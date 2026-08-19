@@ -13,7 +13,7 @@ export type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
 // Reference types a global System Context item may attach. Two exclusions:
 //  - `scope`: org-relative, and the member-less system org isn't in the admin's
 //    scope tree, so the scope sub-picker can't resolve it.
-//  - `data_store`: RAG stores have a dedicated "dataset" feed (which hands the
+//  - `data_store`: Knowledge stores have a dedicated "dataset" feed (which hands the
 //    agent a queryable pointer); a data_store reference has no resolver, so
 //    offering both paths is a confusing dead end. Use the dataset feed instead.
 export const SYSTEM_CONTEXT_REFERENCE_TYPES =

@@ -121,13 +121,13 @@ export const AGENT_SYNC_FIELDS: readonly AgentSyncField[] = [
   {
     column: "default_rag_boost",
     field: "defaultRagBoost",
-    label: "RAG boost",
+    label: "Knowledge boost",
     group: "behavior",
   },
   {
     column: "rag_awareness_mode",
     field: "ragAwarenessMode",
-    label: "RAG awareness",
+    label: "Knowledge awareness",
     group: "behavior",
   },
   {

@@ -181,7 +181,7 @@ export function parseNormalizedCitation(
  * How a source should READ in the UI: as a document (file icon) or a web
  * source (globe icon). Kind-first, ratified 2026-08-08:
  *  - `search_result` is ALWAYS a document — it is a citable tool-result block
- *    (RAG / document_search over OUR files, carrying `file_id` + `page`), not
+ *    (Knowledge / document_search over OUR files, carrying `file_id` + `page`), not
  *    a web hit, even when a `url` happens to be present.
  *  - `document_*` kinds are documents.
  *  - `web` / `grounding` are web sources — unless the capture layer resolved

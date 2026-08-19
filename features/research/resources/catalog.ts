@@ -2,7 +2,7 @@
  * THE RESOURCE CATALOG — one entry per thing an agent can be given.
  *
  * This registry is the whole point of the system: adding a new resource kind
- * (a keyword-metrics table from `seo.*`, brand facts from `web.*`, a RAG
+ * (a keyword-metrics table from `seo.*`, brand facts from `web.*`, a Knowledge
  * library slice) is ONE entry here. The picker, the budget meter, the resolver,
  * and every saved bundle pick it up with no further changes. Nothing may
  * hard-code a resource type anywhere else.

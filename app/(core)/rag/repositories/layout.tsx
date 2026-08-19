@@ -1,9 +1,9 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/rag/repositories", {
+export const metadata = createRouteMetadata("/knowledge/repositories", {
   titlePrefix: "Repositories",
   title: "Knowledge",
-  description: "Manage document repositories connected to your RAG pipeline.",
+  description: "Manage document repositories connected to your Knowledge pipeline.",
   letter: "Rp",
 });
 

@@ -75,7 +75,7 @@ export interface ShellNavChild {
   href: string;
   iconName: ShellIconName;
   exact?: boolean;
-  /** Optional subgroup label in sidebar / mobile flyouts (e.g. "RAG"). */
+  /** Optional subgroup label in sidebar / mobile flyouts (e.g. "Knowledge"). */
   group?: string;
   /**
    * Group-child metadata. A group parent is a sidebar-only organizational
@@ -735,7 +735,7 @@ export const primaryNavItems: ShellNavItem[] = [
     profileMenu: true,
     dashboard: true,
     description:
-      "RAG data stores, knowledge graph, deep research, and org-wide search",
+      "Knowledge data stores, knowledge graph, deep research, and org-wide search",
     color: "amber",
     children: [
       {
@@ -761,27 +761,27 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Data Stores",
-        href: "/rag/data-stores",
+        href: "/knowledge/data-stores",
         iconName: "Database",
-        group: "RAG",
+        group: "Knowledge",
       },
       {
         label: "Search",
-        href: "/rag/search",
+        href: "/knowledge/search",
         iconName: "Search",
-        group: "RAG",
+        group: "Knowledge",
       },
       {
         label: "Library",
-        href: "/rag/library",
+        href: "/knowledge/library",
         iconName: "FileText",
-        group: "RAG",
+        group: "Knowledge",
       },
       {
         label: "Repositories",
-        href: "/rag/repositories",
+        href: "/knowledge/repositories",
         iconName: "Code2",
-        group: "RAG",
+        group: "Knowledge",
       },
       {
         label: "Suggestions",

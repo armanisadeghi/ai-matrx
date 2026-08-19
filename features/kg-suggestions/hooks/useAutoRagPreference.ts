@@ -4,7 +4,7 @@
 // — the per-user Knowledge-Graph auto-ingest opt-out (Phase A). React →
 // Supabase directly (per CLAUDE.md — this is a plain user-owned row
 // write, RLS-scoped to the user). When OFF, the user's content is not
-// auto-ingested into the KG / RAG corpus.
+// auto-ingested into the KG / Knowledge corpus.
 //
 // The column was added in Phase A and now lives natively on
 // `Database['users']['Tables']['user_preferences']]['Row']`, so we read

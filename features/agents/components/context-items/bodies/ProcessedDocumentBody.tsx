@@ -2,11 +2,11 @@
 
 /**
  * Drawer body for `processed_document` attachments — the "Smart Canvas
- * Controller" for a RAG document. Clicking an attached-document chip opens THIS
+ * Controller" for a Knowledge document. Clicking an attached-document chip opens THIS
  * body, which composes the canonical `LibraryPreviewPage` (the pages / cleaned /
  * raw / chunks + in-document search surface) keyed by the document's
  * `processed_document_id`. No bespoke viewer — the same component the
- * `/rag/library/[id]/preview` route renders, in `embedded` mode so it drops its
+ * `/knowledge/library/[id]/preview` route renders, in `embedded` mode so it drops its
  * own header chrome and fills the drawer.
  *
  * `LibraryPreviewPage` is heavy (page renderer, search, resizable panels,
@@ -24,7 +24,7 @@ import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 
 const LibraryPreviewPage = dynamic(
   () =>
-    import("@/features/rag/components/library/LibraryPreviewPage").then(
+    import("@/features/knowledge/components/library/LibraryPreviewPage").then(
       (m) => m.LibraryPreviewPage,
     ),
   {

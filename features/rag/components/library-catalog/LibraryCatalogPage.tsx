@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /rag/library-catalog — the shared-knowledge library catalog, as a real
+ * /knowledge/library-catalog — the shared-knowledge library catalog, as a real
  * list-view destination (list → open → act), per feature-entry doctrine.
  *
  * Left: every DISCOVERABLE shared library (rag.fn_list_library_catalog),
@@ -13,7 +13,7 @@
  * fn_get_user_data_store gate enforce that server-side).
  *
  * Selection lives in ?store_id so deep links and refreshes work — same
- * pattern as /rag/data-stores.
+ * pattern as /knowledge/data-stores.
  */
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -36,19 +36,19 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 import {
   useLibraryCatalog,
   type LibraryCatalogItem,
-} from "@/features/rag/hooks/useLibraryCatalog";
-import { useDataStoreDetail } from "@/features/rag/hooks/useDataStores";
-import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+} from "@/features/knowledge/hooks/useLibraryCatalog";
+import { useDataStoreDetail } from "@/features/knowledge/hooks/useDataStores";
+import { useStoreProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
 import {
   EntitlementChip,
   entitlementLabel,
-} from "@/features/rag/components/library-catalog/EntitlementChip";
+} from "@/features/knowledge/components/library-catalog/EntitlementChip";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
+import { buildRagLibraryContextData } from "@/features/knowledge/agent-context/buildRagLibraryContextData";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
@@ -56,7 +56,7 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
-const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
+const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
 
 export function LibraryCatalogPage() {
   const router = useRouter();
@@ -73,7 +73,7 @@ export function LibraryCatalogPage() {
       if (id) params.set("store_id", id);
       else params.delete("store_id");
       const qs = params.toString();
-      router.replace(`/rag/library-catalog${qs ? `?${qs}` : ""}`);
+      router.replace(`/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
     },
     [router, search],
   );
@@ -95,7 +95,7 @@ export function LibraryCatalogPage() {
   const selected = catalog.items.find((it) => it.id === storeId) ?? null;
 
   // Live surface scope for the header Agents chrome — the catalog half of
-  // `matrx-user/rag-library`. Built at Run time, never on mount.
+  // `matrx-user/knowledge-library`. Built at Run time, never on mount.
   const getScope = useCallback(
     () =>
       buildRagLibraryContextData({

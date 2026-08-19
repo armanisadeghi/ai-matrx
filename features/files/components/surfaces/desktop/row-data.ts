@@ -87,8 +87,8 @@ function passesOwnerFilter(ownerId: string, filter: OwnerFilter): boolean {
 }
 
 /**
- * Applies the RAG-status filter. When the user selects "Indexed" from the
- * RAG column header but the prefetch hasn't reached this file yet, we
+ * Applies the Knowledge-status filter. When the user selects "Indexed" from the
+ * Knowledge column header but the prefetch hasn't reached this file yet, we
  * treat the row as not matching — better to under-show than to flicker
  * the wrong answer. A user clicking Refresh on the column header
  * resolves the ambiguity.
@@ -134,7 +134,7 @@ export interface BuildRowsArg {
   columnFilters?: ColumnFilters;
   permissionsByResourceId: Record<string, CloudFilePermission[]>;
   /**
-   * Per-file RAG status map (`fileId → RagStatus`). Required when the
+   * Per-file Knowledge status map (`fileId → RagStatus`). Required when the
    * `rag` column filter is non-empty; otherwise unused.
    */
   ragStatusByFileId?: Record<string, RagStatus>;
@@ -277,7 +277,7 @@ export function buildRows({
         return false;
       if (columnFilters.extension) return false;
       if (columnFilters.mime) return false;
-      // RAG status is a file-only concept; any active rag filter implicitly
+      // Knowledge status is a file-only concept; any active rag filter implicitly
       // excludes folders.
       if (columnFilters.rag.length > 0) return false;
       if (!passesModifiedFilter(folder.updatedAt, columnFilters.modified))

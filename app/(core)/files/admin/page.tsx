@@ -173,7 +173,7 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
         "Share links and permission grants emit share_link.* / permission.* events onto the spine (features/sharing).",
     },
     {
-      name: "RAG",
+      name: "Knowledge",
       adminUrl: "/knowledge/admin",
       description: "File ingest feeds data stores; file_rag_jobs emits run.completed/run.failed to the spine.",
     },

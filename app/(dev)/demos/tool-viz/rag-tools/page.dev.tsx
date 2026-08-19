@@ -5,7 +5,7 @@
  * `sources` / `chunk`) and `document_content` rendered with REAL payload shapes
  * sampled from `chat.tool_call`, in every action.
  *
- * Route: /demos/tool-viz/rag-tools   (dev profile only)
+ * Route: /demos/tool-viz/knowledge-tools   (dev profile only)
  */
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";

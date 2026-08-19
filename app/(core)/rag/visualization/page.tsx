@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /rag/visualization — Demo playground for the RagFlowVisualization.
+ * /knowledge/visualization — Demo playground for the RagFlowVisualization.
  *
  * Temporary host page so the animation has a public URL while we figure
  * out where it ultimately lives. Shows the visualization with controls
@@ -11,7 +11,7 @@
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { RagFlowVisualization } from "@/features/rag/components/visualization/RagFlowVisualization";
+import { RagFlowVisualization } from "@/features/knowledge/components/visualization/RagFlowVisualization";
 
 export default function Page() {
   return (
@@ -19,7 +19,7 @@ export default function Page() {
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton href="/rag" ariaLabel="Back to Knowledge" />
+            <ChevronLeftTapButton href="/knowledge" ariaLabel="Back to Knowledge" />
             <span className="ml-2 text-sm font-medium text-foreground truncate">
               Visualization
             </span>

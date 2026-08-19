@@ -1,5 +1,5 @@
 /**
- * /rag/search — multi-tab RAG Search Lab.
+ * /knowledge/search — multi-tab Knowledge Search Lab.
  *
  * Tabs:
  *   ?tab=search        (default) clean user search
@@ -11,7 +11,7 @@
  *   ?q=<query>&store_id=<uuid>&tab=<tab>
  */
 
-import { RagSearchExperience } from "@/features/rag/components/search/RagSearchExperience";
+import { RagSearchExperience } from "@/features/knowledge/components/search/RagSearchExperience";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

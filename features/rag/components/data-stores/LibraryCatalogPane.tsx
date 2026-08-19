@@ -2,18 +2,18 @@
 
 /**
  * LibraryCatalogPane — teaser for the shared-knowledge library catalog on
- * the /rag home. Shows a handful of discoverable libraries with the caller's
+ * the /knowledge home. Shows a handful of discoverable libraries with the caller's
  * entitlement chip and quick subscribe/unsubscribe; the full list-view
  * destination (search, detail, provenance, member table) is
- * `/rag/library-catalog` — this pane links there rather than growing.
+ * `/knowledge/library-catalog` — this pane links there rather than growing.
  */
 
 import Link from "next/link";
 import { ArrowRight, Library, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
-import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
+import { EntitlementChip } from "@/features/knowledge/components/library-catalog/EntitlementChip";
 
 const TEASER_LIMIT = 4;
 
@@ -39,7 +39,7 @@ export function LibraryCatalogPane() {
         <Library className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-sm font-semibold">Shared libraries</h2>
         <Link
-          href="/rag/library-catalog"
+          href="/knowledge/library-catalog"
           className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
           Browse the full catalog
@@ -72,7 +72,7 @@ export function LibraryCatalogPane() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link
-                      href={`/rag/library-catalog?store_id=${it.id}`}
+                      href={`/knowledge/library-catalog?store_id=${it.id}`}
                       className="block truncate text-sm font-medium text-foreground hover:underline"
                     >
                       {it.name}
@@ -117,7 +117,7 @@ export function LibraryCatalogPane() {
           </div>
           {items.length > TEASER_LIMIT && (
             <Link
-              href="/rag/library-catalog"
+              href="/knowledge/library-catalog"
               className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
             >
               +{items.length - TEASER_LIMIT} more in the catalog

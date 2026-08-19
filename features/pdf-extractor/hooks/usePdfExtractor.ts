@@ -34,7 +34,7 @@ import {
 /**
  * Frontend view of a `docproc.processed_documents` row.
  *
- * Note: this used to be backed by `public.extracted_documents` which the RAG
+ * Note: this used to be backed by `public.extracted_documents` which the Knowledge
  * team has now superseded. `processed_documents` is the single source of
  * truth and carries lineage + structured JSON. Field naming on the frontend
  * stays in `camelCase` and aliases the canonical columns:
@@ -56,7 +56,7 @@ export interface PdfDocument {
   charCount: number;
   wordCount: number;
 
-  // ── New columns added by the RAG team (Phase 4A — see plan
+  // ── New columns added by the Knowledge team (Phase 4A — see plan
   // `please-review-the-requirements-zany-sphinx`). All optional so legacy
   // rows that haven't been re-processed still render. ─────────────────────
   ownerId: string | null;
@@ -946,7 +946,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   //     `processed_documents.clean_content` column — per-page
   //     `processed_document_pages.cleaned_text` stays untouched.
   //   - `per_page` (>200 pages): the RESUMABLE per-page model (same engine
-  //     as the RAG clean stage) — every page's `cleaned_text` + section
+  //     as the Knowledge clean stage) — every page's `cleaned_text` + section
   //     taxonomy persists the moment it finishes, then the aggregate is
   //     written from the per-page results. On a dropped connection this
   //     hook auto-retries; the server skips already-cleaned pages.

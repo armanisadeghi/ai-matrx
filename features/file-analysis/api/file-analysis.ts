@@ -534,7 +534,7 @@ export function renderPageWithOverlay(
   );
 }
 
-// ─── Extracted text (RAG-ready) ─────────────────────────────────────────────
+// ─── Extracted text (Knowledge-ready) ─────────────────────────────────────────────
 
 export function getExtractedText(
   fileId: string,

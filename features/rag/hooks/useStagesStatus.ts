@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchStagesStatus,
   type StagesStatusResponse,
-} from "@/features/rag/api/stages";
+} from "@/features/knowledge/api/stages";
 
 export function useStagesStatus(processedDocumentId: string | null) {
   const [status, setStatus] = useState<StagesStatusResponse | null>(null);

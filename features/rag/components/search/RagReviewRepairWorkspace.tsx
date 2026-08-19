@@ -36,11 +36,11 @@ import type {
   ExtraExtractionInput,
   PageExtractionJobInsert,
 } from "@/features/page-extraction/types";
-import { SelectedPdfPages } from "@/features/rag/components/search/SelectedPdfPages";
-import { RagContentActions } from "@/features/rag/components/search/RagContentActions";
-import { createRagAiCopyBundle } from "@/features/rag/components/search/ragAiCopy";
-import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
-import type { RagSearchHit } from "@/features/rag/api/search";
+import { SelectedPdfPages } from "@/features/knowledge/components/search/SelectedPdfPages";
+import { RagContentActions } from "@/features/knowledge/components/search/RagContentActions";
+import { createRagAiCopyBundle } from "@/features/knowledge/components/search/ragAiCopy";
+import { hitViewFromSearchHit } from "@/features/knowledge/components/hit-card/adapters";
+import type { RagSearchHit } from "@/features/knowledge/api/search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -69,7 +69,7 @@ const REPAIR_KINDS: Array<{
     label: "Correct text",
     icon: FileCheck2,
     instructions:
-      "Review the attached native PDF pages directly and produce corrected, well-structured text for the material represented by this RAG result. Preserve headings, lists, footnotes, and page provenance. Do not invent missing content.",
+      "Review the attached native PDF pages directly and produce corrected, well-structured text for the material represented by this Knowledge result. Preserve headings, lists, footnotes, and page provenance. Do not invent missing content.",
   },
   {
     value: "missing_context",
@@ -83,7 +83,7 @@ const REPAIR_KINDS: Array<{
     label: "Custom repair",
     icon: FileCheck2,
     instructions:
-      "Review the attached native PDF pages directly and create a faithful, structured correction for this RAG result. State the source pages used and do not infer facts that are not visible in the PDF.",
+      "Review the attached native PDF pages directly and create a faithful, structured correction for this Knowledge result. State the source pages used and do not infer facts that are not visible in the PDF.",
   },
 ];
 
@@ -222,7 +222,7 @@ function RetrievedPane({
             </div>
             <RagContentActions
               humanText={hit.snippet}
-              label="retrieved RAG content"
+              label="retrieved Knowledge content"
               bundle={aiBundle}
               initialSections={["retrieved"]}
             />
@@ -230,11 +230,11 @@ function RetrievedPane({
           <div className="mt-3 space-y-1.5 text-[10px] text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="w-12 shrink-0">Source</span>
-              <MatrxUuidCell value={hit.source_id} label="RAG source ID" />
+              <MatrxUuidCell value={hit.source_id} label="Knowledge source ID" />
             </div>
             <div className="flex items-center gap-2">
               <span className="w-12 shrink-0">Result</span>
-              <MatrxUuidCell value={hit.chunk_id} label="RAG result chunk ID" />
+              <MatrxUuidCell value={hit.chunk_id} label="Knowledge result chunk ID" />
             </div>
           </div>
         </div>
@@ -310,8 +310,8 @@ function RepairPane({
       const insert: PageExtractionJobInsert = {
         file_id: fileId,
         processed_document_id: hit.processed_document_id ?? null,
-        name: `RAG repair · ${sourceName} · pages ${reviewPages.join("-")}`,
-        description: `Targeted ${repairKind} repair for RAG chunk ${hit.chunk_id}. Native PDF pages: ${reviewPages.join(", ")}.`,
+        name: `Knowledge repair · ${sourceName} · pages ${reviewPages.join("-")}`,
+        description: `Targeted ${repairKind} repair for Knowledge chunk ${hit.chunk_id}. Native PDF pages: ${reviewPages.join(", ")}.`,
         agent_id: agentId,
         shortcut_id: null,
         variable_mapping: wiring.mapping,
@@ -503,7 +503,7 @@ function RepairPane({
         <p className="text-[10px] leading-relaxed text-muted-foreground">
           This creates a durable page-extraction dataset anchored to the
           physical source pages. The existing extraction pipeline indexes
-          completed output for RAG; use the review workspace to edit or manage
+          completed output for Knowledge; use the review workspace to edit or manage
           it.
         </p>
       </PaneBody>

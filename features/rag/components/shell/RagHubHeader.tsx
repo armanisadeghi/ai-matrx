@@ -1,8 +1,8 @@
 "use client";
 
-// RagHubHeader — the ONE shell header for the RAG/Knowledge hub level
-// (`/rag`, `/rag/data-stores`, `/rag/library`, `/rag/search`,
-// `/rag/repositories`). Center is the canonical section nav (RouteModeNav);
+// RagHubHeader — the ONE shell header for the Knowledge/Knowledge hub level
+// (`/knowledge`, `/knowledge/data-stores`, `/knowledge/library`, `/knowledge/search`,
+// `/knowledge/repositories`). Center is the canonical section nav (RouteModeNav);
 // callers pass their contextual action tap-buttons via `right`. No title
 // text — the nav IS the identity. Pattern mirrors CmsHubHeader.
 
@@ -19,13 +19,13 @@ import {
 } from "lucide-react";
 
 const HUB_NAV_ITEMS = [
-  { name: "Home", href: "/rag", icon: Home },
-  { name: "Data Stores", href: "/rag/data-stores", icon: Database },
-  { name: "Library", href: "/rag/library", icon: FileText },
-  { name: "Catalog", href: "/rag/library-catalog", icon: Library },
-  { name: "Search", href: "/rag/search", icon: Search },
-  { name: "Embeddings", href: "/rag/embeddings", icon: Binary },
-  { name: "Repositories", href: "/rag/repositories", icon: Code2 },
+  { name: "Home", href: "/knowledge", icon: Home },
+  { name: "Data Stores", href: "/knowledge/data-stores", icon: Database },
+  { name: "Library", href: "/knowledge/library", icon: FileText },
+  { name: "Catalog", href: "/knowledge/library-catalog", icon: Library },
+  { name: "Search", href: "/knowledge/search", icon: Search },
+  { name: "Embeddings", href: "/knowledge/embeddings", icon: Binary },
+  { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },
 ];
 
 export function RagHubHeader({ right }: { right?: React.ReactNode }) {

@@ -1,7 +1,7 @@
 /**
- * Surface manifest — Knowledge Data Stores (`matrx-user/rag-data-stores`).
+ * Surface manifest — Knowledge Data Stores (`matrx-user/knowledge-data-stores`).
  *
- * `/rag/data-stores` — the two-column manager for `rag.data_stores`: every
+ * `/knowledge/data-stores` — the two-column manager for `rag.data_stores`: every
  * store the caller can see on the left, the selected store's identity,
  * configuration, members, access tier, and sharing state on the right.
  *
@@ -13,17 +13,17 @@
  * Selection lives in `?store_id=<uuid>`, so the selected store's values are
  * routed identity — reliable across refresh and deep link.
  *
- * Emitter: `features/rag/components/data-stores/DataStoresPage.tsx` via
+ * Emitter: `features/knowledge/components/data-stores/DataStoresPage.tsx` via
  * `buildRagDataStoresContextData` in
- * `features/rag/agent-context/buildRagDataStoresContextData.ts`.
+ * `features/knowledge/agent-context/buildRagDataStoresContextData.ts`.
  *
- * NOT THE SAME SURFACE AS `/rag/repositories`. That route lists
+ * NOT THE SAME SURFACE AS `/knowledge/repositories`. That route lists
  * `code.code_repositories` — git repos with branches, file counts, and an
  * index action. Different table, different vocabulary, different agents. It
  * has no surface today; folding it in here would mean declaring values this
  * page never emits.
  *
- * SHARING DOCTRINE (features/rag/FEATURE.md): data stores are NOT shared
+ * SHARING DOCTRINE (features/knowledge/FEATURE.md): data stores are NOT shared
  * through `iam.permissions` / ShareButton. Read access is published via
  * `rag.data_store_grants` audiences (global / industry / organization) and
  * write access stays gated by store ownership. `store_access` and
@@ -37,7 +37,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { DATA_STORE_KINDS } from "@/features/rag/types/data-stores-ext";
+import { DATA_STORE_KINDS } from "@/features/knowledge/types/data-stores-ext";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -352,7 +352,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *
  * WHAT DID NOT, deliberately: deleting a store, removing a member, adding or
  * uploading a source (attaching documents is a curation act with real cost —
- * it also queues RAG ingestion), publishing to an audience, and the read-only
+ * it also queues Knowledge ingestion), publishing to an audience, and the read-only
  * / access tier. Those stay human, and several are refused server-side anyway.
  *
  * WHY `kind` IS DRAFT-ONLY. `useDataStoreDetail.updateStore` deliberately does
@@ -412,14 +412,14 @@ const writeTargets: SurfaceWriteTarget[] = [
 ];
 
 export const ragDataStoresManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/rag-data-stores",
+  surfaceName: "matrx-user/knowledge-data-stores",
   readiness: "partial",
   readinessNote:
-    "Manifest authored against the live /rag/data-stores component and the emitter is wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. The publish panel's per-audience grant rows stay undeclared — they load inside DataStorePublishPanel and nothing lifts them to the route.",
+    "Manifest authored against the live /knowledge/data-stores component and the emitter is wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. The publish panel's per-audience grant rows stay undeclared — they load inside DataStorePublishPanel and nothing lifts them to the route.",
   label: "Knowledge Data Stores",
-  urlPattern: "/rag/data-stores",
+  urlPattern: "/knowledge/data-stores",
   intro: `<surface_intro>
-This is where the user curates DATA STORES — the retrieval scopes of the RAG
+This is where the user curates DATA STORES — the retrieval scopes of the Knowledge
 system. A data store is a named bucket of sources; knowledge_search takes one
 data_store_id and searches inside exactly that bucket. So a store decides what
 an agent can retrieve at all, and this page is where that decision is made.
@@ -478,7 +478,7 @@ export interface RagDataStoreMemberEntry {
 }
 
 /**
- * Scope builder for `matrx-user/rag-data-stores`.
+ * Scope builder for `matrx-user/knowledge-data-stores`.
  *
  * `store_count` and `store_list_status` are guaranteed — the left column always
  * renders and always reports its state. Everything about a SELECTED store is

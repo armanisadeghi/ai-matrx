@@ -41,7 +41,7 @@ export const CONNECTORS: ConnectorDefinition[] = [
     blurb: "Bring your Notion pages into a conversation",
     logo: NotionMark,
     surfaces: ["strip", "directory"],
-    comingSoonId: "connectors.notion",
+    manageHref: "/user-settings/integrations",
   },
   {
     id: "google-search-console",

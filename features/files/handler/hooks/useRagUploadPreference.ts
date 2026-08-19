@@ -1,10 +1,10 @@
 /**
  * features/files/handler/hooks/useRagUploadPreference.ts
  *
- * Tiny localStorage-backed toggle for "Process for RAG immediately" on
+ * Tiny localStorage-backed toggle for "Process for Knowledge immediately" on
  * menu uploads. When on, the upload sets `options.rag.trigger_now = true`
- * so the backend runs RAG at upload time instead of waiting for the
- * scheduled auto-RAG sweep.
+ * so the backend runs Knowledge at upload time instead of waiting for the
+ * scheduled auto-Knowledge sweep.
  *
  * Default OFF. Only menu/explicit uploads consume this — drag-drop leaves
  * it unset (the scheduled sweep still runs).

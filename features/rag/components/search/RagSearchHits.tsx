@@ -1,7 +1,7 @@
 /**
- * features/rag/components/search/RagSearchHits.tsx
+ * features/knowledge/components/search/RagSearchHits.tsx
  *
- * Render a list of RAG search hits with rich citations. Each row:
+ * Render a list of Knowledge search hits with rich citations. Each row:
  *   - shows the snippet
  *   - labels the source (file name / note / code-file)
  *   - links to the right viewer with chunk + page deep-links
@@ -15,7 +15,7 @@
  * Used from:
  *   - `/files` omnibox / search results panel (when wired)
  *   - chat citations (when wired into MessageItem)
- *   - admin RAG library audit pages
+ *   - admin Knowledge library audit pages
  */
 
 "use client";
@@ -24,15 +24,15 @@ import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesMap } from "@/features/files/redux/selectors";
 import { cn } from "@/lib/utils";
-import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
+import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
+import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
 import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
   normalizeSourceName,
-} from "@/features/rag/components/hit-card/adapters";
-import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+} from "@/features/knowledge/components/hit-card/adapters";
+import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
 
 export interface RagSearchHitsProps {
   hits: RagSearchHit[];
@@ -94,7 +94,7 @@ export function RagSearchHits({
         )}
       >
         {query
-          ? `No results for "${query}". Try broader keywords or process more files for RAG first.`
+          ? `No results for "${query}". Try broader keywords or process more files for Knowledge first.`
           : "No results."}
       </div>
     );

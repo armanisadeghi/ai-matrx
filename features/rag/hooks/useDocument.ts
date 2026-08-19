@@ -15,13 +15,13 @@ import {
   fetchDocumentChunks,
   fetchDocumentLineage,
   fetchDocumentPage,
-} from "@/features/rag/api/document";
+} from "@/features/knowledge/api/document";
 import type {
   ChunkRow,
   DocumentDetail,
   LineageTree,
   PageDetail,
-} from "@/features/rag/types/documents";
+} from "@/features/knowledge/types/documents";
 
 export interface FetchState<T> {
   data: T | null;

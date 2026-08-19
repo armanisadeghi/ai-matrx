@@ -34,7 +34,7 @@ import type { PdfPaneEditMode } from "./PdfStudioReader";
 import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
-import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
+import { DataStoreBindPanel } from "@/features/knowledge/components/data-stores/DataStoreBindPanel";
 import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";

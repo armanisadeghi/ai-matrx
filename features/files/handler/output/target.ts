@@ -3,7 +3,7 @@
  *
  * Render a `NormalizedFile` for a specific consumer. Each branch is the
  * ONLY place in the codebase that knows how to build that consumer's
- * shape — the duplication clusters in conversation/agents/RAG/tasks all
+ * shape — the duplication clusters in conversation/agents/Knowledge/tasks all
  * collapse here.
  */
 
@@ -265,7 +265,7 @@ function requiredPersistedLocator(file: NormalizedFile) {
 }
 
 // ---------------------------------------------------------------------------
-// RAG ingest
+// Knowledge ingest
 // ---------------------------------------------------------------------------
 
 function toRagIngestSource(file: NormalizedFile): RagIngestSource {
@@ -275,7 +275,7 @@ function toRagIngestSource(file: NormalizedFile): RagIngestSource {
     const bytes = base64ToBytes(file.base64);
     return { source_kind: "inline", inline: { mime: file.meta.mime, bytes } };
   }
-  throw new Error("file-handler: no RAG-ingestable form for this file");
+  throw new Error("file-handler: no Knowledge-ingestable form for this file");
 }
 
 // ---------------------------------------------------------------------------

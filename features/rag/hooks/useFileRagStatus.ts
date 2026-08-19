@@ -1,7 +1,7 @@
 /**
- * features/rag/hooks/useFileRagStatus.ts
+ * features/knowledge/hooks/useFileRagStatus.ts
  *
- * React Query hook for a file's scheduled auto-RAG lifecycle, plus the
+ * React Query hook for a file's scheduled auto-Knowledge lifecycle, plus the
  * on-demand trigger / refresh actions.
  *
  * Live updates come from a Supabase Realtime subscription on
@@ -27,8 +27,8 @@ import {
   refreshFileRag,
   triggerFileIngestNow,
   type FileRagStatus,
-} from "@/features/rag/api/rag-jobs";
-import { subscribeToFileRagJob } from "@/features/rag/hooks/rag-job-realtime";
+} from "@/features/knowledge/api/knowledge-jobs";
+import { subscribeToFileRagJob } from "@/features/knowledge/hooks/knowledge-job-realtime";
 
 /** Match the `detail` shape `useFileIngest.ts` dispatches for this event. */
 const PROCESSED_EVENT = "cloud-files:document-processed";
@@ -73,7 +73,7 @@ export function useFileRagStatus(
   // ── Realtime: flip the moment the server writes a transition ───────────────
   // One refcounted channel per fileId; an INSERT/UPDATE/DELETE to this file's
   // `cld_file_rag_jobs` row invalidates the query, which re-reads the merged
-  // `/files/{id}/rag-status` contract exactly once per real transition.
+  // `/files/{id}/knowledge-status` contract exactly once per real transition.
   useEffect(() => {
     if (!enabled || !fileId) return undefined;
     return subscribeToFileRagJob(fileId, () => {
@@ -86,7 +86,7 @@ export function useFileRagStatus(
   // When the polled status transitions INTO `completed` (e.g. a scheduled or
   // background job finished while this hook was open), keep the rest of the app
   // in sync — the file-lookup cache, the DocumentTab probe, and the file-table
-  // RAG column — exactly as `useFileIngest` does after an on-demand ingest.
+  // Knowledge column — exactly as `useFileIngest` does after an on-demand ingest.
   // Guarded to fire only on the rising edge into `completed` so it never
   // re-dispatches on every poll.
   const dispatch = useAppDispatch();
@@ -99,7 +99,7 @@ export function useFileRagStatus(
       window.dispatchEvent(
         new CustomEvent(PROCESSED_EVENT, { detail: { fileId } }),
       );
-      // Keep the file-table RAG column truthful without a separate fetch.
+      // Keep the file-table Knowledge column truthful without a separate fetch.
       dispatch(setRagStatusForFile({ fileId, status: "indexed" }));
     }
     wasCompletedRef.current = completed;
@@ -136,7 +136,7 @@ export function useFileRagActions(
     onSuccess: () => {
       invalidate();
       toast.success("Refresh started", {
-        description: "Re-processing this file for RAG.",
+        description: "Re-processing this file for Knowledge.",
       });
     },
     onError: (err: unknown) => {
@@ -149,12 +149,12 @@ export function useFileRagActions(
     onSuccess: () => {
       invalidate();
       toast.success("Processing started", {
-        description: "Running RAG now instead of waiting for the schedule.",
+        description: "Running Knowledge now instead of waiting for the schedule.",
       });
     },
     onError: (err: unknown) => {
       if (isRagAlreadyComplete(err)) {
-        toast.info("Already processed for RAG", {
+        toast.info("Already processed for Knowledge", {
           description:
             "This file is already in the knowledge base. Use Refresh to re-run it.",
           action: {

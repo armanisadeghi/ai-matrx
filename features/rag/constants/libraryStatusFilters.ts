@@ -1,5 +1,5 @@
 /**
- * The status filter vocabulary of `/rag/library` — the segmented buttons above
+ * The status filter vocabulary of `/knowledge/library` — the segmented buttons above
  * the document table.
  *
  * This is deliberately NOT `DocStatus`. `DocStatus` carries "chunking" and
@@ -10,13 +10,13 @@
  * It lives in its own pure module (no React, no "use client") because three
  * consumers need the SAME vocabulary and one of them runs in node:
  *   - `LibraryPage` renders the buttons from it,
- *   - the `matrx-user/rag-library` manifest spells it into the `library_filters`
+ *   - the `matrx-user/knowledge-library` manifest spells it into the `library_filters`
  *     write-target contract the agent reads,
  *   - the page's write handler validates an agent's value against it.
  * Re-typing the literals in any of those is how a filter vocabulary drifts.
  */
 
-import type { DocStatus } from "@/features/rag/types/library";
+import type { DocStatus } from "@/features/knowledge/types/library";
 
 /** A value the status filter can hold — a pipeline status, or "all". */
 export type LibraryStatusFilter = DocStatus | "all";

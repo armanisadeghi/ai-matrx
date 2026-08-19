@@ -499,7 +499,7 @@ export const selectOverallUploadProgress = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// RAG status (per-file indexing)
+// Knowledge status (per-file indexing)
 // ---------------------------------------------------------------------------
 
 const selectRagStatusSlice = createSelector(

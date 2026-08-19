@@ -29,8 +29,8 @@ import React, {
 } from "react";
 import { Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { useDocumentSearch } from "@/features/knowledge/hooks/useDocumentSearch";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
@@ -51,7 +51,7 @@ import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
 import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
 import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
+import { KnowledgeAssetPanel } from "@/features/knowledge/components/library/KnowledgeAssetPanel";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useRouter } from "next/navigation";
@@ -194,7 +194,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     });
   const [findQuery, setFindQuery] = useState("");
   const [findOpen, setFindOpen] = useState(false);
-  // Server-side in-document search (same engine as the RAG library viewer /
+  // Server-side in-document search (same engine as the Knowledge library viewer /
   // chat drawer): Enter in the title pill's search runs it; ranked segment
   // hits render in the Segments pane, matched pages become jump chips. Live
   // typing separately drives the `findQuery` string highlights above.
@@ -370,7 +370,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   );
 
   // ── In-document search (title pill, Enter) ───────────────────────────
-  // Runs the RAG lexical search, surfaces the Segments pane with the ranked
+  // Runs the Knowledge lexical search, surfaces the Segments pane with the ranked
   // hits, and jumps to the first matching page. An empty submit clears.
   const { run: runDocSearch, clear: clearDocSearch } = docSearch;
   const activePageRef = useRef(activePage);

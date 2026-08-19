@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /rag/library — visibility surface for processed documents.
+ * /knowledge/library — visibility surface for processed documents.
  *
  * The "where did my content go?" page. One table, one truth. Every
  * processed_documents row owned by the caller, with derived counts
@@ -23,10 +23,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
+import { buildRagLibraryContextData } from "@/features/knowledge/agent-context/buildRagLibraryContextData";
 
 /** Canonical `ui_surface.name` this page emits. */
-const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
+const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { fileHandler } from "@/features/files/handler/handler";
-import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
+import { useProcessingRunner } from "@/features/knowledge/hooks/useProcessingRunner";
 import { ProcessingProgressSheet } from "./ProcessingProgressSheet";
 import { LibraryTrashSheet } from "./LibraryTrashSheet";
 import { ActiveJobsStrip } from "./ActiveJobsStrip";
@@ -87,19 +87,19 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { useLibrary, useLibrarySummary } from "@/features/knowledge/hooks/useLibrary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import {
   LIBRARY_STATUS_FILTER_VALUES,
   STATUS_FILTERS,
   type LibraryStatusFilter,
-} from "@/features/rag/constants/libraryStatusFilters";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+} from "@/features/knowledge/constants/libraryStatusFilters";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import type {
   DocStatus,
   LibraryDocSummary,
-} from "@/features/rag/types/library";
+} from "@/features/knowledge/types/library";
 import { StatusBadge } from "./StatusBadge";
 import { LibraryDocDetailSheet } from "./LibraryDocDetailSheet";
 import { QuickSearchDialog } from "./QuickSearchDialog";
@@ -107,7 +107,7 @@ import { cn } from "@/lib/utils";
 
 /** Poll cadence (ms) while an in-session operation is actively running.
  *  We deliberately do NOT auto-poll just because a doc sits in a non-terminal
- *  state — a single stuck doc used to hammer GET /rag/library and
+ *  state — a single stuck doc used to hammer GET /knowledge/library and
  *  /summary/totals every few seconds, forever. Live cross-session updates
  *  belong to Supabase Realtime, not a polling loop against the Python compute
  *  server (which must never be used as a data-read endpoint). */
@@ -122,7 +122,7 @@ export function LibraryPage() {
   // `router` in its deps creates an infinite navigation loop in the
   // App Router (router.replace mutates the search-params reference, which
   // re-fires the effect, which calls router.replace again, ad infinitum).
-  // For deep links: opening `/rag/library?doc_id=<uuid>` still works
+  // For deep links: opening `/knowledge/library?doc_id=<uuid>` still works
   // because of the snapshot below. Re-syncing on click is intentionally
   // skipped — keep it lean for the demo.
   const initialDocIdRef = useRef<string | null>(search?.get("doc_id") ?? null);
@@ -823,7 +823,7 @@ export function LibraryPage() {
                   }}
                   onPreview={() => {
                     window.open(
-                      `/rag/library/${d.id}/preview`,
+                      `/knowledge/library/${d.id}/preview`,
                       "_blank",
                       "noopener,noreferrer",
                     );
@@ -1015,7 +1015,7 @@ function DocRow({
             opens the detail sheet; the anchor is what makes cmd-click,
             middle-click and keyboard reach the document. */}
         <Link
-          href={`/rag/library/${doc.id}/preview`}
+          href={`/knowledge/library/${doc.id}/preview`}
           onClick={(e) => e.stopPropagation()}
           title={`Open ${doc.name}`}
           className="block font-medium break-words pl-2 hover:text-primary hover:underline"
@@ -1103,7 +1103,7 @@ function DocRow({
             <Button
               size="sm"
               variant="default"
-              title="Run the full RAG pipeline on this document"
+              title="Run the full Knowledge pipeline on this document"
               onClick={onRunPipeline}
               className="h-7 px-2 text-[11px]"
             >

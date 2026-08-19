@@ -1,9 +1,9 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/rag", {
+export const metadata = createRouteMetadata("/knowledge", {
   titlePrefix: "Visualization",
   title: "Knowledge",
-  description: "Explore knowledge graph and RAG pipeline visualizations.",
+  description: "Explore knowledge graph and Knowledge pipeline visualizations.",
   letter: "KV",
 });
 

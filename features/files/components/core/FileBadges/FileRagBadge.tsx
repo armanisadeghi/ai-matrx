@@ -1,17 +1,17 @@
 /**
  * features/files/components/core/FileBadges/FileRagBadge.tsx
  *
- * Tiny inline indicator that a file is RAG-indexed (has a
+ * Tiny inline indicator that a file is Knowledge-indexed (has a
  * `processed_documents` row) or that it's a derivation of another
  * file (`parentFileId`). Designed to live next to the filename in
  * dense list views — file table rows, grid cells, file-tree rows.
  *
  * The "derived from" pill is FREE: it reads `parentFileId` from the file
- * row already in Redux. The "indexed for RAG" pill is NOT free — it needs
+ * row already in Redux. The "indexed for Knowledge" pill is NOT free — it needs
  * a per-file `processed_documents` lookup — so it is OPT-IN via
  * `showRagStatus`. By default the badge never probes, because for the vast
- * majority of lists (images, generic uploads) the RAG signal is noise. Turn
- * it on only for surfaces that specifically curate RAG documents.
+ * majority of lists (images, generic uploads) the Knowledge signal is noise. Turn
+ * it on only for surfaces that specifically curate Knowledge documents.
  *
  * Renders nothing when:
  *   - The file is virtual (no cld_files.id to look up against).
@@ -38,10 +38,10 @@ export interface FileRagBadgeProps {
   /** Compact mode — no labels, just icons. Default true for dense lists. */
   iconOnly?: boolean;
   /**
-   * Opt in to the "Indexed for RAG" pill. OFF by default: resolving it
+   * Opt in to the "Indexed for Knowledge" pill. OFF by default: resolving it
    * requires a per-file `processed_documents` lookup, so leaving it off keeps
    * dense lists free of per-row reads. Enable it only on surfaces that
-   * curate RAG documents (e.g. a document-library directory). The
+   * curate Knowledge documents (e.g. a document-library directory). The
    * "derived from" pill renders regardless — it's read from the file row.
    */
   showRagStatus?: boolean;
@@ -54,7 +54,7 @@ export function FileRagBadge({
   showRagStatus = false,
 }: FileRagBadgeProps) {
   const file = useAppSelector((s) => selectFileById(s, fileId));
-  // Only probe when the RAG pill is explicitly requested. Passing `null`
+  // Only probe when the Knowledge pill is explicitly requested. Passing `null`
   // makes `useFileDocument` a no-op (no Supabase read), so the default
   // dense-list path costs nothing.
   const { state } = useFileDocument(showRagStatus ? fileId : null);
@@ -76,19 +76,19 @@ export function FileRagBadge({
       )}
       aria-label={
         isIndexed && isDerived
-          ? "Indexed for RAG, derived from another file"
+          ? "Indexed for Knowledge, derived from another file"
           : isIndexed
-            ? "Indexed for RAG"
+            ? "Indexed for Knowledge"
             : "Derived from another file"
       }
     >
       {isIndexed ? (
         <span
-          title="Indexed for RAG search"
+          title="Indexed for Knowledge search"
           className="inline-flex items-center gap-0.5 rounded-sm bg-primary/10 text-primary px-1 py-px text-[9px] font-semibold leading-none"
         >
           <Lightbulb className="h-2.5 w-2.5" />
-          {iconOnly ? null : <span>RAG</span>}
+          {iconOnly ? null : <span>Knowledge</span>}
         </span>
       ) : null}
       {isDerived ? (

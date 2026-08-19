@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /rag/repositories — code repositories you can index for RAG.
+ * /knowledge/repositories — code repositories you can index for Knowledge.
  *
  * Lists every code.code_repositories row owned by the caller, with
  * file counts (total vs already-indexed) and a one-click "Index" button
@@ -25,10 +25,10 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -137,7 +137,7 @@ export function RepositoriesPage() {
       // from the contract (`IndexRepositoryResponse`) so a rename still fails here.
       const params = force ? "?force=true" : "";
       const { data } = await postJson<ApiIndexResponse, Record<string, never>>(
-        `/rag/repositories/${id}/index${params}`,
+        `/knowledge/repositories/${id}/index${params}`,
         {} as Record<string, never>,
       );
       const errs = data?.errors ?? [];

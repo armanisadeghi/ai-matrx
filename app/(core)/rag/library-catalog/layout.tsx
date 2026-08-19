@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/rag/library-catalog", {
+export const metadata = createRouteMetadata("/knowledge/library-catalog", {
   titlePrefix: "Library Catalog",
   title: "Knowledge",
   description:

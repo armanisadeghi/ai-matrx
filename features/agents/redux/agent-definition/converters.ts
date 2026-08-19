@@ -223,7 +223,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     accessLevel: null,
     sharedByEmail: null,
 
-    // RAG retrieval-boost for this agent's derivatives. DB default is 0
+    // Knowledge retrieval-boost for this agent's derivatives. DB default is 0
     // (no boost); the column is non-nullable on agent.definition so we just
     // pass it through.
     defaultRagBoost: row.default_rag_boost ?? 0,

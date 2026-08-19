@@ -5,14 +5,14 @@
  * any file with a known parent (`parentFileId`) or a processed-document
  * row with binary/processing ancestors.
  *
- * Two layers, mirroring `features/rag/components/documents/LineageBreadcrumbs`:
+ * Two layers, mirroring `features/knowledge/components/documents/LineageBreadcrumbs`:
  *   - Binary lineage (cld_files.parent_file_id) — "this PDF is a
  *     re-extract / page-range / OCR re-run of <bigger PDF>"
  *   - Processing lineage (processed_documents.parent_processed_id) —
  *     surfaced lazily when the user opens the chip popover
  *
  * Click → opens the source file in the same PreviewPane (real files)
- * or routes to /rag/viewer/<id> for processed-document ancestors.
+ * or routes to /knowledge/viewer/<id> for processed-document ancestors.
  *
  * If neither layer has a known ancestor, the component renders nothing.
  * It is a soft enhancement; missing data is the steady state for files
@@ -28,7 +28,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 
 export interface FileLineageChipProps {
   fileId: string;
@@ -48,7 +48,7 @@ export function FileLineageChip({ fileId, className }: FileLineageChipProps) {
   const hasBinaryParent = !!file?.parentFileId;
   // The "found" lookup carries the doc id — clicking the chip when the
   // user wants the *processed_document* (not the raw bytes parent) opens
-  // the full RAG viewer. The "found" state alone doesn't imply a
+  // the full Knowledge viewer. The "found" state alone doesn't imply a
   // processing-parent though; the LineageTree from /api/document/{id}/lineage
   // is what tells us about prior extractions. We keep the chip simple
   // here and reserve the "ancestor explorer" affordance for the
@@ -90,7 +90,7 @@ export function FileLineageChip({ fileId, className }: FileLineageChipProps) {
           className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5"
         >
           <GitBranch className="h-3 w-3" />
-          <span>RAG</span>
+          <span>Knowledge</span>
         </span>
       )}
     </div>

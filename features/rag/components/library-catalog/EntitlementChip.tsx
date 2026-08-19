@@ -4,7 +4,7 @@
  * EntitlementChip — the ONE chip for a catalog store's per-caller
  * entitlement state (Shared Knowledge Resources). Driven by the settled
  * catalog shape (`entitled_via` + industry label from
- * `rag.fn_list_library_catalog`) so every surface (catalog route, /rag
+ * `rag.fn_list_library_catalog`) so every surface (catalog route, /knowledge
  * teaser pane, org settings) says the same thing:
  *
  *   organization → "Subscribed"
@@ -15,7 +15,7 @@
 
 import { Building2, Check, Globe, Lock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CatalogEntitlement } from "@/features/rag/hooks/useLibraryCatalog";
+import type { CatalogEntitlement } from "@/features/knowledge/hooks/useLibraryCatalog";
 
 export function entitlementLabel(
   entitledVia: CatalogEntitlement,

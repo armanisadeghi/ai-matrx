@@ -33,7 +33,7 @@ import {
   retrieveGroundedPassages,
   serializeGroundedPassages,
   type GroundingSource,
-} from "@/features/rag/api/grounding";
+} from "@/features/knowledge/api/grounding";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { asJsonObject } from "@/lib/supabase/mergeJsonColumn";
@@ -474,7 +474,7 @@ export function ExamContentPipeline() {
             ) : shownSources.length === 0 ? (
               <p className="p-3 text-sm text-muted-foreground">
                 No matching processed sources. Add the official material through
-                the existing Files or Notes “Process for RAG” action first.
+                the existing Files or Notes “Process for Knowledge” action first.
               </p>
             ) : (
               shownSources.map((source) => {

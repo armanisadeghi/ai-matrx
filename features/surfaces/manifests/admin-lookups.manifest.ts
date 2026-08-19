@@ -168,7 +168,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * writes rather than discovering it by refusal.
  *
  * WHEN NOTHING IS OPEN, APPLYING OPENS THE "NEW" FORM on the active tab and
- * stages there — the `CreateStoreInline` call in the RAG data-stores adopter,
+ * stages there — the `CreateStoreInline` call in the Knowledge data-stores adopter,
  * for its reason (staging into something the admin can SEE is the whole
  * contract of `draft`, and opening a create form is reversible and creates
  * nothing) plus one specific to this page: the row dialogs are MODAL, so

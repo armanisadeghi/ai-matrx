@@ -2,8 +2,8 @@
 
 /**
  * useOpenCitation — the ONE way to open a retrieved/cited source in its best
- * in-app surface. Every RAG/citation surface (the knowledge_search tool cards, the
- * /rag/search page, the KG inspectors, chat citations) routes through here so
+ * in-app surface. Every Knowledge/citation surface (the knowledge_search tool cards, the
+ * /knowledge/search page, the KG inspectors, chat citations) routes through here so
  * they all behave identically: a click opens a non-blocking WINDOW, never a
  * forced full-page navigation.
  *
@@ -27,7 +27,7 @@ import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/trans
 import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
 
 // Canonical home: `@/utils/navigation/should-open-in-new-tab` — re-exported
-// here so existing RAG/KG imports keep working.
+// here so existing Knowledge/KG imports keep working.
 export { shouldOpenInNewTab } from "@/utils/navigation/should-open-in-new-tab";
 
 export interface CitationInput {

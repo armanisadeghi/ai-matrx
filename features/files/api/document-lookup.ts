@@ -2,8 +2,8 @@
  * features/files/api/document-lookup.ts
  *
  * Resolve `cld_files.id → processed_documents` so the cloud-files surfaces
- * (RAG badge, RAG-status column, PreviewPane Document/Info tabs, lineage
- * chips) can tell whether a file has been ingested for RAG.
+ * (Knowledge badge, Knowledge-status column, PreviewPane Document/Info tabs, lineage
+ * chips) can tell whether a file has been ingested for Knowledge.
  *
  * ── Architecture (2026-05-20): DIRECT Supabase read ────────────────────────
  *
@@ -13,7 +13,7 @@
  * round-tripping through the Python backend.
  *
  * This reverses an anti-pattern: the old `GET /files/{id}/document` proxy used
- * Python purely as a database reader. Because the RAG badge renders inline on
+ * Python purely as a database reader. Because the Knowledge badge renders inline on
  * every file row, that proxy fired once per row on every list render AND once
  * per upload — a guaranteed 404 at upload time (upload never ingests) — all to
  * read one metadata table the client can read itself. Python is for compute /
@@ -26,7 +26,7 @@
  *      Avoid treating knowledge-asset derivatives (`synthetic_qa`, …) as the
  *      attach/preview target when a canonical extract exists.
  *
- * `chunk_count` is intentionally NOT resolved here. RAG chunks live in the
+ * `chunk_count` is intentionally NOT resolved here. Knowledge chunks live in the
  * `rag` schema (`rag.kg_chunks`), which is not exposed to PostgREST, so the
  * count needs the server. It is left `null`; detail surfaces render it only
  * when known. Tracked as a server-side ask in
@@ -34,7 +34,7 @@
  * `public` view).
  *
  * The result is memoised at module scope for the page lifetime — these answers
- * don't change without a `/rag/ingest` call, which the FE invalidates by
+ * don't change without a `/knowledge/ingest` call, which the FE invalidates by
  * calling `clearFileDocumentCache`.
  */
 import { supabase } from "@/utils/supabase/client";
@@ -42,12 +42,12 @@ import { filesDb } from "@/features/files/filesDb";
 import { extractErrorMessage } from "@/utils/errors";
 
 export interface FileDocumentLookup {
-  /** processed_documents.id — the doc id used by `/rag/viewer/{id}`. */
+  /** processed_documents.id — the doc id used by `/knowledge/viewer/{id}`. */
   processed_document_id: string;
   derivation_kind: string;
   total_pages: number | null;
   /**
-   * Number of RAG chunks. The chunks live in the `rag` schema (not
+   * Number of Knowledge chunks. The chunks live in the `rag` schema (not
    * browser-readable), so the direct lookup leaves this `null`; it is only
    * populated when a server-supplied count is recorded via
    * `recordFileDocument`. Detail surfaces render it only when non-null.
@@ -200,7 +200,7 @@ export async function lookupFileDocument(
 
 /**
  * Synchronous cache peek — returns the memoised answer if this file was already
- * probed (the RAG badge / preview surfaces prime it), else `undefined`. Lets a
+ * probed (the Knowledge badge / preview surfaces prime it), else `undefined`. Lets a
  * synchronous caller (the attach handler) decide the attach shape in the same
  * tick when the answer is already known — avoiding an async round-trip that
  * would let a fast submit race the attach.
@@ -211,7 +211,7 @@ export function peekFileDocument(
   return cache.get(fileId);
 }
 
-/** Drop the cached answer — call after kicking off `/rag/ingest`. */
+/** Drop the cached answer — call after kicking off `/knowledge/ingest`. */
 export function clearFileDocumentCache(fileId?: string): void {
   if (fileId) {
     cache.delete(fileId);

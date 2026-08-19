@@ -1,8 +1,8 @@
 /**
- * User-facing RAG vocabulary.
+ * User-facing Knowledge vocabulary.
  *
  * DB columns, API fields, Redux keys, and pipeline stage ids stay `chunk*`.
- * Import these labels for any human-readable copy in RAG surfaces.
+ * Import these labels for any human-readable copy in Knowledge surfaces.
  */
 export const RAG_VOCAB = {
   segment: "Knowledge Segment",

@@ -1,16 +1,16 @@
 "use client";
 
 import { useFileNode } from "@/features/files/hooks/useFileNode";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
-import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
-import type { RagHitView } from "@/features/rag/components/hit-card/types";
+import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
+import { normalizeSourceName } from "@/features/knowledge/components/hit-card/adapters";
+import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
 import { hrefForNormalized, type NormalizedHit } from "./parseRag";
 
 /**
  * One `knowledge_search` hit as a SOURCE card. A thin adapter that maps the tool's
  * `NormalizedHit` onto the canonical `RagHitView` and renders the ONE
- * `RagHitCard` (compact variant) shared with /rag/search + the omnibox — so the
+ * `RagHitCard` (compact variant) shared with /knowledge/search + the omnibox — so the
  * chat card never drifts from the rest. Name resolution (Redux file map) and
  * the citation-window open live here; everything visual lives in RagHitCard.
  */

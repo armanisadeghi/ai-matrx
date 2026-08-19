@@ -23,7 +23,7 @@ import {
   Workflow,
   ChevronDown,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,8 +38,8 @@ import { cn } from "@/lib/utils";
  * on mobile — matching the original's "attach at any node" message.
  *
  * Everything here describes what the system actually does; the copy is grounded
- * in real surfaces (`/files`, `/rag/library`, `/agents`, `/knowledge-graph`,
- * `/rag/search`). See `features/knowledge/FEATURE.md`.
+ * in real surfaces (`/files`, `/knowledge/library`, `/agents`, `/knowledge-graph`,
+ * `/knowledge/search`). See `features/knowledge/FEATURE.md`.
  */
 
 type Tone = "flow" | "hub" | "gate" | "ask";

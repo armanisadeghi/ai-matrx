@@ -29,7 +29,7 @@ import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { agentFileRef, mediaSafe } from "@/lib/media/agent-payload";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectActiveShareLinksForResource,
@@ -41,7 +41,7 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
+import { FileRagStatusChip } from "@/features/knowledge/components/FileRagStatusChip";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import type { Visibility } from "@/features/files/types";
 import {
@@ -280,7 +280,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
            * appContext — this is local, per-entity tagging). No org
            * pre-selection required: the picker browses every org. Real files
            * only; virtual rows live in their own systems. This is what makes
-           * a file discoverable structurally and feeds RAG/NER downstream.
+           * a file discoverable structurally and feeds Knowledge/NER downstream.
            */}
           {file.source.kind === "real" ? (
             <Section title="Context">
@@ -291,10 +291,10 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
           ) : null}
 
           {/*
-           * RAG status — visible only for real (non-virtual) files.
+           * Knowledge status — visible only for real (non-virtual) files.
            *
            *   - found        → chunk count, derivation, last ingested + link
-           *   - absent       → "Not yet processed for RAG" hint
+           *   - absent       → "Not yet processed for Knowledge" hint
            *   - unavailable  → soft warning, lookup not implemented
            *
            * Lineage data (parentFileId / derivationKind) is shown
@@ -302,10 +302,10 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
            * row itself and doesn't require a backend probe.
            */}
           {file.source.kind === "real" ? (
-            <Section title="RAG / document">
+            <Section title="Knowledge / document">
               {/*
-               * Lifecycle chip — the scheduled auto-RAG state (scheduled /
-               * running / completed / failed) from /files/{id}/rag-status,
+               * Lifecycle chip — the scheduled auto-Knowledge state (scheduled /
+               * running / completed / failed) from /files/{id}/knowledge-status,
                * with Process-now / Refresh actions. Complements the
                * document-lookup detail below (chunks / pages / viewer link).
                */}
@@ -337,7 +337,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
                   />
                   <div className="flex items-center justify-end pt-1">
                     <Link
-                      href={`/rag/viewer/${docState.state.doc.processed_document_id}`}
+                      href={`/knowledge/viewer/${docState.state.doc.processed_document_id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-[11px] font-medium text-primary "
@@ -349,7 +349,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
               ) : docState.state.status === "absent" ? (
                 <Row
                   label="Status"
-                  value="Not yet processed for RAG. Use the Document tab or the Reprocess action to index this file."
+                  value="Not yet processed for Knowledge. Use the Document tab or the Reprocess action to index this file."
                 />
               ) : docState.state.status === "unavailable" ? (
                 <Row
@@ -563,7 +563,7 @@ function CopyableShareLink({
 
 /**
  * Per-file context status + readable chips + assign affordance. The shield is
- * amber until the file has context (the nudge that drives RAG/NER hygiene).
+ * amber until the file has context (the nudge that drives Knowledge/NER hygiene).
  * Reads the canonical per-entity cache; saves write through to the row-scope
  * store so any visible table cell for this file updates instantly.
  */
@@ -599,7 +599,7 @@ function FileContextInfoRow({
       <ContextSummaryChips
         size="sm"
         value={{ scopeIds: es.scopeIds }}
-        emptyText="No context — invisible to scoped RAG, NER, and agents. Click the shield to assign."
+        emptyText="No context — invisible to scoped Knowledge, NER, and agents. Click the shield to assign."
       />
     </div>
   );

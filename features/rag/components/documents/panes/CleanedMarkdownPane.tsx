@@ -11,7 +11,7 @@
  */
 
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
-import type { PageDetail } from "@/features/rag/types/documents";
+import type { PageDetail } from "@/features/knowledge/types/documents";
 
 export interface CleanedMarkdownPaneProps {
   page: PageDetail | null;
@@ -56,7 +56,7 @@ export function CleanedMarkdownPane({
           ) : (
             <p className="italic text-muted-foreground">
               No cleaned content — this document may not have been processed
-              through the RAG cleanup pipeline yet. Re-process from the document
+              through the Knowledge cleanup pipeline yet. Re-process from the document
               admin page to populate.
             </p>
           ))}

@@ -61,7 +61,7 @@ export interface GenerateCardsVariables {
 }
 
 /**
- * Variables the generateFromSource agent declares (Phase 5 — RAG-sourced
+ * Variables the generateFromSource agent declares (Phase 5 — Knowledge-sourced
  * generation). `source_content` is the concatenated text of the chunks the
  * user curated (checklist UI), NOT a whole document — the agent never sees
  * anything the user didn't explicitly include.
@@ -134,7 +134,7 @@ function coerceCard(raw: unknown): NewCardInput | null {
   // Phase 5 (from-source): the agent echoes which passage a card came from
   // as `source: { processed_document_id, chunk_id, page }` per
   // AGENT_SPECS.md §2 — `file_id` is NOT something the agent knows (it's our
-  // cld_file id, not a RAG identifier), so it's left blank here for the
+  // cld_file id, not a Knowledge identifier), so it's left blank here for the
   // from-source caller to backfill from the document the user picked before
   // persisting (fcService.addCards skips lineage entirely on an empty id).
   const rawSource = r.source;

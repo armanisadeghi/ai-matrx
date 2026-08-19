@@ -5,7 +5,7 @@
 
 "use client";
 
-import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
+import { FileKnowledgePanel } from "@/features/knowledge/components/files/FileKnowledgePanel";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

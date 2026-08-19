@@ -1,5 +1,5 @@
 /**
- * Map Surface-A app context (org + scopes) into `/rag/search` request fields.
+ * Map Surface-A app context (org + scopes) into `/knowledge/search` request fields.
  *
  * The Python SearchRequest accepts:
  *   - top-level `scope_ids`
@@ -7,10 +7,10 @@
  *     reflects the user's selection and admins can pivot orgs)
  *   - `filters.scope_ids` (same structural filter as top-level)
  *
- * Project and task are NOT part of the RAG search API — they affect agent
+ * Project and task are NOT part of the Knowledge search API — they affect agent
  * invocation via call-api scope injection but not chunk retrieval today.
  */
-import type { RagSearchFilters } from "@/features/rag/api/search";
+import type { RagSearchFilters } from "@/features/knowledge/api/search";
 
 export interface ActiveContextForRagSearch {
   organizationId: string | null;

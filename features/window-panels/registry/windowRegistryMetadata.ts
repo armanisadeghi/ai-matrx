@@ -1488,12 +1488,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
-  // ── RAG Copy for AI composer ─────────────────────────────────────────────
+  // ── Knowledge Copy for AI composer ─────────────────────────────────────────────
   {
     slug: "rag-ai-copy-window",
     overlayId: "ragAiCopyWindow",
     kind: "window",
-    label: "Copy RAG Result for AI",
+    label: "Copy Knowledge Result for AI",
     defaultData: { bundle: null, initialSections: null },
     ephemeral: true,
     mobilePresentation: "drawer",

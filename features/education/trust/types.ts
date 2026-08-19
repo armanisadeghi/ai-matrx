@@ -9,7 +9,7 @@
 // invented (`confidence`), and against which corpus it was grounded
 // (`groundedIn`). This is the market's #1 unmet want — "grounded in my material,
 // cited, never confidently wrong" — surfaced as a product primitive instead of
-// an implicit RAG detail.
+// an implicit Knowledge detail.
 //
 // Consumers (P1 assessment, P2 tutor, P3 media, P4 notes, P9 ingest) do exactly
 // ONE thing: pass `trust` through from the agent output to the render layer, and
@@ -36,7 +36,7 @@ export type TrustConfidence = "grounded" | "inferred" | "not_in_material";
 /** What kind of thing a citation points at (drives how the locator resolves). */
 export type CitationSourceKind =
   | "document" // a processed document / uploaded file as a whole
-  | "chunk" // a specific RAG / study_source_chunk passage
+  | "chunk" // a specific Knowledge / study_source_chunk passage
   | "section" // a study_structured_section
   | "file" // a raw file (file_id)
   | "url" // an external web source
@@ -66,10 +66,10 @@ export interface SourceCitation {
   // These let a citation OPEN the real source — the full file/PDF/document —
   // not just show an excerpt. Populated by the persisting surface (it knows the
   // durable ids the agent doesn't), never trusted from raw agent output alone.
-  // Works for ANY source: RAG docs, user-uploaded/attached files, chat, web.
+  // Works for ANY source: Knowledge docs, user-uploaded/attached files, chat, web.
   /** Durable file id — opens the real file/PDF via the canonical file viewer. */
   fileId?: string;
-  /** Processed-document id — opens the source document viewer (RAG/notes/etc.). */
+  /** Processed-document id — opens the source document viewer (Knowledge/notes/etc.). */
   documentId?: string;
   /** External URL — opens the web source in a new tab. */
   url?: string;

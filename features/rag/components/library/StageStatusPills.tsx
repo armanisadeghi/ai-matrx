@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * StageStatusPills — visualizes the 6 stable stages of a RAG document
+ * StageStatusPills — visualizes the 6 stable stages of a Knowledge document
  * and provides a clickable action to (re-)run the stage that produces
  * each one.
  *
@@ -38,14 +38,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { useStageAction } from "@/features/rag/hooks/useStageAction";
-import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { useStageAction } from "@/features/knowledge/hooks/useStageAction";
+import { useStagesStatus } from "@/features/knowledge/hooks/useStagesStatus";
 import type {
   StageName,
   StagePillName,
   StageStatus,
-} from "@/features/rag/api/stages";
+} from "@/features/knowledge/api/stages";
 
 // ---------------------------------------------------------------------------
 // Pill definitions (label + icon + which stage action drives it)

@@ -1,10 +1,10 @@
-import type { RagSearchHit } from "@/features/rag/api/search";
+import type { RagSearchHit } from "@/features/knowledge/api/search";
 import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
   normalizeSourceName,
-} from "@/features/rag/components/hit-card/adapters";
-import { factsOnlyMetadata } from "@/features/rag/components/hit-card/copyMetadata";
+} from "@/features/knowledge/components/hit-card/adapters";
+import { factsOnlyMetadata } from "@/features/knowledge/components/hit-card/copyMetadata";
 
 const SOURCE_ID = "e9868104-1234-4123-8123-123456789abc";
 
@@ -30,7 +30,7 @@ function hit(
   };
 }
 
-describe("RAG hit identity", () => {
+describe("Knowledge hit identity", () => {
   it("hydrates every hit with a real filename carried by a sibling hit", () => {
     const unnamed = hit("chunk-1", { page_number: 393 });
     const named = hit("chunk-2", {

@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/rag/search", {
+export const metadata = createRouteMetadata("/knowledge/search", {
   titlePrefix: "Search",
   title: "Knowledge",
   description: "Semantic search across your knowledge bases and data stores.",

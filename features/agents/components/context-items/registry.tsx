@@ -157,7 +157,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     Body: EntityReferenceBody,
   },
   {
-    // A RAG processed document (rag.processed_documents), attached to a
+    // A Knowledge processed document (rag.processed_documents), attached to a
     // conversation as a durable `platform.associations` edge and surfaced by
     // AttachedDocumentChips. Clicking the chip opens the "Smart Canvas
     // Controller": the full LibraryPreviewPage (pages / cleaned / raw / chunks +

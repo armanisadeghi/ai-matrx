@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Hooks for the /rag/library surface — visibility into processed documents.
+ * Hooks for the /knowledge/library surface — visibility into processed documents.
  *
  * These are PURE DB READS (aggregate counts over docproc.* + rag.*), so they
  * go DIRECT to Postgres via SECURITY DEFINER RPCs — never through Python.
@@ -31,7 +31,7 @@ import type {
   LibraryDocSummary,
   LibraryListResponse,
   LibrarySummary,
-} from "@/features/rag/types/library";
+} from "@/features/knowledge/types/library";
 
 // ---------------------------------------------------------------------------
 // Wire shapes (snake_case from FastAPI)
@@ -77,7 +77,7 @@ interface ApiSummaryTotals {
   data_stores: number;
 }
 
-// The doc-detail read hits the HTTP endpoint (`GET /rag/library/{id}`); its
+// The doc-detail read hits the HTTP endpoint (`GET /knowledge/library/{id}`); its
 // wire shape is DERIVED from the generated OpenAPI contract, never hand-mirrored.
 // (`ApiSummaryDoc` / `ApiListResponse` / `ApiSummaryTotals` above stay local —
 // they type the SECURITY DEFINER RPC results, which have no OpenAPI schema.)

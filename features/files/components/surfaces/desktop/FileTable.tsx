@@ -42,7 +42,7 @@ import {
   setSort,
   toggleSelection,
 } from "@/features/files/redux/slice";
-import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
+import { prefetchRagStatusesForFiles } from "@/features/files/redux/knowledge-thunks";
 import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
 import type {
   AccessFilter,
@@ -226,7 +226,7 @@ export function FileTable({
     return out;
   }, [files, folders]);
 
-  // RAG status counts for the RAG column dropdown. We deliberately count
+  // Knowledge status counts for the Knowledge column dropdown. We deliberately count
   // against the FILE input set (not the rendered rows) so the breakdown
   // reflects the universe the user could re-filter to. Files with no
   // status yet are bucketed into `unknown` so the column always has a
@@ -242,7 +242,7 @@ export function FileTable({
     return out;
   }, [ragFileIds, ragStatuses]);
 
-  // Auto-prefetch RAG status for every file in the current dataset
+  // Auto-prefetch Knowledge status for every file in the current dataset
   // whenever the column is visible. The thunk skips ids whose status is
   // already known, so toggling other filters / scrolling does not refire
   // the fetch — only newly-loaded files trigger work.

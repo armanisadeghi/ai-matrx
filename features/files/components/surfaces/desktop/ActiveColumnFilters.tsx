@@ -69,9 +69,9 @@ const RAG_LABEL: Record<string, string> = {
 
 function formatRagChip(value: readonly string[]): string {
   if (value.length === 1) {
-    return `RAG: ${RAG_LABEL[value[0]] ?? value[0]}`;
+    return `Knowledge: ${RAG_LABEL[value[0]] ?? value[0]}`;
   }
-  return `RAG: ${value.length} statuses`;
+  return `Knowledge: ${value.length} statuses`;
 }
 
 function formatTypeChip(value: readonly string[]): string {

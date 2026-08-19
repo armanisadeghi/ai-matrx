@@ -5,7 +5,7 @@
 // Curation ingest: pick an existing cloud file (canonical shared picker) or
 // upload a new one (canonical fileHandler via useFileUpload — never a
 // bespoke uploader), then submit it to P1's
-// `POST /rag/library/stores/{store_id}/ingest`. The endpoint is a published
+// `POST /knowledge/library/stores/{store_id}/ingest`. The endpoint is a published
 // day-1 stub that answers 501 until the P1-full pipeline (system-owner
 // rehome + streamed progress) lands — that state renders as a clearly
 // labeled "pipeline not yet live" card, never a swallowed error.
@@ -36,7 +36,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   ingestLibraryFile,
   isLibraryIngestNotLive,
-} from "@/features/rag/api/library-ingest";
+} from "@/features/knowledge/api/library-ingest";
 import type { SharedKnowledgeDirectory } from "../types";
 
 type IngestPhase =

@@ -62,13 +62,13 @@ import {
   updateFolder as updateFolderThunk,
 } from "@/features/files/redux/thunks";
 import { openFolderPicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
-import { ingestFile } from "@/features/rag/api/ingest";
+import { ingestFile } from "@/features/knowledge/api/ingest";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import type { Visibility } from "@/features/files/types";
 
 const MAX_PARALLEL = 4;
 /**
- * Mime types we know are useless to RAG-ingest. Images / video / audio /
+ * Mime types we know are useless to Knowledge-ingest. Images / video / audio /
  * archives have no text we can chunk, so silently skip them in bulk
  * reprocess and report the count back via the transient note.
  */
@@ -260,9 +260,9 @@ export function BulkActionsBar({ className }: { className?: string }) {
     [busyKind, dispatch, hasAny, selectedFileIds, selectedFolderIds],
   );
 
-  // ─── RAG: bulk reprocess for selected files ─────────────────────────────
+  // ─── Knowledge: bulk reprocess for selected files ─────────────────────────────
   //
-  // Fan out `/rag/ingest` calls (non-streaming — bulk is fire-and-forget;
+  // Fan out `/knowledge/ingest` calls (non-streaming — bulk is fire-and-forget;
   // per-file streaming progress would crowd the UI). Skip:
   //   - virtual-source files (notes/code/agent-app rows are ingested
   //     via their own `source_kind`, not the cld_file path)
@@ -314,7 +314,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
 
       const parts: string[] = [];
       parts.push(
-        `Reprocessed ${succeeded} ${succeeded === 1 ? "file" : "files"} for RAG`,
+        `Reprocessed ${succeeded} ${succeeded === 1 ? "file" : "files"} for Knowledge`,
       );
       if (failed > 0) parts.push(`${failed} failed`);
       if (skippedVirtual > 0) parts.push(`${skippedVirtual} virtual skipped`);
@@ -391,7 +391,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
       </DropdownMenu>
       <BulkActionButton
         icon={<Star className="h-3.5 w-3.5" />}
-        label="Reprocess for RAG"
+        label="Reprocess for Knowledge"
         onClick={handleReprocess}
         running={busyKind === "reprocess"}
         disabled={!hasFiles || busyKind !== null}

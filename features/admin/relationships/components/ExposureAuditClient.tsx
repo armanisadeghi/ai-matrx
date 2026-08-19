@@ -461,7 +461,7 @@ export function ExposureAuditClient() {
         <SearchCheck className="h-4 w-4" />
         <AlertTitle>Discovery is stricter than access</AlertTitle>
         <AlertDescription className="text-xs">
-          Public notes can enter agent/RAG search. Public files are anonymously
+          Public notes can enter agent/Knowledge search. Public files are anonymously
           readable by ID, but the canonical personal file tree and search now
           enumerate only owned or explicitly granted files.
         </AlertDescription>

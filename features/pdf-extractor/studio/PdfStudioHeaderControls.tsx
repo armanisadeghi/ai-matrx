@@ -83,7 +83,7 @@ export interface PdfStudioHeaderControlsProps {
   onSelectDoc?: (summary: StudioDocSummary) => void;
   /** Live find-in-document from the title pill's search overlay. */
   onFindQueryChange?: (query: string) => void;
-  /** Enter in the pill's search — runs the RAG in-document search. */
+  /** Enter in the pill's search — runs the Knowledge in-document search. */
   onFindSubmit?: (query: string) => void;
 }
 

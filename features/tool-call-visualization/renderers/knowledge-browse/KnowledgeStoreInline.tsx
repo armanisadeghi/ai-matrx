@@ -107,7 +107,7 @@ export function KnowledgeStoreInline({
           {
             label: "Open data store",
             icon: Database,
-            href: `/rag/data-stores?store_id=${encodeURIComponent(storeId)}`,
+            href: `/knowledge/data-stores?store_id=${encodeURIComponent(storeId)}`,
           } satisfies EntityAction,
         ]
       : []),

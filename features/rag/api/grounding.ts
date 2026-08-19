@@ -2,7 +2,7 @@
  * Closed-corpus grounding for any product surface that needs cited passages.
  *
  * Corpus inventory is a direct, owner-scoped Postgres read. Retrieval itself
- * always goes through the canonical streamed RAG API; this module never reads
+ * always goes through the canonical streamed Knowledge API; this module never reads
  * chunks or embeddings directly.
  */
 import { supabase } from "@/utils/supabase/client";
@@ -144,7 +144,7 @@ export async function listLearnerOwnedGroundingSources(
     if (!unique.has(key)) unique.set(key, source);
   }
   // Text/HTML and other flat file sources intentionally have no
-  // processed_documents anchor. A completed owner-scoped file RAG job is the
+  // processed_documents anchor. A completed owner-scoped file Knowledge job is the
   // canonical proof that they belong in the grounding inventory.
   for (const row of flatFiles.data) {
     if (row.created_by !== userId) continue;

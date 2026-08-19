@@ -1,9 +1,9 @@
 /**
- * features/files/redux/rag-thunks.ts
+ * features/files/redux/knowledge-thunks.ts
  *
- * Batch-prefetch the per-file RAG status (whether a `processed_documents`
+ * Batch-prefetch the per-file Knowledge status (whether a `processed_documents`
  * row exists for the file) and mirror it into Redux. The Python backend
- * exposes RAG state through `/files/{file_id}/document` — one request per
+ * exposes Knowledge state through `/files/{file_id}/document` — one request per
  * file — so we wrap that with a concurrency-capped fan-out + a Redux
  * mirror so the file-table column can react instantly when each answer
  * lands.
@@ -20,7 +20,7 @@
  *
  * Skipping & forcing:
  *   - In default (non-force) mode we skip files whose status is already
- *     `indexed` / `not_indexed` — they don't change without a `/rag/ingest`
+ *     `indexed` / `not_indexed` — they don't change without a `/knowledge/ingest`
  *     call we know about. `pending` and `unknown` *do* get re-fetched
  *     because they're inconclusive.
  *   - In `force` mode we wipe the module cache for every requested id

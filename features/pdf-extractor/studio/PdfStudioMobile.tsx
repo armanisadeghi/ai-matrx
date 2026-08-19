@@ -609,7 +609,7 @@ function MobileTextScroller({
 
   // True when every per-page row in the active field is empty. Same rule
   // as the desktop reader — per-page `cleaned_text` is only populated by
-  // RAG ingestion, not by the agent-based AI Clean endpoint, so we fall
+  // Knowledge ingestion, not by the agent-based AI Clean endpoint, so we fall
   // back to the aggregate column for the cleaned tab.
   const allEmpty = React.useMemo(
     () =>

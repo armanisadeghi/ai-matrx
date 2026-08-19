@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * RagSearchExperience — the multi-tab RAG search page mounted at /rag/search.
+ * RagSearchExperience — the multi-tab Knowledge search page mounted at /knowledge/search.
  *
  * Replaces the single-pane RagSearchPage. Four tabs:
  *
@@ -10,13 +10,13 @@
  *                          query + HyDE preview, per-hit score breakdown,
  *                          assembled-prompt preview as the AI would see it
  *   3. Agent Chat      — the canonical managed-agent system (same stack as
- *                          /chat) launched on the `matrx-user/rag-search`
- *                          surface with the RAG tool family armed, so the
+ *                          /chat) launched on the `matrx-user/knowledge-search`
+ *                          surface with the Knowledge tool family armed, so the
  *                          agent searches the page's retrieval scope
  *   4. Diagnostics     — caller's content inventory, per-route visibility
  *                          breakdown, per-query trace, admin ACL-bypass
  *
- * Designed for admins demoing the RAG system. The Search tab should also
+ * Designed for admins demoing the Knowledge system. The Search tab should also
  * feel polished enough for any normal user.
  */
 
@@ -57,13 +57,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 
 import {
   ragSearch,
   type RagSearchHit,
   type RagSearchResponse,
-} from "@/features/rag/api/search";
+} from "@/features/knowledge/api/search";
 import {
   ragAgentToolGetChunk,
   ragAgentToolSearch,
@@ -76,25 +76,25 @@ import {
   type DiagnoseResponse,
   type ExpandResponse,
   type InventoryResponse,
-} from "@/features/rag/api/search-lab";
-import { useDataStores } from "@/features/rag/hooks/useDataStores";
-import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
-import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
+} from "@/features/knowledge/api/search-lab";
+import { useDataStores } from "@/features/knowledge/hooks/useDataStores";
+import { useRagSearchContext } from "@/features/knowledge/hooks/useRagSearchContext";
+import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
+import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
 import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
-} from "@/features/rag/components/hit-card/adapters";
-import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
-import { RagPageReferences } from "@/features/rag/components/search/RagPageReferences";
-import { RagReviewRepairWorkspace } from "@/features/rag/components/search/RagReviewRepairWorkspace";
+} from "@/features/knowledge/components/hit-card/adapters";
+import { getHighlightTerms } from "@/features/knowledge/components/hit-card/query-highlighting";
+import { RagPageReferences } from "@/features/knowledge/components/search/RagPageReferences";
+import { RagReviewRepairWorkspace } from "@/features/knowledge/components/search/RagReviewRepairWorkspace";
 import {
   buildRagReviewPages,
   pageCountFromRagHit,
-} from "@/features/rag/components/search/ragReviewPages";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
+} from "@/features/knowledge/components/search/ragReviewPages";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { AnimatedKpiCard } from "@/features/knowledge/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -104,11 +104,11 @@ import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-sy
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
+import { createRagSearchScope } from "@/features/surfaces/manifests/knowledge-search.manifest";
 import {
   buildRagSearchContextData,
   RAG_SEARCH_CONTEXT_MENU_PROPS,
-} from "@/features/rag/agent-context/buildRagSearchContextData";
+} from "@/features/knowledge/agent-context/buildRagSearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -120,7 +120,7 @@ import {
   isFilterableSourceKind,
   isValidMultiQuery,
   type SourceKindFilter,
-} from "@/features/rag/search-controls";
+} from "@/features/knowledge/search-controls";
 import { ProInput } from "@/components/official/ProInput";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
@@ -136,11 +136,11 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 // (same stack as /chat and the Projects "Use AI" tab), NOT a bespoke chat.
 // ===========================================================================
 
-/** Surface registered in `features/surfaces/manifests/rag-search.manifest.ts`. */
-const RAG_SEARCH_SURFACE = "matrx-user/rag-search";
+/** Surface registered in `features/surfaces/manifests/knowledge-search.manifest.ts`. */
+const RAG_SEARCH_SURFACE = "matrx-user/knowledge-search";
 const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
 // The chat agent is the `chat.default_new_chat` MANDATE (resolved in
-// AgentChatTab — the user's own binding wins); the RAG tools below are armed
+// AgentChatTab — the user's own binding wins); the Knowledge tools below are armed
 // onto its run regardless of which agent resolves.
 
 /**
@@ -230,10 +230,10 @@ function citationHrefFor(
   page: number | null,
   chunk_id: string,
 ): string {
-  // Mirrors the module-level citationHrefFor in features/rag/api/search.ts —
+  // Mirrors the module-level citationHrefFor in features/knowledge/api/search.ts —
   // keep the two in sync. Every kind gets a destination (no dead nulls),
   // library_doc carries the page so a result opens on the hit's page (the
-  // /rag/viewer route forwards ?page), and every interpolated id is
+  // /knowledge/viewer route forwards ?page), and every interpolated id is
   // URL-encoded so ids containing ? & # don't break the link.
   const sid = encodeURIComponent(source_id);
   const cid = encodeURIComponent(chunk_id);
@@ -246,13 +246,13 @@ function citationHrefFor(
     case "code_file":
       return `/code/${sid}`;
     case "library_doc":
-      return `/rag/viewer/${sid}?chunk=${cid}${pageQs}`;
+      return `/knowledge/viewer/${sid}?chunk=${cid}${pageQs}`;
     case "transcript":
       return `/transcription/studio?session=${sid}`;
     case "scraped":
       return `/scraper?url=${sid}`;
     default:
-      return `/rag/viewer/${sid}?chunk=${cid}${pageQs}`;
+      return `/knowledge/viewer/${sid}?chunk=${cid}${pageQs}`;
   }
 }
 
@@ -373,7 +373,7 @@ function HitCardSkeleton() {
 
 // ---------------------------------------------------------------------------
 // Motion presets — keep entrance animations consistent across tabs so the
-// RAG surfaces share the same UX language as the library motion stack.
+// Knowledge surfaces share the same UX language as the library motion stack.
 // ---------------------------------------------------------------------------
 
 const FADE_IN_UP = {
@@ -858,7 +858,7 @@ function SearchTab({
       const next = new URLSearchParams();
       if (trimmed) next.set("q", trimmed);
       if (scope.storeId) next.set("store_id", scope.storeId);
-      router.replace(`/rag/search${next.toString() ? `?${next}` : ""}`);
+      router.replace(`/knowledge/search${next.toString() ? `?${next}` : ""}`);
     } catch (e) {
       if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Search failed");
@@ -903,7 +903,7 @@ function SearchTab({
     [scope.stores.stores],
   );
 
-  // Canonical `contextData` for `matrx-user/rag-search` — pure mapping of live
+  // Canonical `contextData` for `matrx-user/knowledge-search` — pure mapping of live
   // search state (query, retrieval scope, pipeline flags) + the latest results.
   const contextData = buildRagSearchContextData({
     query,
@@ -1381,7 +1381,7 @@ function SearchTab({
 // Agent tool view — the agent's ACTUAL knowledge_search, with play-out
 // ===========================================================================
 //
-// Calls /rag/search-lab/tool/search, which reproduces byte-for-byte what the
+// Calls /knowledge/search-lab/tool/search, which reproduces byte-for-byte what the
 // registered knowledge_search tool hands the model (same search() call, same output
 // mappers). Supports N queries (a real agent fires several) and the full arg
 // surface, threads the working-context org/scope (the missing piece that made
@@ -1641,7 +1641,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         use_mmr: true,
         // No expand_entity_clusters here: this endpoint simulates the agent's
         // registered knowledge_search tool byte-for-byte, and that tool has no
-        // cluster-expansion option. The sidebar toggle applies to /rag/search
+        // cluster-expansion option. The sidebar toggle applies to /knowledge/search
         // (Search + Pipeline tabs) only.
         scope_ids: scopeIds,
         organization_id: orgOverride,
@@ -2285,12 +2285,12 @@ function Stat({ label, value }: { label: string; value: number | string }) {
  * overlay / creator-panel / pending-asks machinery — so users get every
  * platform capability here for free.
  *
- * Two things make it RAG-aware:
+ * Two things make it Knowledge-aware:
  *   1. `runtime.surfaceName` + `applicationScope` hand the agent the page's
  *      retrieval scope (selected data store, source-kind filter, pipeline
- *      flags) via the registered `matrx-user/rag-search` surface, so an agent
+ *      flags) via the registered `matrx-user/knowledge-search` surface, so an agent
  *      engineer can bind those values into the agent's context / tool args.
- *   2. The RAG tool family is armed on the conversation via `addedTools`, so
+ *   2. The Knowledge tool family is armed on the conversation via `addedTools`, so
  *      the agent can search / inspect the user's indexed content regardless of
  *      whether the base agent ships those tools.
  */
@@ -2393,7 +2393,7 @@ function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string })
     },
   });
 
-  // Arm the RAG tool family additively on this conversation as soon as it
+  // Arm the Knowledge tool family additively on this conversation as soon as it
   // exists. The instance UI-state entry is created synchronously inside the
   // launch thunk, so by the time `conversationId` is set the dispatch lands.
   useEffect(() => {
@@ -2648,7 +2648,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 // ===========================================================================
 
 /**
- * Top-level RAG Search Lab.
+ * Top-level Knowledge Search Lab.
  *
  * Mobile/desktop responsive shell:
  *
@@ -2732,7 +2732,7 @@ export function RagSearchExperience() {
               <ActiveScopeChips className="min-w-0" />
             </div>
             <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
-              RAG Search Lab · hybrid retrieval + Claude agent
+              Knowledge Search Lab · hybrid retrieval + Claude agent
             </div>
           </div>
 

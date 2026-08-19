@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { KnowledgePipelineDiagram } from "./KnowledgePipelineDiagram";
 
 /**
@@ -54,14 +54,14 @@ const CAPABILITIES: Capability[] = [
     icon: Wand2,
     title: "A real extraction pipeline",
     description: `Extract → clean → ${RAG_VOCAB.segmentStage} → embed, run per-stage or as one streamed job. Watch the original PDF, raw text, cleaned markdown, and ${RAG_VOCAB.segmentsShort.toLowerCase()} side by side in a 4-pane viewer.`,
-    href: "/rag/library",
+    href: "/knowledge/library",
     hrefLabel: "Library",
   },
   {
     icon: Layers,
     title: "Many representations, one source",
     description: `The same document is held as text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, vectors, summaries, schemas, and indices — each scoped to who's allowed to see it, all tracing back to the original.`,
-    href: "/rag/data-stores",
+    href: "/knowledge/data-stores",
     hrefLabel: "Data stores",
   },
   {
@@ -77,7 +77,7 @@ const CAPABILITIES: Capability[] = [
     title: "Retrieval you can trust",
     description:
       "Semantic + structural + trust-weighted search in a multi-tab Search Lab. Every hit drills down to its provenance — no black-box answers.",
-    href: "/rag/search",
+    href: "/knowledge/search",
     hrefLabel: "Search Lab",
   },
   {
@@ -127,7 +127,7 @@ const WALKTHROUGH: WalkthroughStep[] = [
     title: "Run extraction",
     description: `Send the PDF through extract → clean → ${RAG_VOCAB.segmentStage} → embed and watch it in the 4-pane viewer.`,
     state: "built",
-    href: "/rag/library",
+    href: "/knowledge/library",
   },
   {
     n: 3,
@@ -157,7 +157,7 @@ const WALKTHROUGH: WalkthroughStep[] = [
     n: 6,
     title: "Automate the extraction",
     description:
-      "Uploaded files auto-schedule for RAG (≈5 min after arrival). Toggle “Process for RAG immediately” in the New menu to skip the wait, or trigger/refresh any file on demand.",
+      "Uploaded files auto-schedule for Knowledge (≈5 min after arrival). Toggle “Process for Knowledge immediately” in the New menu to skip the wait, or trigger/refresh any file on demand.",
     state: "built",
     href: "/files",
   },
@@ -165,7 +165,7 @@ const WALKTHROUGH: WalkthroughStep[] = [
     n: 7,
     title: "Upload again, watch it run",
     description:
-      "Drop a new document and watch its RAG lifecycle move scheduled → running → indexed right on the file — no manual step required.",
+      "Drop a new document and watch its Knowledge lifecycle move scheduled → running → indexed right on the file — no manual step required.",
     state: "built",
     href: "/files",
   },
@@ -186,9 +186,9 @@ const WALKTHROUGH: WalkthroughStep[] = [
   },
   {
     n: 10,
-    title: "Trigger RAG / NER",
+    title: "Trigger Knowledge / NER",
     description:
-      "Process the note for RAG, then hit “Run NER now” right in the note toolbar — entities lift out on demand instead of waiting for the backend batch.",
+      "Process the note for Knowledge, then hit “Run NER now” right in the note toolbar — entities lift out on demand instead of waiting for the backend batch.",
     state: "built",
     href: "/notes",
   },
@@ -206,7 +206,7 @@ const WALKTHROUGH: WalkthroughStep[] = [
     description:
       "Run a manual retrieval to confirm you can pull good data back out.",
     state: "built",
-    href: "/rag/search",
+    href: "/knowledge/search",
   },
   {
     n: 13,
@@ -219,9 +219,9 @@ const WALKTHROUGH: WalkthroughStep[] = [
     n: 14,
     title: "Ask the hard question",
     description:
-      "Pose a deep, industry-knowledge question and watch the agent hit your RAG, reason, and answer like a pro — cited and traceable.",
+      "Pose a deep, industry-knowledge question and watch the agent hit your Knowledge, reason, and answer like a pro — cited and traceable.",
     state: "built",
-    href: "/rag/search",
+    href: "/knowledge/search",
   },
 ];
 
@@ -485,7 +485,7 @@ export function KnowledgeShowcasePage() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/rag/library">
+              <Link href="/knowledge/library">
                 Open the Library
                 <ArrowRight className="h-4 w-4" />
               </Link>

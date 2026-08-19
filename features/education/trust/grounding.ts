@@ -1,13 +1,13 @@
 // features/education/trust/grounding.ts
 //
 // Source-agnostic grounding helpers: the persisting surface knows the durable
-// ids the AGENT doesn't (the file_id behind a RAG doc, the file_id of a user's
+// ids the AGENT doesn't (the file_id behind a Knowledge doc, the file_id of a user's
 // chat attachment, the processed-document id, a web url). This backfills those
 // onto each citation so the citation can OPEN the real source — the full file,
 // the PDF at its page, the document — not merely show an excerpt.
 //
-// Used identically by every creation surface (RAG from-source, uploaded/attached
-// files, chat-created decks). Nothing here is RAG-specific.
+// Used identically by every creation surface (Knowledge from-source, uploaded/attached
+// files, chat-created decks). Nothing here is Knowledge-specific.
 
 import type { SourceCitation, TrustEnvelope } from "./types";
 

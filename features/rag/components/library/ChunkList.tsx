@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ChunkList — the canonical chunk renderer for the RAG library.
+ * ChunkList — the canonical chunk renderer for the Knowledge library.
  *
  * One card per chunk: kind / index / token badges + embedding status + the
  * actual content_text, with page numbers surfaced prominently (the "where").
@@ -24,11 +24,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import {
   fetchDerivativeChunks,
   type DerivativeChunkRow,
-} from "@/features/rag/api/derivations";
+} from "@/features/knowledge/api/derivations";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -44,7 +44,7 @@ import {
   CHUNK_CSV_COLUMNS,
   CHUNK_CUSTOM_OPTIONS,
   type ChunkScope,
-} from "@/features/rag/chunk-copy";
+} from "@/features/knowledge/chunk-copy";
 
 /** The structural shape ChunkCard needs. Any endpoint chunk row that carries
  *  these fields renders without adaptation. */
@@ -153,7 +153,7 @@ export function ChunkCard({
               kind: "rag-chunk",
               location: ragLocation(scope.surface),
               description:
-                "A single RAG chunk exactly as rendered on its card, with full text.",
+                "A single Knowledge chunk exactly as rendered on its card, with full text.",
               data: { chunk: chunkBrief(chunk, 0), scope },
               summary: chunkSummary(chunk),
               attributes: {
@@ -349,7 +349,7 @@ export function ChunksOnPage({
     setLoading(true);
     setError(null);
     apiGet(
-      buildPath("/rag/library/{processed_document_id}/chunks", {
+      buildPath("/knowledge/library/{processed_document_id}/chunks", {
         processed_document_id: documentId,
       }),
       { query: { limit, page_number: pageNumber } },

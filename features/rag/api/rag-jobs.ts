@@ -1,9 +1,9 @@
 /**
- * features/rag/api/rag-jobs.ts
+ * features/knowledge/api/knowledge-jobs.ts
  *
- * Client for the scheduled auto-RAG lifecycle (aidream kg_032):
+ * Client for the scheduled auto-Knowledge lifecycle (aidream kg_032):
  *
- *   GET  /files/{id}/rag-status  — scheduled / running / completed / failed
+ *   GET  /files/{id}/knowledge-status  — scheduled / running / completed / failed
  *   POST /files/{id}/ingest      — on-demand trigger (cancels the scheduled
  *                                  job; 409 `rag_already_complete` if done)
  *   POST /files/{id}/refresh     — re-run a completed file (new derivative)
@@ -19,7 +19,7 @@ import type { components } from "@/types/python-generated/api-types";
 import type { IngestResponse } from "./ingest";
 
 /**
- * The file's full RAG lifecycle status. DERIVED from the generated OpenAPI
+ * The file's full Knowledge lifecycle status. DERIVED from the generated OpenAPI
  * contract (`FileRagStatusResponse`) — never hand-mirrored, so a backend shape
  * change surfaces as a compile error after `pnpm sync-types` rather than a
  * silent runtime drift.
@@ -46,13 +46,13 @@ export async function fetchFileRagStatus(
   signal?: AbortSignal,
 ): Promise<FileRagStatus> {
   const { data } = await apiGet(
-    buildPath("/files/{file_id}/rag-status", { file_id: fileId }),
+    buildPath("/files/{file_id}/knowledge-status", { file_id: fileId }),
     { signal },
   );
   return data;
 }
 
-/** On-demand trigger. Cancels any deferred auto-RAG job server-side. */
+/** On-demand trigger. Cancels any deferred auto-Knowledge job server-side. */
 export async function triggerFileIngestNow(
   fileId: string,
   opts: { force?: boolean; signal?: AbortSignal } = {},

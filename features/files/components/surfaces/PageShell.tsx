@@ -697,7 +697,7 @@ function PageShellDesktop({
 
   // ---- Preview maximize (full-page-width, in-place, no re-mount) -----------
   // `setLayout` lets us drive the panel sizes imperatively without unmounting
-  // the PreviewPane — so long-running tasks inside it (e.g. RAG classification,
+  // the PreviewPane — so long-running tasks inside it (e.g. Knowledge classification,
   // PDF analysis) keep running across the toggle. The library still owns the
   // sizes; we only stash the layout map before maximizing so we can restore it.
   // See `.claude/skills/react-resizable-panels-v4` §1 "Imperative handles" and

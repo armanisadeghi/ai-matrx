@@ -16,7 +16,7 @@
  *
  * What an agent bound here may safely do: read whichever child's state is
  * populated (per `knowledge_section`) and summarize, diagnose, or explain it
- * — e.g. "why is this org near its auto-RAG cap", "summarize this content
+ * — e.g. "why is this org near its auto-Knowledge cap", "summarize this content
  * exception", "what's wired to the auto_tagger_agent_id slot". Nothing on
  * this surface has a write target yet; the CMS policy editor, KG-cost
  * auto-ingest toggles, podcast show/episode forms, and research-template
@@ -199,7 +199,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kg_cost_org_rows",
     label: "KG cost org leaderboard",
     description:
-      "Per-org auto-RAG spend rows (organization_id, organization_name, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, percent_used, last_charge_at), up to 200. Present only on kg_cost.",
+      "Per-org auto-Knowledge spend rows (organization_id, organization_name, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, percent_used, last_charge_at), up to 200. Present only on kg_cost.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 4000,
@@ -234,7 +234,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kg_cost_org_detail",
     label: "KG cost org detail",
     description:
-      "Detail payload for kg_cost_open_org_id: { budget_usd, used_today_usd, window_start, daily_series, top_sources, batch_summary } plus the org's auto-RAG toggle state (enabled, indexNonPdf, suggestionSweeps). Absent when no org drill-down is open.",
+      "Detail payload for kg_cost_open_org_id: { budget_usd, used_today_usd, window_start, daily_series, top_sources, batch_summary } plus the org's auto-Knowledge toggle state (enabled, indexNonPdf, suggestionSweeps). Absent when no org drill-down is open.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1500,

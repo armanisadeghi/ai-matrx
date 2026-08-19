@@ -1,6 +1,6 @@
 "use client";
 /**
- * /rag/flow — Watch the RAG pipeline in motion.
+ * /knowledge/flow — Watch the Knowledge pipeline in motion.
  *
  * A guided, looping animation showing the two paths (READ on the left,
  * WRITE on the right) converging on the vector data store, then top-K
@@ -10,7 +10,7 @@
 import { Database, FileText, Search } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { RagFlowVisualization } from "@/features/rag/components/visualization/RagFlowVisualization";
+import { RagFlowVisualization } from "@/features/knowledge/components/visualization/RagFlowVisualization";
 
 export default function Page() {
   return (
@@ -18,7 +18,7 @@ export default function Page() {
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton href="/rag" ariaLabel="Back to Knowledge" />
+            <ChevronLeftTapButton href="/knowledge" ariaLabel="Back to Knowledge" />
             <span className="ml-2 text-sm font-medium text-foreground truncate">
               Flow
             </span>
@@ -62,7 +62,7 @@ export default function Page() {
             title="Read path"
             steps={[
               "User asks a question",
-              "Classifier decides if RAG is helpful",
+              "Classifier decides if Knowledge is helpful",
               "Agent calls the search tool",
               "Query is turned into a vector",
               "Closest chunks come back",

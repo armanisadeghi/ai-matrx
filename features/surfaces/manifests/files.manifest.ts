@@ -835,7 +835,7 @@ const clientTools: SurfaceClientTool[] = [
     name: "files_clear_column_filters",
     label: "Clear column filters",
     description:
-      'Clears every per-column header filter at once — name, type, extension, mime, path, owner, size, modified, access and RAG status — exactly as the "Clear all" pill above the table does. Takes no arguments. Use it when the user cannot find files they expect and `column_filters` shows a filter is narrowing the list. This clears ONLY the column filters: the search box, the filter chip and the kind filter are separate controls with their own write targets (search_query, chip_filter, kind_filter) and are left untouched. Refused when no column filter is currently active, so a call that would do nothing tells you so rather than reporting success.',
+      'Clears every per-column header filter at once — name, type, extension, mime, path, owner, size, modified, access and Knowledge status — exactly as the "Clear all" pill above the table does. Takes no arguments. Use it when the user cannot find files they expect and `column_filters` shows a filter is narrowing the list. This clears ONLY the column filters: the search box, the filter chip and the kind filter are separate controls with their own write targets (search_query, chip_filter, kind_filter) and are left untouched. Refused when no column filter is currently active, so a call that would do nothing tells you so rather than reporting success.',
     inputSchema: {
       type: "object",
       properties: {},

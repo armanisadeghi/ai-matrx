@@ -1,4 +1,4 @@
-import type { GroundingResult } from "@/features/rag/api/grounding";
+import type { GroundingResult } from "@/features/knowledge/api/grounding";
 
 export interface ExamDeckPlan {
   key: "foundations" | "reasoning" | "practice";
@@ -33,7 +33,7 @@ export const EXAM_DECK_PLANS: readonly ExamDeckPlan[] = [
 
 /**
  * Search the focused authoring intent first, then the exact exam name as a
- * narrow lexical-safe fallback. The RAG service deliberately degrades to FTS
+ * narrow lexical-safe fallback. The Knowledge service deliberately degrades to FTS
  * when query embedding is unavailable; a long all-term query can return zero
  * in that mode even though the selected issuer corpus is healthy. The fallback
  * remains inside the exact same explicit source list, so it never widens the

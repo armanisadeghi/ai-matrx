@@ -119,7 +119,7 @@ describe("buildMessageCitationIndex", () => {
   });
 });
 
-describe("search_result citations (RAG / document_search tool results)", () => {
+describe("search_result citations (Knowledge / document_search tool results)", () => {
   // The backend emits kind:"search_result" carrying OUR file_id + page
   // (decoded from matrx:// sources); url is null.
   const searchResult = (over: Record<string, unknown> = {}) =>

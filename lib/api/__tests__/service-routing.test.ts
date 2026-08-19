@@ -23,11 +23,11 @@ describe("isStandaloneFileServiceRoute", () => {
 
   it.each([
     `/files/${FILE_ID}/ingest`,
-    `/files/${FILE_ID}/rag-status`,
+    `/files/${FILE_ID}/knowledge-status`,
     `/files/${FILE_ID}/search`,
     `/files/${FILE_ID}/versions`,
     `/assets/${FILE_ID}/variants`,
-    "/rag/ingest/stream",
+    "/knowledge/ingest/stream",
     "/ai/conversations/example",
   ])("leaves aidream-owned route %s on aidream", (path) => {
     expect(isStandaloneFileServiceRoute(path)).toBe(false);

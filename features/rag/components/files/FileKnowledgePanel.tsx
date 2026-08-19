@@ -5,7 +5,7 @@
  *
  * One canonical implementation, mounted wherever a surface needs to show
  * "is this file in the knowledge index?" and let the user (re)run the
- * RAG + NER pipeline: the Analysis tab, the Analysis Studio rail, and any
+ * Knowledge + NER pipeline: the Analysis tab, the Analysis Studio rail, and any
  * future surface. Composes the existing canonical primitives only:
  * `useFileDocument` (status), `ingestFile` (trigger — chunks + embeddings
  * + the 5-stage NER pass server-side), and the Knowledge tab / KG routes.
@@ -23,8 +23,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { ingestFile } from "@/features/rag/api/ingest";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { ingestFile } from "@/features/knowledge/api/ingest";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 
 export interface FileKnowledgePanelProps {
@@ -157,7 +157,7 @@ export function FileKnowledgePanel({
       )}
     >
       <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-        <Database className="h-3 w-3" /> Knowledge index (RAG + NER)
+        <Database className="h-3 w-3" /> Knowledge index (Knowledge + NER)
       </div>
       {body}
     </div>

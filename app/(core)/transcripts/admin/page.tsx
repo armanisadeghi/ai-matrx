@@ -398,7 +398,7 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       name: "Knowledge",
       adminUrl: "/knowledge/admin",
       description:
-        "Cleaned transcripts can be pushed into data stores for RAG. Bridge in features/transcript-studio/service/transcriptBridge.ts.",
+        "Cleaned transcripts can be pushed into data stores for Knowledge. Bridge in features/transcript-studio/service/transcriptBridge.ts.",
     },
   ],
 };

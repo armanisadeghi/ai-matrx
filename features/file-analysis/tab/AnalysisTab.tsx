@@ -21,7 +21,7 @@
 
 "use client";
 
-import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
+import { FileKnowledgePanel } from "@/features/knowledge/components/files/FileKnowledgePanel";
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {

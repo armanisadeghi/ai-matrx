@@ -1,10 +1,10 @@
 /**
- * features/rag/api/ingest.ts
+ * features/knowledge/api/ingest.ts
  *
- * Wrapper around the RAG team's `/rag/ingest` and `/rag/ingest/stream`
+ * Wrapper around the Knowledge team's `/knowledge/ingest` and `/knowledge/ingest/stream`
  * endpoints, scoped to the file-centric UX:
  *
- *   "Process this file for RAG."
+ *   "Process this file for Knowledge."
  *   "Reprocess (force) this file."
  *
  * The cloud-files surfaces never need to think about `source_kind` —
@@ -55,7 +55,7 @@ export interface IngestRequestBody {
  * Non-streaming ingest for an arbitrary source kind. The generic primitive —
  * `ingestFile` below is a thin `cld_file`-scoped convenience wrapper around
  * this. Any editor (notes, code files, agent apps) that wants "Process for
- * RAG" without the per-stage progress UI can call this directly.
+ * Knowledge" without the per-stage progress UI can call this directly.
  */
 export async function ingestSource(
   sourceKind: IngestRequestBody["source_kind"],
@@ -63,7 +63,7 @@ export async function ingestSource(
   opts: { force?: boolean; signal?: AbortSignal } = {},
 ): Promise<IngestResponse> {
   const { data } = await postJson<IngestResponse, IngestRequestBody>(
-    `/rag/ingest`,
+    `/knowledge/ingest`,
     {
       source_kind: sourceKind,
       source_id: sourceId,
@@ -130,7 +130,7 @@ export async function* ingestFileStream(
   // structured error event before terminating, so we open the fetch
   // ourselves but pull the headers from the same factory.
   const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const response = await fetch(`${resolveBaseUrl()}/rag/ingest/stream`, {
+  const response = await fetch(`${resolveBaseUrl()}/knowledge/ingest/stream`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),

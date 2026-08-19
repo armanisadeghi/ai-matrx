@@ -32,7 +32,7 @@ describe("agent review triage", () => {
   it("routes missing fixtures to database and preserves existing metadata", () => {
     const triage = suggestReviewTriage({
       title: "Shared Knowledge detail",
-      url: "/rag/library-catalog",
+      url: "/knowledge/library-catalog",
       instructions: "Open the entitled fixture.",
       feedback:
         "The reviewer entitlement is missing and production has stale data.",

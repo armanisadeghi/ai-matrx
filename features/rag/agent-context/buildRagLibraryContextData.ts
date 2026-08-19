@@ -1,7 +1,7 @@
 /**
- * Canonical scope builder for the `matrx-user/rag-library` surface.
+ * Canonical scope builder for the `matrx-user/knowledge-library` surface.
  *
- * Pure mapping of the live `/rag/library` and `/rag/library-catalog` state
+ * Pure mapping of the live `/knowledge/library` and `/knowledge/library-catalog` state
  * onto `createRagLibraryScope(...)`, so the route emitter and any future
  * caller share one shape. Nothing here fetches — the pages already hold every
  * value; this only derives, caps, and names them the way the manifest declares.
@@ -15,11 +15,11 @@ import {
   type RagLibraryCatalogEntry,
   type RagLibraryDocumentEntry,
   type RagLibraryJobEntry,
-} from "@/features/surfaces/manifests/rag-library.manifest";
+} from "@/features/surfaces/manifests/knowledge-library.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { DocStatus, LibraryDocSummary, LibrarySummary } from "@/features/rag/types/library";
-import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
-import type { LibraryCatalogItem } from "@/features/rag/hooks/useLibraryCatalog";
+import type { DocStatus, LibraryDocSummary, LibrarySummary } from "@/features/knowledge/types/library";
+import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
+import type { LibraryCatalogItem } from "@/features/knowledge/hooks/useLibraryCatalog";
 
 /** Cap the emitted document list so one huge corpus can't blow the payload. */
 const MAX_DOCUMENTS = 200;
@@ -118,7 +118,7 @@ export interface BuildRagLibraryContextDataArgs {
   /** Which route is mounted. */
   view: "library" | "catalog";
 
-  // ── /rag/library ────────────────────────────────────────────────────
+  // ── /knowledge/library ────────────────────────────────────────────────────
   /** Corpus rollup from `useLibrarySummary`. Null while loading. */
   summary?: LibrarySummary | null;
   /** The document rows currently on screen. */
@@ -138,7 +138,7 @@ export interface BuildRagLibraryContextDataArgs {
   /** Jobs this session started (running and terminal). */
   jobs?: readonly ProcessingJob[];
 
-  // ── /rag/library-catalog ────────────────────────────────────────────
+  // ── /knowledge/library-catalog ────────────────────────────────────────────
   /** Every discoverable library returned to this caller. */
   catalogItems?: readonly LibraryCatalogItem[];
   /** The subset left after the catalog search box + entitled-only checkbox. */
@@ -155,7 +155,7 @@ export interface BuildRagLibraryContextDataArgs {
 }
 
 /**
- * Build the `matrx-user/rag-library` application scope from live page state.
+ * Build the `matrx-user/knowledge-library` application scope from live page state.
  */
 export function buildRagLibraryContextData(
   args: BuildRagLibraryContextDataArgs,

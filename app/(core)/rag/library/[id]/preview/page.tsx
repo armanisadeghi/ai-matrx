@@ -1,7 +1,7 @@
 /**
- * /rag/library/[id]/preview — robust document preview.
+ * /knowledge/library/[id]/preview — robust document preview.
  *
- * Built on /rag/library/* endpoints (no /api/document/* dependency, no
+ * Built on /knowledge/library/* endpoints (no /api/document/* dependency, no
  * react-pdf). 3 panes: pages list, page text, chunks + test-search.
  */
 
@@ -9,7 +9,7 @@
 
 import { useParams, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
+import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
 
 export default function Page() {
   const params = useParams();

@@ -1,5 +1,5 @@
 import type { UseFileDocumentState } from "@/features/files/hooks/useFileDocument";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import type { CloudFile, CloudShareLink } from "@/features/files/types";
 import { formatFileSize } from "@/features/files/utils/format";
 
@@ -41,7 +41,7 @@ function ragStatusLabel(state: UseFileDocumentState): string {
     case "found":
       return `Indexed · ${state.doc.derivation_kind}`;
     case "absent":
-      return "Not yet processed for RAG. Use the Document tab or the Reprocess action to index this file.";
+      return "Not yet processed for Knowledge. Use the Document tab or the Reprocess action to index this file.";
     case "unavailable":
       return "Lookup unavailable (backend endpoint not yet implemented).";
     case "loading":
@@ -119,7 +119,7 @@ export function fileInfoHumanSummary(snapshot: FileInfoSnapshot): string {
   lines.push("");
 
   if (file.source.kind === "real") {
-    lines.push("RAG / document");
+    lines.push("Knowledge / document");
     lines.push(`Status: ${ragStatusLabel(ragState)}`);
     if (ragState.status === "found") {
       lines.push(`Pages: ${(ragState.doc.total_pages ?? 0).toLocaleString()}`);

@@ -69,7 +69,7 @@ export interface ContextItemRefs {
   transcriptIds?: string[];
   workbookIds?: string[];
   documentIds?: string[];
-  /** RAG processed-document id (rag.processed_documents) — keys the library viewer. */
+  /** Knowledge processed-document id (rag.processed_documents) — keys the library viewer. */
   processedDocumentId?: string | null;
   /** Free text payload (text / editor pills). */
   text?: string | null;

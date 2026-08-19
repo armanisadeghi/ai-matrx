@@ -1,7 +1,7 @@
 /**
- * Canonical scope builder for the `matrx-user/rag-viewer` surface.
+ * Canonical scope builder for the `matrx-user/knowledge-viewer` surface.
  *
- * Pure mapping of the live `/rag/viewer/[id]` state onto
+ * Pure mapping of the live `/knowledge/viewer/[id]` state onto
  * `createRagViewerScope(...)`. Nothing here fetches — `LibraryPreviewPage`
  * already holds the document detail, the in-document search state, and the
  * shared-library provenance label, and its page-text pane lifts the loaded
@@ -17,13 +17,13 @@ import {
   type RagViewerDataStoreEntry,
   type RagViewerSearchHitEntry,
   type RagViewerSegmentEntry,
-} from "@/features/surfaces/manifests/rag-viewer.manifest";
+} from "@/features/surfaces/manifests/knowledge-viewer.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { LibraryDocDetail } from "@/features/rag/types/library";
+import type { LibraryDocDetail } from "@/features/knowledge/types/library";
 import type {
   DocSearchHit,
   DocSearchSummary,
-} from "@/features/rag/hooks/useDocumentSearch";
+} from "@/features/knowledge/hooks/useDocumentSearch";
 import type { components } from "@/types/python-generated/api-types";
 
 type FullPage = components["schemas"]["LibraryFullPage"];
@@ -104,7 +104,7 @@ export interface BuildRagViewerContextDataArgs {
 }
 
 /**
- * Build the `matrx-user/rag-viewer` application scope from live viewer state.
+ * Build the `matrx-user/knowledge-viewer` application scope from live viewer state.
  */
 export function buildRagViewerContextData(
   args: BuildRagViewerContextDataArgs,

@@ -326,7 +326,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code Repository",
-    urlPathTemplate: "/rag/repositories?repo={id}",
+    urlPathTemplate: "/knowledge/repositories?repo={id}",
     rlsUsesHasPermission: true,
   },
   message_template: {
@@ -372,7 +372,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     // non-null value here wrongly routes sharing through make_resource_public.
     isPublicColumn: null,
     displayLabel: "Data Store",
-    urlPathTemplate: "/rag/data-stores?store_id={id}",
+    urlPathTemplate: "/knowledge/data-stores?store_id={id}",
     rlsUsesHasPermission: false,
   },
   dm_conversation: {

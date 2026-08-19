@@ -153,7 +153,7 @@ import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 import { PdfStudioChunksPane } from "./PdfStudioChunksPane";
-import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
+import type { UseDocumentSearch } from "@/features/knowledge/hooks/useDocumentSearch";
 
 export type { PaneKey } from "../state/types";
 import type { PaneKey } from "../state/types";
@@ -211,7 +211,7 @@ export interface PdfStudioReaderProps {
   onJumpToPage?: (page: number) => void;
   /** Called when the user wants to jump to the Chunked Runs inspector tab. */
   onOpenChunkedRuns?: () => void;
-  /** Active in-document RAG search (title pill, Enter) — while it has
+  /** Active in-document Knowledge search (title pill, Enter) — while it has
    *  results, the Segments pane shows the ranked hits instead of the
    *  active page's chunks. */
   docSearch?: UseDocumentSearch;
@@ -249,7 +249,7 @@ export function PdfStudioReader({
 }: PdfStudioReaderProps) {
   const hasPages = pages.length > 0;
   // Per-field emptiness. The raw and cleaned columns are populated by
-  // different pipelines (extract vs RAG-ingest's per-page cleanup), so a
+  // different pipelines (extract vs Knowledge-ingest's per-page cleanup), so a
   // doc can have raw text on every page but no per-page cleaned_text —
   // exactly the "no text on this page × 7" bug in the AI Clean screenshot.
   // Compute each one separately so each pane can fall back to its own

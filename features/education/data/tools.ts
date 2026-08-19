@@ -56,7 +56,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     slug: "tutor",
     name: "AI Tutor",
     tagline: "Context-aware, memory-carrying study companion",
-    description: "Persistent tutor present at every surface, grounded in the student's own materials via RAG, Socratic by default.",
+    description: "Persistent tutor present at every surface, grounded in the student's own materials via Knowledge, Socratic by default.",
     icon: GraduationCap,
     letter: "Tu",
     status: "live", // P2 shipped: grounded, memory-carrying conversational tutor

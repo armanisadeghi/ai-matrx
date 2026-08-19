@@ -58,7 +58,7 @@ export type WarRoomScope = "thread" | "room" | "all";
  * One attached resource of ANY registered entity type, as agents see it in the
  * `<resources>` roster: the token + id (the tool handle), a human title, the
  * pinned flag (always-inline at every tier), and optional per-token attributes
- * (files carry mime/extraction/rag). Registry-open — new tokens flow through
+ * (files carry mime/extraction/knowledge). Registry-open — new tokens flow through
  * with zero changes here.
  */
 export interface WarRoomResourceModel {
@@ -93,7 +93,7 @@ export interface WarRoomFileModel {
   /** True when OUR text extraction exists (readable server-side via the
    *  `file_read` tool / data_action read_file_extraction operation). */
   hasExtraction?: boolean;
-  /** True when the file is indexed for RAG (searchable via knowledge_search). */
+  /** True when the file is indexed for Knowledge (searchable via knowledge_search). */
   ragIndexed?: boolean;
 }
 
@@ -333,7 +333,7 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
   }
   // EVERY attached resource, any registered entity type — pinned first,
   // budgeted, with a `<more>` escape hatch naming the tool that lists the rest.
-  // File rows carry their extraction/RAG signals as attrs (built upstream).
+  // File rows carry their extraction/Knowledge signals as attrs (built upstream).
   if (t.resources && t.resources.length > 0) {
     const ordered = [...t.resources].sort(
       (a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false),

@@ -6,7 +6,7 @@
 // working context (org · scopes · project · task) and opens a popover to
 // change it. Drop it into any header/toolbar/sidebar that needs "what am I
 // working on right now" (chat header, transcripts cleanup/scribe, knowledge
-// graph, RAG).
+// graph, Knowledge).
 //
 // SURFACE A: this file lives in active-context/ because it is one of the few
 // sanctioned writers of appContextSlice. Everything else (the field, the

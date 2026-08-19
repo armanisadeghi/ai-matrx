@@ -3,7 +3,7 @@
  *
  * A Data Store is a named, scoped collection of documents (and other source
  * kinds) that an agent can query against. Documents are bound to stores via
- * `data_store_members(source_kind, source_id)` rows. The RAG layer's
+ * `data_store_members(source_kind, source_id)` rows. The Knowledge layer's
  * `knowledge_search` tool requires an explicit `data_store_id` (or scope key) —
  * stores are the canonical scope-gate for retrieval.
  */

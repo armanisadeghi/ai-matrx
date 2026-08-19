@@ -195,7 +195,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "source_mode",
     label: "Generation source",
     description:
-      'The create view\'s source mode: "topic" (ungrounded), "deck" (grounded in a flashcard deck), or "document" (grounded in a RAG document, cited). Absent outside the create view.',
+      'The create view\'s source mode: "topic" (ungrounded), "deck" (grounded in a flashcard deck), or "document" (grounded in a Knowledge document, cited). Absent outside the create view.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 8,
@@ -305,7 +305,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_document",
     label: "Selected document",
     description:
-      "The RAG document picked as the grounded (cited) source, as { id, name }. Absent unless the create view is in document mode with a document chosen.",
+      "The Knowledge document picked as the grounded (cited) source, as { id, name }. Absent unless the create view is in document mode with a document chosen.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 100,

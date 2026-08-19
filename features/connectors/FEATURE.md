@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-18`
+**Last updated:** `2026-08-19`
 
 ---
 
@@ -16,7 +16,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 **Components**
 - `features/connectors/ConnectorStrip.tsx` — `<ConnectorStrip />`. Client, presentational, props-driven.
-- `features/connectors/ChatConnectorStrip.tsx` — the container that answers "what has this user actually connected" (Google inventory → `connectedIds`) and "what happens on click" (opens the floating Google connect window). Mounted under the real chat composer by `AgentConversationColumn`. Any new surface mounting the strip should reuse this container rather than resolving status again.
+- `features/connectors/ChatConnectorStrip.tsx` — the container that answers "what has this user actually connected" from the Google inventory plus the per-user MCP catalog. Google connectors open the floating Google connect window; MCP-backed connectors match their connector id to the canonical MCP server slug and use the shared MCP OAuth popup. Mounted under the real chat composer by `AgentConversationColumn`. Any new surface mounting the strip should reuse this container rather than resolving status again.
 
 **Config**
 - `features/connectors/registry.ts` — `CONNECTORS`, `connectorsFor(surface)`, `getConnector(id)`.
@@ -34,7 +34,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 ## Data model
 
-No tables of its own. The connected-set is whatever the host resolves; for the Google connectors that is `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses.
+No tables of its own. The connected-set is whatever the host resolves. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. MCP-backed connectors use the existing `useMcpCatalog()` selector over each signed-in user's `tool.mcp_user_conn` state; credentials remain in the Unified Credential Vault and never enter this feature.
 
 **Key types** (`types.ts`)
 
@@ -68,11 +68,11 @@ The strip **stops nagging**: it collapses to one muted `N tools connected` link 
 
 ### (d) A connector we do not support yet
 
-`comingSoonId` set → status is `unavailable` regardless of the connected-set, the chip is dashed + `soon`, and clicking calls `announceComingSoon(id)` against `lib/coming-soon/registry.ts` (`connectors.notion` today). **Never a bare "coming soon" string.**
+`comingSoonId` set → status is `unavailable` regardless of the connected-set, the chip is dashed + `soon`, and clicking calls `announceComingSoon(id)` against `lib/coming-soon/registry.ts`. **Never a bare "coming soon" string.** Notion no longer uses this path: it is an active MCP-backed connector.
 
 ### (e) Adding a provider
 
-One entry in `registry.ts`: id (generic to the provider, permanent), name (today's truth), blurb (one user-facing line), a local mark, and `surfaces`. Nothing in `ConnectorStrip.tsx` changes.
+One entry in `registry.ts`: id (generic to the provider, permanent), name (today's truth), blurb (one user-facing line), a local mark, and `surfaces`. For an official OAuth MCP provider, the id must match the canonical `tool.mcp_server.slug`; `ChatConnectorStrip` then resolves connection state and OAuth generically. Nothing in `ConnectorStrip.tsx` changes.
 
 ---
 
@@ -91,7 +91,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Related features
 
-- Depends on: `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `lib/coming-soon`, `components/ui/tooltip`.
+- Depends on: `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `features/agents` MCP catalog/OAuth primitives, `lib/coming-soon`, `components/ui/tooltip`.
 - Depended on by: `ChatConnectorStrip` → `AgentConversationColumn` (the real chat composer); a future connector **directory** page consumes `connectorsFor("directory")`.
 - Cross-links: `features/google-workspace/FEATURE.md`, `lib/coming-soon/FEATURE.md`, `features/agent-connections/FEATURE.md` (the agent-facing "what can this agent reach" hub — a different question from "what has this human attached").
 
@@ -112,4 +112,5 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-08-19` — Codex: removed Notion's stale Coming Soon promise and connected the real chat strip to the existing per-user MCP catalog and OAuth flow. MCP-backed connector ids now resolve generically by canonical server slug, so future official MCP providers reuse the same path.
 - `2026-08-18` — Claude: created the feature — config type, seeded registry (Google Workspace, Gmail, Notion (coming-soon), Google Search Console (directory-only)), the strip, local brand marks, and the `/demos/connector-strip` demo. Verified in light and dark at 1280px and 375px.

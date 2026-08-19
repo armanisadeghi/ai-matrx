@@ -16,7 +16,7 @@
  * `useFileMutation()` and `useFolderMutation()` do that. They wrap the
  * underlying slice thunks so consumers never reach for `dispatch(...)` or
  * import from `features/files/redux/*` — which closes the last Tier-4
- * ESLint hole: the cluster of cloud-image / RAG / WhatsApp surfaces that
+ * ESLint hole: the cluster of cloud-image / Knowledge / WhatsApp surfaces that
  * dispatch `deleteFile` / `moveFile` / `updateFileMetadata` / `updateFolder`
  * / `deleteFolder` / `getSignedUrl` from event handlers with dynamic ids.
  *

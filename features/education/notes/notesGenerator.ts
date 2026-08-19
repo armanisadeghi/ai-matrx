@@ -5,7 +5,7 @@
 // TargetKind that P4 Smart Notes owns; registering it lights the "Study notes"
 // target up on the kit picker (P9) and the one-click note-convert menu.
 //
-// A note is a real, first-class platform note (shareable, editable, RAG-indexable)
+// A note is a real, first-class platform note (shareable, editable, Knowledge-indexable)
 // — so a generated note lands right back in the Smart Notes surface where the
 // student can keep working on it. Same lineage + TrustEnvelope contract as the
 // summary/deck generators: link a `source` edge to the ingest anchor file and

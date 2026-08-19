@@ -50,7 +50,7 @@ import type {
   ProcessingStageId,
   StagePreview,
 } from "./ProcessingProgressDialog";
-import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
+import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
 import { STAGE_META, StageHero } from "./StageAnimations";
 
 const STAGES: ProcessingStageId[] = ["extract", "clean", "chunk", "embed"];
@@ -609,7 +609,7 @@ function ResultPanel({
         </div>
         {result.processedDocumentId && (
           <a
-            href={`/rag/library/${result.processedDocumentId}/preview`}
+            href={`/knowledge/library/${result.processedDocumentId}/preview`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shrink-0"

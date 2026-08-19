@@ -1559,7 +1559,7 @@ export function shouldKeepExpandedOnStream(toolName: string | null): boolean {
 
 /**
  * Tools whose RESULT is the deliverable the user asked for — news, search,
- * research, RAG, SEO reports, lists, the wheel spin. Their inline view stays
+ * research, Knowledge, SEO reports, lists, the wheel spin. Their inline view stays
  * expanded when done ("stay-open"): folding away the very thing the user
  * wanted makes no sense. A per-entry `displayMode` (in-code) or the DB row's
  * `keep_expanded_on_stream` flag (DB renderers) overrides this list; this is

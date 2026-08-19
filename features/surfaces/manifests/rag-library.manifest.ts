@@ -1,14 +1,14 @@
 /**
- * Surface manifest — Knowledge Library (`matrx-user/rag-library`).
+ * Surface manifest — Knowledge Library (`matrx-user/knowledge-library`).
  *
- * The user's own RAG corpus and the shared-library catalog beside it:
+ * The user's own Knowledge corpus and the shared-library catalog beside it:
  *
- *   - `/rag/library`         — every `docproc.processed_documents` row the
+ *   - `/knowledge/library`         — every `docproc.processed_documents` row the
  *                              caller owns or curates, with derived page /
  *                              segment / embedding counts, a pipeline status
  *                              badge, a rollup of corpus totals, and the live
  *                              ingest jobs this session started.
- *   - `/rag/library-catalog` — the DISCOVERABLE shared knowledge libraries
+ *   - `/knowledge/library-catalog` — the DISCOVERABLE shared knowledge libraries
  *                              (`rag.fn_list_library_catalog`) with the
  *                              caller's true entitlement per row, plus
  *                              self-service subscribe / unsubscribe.
@@ -20,12 +20,12 @@
  * value is populated on exactly one of them.
  *
  * Emitters (both via `buildRagLibraryContextData` in
- * `features/rag/agent-context/buildRagLibraryContextData.ts`):
- *   - `features/rag/components/library/LibraryPage.tsx`
- *   - `features/rag/components/library-catalog/LibraryCatalogPage.tsx`
+ * `features/knowledge/agent-context/buildRagLibraryContextData.ts`):
+ *   - `features/knowledge/components/library/LibraryPage.tsx`
+ *   - `features/knowledge/components/library-catalog/LibraryCatalogPage.tsx`
  *
  * DELIBERATELY NOT DECLARED: the open document's page text and segment
- * previews. Those belong to `matrx-user/rag-viewer`, which is the surface for
+ * previews. Those belong to `matrx-user/knowledge-viewer`, which is the surface for
  * one document's contents; the library only ever holds a row summary. The
  * library's detail SHEET loads a `LibraryDocDetail` inside
  * `LibraryDocDetailSheet` and nothing lifts it to the route — only the
@@ -39,7 +39,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { LIBRARY_STATUS_FILTER_VALUES } from "@/features/rag/constants/libraryStatusFilters";
+import { LIBRARY_STATUS_FILTER_VALUES } from "@/features/knowledge/constants/libraryStatusFilters";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -55,7 +55,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Corpus totals",
     sortOrder: 200,
     description:
-      "Whole-corpus counts across every processed document the caller owns — the KPI tiles at the top of /rag/library.",
+      "Whole-corpus counts across every processed document the caller owns — the KPI tiles at the top of /knowledge/library.",
   },
   {
     key: "library_query",
@@ -83,7 +83,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Shared library catalog",
     sortOrder: 600,
     description:
-      "Discoverable shared knowledge libraries and the caller's entitlement to each. Empty on /rag/library.",
+      "Discoverable shared knowledge libraries and the caller's entitlement to each. Empty on /knowledge/library.",
   },
 ];
 
@@ -93,7 +93,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "library_view",
     label: "Library view",
     description:
-      '"library" when the user is on /rag/library (their own processed documents), "catalog" when on /rag/library-catalog (shared knowledge libraries). Always present — it tells you which of the other groups carry values.',
+      '"library" when the user is on /knowledge/library (their own processed documents), "catalog" when on /knowledge/library-catalog (shared knowledge libraries). Always present — it tells you which of the other groups carry values.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 8,
@@ -309,7 +309,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_document_id",
     label: "Open document ID",
     description:
-      "UUID of the processed document whose detail sheet the user opened from the table. Empty when no row is selected. The sheet's page text and segments are NOT part of this surface — read them on matrx-user/rag-viewer.",
+      "UUID of the processed document whose detail sheet the user opened from the table. Empty when no row is selected. The sheet's page text and segments are NOT part of this surface — read them on matrx-user/knowledge-viewer.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -516,7 +516,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "library_filters",
     label: "Library filters",
     description:
-      "Narrows the document table on /rag/library — the same search box and status buttons the user clicks. " +
+      "Narrows the document table on /knowledge/library — the same search box and status buttons the user clicks. " +
       "Value is an OBJECT containing ONLY the keys you want to change; each key you send REPLACES that filter outright. " +
       'Keys: `search_query` (string, matched server-side against the document NAME only — not its contents; pass "" to clear it), ' +
       "and `status_filter` (exactly one of: " +
@@ -537,7 +537,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "selected_document_id",
     label: "Open document",
     description:
-      "Opens one processed document's detail sheet on /rag/library — the same thing clicking its row does. " +
+      "Opens one processed document's detail sheet on /knowledge/library — the same thing clicking its row does. " +
       "Value is the document's UUID as a plain string, and it MUST be the `id` of a document in `visible_documents` " +
       "(narrow the table with `library_filters` first if the one you want is not listed; an id that is not on screen is refused rather than guessed at). " +
       'Pass "" to close the sheet and clear the selection. ' +
@@ -573,7 +573,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "catalog_filters",
     label: "Catalog filters",
     description:
-      "Narrows the shared-library list on /rag/library-catalog — the same search box and checkbox the user clicks. " +
+      "Narrows the shared-library list on /knowledge/library-catalog — the same search box and checkbox the user clicks. " +
       "Value is an OBJECT containing ONLY the keys you want to change; each key you send REPLACES that filter outright. " +
       'Keys: `search_query` (string, matched client-side against library name, description, short code and entitling industry; pass "" to clear it), ' +
       'and `entitled_only` (boolean; true hides libraries the user cannot read — the "Only libraries I can read" checkbox). ' +
@@ -590,25 +590,25 @@ const writeTargets: SurfaceWriteTarget[] = [
 ];
 
 export const ragLibraryManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/rag-library",
+  surfaceName: "matrx-user/knowledge-library",
   readiness: "partial",
   readinessNote:
-    "Values authored against the live /rag/library + /rag/library-catalog components and both emitters are wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. All four write targets ARE live-verified against a real agent run on /rag/library — apply, decline, an undeclared-target refusal, and a handler throw reaching the agent. catalog_filters' handler is verified by construction on the same seam but its route (/rag/library-catalog) was not separately driven. The detail sheet's LibraryDocDetail body stays undeclared by design — it belongs to matrx-user/rag-viewer.",
+    "Values authored against the live /knowledge/library + /knowledge/library-catalog components and both emitters are wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. All four write targets ARE live-verified against a real agent run on /knowledge/library — apply, decline, an undeclared-target refusal, and a handler throw reaching the agent. catalog_filters' handler is verified by construction on the same seam but its route (/knowledge/library-catalog) was not separately driven. The detail sheet's LibraryDocDetail body stays undeclared by design — it belongs to matrx-user/knowledge-viewer.",
   label: "Knowledge Library",
-  urlPattern: "/rag/library",
+  urlPattern: "/knowledge/library",
   intro: `<surface_intro>
-This is the user's RAG knowledge corpus — the "where did my content go?" pages.
+This is the user's Knowledge knowledge corpus — the "where did my content go?" pages.
 A processed document is one extraction run over a source (a PDF, a note, a code
 file). It becomes retrievable only after the pipeline finishes: pages are
 extracted, cleaned, split into SEGMENTS, and each segment embedded.
 
 Read library_view FIRST:
-  - "library" — the user is on /rag/library looking at documents they own.
+  - "library" — the user is on /knowledge/library looking at documents they own.
                 The rollup values (documents_total, documents_ready,
                 documents_pending, segment_count, embeddings_voyage) describe
                 the whole corpus; the query values describe the table in front
                 of them; visible_documents holds the rows themselves.
-  - "catalog" — the user is on /rag/library-catalog browsing SHARED knowledge
+  - "catalog" — the user is on /knowledge/library-catalog browsing SHARED knowledge
                 libraries published by Matrx. These are read-only and belong
                 to someone else. catalog_* values apply; every library_* value
                 is empty.
@@ -697,7 +697,7 @@ export interface RagLibraryCatalogEntry {
 }
 
 /**
- * Scope builder for `matrx-user/rag-library`.
+ * Scope builder for `matrx-user/knowledge-library`.
  *
  * Only `library_view` is guaranteed — every other value belongs to exactly one
  * of the two routes (or to a load that may not have settled), so it is optional

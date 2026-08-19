@@ -86,7 +86,7 @@ export const agentSystems: AIAgentSystem[] = [
     category: "Low-Code",
     isOpenSource: true,
     description:
-      "A drag-and-drop visual editor for building and testing agentic RAG workflows.",
+      "A drag-and-drop visual editor for building and testing agentic Knowledge workflows.",
     primaryLanguage: "Python",
   },
   {
@@ -113,7 +113,7 @@ export const agentSystems: AIAgentSystem[] = [
     category: "Specialized",
     isOpenSource: true,
     description:
-      "Event-driven orchestration specifically for data-heavy and RAG-focused agents.",
+      "Event-driven orchestration specifically for data-heavy and Knowledge-focused agents.",
     primaryLanguage: "Python / TypeScript",
   },
   {

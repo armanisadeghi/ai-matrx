@@ -440,7 +440,7 @@ function PendingBatchesTable({
  * Admin-editable auto-ingest switches for one org, embedded in the org-detail
  * dialog. Reuses `useOrgAutoRagPreference` — the SAME React → Supabase write
  * path the org owners' settings panel uses — so an operator can flip the
- * master auto-RAG switch and the non-PDF opt-in for any org. Cost figures
+ * master auto-Knowledge switch and the non-PDF opt-in for any org. Cost figures
  * (used / budget / window) keep coming from the read-only Python `kgCostService`
  * shown above; these switches just edit the two booleans on the row.
  */
@@ -451,9 +451,9 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
     void pref
       .setEnabled(next)
       .then(() =>
-        toast.success(next ? "Auto-RAG enabled" : "Auto-RAG disabled"),
+        toast.success(next ? "Auto-Knowledge enabled" : "Auto-Knowledge disabled"),
       )
-      .catch(() => toast.error("Couldn't update auto-RAG"));
+      .catch(() => toast.error("Couldn't update auto-Knowledge"));
   };
 
   const handleToggleNonPdf = (next: boolean) => {

@@ -1019,7 +1019,7 @@ const slice = createSlice({
       state.realtime.lastEventAt = Date.now();
     },
 
-    // ---- RAG status (per-file) ---------------------------------------------
+    // ---- Knowledge status (per-file) ---------------------------------------------
     setRagStatusForFile(
       state,
       action: PayloadAction<{ fileId: string; status: RagStatus }>,

@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Binary, Check, Clipboard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 import {
   createGoogleEmbeddings,
   type GoogleEmbeddingRequest,
   type GoogleEmbeddingResponse,
-} from "@/features/rag/api/google-embeddings";
+} from "@/features/knowledge/api/google-embeddings";
 
 export function GoogleEmbeddingLab() {
   const [model, setModel] =

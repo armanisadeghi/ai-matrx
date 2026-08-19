@@ -483,7 +483,7 @@ Everything here is OBSERVED evidence pulled from live pages — never invent con
 target_url and search_keyword are the user's live inputs — what they intend to scrape next, distinct from what has already been scraped.
 You can STAGE the next run for the user but never start it: scrape_command sets the mode and its target, scrape_page_limit the deep-mode page budget, scrape_result_limit the web-search hit budget. Staging only fills the form — the user presses Scrape, because a run spends real time against someone else's server.
 selected_result_page and selected_search_hit put something ALREADY fetched on screen; neither fetches anything. When you have judged which search hit is worth scraping, select it and let the user press the button.
-The scraped_* values are fetched evidence and are NOT writable — a page's body, title, links and metadata are what a real server returned, and this pane feeds RAG ingestion directly, so never try to "correct" them.
+The scraped_* values are fetched evidence and are NOT writable — a page's body, title, links and metadata are what a real server returned, and this pane feeds Knowledge ingestion directly, so never try to "correct" them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

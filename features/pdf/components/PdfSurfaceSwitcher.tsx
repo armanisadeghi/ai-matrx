@@ -4,7 +4,7 @@
  * PdfSurfaceSwitcher — the one-click jump between every PDF surface.
  *
  * Mounted on every UI that renders a PDF (file viewer, Analysis Studio,
- * PDF Extractor, RAG pane, …). Reads the surface registry
+ * PDF Extractor, Knowledge pane, …). Reads the surface registry
  * (features/pdf/surfaces/registry.ts) so the menu is identical everywhere
  * and new surfaces appear on all of them by adding one registry entry.
  *

@@ -8,14 +8,14 @@
  *   - `idle`     — no fileId yet
  *   - `loading`  — request in flight (first probe)
  *   - `found`    — processed_documents row exists; `doc` is populated
- *   - `absent`   — file is not ingested for RAG yet (404 from backend)
+ *   - `absent`   — file is not ingested for Knowledge yet (404 from backend)
  *   - `unavailable` — endpoint not yet implemented or transient failure
  *
  * UI rules:
  *   - `found`        → render the Document tab + lineage chip
- *   - `absent`       → Document tab CTA "Process this file for RAG"
+ *   - `absent`       → Document tab CTA "Process this file for Knowledge"
  *   - `unavailable`  → hide the tab silently; don't break the rest of
- *                      the preview surface just because RAG is offline
+ *                      the preview surface just because Knowledge is offline
  *
  * Synthetic ids (virtual filesystem files like
  * `vfs:notes:<id>`) skip the probe entirely — virtual sources don't
@@ -41,7 +41,7 @@ export type UseFileDocumentState =
 
 export interface UseFileDocumentResult {
   state: UseFileDocumentState;
-  /** Force a re-fetch — call after `/rag/ingest` succeeds. */
+  /** Force a re-fetch — call after `/knowledge/ingest` succeeds. */
   refresh: () => void;
 }
 
@@ -57,7 +57,7 @@ export function useFileDocument(
       return undefined;
     }
     // Virtual sources have no processed_document by definition (they
-    // are Postgres-row "fake files", not S3 bytes the RAG pipeline
+    // are Postgres-row "fake files", not S3 bytes the Knowledge pipeline
     // ingests). Skip the network probe entirely.
     if (isSyntheticId(fileId)) {
       setState({ status: "absent" });

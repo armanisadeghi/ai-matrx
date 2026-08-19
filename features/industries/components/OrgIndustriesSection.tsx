@@ -42,8 +42,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useUserRole } from "@/features/organizations/hooks";
 import { useIndustries, useOrgIndustries } from "@/features/industries/hooks";
-import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
-import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
+import { EntitlementChip } from "@/features/knowledge/components/library-catalog/EntitlementChip";
 
 export function OrgIndustriesSection({ orgId }: { orgId: string }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -141,7 +141,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                     {unlocked.map((lib) => (
                       <Link
                         key={lib.id}
-                        href={`/rag/library-catalog?store_id=${lib.id}`}
+                        href={`/knowledge/library-catalog?store_id=${lib.id}`}
                         className="rounded-full bg-primary/10 px-2 py-0.5 text-primary hover:underline"
                       >
                         {lib.name}
@@ -203,7 +203,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
           <Library className="h-4 w-4 text-muted-foreground" />
           <h4 className="text-xs font-semibold">Shared knowledge libraries</h4>
           <Link
-            href="/rag/library-catalog"
+            href="/knowledge/library-catalog"
             className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
           >
             Full catalog
@@ -226,7 +226,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                 className="flex items-center gap-2 rounded-md border border-border/70 bg-background/40 px-2.5 py-1.5"
               >
                 <Link
-                  href={`/rag/library-catalog?store_id=${it.id}`}
+                  href={`/knowledge/library-catalog?store_id=${it.id}`}
                   className="min-w-0 truncate text-xs font-medium text-foreground hover:underline"
                 >
                   {it.name}

@@ -3,12 +3,12 @@ import {
   createRagSearchScope,
   type RagDataStoreEntry,
   type RagQueryTermCoverageEntry,
-} from "@/features/surfaces/manifests/rag-search.manifest";
-import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
-import type { RagSearchHit, RagSearchResponse } from "@/features/rag/api/search";
+} from "@/features/surfaces/manifests/knowledge-search.manifest";
+import { getHighlightTerms } from "@/features/knowledge/components/hit-card/query-highlighting";
+import type { RagSearchHit, RagSearchResponse } from "@/features/knowledge/api/search";
 
 /**
- * Placement visibility for the `matrx-user/rag-search` surface menu.
+ * Placement visibility for the `matrx-user/knowledge-search` surface menu.
  *
  * Both regions this surface wires are effectively read-only at the text level:
  * the search box holds a single short query and the results list is rendered
@@ -29,7 +29,7 @@ export const RAG_SEARCH_CONTEXT_MENU_PLACEMENT_MODE: PlacementMode = {
 };
 
 /**
- * Shared menu props for `matrx-user/rag-search` (editable search box +
+ * Shared menu props for `matrx-user/knowledge-search` (editable search box +
  * presentational results). Mount this on every region with
  * `isEditable` decided per-region by the caller (search box: `true`;
  * results: `false`) so `isEditable` is never baked into the shared object.
@@ -40,7 +40,7 @@ export const RAG_SEARCH_CONTEXT_MENU_PLACEMENT_MODE: PlacementMode = {
  */
 export const RAG_SEARCH_CONTEXT_MENU_PROPS = {
   sourceFeature: "rag-search" as const,
-  surfaceName: "matrx-user/rag-search" as const,
+  surfaceName: "matrx-user/knowledge-search" as const,
   placementMode: RAG_SEARCH_CONTEXT_MENU_PLACEMENT_MODE,
 };
 
@@ -169,7 +169,7 @@ export interface BuildRagSearchContextDataArgs {
 }
 
 /**
- * Canonical `contextData` for `matrx-user/rag-search`.
+ * Canonical `contextData` for `matrx-user/knowledge-search`.
  *
  * Pure mapping of live search state → `createRagSearchScope(...)`, so a runtime
  * caller and any demo share one shape. Emits the auto-injected baselines with

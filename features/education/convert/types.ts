@@ -66,7 +66,7 @@ export interface SourceRef {
     | "processed_document";
   /** Canonical anchor — the cld_files id lineage edges point at. */
   fileId?: string;
-  /** RAG processed-document id, when the source was ingested into RAG. */
+  /** Knowledge processed-document id, when the source was ingested into Knowledge. */
   processedDocumentId?: string;
   /** Original external URL / YouTube link, when applicable. */
   url?: string;

@@ -185,7 +185,7 @@ export const PLANS: Plan[] = [
       { label: "Everything in Team", included: true },
       { label: "30,000 messages per seat", included: true },
       { label: "Reasoning + critic loops", included: true },
-      { label: "Org-level memory & RAG", included: true, highlight: true },
+      { label: "Org-level memory & Knowledge", included: true, highlight: true },
       { label: "Replayable trajectories", included: true },
       { label: "SSO (Google, Microsoft)", included: true },
       { label: "Slack & Teams integration", included: true },

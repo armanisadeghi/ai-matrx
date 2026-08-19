@@ -1,4 +1,4 @@
-import { buildRagReviewPages } from "@/features/rag/components/search/ragReviewPages";
+import { buildRagReviewPages } from "@/features/knowledge/components/search/ragReviewPages";
 
 describe("buildRagReviewPages", () => {
   it("adds one physical page before and after a one-page hit", () => {

@@ -382,13 +382,13 @@ export function AgentSettingsForm({
             </div>
           </div>
 
-          {/* RAG retrieval boost — controls how heavily this agent's
-              extracted content ranks against raw extracts in RAG search.
+          {/* Knowledge retrieval boost — controls how heavily this agent's
+              extracted content ranks against raw extracts in Knowledge search.
               Per-job overrides live on the page-extraction job builder. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2 flex flex-col">
               <Label className="text-sm font-semibold flex items-center gap-1.5">
-                Default RAG boost
+                Default Knowledge boost
                 <span className="text-xs font-normal text-muted-foreground">
                   retrieval ranking
                 </span>
@@ -416,7 +416,7 @@ export function AgentSettingsForm({
                 className="bg-background/50 focus-visible:ring-primary/20 font-mono"
               />
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Multiplier applied to this agent's extracted content in RAG
+                Multiplier applied to this agent's extracted content in Knowledge
                 search. <span className="font-medium">0</span> = no boost
                 (default). <span className="font-medium">10–25</span> = lift
                 over raw extracts. <span className="font-medium">50+</span> =

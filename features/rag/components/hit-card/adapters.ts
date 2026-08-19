@@ -1,5 +1,5 @@
-import type { RagSearchHit } from "@/features/rag/api/search";
-import type { DiagnoseHit } from "@/features/rag/api/search-lab";
+import type { RagSearchHit } from "@/features/knowledge/api/search";
+import type { DiagnoseHit } from "@/features/knowledge/api/search-lab";
 import type { RagHitView } from "./types";
 
 /**

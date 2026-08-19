@@ -441,7 +441,7 @@ export const SUBJECTS: AxisEntry[] = [
           },
           {
             q: "Can it help with a specific book or article?",
-            a: "Yes. Upload the text or your notes and every response is grounded in that source through RAG, citing the passages it draws from rather than pulling from the open internet.",
+            a: "Yes. Upload the text or your notes and every response is grounded in that source through Knowledge, citing the passages it draws from rather than pulling from the open internet.",
           },
           {
             q: "Does it support test-prep vocabulary?",

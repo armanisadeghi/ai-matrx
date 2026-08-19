@@ -2,7 +2,7 @@
 
 // features/context-menu-v3/NonEditableContextMenu.tsx
 //
-// Thin wrapper for READ-ONLY surfaces (viewers, results, RAG/research output,
+// Thin wrapper for READ-ONLY surfaces (viewers, results, Knowledge/research output,
 // rendered markdown, message displays). No text mutation — but Copy, AI
 // Actions, Attach To, Share, Export and Convert all work, because the menu
 // self-resolves content from the DOM. Presets `isEditable: false`.

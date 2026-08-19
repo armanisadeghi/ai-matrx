@@ -1,7 +1,7 @@
 /**
- * Canonical scope builder for the `matrx-user/rag-data-stores` surface.
+ * Canonical scope builder for the `matrx-user/knowledge-data-stores` surface.
  *
- * Pure mapping of the live `/rag/data-stores` state onto
+ * Pure mapping of the live `/knowledge/data-stores` state onto
  * `createRagDataStoresScope(...)`. Nothing here fetches — the page already
  * holds the store list, the selected store's detail, its members, and the
  * shared-library provenance label; this only derives, caps, and names them the
@@ -12,13 +12,13 @@ import {
   createRagDataStoresScope,
   type RagDataStoreEntry,
   type RagDataStoreMemberEntry,
-} from "@/features/surfaces/manifests/rag-data-stores.manifest";
+} from "@/features/surfaces/manifests/knowledge-data-stores.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type {
   DataStore,
   DataStoreWithMemberCount,
-} from "@/features/rag/types/data-stores";
-import type { EnrichedMember } from "@/features/rag/hooks/useDataStores";
+} from "@/features/knowledge/types/data-stores";
+import type { EnrichedMember } from "@/features/knowledge/hooks/useDataStores";
 
 /** Cap the emitted member list so a huge store can't blow the payload. */
 const MAX_MEMBERS = 300;
@@ -116,7 +116,7 @@ export interface BuildRagDataStoresContextDataArgs {
 }
 
 /**
- * Build the `matrx-user/rag-data-stores` application scope from live page state.
+ * Build the `matrx-user/knowledge-data-stores` application scope from live page state.
  */
 export function buildRagDataStoresContextData(
   args: BuildRagDataStoresContextDataArgs,

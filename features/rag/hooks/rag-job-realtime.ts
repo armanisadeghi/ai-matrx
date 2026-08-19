@@ -1,5 +1,5 @@
 /**
- * features/rag/hooks/rag-job-realtime.ts
+ * features/knowledge/hooks/knowledge-job-realtime.ts
  *
  * Refcounted Supabase Realtime subscription on `cld_file_rag_jobs`, keyed by
  * file_id. This is what replaced the old 3s/15s polling in `useFileRagStatus`:
@@ -12,7 +12,7 @@
  * mirroring `features/file-analysis/hooks/useFileAnalysis.ts`.
  *
  * On any INSERT/UPDATE/DELETE to a file's job row we invoke each listener; the
- * caller invalidates its React Query so the canonical `/files/{id}/rag-status`
+ * caller invalidates its React Query so the canonical `/files/{id}/knowledge-status`
  * contract (which merges the job row with the `processed_documents` anchor) is
  * re-read exactly once per real transition instead of on a timer.
  */

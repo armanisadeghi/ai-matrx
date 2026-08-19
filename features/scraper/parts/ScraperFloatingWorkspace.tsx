@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
-import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   useScraperApi,
@@ -472,7 +472,7 @@ export function ScraperFloatingWorkspace({
       {showScrapeMain && selectedScraped && (
         // Scraped pages don't have a row id in any FE table — the page URL
         // is the canonical key the scraper feature already uses, so it
-        // doubles as `source_id` for the RAG ingest (the matching
+        // doubles as `source_id` for the Knowledge ingest (the matching
         // citationHrefFor("scraped") route reverses this with ?url=…).
         <ProcessForRagButton
           sourceKind="scraped"
@@ -480,10 +480,10 @@ export function ScraperFloatingWorkspace({
           iconOnly
           force
           onComplete={() => {
-            toast.success("Page indexed for RAG", {
+            toast.success("Page indexed for Knowledge", {
               action: {
                 label: "View in library",
-                onClick: () => router.push("/rag/library"),
+                onClick: () => router.push("/knowledge/library"),
               },
             });
           }}

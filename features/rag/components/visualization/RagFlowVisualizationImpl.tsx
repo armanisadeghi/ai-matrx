@@ -11,7 +11,7 @@
  *   ------------------------             -----------------------
  *   User task                            User file
  *      ↓ scan keywords                      ↓ upload
- *   RAG-likely?                          Cloud file
+ *   Knowledge-likely?                          Cloud file
  *      ↓ inject tool                        ↓ extract
  *   Agent system                         Raw text
  *      ↓ call tool                          ↓ clean
@@ -55,7 +55,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { Pause, Play, RotateCcw, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RagFlowVisualizationProps } from "./RagFlowVisualization";
@@ -276,7 +276,7 @@ const NODE_SPECS: NodeSpec[] = [
     pipeline: {
       variant: "read",
       icon: ScanText,
-      title: "RAG-likely?",
+      title: "Knowledge-likely?",
       subtitle: "classifier",
     },
   },

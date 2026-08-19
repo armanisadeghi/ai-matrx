@@ -1,4 +1,4 @@
-import type { RagSearchHit } from "@/features/rag/api/search";
+import type { RagSearchHit } from "@/features/knowledge/api/search";
 
 const MAX_REVIEW_PAGES = 12;
 

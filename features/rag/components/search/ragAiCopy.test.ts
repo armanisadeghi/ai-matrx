@@ -4,8 +4,8 @@ import {
   createRagAiCopyBundle,
   identifiersOnlyRagAiCopyOptions,
   withRagAiSections,
-} from "@/features/rag/components/search/ragAiCopy";
-import type { RagHitView } from "@/features/rag/components/hit-card/types";
+} from "@/features/knowledge/components/search/ragAiCopy";
+import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
 
 const VIEW: RagHitView = {
   sourceKind: "cld_file",
@@ -32,7 +32,7 @@ const VIEW: RagHitView = {
   libraryProvenance: null,
 };
 
-describe("RAG Copy for AI payload", () => {
+describe("Knowledge Copy for AI payload", () => {
   it("always preserves true source and retrieval identifiers", () => {
     const bundle = createRagAiCopyBundle(
       VIEW,

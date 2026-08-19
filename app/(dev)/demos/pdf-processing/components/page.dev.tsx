@@ -9,7 +9,7 @@
  *   Preview   → PdfPreview → PdfDocumentRenderer (features/pdf viewer)
  *   Edit      → PdfEditTab (canvas view/select/draw + Pages, Doc Ops,
  *               Notes, Findings, Redact, Search panels)
- *   Knowledge → DocumentTab (RAG index status, pages, chunks, search)
+ *   Knowledge → DocumentTab (Knowledge index status, pages, chunks, search)
  *   Analysis  → AnalysisTab (detector sections + Knowledge/NER panel)
  *   Share     → FileShareTab · Info → FileInfoTab
  *   Switcher  → PdfSurfaceSwitcher · Presets → PdfPresetPicker
@@ -27,7 +27,7 @@ import { supabase } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { PdfPresetPicker } from "@/features/pdf/components/PdfPresetPicker";
-import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
+import { FileKnowledgePanel } from "@/features/knowledge/components/files/FileKnowledgePanel";
 import PdfPreview from "@/features/pdf/components/viewer/PdfPreview";
 import { PdfEditTab } from "@/features/files/components/surfaces/single-file/PdfEditTab";
 import { DocumentTab } from "@/features/files/components/surfaces/DocumentTab";
@@ -181,7 +181,7 @@ export default function PdfComponentsBenchPage() {
           </Section>
 
           <Section
-            title="Knowledge (RAG index)"
+            title="Knowledge (Knowledge index)"
             hint="DocumentTab — ingest CTA / pages / cleaned text / chunks / search"
             tall
           >

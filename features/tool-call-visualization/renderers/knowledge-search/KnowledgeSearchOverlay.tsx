@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
-import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
 
 /**
  * Overlay renderer for `knowledge_search` — every source for the query, full list, as

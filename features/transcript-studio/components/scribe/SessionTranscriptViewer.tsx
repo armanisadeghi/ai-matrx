@@ -46,7 +46,7 @@ export function SessionTranscriptViewer({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   // Timestamped (`[m:ss] text`) — the single standard for the transcript display
-  // + copy. Plain selectors stay for machine consumers (agent context, RAG).
+  // + copy. Plain selectors stay for machine consumers (agent context, Knowledge).
   const rawText = useAppSelector(selectSessionRawTimestamped(sessionId));
   const cleanText = useAppSelector(selectSessionCleanedTimestamped(sessionId));
   const [refreshing, setRefreshing] = useState(false);

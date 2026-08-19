@@ -143,7 +143,7 @@ export const APP_META: Record<string, SourceMeta> = {
   chat: { label: "Chat (legacy app)", icon: MessageSquare },
   "matrx-scheduler": { label: "Scheduler", icon: CalendarClock, system: true },
   // Rows the Python brain writes directly (podcast pipeline, canon bench,
-  // page extraction, RAG expansion, …) — all programmatic, never user chats.
+  // page extraction, Knowledge expansion, …) — all programmatic, never user chats.
   aidream: { label: "Aidream Server", icon: Server, system: true },
   // Server-side MCP agent-service executions — programmatic.
   "mcp-agent-service": {
@@ -210,7 +210,7 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "mermaid-workbench": { label: "Diagram Workbench", icon: PencilRuler },
   "ai-results": { label: "AI Results", icon: FileOutput },
   "content-extractor": { label: "Content Extractor", icon: FileText },
-  "rag-search": { label: "RAG Search", icon: Globe },
+  "rag-search": { label: "Knowledge Search", icon: Globe },
   udt: { label: "Data Tables", icon: Boxes },
   "tool-call-visualization": {
     label: "Tool UI Generator",

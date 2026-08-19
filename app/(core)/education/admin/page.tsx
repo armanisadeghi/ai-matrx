@@ -281,7 +281,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/notes",
       label: "Smart Notes",
       description:
-        "App tool — LIVE (P4). List-first home over the student's platform notes; New → creates a note. A THIN education skin over features/notes (canonical editor, autosave, sharing, RAG) — no forked note store.",
+        "App tool — LIVE (P4). List-first home over the student's platform notes; New → creates a note. A THIN education skin over features/notes (canonical editor, autosave, sharing, Knowledge) — no forked note store.",
       filePath: "app/(core)/education/notes/page.tsx",
       status: "Live",
       notes: [
@@ -759,9 +759,9 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
         "Funnel markers (AccessTierBadge) are display-only; enforcement is the forked Entitlements & Billing system.",
     },
     {
-      name: "RAG",
+      name: "Knowledge",
       description:
-        "The AI Tutor will ground answers in the student's materials via the RAG system.",
+        "The AI Tutor will ground answers in the student's materials via the Knowledge system.",
     },
   ],
 };

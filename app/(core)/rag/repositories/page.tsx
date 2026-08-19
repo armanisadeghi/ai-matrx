@@ -1,8 +1,8 @@
 /**
- * /rag/repositories — code repositories you can index for RAG.
+ * /knowledge/repositories — code repositories you can index for Knowledge.
  */
 
-import { RepositoriesPage } from "@/features/rag/components/RepositoriesPage";
+import { RepositoriesPage } from "@/features/knowledge/components/RepositoriesPage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

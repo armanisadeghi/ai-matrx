@@ -2,7 +2,7 @@
 //
 // The app-global "Hey, we found something new you might like" nudge. Mounted
 // once near the root (DeferredSingletons) so it fires no matter what route the
-// user is on — they could be checking messages while an overnight RAG/NER batch
+// user is on — they could be checking messages while an overnight Knowledge/NER batch
 // quietly produced suggestions for their org/scopes.
 //
 // Two dismissal tiers, by design:

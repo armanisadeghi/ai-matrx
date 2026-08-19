@@ -71,7 +71,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Data stores",
     status: "Live",
-    href: "/rag/data-stores",
+    href: "/knowledge/data-stores",
     items: [
       "Create + manage",
       "Cloud + repo sync",
@@ -82,7 +82,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Search",
     status: "Live",
-    href: "/rag/search",
+    href: "/knowledge/search",
     items: [
       "Hybrid retrieval",
       "Per-store filtering",
@@ -93,7 +93,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Document library",
     status: "Live",
-    href: "/rag/library",
+    href: "/knowledge/library",
     items: [
       "Every doc you've added",
       "Filter + sort",
@@ -104,7 +104,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Repositories",
     status: "Live",
-    href: "/rag/repositories",
+    href: "/knowledge/repositories",
     items: [
       "Index your code",
       "Symbol-aware search",
@@ -125,7 +125,7 @@ export default function KnowledgeLanding() {
       description="Group your docs, code, and reference material into named data stores. Agents query the right store for the right job, cite every source, and stay scoped to who's allowed to see what."
       primaryCtaHref="/sign-up?source=knowledge-landing"
       primaryCtaLabel="Build Your Knowledge Base Free"
-      workspaceHref="/rag/data-stores"
+      workspaceHref="/knowledge/data-stores"
       workspaceLabel="Knowledge"
       capabilitiesHeading="More than file upload + hope"
       capabilitiesDescription="Five capabilities that make retrieval actually work — typed stores, hybrid search, citations, scopes, freshness."

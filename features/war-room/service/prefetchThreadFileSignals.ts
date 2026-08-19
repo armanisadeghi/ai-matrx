@@ -5,7 +5,7 @@
  * builder stamps onto a thread's `<files>` manifest:
  *   1. EXTRACTION presence → reuse the canonical `prefetchRagStatusesForFiles`
  *      thunk (fills `cloudFiles.ragStatus`, which `buildThreadFiles` reads).
- *   2. RAG SEARCHABLE state → `fetchFileRagStatus` per file (state==='completed')
+ *   2. Knowledge SEARCHABLE state → `fetchFileRagStatus` per file (state==='completed')
  *      into the module cache (`threadFileRagCache`) the builder reads.
  *
  * The builder is sync (reads Redux + the cache), so this runs on panel mount to
@@ -14,13 +14,13 @@
  * the searchable probes land it invokes `onResolved` so the caller can bump the
  * context builder's identity and re-push with the now-known flags.
  *
- * Reuses existing fetch paths only (`features/files` + `features/rag/api`) — no
+ * Reuses existing fetch paths only (`features/files` + `features/knowledge/api`) — no
  * new endpoint, no `features/files/handler` internals.
  */
 
 import type { AppDispatch } from "@/lib/redux/store";
-import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
-import { fetchFileRagStatus } from "@/features/rag/api/rag-jobs";
+import { prefetchRagStatusesForFiles } from "@/features/files/redux/knowledge-thunks";
+import { fetchFileRagStatus } from "@/features/knowledge/api/knowledge-jobs";
 import {
   hasThreadFileRagProbe,
   setThreadFileRagIndexed,
@@ -49,7 +49,7 @@ export async function prefetchThreadFileSignals(
   // 1. Extraction presence — the canonical batched thunk (de-dups internally).
   void dispatch(prefetchRagStatusesForFiles({ fileIds: ids, force: false }));
 
-  // 2. RAG searchable state — probe only ids we haven't already cached.
+  // 2. Knowledge searchable state — probe only ids we haven't already cached.
   const toProbe = ids.filter((id) => !hasThreadFileRagProbe(id));
   if (toProbe.length === 0) {
     onResolved?.();

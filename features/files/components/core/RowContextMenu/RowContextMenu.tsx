@@ -4,7 +4,7 @@
  * Right-click menus for file and folder rows — consolidated onto the ONE
  * universal context menu (v3). The file-manager actions (preview, download,
  * cut/copy/paste of the file object, rename, move, duplicate, PDF surfaces,
- * RAG, delete) ride in as `extraSections`; everything else (Copy text, AI
+ * Knowledge, delete) ride in as `extraSections`; everything else (Copy text, AI
  * actions, surface-bound + default agents, Attach To / Share for files,
  * Quick Actions, admin tools) is the standard menu. The "..." dropdown menu
  * remains the full-parity action list; this stays the fast subset.
@@ -400,7 +400,7 @@ export function FileRowContextMenu({
       {
         kind: "item",
         id: "file-reprocess",
-        label: "Reprocess for RAG",
+        label: "Reprocess for Knowledge",
         icon: Stars,
         onSelect: handleReprocess,
       },

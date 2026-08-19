@@ -1,7 +1,7 @@
 /**
- * features/rag/components/FileRagStatusChip.tsx
+ * features/knowledge/components/FileRagStatusChip.tsx
  *
- * Compact RAG-lifecycle chip for a file, with optional inline actions.
+ * Compact Knowledge-lifecycle chip for a file, with optional inline actions.
  * Visual language matches RagStatusCell (Lightbulb / Loader2, muted dots).
  *
  *   none / not_scheduled → muted "Not processed"
@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 import {
   useFileRagActions,
   useFileRagStatus,
-} from "@/features/rag/hooks/useFileRagStatus";
-import type { FileRagState } from "@/features/rag/api/rag-jobs";
+} from "@/features/knowledge/hooks/useFileRagStatus";
+import type { FileRagState } from "@/features/knowledge/api/knowledge-jobs";
 
 export interface FileRagStatusChipProps {
   fileId: string | null;
@@ -82,7 +82,7 @@ function StateChip({
       return (
         <span
           className={cn(PILL, "bg-destructive/10 text-destructive")}
-          title={errorMessage ?? "RAG processing failed"}
+          title={errorMessage ?? "Knowledge processing failed"}
         >
           Failed
         </span>

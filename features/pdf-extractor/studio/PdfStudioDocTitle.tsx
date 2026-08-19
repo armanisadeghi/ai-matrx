@@ -39,7 +39,7 @@ export interface PdfStudioDocTitleProps {
   /** Live find-in-document — drives the same `findQuery` highlight the
    *  Cmd+F find bar uses (raw + cleaned panes). */
   onFindQueryChange?: (query: string) => void;
-  /** Enter in the pill's search — runs the RAG in-document search (ranked
+  /** Enter in the pill's search — runs the Knowledge in-document search (ranked
    *  segment hits land in the Segments pane). */
   onFindSubmit?: (query: string) => void;
 }

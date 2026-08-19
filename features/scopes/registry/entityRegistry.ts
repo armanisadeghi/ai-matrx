@@ -78,7 +78,7 @@ import {
   isEntityTypeToken,
   type EntityTypeToken,
 } from "@/types/generated/entity-types.generated";
-import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
+import { listDataStoreCandidates } from "@/features/knowledge/service/dataStoreCandidates";
 
 /**
  * The universal ownership column post-2026-reorg. Every first-class entity
@@ -293,7 +293,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Workbooks",
     hrefFor: (id) => `/workbooks/${id}`,
   },
-  // RAG knowledge store — the scope-gate for knowledge_search retrieval.
+  // Knowledge knowledge store — the scope-gate for knowledge_search retrieval.
   // Although the DB registry owns title_column='name', `rag.*` is not
   // PostgREST-exposed, so candidates list through the registered source.
   // Edges MUST stamp `label` = store name at attach time — titles can't be
@@ -329,10 +329,10 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   code_repository: {
     Icon: GitBranch,
     labelPlural: "Code Repositories",
-    // `/rag/repositories` is the ONLY surface over code.code_repositories —
+    // `/knowledge/repositories` is the ONLY surface over code.code_repositories —
     // /code's Source Control view is git-on-the-sandbox, a different thing.
     // `?repo=` highlights the row and scrolls it into view.
-    hrefFor: (id) => `/rag/repositories?repo=${encodeURIComponent(id)}`,
+    hrefFor: (id) => `/knowledge/repositories?repo=${encodeURIComponent(id)}`,
   },
 
   // ─── Outputs ────────────────────────────────────────────────────────────--
@@ -636,7 +636,7 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
  * Domain vocabularies that name a registered entity by a DIFFERENT string.
  *
  * A `kind` column written by another system is not automatically a canonical
- * token. The RAG/ingest pipeline (aidream) stamps `source_kind='cld_file'` on
+ * token. The Knowledge/ingest pipeline (aidream) stamps `source_kind='cld_file'` on
  * `rag.kg_chunks` and `public.auto_ingest_batch` — the legacy name of the table
  * now called `files.files`, which IS the registry's `file`: same row, same id,
  * same `/files/f/{id}` route, same peek. A surface that hands the raw string to

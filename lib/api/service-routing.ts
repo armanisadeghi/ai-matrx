@@ -2,7 +2,7 @@
  * Route ownership at the Python API boundary.
  *
  * The standalone matrx-files service intentionally owns only the routes
- * listed here. Broader file-adjacent APIs such as `/files/{id}/ingest`, RAG,
+ * listed here. Broader file-adjacent APIs such as `/files/{id}/ingest`, Knowledge,
  * annotations, and media processing still belong to aidream and must not be
  * moved merely because their path starts with `/files`.
  */

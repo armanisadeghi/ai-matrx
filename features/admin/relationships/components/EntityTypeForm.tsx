@@ -242,7 +242,7 @@ export function EntityTypeForm({
             ["Scopeable by default", "defaultScopeable", "Can be tagged into scopes (context assignment)."],
             ["Members can add", "defaultMembersCanAdd", "Org members may create instances by default."],
             ["Needs approval", "defaultNeedsApproval", "New instances require approval by default."],
-            ["Auto ingest", "defaultAutoIngest", "New instances auto-ingest into RAG by default."],
+            ["Auto ingest", "defaultAutoIngest", "New instances auto-ingest into Knowledge by default."],
           ] as const
         ).map(([flagLabel, key, hint]) => (
           <div key={key} className="flex items-center justify-between">

@@ -1,7 +1,7 @@
 /**
  * utils/supabase/ragDb.ts
  *
- * RAG tables (`data_stores`, `data_store_members`, `data_store_grants`,
+ * Knowledge tables (`data_stores`, `data_store_members`, `data_store_grants`,
  * `library_docs`, ...) live in the dedicated `rag` Postgres schema.
  * supabase-js reaches a non-public schema via `.schema()`.
  *

@@ -21,7 +21,7 @@ import { Loader2, Search as SearchIcon, ExternalLink } from "lucide-react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 
 // Search hit — DERIVED from the generated contract (never hand-mirrored).
 type ApiHit = components["schemas"]["LibraryTestSearchHit"];
@@ -68,7 +68,7 @@ export function QuickSearchDialog({
     try {
       const organizationId = await ensureOrgId(undefined);
       const { data } = await apiPost(
-        buildPath("/rag/library/{processed_document_id}/test-search", {
+        buildPath("/knowledge/library/{processed_document_id}/test-search", {
           processed_document_id: processedDocumentId,
         }),
         {
@@ -173,7 +173,7 @@ export function QuickSearchDialog({
                     h.page_numbers &&
                     h.page_numbers.length > 0 && (
                       <a
-                        href={`/rag/library/${processedDocumentId}/preview?page=${h.page_numbers[0]}`}
+                        href={`/knowledge/library/${processedDocumentId}/preview?page=${h.page_numbers[0]}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="ml-auto inline-flex items-center gap-1 text-primary text-[11px] hover:underline"

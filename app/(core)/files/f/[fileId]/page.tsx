@@ -43,7 +43,7 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
 
   // No direct file access — but this may be a processed library document the
   // user can read read-only via a Shared-Knowledge grant (org/industry/global),
-  // which is exactly the content RAG search already surfaced to them. Rather
+  // which is exactly the content Knowledge search already surfaced to them. Rather
   // than dead-end at 404, resolve the readable processed doc and send them to
   // the canonical read-only viewer. The RPC (and the viewer's own endpoints)
   // enforce `can_read_library_document` server-side, so a non-entitled user
@@ -54,7 +54,7 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
       { p_file: fileId },
     );
     if (typeof docId === "string" && docId) {
-      redirect(`/rag/viewer/${docId}`);
+      redirect(`/knowledge/viewer/${docId}`);
     }
   }
 

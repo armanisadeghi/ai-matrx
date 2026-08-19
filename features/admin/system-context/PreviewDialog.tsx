@@ -53,7 +53,7 @@ export function PreviewDialog({ onClose }: { onClose: () => void }) {
             selected, straight from{" "}
             <code className="text-xs">resolve_full_context</code>. Ambient
             values compute fresh per request; dataset feeds arrive as pointers
-            agents query with the RAG tools.
+            agents query with the Knowledge tools.
           </DialogDescription>
         </DialogHeader>
 

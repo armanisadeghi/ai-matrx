@@ -21,7 +21,7 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
   slug: "pdf",
   baseUrl: "/tools/pdf-extractor",
   description:
-    "The document domain: viewing, extraction, AI cleaning, page ops, layout analysis, redaction, phone scanning, and derivative lineage. One canonical home (features/pdf/) — the Extractor Studio, Analysis Studio, phone scanner, file-viewer tabs, RAG Source Inspector, and demo pages are all surfaces composing the same parts, cross-linked via PdfSurfaceSwitcher. All /utilities/pdf/* and /images/* endpoints below live on the Python backend (server.app.matrxserver.com), not Next.js routes; the FE contract is ENDPOINTS.pdf in lib/api/endpoints.ts, transported by usePdfClient.",
+    "The document domain: viewing, extraction, AI cleaning, page ops, layout analysis, redaction, phone scanning, and derivative lineage. One canonical home (features/pdf/) — the Extractor Studio, Analysis Studio, phone scanner, file-viewer tabs, Knowledge Source Inspector, and demo pages are all surfaces composing the same parts, cross-linked via PdfSurfaceSwitcher. All /utilities/pdf/* and /images/* endpoints below live on the Python backend (server.app.matrxserver.com), not Next.js routes; the FE contract is ENDPOINTS.pdf in lib/api/endpoints.ts, transported by usePdfClient.",
   docs: [
     { label: "PDF FEATURE.md", href: "/features/pdf/FEATURE.md" },
     { label: "Extractor API.md", href: "/features/pdf-extractor/API.md" },
@@ -96,7 +96,7 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "sourceInspectorWindow",
       description:
-        "RAG-owned citation surface (features/rag/components/source-inspector/) — renders PdfPreview at the cited page beside the page's extraction + matched chunk. Composes PDF parts, never forks them.",
+        "Knowledge-owned citation surface (features/knowledge/components/source-inspector/) — renders PdfPreview at the cited page beside the page's extraction + matched chunk. Composes PDF parts, never forks them.",
     },
   ],
 
@@ -159,7 +159,7 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
       name: "PdfSurfaceSwitcher + surfaces registry",
       filePath: "features/pdf/components/PdfSurfaceSwitcher.tsx",
       description:
-        "Jump between surfaces (file viewer / Analysis Studio / extractor / RAG library). Add a surface = one entry in surfaces/registry.ts; every menu updates.",
+        "Jump between surfaces (file viewer / Analysis Studio / extractor / Knowledge library). Add a surface = one entry in surfaces/registry.ts; every menu updates.",
       status: "Live",
       tier: "internal",
     },
@@ -696,7 +696,7 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
         "cld_files owns the physical PDFs; uploads go through fileHandler; the viewer + Analysis Studio live on the /files/f/ route tree.",
     },
     {
-      name: "RAG / Knowledge",
+      name: "Knowledge / Knowledge",
       description:
         "Extracted pages feed chunking + data stores; the Source Inspector and rag-library surface land on cited pages via the bridge.",
     },

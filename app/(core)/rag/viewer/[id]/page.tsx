@@ -1,8 +1,8 @@
 /**
- * /rag/viewer/[id] — full-page document preview.
+ * /knowledge/viewer/[id] — full-page document preview.
  *
  * Citation deep links use search params:
- *   /rag/viewer/<processed_document_id>?page=12&chunk=<chunk_id>
+ *   /knowledge/viewer/<processed_document_id>?page=12&chunk=<chunk_id>
  *
  * Implementation note:
  *   The legacy 4-pane `<DocumentViewer/>` (PDF + raw + cleaned + chunks)
@@ -10,7 +10,7 @@
  *   `/api/document/*` endpoints — any one of which can return 404 and
  *   leave the user staring at a broken page. The Files Document tab
  *   already routes around this by mounting `<LibraryPreviewPage/>`
- *   (which talks to the reliable `/rag/library/*` endpoints). We do the
+ *   (which talks to the reliable `/knowledge/library/*` endpoints). We do the
  *   same here so this standalone route never breaks for documents that
  *   render perfectly inside the file preview.
  *
@@ -21,7 +21,7 @@
  */
 
 import { notFound } from "next/navigation";
-import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
+import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
 
 interface RagViewerPageProps {
   params: Promise<{ id: string }>;

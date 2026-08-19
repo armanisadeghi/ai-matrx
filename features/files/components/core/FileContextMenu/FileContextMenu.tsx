@@ -342,7 +342,7 @@ export function FileContextMenu({
     [openInPreview],
   );
 
-  // "Reprocess for RAG" — kicks off `/rag/ingest` and pops the user
+  // "Reprocess for Knowledge" — kicks off `/knowledge/ingest` and pops the user
   // into the Document tab so they see the streaming progress UI. This
   // is also the single entry point that flips a never-ingested file
   // from the absent state to the live viewer.
@@ -357,7 +357,7 @@ export function FileContextMenu({
     }
   }, [fileId, openInPreview]);
 
-  // "Reprocess N for RAG" — bulk variant. Fires the same per-file
+  // "Reprocess N for Knowledge" — bulk variant. Fires the same per-file
   // event the single-file path uses, but in series with progress
   // toasts. Serial (not parallel) so we don't blow the matrx-orm
   // pool — that's what the dev server saw on the bulk-ingest script.
@@ -371,7 +371,7 @@ export function FileContextMenu({
     const { toastDoor } = await import(
       "@/components/official/entity-ref/toastDoor"
     );
-    const tid = toast.loading(`Reprocessing ${ids.length} files for RAG…`, {
+    const tid = toast.loading(`Reprocessing ${ids.length} files for Knowledge…`, {
       description: "Running serially to avoid pool saturation.",
     });
     let done = 0;
@@ -388,7 +388,7 @@ export function FileContextMenu({
         await new Promise<void>((r) => setTimeout(r, 300));
         done += 1;
         toast.loading(
-          `Reprocessing for RAG: ${done} / ${ids.length} dispatched`,
+          `Reprocessing for Knowledge: ${done} / ${ids.length} dispatched`,
           { id: tid },
         );
       } catch (err) {
@@ -401,15 +401,15 @@ export function FileContextMenu({
         });
       }
     }
-    toast.success(`${done} of ${ids.length} files queued for RAG ingestion`, {
+    toast.success(`${done} of ${ids.length} files queued for Knowledge ingestion`, {
       id: tid,
       description:
         "Watch the per-file Document tab for progress. Reload the file list when done to see the new viewer links.",
     });
   }, [batchFileIds, fileId]);
 
-  // "Open in 4-pane RAG viewer" — looks up the processed_documents row
-  // anchored to this cld_files id and opens /rag/viewer/{id}. If the
+  // "Open in 4-pane Knowledge viewer" — looks up the processed_documents row
+  // anchored to this cld_files id and opens /knowledge/viewer/{id}. If the
   // file has never been processed, shows a toast with a hint.
   const handleOpenRagViewer = useCallback(async () => {
     try {
@@ -419,12 +419,12 @@ export function FileContextMenu({
         found: boolean;
       }>(`/api/document/by-cld-file/${encodeURIComponent(fileId)}`);
       if (data.found && data.document_id) {
-        window.open(`/rag/viewer/${data.document_id}`, "_blank", "noopener");
+        window.open(`/knowledge/viewer/${data.document_id}`, "_blank", "noopener");
       } else {
         const { toast } = await import("@/lib/toast");
-        toast.info("Not yet processed for RAG", {
+        toast.info("Not yet processed for Knowledge", {
           description:
-            'Run "Reprocess for RAG" first — the 4-pane viewer needs the per-page extraction.',
+            'Run "Reprocess for Knowledge" first — the 4-pane viewer needs the per-page extraction.',
         });
       }
     } catch (err) {
@@ -438,21 +438,21 @@ export function FileContextMenu({
   // "Knowledge assets" — open the library preview with the Knowledge Asset
   // Builder drawer already open (?assets=1). Resolves the processed document
   // via the canonical bridge (direct supabase-js, no Python hop); unprocessed
-  // files get the same hint as the RAG viewer.
+  // files get the same hint as the Knowledge viewer.
   const handleOpenKnowledgeAssets = useCallback(async () => {
     try {
       const ids = await resolvePdfSurfaceIds({ fileId });
       if (ids.processedDocumentId) {
         window.open(
-          `/rag/library/${ids.processedDocumentId}/preview?assets=1`,
+          `/knowledge/library/${ids.processedDocumentId}/preview?assets=1`,
           "_blank",
           "noopener",
         );
       } else {
         const { toast } = await import("@/lib/toast");
-        toast.info("Not yet processed for RAG", {
+        toast.info("Not yet processed for Knowledge", {
           description:
-            'Run "Reprocess for RAG" first — knowledge assets build on the extraction.',
+            'Run "Reprocess for Knowledge" first — knowledge assets build on the extraction.',
         });
       }
     } catch (err) {
@@ -529,7 +529,7 @@ export function FileContextMenu({
                 disabled={busy !== null}
               >
                 <RotateCw className="mr-2 h-4 w-4" />
-                Reprocess {batchFileIds.length} for RAG
+                Reprocess {batchFileIds.length} for Knowledge
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -696,11 +696,11 @@ export function FileContextMenu({
                     <DropdownMenuSeparator />
                   ) : null}
                   {/*
-                   * RAG / processed-document actions. Open the Document tab
+                   * Knowledge / processed-document actions. Open the Document tab
                    * (4-pane viewer of pages, cleaned text, chunks, lineage)
-                   * or kick off `/rag/ingest` to (re-)process. The Document
+                   * or kick off `/knowledge/ingest` to (re-)process. The Document
                    * tab itself lazy-loads its viewer; clicking these from a
-                   * never-ingested file flips into the "Process for RAG"
+                   * never-ingested file flips into the "Process for Knowledge"
                    * CTA without an extra click.
                    */}
                   <DropdownMenuItem onClick={handleShowDocument}>
@@ -709,11 +709,11 @@ export function FileContextMenu({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => void handleOpenRagViewer()}>
                     <FileSearch className="mr-2 h-4 w-4" />
-                    Advanced RAG viewer
+                    Advanced Knowledge viewer
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleReprocess}>
                     <RotateCw className="mr-2 h-4 w-4" />
-                    Reprocess for RAG
+                    Reprocess for Knowledge
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => void handleOpenKnowledgeAssets()}
@@ -723,7 +723,7 @@ export function FileContextMenu({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
-                      window.open("/rag/search", "_blank", "noopener")
+                      window.open("/knowledge/search", "_blank", "noopener")
                     }
                   >
                     <Telescope className="mr-2 h-4 w-4" />

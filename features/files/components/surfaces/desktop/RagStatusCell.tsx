@@ -1,8 +1,8 @@
 /**
  * features/files/components/surfaces/desktop/RagStatusCell.tsx
  *
- * Compact "RAG" cell rendered inside the file table when the user
- * enables the RAG-status column. Reads `cloudFiles.ragStatus.byFileId`
+ * Compact "Knowledge" cell rendered inside the file table when the user
+ * enables the Knowledge-status column. Reads `cloudFiles.ragStatus.byFileId`
  * — the column header (or column-settings) is responsible for kicking
  * off the prefetch thunk; this cell is purely presentational.
  *
@@ -32,7 +32,7 @@ export function RagStatusCell({ fileId, className }: RagStatusCellProps) {
     return (
       <span
         className={cn("text-xs text-muted-foreground/60", className)}
-        title="RAG status not yet checked — toggle the column on or click Refresh."
+        title="Knowledge status not yet checked — toggle the column on or click Refresh."
       >
         —
       </span>
@@ -46,7 +46,7 @@ export function RagStatusCell({ fileId, className }: RagStatusCellProps) {
           "inline-flex items-center gap-1 text-xs text-muted-foreground",
           className,
         )}
-        title="Checking RAG indexing status…"
+        title="Checking Knowledge indexing status…"
       >
         <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
         Checking…
@@ -61,7 +61,7 @@ export function RagStatusCell({ fileId, className }: RagStatusCellProps) {
           "inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary",
           className,
         )}
-        title="Indexed for RAG search"
+        title="Indexed for Knowledge search"
       >
         <Lightbulb className="h-3 w-3" aria-hidden="true" />
         Indexed
@@ -76,7 +76,7 @@ export function RagStatusCell({ fileId, className }: RagStatusCellProps) {
         "inline-flex items-center gap-1 text-xs text-muted-foreground",
         className,
       )}
-      title="File has not been ingested for RAG yet."
+      title="File has not been ingested for Knowledge yet."
     >
       <span
         aria-hidden="true"

@@ -2,7 +2,7 @@
  * Document Evidence System activation for code-first UI surfaces.
  *
  * A surface that already knows a `processed_document_id` should never rely on
- * an agent-specific variable mapping to make the document's clean/raw/page/RAG
+ * an agent-specific variable mapping to make the document's clean/raw/page/Knowledge
  * representations available. This resolver turns manifest `evidenceSources`
  * into the canonical source-only context shape consumed by aidream's
  * `ProcessedDocumentResolver`.

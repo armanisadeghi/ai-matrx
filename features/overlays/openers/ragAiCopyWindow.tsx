@@ -6,7 +6,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type {
   RagAiCopyBundle,
   RagAiSectionKey,
-} from "@/features/rag/components/search/ragAiCopy";
+} from "@/features/knowledge/components/search/ragAiCopy";
 
 const OVERLAY_ID = "ragAiCopyWindow" as const;
 

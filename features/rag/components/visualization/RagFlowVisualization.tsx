@@ -1,6 +1,6 @@
 "use client";
 
-// Front-door dynamic gate for the RAG flow visualization (Method B — see the
+// Front-door dynamic gate for the Knowledge flow visualization (Method B — see the
 // code-splitting skill). React Flow (@xyflow/react) is heavy and browser-only;
 // everything under RagFlowVisualizationImpl (nodes/, edges/) stays STATIC
 // inside this one boundary. Never import the Impl directly.

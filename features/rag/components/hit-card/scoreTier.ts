@@ -1,12 +1,12 @@
 /**
- * Map a RAG relevance score to a color tier. The score is a fused hybrid score
+ * Map a Knowledge relevance score to a color tier. The score is a fused hybrid score
  * (vector + lexical, optionally re-ranked) — for cosine / cross-encoder
  * rerankers it usually lives in the 0–1 band and rarely clears 0.6, so the
- * thresholds are tuned LOW on purpose: a "strong" RAG hit is ~0.45+, not the
+ * thresholds are tuned LOW on purpose: a "strong" Knowledge hit is ~0.45+, not the
  * ~0.8 you'd expect from a normalized probability.
  *
- * One source of truth for the score → color language so every RAG surface
- * (knowledge_search tool card, /rag/search, the omnibox) speaks it identically.
+ * One source of truth for the score → color language so every Knowledge surface
+ * (knowledge_search tool card, /knowledge/search, the omnibox) speaks it identically.
  * Returns Tailwind class fragments that are light/dark safe.
  */
 
@@ -46,7 +46,7 @@ const WEAK: RelevanceTier = {
   text: "text-slate-600 dark:text-slate-300",
 };
 
-/** Absolute-quality tier for a hybrid RAG score. */
+/** Absolute-quality tier for a hybrid Knowledge score. */
 export function scoreTier(score: number): RelevanceTier {
   if (score >= 0.45) return STRONG;
   if (score >= 0.28) return MODERATE;

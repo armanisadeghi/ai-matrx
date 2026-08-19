@@ -1,12 +1,12 @@
 /**
  * features/files/components/surfaces/desktop/RagFilterPicker.tsx
  *
- * Multi-select dropdown body for the RAG-status column header. Shows
+ * Multi-select dropdown body for the Knowledge-status column header. Shows
  * one row per status — Indexed / Not indexed / Checking / Unknown —
  * with the live count from the current dataset. The header includes a
  * "Refresh" button that re-runs the prefetch thunk for every visible
  * file id (force=true), which is how users invalidate stale answers
- * after a `/rag/ingest` they did from another surface.
+ * after a `/knowledge/ingest` they did from another surface.
  *
  * State lives in `cloudFiles.ui.columnFilters.rag`. This component is
  * presentational; the host wires `value`/`onChange` and the refresh
@@ -125,7 +125,7 @@ export function RagFilterPicker({
                 e.stopPropagation();
                 onRefresh();
               }}
-              title="Re-fetch RAG status for the current view"
+              title="Re-fetch Knowledge status for the current view"
               className={cn(
                 "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium",
                 "text-muted-foreground hover:bg-accent hover:text-foreground",

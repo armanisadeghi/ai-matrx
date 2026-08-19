@@ -40,7 +40,7 @@ const CAPABILITIES: ModuleCapability[] = [
   },
   {
     icon: Layers,
-    title: "Batch + RAG-ready",
+    title: "Batch + Knowledge-ready",
     description:
       "Drop a folder of PDFs, get a structured corpus back. Feed straight into a knowledge data store for retrieval at scale.",
   },
@@ -63,7 +63,7 @@ const STEPS: ModuleStep[] = [
     number: "03",
     title: "Push into the rest of the platform",
     description:
-      "Send to a knowledge store for RAG, to a data table for analysis, to a chat for inspection, or download as JSON / CSV.",
+      "Send to a knowledge store for Knowledge, to a data table for analysis, to a chat for inspection, or download as JSON / CSV.",
   },
 ];
 
@@ -80,7 +80,7 @@ const SUB_AREAS: ModuleSubArea[] = [
     items: ["Folder upload", "Background workers", "Per-file status", "Bulk export"],
   },
   {
-    title: "RAG ingest",
+    title: "Knowledge ingest",
     status: "Live",
     items: ["Push to data store", "Auto-chunking", "Citation anchors", "Re-index on update"],
   },
@@ -110,7 +110,7 @@ export default function PdfExtractorLanding() {
       stepsDescription="From a stack of PDFs to a queryable knowledge base in three steps."
       steps={STEPS}
       subAreasHeading="Extractor surfaces"
-      subAreasDescription="Single-file, batch, RAG ingest, tables — every PDF flow under one roof."
+      subAreasDescription="Single-file, batch, Knowledge ingest, tables — every PDF flow under one roof."
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop wrestling with PDFs"
       finalCtaDescription="Extract structure, not just text. Cite by page, query by content. Free to start, no credit card."

@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * /rag — Knowledge home.
+ * /knowledge — Knowledge home.
  *
- * Landing page for the RAG / Knowledge area. The user said there was
+ * Landing page for the Knowledge / Knowledge area. The user said there was
  * no landing here, so this is the canonical entry point: a clean
  * dashboard that surfaces the live state across data stores, the
  * processed-document library, and search.
  *
- * Pulls from /rag/library/summary/totals (already-implemented endpoint)
+ * Pulls from /knowledge/library/summary/totals (already-implemented endpoint)
  * so users see "is anything happening?" without clicking through.
  */
 
@@ -26,12 +26,12 @@ import {
   Binary,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
-import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
-import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
-import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { useLibrarySummary } from "@/features/knowledge/hooks/useLibrary";
+import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
+import { LibraryCatalogPane } from "@/features/knowledge/components/data-stores/LibraryCatalogPane";
+import { EntitlementChip } from "@/features/knowledge/components/library-catalog/EntitlementChip";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();
@@ -69,7 +69,7 @@ export function RagHomePage() {
                 {entitledLibraries.map((it) => (
                   <Link
                     key={it.id}
-                    href={`/rag/library-catalog?store_id=${it.id}`}
+                    href={`/knowledge/library-catalog?store_id=${it.id}`}
                     className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-primary/50"
                   >
                     <FileText className="h-4 w-4 shrink-0 text-primary" />
@@ -95,7 +95,7 @@ export function RagHomePage() {
               <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
                 <strong>Could not load summary:</strong> {error}
                 <p className="text-xs mt-1 text-muted-foreground">
-                  The endpoint is /rag/library/summary/totals. If you just
+                  The endpoint is /knowledge/library/summary/totals. If you just
                   deployed, give the backend a minute to restart, then refresh.
                 </p>
               </div>
@@ -156,28 +156,28 @@ export function RagHomePage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <NavCard
-                href="/rag/library"
+                href="/knowledge/library"
                 icon={<FileText className="h-5 w-5" />}
                 title="Library"
                 description={`Every document you've processed, with status, page counts, ${RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and which data stores they're bound to.`}
                 cta="Open library"
               />
               <NavCard
-                href="/rag/data-stores"
+                href="/knowledge/data-stores"
                 icon={<Database className="h-5 w-5" />}
                 title="Data Stores"
                 description="Named, scoped collections of documents an agent can query. Bind documents here to make them retrievable."
                 cta="Manage stores"
               />
               <NavCard
-                href="/rag/search"
+                href="/knowledge/search"
                 icon={<Search className="h-5 w-5" />}
                 title="Search"
                 description="Hybrid retrieval (vector + lexical, with optional rerank) across your indexed content. Useful for testing what an agent will see."
                 cta="Run a search"
               />
               <NavCard
-                href="/rag/embeddings"
+                href="/knowledge/embeddings"
                 icon={<Binary className="h-5 w-5" />}
                 title="Embedding Lab"
                 description="Generate catalog-routed Gemini vectors for text or multimodal inputs and inspect the exact output used by vector search."
@@ -196,7 +196,7 @@ export function RagHomePage() {
               <li>
                 <strong className="text-foreground">Add a document:</strong> go
                 to{" "}
-                <Link href="/rag/data-stores" className="underline">
+                <Link href="/knowledge/data-stores" className="underline">
                   Data Stores
                 </Link>{" "}
                 → drag a PDF onto a store → it uploads, processes, segments,
@@ -207,7 +207,7 @@ export function RagHomePage() {
                   See what processed correctly:
                 </strong>{" "}
                 open the{" "}
-                <Link href="/rag/library" className="underline">
+                <Link href="/knowledge/library" className="underline">
                   Library
                 </Link>{" "}
                 and look at the status badge — Ready means it's fully
@@ -221,7 +221,7 @@ export function RagHomePage() {
               </li>
               <li>
                 <strong className="text-foreground">Test retrieval:</strong> use{" "}
-                <Link href="/rag/search" className="underline">
+                <Link href="/knowledge/search" className="underline">
                   Search
                 </Link>{" "}
                 with a data-store filter to see exactly what an agent would

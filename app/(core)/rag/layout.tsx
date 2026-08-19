@@ -1,9 +1,9 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/rag", {
+export const metadata = createRouteMetadata("/knowledge", {
   title: "Knowledge",
   description:
-    "RAG hub — data stores, document library, semantic search, and repositories.",
+    "Knowledge hub — data stores, document library, semantic search, and repositories.",
   letter: "Kn",
 });
 

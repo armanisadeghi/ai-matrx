@@ -1,5 +1,5 @@
 /**
- * features/rag/api/document.ts
+ * features/knowledge/api/document.ts
  *
  * Read-only client for the unified document API at /document/*.
  * All calls go through the contract-bound typed client
@@ -14,7 +14,7 @@ import type {
   LineageTree,
   PageDetail,
   PageSummary,
-} from "@/features/rag/types/documents";
+} from "@/features/knowledge/types/documents";
 
 // ---------------------------------------------------------------------------
 // Reads

@@ -36,7 +36,7 @@ describe("file resource family contract", () => {
         },
         {
           key: "rag",
-          label: "RAG chunks",
+          label: "Knowledge chunks",
           category: "search",
           count: 42,
           promotable: false,

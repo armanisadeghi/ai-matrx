@@ -849,7 +849,7 @@ export const createAgent = createAsyncThunk<
     sharedByEmail: null,
 
     // Default 0 boost — user picks a non-zero value in Settings if they
-    // want this agent's derivatives to outrank raw extracts in RAG.
+    // want this agent's derivatives to outrank raw extracts in Knowledge.
     defaultRagBoost: partial.defaultRagBoost ?? 0,
     ragAwarenessMode: partial.ragAwarenessMode ?? "none",
   };

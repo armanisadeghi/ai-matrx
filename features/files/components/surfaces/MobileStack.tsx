@@ -29,7 +29,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
@@ -441,7 +441,7 @@ function MobileFileActionSheet({
               />
               <ActionRow
                 icon={<Zap className="h-4 w-4" />}
-                label="Reprocess for RAG"
+                label="Reprocess for Knowledge"
                 description={`Re-run extract / clean / ${RAG_VOCAB.segmentStage} / embed.`}
                 onPress={fireReprocess}
               />

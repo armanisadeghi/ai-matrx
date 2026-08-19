@@ -1,5 +1,5 @@
 /**
- * Shared human/agent copy builders for RAG chunk lists.
+ * Shared human/agent copy builders for Knowledge chunk lists.
  *
  * Chunk lists are the biggest data surface in the feature — a document page's
  * segments routinely run to tens of thousands of characters — so per the
@@ -11,7 +11,7 @@
  * builders with nothing clicked.
  */
 
-import type { ChunkLike } from "@/features/rag/components/library/ChunkList";
+import type { ChunkLike } from "@/features/knowledge/components/library/ChunkList";
 
 /** Where the chunks came from — mirrored into every payload envelope. */
 export interface ChunkScope {
@@ -25,7 +25,7 @@ export interface ChunkScope {
 }
 
 export function ragLocation(surface: string): string {
-  return `AI Matrx — RAG — ${surface}`;
+  return `AI Matrx — Knowledge — ${surface}`;
 }
 
 /** One chunk, as the card reads on screen. */

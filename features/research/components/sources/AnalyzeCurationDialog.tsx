@@ -29,7 +29,7 @@ interface Props {
 /**
  * The "10 seconds of help" before an expensive analysis: let the human chop the
  * junk (nav, boilerplate, comment sludge) off a scraped page so the model — and
- * downstream RAG — only see what matters. Trimming is saved (the original is
+ * downstream Knowledge — only see what matters. Trimming is saved (the original is
  * backed up server-side and recoverable), or the user can analyze as-is.
  */
 export function AnalyzeCurationDialog({
@@ -77,7 +77,7 @@ export function AnalyzeCurationDialog({
             Curate content before analysis
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Trim the junk so the model — and downstream RAG — only see what
+            Trim the junk so the model — and downstream Knowledge — only see what
             matters. The original page content is backed up and recoverable.
           </DialogDescription>
         </DialogHeader>

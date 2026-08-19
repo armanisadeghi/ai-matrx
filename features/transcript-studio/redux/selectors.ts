@@ -244,7 +244,7 @@ export function selectSessionRawText(sessionId: string | null) {
 /**
  * Timestamped variants — the standard `[m:ss] text` per segment, for human-facing
  * DISPLAY + copy/export (the plain selectors above stay for machine consumers:
- * agent context, RAG, search). Reference-stable primitive strings.
+ * agent context, Knowledge, search). Reference-stable primitive strings.
  */
 export function selectSessionRawTimestamped(sessionId: string | null) {
   return (state: RootState): string => {

@@ -48,20 +48,20 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
-import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { ChunksPane } from "@/features/rag/components/documents/panes/ChunksPane";
-import { CleanedMarkdownPane } from "@/features/rag/components/documents/panes/CleanedMarkdownPane";
-import { PdfPane } from "@/features/rag/components/documents/panes/PdfPane";
-import { RawTextPane } from "@/features/rag/components/documents/panes/RawTextPane";
-import { LineageBreadcrumbs } from "@/features/rag/components/documents/LineageBreadcrumbs";
+import { DataStoreBindPanel } from "@/features/knowledge/components/data-stores/DataStoreBindPanel";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { ChunksPane } from "@/features/knowledge/components/documents/panes/ChunksPane";
+import { CleanedMarkdownPane } from "@/features/knowledge/components/documents/panes/CleanedMarkdownPane";
+import { PdfPane } from "@/features/knowledge/components/documents/panes/PdfPane";
+import { RawTextPane } from "@/features/knowledge/components/documents/panes/RawTextPane";
+import { LineageBreadcrumbs } from "@/features/knowledge/components/documents/LineageBreadcrumbs";
 import {
   useDocument,
   useDocumentChunks,
   useDocumentLineage,
   useDocumentPage,
-} from "@/features/rag/hooks/useDocument";
-import type { ChunkRow } from "@/features/rag/types/documents";
+} from "@/features/knowledge/hooks/useDocument";
+import type { ChunkRow } from "@/features/knowledge/types/documents";
 
 export interface DocumentViewerProps {
   documentId: string;
@@ -294,12 +294,12 @@ function BindButton({
           <span>
             Manage all stores at{" "}
             <a
-              href="/rag/data-stores"
+              href="/knowledge/data-stores"
               target="_blank"
               rel="noreferrer"
               className="underline inline-flex items-center gap-0.5 hover:text-foreground"
             >
-              /rag/data-stores
+              /knowledge/data-stores
               <ExternalLink className="h-3 w-3" />
             </a>
           </span>

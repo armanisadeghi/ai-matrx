@@ -1,7 +1,7 @@
 /**
- * features/rag/hooks/useRagSearch.ts
+ * features/knowledge/hooks/useRagSearch.ts
  *
- * Debounced RAG search hook. Returns hits + meta with stable query
+ * Debounced Knowledge search hook. Returns hits + meta with stable query
  * identity so consumers can render in-place without flicker.
  *
  * Companion of `<RagSearchHits/>`. Most callers wire them together —
@@ -16,8 +16,8 @@ import {
   type RagSearchFilters,
   type RagSearchHit,
   type RagSearchResponse,
-} from "@/features/rag/api/search";
-import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
+} from "@/features/knowledge/api/search";
+import { useRagSearchContext } from "@/features/knowledge/hooks/useRagSearchContext";
 
 export interface UseRagSearchState {
   query: string;

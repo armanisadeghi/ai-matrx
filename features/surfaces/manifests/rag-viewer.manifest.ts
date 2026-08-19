@@ -1,27 +1,27 @@
 /**
- * Surface manifest — Knowledge Document Viewer (`matrx-user/rag-viewer`).
+ * Surface manifest — Knowledge Document Viewer (`matrx-user/knowledge-viewer`).
  *
- * `/rag/viewer/[id]` — the read surface for ONE processed document
+ * `/knowledge/viewer/[id]` — the read surface for ONE processed document
  * (`docproc.processed_documents`), rendered by `LibraryPreviewPage`: a page
  * index on the left, the selected page's extracted text (cleaned or raw) in
  * the middle, and the document's segments plus in-document search results on
  * the right.
  *
- * This is where a citation lands. `/rag/search` hits, chat tool cards, and the
+ * This is where a citation lands. `/knowledge/search` hits, chat tool cards, and the
  * `/files/f/[id]` redirect for shared-library grant readers all deep-link here
  * with `?page=<n>`, so the surface's job is to hand an agent the passage the
  * user is actually looking at, with enough identity to cite it back.
  *
  * PROVENANCE NOTE — `documents.manifest.ts` used to describe exactly this
- * surface (a RAG viewer at `/rag/viewer/[id]` with pages, extracted text, and
+ * surface (a Knowledge viewer at `/knowledge/viewer/[id]` with pages, extracted text, and
  * chunks) while being wired to `/documents`, the unrelated Univer cloud-docs
  * feature. Those values were fiction there. This manifest is where they
  * belong, declared against the component that really loads them. See that
  * file's 2026-07-27 rewrite note.
  *
- * Emitter: `features/rag/components/library/LibraryPreviewPage.tsx` via
+ * Emitter: `features/knowledge/components/library/LibraryPreviewPage.tsx` via
  * `buildRagViewerContextData` in
- * `features/rag/agent-context/buildRagViewerContextData.ts`. The page-text
+ * `features/knowledge/agent-context/buildRagViewerContextData.ts`. The page-text
  * pane pushes its loaded page up through `onActivePageLoaded` so the route can
  * emit it — without that lift, the page text would be declared and unemitted.
  *
@@ -65,7 +65,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Segments",
     sortOrder: 400,
     description:
-      "The retrievable segments this document was split into — what RAG search actually matches against.",
+      "The retrievable segments this document was split into — what Knowledge search actually matches against.",
   },
   {
     key: "viewer_search",
@@ -245,7 +245,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "segment_count",
     label: "Segment count",
     description:
-      "How many retrievable segments this document was split into. 0 means it has been extracted but not segmented, so RAG search cannot find it. Absent until the document loads.",
+      "How many retrievable segments this document was split into. 0 means it has been extracted but not segmented, so Knowledge search cannot find it. Absent until the document loads.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 5,
@@ -509,16 +509,16 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const ragViewerManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/rag-viewer",
+  surfaceName: "matrx-user/knowledge-viewer",
   readiness: "partial",
   readinessNote:
-    "Manifest authored against the live /rag/viewer/[id] component and the emitter is wired via SurfaceRuntimeProvider (the page-text pane lifts its loaded page through onActivePageLoaded); not yet DB-synced and no live non-matching-name binding test run. The Knowledge Asset Builder drawer's derivation rollup stays undeclared — it loads inside KnowledgeAssetPanel and nothing lifts it to the route.",
+    "Manifest authored against the live /knowledge/viewer/[id] component and the emitter is wired via SurfaceRuntimeProvider (the page-text pane lifts its loaded page through onActivePageLoaded); not yet DB-synced and no live non-matching-name binding test run. The Knowledge Asset Builder drawer's derivation rollup stays undeclared — it loads inside KnowledgeAssetPanel and nothing lifts it to the route.",
   label: "Knowledge Document Viewer",
-  urlPattern: "/rag/viewer/[id]",
+  urlPattern: "/knowledge/viewer/[id]",
   intro: `<surface_intro>
 This is the read surface for ONE processed document — a source (usually a PDF)
-that the RAG pipeline extracted into pages, cleaned, split into SEGMENTS, and
-embedded. The user is reading it page by page. Citations from RAG search and
+that the Knowledge pipeline extracted into pages, cleaned, split into SEGMENTS, and
+embedded. The user is reading it page by page. Citations from Knowledge search and
 from chat tool cards land here, deep-linked to the cited page.
 
 The passage in front of the user is page_text, on page active_page_number, in
@@ -578,7 +578,7 @@ export interface RagViewerDataStoreEntry {
 }
 
 /**
- * Scope builder for `matrx-user/rag-viewer`.
+ * Scope builder for `matrx-user/knowledge-viewer`.
  *
  * `document_id`, `document_load_status`, and `active_page_number` are the only
  * guaranteed keys: the first two come from the route and the fetch state

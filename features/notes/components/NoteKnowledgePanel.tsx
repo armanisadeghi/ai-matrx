@@ -1,8 +1,8 @@
 "use client";
 
-// NoteKnowledgePanel — a note's RAG / knowledge-base surface, mirroring the
+// NoteKnowledgePanel — a note's Knowledge / knowledge-base surface, mirroring the
 // file "Document" tab (DocumentTab): index it, see its status, re-index, and —
-// once indexed — engage with it via the canonical RAG document viewer
+// once indexed — engage with it via the canonical Knowledge document viewer
 // (LibraryPreviewPage embedded: chunks, raw/cleaned text, and in-document
 // search that highlights matches + summarizes which pages they're on). Hosted
 // in a pop-out SidePanelSurface via the `noteKnowledgePanel` overlay.
@@ -10,8 +10,8 @@
 import { Database, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
-import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
+import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
+import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 
 /** Light up `useNoteIngestStatus` everywhere instantly. ProcessForRagButton
@@ -64,7 +64,7 @@ export function NoteKnowledgePanel({ noteId }: { noteId: string }) {
     );
   }
 
-  // Indexed — header chrome + the canonical RAG viewer (chunks + in-document
+  // Indexed — header chrome + the canonical Knowledge viewer (chunks + in-document
   // search with highlighting).
   return (
     <div className="flex h-full flex-col">
@@ -90,7 +90,7 @@ export function NoteKnowledgePanel({ noteId }: { noteId: string }) {
             className="h-7 gap-1.5 text-xs"
             onClick={() =>
               window.open(
-                `/rag/viewer/${documentId}`,
+                `/knowledge/viewer/${documentId}`,
                 "_blank",
                 "noopener,noreferrer",
               )

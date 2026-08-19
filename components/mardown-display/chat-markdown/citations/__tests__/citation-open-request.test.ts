@@ -1,7 +1,7 @@
 /**
  * Unit guard for citation click-through targets (citation-open-request.ts):
  * the pure builder behind `useOpenCitationSource`. The load-bearing case is
- * the `search_result` path — a RAG/document_search citation with our
+ * the `search_result` path — a Knowledge/document_search citation with our
  * file_id + page (url null) MUST open the Source Inspector at the exact page.
  */
 

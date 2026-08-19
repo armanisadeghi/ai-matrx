@@ -1,7 +1,7 @@
 /**
- * features/rag/hooks/useFileIngest.ts
+ * features/knowledge/hooks/useFileIngest.ts
  *
- * One-call entry point for "process this file for RAG" from any
+ * One-call entry point for "process this file for Knowledge" from any
  * cloud-files surface. Uses the streaming endpoint by default so the
  * UI can render per-stage progress (extract / chunk / embed / upsert),
  * but exposes a `runOnce` non-streaming fallback for callers that
@@ -25,7 +25,7 @@ import {
   ingestFileStream,
   type IngestProgress,
   type IngestResponse,
-} from "@/features/rag/api/ingest";
+} from "@/features/knowledge/api/ingest";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 
 export type IngestStatus = "idle" | "running" | "complete" | "error";

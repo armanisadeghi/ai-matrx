@@ -131,8 +131,8 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Menu uploads opt into instant RAG when the preference is on. Drag-drop
-  // never sets this — the scheduled auto-RAG sweep still covers those.
+  // Menu uploads opt into instant Knowledge when the preference is on. Drag-drop
+  // never sets this — the scheduled auto-Knowledge sweep still covers those.
   const uploadOptions = triggerNow
     ? { rag: { trigger_now: true } }
     : undefined;
@@ -258,7 +258,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
             // Keep the menu open so toggling doesn't dismiss the dropdown.
             onSelect={(e) => e.preventDefault()}
           >
-            Process for RAG immediately
+            Process for Knowledge immediately
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -15,7 +15,7 @@ import {
   selectTerminalOpen,
   setOpen as setTerminalOpen,
 } from "../redux/terminalSlice";
-import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
 
 interface EditorToolbarProps {
   rightSlotAvailable: boolean;
@@ -37,7 +37,7 @@ interface EditorToolbarProps {
    *  to publish to (or no active tab). */
   canSendSelectionAsContext?: boolean;
   /** cld_files UUID for the active tab when it's backed by a cloud-stored
-   *  file. Surfaces the "Process for RAG" affordance so the user can
+   *  file. Surfaces the "Process for Knowledge" affordance so the user can
    *  index the file from where they're editing it, without round-tripping
    *  through the files surface. Undefined for purely filesystem-backed
    *  tabs — there's no DB row to ingest. */

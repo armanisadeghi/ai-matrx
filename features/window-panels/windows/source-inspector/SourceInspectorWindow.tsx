@@ -1,9 +1,9 @@
 /**
  * features/window-panels/windows/source-inspector/SourceInspectorWindow.tsx
  *
- * Floating WindowPanel around the [SourceInspectorPane](../../../rag/components/source-inspector/SourceInspectorPane.tsx).
+ * Floating WindowPanel around the [SourceInspectorPane](../../../knowledge/components/source-inspector/SourceInspectorPane.tsx).
  *
- * Opened from any citation surface (RAG source cards, chat citations, search
+ * Opened from any citation surface (Knowledge source cards, chat citations, search
  * results) to take the user straight to the cited PAGE of the source document
  * and show everything anchored there — the matched chunk, the page's raw + clean
  * extraction, and page-level extractions. A non-blocking window (modals are out
@@ -16,7 +16,7 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { SourceInspectorPane } from "@/features/rag/components/source-inspector/SourceInspectorPane";
+import { SourceInspectorPane } from "@/features/knowledge/components/source-inspector/SourceInspectorPane";
 
 export interface SourceInspectorWindowProps {
   isOpen: boolean;

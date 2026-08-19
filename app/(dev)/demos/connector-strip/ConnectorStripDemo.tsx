@@ -88,7 +88,7 @@ export default function ConnectorStripDemo() {
 
       <Case
         title="Some connected"
-        note="color = connected; Notion is registered coming-soon"
+        note="color = connected; Notion raises the shared MCP connect intent"
       >
         <FakeAgentInput>
           <ConnectorStrip connectedIds={["google-workspace"]} onConnect={raise} />

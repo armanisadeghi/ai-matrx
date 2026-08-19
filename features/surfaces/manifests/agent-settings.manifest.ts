@@ -324,9 +324,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "agent_default_rag_boost",
-    label: "Default RAG boost",
+    label: "Default Knowledge boost",
     description:
-      "Retrieval-ranking multiplier applied to this agent's extracted content in RAG search; 0 means no boost and negative values demote. Absent when no agent is open. Not writable from this surface.",
+      "Retrieval-ranking multiplier applied to this agent's extracted content in Knowledge search; 0 means no boost and negative values demote. Absent when no agent is open. Not writable from this surface.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -438,7 +438,7 @@ copy — its description, its category and its tags, in one atomic patch. The
 agent's NAME is not writable (it is the label the tab strip and sidebar are
 navigated by), and neither is anything that decides what this agent can REACH or
 who can see it — the Active / Public / Favorite / Archived switches, the
-hierarchy scopes, the RAG boost, and the Surface pane's bindings and value
+hierarchy scopes, the Knowledge boost, and the Surface pane's bindings and value
 mappings are all human-only. Propose those in your answer instead of trying to
 apply them.
 

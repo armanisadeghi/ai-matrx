@@ -29,11 +29,11 @@ import { Badge } from "@/components/ui/badge";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/components/text/HighlightedText";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import type {
   DocSearchHit,
   DocSearchSummary,
-} from "@/features/rag/hooks/useDocumentSearch";
+} from "@/features/knowledge/hooks/useDocumentSearch";
 
 // ---------------------------------------------------------------------------
 // Toolbar
@@ -65,8 +65,8 @@ export function DocumentSearchBar({
   // Pre-fill the full AI search with whatever the user typed here, so the jump
   // is one click and zero retyping.
   const fullSearchHref = query.trim()
-    ? `/rag/search?q=${encodeURIComponent(query.trim())}`
-    : "/rag/search";
+    ? `/knowledge/search?q=${encodeURIComponent(query.trim())}`
+    : "/knowledge/search";
 
   const resultLabel = (() => {
     if (loading) return null;

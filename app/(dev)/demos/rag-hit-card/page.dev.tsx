@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * RagHitCard demo — renders the ONE canonical RAG hit card (expanded +
+ * RagHitCard demo — renders the ONE canonical Knowledge hit card (expanded +
  * compact) from fixtures, with no backend dependency. Exists so layout work
  * (especially the 375px mobile header wrap) can be verified without needing
  * live indexed content and a reachable retrieval backend.
  */
 
-import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
-import type { RagHitView } from "@/features/rag/components/hit-card/types";
+import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
+import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
 
 const BASE: RagHitView = {
   sourceKind: "cld_file",
@@ -88,7 +88,7 @@ export default function RagHitCardDemoPage() {
               variant="expanded"
               rank={rank}
               topScore={HITS[0].view.score}
-              href={`/rag/library/${view.sourceId}/preview`}
+              href={`/knowledge/library/${view.sourceId}/preview`}
               onOpen={() => {}}
               onReviewRepair={rank === 1 ? () => {} : undefined}
               highlightQuery="temporary disability"
@@ -107,7 +107,7 @@ export default function RagHitCardDemoPage() {
               view={view}
               variant="compact"
               topScore={HITS[0].view.score}
-              href={`/rag/library/${view.sourceId}/preview`}
+              href={`/knowledge/library/${view.sourceId}/preview`}
               onOpen={() => {}}
             />
           ))}

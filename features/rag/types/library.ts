@@ -1,5 +1,5 @@
 /**
- * Types for /rag/library — the visibility surface for processed documents.
+ * Types for /knowledge/library — the visibility surface for processed documents.
  *
  * A "processed document" is a row in `docproc.processed_documents` representing
  * one extraction/processing run over a source (PDF, note, code file, …).

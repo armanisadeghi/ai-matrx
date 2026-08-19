@@ -282,7 +282,7 @@ export function DocumentContentInline({
           {
             label: "Open document viewer",
             icon: SquareArrowOutUpRight,
-            href: `/rag/viewer/${encodeURIComponent(docId)}`,
+            href: `/knowledge/viewer/${encodeURIComponent(docId)}`,
           } satisfies EntityAction,
         ]
       : []),

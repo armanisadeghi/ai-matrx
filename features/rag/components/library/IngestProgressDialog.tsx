@@ -2,7 +2,7 @@
 
 /**
  * IngestProgressDialog — adapter that drives ProcessingProgressDialog
- * from the legacy useFileIngest hook (which streams /rag/ingest/stream).
+ * from the legacy useFileIngest hook (which streams /knowledge/ingest/stream).
  *
  * Used by the Files page's Document tab so a re-process from there gets
  * the same beautiful full-screen dialog as the new Library Upload flow.
@@ -15,12 +15,12 @@ import {
   type ProcessingStageId,
   type ProcessingResultSummary,
 } from "./ProcessingProgressDialog";
-import type { UseFileIngestState } from "@/features/rag/hooks/useFileIngest";
-import type { IngestProgress } from "@/features/rag/api/ingest";
+import type { UseFileIngestState } from "@/features/knowledge/hooks/useFileIngest";
+import type { IngestProgress } from "@/features/knowledge/api/ingest";
 import {
   RAG_PIPELINE_SUBTITLE,
   RAG_VOCAB,
-} from "@/features/rag/constants/vocabulary";
+} from "@/features/knowledge/constants/vocabulary";
 
 interface IngestHandle extends UseFileIngestState {
   cancel: () => void;
@@ -81,7 +81,7 @@ export function IngestProgressDialog({
         embed: `${r.embeddings_written.toLocaleString()} embeddings written`,
       },
       // Threaded through so the minimized widget and full success view
-      // can deep-link to /rag/library/<id>/preview when the user wants
+      // can deep-link to /knowledge/library/<id>/preview when the user wants
       // to open the freshly-indexed document in a new tab.
       processedDocumentId: r.processed_document_id ?? null,
     };

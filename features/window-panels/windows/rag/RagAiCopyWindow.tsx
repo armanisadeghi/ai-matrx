@@ -18,7 +18,7 @@ import {
   type RagAiCopyBundle,
   type RagAiCopyOptions,
   type RagAiSectionKey,
-} from "@/features/rag/components/search/ragAiCopy";
+} from "@/features/knowledge/components/search/ragAiCopy";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { cn } from "@/lib/utils";
 
@@ -125,7 +125,7 @@ function RagAiCopyWindowInner({
       id="rag-ai-copy-window"
       overlayId={OVERLAY_ID}
       onClose={onClose}
-      title="Copy RAG result for AI"
+      title="Copy Knowledge result for AI"
       width={980}
       height={700}
       minWidth={600}
@@ -319,9 +319,9 @@ function RagAiCopyWindowInner({
               ).then(
                 () => {
                   flash("text");
-                  toast.success("Selected RAG content copied");
+                  toast.success("Selected Knowledge content copied");
                 },
-                () => toast.error("Could not copy selected RAG content"),
+                () => toast.error("Could not copy selected Knowledge content"),
               );
             }}
           >
@@ -341,9 +341,9 @@ function RagAiCopyWindowInner({
               ).then(
                 () => {
                   flash("ai");
-                  toast.success("RAG result copied for AI");
+                  toast.success("Knowledge result copied for AI");
                 },
-                () => toast.error("Could not copy RAG result for AI"),
+                () => toast.error("Could not copy Knowledge result for AI"),
               );
             }}
           >

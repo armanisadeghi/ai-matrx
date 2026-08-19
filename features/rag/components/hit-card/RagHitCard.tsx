@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * RagHitCard — the ONE canonical card for a retrieved RAG hit, used by every
- * surface (the `knowledge_search` tool card, `/rag/search`, the files omnibox, chat
+ * RagHitCard — the ONE canonical card for a retrieved Knowledge hit, used by every
+ * surface (the `knowledge_search` tool card, `/knowledge/search`, the files omnibox, chat
  * citations). Two variants share one beautiful core:
  *
  *   - "compact"  — a mini entity-card ROW (glossy glyph · 2-line title · color
@@ -44,11 +44,11 @@ import { getQueryHighlightSegments } from "./query-highlighting";
 import {
   RagAiCopyButton,
   RagContentActions,
-} from "@/features/rag/components/search/RagContentActions";
+} from "@/features/knowledge/components/search/RagContentActions";
 import {
   createRagAiCopyBundle,
   type RagAiCopyBundle,
-} from "@/features/rag/components/search/ragAiCopy";
+} from "@/features/knowledge/components/search/ragAiCopy";
 import {
   EMPTY_RAG_REFERENCE_AVAILABILITY,
   type RagReferenceAvailability,
@@ -265,7 +265,7 @@ function HitBreakdown({
           <span className="font-medium text-foreground/80">Result:</span>
           <MatrxUuidCell
             value={view.chunkId}
-            label="RAG result chunk ID"
+            label="Knowledge result chunk ID"
             className="min-w-0"
           />
         </div>

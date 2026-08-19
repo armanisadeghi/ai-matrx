@@ -15,8 +15,8 @@ import {
 import {
   DocumentSearchResultsList,
   DocumentSearchSummary,
-} from "@/features/rag/components/library/DocumentSearch";
-import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
+} from "@/features/knowledge/components/library/DocumentSearch";
+import type { UseDocumentSearch } from "@/features/knowledge/hooks/useDocumentSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,7 +33,7 @@ import {
   setPendingScrollPage,
   setScrollSource,
 } from "../state/pdfStudioSlice";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { fetchChunksForPage } from "../state/thunks";
 import type { ApiChunkRow } from "../state/types";
 
@@ -43,7 +43,7 @@ interface PdfStudioChunksPaneProps {
   hasCldFile: boolean;
   onOpenChunkedRuns: () => void;
   onClose?: () => void;
-  /** Active in-document RAG search — while it has run, this pane shows the
+  /** Active in-document Knowledge search — while it has run, this pane shows the
    *  ranked hits (with matched-page jump chips) instead of the page chunks. */
   search?: UseDocumentSearch;
   /** Clear the search and return to the per-page chunk list. */
@@ -82,7 +82,7 @@ export function PdfStudioChunksPane({
     jumpToResultPage(target);
   };
 
-  // Search-results mode — the same summary + ranked list the RAG library
+  // Search-results mode — the same summary + ranked list the Knowledge library
   // viewer renders, scoped to this pane.
   const searchActive = Boolean(search && (search.hasSearched || search.loading));
   if (search && searchActive) {

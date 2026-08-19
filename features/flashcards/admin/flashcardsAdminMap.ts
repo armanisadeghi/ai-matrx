@@ -57,9 +57,9 @@ export const flashcardsAdminMap: FeatureAdminMap = {
     },
     {
       url: "/education/flashcards/new/from-source",
-      label: "Generate from a document (RAG)",
+      label: "Generate from a document (Knowledge)",
       description:
-        "CreateFromSource — two-step wizard: pick a RAG-indexed doc, curate which chunks to include, then fc_generate_from_source. Persists chunk/page lineage on each card's source field.",
+        "CreateFromSource — two-step wizard: pick a Knowledge-indexed doc, curate which chunks to include, then fc_generate_from_source. Persists chunk/page lineage on each card's source field.",
       filePath: "app/(core)/education/flashcards/new/from-source/page.tsx",
       status: "Live",
       notes: [
@@ -316,7 +316,7 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       name: "CreateFromSource",
       filePath: "features/flashcards/components/create/CreateFromSource.tsx",
       description:
-        "RAG-sourced generation: DocPickerStep (useLibrary) → CurateStep (chunk checklist via useDocumentChunks) → fc_generate_from_source, with source lineage backfilled from the picked document.",
+        "Knowledge-sourced generation: DocPickerStep (useLibrary) → CurateStep (chunk checklist via useDocumentChunks) → fc_generate_from_source, with source lineage backfilled from the picked document.",
       tier: "internal",
     },
     {

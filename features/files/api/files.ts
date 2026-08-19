@@ -59,8 +59,8 @@ export interface UploadFileParams {
   metadata?: Record<string, unknown>;
   /**
    * Per-upload options the backend reads to alter post-upload behavior —
-   * notably `rag.trigger_now` to run RAG immediately instead of waiting for
-   * the scheduled auto-RAG sweep. Serialized to the `options_json` form
+   * notably `rag.trigger_now` to run Knowledge immediately instead of waiting for
+   * the scheduled auto-Knowledge sweep. Serialized to the `options_json` form
    * field alongside `metadata_json`.
    */
   options?: UploadOptions;
@@ -69,7 +69,7 @@ export interface UploadFileParams {
 /** Mirrors the backend `options_json` envelope. Extend as new opts land. */
 export interface UploadOptions {
   rag?: {
-    /** Run RAG ingest immediately on upload (skip the scheduled sweep). */
+    /** Run Knowledge ingest immediately on upload (skip the scheduled sweep). */
     trigger_now?: boolean;
   };
 }

@@ -8,7 +8,7 @@
 //   Stores & grants — every kind='library' store; publish/revoke all three
 //                     audiences via the grant RPC family
 //   Ingest          — curation ingest through the canonical fileHandler +
-//                     P1's /rag/library/stores/{id}/ingest endpoint
+//                     P1's /knowledge/library/stores/{id}/ingest endpoint
 //   Access explorer — "who can read what, and why" over grants + industry
 //                     assignments + memberships
 //

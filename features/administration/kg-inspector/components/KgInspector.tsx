@@ -58,11 +58,11 @@ import {
 } from "../utils/organizationNames";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
+import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
 import {
   useOpenCitation,
   shouldOpenInNewTab,
-} from "@/features/rag/components/source-inspector/useOpenCitation";
+} from "@/features/knowledge/components/source-inspector/useOpenCitation";
 import {
   listKgEntities,
   listKgEntityMentions,
@@ -808,7 +808,7 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
                        mapped set and returns null otherwise). The id stays a
                        dead end by necessity — but not an unselectable one: the
                        canonical uuid cell gives it a copy control. The kind is
-                       NOT run through the entity registry: a RAG `source_kind`
+                       NOT run through the entity registry: a Knowledge `source_kind`
                        is not a canonical entity token, and a colliding name
                        would open the wrong record. */
                     <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">

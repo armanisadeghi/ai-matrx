@@ -19,7 +19,7 @@
  *      the ProcessingFrame shape the sheet renders.
  *
  *   2. runForCldFile(cldFileId, title, subtitle)
- *      Wraps the legacy ingestFileStream (POST /rag/ingest/stream) for
+ *      Wraps the legacy ingestFileStream (POST /knowledge/ingest/stream) for
  *      the "I just uploaded a file, kick the pipeline" flow.
  *
  * Both return the new jobId so the caller can focus the sheet on the
@@ -27,19 +27,19 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { runStageStream, type StageName } from "@/features/rag/api/stages";
+import { runStageStream, type StageName } from "@/features/knowledge/api/stages";
 import {
   ingestFileStream,
   type IngestStreamEvent,
-} from "@/features/rag/api/ingest";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+} from "@/features/knowledge/api/ingest";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { supabase } from "@/utils/supabase/client";
 import type {
   ProcessingFrame,
   ProcessingResultSummary,
   ProcessingStageId,
   StagePreview,
-} from "@/features/rag/components/library/ProcessingProgressDialog";
+} from "@/features/knowledge/components/library/ProcessingProgressDialog";
 
 export type JobStatus = "running" | "succeeded" | "failed" | "cancelled";
 
@@ -89,7 +89,7 @@ export interface UseProcessingRunner {
     subtitle?: string,
   ) => Promise<string>;
 
-  /** Start the legacy /rag/ingest/stream pipeline against a cld_file id.
+  /** Start the legacy /knowledge/ingest/stream pipeline against a cld_file id.
    *  Used right after an upload to kick the full extract → … → embed pipe.
    *  Returns the new job's id. */
   runForCldFile: (

@@ -82,8 +82,8 @@ export const COLUMN_SPECS: Record<ColumnId, ColumnSpec> = {
   access: { id: "access", label: "Access", sortKey: null },
   rag_status: {
     id: "rag_status",
-    label: "RAG",
-    // RAG status is a derived enum (Indexed / Not indexed / Checking),
+    label: "Knowledge",
+    // Knowledge status is a derived enum (Indexed / Not indexed / Checking),
     // and the column is meaningless for folders — keep it filter-only
     // so users don't accidentally interleave files by indexing state.
     sortKey: null,
@@ -93,7 +93,7 @@ export const COLUMN_SPECS: Record<ColumnId, ColumnSpec> = {
     id: "context",
     label: "Context",
     // Amber = no context, green = assigned — click either to assign. The
-    // signal that drives RAG/NER, so it ships visible by default. Populated
+    // signal that drives Knowledge/NER, so it ships visible by default. Populated
     // by ONE bulk query per visible page, never per-row probes.
     sortKey: null,
     fileOnly: true,

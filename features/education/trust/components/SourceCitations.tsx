@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import CitationChip from "@/components/official/citation-chip/CitationChip";
 import type { SourceCitation, TrustEnvelope } from "../types";
 import { citationIsOpenable, openCitationSource } from "../open-source";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
 
 const KIND_ICON = {
   url: LinkIcon,
@@ -68,7 +68,7 @@ export function SourceCitations({
       const page = c.page !== undefined ? `&page=${c.page}` : "";
       const href = c.fileId
         ? `/files/f/${encodeURIComponent(sourceId)}?tab=document&chunk=${encodeURIComponent(c.sourceId)}${page}`
-        : `/rag/viewer/${encodeURIComponent(sourceId)}?chunk=${encodeURIComponent(c.sourceId)}${page}`;
+        : `/knowledge/viewer/${encodeURIComponent(sourceId)}?chunk=${encodeURIComponent(c.sourceId)}${page}`;
       openRetrievedCitation({
         sourceKind,
         sourceId,

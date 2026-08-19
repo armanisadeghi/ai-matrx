@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import type {
   DocumentDetail,
   LineageTree,
-} from "@/features/rag/types/documents";
+} from "@/features/knowledge/types/documents";
 
 export interface LineageBreadcrumbsProps {
   document: DocumentDetail | null;

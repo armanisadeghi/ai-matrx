@@ -2,7 +2,7 @@
 //
 // The Smart Notes editor surface (/education/notes/[id]). A THIN education skin
 // over the canonical notes workspace: the real editor, autosave, access gating,
-// version history, context menu, and RAG all come from `features/notes` NotesView
+// version history, context menu, and Knowledge all come from `features/notes` NotesView
 // (single-note mode). We only add the education action bar on top (convert / live
 // capture / share / lineage). No forked editor, no forked storage.
 

@@ -5,7 +5,7 @@
  * The model is deliberately flat and feature-agnostic: an exchange is one
  * request out, one response in, and — when the response is a stream — the
  * ordered array of events that arrived on it. That shape does not change per
- * feature. Agents, research, podcasts, scraper, RAG and PDF all produce it.
+ * feature. Agents, research, podcasts, scraper, Knowledge and PDF all produce it.
  *
  * Capture happens at the `fetch` boundary (see `install-fetch-tap.ts`), NOT at
  * `parseNdjsonStream`. A parser-level tap records only the callers that opt in,

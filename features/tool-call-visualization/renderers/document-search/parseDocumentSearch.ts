@@ -12,7 +12,7 @@ import type { NormalizedHit } from "../knowledge-search/parseRag";
  *     page_numbers, derivation_kind, ... }], string: [...] } ], note }.
  * Hits are flattened across pages, deduped by chunk_id (a chunk can match on
  * several pages), and sorted by score. `source_kind: "library_doc"` routes a
- * click to the canonical /rag/viewer at the chunk + page.
+ * click to the canonical /knowledge/viewer at the chunk + page.
  */
 
 interface RawDocHit {

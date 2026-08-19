@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Opener for the `noteKnowledgePanel` overlay — a note's RAG / knowledge-base
+ * Opener for the `noteKnowledgePanel` overlay — a note's Knowledge / knowledge-base
  * surface (index status, re-index, chunks, test search) opened in a NON-BLOCKING
  * resizable RIGHT sidebar (SidePanelSurface), the same "pops out, stays open
  * while you edit" affordance files use for their Document tab.

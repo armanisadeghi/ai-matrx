@@ -1,12 +1,12 @@
 /**
- * features/rag/api/search-lab.ts
+ * features/knowledge/api/search-lab.ts
  *
- * Typed client for the /rag/search-lab/* endpoints — diagnostics,
+ * Typed client for the /knowledge/search-lab/* endpoints — diagnostics,
  * query-expansion preview, content inventory, and the transparent
  * Claude agent loop.
  *
- * Consumed by the multi-tab RAG search experience in
- * `features/rag/components/search/`.
+ * Consumed by the multi-tab Knowledge search experience in
+ * `features/knowledge/components/search/`.
  */
 import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
 import { apiPost } from "@/lib/api/typed-client";
@@ -30,7 +30,7 @@ export async function ragExpand(
   body: ExpandRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<ExpandResponse> {
-  const { data } = await apiPost("/rag/search-lab/expand", body, {
+  const { data } = await apiPost("/knowledge/search-lab/expand", body, {
     signal: opts.signal,
   });
   return data;
@@ -61,7 +61,7 @@ export async function ragInventory(
   // Response type is still contract-derived (InventoryResponse alias above).
   const qs = opts.adminBypassAcl ? "?admin_bypass_acl=true" : "";
   const { data } = await postJson<InventoryResponse, Record<string, never>>(
-    `/rag/search-lab/inventory${qs}`,
+    `/knowledge/search-lab/inventory${qs}`,
     {},
     { signal: opts.signal },
   );
@@ -89,7 +89,7 @@ export async function ragDiagnose(
   body: DiagnoseRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<DiagnoseResponse> {
-  const { data } = await apiPost("/rag/search-lab/diagnose", body, {
+  const { data } = await apiPost("/knowledge/search-lab/diagnose", body, {
     signal: opts.signal,
   });
   return data;
@@ -137,7 +137,7 @@ export async function* ragDiagnoseStream(
   body: DiagnoseRequest,
   opts: { signal?: AbortSignal } = {},
 ): AsyncGenerator<DiagnoseEvent, void, void> {
-  const url = `${resolveBaseUrl()}/rag/search-lab/diagnose/stream`;
+  const url = `${resolveBaseUrl()}/knowledge/search-lab/diagnose/stream`;
   const { headers } = await buildHeaders({ signal: opts.signal }, true);
   const res = await fetch(url, {
     method: "POST",
@@ -217,7 +217,7 @@ export async function ragAgentToolSearch(
   body: AgentToolSearchRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<AgentToolSearchResponse> {
-  const { data } = await apiPost("/rag/search-lab/tool/search", body, {
+  const { data } = await apiPost("/knowledge/search-lab/tool/search", body, {
     signal: opts.signal,
   });
   return data;
@@ -238,7 +238,7 @@ export async function ragAgentToolGetChunk(
   body: AgentToolGetChunkRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<AgentToolGetChunkResponse> {
-  const { data } = await apiPost("/rag/search-lab/tool/get-chunk", body, {
+  const { data } = await apiPost("/knowledge/search-lab/tool/get-chunk", body, {
     signal: opts.signal,
   });
   return data;

@@ -1,6 +1,6 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import { factsOnlyMetadata } from "@/features/rag/components/hit-card/copyMetadata";
-import type { RagHitView } from "@/features/rag/components/hit-card/types";
+import { factsOnlyMetadata } from "@/features/knowledge/components/hit-card/copyMetadata";
+import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
 
 export const RAG_AI_SECTION_KEYS = [
   "retrieved",
@@ -289,11 +289,11 @@ export function buildRagAiPayload(
 
   return {
     kind: "rag-result-reference",
-    location: "AI Matrx — RAG search results",
+    location: "AI Matrx — Knowledge search results",
     description:
       selected.length > 0
-        ? "Identifying, retrieval, and user-selected content for one RAG result."
-        : "Identifying and retrieval facts for one RAG result; document content is intentionally excluded.",
+        ? "Identifying, retrieval, and user-selected content for one Knowledge result."
+        : "Identifying and retrieval facts for one Knowledge result; document content is intentionally excluded.",
     attributes: {
       source_kind: bundle.source.kind,
       page_number: bundle.retrieval.pageNumber,

@@ -84,11 +84,11 @@ export function buildAgentAdapterRegistry() {
   });
   registry.register("defaultRagBoost", {
     ...TextFieldAdapter,
-    label: "Default RAG Boost",
+    label: "Default Knowledge Boost",
   });
   registry.register("ragAwarenessMode", {
     ...TextFieldAdapter,
-    label: "RAG Awareness Mode",
+    label: "Knowledge Awareness Mode",
   });
 
   // JSON fields

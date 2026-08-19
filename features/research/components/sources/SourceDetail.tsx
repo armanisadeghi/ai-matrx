@@ -91,7 +91,7 @@ import {
   formatSnippetRelevance,
 } from "./sourceScoreDisplay";
 import MarkdownStream from "@/components/MarkdownStream";
-import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
 import type {
   ResearchContent,
   ResearchAnalysis,
@@ -1618,8 +1618,8 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               <AlertTriangle className="h-3.5 w-3.5" />
               Mark Stale
             </Button>
-            {/* Index this research source into RAG (kg_chunks + NER). Reuses
-                the same /rag/ingest/stream control every other source kind
+            {/* Index this research source into Knowledge (kg_chunks + NER). Reuses
+                the same /knowledge/ingest/stream control every other source kind
                 uses; source_kind="research" resolves rs_source → rs_content
                 body on the backend. Only meaningful once content exists —
                 the resolver tombstones a metadata-only (unscraped) source. */}
@@ -1632,7 +1632,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 force
                 className="h-8"
                 onComplete={() => {
-                  toast.success("Source indexed for RAG");
+                  toast.success("Source indexed for Knowledge");
                 }}
               />
             )}

@@ -358,7 +358,7 @@ export interface AgentDefinition {
   sharedByEmail: string | null; // null when isOwner = true or not yet loaded
 
   /**
-   * Default RAG retrieval-boost for this agent's extracted content.
+   * Default Knowledge retrieval-boost for this agent's extracted content.
    *
    * Smallint, default 0. When this agent produces page-extraction
    * derivatives (agent_structured_json / agent_extract / agent_summary

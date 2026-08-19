@@ -1,7 +1,7 @@
 /**
- * Surface manifest — RAG Search Lab (`matrx-user/rag-search`).
+ * Surface manifest — Knowledge Search Lab (`matrx-user/knowledge-search`).
  *
- * The retrieval workspace at `/rag/search` (`RagSearchExperience`). Four tabs
+ * The retrieval workspace at `/knowledge/search` (`RagSearchExperience`). Four tabs
  * over ONE shared retrieval scope: Search (user-facing hybrid search with rich
  * result cards), Agent Simulation (the registered `knowledge_search` tool run
  * byte-for-byte, with raw request/response JSON), Agent Chat (the canonical
@@ -25,7 +25,7 @@
  * `writeTargets` for the split and the per-mount reasoning.
  *
  * Runtime scope assembly lives in
- * `features/rag/agent-context/buildRagSearchContextData.ts` — the ONE pure
+ * `features/knowledge/agent-context/buildRagSearchContextData.ts` — the ONE pure
  * state→scope mapper, consumed by the Search tab's context menus and its
  * `SurfaceRuntimeProvider`, and (scope-only, no query/results) by the Agent
  * Chat tab's launch.
@@ -42,7 +42,7 @@ import {
   FILTERABLE_SOURCE_KIND_ENUM_TEXT,
   MULTI_QUERY_MAX,
   MULTI_QUERY_MIN,
-} from "@/features/rag/search-controls";
+} from "@/features/knowledge/search-controls";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -81,7 +81,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "query",
     label: "Search query",
     description:
-      "The user's current query in the RAG search box (trimmed). Empty before the user types anything, and on the Agent Chat / Diagnostics tabs, which carry the retrieval scope but no search box query.",
+      "The user's current query in the Knowledge search box (trimmed). Empty before the user types anything, and on the Agent Chat / Diagnostics tabs, which carry the retrieval scope but no search box query.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -447,7 +447,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "search_query",
     label: "Search query",
     description:
-      "Stages the text of the RAG search box — what the next search will ask. Value: a non-empty string, which REPLACES the full contents of the box (there is no append mode; to extend the user's wording, read the current text from `query` and send the whole new string). Whitespace-only is refused. This only STAGES the query: the user still presses Search, and running the search is never an agent action. Use this to repair a query the evidence says failed — read `query_term_coverage` for words that landed in zero results, and `rerank_status` (\"low_confidence\" means nothing matched strongly) — rather than to ask the same question twice.",
+      "Stages the text of the Knowledge search box — what the next search will ask. Value: a non-empty string, which REPLACES the full contents of the box (there is no append mode; to extend the user's wording, read the current text from `query` and send the whole new string). Whitespace-only is refused. This only STAGES the query: the user still presses Search, and running the search is never an agent action. Use this to repair a query the evidence says failed — read `query_term_coverage` for words that landed in zero results, and `rerank_status` (\"low_confidence\" means nothing matched strongly) — rather than to ask the same question twice.",
     valueType: "string",
     updatesValue: "query",
     mode: "draft",
@@ -493,12 +493,12 @@ const writeTargets: SurfaceWriteTarget[] = [
 ];
 
 export const ragSearchManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/rag-search",
+  surfaceName: "matrx-user/knowledge-search",
   readiness: "verified",
-  label: "RAG Search",
-  urlPattern: "/rag/search",
+  label: "Knowledge Search",
+  urlPattern: "/knowledge/search",
   intro: `<surface_intro>
-You are on the RAG Search Lab: the user searches their own indexed content (PDFs, notes, code, library documents) through a hybrid retrieval pipeline, and can hand that same retrieval scope to you.
+You are on the Knowledge Search Lab: the user searches their own indexed content (PDFs, notes, code, library documents) through a hybrid retrieval pipeline, and can hand that same retrieval scope to you.
 Read the values in three layers. RETRIEVAL SCOPE (data_store_id, source_kinds, active_organization_id, active_scope_ids, admin_bypass_acl) is what the search is allowed and filtered to see — when you call a knowledge tool, match this scope rather than inventing your own, and remember that an EMPTY data store or organization means "everything the user can see", never "nothing". PIPELINE SETTINGS (rerank, multi_query, use_hyde, expand_entity_clusters, result_limit) change recall and ordering only; they never widen permissions. RESULTS are evidence of the last search.
 Scores are pipeline-relative — a rerank score or a fused RRF score — so they compare hits within one result set and mean nothing across searches. Never present a score as a confidence or a truth value. Check rerank_status before trusting the ordering: "low_confidence" means nothing matched the query strongly and the fusion order was kept, and "failed" means the reranker errored.
 query_term_coverage tells you which of the user's words appeared in zero results; when a key term is missing, say so rather than answering around it. Zero results is a real, reportable answer — never fabricate passages, and cite the source and page of anything you do use.
@@ -538,7 +538,7 @@ export interface RagDataStoreEntry {
 }
 
 /**
- * Type-safe payload helper for the RAG Search surface. None of the values are
+ * Type-safe payload helper for the Knowledge Search surface. None of the values are
  * `alwaysAvailable` — the page can be in any state (no store selected, default
  * pipeline settings, no search run, a tab with no search box at all), so every
  * key is optional.

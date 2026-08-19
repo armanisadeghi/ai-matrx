@@ -8,7 +8,7 @@
  * TWO attach shapes, by kind:
  *  - A stored FILE → a DURABLE `platform.associations` edge to the conversation
  *    (`file → conversation`). The file ID means its complete existing family,
- *    including processed documents and RAG. This PERSISTS across turns and reloads; the
+ *    including processed documents and Knowledge. This PERSISTS across turns and reloads; the
  *    backend reads the conversation's edges at call time and injects the context.
  *    The chip renders from the edge list (see `AttachedDocumentChips`), NOT the
  *    ephemeral `instanceResources` slice.

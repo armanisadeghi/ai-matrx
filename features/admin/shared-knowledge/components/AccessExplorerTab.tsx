@@ -16,7 +16,7 @@
 // a sibling of the picker (`EntityRef`), and every organization/store named in
 // a result row is an `EntityRef` in place. Doors come from the registries —
 // `organization` → /organizations/[orgId], `data_store` →
-// /rag/data-stores?store_id= — never hand-written here.
+// /knowledge/data-stores?store_id= — never hand-written here.
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -44,7 +44,7 @@ import {
 import {
   fetchDataStoreGrants,
   type DataStoreGrant,
-} from "@/features/rag/hooks/useDataStoreGrants";
+} from "@/features/knowledge/hooks/useDataStoreGrants";
 import { useAllOrgIndustries } from "@/features/industries/hooks";
 import { searchUserByEmail } from "@/features/organizations/userSearch";
 import type { SharedKnowledgeDirectory } from "../types";

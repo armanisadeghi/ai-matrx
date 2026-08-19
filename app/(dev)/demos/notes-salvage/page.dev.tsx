@@ -3,7 +3,7 @@
 // Notes component salvage — audit 2026-06-24.
 //
 // We deleted 15 dead notes components. This page surfaces the ONE capability
-// that was unique to a deleted component and worth keeping: the RAG / "add this
+// that was unique to a deleted component and worth keeping: the Knowledge / "add this
 // note to the knowledge base" affordance from the old NoteToolbar. It's rebuilt
 // here from the surviving primitives (ProcessForRagButton + useNoteIngestStatus)
 // so you can see/try it and decide whether to wire it into the real /notes UI.
@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Database, Trash2, ArrowRightLeft, Info } from "lucide-react";
-import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
 import { useNoteIngestStatus } from "@/features/notes/hooks/useNoteIngestStatus";
 
 /** The salvaged cluster, faithful to the deleted NoteToolbar (lines 174-210). */
@@ -38,10 +38,10 @@ function RagCluster({ noteId }: { noteId: string | null }) {
               detail: { fileId: noteId },
             }),
           );
-          toast.success("Note indexed for RAG", {
+          toast.success("Note indexed for Knowledge", {
             action: {
               label: "View in library",
-              onClick: () => router.push("/rag/library"),
+              onClick: () => router.push("/knowledge/library"),
             },
           });
         }}
@@ -60,7 +60,7 @@ function RagCluster({ noteId }: { noteId: string | null }) {
 }
 
 const DELETED = [
-  "NoteToolbar.tsx — redundant; only the RAG cluster (shown left) was unique",
+  "NoteToolbar.tsx — redundant; only the Knowledge cluster (shown left) was unique",
   "shell/ (7 files: NotesShell, NoteViewShell, NoteEditorPlaceholder, NotesMainArea, NotesTabBar, NotesSidebar, NotesSidebarClient) — abandoned RSC rewrite; 2 were self-labeled stubs",
   "NoteContextMenu, NoteContextMenuContent, noteContextMenuBridge — superseded by UnifiedAgentContextMenu",
   "NoteEditorWithChrome + actions/WindowNotesBody — the dead window editor that consumed the bespoke menu",
@@ -69,9 +69,9 @@ const DELETED = [
 
 const PORT_CANDIDATES = [
   {
-    title: "RAG / knowledge-base indexing — SHIPPED (2026-06-24)",
+    title: "Knowledge / knowledge-base indexing — SHIPPED (2026-06-24)",
     detail:
-      "Now in the tab “…” menu (“Add to knowledge base” / “Knowledge base”, with an indexed dot) and the mobile dock’s More sheet. Opens NoteKnowledgePanel in a pop-out side panel: index/re-index + the canonical RAG viewer (chunks + Test search). The live cluster above remains for quick trying.",
+      "Now in the tab “…” menu (“Add to knowledge base” / “Knowledge base”, with an indexed dot) and the mobile dock’s More sheet. Opens NoteKnowledgePanel in a pop-out side panel: index/re-index + the canonical Knowledge viewer (chunks + Test search). The live cluster above remains for quick trying.",
   },
   {
     title: "Sidebar drag-edge auto-scroll — SHIPPED (2026-06-24)",
@@ -112,7 +112,7 @@ export default function NotesSalvageDemoPage() {
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-semibold text-foreground">
-              Salvaged: add a note to the knowledge base (RAG)
+              Salvaged: add a note to the knowledge base (Knowledge)
             </h2>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">

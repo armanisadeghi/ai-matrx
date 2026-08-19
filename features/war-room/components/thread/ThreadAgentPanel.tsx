@@ -147,7 +147,7 @@ export default function ThreadAgentPanel({
     if (taskId) void dispatch(loadThreadSubtasks(taskId));
   }, [taskId, dispatch]);
 
-  // ── Hydrate the attached files' extraction + RAG-searchable signals ──────
+  // ── Hydrate the attached files' extraction + Knowledge-searchable signals ──────
   // The `war_room` <files> manifest is built SYNC from Redux + a module cache,
   // so the flags (extraction="yes|no", rag="indexed|no") are only accurate once
   // we've probed each attached cld_file. Prefetch on mount / whenever the file
@@ -217,7 +217,7 @@ export default function ThreadAgentPanel({
       note?.content,
       note?.label,
       attachments,
-      // Re-push when the attached files' extraction/RAG signals resolve, so the
+      // Re-push when the attached files' extraction/Knowledge signals resolve, so the
       // <files> manifest's flags become accurate without a recording/cleanup.
       filesProbeTick,
       // Re-push when the thread's OTHER audio sessions' transcripts hydrate,

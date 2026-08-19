@@ -21,11 +21,11 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
+import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
 import {
   useOpenCitation,
   shouldOpenInNewTab,
-} from "@/features/rag/components/source-inspector/useOpenCitation";
+} from "@/features/knowledge/components/source-inspector/useOpenCitation";
 
 import { fetchEntityMentions } from "../service/kgGraphService";
 import { fetchSourceNames } from "../service/sourceNames";

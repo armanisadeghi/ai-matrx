@@ -3,8 +3,8 @@ import { FileText, NotebookText, Code2, BookOpen, Mic, Globe } from "lucide-reac
 import type { ToolAccent } from "@/features/tool-call-visualization/types";
 
 /**
- * Canonical source-kind → glossy glyph mapping for RAG hits. One place so every
- * surface (the knowledge_search tool card, /rag/search, the omnibox) draws the same
+ * Canonical source-kind → glossy glyph mapping for Knowledge hits. One place so every
+ * surface (the knowledge_search tool card, /knowledge/search, the omnibox) draws the same
  * icon + accent + label for a kind. The tool-viz `parseRag` re-exports this.
  */
 

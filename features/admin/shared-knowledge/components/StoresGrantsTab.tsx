@@ -14,7 +14,7 @@
 // an anchor — `EntityDoorControls` rides beside it as a sibling, exactly like
 // the association picker does. Owning organizations and organization-audience
 // grants are full `EntityRef`s. Routes come from the entity registry
-// (`data_store` → /rag/data-stores?store_id=, `organization` →
+// (`data_store` → /knowledge/data-stores?store_id=, `organization` →
 // /organizations/[orgId]); nothing is hand-written here.
 
 import { useMemo, useState } from "react";
@@ -35,8 +35,8 @@ import { toast } from "@/lib/toast";
 import {
   useDataStoreGrants,
   type DataStoreGrant,
-} from "@/features/rag/hooks/useDataStoreGrants";
-import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+} from "@/features/knowledge/hooks/useDataStoreGrants";
+import { DataStorePublishPanel } from "@/features/knowledge/components/data-stores/DataStorePublishPanel";
 import type { SharedKnowledgeDirectory } from "../types";
 
 function grantLabel(g: DataStoreGrant): string {

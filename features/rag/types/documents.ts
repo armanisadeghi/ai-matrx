@@ -1,5 +1,5 @@
 /**
- * features/rag/types/documents.ts
+ * features/knowledge/types/documents.ts
  *
  * Wire shapes for the unified document API at /api/document/*.
  *

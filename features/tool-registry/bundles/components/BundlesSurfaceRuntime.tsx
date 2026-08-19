@@ -476,7 +476,7 @@ export function useBundlesWriteHandlers(): () => SurfaceWriteHandlers {
        * admin cannot open the form and then ask for help. Opening from the
        * handler inverts that: the admin asks first, with the page idle, and
        * the form appears already filled. This follows `CreateStoreInline` in
-       * the RAG data-stores adopter and `lookup_draft` in the sibling lookups
+       * the Knowledge data-stores adopter and `lookup_draft` in the sibling lookups
        * console.
        */
       new_bundle_draft: async (value: unknown) => {

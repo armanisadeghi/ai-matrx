@@ -14,7 +14,7 @@
  * of them.
  *
  * NOTE — this manifest was rewritten on 2026-07-27. It previously described a
- * RAG document VIEWER at `/rag/viewer/[id]` (pages, extracted text, RAG
+ * Knowledge document VIEWER at `/knowledge/viewer/[id]` (pages, extracted text, Knowledge
  * chunks). No such component was ever wired to this surface; every one of
  * those values was fictional. See the Change Log entry below.
  *

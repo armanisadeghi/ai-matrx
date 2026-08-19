@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * IngestFlowAnimation — in-tab visualization of the RAG write pipeline.
+ * IngestFlowAnimation — in-tab visualization of the Knowledge write pipeline.
  *
  * Lives inside surfaces like the Files preview "Document" tab while a
  * file is being processed. Replaces the old "live progress in the corner"
  * placeholder with a beautiful, real-time pipeline visualization that
- * mirrors the marketing diagram users see at /rag/visualization.
+ * mirrors the marketing diagram users see at /knowledge/visualization.
  *
  * Driven by the streaming `useFileIngest` state — every node and edge
  * derives its visual state ("pending" / "active" / "complete") from the
@@ -25,7 +25,7 @@
  */
 
 import { useMemo } from "react";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 // eslint-disable-next-line no-restricted-syntax -- inside the IngestFlowAnimation dynamic(ssr:false) front-door gate; React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import {
   ReactFlow,
@@ -66,7 +66,7 @@ import {
   type FlowEdgeLiveStats,
 } from "./edges/FlowEdge";
 import type { IngestHandle, IngestFlowAnimationProps } from "./IngestFlowAnimation";
-import type { IngestProgress, IngestResponse } from "@/features/rag/api/ingest";
+import type { IngestProgress, IngestResponse } from "@/features/knowledge/api/ingest";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -551,7 +551,7 @@ export function IngestFlowAnimation({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Processing for RAG
+              Processing for Knowledge
             </div>
             <div
               className="mt-0.5 text-sm font-medium truncate"

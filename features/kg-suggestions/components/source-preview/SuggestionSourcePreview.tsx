@@ -240,7 +240,7 @@ function PreviewBody({
 
 // ── Snippet matching ─────────────────────────────────────────────────────────
 //
-// RAG snippets are usually a contiguous slice of the source text, so a
+// Knowledge snippets are usually a contiguous slice of the source text, so a
 // case-insensitive substring match lands most of the time. We strip leading /
 // trailing ellipses + quotes the snippet pipeline adds, and if the full snippet
 // isn't found, retry with a long leading run of words (handles trailing "…"

@@ -211,7 +211,7 @@ const NAV_ITEMS: { label: string; icon: LucideIcon; href?: string }[] = [
   { label: "Projects", icon: FileText, href: "/projects" },
   { label: "Agents", icon: Cpu, href: "/agents" },
   { label: "Workflows", icon: WandSparkles },
-  { label: "Knowledge Base", icon: BookOpen, href: "/rag" },
+  { label: "Knowledge Base", icon: BookOpen, href: "/knowledge" },
   { label: "Apps", icon: LayoutGrid, href: "/apps" },
 ];
 

@@ -35,7 +35,7 @@ import {
   Share2,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -148,7 +148,7 @@ export function FileTabsBody({
   // not mounted at all. This is the difference between "keep the blob alive"
   // (correct, post-visit) and "fetch every tab's data on first click"
   // (the bug): mounting Analysis + Knowledge + Info eagerly fired
-  // `/files/{id}/analysis`, `/annotations`, and `/rag-status` on a plain
+  // `/files/{id}/analysis`, `/annotations`, and `/knowledge-status` on a plain
   // preview click — three server round-trips for tabs the user never saw.
   //
   // `mountedTabs` grows monotonically: it starts with whatever tab is active
@@ -224,7 +224,7 @@ export function FileTabsBody({
           active={activeTab === "document"}
           onClick={() => setActiveTab("document")}
           density={density}
-          title={`Knowledge index view (RAG: pages, cleaned text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, lineage)`}
+          title={`Knowledge index view (Knowledge: pages, cleaned text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, lineage)`}
         />
         <TabButton
           icon={<Atom className="h-3.5 w-3.5" />}
@@ -270,7 +270,7 @@ export function FileTabsBody({
        *
        * Lazy (pre-visit): a tab the user has never opened is not rendered, so
        * its data fetch never fires. This is what stops a plain preview click
-       * from hitting `/analysis`, `/annotations`, and `/rag-status`.
+       * from hitting `/analysis`, `/annotations`, and `/knowledge-status`.
        *
        * Each tab has its own error boundary so a crash in one doesn't
        * blank the other.

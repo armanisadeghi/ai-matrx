@@ -13,8 +13,8 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import type { ChunkRow } from "@/features/rag/types/documents";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import type { ChunkRow } from "@/features/knowledge/types/documents";
 
 export interface ChunksPaneProps {
   chunks: ChunkRow[];
@@ -70,7 +70,7 @@ export function ChunksPane({
         )}
         {!loading && !error && chunks.length === 0 && (
           <div className="p-3 text-sm text-muted-foreground">
-            No segments for this document yet — re-process through RAG
+            No segments for this document yet — re-process through Knowledge
             ingestion.
           </div>
         )}

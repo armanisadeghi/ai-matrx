@@ -686,7 +686,7 @@ export const OVERLAY_CATALOGUE = {
     isWindow: false,
   },
   ragAiCopyWindow: {
-    label: "Copy RAG Result for AI",
+    label: "Copy Knowledge Result for AI",
     instanceMode: "singleton",
     isWindow: true,
   },

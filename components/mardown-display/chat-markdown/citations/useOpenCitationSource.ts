@@ -6,7 +6,7 @@
  * Thin hook shell: the openable target is built by the PURE
  * `citationOpenRequest` (./citation-open-request — unit-tested there) and
  * routed through the CANONICAL opener (`useOpenCitation`,
- * features/rag/components/source-inspector) — never a fork:
+ * features/knowledge/components/source-inspector) — never a fork:
  *   - fileId present → Source Inspector window at the exact PDF page
  *     (sourceKind "cld_file");
  *   - url present (no fileId) → the opener's new-tab fallback;
@@ -16,7 +16,7 @@
  */
 
 import { useCallback } from "react";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
 import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
 import { citationOpenRequest } from "./citation-open-request";
 

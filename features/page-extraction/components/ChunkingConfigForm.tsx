@@ -1229,8 +1229,8 @@ function TemplateEditor({
           />
         </Field>
 
-        {/* 5. RAG-boost override */}
-        <Field label="RAG boost" hint="Blank = agent default">
+        {/* 5. Knowledge-boost override */}
+        <Field label="Knowledge boost" hint="Blank = agent default">
           <Input
             value={draft.ragBoost ?? ""}
             onChange={(e) => {

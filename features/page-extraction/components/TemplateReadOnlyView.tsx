@@ -244,7 +244,7 @@ export function TemplateReadOnlyView({
           );
         })()}
         {job.rag_boost != null && (
-          <Row label="RAG boost">
+          <Row label="Knowledge boost">
             <span className="font-mono text-foreground/90">
               {job.rag_boost}
             </span>

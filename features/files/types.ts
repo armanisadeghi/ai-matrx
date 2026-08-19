@@ -308,7 +308,7 @@ export interface CloudFile {
   /**
    * Points at the "official" `processed_documents.id` for this file —
    * the canonical text-extraction row out of potentially many re_extract /
-   * re_clean variants. UIs that show "extracted text" or feed RAG should
+   * re_clean variants. UIs that show "extracted text" or feed Knowledge should
    * use this column to find THE extract, not the freshest one.
    */
   canonicalProcessedDocumentId?: string | null;
@@ -539,7 +539,7 @@ export type TypeFilter = string[];
 export type OwnerFilter = string[];
 
 /**
- * Per-file RAG indexing status.
+ * Per-file Knowledge indexing status.
  *
  *   - `indexed`     — backend has a `processed_documents` row for this file
  *   - `not_indexed` — file exists but no doc row (`/files/{id}/document` 404)
@@ -547,14 +547,14 @@ export type OwnerFilter = string[];
  *   - `unknown`     — endpoint returned a transient error or hasn't been
  *                     called yet for this file
  *
- * The pending state matters because the user toggles "Show RAG status"
+ * The pending state matters because the user toggles "Show Knowledge status"
  * across hundreds of files at once — the column needs to show "Checking…"
  * for the rows still in flight rather than flickering "Not indexed".
  */
 export type RagStatus = "indexed" | "not_indexed" | "pending" | "unknown";
 
 /**
- * RAG filter — multi-select of statuses. Empty array = "any status".
+ * Knowledge filter — multi-select of statuses. Empty array = "any status".
  * Modeled as `string[]` (not `RagStatus[]`) to mirror `TypeFilter` /
  * `OwnerFilter` and keep the slice type import-cycle-free.
  */
@@ -581,10 +581,10 @@ export interface ColumnFilters {
   size: SizeFilter;
   access: AccessFilter;
   /**
-   * RAG indexing status multi-select. Only meaningful when the user has
-   * fetched RAG statuses (via the RAG column toggle in column-settings or
+   * Knowledge indexing status multi-select. Only meaningful when the user has
+   * fetched Knowledge statuses (via the Knowledge column toggle in column-settings or
    * the column-header refresh button) — folders never pass this filter
-   * since RAG indexing is a file-only concept.
+   * since Knowledge indexing is a file-only concept.
    */
   rag: RagFilter;
 }
@@ -637,7 +637,7 @@ export const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
   created_at: false,
   access: true,
   rag_status: false,
-  // ON by default on purpose: context drives RAG/NER and everything
+  // ON by default on purpose: context drives Knowledge/NER and everything
   // downstream — its presence (or amber absence) must be impossible to miss.
   // One bulk query per visible page populates it (no per-row probes).
   context: true,
@@ -712,9 +712,9 @@ export interface UploadState {
 // Registered under key `cloudFiles` in lib/redux/rootReducer.ts (Phase 2).
 
 /**
- * Per-file RAG indexing status, hydrated lazily by the
+ * Per-file Knowledge indexing status, hydrated lazily by the
  * `prefetchRagStatusesForFiles` thunk. The thunk de-duplicates against
- * `byFileId` so toggling the RAG column on/off doesn't re-fetch already
+ * `byFileId` so toggling the Knowledge column on/off doesn't re-fetch already
  * known answers (use the column header's refresh action to force).
  */
 export interface RagStatusState {
@@ -737,7 +737,7 @@ export interface CloudFilesState {
   ui: UiState;
   uploads: Record<string, UploadState>;
 
-  /** Per-file RAG indexing status, populated on demand. */
+  /** Per-file Knowledge indexing status, populated on demand. */
   ragStatus: RagStatusState;
 
   /**
@@ -800,8 +800,8 @@ export interface UploadFilesArg {
   metadata?: Record<string, unknown>;
   /**
    * Per-upload options forwarded to the backend `options_json` field.
-   * Notably `rag.trigger_now` to run RAG immediately on upload instead of
-   * waiting for the scheduled auto-RAG sweep. Only menu/explicit uploads set
+   * Notably `rag.trigger_now` to run Knowledge immediately on upload instead of
+   * waiting for the scheduled auto-Knowledge sweep. Only menu/explicit uploads set
    * this — drag-drop leaves it unset (scheduled sweep still runs).
    */
   options?: { rag?: { trigger_now?: boolean } };

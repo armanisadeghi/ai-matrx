@@ -10,7 +10,7 @@
 //
 // A resource is a DEFINITION + a FEED — the value is the feed's output, not the
 // authored thing. Feeds (see FeedConfigEditor.tsx):
-//   - dataset  — points at a RAG data store; agents query it (LIVE: the AMA
+//   - dataset  — points at a Knowledge data store; agents query it (LIVE: the AMA
 //     Guides). Resolves to a pointer via resolve_full_context loop 4c.
 //   - manual   — a typed value (rare; the component-aware editor). LIVE.
 //   - computed — code/expression at resolution (the ambient current_* keys are
@@ -86,7 +86,7 @@ import {
  *
  * THE DOOR LAW: this is what turns "→ AMA Guides" from a label into the store
  * itself. Tokens resolve their own route + peek through the entity registry
- * (`data_store` → /rag/data-stores?store_id=, `agent` → /agents/[id]), so this
+ * (`data_store` → /knowledge/data-stores?store_id=, `agent` → /agents/[id]), so this
  * function never writes a URL.
  */
 function feedTarget(

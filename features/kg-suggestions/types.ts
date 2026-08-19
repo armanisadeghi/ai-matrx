@@ -191,7 +191,7 @@ export type KgDecisionResponse = void;
 
 // ── Source-kind → taggable entity-type mapping ───────────────────────────────
 //
-// A suggestion's `source_kind` is a RAG source kind (note | task | project |
+// A suggestion's `source_kind` is a Knowledge source kind (note | task | project |
 // cld_file | transcript | scraped | code_file | …). Only a subset maps to a
 // taggable `EntityType` (features/scopes/types.ts). Used by both
 // the Stage-A link accept (tag the source to its target scope) and the
@@ -208,7 +208,7 @@ export const KG_SOURCE_KIND_TO_ENTITY_TYPE: Record<string, string> = {
   cld_file: "file",
 };
 
-/** Map a RAG source_kind to a taggable entity type, or `null` if untaggable. */
+/** Map a Knowledge source_kind to a taggable entity type, or `null` if untaggable. */
 export function kgSourceKindToEntityType(sourceKind: string): string | null {
   return KG_SOURCE_KIND_TO_ENTITY_TYPE[sourceKind] ?? null;
 }

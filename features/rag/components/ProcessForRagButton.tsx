@@ -1,10 +1,10 @@
 /**
- * features/rag/components/ProcessForRagButton.tsx
+ * features/knowledge/components/ProcessForRagButton.tsx
  *
- * Reusable "Process for RAG" toolbar/menu button. Designed to drop into
+ * Reusable "Process for Knowledge" toolbar/menu button. Designed to drop into
  * any per-source-kind editor — Notes, code editors, agent-app editors —
  * so each one gets a consistent affordance to push its current row
- * through `/rag/ingest` with the right `source_kind`.
+ * through `/knowledge/ingest` with the right `source_kind`.
  *
  * Why centralise this:
  *   - The cloud-files DocumentTab already covers `cld_file` ingestion.
@@ -23,7 +23,7 @@ import { Loader2, Rocket } from "lucide-react";
 import type {
   IngestProgress,
   IngestRequestBody,
-} from "@/features/rag/api/ingest";
+} from "@/features/knowledge/api/ingest";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ export interface ProcessForRagButtonProps {
   force?: boolean;
   /** Compact icon-only mode for tight toolbars. Default false (label + icon). */
   iconOnly?: boolean;
-  /** Label shown in the idle/error state. Default "Process for RAG". */
+  /** Label shown in the idle/error state. Default "Process for Knowledge". */
   idleLabel?: string;
   /** Label shown once ingestion completes. Default "Indexed". */
   completeLabel?: string;
@@ -54,7 +54,7 @@ export interface ProcessForRagButtonProps {
 }
 
 /**
- * Internal: streams `/rag/ingest/stream` and tracks progress. Same shape
+ * Internal: streams `/knowledge/ingest/stream` and tracks progress. Same shape
  * as `useFileIngest` but accepts an arbitrary source kind (notes /
  * code-files / future).
  */
@@ -95,7 +95,7 @@ function useSourceIngest({
       setProgress(null);
       try {
         // The streaming helper in `rag-ingest.ts` is hard-coded to
-        // `cld_file`. Notes / code use the same `/rag/ingest/stream`
+        // `cld_file`. Notes / code use the same `/knowledge/ingest/stream`
         // endpoint with a different `source_kind`. We POST directly and
         // route the response through `parseNdjsonStream` — the same
         // platform primitive every other NDJSON consumer uses — instead
@@ -109,7 +109,7 @@ function useSourceIngest({
           field_id: fieldId ?? null,
           force: opts.force ?? false,
         };
-        const response = await fetch(`${resolveBaseUrl()}/rag/ingest/stream`, {
+        const response = await fetch(`${resolveBaseUrl()}/knowledge/ingest/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify(body),
@@ -121,7 +121,7 @@ function useSourceIngest({
           return;
         }
 
-        // The RAG ingest endpoint emits custom event names
+        // The Knowledge ingest endpoint emits custom event names
         // (`rag.ingest.progress` / `.complete` / `.error`) — not the
         // standard Matrx envelope set — so we walk the raw generator and
         // narrow the event names by hand. `TypedStreamEvent` only covers
@@ -171,7 +171,7 @@ export function ProcessForRagButton({
   fieldId,
   force = false,
   iconOnly = false,
-  idleLabel = "Process for RAG",
+  idleLabel = "Process for Knowledge",
   completeLabel = "Indexed",
   className,
   disabled,
@@ -198,8 +198,8 @@ export function ProcessForRagButton({
       : status === "error"
         ? `Ingest failed: ${error ?? "unknown error"}`
         : status === "complete"
-          ? "Indexed for RAG"
-          : "Process this for RAG search and citations";
+          ? "Indexed for Knowledge"
+          : "Process this for Knowledge search and citations";
 
   const handleClick = useCallback(() => {
     if (status === "running") return;

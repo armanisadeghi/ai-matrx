@@ -56,7 +56,7 @@ const COLUMN_SPECS: ReadonlyArray<ColumnSpec> = [
   { id: "created_at", label: "Created" },
   { id: "access", label: "Access" },
   { id: "context", label: "Context" },
-  { id: "rag_status", label: "RAG status" },
+  { id: "rag_status", label: "Knowledge status" },
 ];
 
 export interface ColumnSettingsProps {

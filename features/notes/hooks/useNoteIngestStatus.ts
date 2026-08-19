@@ -28,8 +28,8 @@ const PROCESSED_EVENT = "cloud-files:document-processed";
 
 export function useNoteIngestStatus(noteId: string | null): {
   state: NoteIngestState;
-  /** processed_documents.id when ingested — for /rag/viewer/<id> or the
-   *  embedded RAG viewer. Null when not ingested / still loading. */
+  /** processed_documents.id when ingested — for /knowledge/viewer/<id> or the
+   *  embedded Knowledge viewer. Null when not ingested / still loading. */
   documentId: string | null;
   refresh: () => void;
 } {

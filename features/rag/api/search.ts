@@ -1,11 +1,11 @@
 /**
- * features/rag/api/search.ts
+ * features/knowledge/api/search.ts
  *
- * Typed client for `POST /rag/search`. Mirror of the Python team's
+ * Typed client for `POST /knowledge/search`. Mirror of the Python team's
  * `SearchHitOut` / `SearchResponseOut` shapes.
  *
- * Lives in the rag feature alongside the other RAG endpoints (ingest,
- * stages, document) and is consumed by both the dedicated RAG search
+ * Lives in the rag feature alongside the other Knowledge endpoints (ingest,
+ * stages, document) and is consumed by both the dedicated Knowledge search
  * page and embedded surfaces (file context menu, omnibox, embed-in-chat).
  */
 import { postNdjson } from "@/lib/python-client";
@@ -108,16 +108,16 @@ export interface RagSearchRequest {
 }
 
 /**
- * Run a single RAG search. `POST /rag/search` STREAMS NDJSON since the
+ * Run a single Knowledge search. `POST /knowledge/search` STREAMS NDJSON since the
  * 2026-07-06 stream-everything conversion (identical to the retained
- * `/rag/search/stream` alias) — this function resolves with the terminal
+ * `/knowledge/search/stream` alias) — this function resolves with the terminal
  * `rag.search.result` payload carrying the old `SearchResponseOut` body.
  *
  * (The per-hit `rag.citation` / `rag.citation.summary` events were deleted
  * 2026-08-08 — a parallel citation channel with zero consumers; answer
  * citations are provider-native via the unified `citation` stream event.)
  *
- * Like the ingest family, RAG events are namespaced in `data.kind`
+ * Like the ingest family, Knowledge events are namespaced in `data.kind`
  * (dotted), not the typed `data.type` registry.
  *
  * Throws on pre-stream HTTP failures, in-stream `error` events, and a
@@ -130,12 +130,12 @@ export async function ragSearch(
   } = {},
 ): Promise<RagSearchResponse> {
   let result: RagSearchResponse | null = null;
-  for await (const evt of postNdjson<RagSearchRequest>(`/rag/search`, body, {
+  for await (const evt of postNdjson<RagSearchRequest>(`/knowledge/search`, body, {
     signal: opts.signal,
   })) {
     if (evt.event === "error") {
       throw new Error(
-        evt.data.user_message ?? evt.data.message ?? "RAG search failed",
+        evt.data.user_message ?? evt.data.message ?? "Knowledge search failed",
       );
     }
     if (evt.event !== "data") continue;
@@ -145,7 +145,7 @@ export async function ragSearch(
     }
   }
   if (!result) {
-    throw new Error("RAG search stream closed without a result");
+    throw new Error("Knowledge search stream closed without a result");
   }
   return result;
 }
@@ -157,14 +157,14 @@ export async function ragSearch(
 //   - cld_file    → /files/f/<source_id>?tab=document&chunk=<chunk_id>[&page=]
 //   - note        → /notes/<source_id> (noteid is the row id)
 //   - code_file   → /code/<source_id>  (legacy code workspace)
-//   - library_doc → /rag/viewer/<source_id>?chunk=<chunk_id>
+//   - library_doc → /knowledge/viewer/<source_id>?chunk=<chunk_id>
 //   - transcript  → /transcription/studio?session=<source_id>
 //   - scraped     → /scraper?url=<source_id>   (source_id is the page URL)
 //
 // The `metadata` dict on a hit may carry `page_number` for pdf-extracted
 // chunks; the helper looks it up and adds &page= when present.
 //
-// Anything else falls through to the standalone /rag/viewer (works whenever
+// Anything else falls through to the standalone /knowledge/viewer (works whenever
 // the chunk's underlying processed_document can be derived from source_id).
 // ---------------------------------------------------------------------------
 
@@ -188,7 +188,7 @@ export function citationHrefFor(hit: RagSearchHit): string {
     case "code_file":
       return `/code/${encodeURIComponent(hit.source_id)}`;
     case "library_doc":
-      return `/rag/viewer/${encodeURIComponent(
+      return `/knowledge/viewer/${encodeURIComponent(
         hit.source_id,
       )}?chunk=${encodeURIComponent(hit.chunk_id)}${pageQs}`;
     case "transcript":
@@ -201,7 +201,7 @@ export function citationHrefFor(hit: RagSearchHit): string {
       // scraper window with ?url=… restores the page in its viewer.
       return `/scraper?url=${encodeURIComponent(hit.source_id)}`;
     default:
-      return `/rag/viewer/${encodeURIComponent(
+      return `/knowledge/viewer/${encodeURIComponent(
         hit.source_id,
       )}?chunk=${encodeURIComponent(hit.chunk_id)}${pageQs}`;
   }

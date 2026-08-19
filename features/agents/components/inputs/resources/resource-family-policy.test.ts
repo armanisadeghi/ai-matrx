@@ -23,7 +23,7 @@ describe("resource family policy", () => {
   it("keeps promotions and exclusions internally consistent", () => {
     let policy = normalizeResourceFamilyPolicy({
       promote: [{ representation: "CLEAN", max_chars: 50_000 }],
-      exclude: ["clean", "RAG", "rag"],
+      exclude: ["clean", "Knowledge", "rag"],
     });
     policy = updateFamilyPromotion(policy, 0, { representation: "raw" });
     policy = setFamilyRepresentationEnabled(policy, "raw", false);

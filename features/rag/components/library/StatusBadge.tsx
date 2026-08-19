@@ -8,8 +8,8 @@ import {
   FileText,
   Stars,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import type { DocStatus } from "@/features/rag/types/library";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import type { DocStatus } from "@/features/knowledge/types/library";
 
 const STATUS_CONFIG: Record<
   DocStatus,

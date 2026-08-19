@@ -73,9 +73,9 @@ export const PDF_SURFACES: PdfSurfaceDef[] = [
   {
     id: "rag-library",
     label: "Knowledge library",
-    description: "RAG documents built from this file",
+    description: "Knowledge documents built from this file",
     icon: Database,
     buildHref: ({ processedDocumentId }) =>
-      processedDocumentId ? `/rag/library` : null,
+      processedDocumentId ? `/knowledge/library` : null,
   },
 ];

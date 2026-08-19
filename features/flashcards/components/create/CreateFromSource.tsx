@@ -2,14 +2,14 @@
 
 // features/flashcards/components/create/CreateFromSource.tsx
 //
-// Phase 5 (Flashcards Competitive Parity Push) — RAG-sourced generation with
+// Phase 5 (Flashcards Competitive Parity Push) — Knowledge-sourced generation with
 // a chunk-level curation UI. The real blocker per the owner wasn't the agent
 // (fc_generate_from_source is already specced + registered, AGENT_SPECS.md
 // §2) — it's giving the user a checklist of exactly which retrieved
 // chunks/sections go into the deck, instead of blindly feeding a whole
-// document. This is a two-step wizard on top of existing RAG library
+// document. This is a two-step wizard on top of existing Knowledge library
 // primitives (useLibrary, useDocument/useDocumentChunks):
-//   1. Pick a processed document (from the RAG library, status "ready").
+//   1. Pick a processed document (from the Knowledge library, status "ready").
 //   2. Check off which chunks to include, set count/difficulty, generate.
 //
 // Reuses useGenerateCards (the same agent round-trip primitive from-topic
@@ -52,13 +52,13 @@ import { LoadingSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { DEPTH_TIERS } from "../../data/enhanceCard";
 import type { Depth } from "@/features/education/assessment/data/types";
-import { useLibrary } from "@/features/rag/hooks/useLibrary";
+import { useLibrary } from "@/features/knowledge/hooks/useLibrary";
 import {
   useDocument,
   useDocumentChunks,
-} from "@/features/rag/hooks/useDocument";
-import type { LibraryDocSummary } from "@/features/rag/types/library";
-import type { ChunkRow } from "@/features/rag/types/documents";
+} from "@/features/knowledge/hooks/useDocument";
+import type { LibraryDocSummary } from "@/features/knowledge/types/library";
+import type { ChunkRow } from "@/features/knowledge/types/documents";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -233,7 +233,7 @@ export function CreateFromSource() {
         // Backfill durable, OPENABLE refs onto every citation — the doc's file,
         // the processed-document id, and the chunk's real page — so tapping a
         // citation opens the actual source, not just an excerpt. Source-agnostic
-        // (same helper serves uploads + chat); RAG just happens to know these ids.
+        // (same helper serves uploads + chat); Knowledge just happens to know these ids.
         trust: attachSourceRefs(c.trust, {
           fileId,
           documentId: selectedDoc.id,
@@ -415,11 +415,11 @@ function DocPickerStep({
             No processed documents yet
           </p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Upload and process a PDF or document in your RAG library first —
+            Upload and process a PDF or document in your Knowledge library first —
             once it finishes chunking, it'll show up here to build a deck from.
           </p>
           <Button variant="outline" size="sm" asChild className="mt-1">
-            <a href="/rag/library">Open RAG library</a>
+            <a href="/knowledge/library">Open Knowledge library</a>
           </Button>
         </div>
       ) : (

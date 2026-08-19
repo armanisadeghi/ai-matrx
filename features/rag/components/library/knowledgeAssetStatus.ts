@@ -3,9 +3,9 @@ import type {
   DeriveKind,
   DerivationRollup,
   DerivationRun,
-} from "@/features/rag/api/derivations";
-import type { OpState } from "@/features/rag/hooks/useKnowledgeAssetRunner";
-import type { PageVerificationSummary } from "@/features/rag/hooks/usePageVerificationSummary";
+} from "@/features/knowledge/api/derivations";
+import type { OpState } from "@/features/knowledge/hooks/useKnowledgeAssetRunner";
+import type { PageVerificationSummary } from "@/features/knowledge/hooks/usePageVerificationSummary";
 
 export interface RepresentationState {
   started: boolean;

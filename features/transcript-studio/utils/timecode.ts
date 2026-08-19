@@ -23,7 +23,7 @@ export function formatTimecode(sec: number): string {
  * Build the standard timestamped transcript text from time-anchored segments:
  * one `[m:ss] text` entry per segment. This is the single standard for any
  * human-facing transcript DISPLAY or copy/export across the app (the plain,
- * un-timecoded selectors remain for machine consumers — agent context, RAG,
+ * un-timecoded selectors remain for machine consumers — agent context, Knowledge,
  * search — that need raw text).
  */
 export function buildTimestampedTranscript(

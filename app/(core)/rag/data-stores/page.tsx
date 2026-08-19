@@ -1,5 +1,5 @@
 /**
- * /rag/data-stores — per-user data store management.
+ * /knowledge/data-stores — per-user data store management.
  *
  * Counterpart to the admin surface in dashboard/. Both surfaces talk to
  * the same rag.data_stores + rag.data_store_members tables; RLS scopes
@@ -7,7 +7,7 @@
  * has no meaningful guest experience.
  */
 
-import { DataStoresPage } from "@/features/rag/components/data-stores/DataStoresPage";
+import { DataStoresPage } from "@/features/knowledge/components/data-stores/DataStoresPage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

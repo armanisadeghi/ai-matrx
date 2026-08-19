@@ -21,7 +21,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
 import {
   AlertCircle,
   CloudUpload,
@@ -37,7 +37,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,34 +56,34 @@ import {
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
 import dynamic from "next/dynamic";
-import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
+import { RichMemberTable } from "@/features/knowledge/components/data-stores/RichMemberTable";
 import {
   useDataStoreDetail,
   useDataStores,
   type EnrichedMember,
   useDataStoreMembersRich,
-} from "@/features/rag/hooks/useDataStores";
+} from "@/features/knowledge/hooks/useDataStores";
 import {
   DATA_STORE_KINDS,
   SOURCE_KINDS,
-} from "@/features/rag/types/data-stores-ext";
-import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores";
+} from "@/features/knowledge/types/data-stores-ext";
+import type { DataStoreWithMemberCount } from "@/features/knowledge/types/data-stores";
 import { fileHandler } from "@/features/files/handler/handler";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+import { DataStorePublishPanel } from "@/features/knowledge/components/data-stores/DataStorePublishPanel";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
-import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+import { useStoreProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
 import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
-import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
+import { buildRagDataStoresContextData } from "@/features/knowledge/agent-context/buildRagDataStoresContextData";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 /** Canonical `ui_surface.name` this page emits. */
-const RAG_DATA_STORES_SURFACE = "matrx-user/rag-data-stores";
+const RAG_DATA_STORES_SURFACE = "matrx-user/knowledge-data-stores";
 
 // THE one canonical file picker. Lazy — WindowPanel must never be parsed in
 // a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
@@ -149,7 +149,7 @@ export function DataStoresPage() {
       if (id) params.set("store_id", id);
       else params.delete("store_id");
       const qs = params.toString();
-      router.replace(`/rag/data-stores${qs ? `?${qs}` : ""}`);
+      router.replace(`/knowledge/data-stores${qs ? `?${qs}` : ""}`);
     },
     [router, search],
   );
@@ -538,14 +538,14 @@ function StoreDetailPanel({
   // ─── Bind + auto-ingest helpers ──────────────────────────────────
   // When a user adds a cld_file member to a data store, we ALSO
   // dispatch the existing "cloud-files:reprocess-document" event so
-  // the file gets queued for RAG ingestion if it wasn't already.
+  // the file gets queued for Knowledge ingestion if it wasn't already.
   // That collapses two manual steps into one click.
 
   const bindAndReprocess = useCallback(
     async (picks: { cldFileId: string; fileName: string }[], label: string) => {
       if (!picks.length) return;
       const tid = toast.loading(`${label}: 0 / ${picks.length}`, {
-        description: "Binding to store + queuing for RAG ingestion.",
+        description: "Binding to store + queuing for Knowledge ingestion.",
       });
       let bound = 0;
       let reprocessed = 0;
@@ -573,7 +573,7 @@ function StoreDetailPanel({
         }
       }
       toast.success(
-        `${bound} of ${picks.length} bound · ${reprocessed} queued for RAG`,
+        `${bound} of ${picks.length} bound · ${reprocessed} queued for Knowledge`,
         {
           id: tid,
           description: `Each file streams its ingestion progress in the file viewer. Refresh to see ${RAG_VOCAB.segmentShort.toLowerCase()} counts.`,
@@ -585,7 +585,7 @@ function StoreDetailPanel({
 
   // ─── Drag-and-drop: upload then bind ─────────────────────────────
   // Files dropped on the panel are uploaded into the user's cloud
-  // root (file_path = "/<filename>"), then bound + queued for RAG.
+  // root (file_path = "/<filename>"), then bound + queued for Knowledge.
 
   const onPanelDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     // Only react when actual files are being dragged (not text or
@@ -749,7 +749,7 @@ function StoreDetailPanel({
         id={storeId}
         error={detail.readError}
         onRetry={detail.refresh}
-        fallbackHref="/rag/data-stores"
+        fallbackHref="/knowledge/data-stores"
         fallbackLabel="All data stores"
       />
     );
@@ -919,7 +919,7 @@ function StoreDetailPanel({
             </p>
             <p>
               Drop files here to upload, bind to <strong>{s.name}</strong>, and
-              queue them for RAG ingestion in one step. Or use{" "}
+              queue them for Knowledge ingestion in one step. Or use{" "}
               <strong>Pick from your files</strong> to add already-uploaded
               documents.
             </p>
@@ -946,7 +946,7 @@ function StoreDetailPanel({
         {!readOnly && detail.members.length > 0 && (
           <div className="text-[11px] text-muted-foreground/70 pt-1">
             Tip: drag files from your computer onto this panel to upload + bind
-            + queue for RAG in one step.
+            + queue for Knowledge in one step.
           </div>
         )}
       </div>

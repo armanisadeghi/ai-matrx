@@ -55,7 +55,7 @@ export interface NoteMenuContext {
   folder: string;
   /** All known folders, used to build the "Move to Folder" submenu. */
   allFolders: string[];
-  /** Opens the note's knowledge-base (RAG) side panel. */
+  /** Opens the note's knowledge-base (Knowledge) side panel. */
   openKnowledge: (opts: { noteId: string; title?: string }) => void;
   /** Creates a folder, then moves this note into it. */
   onCreateFolder: () => void;

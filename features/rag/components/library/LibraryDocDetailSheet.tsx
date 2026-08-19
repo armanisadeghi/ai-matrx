@@ -12,7 +12,7 @@
  *   - Make it impossible to "lose" a document — everything we have on
  *     it is visible from this sheet.
  *   - Summary payload may include short previews; this sheet loads full
- *     page/chunk bodies from `/rag/library/.../page|chunks` endpoints.
+ *     page/chunk bodies from `/knowledge/library/.../page|chunks` endpoints.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,7 +20,7 @@ import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRunt
 
 /** Canonical `ui_surface.name` this sheet registers its write handler against —
  *  the same surface LibraryPage, its parent, mounts. */
-const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
+const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
@@ -59,18 +59,18 @@ import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePrevie
 import {
   citationOpensInWindow,
   useOpenCitation,
-} from "@/features/rag/components/source-inspector/useOpenCitation";
+} from "@/features/knowledge/components/source-inspector/useOpenCitation";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { components } from "@/types/python-generated/api-types";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
-import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import type { LibraryChunkPreview } from "@/features/rag/types/library";
-import type { StageName } from "@/features/rag/api/stages";
-import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
+import { useLibraryDoc } from "@/features/knowledge/hooks/useLibrary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import type { LibraryChunkPreview } from "@/features/knowledge/types/library";
+import type { StageName } from "@/features/knowledge/api/stages";
+import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
 import { ProcessingJobView } from "./ProcessingJobView";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -85,13 +85,13 @@ function sourceHref(sourceKind: string, sourceId: string): string {
     case "code_file":
       return `/code/${id}`;
     case "library_doc":
-      return `/rag/viewer/${id}`;
+      return `/knowledge/viewer/${id}`;
     case "transcript":
       return `/transcription/studio?session=${id}`;
     case "scraped":
       return `/scraper?url=${id}`;
     default:
-      return `/rag/viewer/${id}`;
+      return `/knowledge/viewer/${id}`;
   }
 }
 
@@ -337,7 +337,7 @@ export function LibraryDocDetailSheet({
    * "run_all", …); the inline view picks the new job up automatically
    * because LibraryPage filters runner.jobs by processedDocumentId.
    *
-   * Replaces the legacy POST /rag/library/{id}/reprocess fire-and-forget,
+   * Replaces the legacy POST /knowledge/library/{id}/reprocess fire-and-forget,
    * which a) hit Next.js with no auth and b) showed zero progress.
    */
   const handleReprocess = () => {
@@ -405,7 +405,7 @@ export function LibraryDocDetailSheet({
           human={() => documentHumanSummary(doc)}
           agent={() => ({
             kind: "rag-library-document",
-            location: "AI Matrx — RAG Document Library — Detail panel",
+            location: "AI Matrx — Knowledge Document Library — Detail panel",
             description:
               "Complete detail payload for the processed document currently open in the library.",
             data: doc,
@@ -428,7 +428,7 @@ export function LibraryDocDetailSheet({
           variant="outline"
           onClick={() => {
             window.open(
-              `/rag/library/${doc.id}/preview`,
+              `/knowledge/library/${doc.id}/preview`,
               "_blank",
               "noopener,noreferrer",
             );
@@ -472,7 +472,7 @@ export function LibraryDocDetailSheet({
               id={processedDocumentId ?? ""}
               error={readError}
               onRetry={reload}
-              fallbackHref="/rag/library"
+              fallbackHref="/knowledge/library"
               fallbackLabel="Library"
             />
           </div>
@@ -780,12 +780,12 @@ export function LibraryDocDetailSheet({
                           <MatrxUuidCell
                             value={doc.id}
                             label="Document ID"
-                            href={`/rag/viewer/${encodeURIComponent(doc.id)}`}
+                            href={`/knowledge/viewer/${encodeURIComponent(doc.id)}`}
                             onOpen={(id) => {
                               openCitation({
                                 sourceKind: "library_doc",
                                 sourceId: id,
-                                href: `/rag/viewer/${encodeURIComponent(id)}`,
+                                href: `/knowledge/viewer/${encodeURIComponent(id)}`,
                                 fileName: doc.name,
                               });
                             }}
@@ -856,12 +856,12 @@ export function LibraryDocDetailSheet({
                             <MatrxUuidCell
                               value={doc.parentProcessedId}
                               label="Parent document ID"
-                              href={`/rag/viewer/${encodeURIComponent(doc.parentProcessedId)}`}
+                              href={`/knowledge/viewer/${encodeURIComponent(doc.parentProcessedId)}`}
                               onOpen={(id) => {
                                 openCitation({
                                   sourceKind: "library_doc",
                                   sourceId: id,
-                                  href: `/rag/viewer/${encodeURIComponent(id)}`,
+                                  href: `/knowledge/viewer/${encodeURIComponent(id)}`,
                                 });
                               }}
                             />
@@ -877,7 +877,7 @@ export function LibraryDocDetailSheet({
                         <p className="text-sm text-muted-foreground">
                           Not bound to any data store. Bind it on the{" "}
                           <a
-                            href="/rag/data-stores"
+                            href="/knowledge/data-stores"
                             className="underline"
                             target="_blank"
                           >
@@ -894,7 +894,7 @@ export function LibraryDocDetailSheet({
                             >
                               <Database className="h-3 w-3 mr-1" />
                               <a
-                                href={`/rag/data-stores?store_id=${encodeURIComponent(s.dataStoreId)}`}
+                                href={`/knowledge/data-stores?store_id=${encodeURIComponent(s.dataStoreId)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:underline"
@@ -905,7 +905,7 @@ export function LibraryDocDetailSheet({
                               <MatrxUuidCell
                                 value={s.dataStoreId}
                                 label={`${s.name} data store ID`}
-                                href={`/rag/data-stores?store_id=${encodeURIComponent(s.dataStoreId)}`}
+                                href={`/knowledge/data-stores?store_id=${encodeURIComponent(s.dataStoreId)}`}
                               />
                             </div>
                           ))}
@@ -1572,7 +1572,7 @@ function PreviewBlock({
           human={() => text}
           agent={() => ({
             kind: "rag-document-content",
-            location: "AI Matrx — RAG Document Library — Detail panel",
+            location: "AI Matrx — Knowledge Document Library — Detail panel",
             description: `${label || "Document text"} from the open processed document.`,
             data: agentData ?? { text },
             attributes: { "content-kind": label || "text" },

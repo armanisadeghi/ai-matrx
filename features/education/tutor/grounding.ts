@@ -28,7 +28,7 @@ import {
   retrieveGroundedPassages,
   serializeGroundedPassages,
   type GroundingResult,
-} from "@/features/rag/api/grounding";
+} from "@/features/knowledge/api/grounding";
 
 /** A specific item a surface wants the tutor grounded in (AskTutor entry). */
 export interface TutorGroundingSeed {
@@ -56,7 +56,7 @@ export interface TutorLaunchGrounding {
    * tutor surface. Null only if trust derivation itself is impossible.
    */
   trust: TrustEnvelope | null;
-  /** Exact same-turn RAG result; null when no question was supplied. */
+  /** Exact same-turn Knowledge result; null when no question was supplied. */
   retrieval: GroundingResult | null;
 }
 

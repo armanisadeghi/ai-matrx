@@ -21,7 +21,7 @@ import { registerNotesDraftSource } from "@/features/notes/utils/notesDrafts";
 import { notesRealtimeMiddleware } from "@/features/notes/redux/realtimeMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
 // Deep imports, NOT `@/features/files`. The barrel re-exports the whole Files UI
-// (PreviewPane -> RAG library + PDF viewer + file-analysis studio, @xyflow/react,
+// (PreviewPane -> Knowledge library + PDF viewer + file-analysis studio, @xyflow/react,
 // react-icons/fa6). The store is built under Providers for every route, so the
 // barrel put ~261 modules / 1.75 MB of UI into every route's graph to obtain two
 // middlewares. Never import the barrel from here.

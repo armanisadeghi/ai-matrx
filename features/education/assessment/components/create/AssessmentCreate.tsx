@@ -4,7 +4,7 @@
 // Three grounded/ungrounded source modes:
 //   • Topic     → the topic generator (confidence "inferred", no citations)
 //   • Deck      → the from-source generator over a flashcard deck's cards (cited)
-//   • Document  → the from-source generator over a RAG document's chunks (cited)
+//   • Document  → the from-source generator over a Knowledge document's chunks (cited)
 // Depth-on-demand + question-type mix + exam-type are first-class config on
 // every path. Generation is metered via useEntitlement (permissive stub until P8
 // enforcement flips) — the remaining count shows BEFORE the action (TRUST §6).
@@ -42,9 +42,9 @@ import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
-import { useLibrary } from "@/features/rag/hooks/useLibrary";
-import { useDocumentChunks } from "@/features/rag/hooks/useDocument";
-import type { LibraryDocSummary } from "@/features/rag/types/library";
+import { useLibrary } from "@/features/knowledge/hooks/useLibrary";
+import { useDocumentChunks } from "@/features/knowledge/hooks/useDocument";
+import type { LibraryDocSummary } from "@/features/knowledge/types/library";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
@@ -577,8 +577,8 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
                 ) : docs.filter((d) => d.chunks > 0).length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No processed documents. Upload one in your{" "}
-                    <a className="underline" href="/rag/library">
-                      RAG library
+                    <a className="underline" href="/knowledge/library">
+                      Knowledge library
                     </a>{" "}
                     first.
                   </p>

@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import {
   fetchDerivativeChunks,
   type DerivativeChunkRow,
-} from "@/features/rag/api/derivations";
+} from "@/features/knowledge/api/derivations";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,

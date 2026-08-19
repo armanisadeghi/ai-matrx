@@ -2,7 +2,7 @@
 //
 // Resolve a citation to its REAL source and open it — the full file/PDF in the
 // canonical file viewer, or the web page in a new tab — not just an excerpt.
-// Source-agnostic: works for RAG-backed docs, user uploads/attachments, and
+// Source-agnostic: works for Knowledge-backed docs, user uploads/attachments, and
 // chat-created decks, because the citation carries a durable `fileId`/`url`
 // (backfilled at persist time by whichever surface created the card).
 //

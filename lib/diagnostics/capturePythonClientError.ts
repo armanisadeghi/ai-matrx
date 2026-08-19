@@ -3,7 +3,7 @@
  *
  * Adapter that feeds `lib/python-client.ts` failures into the systemwide
  * `errorCaptureStore`. `call-api.ts` already captures via `captureApiError`;
- * RAG, cloud-files, PDF, and most REST surfaces use python-client directly —
+ * Knowledge, cloud-files, PDF, and most REST surfaces use python-client directly —
  * without this chokepoint those failures vanish into per-hook React state.
  */
 
@@ -16,7 +16,7 @@ interface PythonClientErrorContext {
   url: string;
   /** HTTP method. */
   method: string;
-  /** Endpoint path without query string (e.g. "/rag/library"). */
+  /** Endpoint path without query string (e.g. "/knowledge/library"). */
   path: string;
   /** Client-generated request id, available even if fetch gets no response. */
   requestId?: string;

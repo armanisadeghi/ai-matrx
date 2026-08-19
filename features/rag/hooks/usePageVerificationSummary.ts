@@ -1,5 +1,5 @@
 /**
- * features/rag/hooks/usePageVerificationSummary.ts
+ * features/knowledge/hooks/usePageVerificationSummary.ts
  *
  * Reads page-verification results for a processed document — verified count,
  * flagged count, and a per-reason breakdown — by querying public.
@@ -13,7 +13,7 @@
  *
  * Architecture note: this is a deliberate example of reading PUBLIC tables
  * straight from the browser via Supabase instead of routing data through the
- * Python compute server (see RAG task #15).
+ * Python compute server (see Knowledge task #15).
  */
 
 import { useCallback, useEffect, useState } from "react";

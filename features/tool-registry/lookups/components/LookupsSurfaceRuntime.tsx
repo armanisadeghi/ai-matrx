@@ -371,7 +371,7 @@ async function awaitEditor(
  *
  * When exactly one row dialog is open, that dialog is the target. When NONE
  * is open there is no visible state to stage into, so — following
- * `CreateStoreInline` in the RAG data-stores adopter — applying OPENS the
+ * `CreateStoreInline` in the Knowledge data-stores adopter — applying OPENS the
  * "New" form on the ACTIVE tab and stages there: staging into something the
  * admin can see is the whole contract of `mode: "draft"`, opening a create
  * form is reversible and creates nothing, and the ask dialog has already been

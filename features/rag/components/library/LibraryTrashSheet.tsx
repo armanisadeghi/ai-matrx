@@ -39,7 +39,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { restoreFileDirect } from "@/features/files/api/direct";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 
 interface TrashRow {
   id: string;

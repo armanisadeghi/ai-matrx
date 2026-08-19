@@ -35,7 +35,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
+import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
 import { ProcessingJobView } from "./ProcessingJobView";
 
 // ---------------------------------------------------------------------------

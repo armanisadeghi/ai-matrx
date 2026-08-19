@@ -2,7 +2,7 @@
 
 /**
  * ProcessingProgressDialog — full-screen, multi-stage progress UI for
- * RAG document processing.
+ * Knowledge document processing.
  *
  * Design goals:
  *   - Use the full available space, not a 400px popover.
@@ -40,7 +40,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -624,7 +624,7 @@ function ResultView({ result }: { result: ProcessingResultSummary }) {
           </div>
           {result.processedDocumentId && (
             <a
-              href={`/rag/library/${result.processedDocumentId}/preview`}
+              href={`/knowledge/library/${result.processedDocumentId}/preview`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 shrink-0"
@@ -713,7 +713,7 @@ function MinimizedWidget({
       ? Math.min(100, Math.round(frame.fraction * 100))
       : null;
   const openInLibraryHref = result?.processedDocumentId
-    ? `/rag/library/${result.processedDocumentId}/preview`
+    ? `/knowledge/library/${result.processedDocumentId}/preview`
     : null;
 
   return (

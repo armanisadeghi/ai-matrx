@@ -22,11 +22,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { QuickSearchDialog } from "@/features/rag/components/library/QuickSearchDialog";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { StatusBadge } from "@/features/rag/components/library/StatusBadge";
-import type { DocStatus } from "@/features/rag/types/library";
-import type { RichMember } from "@/features/rag/hooks/useDataStores";
+import { QuickSearchDialog } from "@/features/knowledge/components/library/QuickSearchDialog";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { StatusBadge } from "@/features/knowledge/components/library/StatusBadge";
+import type { DocStatus } from "@/features/knowledge/types/library";
+import type { RichMember } from "@/features/knowledge/hooks/useDataStores";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,
@@ -236,7 +236,7 @@ export function RichMemberTable({
                       onClick={() => {
                         if (m.processedDocumentId) {
                           window.open(
-                            `/rag/library/${m.processedDocumentId}/preview`,
+                            `/knowledge/library/${m.processedDocumentId}/preview`,
                             "_blank",
                             "noopener,noreferrer",
                           );

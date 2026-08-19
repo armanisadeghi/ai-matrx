@@ -227,7 +227,7 @@ export function PreviewPane({
             {/*
              * Lineage chips — silent when the file has no parent and no
              * processed_documents row. When present, they let the user
-             * jump to the binary-parent file or open the RAG viewer
+             * jump to the binary-parent file or open the Knowledge viewer
              * without leaving this surface. Skipped for virtual files.
              */}
             {file?.source.kind === "real" ? (
@@ -268,7 +268,7 @@ export function PreviewPane({
           {/* In-place maximize / restore. Drives `setLayout` against the
            * react-resizable-panels group in PageShell so the preview takes
            * 100% of the page width without any z-index gymnastics and
-           * WITHOUT re-mounting — long-running work in the body (RAG
+           * WITHOUT re-mounting — long-running work in the body (Knowledge
            * classification, PDF analysis, fetched blobs) keeps going.
            * Only rendered when the parent owns a togglable layout. */}
           {onToggleMaximize ? (

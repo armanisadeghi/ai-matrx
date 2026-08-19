@@ -1,7 +1,7 @@
 /**
  * features/war-room/service/threadFileRagCache.ts
  *
- * A tiny module-level cache of a file's RAG SEARCHABLE state (`fetchFileRagStatus`
+ * A tiny module-level cache of a file's Knowledge SEARCHABLE state (`fetchFileRagStatus`
  * → `state==='completed'`), keyed by `cld_files.id`. It exists because that state
  * is DISTINCT from "has an extraction" (the cloudFiles `ragStatus` slice already
  * carries extraction-presence) and is NOT mirrored anywhere in Redux — yet the
@@ -15,13 +15,13 @@
 
 const ragIndexedByFileId = new Map<string, boolean>();
 
-/** Record whether a file is searchable via RAG (`fetchFileRagStatus` completed). */
+/** Record whether a file is searchable via Knowledge (`fetchFileRagStatus` completed). */
 export function setThreadFileRagIndexed(fileId: string, indexed: boolean): void {
   if (!fileId) return;
   ragIndexedByFileId.set(fileId, indexed);
 }
 
-/** Read a file's known RAG-searchable state, or `undefined` when not yet probed. */
+/** Read a file's known Knowledge-searchable state, or `undefined` when not yet probed. */
 export function getThreadFileRagIndexed(fileId: string): boolean | undefined {
   return ragIndexedByFileId.get(fileId);
 }

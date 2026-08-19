@@ -278,9 +278,9 @@ export function MediaVariableInput({
               {documentState.status === "loading"
                 ? "Checking processed document…"
                 : documentState.status === "found"
-                  ? "Processed document detected — existing clean/raw text, RAG, pages, and derivations are discoverable by the agent automatically."
+                  ? "Processed document detected — existing clean/raw text, Knowledge, pages, and derivations are discoverable by the agent automatically."
                   : documentState.status === "absent"
-                    ? "Original file selected. Process it for RAG to add clean/raw text, search, pages, and derivations."
+                    ? "Original file selected. Process it for Knowledge to add clean/raw text, search, pages, and derivations."
                     : documentState.status === "unavailable"
                       ? "File selected; processed-document status is temporarily unavailable."
                       : "File selected by file_id."}

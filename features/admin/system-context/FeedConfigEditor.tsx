@@ -5,7 +5,7 @@
 // the Add and Edit dialogs. "manual" is the rare case (you type a value); every
 // other feed describes a mechanism that produces/points-at the value.
 //
-// Live today: manual (typed value) + dataset (point at a real RAG data store).
+// Live today: manual (typed value) + dataset (point at a real Knowledge data store).
 // Definition-only (executor lands in a later wave — the config is captured and
 // honestly marked "pending"): agent, api, web, computed. This matches the
 // intended workflow: establish the resource, then build how we feed it.
@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
+import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
 import type { Database as DB, Json } from "@/types/database.types";
 
 export type FeedType = DB["public"]["Enums"]["context_feed_type"];
@@ -52,7 +52,7 @@ export const FEED_TYPE_OPTIONS: FeedTypeOption[] = [
     value: "dataset",
     label: "Linked dataset",
     description:
-      "Point at a knowledge resource (RAG data store) — agents query it with the RAG tools. For large multifaceted resources (e.g. the AMA Guides).",
+      "Point at a knowledge resource (Knowledge data store) — agents query it with the Knowledge tools. For large multifaceted resources (e.g. the AMA Guides).",
     live: true,
     icon: Database,
   },
@@ -143,7 +143,7 @@ export function feedSourceLink(
     case "dataset": {
       const id = cfgStr(cfg, "data_store_id");
       return id
-        ? { href: `/rag/data-stores?store_id=${encodeURIComponent(id)}`, label: "Open dataset" }
+        ? { href: `/knowledge/data-stores?store_id=${encodeURIComponent(id)}`, label: "Open dataset" }
         : null;
     }
     case "agent": {
@@ -160,7 +160,7 @@ export function feedSourceLink(
 export function feedCreateLink(feedType: FeedType): FeedLink | null {
   switch (feedType) {
     case "dataset":
-      return { href: "/rag/data-stores", label: "Manage / create datasets" };
+      return { href: "/knowledge/data-stores", label: "Manage / create datasets" };
     case "agent":
       return { href: "/agents", label: "Browse / create agents" };
     default:
@@ -194,7 +194,7 @@ export function OpenSourceLink({
 }
 
 // ── Dataset picker — lists published/discoverable knowledge libraries from
-// the live RAG catalog (/rag/library-catalog) and writes the pointer.
+// the live Knowledge catalog (/knowledge/library-catalog) and writes the pointer.
 function DatasetFeedConfig({
   config,
   onChange,
@@ -225,7 +225,7 @@ function DatasetFeedConfig({
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No published knowledge libraries found. Publish one from{" "}
-          <code className="text-[11px]">/rag/data-stores</code> first.
+          <code className="text-[11px]">/knowledge/data-stores</code> first.
         </p>
       ) : (
         <Select
@@ -254,7 +254,7 @@ function DatasetFeedConfig({
         </Select>
       )}
       <p className="text-[11px] text-muted-foreground">
-        Agents query this resource with the RAG tools (
+        Agents query this resource with the Knowledge tools (
         <code className="text-[10px]">knowledge_search(data_store_id=…)</code>). Pointing
         at sub-resources (only the tables, only the KG…) comes next.
       </p>

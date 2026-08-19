@@ -7,12 +7,12 @@
  *
  *   1. `found`        — file has a processed_documents row.
  *                       Renders an embedded `<DocumentViewer/>` (the
- *                       same 4-pane viewer at /rag/viewer/[id]) plus
+ *                       same 4-pane viewer at /knowledge/viewer/[id]) plus
  *                       an "Open full viewer" button that navigates
- *                       to /rag/viewer/<id>.
+ *                       to /knowledge/viewer/<id>.
  *
  *   2. `absent`       — file is not yet ingested. Show a CTA card
- *                       with "Process this file for RAG" and
+ *                       with "Process this file for Knowledge" and
  *                       streaming progress.
  *
  *   3. `unavailable`  — endpoint not implemented or transient failure.
@@ -25,7 +25,7 @@
  *     a successful ingest. Triggers a re-probe so we transition from
  *     `absent → loading → found` automatically.
  *   - "cloud-files:reprocess-document" — fired by the file context menu
- *     ("Reprocess for RAG") or any toolbar button. Kicks off the
+ *     ("Reprocess for Knowledge") or any toolbar button. Kicks off the
  *     streaming ingest from inside this tab, regardless of current
  *     state. Lets a user re-process an already-ingested file with one
  *     click.
@@ -44,21 +44,21 @@ import {
   RotateCw,
   Rainbow,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { DocumentViewer } from "@/features/rag/components/documents/DocumentViewer";
-import { IngestFlowAnimation } from "@/features/rag/components/visualization/IngestFlowAnimation";
-import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
+import { DocumentViewer } from "@/features/knowledge/components/documents/DocumentViewer";
+import { IngestFlowAnimation } from "@/features/knowledge/components/visualization/IngestFlowAnimation";
+import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import {
   onFileDocumentProcessed,
   useFileIngest,
   type UseFileIngestState,
-} from "@/features/rag/hooks/useFileIngest";
-import { useFileRagStatus } from "@/features/rag/hooks/useFileRagStatus";
-import type { FileRagState } from "@/features/rag/api/rag-jobs";
+} from "@/features/knowledge/hooks/useFileIngest";
+import { useFileRagStatus } from "@/features/knowledge/hooks/useFileRagStatus";
+import type { FileRagState } from "@/features/knowledge/api/knowledge-jobs";
 
 export interface DocumentTabProps {
   fileId: string;
@@ -86,7 +86,7 @@ export function DocumentTab({
   const { state, refresh } = useFileDocument(fileId);
   const ingest = useFileIngest(fileId);
 
-  // Only probe the scheduled/running auto-RAG lifecycle when the document is
+  // Only probe the scheduled/running auto-Knowledge lifecycle when the document is
   // absent — a found doc is already indexed, and probing it would poll a
   // finished file. The hook itself stops polling on any terminal state.
   const isAbsent = state.status === "absent";
@@ -121,7 +121,7 @@ export function DocumentTab({
 
   // While an ingest is in flight (or has just errored / completed), render
   // the in-tab pipeline animation — the same beautiful viz the user sees on
-  // /rag/visualization, driven live by this file's progress. Replaces the
+  // /knowledge/visualization, driven live by this file's progress. Replaces the
   // old "live progress in the corner" placeholder, which was a horrible
   // experience on a slow operation that the user is presumably watching.
   const ingestActive =
@@ -193,7 +193,7 @@ export function DocumentTab({
           <button
             type="button"
             onClick={() => void ingest.run({ force: true })}
-            title="Force the full RAG pipeline to re-run end-to-end (streaming progress fills this panel below)."
+            title="Force the full Knowledge pipeline to re-run end-to-end (streaming progress fills this panel below)."
             className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-0.5 text-[11px] font-medium hover:bg-accent"
           >
             <RotateCw className="h-3 w-3" />
@@ -206,7 +206,7 @@ export function DocumentTab({
               button above is the one-shot "redo everything" path; the
               Library is for surgical re-runs. */}
           <Link
-            href={`/rag/library?doc_id=${encodeURIComponent(docId)}`}
+            href={`/knowledge/library?doc_id=${encodeURIComponent(docId)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-0.5 text-[11px] font-medium hover:bg-accent"
@@ -221,7 +221,7 @@ export function DocumentTab({
               if (initialPage) qs.set("page", String(initialPage));
               if (initialChunkId) qs.set("chunk", initialChunkId);
               const tail = qs.toString();
-              return `/rag/viewer/${docId}${tail ? `?${tail}` : ""}`;
+              return `/knowledge/viewer/${docId}${tail ? `?${tail}` : ""}`;
             })()}
             target="_blank"
             rel="noreferrer"
@@ -281,12 +281,12 @@ function NotIngestedCard({
     cancel: () => void;
     reset: () => void;
   };
-  /** Scheduled auto-RAG lifecycle state, when known. */
+  /** Scheduled auto-Knowledge lifecycle state, when known. */
   ragState?: FileRagState | null;
   scheduledFor?: string | null;
   className?: string;
 }) {
-  // A background/scheduled auto-RAG job may already be queued for this file.
+  // A background/scheduled auto-Knowledge job may already be queued for this file.
   // Surface it so the user knows processing is coming without re-triggering.
   const scheduledHint =
     ragState === "scheduled"
@@ -305,7 +305,7 @@ function NotIngestedCard({
       ? `Ingest failed: ${ingest.error}`
       : ingest.status === "complete"
         ? "Done — refreshing…"
-        : `Run the RAG pipeline (extract → clean → ${RAG_VOCAB.segmentStage} → embed) so this file can be searched, cited, and added to data stores.`;
+        : `Run the Knowledge pipeline (extract → clean → ${RAG_VOCAB.segmentStage} → embed) so this file can be searched, cited, and added to data stores.`;
 
   return (
     <div
@@ -320,8 +320,8 @@ function NotIngestedCard({
       <div className="space-y-1 max-w-md">
         <h3 className="text-sm font-semibold">
           {fileName
-            ? `${fileName} hasn't been processed for RAG yet`
-            : "This file hasn't been processed for RAG yet"}
+            ? `${fileName} hasn't been processed for Knowledge yet`
+            : "This file hasn't been processed for Knowledge yet"}
         </h3>
         <p className="text-xs text-muted-foreground break-words">{subtitle}</p>
       </div>
@@ -344,7 +344,7 @@ function NotIngestedCard({
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Rainbow className="h-3.5 w-3.5" />
-          Process for RAG
+          Process for Knowledge
         </button>
         {ingest.status === "error" && (
           <button
