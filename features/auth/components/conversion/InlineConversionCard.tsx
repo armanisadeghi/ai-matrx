@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { UserPlus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  loginHref,
+  signUpHref as signUpHref_,
+} from "@/utils/auth/auth-destination";
 
 interface InlineConversionCardProps {
   /** Headline on the card. */
@@ -15,7 +19,7 @@ interface InlineConversionCardProps {
 /**
  * Inline content-grade signup card. Designed to drop into the body of a
  * landing or surface as if it were one of the content sections — gradient
- * border, polite copy, dual CTAs. Always preserves `returnUrl`.
+ * border, polite copy, dual CTAs. Always preserves the auth destination.
  *
  * Mounting is the caller's responsibility (see
  * `ModuleLandingConversionNudges` for the rule that fires this after the
@@ -26,12 +30,15 @@ export function InlineConversionCard({
   description,
   className,
 }: InlineConversionCardProps) {
-  const returnUrl =
+  // `redirectTo` is the ONE param we write — `returnUrl` is a read-only
+  // legacy alias (utils/auth/auth-destination.ts), and hand-building it here
+  // skipped the destination validation every other auth surface applies.
+  const destination =
     typeof window !== "undefined"
-      ? encodeURIComponent(window.location.pathname + window.location.search)
-      : "";
-  const signUpHref = `/sign-up${returnUrl ? `?returnUrl=${returnUrl}` : ""}`;
-  const signInHref = `/login${returnUrl ? `?returnUrl=${returnUrl}` : ""}`;
+      ? window.location.pathname + window.location.search
+      : null;
+  const signUpHref = signUpHref_(destination);
+  const signInHref = loginHref(destination);
 
   return (
     <div

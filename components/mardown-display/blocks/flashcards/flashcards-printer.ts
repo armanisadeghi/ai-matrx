@@ -34,6 +34,7 @@ interface CardPrintSettings {
   showCutLines: boolean; // full dashed crossing lines
   lightBackText: boolean; // print back text in dark gray (~#555) to reduce show-through
   mirrorBack: boolean; // horizontally flip back page text so bleed-through is unreadable
+  showImages: boolean; // print face images (durable URLs only) — default ON
 }
 
 const SETTING_DEFAULTS: CardPrintSettings = {
@@ -43,6 +44,7 @@ const SETTING_DEFAULTS: CardPrintSettings = {
   showCutLines: false,
   lightBackText: false,
   mirrorBack: false,
+  showImages: true,
 };
 
 function resolveSettings(raw?: PrintSettings): CardPrintSettings {
@@ -56,6 +58,7 @@ function resolveSettings(raw?: PrintSettings): CardPrintSettings {
     showCutLines: b("showCutLines"),
     lightBackText: b("lightBackText"),
     mirrorBack: b("mirrorBack"),
+    showImages: b("showImages"),
   };
 }
 
@@ -89,7 +92,12 @@ function extractCards(data: unknown): Flashcard[] {
  * variants (landscape / 6-up / Avery) stay text-only by design — their fixed
  * cells can't absorb an image without breaking the die-cut math.
  */
-function faceImageHtml(card: Flashcard, face: "front" | "back"): string {
+function faceImageHtml(
+  card: Flashcard,
+  face: "front" | "back",
+  showImages = true,
+): string {
+  if (!showImages) return "";
   const url = face === "front" ? card.frontImageUrl : card.backImageUrl;
   if (!url || !/^https?:\/\//.test(url)) return "";
   const alt = (face === "front" ? card.frontImageAlt : card.backImageAlt) ?? "";
@@ -268,6 +276,7 @@ function sizeClass(text: string): string {
 function renderCutCards(
   cards: Flashcard[],
   title: string,
+  s: CardPrintSettings,
   startIndex = 0,
 ): string {
   const PAGE_SIZE = 4; // cards per page
@@ -291,11 +300,11 @@ function renderCutCards(
   <div class="card-inner">
     <div class="card-face card-front-face">
       <div class="card-side-label">Question / Term</div>
-      ${faceImageHtml(card, "front")}<div class="front-text ${frontSize}">${escapeHtml(card.front)}</div>
+      ${faceImageHtml(card, "front", s.showImages)}<div class="front-text ${frontSize}">${escapeHtml(card.front)}</div>
     </div>
     <div class="card-face card-back-face">
       <div class="card-side-label">Answer / Definition</div>
-      ${faceImageHtml(card, "back")}<div class="back-text ${backSize}">${backContent}</div>
+      ${faceImageHtml(card, "back", s.showImages)}<div class="back-text ${backSize}">${backContent}</div>
     </div>
   </div>
 </div>`;
@@ -375,6 +384,7 @@ const BOTH_SIDES_STYLES = `
 function renderBothSides(
   cards: Flashcard[],
   title: string,
+  s: CardPrintSettings,
   startIndex = 0,
 ): string {
   const cells = cards
@@ -382,9 +392,9 @@ function renderBothSides(
       (card, i) => `<div class="card-cell">
   <div class="card-front">
     <div class="card-number">Card ${startIndex + i + 1}</div>
-    ${faceImageHtml(card, "front")}${escapeHtml(card.front)}
+    ${faceImageHtml(card, "front", s.showImages)}${escapeHtml(card.front)}
   </div>
-  <div class="card-back">${faceImageHtml(card, "back")}${escapeHtml(card.back ?? "")}</div>
+  <div class="card-back">${faceImageHtml(card, "back", s.showImages)}${escapeHtml(card.back ?? "")}</div>
 </div>`,
     )
     .join("\n");
@@ -455,13 +465,14 @@ const STUDY_SHEET_STYLES = `
 function renderStudySheet(
   cards: Flashcard[],
   title: string,
+  s: CardPrintSettings,
   startIndex = 0,
 ): string {
   const rows = cards
     .map(
       (card, i) => `  <tr>
-    <td><span class="row-num">${startIndex + i + 1}.</span>${faceImageHtml(card, "front")}${escapeHtml(card.front)}</td>
-    <td>${faceImageHtml(card, "back")}${escapeHtml(card.back ?? "")}</td>
+    <td><span class="row-num">${startIndex + i + 1}.</span>${faceImageHtml(card, "front", s.showImages)}${escapeHtml(card.front)}</td>
+    <td>${faceImageHtml(card, "back", s.showImages)}${escapeHtml(card.back ?? "")}</td>
   </tr>`,
     )
     .join("\n");
@@ -535,6 +546,7 @@ const FRONT_ONLY_STYLES = `
 function renderFrontOnly(
   cards: Flashcard[],
   title: string,
+  s: CardPrintSettings,
   startIndex = 0,
 ): string {
   const cells = cards
@@ -542,7 +554,7 @@ function renderFrontOnly(
       (card, i) => `<div class="card-cell">
   <div class="card-front">
     <div class="card-number">Card ${startIndex + i + 1}</div>
-    ${faceImageHtml(card, "front")}${escapeHtml(card.front)}
+    ${faceImageHtml(card, "front", s.showImages)}${escapeHtml(card.front)}
   </div>
   <div class="answer-blank"></div>
 </div>`,
@@ -602,13 +614,14 @@ const BACK_ONLY_STYLES = `
 function renderBackOnly(
   cards: Flashcard[],
   title: string,
+  s: CardPrintSettings,
   startIndex = 0,
 ): string {
   const cells = cards
     .map(
       (card, i) => `<div class="card-cell">
   <div class="card-back-header">Card ${startIndex + i + 1}</div>
-  <div class="card-back-content">${faceImageHtml(card, "back")}${escapeHtml(card.back ?? "")}</div>
+  <div class="card-back-content">${faceImageHtml(card, "back", s.showImages)}${escapeHtml(card.back ?? "")}</div>
 </div>`,
     )
     .join("\n");
@@ -1834,6 +1847,21 @@ export const flashcardsPrinter: BlockPrinter = {
         "avery-5388",
       ],
     },
+    {
+      type: "boolean" as const,
+      id: "showImages",
+      label: "Print face images",
+      description:
+        "Includes each card's front/back image when it has one. The fixed-geometry formats (landscape, 6-up, Avery) are text-only by design",
+      defaultValue: true,
+      appliesTo: [
+        "cut-cards",
+        "both-sides",
+        "study-sheet",
+        "front-only",
+        "back-only",
+      ],
+    },
   ],
 
   print(
@@ -1910,24 +1938,24 @@ export const flashcardsPrinter: BlockPrinter = {
 
     switch (variantId as FlashcardsVariant) {
       case "cut-cards":
-        bodyHtml = renderCutCards(cards, title, startIndex);
+        bodyHtml = renderCutCards(cards, title, s, startIndex);
         styles = CUT_CARD_STYLES;
         break;
       case "front-only":
-        bodyHtml = renderFrontOnly(cards, title, startIndex);
+        bodyHtml = renderFrontOnly(cards, title, s, startIndex);
         styles = FRONT_ONLY_STYLES;
         break;
       case "back-only":
-        bodyHtml = renderBackOnly(cards, title, startIndex);
+        bodyHtml = renderBackOnly(cards, title, s, startIndex);
         styles = BACK_ONLY_STYLES;
         break;
       case "study-sheet":
-        bodyHtml = renderStudySheet(cards, title, startIndex);
+        bodyHtml = renderStudySheet(cards, title, s, startIndex);
         styles = STUDY_SHEET_STYLES;
         break;
       case "both-sides":
       default:
-        bodyHtml = renderBothSides(cards, title, startIndex);
+        bodyHtml = renderBothSides(cards, title, s, startIndex);
         styles = BOTH_SIDES_STYLES;
         break;
     }

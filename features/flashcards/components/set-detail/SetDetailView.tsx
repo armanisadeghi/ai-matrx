@@ -36,6 +36,7 @@ import {
   Mic,
   Headphones,
   Merge,
+  Printer,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
@@ -54,6 +55,12 @@ import { canEditAccess } from "@/utils/permissions/access-core";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
 import { getCardImages } from "../study/cardImages";
+import { buildDeckPrintData } from "../../utils/deckPrintData";
+import { flashcardsPrinter } from "@/components/mardown-display/blocks/flashcards/flashcards-printer";
+import {
+  PrintOptionsDialog,
+  usePrintOptions,
+} from "@/lib/block-print/PrintOptionsDialog";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
 import {
@@ -366,6 +373,33 @@ export function SetDetailView({ setId }: { setId: string }) {
   const canEdit = access.isOwner || canEditAccess(access.level);
   const viewOnly = !access.loading && !canEdit;
 
+  // Print — the SAME canonical printer (10 variants, same settings UX) the
+  // markdown-block lane uses; only the data shape differs, and ONE mapper owns
+  // that (`buildDeckPrintData`: studyFaces for cloze/formula, getCardImages for
+  // durable face-image URLs). Never a second print UI.
+  const printData = data
+    ? buildDeckPrintData(data.set, data.cards)
+    : { title: "Flashcards", cards: [], skippedImageCount: 0 };
+  const {
+    open: printOpen,
+    setOpen: setPrintOpen,
+    triggerPrint,
+  } = usePrintOptions(flashcardsPrinter, printData);
+
+  const handlePrint = () => {
+    // Say it out loud rather than printing a deck with silent holes: a print
+    // window is unauthenticated, so a stored-file image with no durable URL
+    // can't be fetched there.
+    if (printData.skippedImageCount > 0) {
+      toast.info(
+        `${printData.skippedImageCount} face image${
+          printData.skippedImageCount === 1 ? "" : "s"
+        } can't be printed (stored file, no public URL) — text prints normally.`,
+      );
+    }
+    void triggerPrint();
+  };
+
   // VISION §15 (WP3 gap 6) — own your data. Every byte comes from the ONE
   // canonical writer (`deckFormats.buildDeckExport`), which the importer
   // round-trips; this handler only names the file and hands it over.
@@ -664,6 +698,14 @@ export function SetDetailView({ setId }: { setId: string }) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button
+                  variant="outline"
+                  onClick={handlePrint}
+                  disabled={data.cards.length === 0}
+                >
+                  <Printer className="mr-1.5 h-4 w-4" />
+                  Print
+                </Button>
                 {canEdit && (
                   <Button
                     variant="outline"
@@ -821,6 +863,15 @@ export function SetDetailView({ setId }: { setId: string }) {
               setId={setId}
               cards={data.cards}
               onChanged={() => setReloadKey((k) => k + 1)}
+            />
+
+            {/* Canonical block printer — same dialog, variants, and settings
+                as the markdown-block flashcards lane. */}
+            <PrintOptionsDialog
+              printer={flashcardsPrinter}
+              data={printData}
+              open={printOpen}
+              onOpenChange={setPrintOpen}
             />
 
             {/* WP3 gap 5 — merge selected cards into one (editable preview). */}

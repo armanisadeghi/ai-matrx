@@ -21,6 +21,7 @@ import {
   FileSpreadsheet,
   Network,
   Megaphone,
+  Workflow,
 } from "lucide-react";
 
 /**
@@ -214,6 +215,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     group: "Build & Run",
   },
 
+  {
+    label: "Workflows",
+    href: "/workflows",
+    icon: Workflow,
+    teaser:
+      "Long, many-step work you can watch: what you'll get named up front, the plan on screen, and results you can use.",
+    group: "Build & Run",
+  },
   {
     label: "Marketing",
     href: "/marketing",

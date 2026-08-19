@@ -455,7 +455,10 @@ function InterruptForm({
       : "";
   const fields = parseInterruptFields(interrupt.payload.schema_hint);
 
-  const send = (value: unknown) => {
+  // The engine's resume payload is an OBJECT — `control.human_input` fills its
+  // output model from these keys — so a free-text answer travels as
+  // `{ answer }`. A bare string is refused by the server (422).
+  const send = (value: Record<string, unknown>) => {
     setSending(true);
     void answerInterrupt(runId, interrupt.checkpointId, value).finally(() =>
       setSending(false),
@@ -553,7 +556,7 @@ function InterruptForm({
           <button
             type="button"
             disabled={sending}
-            onClick={() => send(answer ?? defaultAnswer)}
+            onClick={() => send({ answer: answer ?? defaultAnswer })}
             className="mt-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
           >
             {sending ? "Sending…" : "Send answer"}

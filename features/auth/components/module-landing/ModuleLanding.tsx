@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CheckCircle2, Zap, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { loginHref } from "@/utils/auth/auth-destination";
 import { AuthedWorkspaceCTA } from "./AuthedWorkspaceCTA";
 import { ModuleLandingConversionNudges } from "../conversion/ModuleLandingConversionNudges";
 import { MODULE_LANDING_DIRECTORY } from "./landings/directory";
@@ -42,6 +43,13 @@ export interface ModuleLandingProps {
   /** Where the primary "Get Started" CTA routes. Same for guest + authed. */
   primaryCtaHref: string;
   primaryCtaLabel?: string;
+  /**
+   * Where a guest who ALREADY has an account should land after signing in.
+   * Defaults to `workspaceHref`. The sign-in link is built with `loginHref`
+   * so the destination rides through every auth page, error re-render, and
+   * password reset — a returning user never loses where they were going.
+   */
+  signInDestination?: string;
   /** Where the workspace lives — for authed-user banner. */
   workspaceHref: string;
   /** Display label for the workspace ("Open Chat", "Open Workspace", etc.). */
@@ -91,6 +99,7 @@ export function ModuleLanding({
   description,
   primaryCtaHref,
   primaryCtaLabel = "Get Started",
+  signInDestination,
   workspaceHref,
   workspaceLabel,
   capabilitiesHeading,
@@ -106,6 +115,7 @@ export function ModuleLanding({
   finalCtaDescription,
   relatedModules,
 }: ModuleLandingProps) {
+  const signInUrl = loginHref(signInDestination ?? workspaceHref);
   const relatedEntries = (relatedModules ?? [])
     .map((href) => MODULE_LANDING_DIRECTORY.find((e) => e.href === href))
     .filter((entry): entry is NonNullable<typeof entry> => entry != null);
@@ -160,6 +170,15 @@ export function ModuleLanding({
               <Link href="#capabilities">See what it does</Link>
             </Button>
           </div>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link
+              href={signInUrl}
+              className="font-medium text-primary hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
         </div>
       </section>
 

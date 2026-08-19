@@ -1,18 +1,27 @@
+// app/(core)/workflows/page.tsx
+//
+// /workflows — one URL, two audiences (module-landing-pages doctrine).
+//
+// A guest gets the public marketing landing for the workflow product; they are
+// NEVER bounced to a login wall. A signed-in visitor is sent straight to their
+// library at /workflows/all — the pitch has nothing to tell someone who already
+// has the thing, and the run stage lives behind an id.
+//
+// The sign-in door on the landing is built with `loginHref` inside
+// `ModuleLanding`, so a returning user still lands on /workflows/all after
+// signing in — the behavior this placeholder route used to provide directly.
+
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import { loginHref } from "@/utils/auth/auth-destination";
+import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
+import WorkflowsLanding from "@/features/auth/components/module-landing/landings/WorkflowsLanding";
 
-/**
- * /workflows — RESERVED for the public marketing page about workflows
- * (Arman, 2026-08-18). It is deliberately not built yet.
- *
- * Until it exists, a signed-in visitor is sent to the catalog they came for.
- * A signed-out visitor is sent to sign in and lands back on the catalog
- * afterwards — `loginHref` carries the destination, so the marketing page can
- * later take this route over without anyone losing where they were going.
- */
 export default async function WorkflowsIndexRoute() {
   const { isAuthenticated } = await getServerAuth();
   if (isAuthenticated) redirect("/workflows/all");
-  redirect(loginHref("/workflows/all"));
+  return (
+    <MarketingPageShell>
+      <WorkflowsLanding />
+    </MarketingPageShell>
+  );
 }

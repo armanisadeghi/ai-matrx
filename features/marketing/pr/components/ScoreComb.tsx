@@ -11,18 +11,20 @@
  * The footprint is fixed in BOTH dimensions and the digits are tabular, so a
  * queue re-sorting or a score changing can never move a row a pixel.
  *
- * The tooltip is a convenience, never the only way in: the expanded row prints
- * every axis, labelled, with its weight, in the open — a hover is not a door on
- * a touch screen. The weighting is declared and un-configurable (see
- * `scoring.ts`): a readiness number the user can tune is a number they can no
- * longer compare between angles.
+ * THIS RENDERS INSIDE THE ROW'S `<button>`, so it is PHRASING content only and
+ * carries NO interactive element of its own. It used to hang a Radix tooltip
+ * off a `<div role="img">` in there — a div inside a button (invalid content
+ * model) that no keyboard could ever reach, which made the five-score
+ * breakdown a mouse-only door. It is now purely decorative: `aria-hidden`
+ * visuals plus one short `sr-only` sentence, and `title` for the hover
+ * convenience. **`ScoreBreakdown` in the expanded row is THE accessible source
+ * of the five axes** — labelled, weighted, in the open, and reachable by the
+ * same Enter that opens the row. A hover was never a door on a touch screen
+ * either. The weighting is declared and un-configurable (see `scoring.ts`): a
+ * readiness number the user can tune is a number they can no longer compare
+ * between angles.
  */
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   SCORE_MODEL,
@@ -88,60 +90,32 @@ export function ScoreComb({
   ).join(", ");
 
   return (
-    <Tooltip delayDuration={150}>
-      <TooltipTrigger asChild>
-        <div
-          className={cn(
-            "flex w-[74px] shrink-0 items-center justify-end gap-2",
-            className,
-          )}
-          role="img"
-          aria-label={`Pitch readiness ${readiness} out of 100. ${summary}.`}
-        >
-          <Comb angle={angle} />
-          <span
-            className={cn(
-              "w-9 text-right text-lg font-semibold leading-none tabular-nums",
-              TONE_TEXT[tone],
-            )}
-          >
-            {readiness}
-          </span>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="left" className="max-w-xs px-3 py-2">
-        <p className="text-xs font-semibold text-foreground">
-          Pitch readiness {readiness}/100
-        </p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
-          A weighted blend of four signals. Priority is on the comb but weighs
-          nothing here — it sets the ORDER of the queue, not the readiness.
-        </p>
-        <dl className="mt-2 space-y-1">
-          {SCORE_MODEL.map((spec) => {
-            const value = scoreValue(angle, spec.key);
-            return (
-              <div key={spec.key} className="flex items-baseline gap-2">
-                <dt className="w-20 shrink-0 text-[11px] text-muted-foreground">
-                  {spec.label}
-                </dt>
-                <dd
-                  className={cn(
-                    "w-8 text-right text-[11px] font-semibold tabular-nums",
-                    TONE_TEXT[scoreTone(value)],
-                  )}
-                >
-                  {value}
-                </dd>
-                <dd className="text-[10px] text-muted-foreground">
-                  {spec.weight > 0 ? `×${spec.weight.toFixed(2)}` : "order only"}
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
-      </TooltipContent>
-    </Tooltip>
+    <span
+      className={cn(
+        "flex w-[74px] shrink-0 items-center justify-end gap-2",
+        className,
+      )}
+      // The hover convenience, on an attribute instead of a nested trigger —
+      // no extra element, no invalid nesting, and it survives inside a button.
+      title={`Pitch readiness ${readiness}/100 — a weighted blend of four signals. ${summary}. Priority is on the comb but weighs nothing here: it sets the ORDER of the queue, not the readiness. Open the row for the weighted breakdown.`}
+    >
+      {/* One SHORT sentence into the row button's accessible name. The five
+          axes belong to the expanded row, which the same button opens —
+          repeating them here would bury the headline in every row. */}
+      <span className="sr-only">
+        Pitch readiness {readiness} out of 100.
+      </span>
+      <Comb angle={angle} />
+      <span
+        aria-hidden
+        className={cn(
+          "w-9 text-right text-lg font-semibold leading-none tabular-nums",
+          TONE_TEXT[tone],
+        )}
+      >
+        {readiness}
+      </span>
+    </span>
   );
 }
 

@@ -1,6 +1,7 @@
 import { siteConfig } from '@/config/extras/site'
 import { EDU_ORIGIN } from '@/features/education/constants'
 import { getEducationSitemapPaths } from '@/features/education/publishing/sitemap'
+import { MODULE_LANDING_DIRECTORY } from '@/features/auth/components/module-landing/landings/directory'
 
 // Revalidate hourly; a learn-doc publish busts the education reads via tag.
 export const revalidate = 3600
@@ -39,7 +40,21 @@ export async function GET() {
     priority: u.priority,
   }))
 
-  const urls = [...staticUrls, ...educationUrls]
+  // Module landings — every public feature front door, derived from the ONE
+  // directory that also drives /features. A landing registered there is
+  // crawlable the moment it ships; nothing to remember to add here.
+  const moduleLandingUrls = MODULE_LANDING_DIRECTORY.map((entry) => ({
+    loc: `${baseUrl}${entry.href}`,
+    changefreq: 'weekly',
+    priority: '0.8',
+  }))
+
+  const urls = [
+    ...staticUrls,
+    { loc: `${baseUrl}/features`, changefreq: 'weekly', priority: '0.8' },
+    ...moduleLandingUrls,
+    ...educationUrls,
+  ]
   const now = new Date().toISOString()
 
   // Escape XML metacharacters — `loc` includes author-controlled doc slugs.

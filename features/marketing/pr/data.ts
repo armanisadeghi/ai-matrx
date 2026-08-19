@@ -22,17 +22,25 @@
  * is the only reader of that key — nothing downstream assumes the shape.
  */
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { isJsonRecord } from "@/features/marketing/types";
-import {
-  buildPressRoomFixture,
-  type PressRoomFixture,
-} from "@/features/marketing/pr/fixtures";
+// TYPE ONLY. `fixtures.ts` is ~950 lines of sample dataset that almost nobody
+// on this route ever sees, so it must not sit in the bundle every user
+// downloads. A type-only import is erased at build time; the module itself is
+// pulled in at runtime by `useSampleFixture` below, and only on the path that
+// actually renders sample data.
+import type { PressRoomFixture } from "@/features/marketing/pr/fixtures";
 import type { PressRoomScenario } from "@/features/marketing/pr/routes";
 import { ladderPercent, readLadder } from "@/features/marketing/pr/ladder";
 import {
@@ -125,6 +133,43 @@ export function angleIdFromMention(mention: CoverageMention): string | null {
   return typeof raw === "string" && raw ? raw : null;
 }
 
+/**
+ * The sample dataset, fetched only when the surface actually needs it.
+ *
+ * `fixtures.ts` is the biggest file in this feature and it exists for the case
+ * where the real reads come back empty — a case that disappears the day
+ * `seo.story_angle` has rows. Shipping it statically taxed every user's bundle
+ * for a screen approximately nobody sees, so it loads on demand.
+ *
+ * The anchor is fixed on the first mount so the relative deadlines inside the
+ * fixture do not re-randomise under the user while they read the page, exactly
+ * as the eager version behaved.
+ */
+function useSampleFixture(wanted: boolean): PressRoomFixture | null {
+  const [anchor] = useState(() => Date.now());
+  const [fixture, setFixture] = useState<PressRoomFixture | null>(null);
+
+  useEffect(() => {
+    if (!wanted || fixture !== null) return;
+    let cancelled = false;
+    void import("@/features/marketing/pr/fixtures").then(
+      (module) => {
+        if (!cancelled) setFixture(module.buildPressRoomFixture(anchor));
+      },
+      (error: unknown) => {
+        // Loud, never silent: a chunk that fails to arrive would otherwise
+        // read as "the sample is empty", which is a different claim entirely.
+        console.error("[press-room] sample dataset failed to load:", error);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [wanted, fixture, anchor]);
+
+  return fixture;
+}
+
 export interface PressRoomData {
   angles: StoryAngle[];
   requests: SourceRequest[];
@@ -197,13 +242,24 @@ export function usePressRoom(
     coverage.failureCount,
   );
 
-  // The sample dataset is built once per mount so its relative deadlines do not
-  // re-randomise under the user while they read the page.
-  const [fixtureAnchor] = useState(() => Date.now());
-  const fixture = useMemo<PressRoomFixture>(
-    () => buildPressRoomFixture(fixtureAnchor),
-    [fixtureAnchor],
-  );
+  const realAngles = angles.data ?? [];
+  const realRequests = requests.data ?? [];
+  const realCoverage = coverage.data ?? [];
+  const settled = !liveLoading && !angles.isError && !requests.isError;
+  // Also true before a site is chosen: the queries are disabled, there is
+  // nothing real to show, and the honest sample + its banner is more use than
+  // an empty page. The banner names which of the three cases this is.
+  const wantsSample =
+    forced === "ready" ||
+    (forced === null &&
+      settled &&
+      realAngles.length === 0 &&
+      realRequests.length === 0);
+
+  // Loaded on demand — see `useSampleFixture`. Until the chunk lands this is
+  // null, and the surface reports `isLoading`, which is exactly what it is.
+  const fixture = useSampleFixture(wantsSample);
+  const isSample = wantsSample && fixture !== null;
 
   const refetch = useCallback(() => {
     void angles.refetch();
@@ -212,14 +268,14 @@ export function usePressRoom(
   }, [angles, requests, coverage]);
 
   if (forced !== null) {
-    const showSample = forced === "ready";
     return {
-      angles: showSample ? fixture.angles : [],
-      requests: showSample ? fixture.requests : [],
-      coverage: showSample ? fixture.coverage : [],
-      isSample: showSample,
-      sampleBrandName: showSample ? fixture.brandName : null,
-      isLoading: forced === "stalled",
+      angles: fixture?.angles ?? [],
+      requests: fixture?.requests ?? [],
+      coverage: fixture?.coverage ?? [],
+      isSample,
+      sampleBrandName: fixture?.brandName ?? null,
+      // `?data=ready` is still loading while its sample chunk is in flight.
+      isLoading: forced === "stalled" || (wantsSample && fixture === null),
       isStalled: forced === "stalled",
       stallReason: forced === "stalled" ? "retrying" : null,
       retryAttempt: forced === "stalled" ? 2 : 0,
@@ -232,16 +288,6 @@ export function usePressRoom(
     };
   }
 
-  const realAngles = angles.data ?? [];
-  const realRequests = requests.data ?? [];
-  const realCoverage = coverage.data ?? [];
-  const settled = !liveLoading && !angles.isError && !requests.isError;
-  // Also true before a site is chosen: the queries are disabled, there is
-  // nothing real to show, and the honest sample + its banner is more use than
-  // an empty page. The banner names which of the three cases this is.
-  const isSample =
-    settled && realAngles.length === 0 && realRequests.length === 0;
-
   const failed = [
     angles.isError ? "story angles" : null,
     requests.isError ? "source requests" : null,
@@ -249,12 +295,13 @@ export function usePressRoom(
   ].filter((value): value is string => value !== null);
 
   return {
-    angles: isSample ? fixture.angles : realAngles,
-    requests: isSample ? fixture.requests : realRequests,
-    coverage: isSample ? fixture.coverage : realCoverage,
+    angles: isSample && fixture ? fixture.angles : realAngles,
+    requests: isSample && fixture ? fixture.requests : realRequests,
+    coverage: isSample && fixture ? fixture.coverage : realCoverage,
     isSample,
-    sampleBrandName: isSample ? fixture.brandName : null,
-    isLoading: liveLoading,
+    sampleBrandName: isSample && fixture ? fixture.brandName : null,
+    // The sample chunk being in flight is a load, not an empty page.
+    isLoading: liveLoading || (wantsSample && fixture === null),
     isStalled: liveLoading && (isPaused || retrying > 0),
     stallReason: isPaused
       ? ("offline" as const)

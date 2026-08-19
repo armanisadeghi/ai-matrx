@@ -21,6 +21,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useExitIntent } from "@/features/auth/hooks/useExitIntent";
 import { useUserType } from "@/features/auth/hooks/useUserType";
 import { cn } from "@/lib/utils";
+import {
+  loginHref,
+  signUpHref as signUpHref_,
+} from "@/utils/auth/auth-destination";
 
 interface ExitIntentSignupModalProps {
   /** Module name woven into the headline ("Chat", "Files", etc.). */
@@ -45,12 +49,15 @@ export function ExitIntentSignupModal({ moduleName }: ExitIntentSignupModalProps
 
   if (!fired || dismissed) return null;
 
-  const returnUrl =
+  // `redirectTo` is the ONE param we write — `returnUrl` is a read-only
+  // legacy alias (utils/auth/auth-destination.ts), and hand-building it here
+  // skipped the destination validation every other auth surface applies.
+  const destination =
     typeof window !== "undefined"
-      ? encodeURIComponent(window.location.pathname + window.location.search)
-      : "";
-  const signUpHref = `/sign-up${returnUrl ? `?returnUrl=${returnUrl}` : ""}`;
-  const signInHref = `/login${returnUrl ? `?returnUrl=${returnUrl}` : ""}`;
+      ? window.location.pathname + window.location.search
+      : null;
+  const signUpHref = signUpHref_(destination);
+  const signInHref = loginHref(destination);
 
   const content = (
     <div className="flex flex-col items-center text-center gap-5 pt-2 pb-4 px-1">
