@@ -86,11 +86,13 @@ defects each broke it on their own:
 **Still open:** `tool.definition` has no routine MCP catalog sync; the only caller of
 `mcp_sync.sync_server` is `bundle_lister`.
 
-The OAuth popup is no longer hand-copied — `services/mcp-oauth/popup.ts` is the one
-implementation (it also adds the origin check and listener cleanup the settings copy lacked).
+OAuth popups share `utils/oauth-popup.ts`; the MCP adapter remains
+`services/mcp-oauth/popup.ts`. The primitive enforces same-origin completion messages,
+listener cleanup, popup-blocker errors, and cancellation settlement.
 
 ## Change log
 
+- `2026-08-18` — extracted the provider-neutral OAuth popup primitive for MCP and GitHub connection flows.
 - `2026-08-17` — made shared external-MCP OAuth state validation fail closed before the
   Microsoft Graph / Work IQ rollout; missing, empty, malformed, and mismatched state values
   are rejected before token exchange.

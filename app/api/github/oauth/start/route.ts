@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import {
   GITHUB_OAUTH_COOKIE,
+  githubAuthorizationUrl,
   requestBaseUrl,
   safeReturnUrl,
   type GitHubOAuthSession,
@@ -15,7 +16,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/login?next=/code", requestBaseUrl(request)));
+    return NextResponse.redirect(
+      new URL("/login?next=/code", requestBaseUrl(request)),
+    );
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;
@@ -28,7 +31,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const state = randomBytes(32).toString("base64url");
   const redirectUri = `${requestBaseUrl(request)}/api/github/oauth/callback`;
-  const returnUrl = safeReturnUrl(request.nextUrl.searchParams.get("return_url"));
+  const returnUrl = safeReturnUrl(
+    request.nextUrl.searchParams.get("return_url"),
+  );
   const session: GitHubOAuthSession = { state, redirectUri, returnUrl };
   const cookieStore = await cookies();
   cookieStore.set(GITHUB_OAUTH_COOKIE, JSON.stringify(session), {
@@ -39,9 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     maxAge: 10 * 60,
   });
 
-  const installUrl = new URL("https://github.com/apps/ai-matrx-admin/installations/new");
-  installUrl.searchParams.set("state", state);
-  installUrl.searchParams.set("redirect_uri", redirectUri);
-  installUrl.searchParams.set("client_id", clientId);
-  return NextResponse.redirect(installUrl);
+  return NextResponse.redirect(
+    githubAuthorizationUrl(clientId, redirectUri, state),
+  );
 }

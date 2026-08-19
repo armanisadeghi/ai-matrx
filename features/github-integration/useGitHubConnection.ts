@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   disconnectGitHubConnection,
-  githubConnectUrl,
   loadGitHubConnectionInventory,
+  startGitHubConnection,
   syncGitHubConnection,
 } from "./service";
 import type { GitHubConnectionInventory } from "./types";
@@ -26,7 +26,9 @@ export function useGitHubConnection() {
     try {
       setInventory(await loadGitHubConnectionInventory());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to load GitHub.");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to load GitHub.",
+      );
     } finally {
       setLoading(false);
     }
@@ -53,8 +55,16 @@ export function useGitHubConnection() {
     };
   }, []);
 
-  const connect = (returnUrl = window.location.pathname) => {
-    window.location.assign(githubConnectUrl(returnUrl));
+  const connect = async (returnUrl = window.location.pathname) => {
+    setBusy(true);
+    setError(null);
+    const outcome = await startGitHubConnection(returnUrl);
+    if (outcome.ok) {
+      await reload();
+    } else if (!outcome.cancelled) {
+      setError(outcome.error);
+    }
+    setBusy(false);
   };
 
   const sync = async () => {
@@ -64,7 +74,9 @@ export function useGitHubConnection() {
       await syncGitHubConnection();
       await reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to refresh GitHub.");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to refresh GitHub.",
+      );
     } finally {
       setBusy(false);
     }
@@ -77,7 +89,9 @@ export function useGitHubConnection() {
       await disconnectGitHubConnection();
       await reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to disconnect GitHub.");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to disconnect GitHub.",
+      );
     } finally {
       setBusy(false);
     }

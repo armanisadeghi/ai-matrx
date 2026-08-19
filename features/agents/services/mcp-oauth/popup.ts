@@ -22,13 +22,13 @@
  * settles. (D128)
  */
 
+import { startOAuthPopup } from "@/utils/oauth-popup";
+
 export type McpOAuthOutcome =
   | { ok: true; serverId: string }
   | { ok: false; error: string; cancelled: boolean };
 
-const POPUP_FEATURES = "width=600,height=700,popup=yes";
 const POPUP_TARGET = "mcp_oauth";
-const CLOSE_POLL_MS = 500;
 
 /**
  * Run the MCP OAuth popup flow for one server.
@@ -40,71 +40,21 @@ export function startMcpOAuthPopup(
   serverId: string,
   returnUrl?: string,
 ): Promise<McpOAuthOutcome> {
-  if (typeof window === "undefined") {
-    return Promise.resolve({
-      ok: false,
-      error: "OAuth can only start in the browser",
-      cancelled: false,
-    });
-  }
-
-  const target = returnUrl ?? window.location.pathname;
+  const target =
+    returnUrl ??
+    (typeof window === "undefined" ? "/" : window.location.pathname);
   const url = `/api/mcp/oauth/start?server_id=${encodeURIComponent(
     serverId,
   )}&return_url=${encodeURIComponent(target)}`;
 
-  const popup = window.open(url, POPUP_TARGET, POPUP_FEATURES);
-  if (!popup) {
-    return Promise.resolve({
-      ok: false,
-      error:
-        "The sign-in window was blocked. Allow pop-ups for this site and try again.",
-      cancelled: false,
-    });
-  }
-
-  return new Promise<McpOAuthOutcome>((resolve) => {
-    let settled = false;
-
-    const finish = (outcome: McpOAuthOutcome) => {
-      if (settled) return;
-      settled = true;
-      window.removeEventListener("message", onMessage);
-      window.clearInterval(closeTimer);
-      resolve(outcome);
-    };
-
-    const onMessage = (event: MessageEvent) => {
-      // Only our own origin may report the result — the completion page is
-      // served by this app. Without this check any open window can forge a
-      // "connected" message.
-      if (event.origin !== window.location.origin) return;
-      const data = event.data as
-        | { type?: string; serverId?: string; error?: string }
-        | undefined;
-      if (data?.type === "mcp_oauth_complete") {
-        finish({ ok: true, serverId: data.serverId ?? serverId });
-      } else if (data?.type === "mcp_oauth_error") {
-        finish({
-          ok: false,
-          error: data.error ?? "OAuth connection failed",
-          cancelled: false,
-        });
-      }
-    };
-
-    // A closed popup with no message means the user walked away. Without
-    // this the caller's "connecting…" state never clears.
-    const closeTimer = window.setInterval(() => {
-      if (popup.closed) {
-        finish({
-          ok: false,
-          error: "Connection cancelled",
-          cancelled: true,
-        });
-      }
-    }, CLOSE_POLL_MS);
-
-    window.addEventListener("message", onMessage);
-  });
+  return startOAuthPopup({
+    url,
+    target: POPUP_TARGET,
+    successType: "mcp_oauth_complete",
+    errorType: "mcp_oauth_error",
+    readSuccessValue: (data) =>
+      typeof data.serverId === "string" ? data.serverId : serverId,
+  }).then((outcome): McpOAuthOutcome =>
+    outcome.ok ? { ok: true, serverId: outcome.value } : outcome,
+  );
 }

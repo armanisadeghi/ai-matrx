@@ -113,8 +113,8 @@ export function GitHubConnectionCard({
             ) : (
               <Button
                 size="sm"
-                onClick={() => github.connect()}
-                disabled={github.loading}
+                onClick={() => void github.connect()}
+                disabled={github.loading || github.busy}
               >
                 <GitBranch className="h-3.5 w-3.5" /> Connect GitHub
               </Button>

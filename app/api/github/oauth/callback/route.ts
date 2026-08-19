@@ -7,8 +7,13 @@ import {
   requestBaseUrl,
 } from "../session";
 
-function errorRedirect(request: NextRequest, returnUrl: string, message: string) {
-  const url = new URL(returnUrl, requestBaseUrl(request));
+function errorRedirect(
+  request: NextRequest,
+  returnUrl: string,
+  message: string,
+) {
+  const url = new URL("/api/github/oauth/complete", requestBaseUrl(request));
+  url.searchParams.set("return_url", returnUrl);
   url.searchParams.set("github_error", message);
   return NextResponse.redirect(url);
 }
@@ -19,7 +24,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   cookieStore.delete(GITHUB_OAUTH_COOKIE);
   const oauthSession = rawSession ? parseGitHubOAuthSession(rawSession) : null;
   if (!oauthSession) {
-    return errorRedirect(request, "/code", "GitHub connection expired. Please try again.");
+    return errorRedirect(
+      request,
+      "/code",
+      "GitHub connection expired. Please try again.",
+    );
   }
 
   const error = request.nextUrl.searchParams.get("error");
@@ -45,21 +54,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    return errorRedirect(request, oauthSession.returnUrl, "Sign in again before connecting GitHub.");
+    return errorRedirect(
+      request,
+      oauthSession.returnUrl,
+      "Sign in again before connecting GitHub.",
+    );
   }
 
   const backendBase =
     process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com";
   try {
-    const response = await fetch(`${backendBase}/api/github-integrations/exchange`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${backendBase}/api/github-integrations/exchange`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, redirect_uri: oauthSession.redirectUri }),
+        signal: AbortSignal.timeout(30_000),
       },
-      body: JSON.stringify({ code, redirect_uri: oauthSession.redirectUri }),
-      signal: AbortSignal.timeout(30_000),
-    });
+    );
     if (!response.ok) {
       const body: unknown = await response.json().catch(() => null);
       const detail =
@@ -79,7 +95,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const returnUrl = new URL(oauthSession.returnUrl, requestBaseUrl(request));
-  returnUrl.searchParams.set("github", "connected");
-  return NextResponse.redirect(returnUrl);
+  const completeUrl = new URL(
+    "/api/github/oauth/complete",
+    requestBaseUrl(request),
+  );
+  completeUrl.searchParams.set("return_url", oauthSession.returnUrl);
+  completeUrl.searchParams.set("github", "connected");
+  return NextResponse.redirect(completeUrl);
 }

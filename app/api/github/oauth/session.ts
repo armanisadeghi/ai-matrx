@@ -15,8 +15,21 @@ export function requestBaseUrl(request: NextRequest): string {
 }
 
 export function safeReturnUrl(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/code";
+  if (!value || !value.startsWith("/") || value.startsWith("//"))
+    return "/code";
   return value;
+}
+
+export function githubAuthorizationUrl(
+  clientId: string,
+  redirectUri: string,
+  state: string,
+): URL {
+  const url = new URL("https://github.com/login/oauth/authorize");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("state", state);
+  return url;
 }
 
 export function parseGitHubOAuthSession(

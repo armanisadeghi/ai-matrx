@@ -1,6 +1,7 @@
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
+import { startOAuthPopup } from "@/utils/oauth-popup";
 import type {
   GitHubConnectionInventory,
   GitHubConnectionRow,
@@ -45,7 +46,11 @@ export function githubRepositoryFromRow(
     id: row.resource_ref,
     fullName: row.display_name,
     htmlUrl: requiredMetadataString(row.metadata, "html_url", row.display_name),
-    cloneUrl: requiredMetadataString(row.metadata, "clone_url", row.display_name),
+    cloneUrl: requiredMetadataString(
+      row.metadata,
+      "clone_url",
+      row.display_name,
+    ),
     defaultBranch: requiredMetadataString(
       row.metadata,
       "default_branch",
@@ -100,7 +105,10 @@ function backendBase(): string {
   );
 }
 
-async function githubBackend(path: string, method: "POST" | "DELETE" = "POST"): Promise<void> {
+async function githubBackend(
+  path: string,
+  method: "POST" | "DELETE" = "POST",
+): Promise<void> {
   const supabase = createClient();
   const {
     data: { session },
@@ -134,4 +142,19 @@ export function disconnectGitHubConnection(): Promise<void> {
 
 export function githubConnectUrl(returnUrl: string): string {
   return `/api/github/oauth/start?return_url=${encodeURIComponent(returnUrl)}`;
+}
+
+export function startGitHubConnection(
+  returnUrl: string,
+): Promise<
+  | { ok: true; value: "connected" }
+  | { ok: false; error: string; cancelled: boolean }
+> {
+  return startOAuthPopup({
+    url: githubConnectUrl(returnUrl),
+    target: "github_oauth",
+    successType: "github_oauth_complete",
+    errorType: "github_oauth_error",
+    readSuccessValue: () => "connected" as const,
+  });
 }
