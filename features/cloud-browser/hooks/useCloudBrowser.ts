@@ -2,12 +2,12 @@
 
 /**
  * useCloudBrowser — the facade the panel consumes. Wires the slice to the
- * fixture service and owns the async flows (load, take/return control, consent).
+ * live service and owns the async flows (load, take/return control, consent).
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { FIXTURE_ME } from "../fixtures";
+import { useUser } from "@/lib/hooks/useUser";
 import * as service from "../service";
 import type { CloudBrowserConsent, NotificationConsent } from "../types";
 import {
@@ -39,6 +39,11 @@ import {
 
 export function useCloudBrowser(initialProfileId?: string) {
   const dispatch = useAppDispatch();
+  const { userId, activeUserName } = useUser();
+  const me = useMemo(
+    () => ({ userId: userId ?? "", displayName: activeUserName ?? "You" }),
+    [activeUserName, userId],
+  );
 
   const activeProfileId = useAppSelector(selectActiveProfileId);
   const activeProfile = useAppSelector(selectActiveProfile);
@@ -62,19 +67,19 @@ export function useCloudBrowser(initialProfileId?: string) {
         const snap = await service.loadSnapshot(profileId);
         dispatch(hydrateSnapshot(snap));
       } catch (e) {
-        dispatch(setError(e instanceof Error ? e.message : "Failed to load Cloud Browser."));
+        dispatch(
+          setError(
+            e instanceof Error ? e.message : "Failed to load Cloud Browser.",
+          ),
+        );
       }
     },
     [dispatch],
   );
 
-  // First mount: choose a profile and load its snapshot.
   useEffect(() => {
-    const target = initialProfileId ?? activeProfileId ?? "bp_personal_default";
-    if (activeProfileId !== target) dispatch(setActiveProfile(target));
-    void load(target);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void load(initialProfileId ?? "");
+  }, [initialProfileId, load]);
 
   const selectProfile = useCallback(
     (profileId: string) => {
@@ -86,9 +91,9 @@ export function useCloudBrowser(initialProfileId?: string) {
 
   const takeControl = useCallback(async () => {
     if (!run) return;
-    const next = await service.takeControl(run.id, FIXTURE_ME);
+    const next = await service.takeControl(run.id, me);
     dispatch(setController(next));
-  }, [dispatch, run]);
+  }, [dispatch, me, run]);
 
   const returnControl = useCallback(async () => {
     if (!run) return;
@@ -103,22 +108,27 @@ export function useCloudBrowser(initialProfileId?: string) {
 
   const updateConsent = useCallback(
     async (next: CloudBrowserConsent) => {
-      const saved = await service.saveConsent(next);
+      if (!activeProfileId) return;
+      const saved = await service.saveConsent(activeProfileId, next);
       dispatch(setConsent(saved));
     },
-    [dispatch],
+    [activeProfileId, dispatch],
   );
 
   const updateNotificationConsent = useCallback(
     async (next: NotificationConsent) => {
-      const saved = await service.saveNotificationConsent(next);
+      if (!activeProfileId) return;
+      const saved = await service.saveNotificationConsent(
+        activeProfileId,
+        next,
+      );
       dispatch(setNotificationConsent(saved));
     },
-    [dispatch],
+    [activeProfileId, dispatch],
   );
 
   return {
-    me: FIXTURE_ME,
+    me,
     activeProfileId,
     activeProfile,
     profiles,

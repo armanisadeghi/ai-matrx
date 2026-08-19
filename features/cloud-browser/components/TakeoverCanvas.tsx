@@ -4,20 +4,20 @@
  * TakeoverCanvas — the interactive stream canvas (D-8 tier 3).
  *
  * Appears ONLY during an active takeover (a person is actually driving). This is
- * the one expensive tier. In this fixture build it renders a placeholder surface
- * standing in for the Selkies/WebRTC <video> the gateway serves after a claim
- * (S4); the real element binds to the minted stream endpoint at M3.
+ * the one expensive tier. The authenticated iframe is the WebRTC client; its
+ * address comes from the server and its session cookie is HttpOnly.
  *
  * The canvas is never the only way to act: reconnect + return-control live in
  * accessible non-canvas controls beside it, and the controller banner names who
  * is driving above it.
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
-import { Loader2, RotateCw, MonitorSmartphone } from "lucide-react";
+import { Loader2, RotateCw } from "lucide-react";
 import type { ControllerState, StreamTicketEnvelope } from "../types";
+import { renewStreamTicket } from "../service";
 
 export function TakeoverCanvas({
   controller,
@@ -32,11 +32,40 @@ export function TakeoverCanvas({
   onReconnect: () => void;
   className?: string;
 }) {
+  const [loadedSessionId, setLoadedSessionId] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<{
+    sessionId: string;
+    message: string;
+  } | null>(null);
+  const loaded = ticket !== null && loadedSessionId === ticket.streamSessionId;
+  const visibleError =
+    ticket !== null && connectionError?.sessionId === ticket.streamSessionId
+      ? connectionError.message
+      : null;
+
+  useEffect(() => {
+    if (!ticket?.control) return;
+    const renew = window.setInterval(() => {
+      void renewStreamTicket(ticket).catch(() => {
+        setConnectionError({
+          sessionId: ticket.streamSessionId,
+          message:
+            "The live browser connection expired. Reconnect to continue.",
+        });
+      });
+    }, ticket.control.renewIntervalSeconds * 1000);
+    return () => window.clearInterval(renew);
+  }, [ticket]);
+
   return (
     <div className={cn("flex h-full flex-col", className)}>
       <div
         className="relative flex-1 overflow-hidden rounded-md border border-border bg-slate-950"
-        style={{ aspectRatio: ticket ? `${ticket.viewport.width} / ${ticket.viewport.height}` : undefined }}
+        style={{
+          aspectRatio: ticket
+            ? `${ticket.viewport.width} / ${ticket.viewport.height}`
+            : undefined,
+        }}
       >
         {connecting || !ticket ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
@@ -44,19 +73,35 @@ export function TakeoverCanvas({
             <span className="text-sm">Connecting to the live browser…</span>
           </div>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
-            <MonitorSmartphone className="h-8 w-8" aria-hidden />
-            <span className="text-sm">
-              Live control stream ({ticket.protocol})
-            </span>
-            <span className="text-xs">
-              {ticket.viewport.width}×{ticket.viewport.height} ·{" "}
-              {controller.isMe ? "you are driving" : `${controller.displayName ?? "a person"} is driving`}
-            </span>
-            <span className="text-[11px] text-slate-500">
-              (fixture placeholder — the WebRTC video binds here at M3)
-            </span>
-          </div>
+          <>
+            {!loaded ? (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 text-slate-300">
+                <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+                <span className="text-sm">Starting the live browser…</span>
+              </div>
+            ) : null}
+            <iframe
+              key={ticket.streamSessionId}
+              src={ticket.endpoint}
+              title="Live cloud browser"
+              className="absolute inset-0 h-full w-full border-0"
+              allow="autoplay; fullscreen"
+              referrerPolicy="no-referrer"
+              onLoad={() => setLoadedSessionId(ticket.streamSessionId)}
+              onError={() =>
+                setConnectionError({
+                  sessionId: ticket.streamSessionId,
+                  message:
+                    "The live browser could not load. Reconnect to try again.",
+                })
+              }
+            />
+            {visibleError ? (
+              <div className="absolute inset-x-3 bottom-3 z-20 rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground shadow">
+                {visibleError}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
 

@@ -11167,6 +11167,21 @@ export type Database = {
         }
         Returns: string
       }
+      finalize_sms_agent_turn_jsonb: {
+        Args: {
+          p_error_code?: string
+          p_execution_known_not_started?: boolean
+          p_inbound_message_id: string
+          p_operator_detail?: string
+          p_replies?: Json
+          p_reply?: string
+          p_request_id?: string
+          p_retry_after_seconds?: number
+          p_status: string
+          p_worker_id: string
+        }
+        Returns: string
+      }
       finalize_sms_outbound_attempt: {
         Args: {
           p_error_code?: string
@@ -35847,6 +35862,34 @@ export type Database = {
           mode: string | null
           scored: number | null
           subject_kind: string | null
+        }
+        Relationships: []
+      }
+      v_producer_yield: {
+        Row: {
+          accept_rate_of_decided: number | null
+          accepted: number | null
+          age_days: number | null
+          cost_per_accepted_usd: number | null
+          cost_per_produced_usd: number | null
+          cost_usd: number | null
+          decided: number | null
+          decision_rate: number | null
+          display_name: string | null
+          door_href: string | null
+          expired: number | null
+          first_produced_at: string | null
+          id: string | null
+          last_accepted_at: string | null
+          last_produced_at: string | null
+          measurement_state: string | null
+          outcome_token: string | null
+          produced: number | null
+          producer_key: string | null
+          rejected: number | null
+          runs: number | null
+          undecided: number | null
+          yield_rate: number | null
         }
         Relationships: []
       }
