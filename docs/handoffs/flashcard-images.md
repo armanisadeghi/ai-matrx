@@ -36,9 +36,15 @@ fetcher), and **repairs do not consume the owner's allowance** but ARE recorded 
 the list when the repaired cards span sets) with no deep-link to the specific face — the page
 does not read an `?assist=` param today, so none is sent. If/when that page grows the
 launch-contract handling the Rulebook page has, the sweep can point at the exact card.
-2. **DB-deck print door** (chip `task_0aa48778`): Print action in SetDetailView feeding the
-   existing 10-variant printer with `CardWithDetails → Flashcard` mapping (studyFaces for
-   cloze + `getCardImages` for image urls).
+
+**DONE 2026-08-19 — DB-deck print door** (was chip `task_0aa48778`): SetDetailView **Print**
+(beside Export) opens the SAME 10-variant printer dialog as the markdown lane, fed by the ONE
+mapper `features/flashcards/utils/deckPrintData.ts` (`buildDeckPrintData`: shared `studyFaces`
+so cloze prints occluded front / revealed back, `getCardImages` for face images) plus a new
+`showImages` printer setting (default ON, image-capable variants only). Browser-verified on a
+live deck. Only durable `image_url`s can reach a print window (it is unauthenticated), so
+file_id-only images are skipped and counted out loud in a toast — that last gap closes with
+lane 1 above, when upload stamps a public URL beside every `image_file_id`.
 
 ## Not chipped (blocked on other owners / rulings)
 

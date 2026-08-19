@@ -95,7 +95,13 @@ own fresh conversation):
   `front_image_url`/`back_image_url` + alt — anon can only use durable URLs, never a
   bare file_id), and print (cut-cards / both-sides / study-sheet / front-only /
   back-only variants; the fixed-geometry variants — landscape / 6-up / Avery — are
-  text-only by design).
+  text-only by design), reachable from BOTH lanes: the markdown block and — since
+  2026-08-19 — the DB-backed deck (SetDetailView **Print**, beside Export, same
+  10-variant dialog). The DB deck's `CardWithDetails[]` reaches the printer through ONE
+  mapper, [`utils/deckPrintData.ts`](./utils/deckPrintData.ts) (`buildDeckPrintData`):
+  faces via the shared `studyFaces` (cloze prints occluded front / revealed back, never
+  raw `{{c1::}}`), images via `getCardImages`. Print honours a **Print face images**
+  setting (default ON, offered only on the 5 image-capable variants).
 
 ### Known limits (images)
 
@@ -109,9 +115,11 @@ own fresh conversation):
 - The review pass records `fc_detail.metadata.human_review`; wiring those verdicts into
   `platform.judge_verdict` accuracy for `education.card_image_web_source` is the
   follow-on (see `docs/handoffs/flashcard-images.md`).
-- The markdown-block print lane only shows images when the caller's card data carries
-  `frontImageUrl`/`backImageUrl` (widened `Flashcard` type); the DB-backed deck has no
-  print door at all yet (SetDetailView exports, but doesn't print) — chipped.
+- A print window is a fresh, UNAUTHENTICATED document, so only a durable `image_url`
+  can travel into it. A `file_id`-only face image is skipped and counted
+  (`skippedImageCount` → a toast naming how many), never silently dropped — the same
+  constraint the anon public-deck lane lives under. It disappears for good once the
+  upload lane stamps a public URL beside every `image_file_id`.
 - Hotlinked `image_url` rot has a graceful render fallback but no re-source sweep yet —
   chipped.
 - Uploaded stored-file images (`image_file_id`, future upload lane) must also stamp the
@@ -119,6 +127,13 @@ own fresh conversation):
   already writes both).
 
 ## Change log
+
+- **2026-08-19 — DB-backed decks can print.** `SetDetailView` gained a **Print** action
+  (beside Export) on the SAME canonical printer/dialog the markdown lane uses, fed by the
+  new `buildDeckPrintData` mapper (studyFaces + getCardImages). Added the printer's
+  `showImages` setting (default ON, image-capable variants only). Browser-verified on a
+  live deck: both face images render in the print document, a cloze card prints occluded
+  front / revealed back, and the one file_id-only image is skipped with a toast.
 
 - **2026-08-18 — "Illustrate this set" (the per-SET image lane).** Set detail can now run
   the whole deck through the web-sourcing agent in one action, entitlement-guarded with the
