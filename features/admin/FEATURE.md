@@ -185,6 +185,8 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-19` — Registered User Acquisition in the canonical Users navigation and admin destination catalog.
+
 - `2026-08-15` — Codex: added the registry-backed Admin Launchpad, prominent dashboard and admin-only sidebar doors, mandatory new-tab launches, and a single visibility-aware hourly reload.
 
 - `2026-08-13` — Claude: made the Official Components registry

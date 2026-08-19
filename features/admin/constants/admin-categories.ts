@@ -810,6 +810,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "User Acquisition",
+        description:
+          "Trace visitor, guest, account, and conversion cohorts from first-touch provenance through AI activity and stored cost.",
+        iconName: "Route",
+        link: "/administration/users/acquisition",
+        isNew: true,
+      },
+      {
         title: "Change Policy",
         description:
           "Platform defaults for every AI-proposed change type (the C-18 catalogue), plus which organizations have diverged from them — each a door to that org's own change-policy page.",
