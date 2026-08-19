@@ -582,7 +582,9 @@ function LayerHeader({ out }: { out: DescendOut }) {
           <span className="text-muted-foreground">status: {out.unit.status}</span>
         )}
         {typeof out.unit.position === "number" && (
-          <span className="text-muted-foreground">turn {out.unit.position}</span>
+          <span className="text-muted-foreground">
+            message #{out.unit.position}
+          </span>
         )}
         {producer && (
           <>
