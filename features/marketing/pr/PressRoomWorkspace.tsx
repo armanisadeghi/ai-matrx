@@ -26,7 +26,7 @@
  * load state, so every screen here is shareable and reload-safe.
  */
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlarmClock,
@@ -34,6 +34,7 @@ import {
   FileSearch,
   FlaskConical,
   Globe,
+  Loader2,
   Newspaper,
   Send,
   TriangleAlert,
@@ -50,6 +51,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  generateStoryAngles,
+  type GenerateAnglesResult,
+} from "@/features/marketing/pr/api";
 import { cn } from "@/lib/utils";
 import {
   InlineQueryError,
@@ -229,6 +234,35 @@ export default function PressRoomWorkspace() {
   }, [angles, requests, now]);
 
   const hasNoBrands = !brands.isLoading && (brands.data?.length ?? 0) === 0;
+
+  /**
+   * Running the Story Engine. Slow by nature — it fetches the site's own pages
+   * and then runs the analyst over them — so this reports what happened rather
+   * than spinning silently: how many angles survived, how many were refused and
+   * why, and what the analyst could not see.
+   */
+  const [analysis, setAnalysis] = useState<{
+    running: boolean;
+    result: GenerateAnglesResult | null;
+    error: string | null;
+  }>({ running: false, result: null, error: null });
+
+  const runAnalysis = useCallback(async () => {
+    if (!siteId) return;
+    setAnalysis({ running: true, result: null, error: null });
+    try {
+      const result = await generateStoryAngles(siteId, { capturePages: 8 });
+      setAnalysis({ running: false, result, error: null });
+      // Whatever survived the gates is now in the table; go read it.
+      press.refetch();
+    } catch (err) {
+      setAnalysis({
+        running: false,
+        result: null,
+        error: err instanceof Error ? err.message : "Analysis failed.",
+      });
+    }
+  }, [siteId, press]);
   const selectedBrand = brands.data?.find((brand) => brand.id === brandId);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
 
@@ -246,13 +280,21 @@ export default function PressRoomWorkspace() {
             className="size-4 shrink-0 text-muted-foreground"
             aria-hidden
           />
-          <Label htmlFor="press-brand" className="text-xs text-muted-foreground">
+          <Label
+            htmlFor="press-brand"
+            className="text-xs text-muted-foreground"
+          >
             Business
           </Label>
-          <Select value={brandId} onValueChange={(value) => set({ brand: value })}>
+          <Select
+            value={brandId}
+            onValueChange={(value) => set({ brand: value })}
+          >
             <SelectTrigger id="press-brand" className="h-8 w-56">
               <SelectValue
-                placeholder={brands.isLoading ? "Loading…" : "Select a business"}
+                placeholder={
+                  brands.isLoading ? "Loading…" : "Select a business"
+                }
               />
             </SelectTrigger>
             <SelectContent>
@@ -304,10 +346,34 @@ export default function PressRoomWorkspace() {
             >
               Refresh
             </Button>
+            {siteId ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 shrink-0 text-[11px]"
+                onClick={() => void runAnalysis()}
+                disabled={analysis.running}
+                title="Re-read this site and look for new angles. Existing angles you have ruled on are never overwritten."
+              >
+                {analysis.running ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                    Reading…
+                  </>
+                ) : (
+                  <>
+                    <Newspaper className="mr-1.5 h-3 w-3" />
+                    Find stories
+                  </>
+                )}
+              </Button>
+            ) : null}
             <CopyButtons
               size="sm"
               label="Press room"
-              human={() => pressRoomAsText(snapshot, selectedBrand?.name ?? null)}
+              human={() =>
+                pressRoomAsText(snapshot, selectedBrand?.name ?? null)
+              }
               // The human payload already prefixes "(SAMPLE DATA)". The agent
               // and json payloads did not, so a downstream agent received ten
               // fictional angles stamped with the user's REAL site_id and no way
@@ -338,45 +404,50 @@ export default function PressRoomWorkspace() {
         </div>
 
         {/* ── Status bar: the honest line about anything held in memory ── */}
-        {rulings.count > 0 ? (
-          (() => {
-            const failed = Object.keys(rulings.failures ?? {}).length;
-            const tone = failed
-              ? "border-destructive/40 bg-destructive/10 text-destructive"
-              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
-            return (
-          <div className={`flex min-w-0 flex-wrap items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] ${tone}`}>
-            <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="min-w-0">
-              {failed ? (
-                <>
-                  {failed} ruling{failed === 1 ? "" : "s"} could not be saved.
-                  The page still shows your decision, but the row was not
-                  written — retry, or check you still have edit access to this
-                  site.
-                </>
-              ) : (
-                <>
-                  {rulings.count} ruling{rulings.count === 1 ? "" : "s"} applied
-                  and saved. Accepting, pitching and dismissing write straight to{" "}
-                  <span className="font-mono text-[10px]">seo.story_angle</span>;
-                  &ldquo;I have this&rdquo; recomputes the page for this session
-                  and is not stored yet.
-                </>
-              )}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="ml-auto h-6 shrink-0 text-[10px]"
-              onClick={rulings.discard}
-            >
-              Discard them
-            </Button>
-          </div>
-        );
-          })()
-        ) : null}
+        {rulings.count > 0
+          ? (() => {
+              const failed = Object.keys(rulings.failures ?? {}).length;
+              const tone = failed
+                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+              return (
+                <div
+                  className={`flex min-w-0 flex-wrap items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] ${tone}`}
+                >
+                  <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="min-w-0">
+                    {failed ? (
+                      <>
+                        {failed} ruling{failed === 1 ? "" : "s"} could not be
+                        saved. The page still shows your decision, but the row
+                        was not written — retry, or check you still have edit
+                        access to this site.
+                      </>
+                    ) : (
+                      <>
+                        {rulings.count} ruling{rulings.count === 1 ? "" : "s"}{" "}
+                        applied and saved. Accepting, pitching and dismissing
+                        write straight to{" "}
+                        <span className="font-mono text-[10px]">
+                          seo.story_angle
+                        </span>
+                        ; &ldquo;I have this&rdquo; recomputes the page for this
+                        session and is not stored yet.
+                      </>
+                    )}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto h-6 shrink-0 text-[10px]"
+                    onClick={rulings.discard}
+                  >
+                    Discard them
+                  </Button>
+                </div>
+              );
+            })()
+          : null}
 
         {/* ── Forced load state, on the real route ─────────────────────── */}
         {press.forcedScenario ? (
@@ -386,10 +457,15 @@ export default function PressRoomWorkspace() {
               <span className="font-semibold text-foreground">
                 {SCENARIO_COPY[press.forcedScenario].label}
               </span>{" "}
-              — {SCENARIO_COPY[press.forcedScenario].blurb} Nothing was read from
-              the database.
+              — {SCENARIO_COPY[press.forcedScenario].blurb} Nothing was read
+              from the database.
             </span>
-            <Button asChild size="sm" variant="outline" className="ml-auto h-6 text-[10px]">
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="ml-auto h-6 text-[10px]"
+            >
               <Link href={href({ scenario: "live" })}>Back to live data</Link>
             </Button>
           </div>
@@ -467,7 +543,31 @@ export default function PressRoomWorkspace() {
                       variant="outline"
                       className="h-7 text-[11px]"
                     >
-                      <Link href={marketingRoutes.brands()}>Add a business</Link>
+                      <Link href={marketingRoutes.brands()}>
+                        Add a business
+                      </Link>
+                    </Button>
+                  ) : siteId ? (
+                    // THE fix for the dead end: the surface detected "never
+                    // analysed" and previously offered nothing, while the
+                    // endpoint that fixes it existed and was tested.
+                    <Button
+                      size="sm"
+                      className="h-7 text-[11px]"
+                      onClick={() => void runAnalysis()}
+                      disabled={analysis.running}
+                    >
+                      {analysis.running ? (
+                        <>
+                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                          Reading the site…
+                        </>
+                      ) : (
+                        <>
+                          <Newspaper className="mr-1.5 h-3 w-3" />
+                          Find my stories
+                        </>
+                      )}
                     </Button>
                   ) : null
                 }
@@ -478,10 +578,79 @@ export default function PressRoomWorkspace() {
                 </span>
                 , a stand-in business, and is here to show what this surface
                 looks like with work in it. Most of its angles are still
-                gathering proof, which is what a healthy account looks like. Your
-                own analysis writes to{" "}
+                gathering proof, which is what a healthy account looks like.
+                Your own analysis writes to{" "}
                 <span className="font-mono text-[10px]">seo.story_angle</span>{" "}
                 and replaces all of it.
+              </Banner>
+            ) : null}
+
+            {analysis.error ? (
+              <Banner
+                tone="info"
+                icon={<TriangleAlert className="h-4 w-4" />}
+                title="The analysis did not run"
+                action={
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => void runAnalysis()}
+                  >
+                    Try again
+                  </Button>
+                }
+              >
+                {analysis.error}
+              </Banner>
+            ) : null}
+
+            {analysis.result ? (
+              <Banner
+                tone={analysis.result.kept > 0 ? "sample" : "info"}
+                icon={<Newspaper className="h-4 w-4" />}
+                title={
+                  analysis.result.kept > 0
+                    ? `${analysis.result.kept} angle${analysis.result.kept === 1 ? "" : "s"} found${analysis.result.dropped ? `, ${analysis.result.dropped} refused` : ""}`
+                    : "Nothing survived the evidence gates"
+                }
+                action={
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => setAnalysis((a) => ({ ...a, result: null }))}
+                  >
+                    Dismiss
+                  </Button>
+                }
+              >
+                <span className="block">
+                  Read {analysis.result.bundle_stats.confirmed_fact_count ?? 0}{" "}
+                  confirmed facts and captured{" "}
+                  {analysis.result.bundle_stats.pages_captured ?? 0} of your own
+                  pages
+                  {analysis.result.bundle_stats.pages_failed
+                    ? ` (${analysis.result.bundle_stats.pages_failed} could not be fetched)`
+                    : ""}
+                  .
+                </span>
+                {analysis.result.gates.some((g) => !g.kept) ? (
+                  <span className="mt-1 block text-[11px]">
+                    Refused, with reasons —{" "}
+                    {analysis.result.gates
+                      .filter((g) => !g.kept)
+                      .slice(0, 3)
+                      .map((g) => g.reasons[0])
+                      .filter(Boolean)
+                      .join("; ")}
+                  </span>
+                ) : null}
+                {analysis.result.limitations.length ? (
+                  <span className="mt-1 block text-[11px]">
+                    Could not assess: {analysis.result.limitations.join(" ")}
+                  </span>
+                ) : null}
               </Banner>
             ) : null}
 
@@ -551,7 +720,9 @@ export default function PressRoomWorkspace() {
                 now={now}
                 expandedAngleId={expandedAngleId}
                 onExpandAngle={(angleId) =>
-                  set({ focus: angleId ? { kind: "angle", id: angleId } : null })
+                  set({
+                    focus: angleId ? { kind: "angle", id: angleId } : null,
+                  })
                 }
                 onOpenRequest={(requestId) =>
                   set({ focus: { kind: "request", id: requestId } })
