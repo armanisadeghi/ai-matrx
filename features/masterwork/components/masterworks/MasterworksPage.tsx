@@ -22,7 +22,6 @@ import { AuditionDialog } from "./AuditionDialog";
 import { MasterworkDriftDialog } from "./MasterworkDriftDialog";
 import { TryMasterworkBox } from "./TryMasterworkBox";
 import {
-  getRulebook,
   listMasterworksForRulebook,
   listRecentRunsForMasterworks,
   setMasterworkReleased,
@@ -105,8 +104,18 @@ function MasterworkRunRow({
  * behind the Rulebook's current version gets a drift flag — rebuild to adopt
  * the new rules.
  */
-export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
-  const [rulebook, setRulebook] = useState<Rulebook | null>(null);
+export function MasterworksPage({
+  rulebook,
+}: {
+  /**
+   * Handed down by `RulebookLaneRoute`, which already loaded and gated it.
+   * This page must NOT read the Rulebook again: a second read is a second
+   * denial story to hand-write, and hand-written denial copy is exactly what
+   * AccessGate exists to kill.
+   */
+  rulebook: Rulebook;
+}) {
+  const rulebookId = rulebook.id;
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   const [runsByMasterwork, setRunsByMasterwork] = useState<
     Record<string, MasterworkRun[]>
@@ -178,18 +187,12 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const [r, allRows] = await Promise.all([
-          getRulebook(rulebookId),
-          listMasterworksForRulebook(rulebookId),
-        ]);
+        const allRows = await listMasterworksForRulebook(rulebookId);
         if (cancelled) return;
-        setRulebook(r);
         // The Understudy (running-from-minute-one) lives on the Rulebook page
         // and is never releasable — this page manages the BUILT Masterworks.
         const m = allRows.filter((mw) => !mw.understudy);
         setMasterworks(m);
-        if (!r)
-          setError("This Rulebook doesn't exist, or you don't have access.");
         if (m.length > 0) {
           // Run history is enrichment — its failure never blanks the page.
           listRecentRunsForMasterworks(m.map((mw) => mw.id))
@@ -219,7 +222,7 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
       </div>
     );
   }
-  if (error || !rulebook) {
+  if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">{error}</p>

@@ -18,7 +18,7 @@ export default function RulebookSourcesRoute({
 }) {
   const { id } = use(params);
   return (
-    <RulebookLaneRoute rulebookId={id} title="Sources">
+    <RulebookLaneRoute rulebookId={id} lane="sources" title="Sources">
       {({ rulebook, canEdit, setRulebook, reload }) => (
         <RulebookSourcesPanel
           rulebook={rulebook}

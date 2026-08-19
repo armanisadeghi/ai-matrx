@@ -36,26 +36,56 @@ export interface RulebookWorkspaceState {
   assist_key: string | null;
 }
 
+/**
+ * The `workspace_state` every lane route publishes: nothing on the detail
+ * page's dialog stack is open, because the lane IS the mode. `lane` names
+ * which door the Expert came through so the agent is never guessing.
+ */
+export const CLOSED_RULEBOOK_WORKSPACE_STATE: RulebookWorkspaceState = {
+  editor_open: false,
+  interview_open: false,
+  ingest_open: false,
+  corpus_open: false,
+  chat_import_open: false,
+  build_open: false,
+  review_wizard_open: false,
+  activate_confirmation_open: false,
+  feedback_rule_id: null,
+  feedback_mode: null,
+  dump_focus: false,
+  assist_key: null,
+};
+
 export interface BuildRulebookSurfaceScopeArgs {
   rulebook: Rulebook;
-  masterworks: Masterwork[];
   canEdit: boolean;
-  searchQuery: string;
-  visibleRules: RulebookRule[];
-  activeRule: RulebookRule | null;
-  activeRuleDraft: RulebookDraftSnapshot | null;
-  workspaceState: RulebookWorkspaceState;
+  /**
+   * Everything below is the DETAIL PAGE's live workspace. A lane route
+   * (`/masterwork/[id]/<lane>`) publishes the same Rulebook truth without a
+   * rules list, editor, or dialog stack of its own, so each is optional and
+   * defaults to the honest "nothing open, nothing filtered" reading. ONE
+   * builder — a lane must never emit a second, thinner shape of this surface.
+   */
+  masterworks?: Masterwork[];
+  searchQuery?: string;
+  visibleRules?: RulebookRule[];
+  activeRule?: RulebookRule | null;
+  activeRuleDraft?: RulebookDraftSnapshot | null;
+  workspaceState?: RulebookWorkspaceState;
+  /** Lane slug (`conduct`, `interview`, `sources`, …) when not the detail page. */
+  lane?: string;
 }
 
 export function buildRulebookSurfaceScope({
   rulebook,
-  masterworks,
   canEdit,
-  searchQuery,
-  visibleRules,
-  activeRule,
-  activeRuleDraft,
-  workspaceState,
+  masterworks = [],
+  searchQuery = "",
+  visibleRules = rulebook.rules,
+  activeRule = null,
+  activeRuleDraft = null,
+  workspaceState = CLOSED_RULEBOOK_WORKSPACE_STATE,
+  lane,
 }: BuildRulebookSurfaceScopeArgs): SurfaceScopePayload {
   const approvedRules = rulebook.rules.filter(
     (rule) => ruleState(rule) === "approved",
@@ -81,6 +111,7 @@ export function buildRulebookSurfaceScope({
       surface: "masterwork_rulebook",
       rulebook_id: rulebook.id,
       current_filter: searchQuery,
+      lane: lane ?? "rulebook",
     },
     rulebook_id: rulebook.id,
     rulebook_name: rulebook.name,

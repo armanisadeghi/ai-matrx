@@ -23,6 +23,7 @@ export default function RulebookChatImportRoute({
   return (
     <RulebookLaneRoute
       rulebookId={id}
+      lane="import"
       title="Import your AI chats"
       requireOwner
       ownerMessage="Only the Rulebook's owner can distill their AI chats into it."

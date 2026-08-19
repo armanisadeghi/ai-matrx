@@ -23,6 +23,7 @@ export default function RulebookBodyOfWorkRoute({
   return (
     <RulebookLaneRoute
       rulebookId={id}
+      lane="body-of-work"
       title="Your published work"
       requireOwner
       ownerMessage="Only the Rulebook's owner can distill their published work into it."
