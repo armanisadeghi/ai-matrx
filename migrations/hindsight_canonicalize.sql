@@ -33,6 +33,8 @@ BEGIN
     ALTER TABLE hindsight.enrollment
       ALTER COLUMN visibility TYPE platform.visibility
       USING visibility::text::platform.visibility;
+    -- personal-justified: an enrollment is one person's watch on a subject.
+    -- Another org member does not inherit the watch.
     ALTER TABLE hindsight.enrollment
       ALTER COLUMN visibility SET DEFAULT 'personal'::platform.visibility;
     ALTER TABLE hindsight.enrollment ALTER COLUMN visibility SET NOT NULL;

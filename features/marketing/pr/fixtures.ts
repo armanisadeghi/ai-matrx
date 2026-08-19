@@ -506,7 +506,7 @@ const ANGLE_SEEDS: readonly AngleSeed[] = [
       [
         "your-position",
         "Your decision on going on the record",
-        "Only you can answer this. Say yes and the rest is assemblable in a day.",
+        "This needs your answer. Say yes and the rest is assemblable in a day.",
         "you",
         "quick",
       ],

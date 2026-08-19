@@ -29,6 +29,8 @@ export async function getTopicOverviewServer(topicId: string): Promise<ResearchP
 /** The fixed research-intent catalog, active only — SSR twin of `service.ts::getResearchIntents`. */
 export async function getResearchIntentsServer(): Promise<ResearchIntent[]> {
     const supabase = await createClient();
+    // VIEW LAW: fixed platform catalog — active rows are world-readable
+    // reference data, not a tenant list.
     const { data, error } = await supabase
         .schema('research')
         .from('research_intent')

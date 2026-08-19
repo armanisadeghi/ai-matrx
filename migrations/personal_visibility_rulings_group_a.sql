@@ -52,6 +52,7 @@ set default_visibility = 'internal'::platform.visibility
 where (schema_name, table_name) = ('users', 'profiles')
   and default_visibility is null;
 
+-- personal-justified: person-owned rows (chat run, SMS, quiz attempt).
 update platform.entity_types
 set default_visibility = 'personal'::platform.visibility
 where (schema_name, table_name) in (

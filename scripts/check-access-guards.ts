@@ -180,7 +180,11 @@ function pushFinding(f: Finding) {
 // filename — see scripts/access-guards/allowlist.json `lowestTierDefault`.
 
 const LOWEST_TIER_CUTOFF_DATE = "2026-07-21";
-const LOWEST_TIER_RE = /default\s*[:=]?\s*'personal'|default_visibility.*'personal'/i;
+// Visibility columns only — `billing.plan.audience default 'personal'` is a
+// product-segment enum (free/personal/company/enterprise), not a visibility
+// tier, and must not trip this detector.
+const LOWEST_TIER_RE =
+  /\bvisibility\b[^;\n]*default\s+'personal'|default_visibility\s*=\s*'personal'|SET DEFAULT 'personal'::platform\.visibility/i;
 const JUSTIFY_RE = /personal-justified\s*:/i;
 
 // A comment can only DESCRIBE a default, never BE one. Migrations that fix this
@@ -430,6 +434,8 @@ function detectHandRolledLadder(allow: Allowlist) {
 const VIEW_LAW_DIR_RE = /^features\/[^/]+\/(service|services|redux)\//;
 const SCOPE_EQ_RE =
   /\.eq\(\s*["'](created_by|user_id|owner_id|owner|organization_id|org_id|project_id|task_id|conversation_id|scope_id|[a-z_]+_id)["']/;
+const SCOPE_OR_RE =
+  /\.or\(\s*[`'"][^`'"]*\b(created_by|user_id|owner_id|organization_id|org_id)\.eq/;
 const CONTAINS_IN_ID_RE = /\.in\(\s*["']id["']/;
 const SINGLE_RECORD_RE = /\.eq\(\s*["']id["']|\.single\(\)/;
 const VIEW_LAW_COMMENT_RE = /\/\/\s*VIEW LAW:/;
@@ -465,6 +471,7 @@ function detectBareRlsList(allow: Allowlist) {
       if (RPC_RE.test(chain)) continue;
       if (SINGLE_RECORD_RE.test(chain)) continue;
       if (SCOPE_EQ_RE.test(chain)) continue;
+      if (SCOPE_OR_RE.test(chain)) continue;
       if (CONTAINS_IN_ID_RE.test(chain)) continue;
       if (APPLY_LIST_SCOPE_RE.test(chain)) continue;
 

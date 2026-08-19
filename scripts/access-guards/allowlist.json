@@ -38,7 +38,6 @@
     { "file": "features/sharing/components/PermissionsList.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/tabs/ShareWithOrgTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/tabs/ShareWithUserTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
-    { "file": "features/tasks/services/taskService.ts", "line": 742, "justification": "cosmetic UI union, no access decision — level is a pass-through param to share_resource_with_user RPC, never compared", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "lib/redux/slices/agentCacheSlice.ts", "line": 48, "justification": "cosmetic UI union, no access decision — display-only shared-cache metadata field", "addedBy": "claude", "date": "2026-07-22" }
   ],
   "bareRlsList": [

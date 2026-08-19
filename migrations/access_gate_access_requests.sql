@@ -24,6 +24,8 @@ create table if not exists iam.access_requests (
   deleted_at       timestamptz,
   version          integer not null default 1,
   metadata         jsonb not null default '{}'::jsonb,
+  -- personal-justified: an access request is one person's ask. The requester
+  -- owns the row; the decider sees it via the inbox RPC, not org visibility.
   visibility       platform.visibility not null default 'personal',
 
   -- What is being asked for.

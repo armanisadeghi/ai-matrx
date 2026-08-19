@@ -45,9 +45,10 @@ Advisory only — nothing runs it at commit time; a human or agent runs it.
    (`.from(` + `.select(` + one of `.order(`/`.limit(`/`.range(`) inside
    `features/**/{service,services,redux}/**` must carry a visible owner/org/
    container scope in the same chain (`.eq("created_by"|"user_id"|
-   "organization_id"|"<fk>_id"...)`, `.in("id", ...)`, an `.rpc(` call, or a
-   wrapping `applyListScope(...)`), or an explicit `// VIEW LAW: <reason>`
-   comment within 5 lines. RLS alone is not defense in depth — a policy bug
+   "organization_id"|"<fk>_id"...)`, `.or("organization_id.eq.…")`,
+   `.in("id", ...)`, an `.rpc(` call, or a wrapping `applyListScope(...)`),
+   or an explicit `// VIEW LAW: <reason>` comment within 5 lines. RLS alone
+   is not defense in depth — a policy bug
    or a future RLS relaxation must not turn every naive list query into an
    information leak. Single-record reads (`.eq("id", ...)` / `.single()`) are
    exempt — they aren't "list" reads. **This detector has known false
@@ -67,11 +68,13 @@ reviewed like code, and an unjustified entry should be rejected in review.
 
 ## Known current findings (informational, tracked here so a re-run isn't a surprise)
 
-As of 2026-07-25, a full-tree run should report **0 FAIL** after the
-`research_context_bundle` default was corrected to `internal` (and notes
-context types switched to the canonical `PermissionLevel`). **Any FAIL from
-here on is a real regression, not known noise.** Do not hardcode a count as a
-target; re-run the script for the live list.
+As of 2026-08-18, LOWEST-TIER DEFAULT matches **visibility columns only**
+(`visibility … default 'personal'`, `default_visibility = 'personal'`,
+`SET DEFAULT 'personal'::platform.visibility`). A product-segment enum such as
+`billing.plan.audience default 'personal'` is not a visibility tier and must
+not trip the detector. Deliberate personal defaults carry a `personal-justified:`
+comment. **Any FAIL from here on is a real regression, not known noise.**
+Do not hardcode a count as a target; re-run the script for the live list.
 
 **Scan scope (2026-07-22):** the walker skips every dot-dir. This matters more
 than it sounds — `.claude/worktrees/` holds *full repo copies* from parallel

@@ -130,6 +130,12 @@ export const AGENT_SYNC_FIELDS: readonly AgentSyncField[] = [
     label: "RAG awareness",
     group: "behavior",
   },
+  {
+    column: "auto_context_disabled",
+    field: "autoContextDisabled",
+    label: "Context kill switch",
+    group: "behavior",
+  },
 ] as const;
 
 /**

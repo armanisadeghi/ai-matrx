@@ -14,6 +14,8 @@
  * listed here does not exist. Do not widen them locally.
  */
 
+import type { PermissionLevel } from "@/utils/permissions/types";
+
 // ── S1 §2 enums ──────────────────────────────────────────────────────────────
 
 export type ProfileOwnerType = "user" | "organization";
@@ -92,8 +94,8 @@ export type ActionResultClass =
   | "suppressed"
   | "cancelled";
 
-/** Platform share level. Say FULL for `admin` (S1 §2.17). */
-export type ShareLevel = "viewer" | "editor" | "admin";
+/** Platform share level — the canonical permission ladder. Say FULL for `admin` (S1 §2.17). */
+export type ShareLevel = PermissionLevel;
 
 // ── S1 §3 rows (safe, frontend-readable projections only) ────────────────────
 

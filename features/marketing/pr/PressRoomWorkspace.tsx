@@ -516,7 +516,7 @@ export default function PressRoomWorkspace() {
               <KpiDoor
                 label="Needs you"
                 value={stats.you}
-                detail="Only you can unblock these"
+                detail="These need a decision from you"
                 icon={<Newspaper className="h-4 w-4" />}
                 tone={stats.you > 0 ? "warning" : "default"}
                 active={viewId === "you"}

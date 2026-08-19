@@ -60,8 +60,9 @@ export function StudentAgeBandControl({
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <CalendarClock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
-          Had a birthday? Only you can change {studentLabel}&apos;s age —
-          children can&apos;t move themselves out of the under-13 protections.
+          Had a birthday? A parent or guardian has to change {studentLabel}
+          &apos;s age — children can&apos;t move themselves out of the
+          under-13 protections.
         </span>
       </p>
       <div className="flex shrink-0 gap-1.5">

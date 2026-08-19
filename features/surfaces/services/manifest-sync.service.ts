@@ -511,6 +511,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   ] = await Promise.all([
     readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_value")
@@ -522,6 +523,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     ),
     readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_agent_role")
@@ -533,6 +535,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     ),
     readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_write_target")
@@ -544,6 +547,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     ),
     readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_client_tool")
@@ -555,6 +559,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     ),
     readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_config")
@@ -566,6 +571,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     ),
     readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("agent")
           .from("menu_surface")
@@ -883,6 +889,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 9. ui_surface-level drift — url_pattern, canonical label, value_groups.
   const surfaceRows = await readAllRows(
     ({ from, to }) =>
+      // VIEW LAW: completeness audit of the system catalog — every row is the job.
       sb
         .schema("ui")
         .from("ui_surface")
@@ -1175,6 +1182,7 @@ export async function applyManifestSync(
   // surface look absent and drives a duplicate insert.
   const existingSurfaceRows = await readAllRows(
     ({ from, to }) =>
+      // VIEW LAW: completeness audit of the system catalog — every row is the job.
       sb
         .schema("ui")
         .from("ui_surface")
@@ -1383,6 +1391,7 @@ export async function applyManifestSync(
   //     route-map entry or client/local heuristic exists.
   const allSurfaceRows = await readAllRows(
     ({ from, to }) =>
+      // VIEW LAW: completeness audit of the system catalog — every row is the job.
       sb
         .schema("ui")
         .from("ui_surface")
@@ -1418,6 +1427,7 @@ export async function applyManifestSync(
     // manifest side ever changed shape, could target the wrong ones).
     const allDb = await readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_value")
@@ -1460,6 +1470,7 @@ export async function applyManifestSync(
   if (deleteStale) {
     const allDbRoles = await readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_agent_role")
@@ -1511,6 +1522,7 @@ export async function applyManifestSync(
   if (deleteStale) {
     const allDbTargets = await readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_write_target")
@@ -1554,6 +1566,7 @@ export async function applyManifestSync(
   if (deleteStale) {
     const allDbTools = await readAllRows(
       ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
         sb
           .schema("ui")
           .from("ui_surface_client_tool")

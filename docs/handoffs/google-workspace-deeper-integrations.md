@@ -3,7 +3,7 @@
 **Owner:** unassigned
 **Created:** 2026-08-18
 
-Google Workspace is connected, canonical, and reachable from chat, every content
+Google Workspace is connected and reachable from chat, every content
 surface, and every list page. What remains is not plumbing — it is four
 capabilities that were deliberately scoped out, each with a real design question.
 

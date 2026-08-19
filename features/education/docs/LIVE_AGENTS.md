@@ -2,10 +2,10 @@
 
 **Agents resolve via MANDATES now.** No education/flashcards code names an agent id: every AI
 lane names a mandate key, and the DATABASE decides which agent fulfils it (system default → org
-binding → user binding). **The mandate console is the source of truth** — inspect or swap the
-live agent behind any lane at `/agents/mandates` (user bindings) or
-`/administration/agents/mandates` (system pins). Agent definitions, prompts, schemas and
-variable shapes live on the DB agents themselves, never in this repo.
+binding → user binding). **Inspect or swap the live agent** behind any lane at
+`/agents/mandates` (user bindings) or `/administration/agents/mandates` (system pins). Agent
+definitions, prompts, schemas and variable shapes live on the DB agents themselves, never in
+this repo.
 
 The pre-mandate raw agent-export dump that used to live in this file (2026-06-30, 630 lines of
 UUIDs and prompt text) is deleted per WP2 — it documented ids code no longer contains.

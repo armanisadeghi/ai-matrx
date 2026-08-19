@@ -4,6 +4,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getSharedWithMe } from "@/utils/permissions/service";
+import type { PermissionLevel } from "@/utils/permissions/types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { Json, TablesUpdate } from "@/types/database.types";
 import type { DatabaseTask } from "../types";
@@ -902,7 +903,7 @@ export interface TaskShareResult {
 export async function shareTask(
   taskId: string,
   targetUserId: string,
-  level: "viewer" | "editor" | "admin" = "viewer",
+  level: PermissionLevel = "viewer",
 ): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("share_resource_with_user", {
     // Canonical resource_type is 'task' (singular) — matches DB shareable_resource_registry.

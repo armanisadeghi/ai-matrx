@@ -164,7 +164,7 @@ A user agent and its system (`builtin`) twin are linked by `source_agent_id` on 
 
 **The panel states a verdict before it offers an action.** A "last synced" timestamp is provenance, not an answer, and the panel used to show nothing else — it invited an overwrite without ever comparing the two agents.
 
-- **ONE field set: [`sync/sync-fields.ts`](sync/sync-fields.ts) → `AGENT_SYNC_FIELDS`.** It mirrors exactly the `agent.definition` columns `agx_sync_linked_agents` copies, split **identity** (`name`, `description`, `category`, `tags` — only on `p_include_identity`) vs **behavior** (the other 14, always). Everything — the snapshot `select`, the verdict, the per-field summary, the button labels — derives from this list, so the verdict can never disagree with what Pull/Push writes. **Add a column to the RPC's `UPDATE` ⇒ add a row here in the same change.** Guard: `pnpm check:sync-fields` parses the SET clause out of the deployed function and screams on drift.
+- **ONE field set: [`sync/sync-fields.ts`](sync/sync-fields.ts) → `AGENT_SYNC_FIELDS`.** It mirrors exactly the `agent.definition` columns `agx_sync_linked_agents` copies, split **identity** (`name`, `description`, `category`, `tags` — only on `p_include_identity`) vs **behavior** (the other 15, always, including `auto_context_disabled`). Everything — the snapshot `select`, the verdict, the per-field summary, the button labels — derives from this list, so the verdict can never disagree with what Pull/Push writes. **Add a column to the RPC's `UPDATE` ⇒ add a row here in the same change.** Guard: `pnpm check:sync-fields` parses the SET clause out of the deployed function and screams on drift.
 - **Verdict: `identical` | `differs` | `unknown`** — [`sync/compare.ts`](sync/compare.ts), a pure module (no React, no Redux, no network; 62 unit tests in [`sync/__tests__/compare.test.ts`](sync/__tests__/compare.test.ts) built on the real production pair). `unknown` means a side could not be read (RLS/deleted) and is **never** downgraded to `identical`.
 - **It reuses `computeDiff`** (`components/diff/engine/`), not a second diff engine — but with **none of `AGENT_DIFF_OPTIONS`' ergonomic options**. One rule: _the RPC copies these columns verbatim, so any option that makes two different stored values look equal is a lie here._ `excludePaths` is keyed by bare key name at every depth (it would drop a nested `id`/`version` inside `settings`); `skipUnderscorePrefix` would hide a `__kind` difference; and **`identityKeys` is the dangerous one** — matching array items by `name`/`key` instead of position reported a reordered `variable_definitions` as _identical_, silently dropped items whose key collided, and leaked to any nested array merely spelled `variableDefinitions`. Since "identical" **disables both buttons**, each of those made a real difference unsyncable. Positional comparison over **raw column values** (not converter output) is the only form faithful to `SET col = v_from.col`. `AGENT_IDENTITY_KEYS` still belongs to `AgentDiffViewer`, which answers a different question.
 - **A failed request is not a verdict.** A 500/timeout/offline is rendered as "the comparison request failed" with a Try again button — never folded into `unknown`, which would blame the user's permissions for a network blip.
@@ -353,6 +353,10 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-18` — **`auto_context_disabled` is a synced behavior field.** The
+  live `agx_sync_linked_agents_reviewed` UPDATE already copied it; `AGENT_SYNC_FIELDS`
+  now lists it so Pull/Push comparison cannot call two agents identical while
+  the sync overwrites the context kill switch.
 - `2026-08-17` — **"Context slot" is now **Context Policy**, and the context
   kill switch exists.** Vocabulary Law 4 rename (Arman, 2026-08-17), a
   deliberately SEPARATE lineage from the Mandate rename — the two merely shared

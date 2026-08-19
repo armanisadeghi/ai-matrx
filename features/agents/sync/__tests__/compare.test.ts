@@ -95,6 +95,7 @@ function productionRow(
     ui_gates: {},
     default_rag_boost: 0,
     rag_awareness_mode: "none",
+    auto_context_disabled: false,
     ...overrides,
   };
 }

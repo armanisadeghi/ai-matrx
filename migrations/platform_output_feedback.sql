@@ -46,6 +46,8 @@ create table if not exists platform.output_feedback (
   version int not null default 1,
   deleted_at timestamptz,
   metadata jsonb not null default '{}'::jsonb,
+  -- personal-justified: a thumbs verdict is one person's opinion of one
+  -- output. Org-wide feedback would be a different product.
   visibility platform.visibility not null default 'personal'
 );
 
