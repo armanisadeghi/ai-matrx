@@ -490,7 +490,7 @@ export function SourceRequestRail({
           </p>
         </div>
       ) : (
-        <ul className="min-w-0 overflow-y-auto scrollbar-thin lg:max-h-[calc(100vh-18rem)]">
+        <ul className="min-w-0 overflow-y-auto scrollbar-thin lg:max-h-[calc(100dvh-18rem)]">
           {ordered.map((request) => (
             <RequestRow
               key={request.id}

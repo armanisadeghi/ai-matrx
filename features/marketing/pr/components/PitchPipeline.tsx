@@ -13,12 +13,15 @@
  * moves between stages.
  */
 
+import Link from "next/link";
+
 import { cn } from "@/lib/utils";
 import { pitchReadiness } from "@/features/marketing/pr/scoring";
 import {
   ANGLE_STATUS_LABELS,
   type StoryAngle,
 } from "@/features/marketing/pr/types";
+import { pressRoomHref } from "@/features/marketing/pr/routes";
 
 const STAGES = [
   {
@@ -55,9 +58,14 @@ export function PitchPipeline({
           Pitch pipeline
         </h2>
         {dismissed.length > 0 ? (
-          <span className="text-[11px] text-muted-foreground">
-            {dismissed.length} dismissed, not shown
-          </span>
+          // A count is a door: the view that contains them is one click away.
+          <Link
+            href={pressRoomHref({ view: "all" })}
+            className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+            title="Open the All angles view, which includes dismissed angles."
+          >
+            {dismissed.length} dismissed — see all
+          </Link>
         ) : null}
       </div>
       <div className="grid gap-2 p-2 sm:grid-cols-2 lg:grid-cols-5">
