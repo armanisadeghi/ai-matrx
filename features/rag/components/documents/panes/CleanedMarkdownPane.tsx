@@ -11,7 +11,7 @@
  */
 
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
-import type { PageDetail } from "@/features/knowledge/types/documents";
+import type { PageDetail } from "@/features/rag/types/documents";
 
 export interface CleanedMarkdownPaneProps {
   page: PageDetail | null;

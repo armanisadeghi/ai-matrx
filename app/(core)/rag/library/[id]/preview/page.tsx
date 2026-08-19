@@ -9,7 +9,7 @@
 
 import { useParams, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
+import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
 
 export default function Page() {
   const params = useParams();

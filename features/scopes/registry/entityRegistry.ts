@@ -78,7 +78,7 @@ import {
   isEntityTypeToken,
   type EntityTypeToken,
 } from "@/types/generated/entity-types.generated";
-import { listDataStoreCandidates } from "@/features/knowledge/service/dataStoreCandidates";
+import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
 
 /**
  * The universal ownership column post-2026-reorg. Every first-class entity

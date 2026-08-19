@@ -29,7 +29,7 @@ import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { agentFileRef, mediaSafe } from "@/lib/media/agent-payload";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectActiveShareLinksForResource,
@@ -41,7 +41,7 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { FileRagStatusChip } from "@/features/knowledge/components/FileRagStatusChip";
+import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import type { Visibility } from "@/features/files/types";
 import {

@@ -3,7 +3,7 @@ import {
   examGroundingQueries,
   groundingReady,
 } from "../examContentPipeline";
-import type { GroundingResult } from "@/features/knowledge/api/grounding";
+import type { GroundingResult } from "@/features/rag/api/grounding";
 
 const trust = {
   citations: [],

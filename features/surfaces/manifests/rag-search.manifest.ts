@@ -25,7 +25,7 @@
  * `writeTargets` for the split and the per-mount reasoning.
  *
  * Runtime scope assembly lives in
- * `features/knowledge/agent-context/buildRagSearchContextData.ts` — the ONE pure
+ * `features/rag/agent-context/buildRagSearchContextData.ts` — the ONE pure
  * state→scope mapper, consumed by the Search tab's context menus and its
  * `SurfaceRuntimeProvider`, and (scope-only, no query/results) by the Agent
  * Chat tab's launch.
@@ -42,7 +42,7 @@ import {
   FILTERABLE_SOURCE_KIND_ENUM_TEXT,
   MULTI_QUERY_MAX,
   MULTI_QUERY_MIN,
-} from "@/features/knowledge/search-controls";
+} from "@/features/rag/search-controls";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [

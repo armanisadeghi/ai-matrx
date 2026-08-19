@@ -15,12 +15,12 @@ import {
   type ProcessingStageId,
   type ProcessingResultSummary,
 } from "./ProcessingProgressDialog";
-import type { UseFileIngestState } from "@/features/knowledge/hooks/useFileIngest";
-import type { IngestProgress } from "@/features/knowledge/api/ingest";
+import type { UseFileIngestState } from "@/features/rag/hooks/useFileIngest";
+import type { IngestProgress } from "@/features/rag/api/ingest";
 import {
   RAG_PIPELINE_SUBTITLE,
   RAG_VOCAB,
-} from "@/features/knowledge/constants/vocabulary";
+} from "@/features/rag/constants/vocabulary";
 
 interface IngestHandle extends UseFileIngestState {
   cancel: () => void;

@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/derivations.ts
+ * features/rag/api/derivations.ts
  *
  * Typed client for the Knowledge-Asset "derivation" surface — the premium
  * representations the backend can build from an extracted document (table

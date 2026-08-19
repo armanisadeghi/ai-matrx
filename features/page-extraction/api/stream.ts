@@ -2,7 +2,7 @@
  * features/page-extraction/api/stream.ts
  *
  * NDJSON SSE client for `POST /page-extraction/runs/stream`. Mirrors the
- * shape of `features/knowledge/api/ingest.ts` so the wire-format adapter logic
+ * shape of `features/rag/api/ingest.ts` so the wire-format adapter logic
  * stays consistent across streaming endpoints.
  */
 

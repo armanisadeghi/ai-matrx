@@ -17,9 +17,9 @@ import {
   type RagLibraryJobEntry,
 } from "@/features/surfaces/manifests/knowledge-library.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { DocStatus, LibraryDocSummary, LibrarySummary } from "@/features/knowledge/types/library";
-import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
-import type { LibraryCatalogItem } from "@/features/knowledge/hooks/useLibraryCatalog";
+import type { DocStatus, LibraryDocSummary, LibrarySummary } from "@/features/rag/types/library";
+import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
+import type { LibraryCatalogItem } from "@/features/rag/hooks/useLibraryCatalog";
 
 /** Cap the emitted document list so one huge corpus can't blow the payload. */
 const MAX_DOCUMENTS = 200;

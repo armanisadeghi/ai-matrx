@@ -17,9 +17,9 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { useFileNode } from "@/features/files/hooks/useFileNode";
-import { normalizeSourceName } from "@/features/knowledge/components/hit-card/adapters";
-import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
-import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
+import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 /**
  * Inline renderer for `knowledge_browse(action="sources")` — the user's indexed knowledge as a

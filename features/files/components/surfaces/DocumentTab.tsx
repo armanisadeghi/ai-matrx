@@ -44,21 +44,21 @@ import {
   RotateCw,
   Rainbow,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { DocumentViewer } from "@/features/knowledge/components/documents/DocumentViewer";
-import { IngestFlowAnimation } from "@/features/knowledge/components/visualization/IngestFlowAnimation";
-import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
+import { DocumentViewer } from "@/features/rag/components/documents/DocumentViewer";
+import { IngestFlowAnimation } from "@/features/rag/components/visualization/IngestFlowAnimation";
+import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import {
   onFileDocumentProcessed,
   useFileIngest,
   type UseFileIngestState,
-} from "@/features/knowledge/hooks/useFileIngest";
-import { useFileRagStatus } from "@/features/knowledge/hooks/useFileRagStatus";
-import type { FileRagState } from "@/features/knowledge/api/knowledge-jobs";
+} from "@/features/rag/hooks/useFileIngest";
+import { useFileRagStatus } from "@/features/rag/hooks/useFileRagStatus";
+import type { FileRagState } from "@/features/rag/api/rag-jobs";
 
 export interface DocumentTabProps {
   fileId: string;

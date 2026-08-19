@@ -1,5 +1,5 @@
 /**
- * features/knowledge/search-controls.ts
+ * features/rag/search-controls.ts
  *
  * The Knowledge Search Lab's CONTROL vocabulary — the one place that knows what the
  * search form's scope and pipeline knobs can say. Deliberately runtime
@@ -24,7 +24,7 @@
  * here rather than a filter that silently matches nothing.
  */
 
-import type { SourceKind } from "@/features/knowledge/types/data-stores-ext";
+import type { SourceKind } from "@/features/rag/types/data-stores-ext";
 
 /**
  * Every position the Search Lab's source-kind toggle can be in.

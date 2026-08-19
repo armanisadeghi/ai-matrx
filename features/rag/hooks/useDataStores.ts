@@ -23,7 +23,7 @@ import type { Database } from "@/types/database.types";
 import type {
   DataStore,
   DataStoreWithMemberCount,
-} from "@/features/knowledge/types/data-stores";
+} from "@/features/rag/types/data-stores";
 
 type DataStoreUpdate = Database["rag"]["Tables"]["data_stores"]["Update"];
 

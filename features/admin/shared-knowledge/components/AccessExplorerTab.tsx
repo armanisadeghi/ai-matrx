@@ -44,7 +44,7 @@ import {
 import {
   fetchDataStoreGrants,
   type DataStoreGrant,
-} from "@/features/knowledge/hooks/useDataStoreGrants";
+} from "@/features/rag/hooks/useDataStoreGrants";
 import { useAllOrgIndustries } from "@/features/industries/hooks";
 import { searchUserByEmail } from "@/features/organizations/userSearch";
 import type { SharedKnowledgeDirectory } from "../types";

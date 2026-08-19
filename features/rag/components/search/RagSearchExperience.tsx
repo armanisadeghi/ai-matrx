@@ -57,13 +57,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
 import {
   ragSearch,
   type RagSearchHit,
   type RagSearchResponse,
-} from "@/features/knowledge/api/search";
+} from "@/features/rag/api/search";
 import {
   ragAgentToolGetChunk,
   ragAgentToolSearch,
@@ -76,25 +76,25 @@ import {
   type DiagnoseResponse,
   type ExpandResponse,
   type InventoryResponse,
-} from "@/features/knowledge/api/search-lab";
-import { useDataStores } from "@/features/knowledge/hooks/useDataStores";
-import { useRagSearchContext } from "@/features/knowledge/hooks/useRagSearchContext";
-import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
-import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
-import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
+} from "@/features/rag/api/search-lab";
+import { useDataStores } from "@/features/rag/hooks/useDataStores";
+import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
 import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
-} from "@/features/knowledge/components/hit-card/adapters";
-import { getHighlightTerms } from "@/features/knowledge/components/hit-card/query-highlighting";
-import { RagPageReferences } from "@/features/knowledge/components/search/RagPageReferences";
-import { RagReviewRepairWorkspace } from "@/features/knowledge/components/search/RagReviewRepairWorkspace";
+} from "@/features/rag/components/hit-card/adapters";
+import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
+import { RagPageReferences } from "@/features/rag/components/search/RagPageReferences";
+import { RagReviewRepairWorkspace } from "@/features/rag/components/search/RagReviewRepairWorkspace";
 import {
   buildRagReviewPages,
   pageCountFromRagHit,
-} from "@/features/knowledge/components/search/ragReviewPages";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
-import { AnimatedKpiCard } from "@/features/knowledge/components/library/AnimatedKpiCard";
+} from "@/features/rag/components/search/ragReviewPages";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -108,7 +108,7 @@ import { createRagSearchScope } from "@/features/surfaces/manifests/knowledge-se
 import {
   buildRagSearchContextData,
   RAG_SEARCH_CONTEXT_MENU_PROPS,
-} from "@/features/knowledge/agent-context/buildRagSearchContextData";
+} from "@/features/rag/agent-context/buildRagSearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -120,7 +120,7 @@ import {
   isFilterableSourceKind,
   isValidMultiQuery,
   type SourceKindFilter,
-} from "@/features/knowledge/search-controls";
+} from "@/features/rag/search-controls";
 import { ProInput } from "@/components/official/ProInput";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
@@ -230,7 +230,7 @@ function citationHrefFor(
   page: number | null,
   chunk_id: string,
 ): string {
-  // Mirrors the module-level citationHrefFor in features/knowledge/api/search.ts —
+  // Mirrors the module-level citationHrefFor in features/rag/api/search.ts —
   // keep the two in sync. Every kind gets a destination (no dead nulls),
   // library_doc carries the page so a result opens on the hit's page (the
   // /knowledge/viewer route forwards ?page), and every interpolated id is

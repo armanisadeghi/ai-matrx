@@ -24,7 +24,7 @@ import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 
 const LibraryPreviewPage = dynamic(
   () =>
-    import("@/features/knowledge/components/library/LibraryPreviewPage").then(
+    import("@/features/rag/components/library/LibraryPreviewPage").then(
       (m) => m.LibraryPreviewPage,
     ),
   {

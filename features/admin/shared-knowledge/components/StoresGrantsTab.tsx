@@ -35,8 +35,8 @@ import { toast } from "@/lib/toast";
 import {
   useDataStoreGrants,
   type DataStoreGrant,
-} from "@/features/knowledge/hooks/useDataStoreGrants";
-import { DataStorePublishPanel } from "@/features/knowledge/components/data-stores/DataStorePublishPanel";
+} from "@/features/rag/hooks/useDataStoreGrants";
+import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
 import type { SharedKnowledgeDirectory } from "../types";
 
 function grantLabel(g: DataStoreGrant): string {

@@ -51,7 +51,7 @@ import { SyncedPdfTextView } from "./SyncedPdfTextView";
 import { PdfAiContent } from "./PdfAiContent";
 import { LineageTreeView } from "./LineageTreeView";
 import { ManipulationPanel } from "./ManipulationPanel";
-import { DataStoreBindPanel } from "@/features/knowledge/components/data-stores/DataStoreBindPanel";
+import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { CopyPagesOverlay } from "./CopyPagesOverlay";
 import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";

@@ -1,5 +1,5 @@
 /**
- * features/knowledge/hooks/usePageVerificationSummary.ts
+ * features/rag/hooks/usePageVerificationSummary.ts
  *
  * Reads page-verification results for a processed document — verified count,
  * flagged count, and a per-reason breakdown — by querying public.

@@ -19,11 +19,11 @@ import {
   type RagViewerSegmentEntry,
 } from "@/features/surfaces/manifests/knowledge-viewer.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { LibraryDocDetail } from "@/features/knowledge/types/library";
+import type { LibraryDocDetail } from "@/features/rag/types/library";
 import type {
   DocSearchHit,
   DocSearchSummary,
-} from "@/features/knowledge/hooks/useDocumentSearch";
+} from "@/features/rag/hooks/useDocumentSearch";
 import type { components } from "@/types/python-generated/api-types";
 
 type FullPage = components["schemas"]["LibraryFullPage"];

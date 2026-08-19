@@ -12,8 +12,8 @@ import Link from "next/link";
 import { ArrowRight, Library, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
-import { EntitlementChip } from "@/features/knowledge/components/library-catalog/EntitlementChip";
+import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
+import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 
 const TEASER_LIMIT = 4;
 

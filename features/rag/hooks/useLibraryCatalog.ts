@@ -40,7 +40,7 @@ export interface LibraryCatalogItem {
   /** Explicit org-audience grant for the caller's effective org. */
   subscribed: boolean;
   /** The caller's true per-row entitlement state (settled catalog shape —
-   *  see features/knowledge/FEATURE.md § Shared Knowledge Resources). */
+   *  see features/rag/FEATURE.md § Shared Knowledge Resources). */
   entitledVia: CatalogEntitlement;
   /** Present when entitledVia === 'industry' — the informative "why". */
   entitledIndustryName: string | null;

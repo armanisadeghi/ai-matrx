@@ -7,7 +7,7 @@
  * (catalog, hit cards, Source Inspector, data-store badges, viewers).
  *
  * Backed by the settled contract RPCs (contract recorded in
- * features/knowledge/FEATURE.md § Shared Knowledge Resources):
+ * features/rag/FEATURE.md § Shared Knowledge Resources):
  *   - public.library_grant_provenance(p_store)         — single store
  *   - public.library_grant_provenance_batch(p_stores)  — N stores, one trip
  * Both return ONLY grants reaching auth.uid() — never the full grant list —

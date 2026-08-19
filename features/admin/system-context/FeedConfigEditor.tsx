@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
+import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import type { Database as DB, Json } from "@/types/database.types";
 
 export type FeedType = DB["public"]["Enums"]["context_feed_type"];

@@ -52,13 +52,13 @@ import { LoadingSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { DEPTH_TIERS } from "../../data/enhanceCard";
 import type { Depth } from "@/features/education/assessment/data/types";
-import { useLibrary } from "@/features/knowledge/hooks/useLibrary";
+import { useLibrary } from "@/features/rag/hooks/useLibrary";
 import {
   useDocument,
   useDocumentChunks,
-} from "@/features/knowledge/hooks/useDocument";
-import type { LibraryDocSummary } from "@/features/knowledge/types/library";
-import type { ChunkRow } from "@/features/knowledge/types/documents";
+} from "@/features/rag/hooks/useDocument";
+import type { LibraryDocSummary } from "@/features/rag/types/library";
+import type { ChunkRow } from "@/features/rag/types/documents";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";

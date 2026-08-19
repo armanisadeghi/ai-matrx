@@ -29,11 +29,11 @@ import { Badge } from "@/components/ui/badge";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/components/text/HighlightedText";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type {
   DocSearchHit,
   DocSearchSummary,
-} from "@/features/knowledge/hooks/useDocumentSearch";
+} from "@/features/rag/hooks/useDocumentSearch";
 
 // ---------------------------------------------------------------------------
 // Toolbar

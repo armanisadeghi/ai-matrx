@@ -1,5 +1,5 @@
 /**
- * features/knowledge/constants/search-pipeline.ts
+ * features/rag/constants/search-pipeline.ts
  *
  * The Knowledge Search Lab's PIPELINE vocabulary — the one place that knows what a
  * retrieval pipeline setting can say. Deliberately dependency-free (no React,
@@ -27,7 +27,7 @@
  * fused via RRF. `1` means no expansion.
  *
  * The 1-5 range is the backend's own documented contract for
- * `RagSearchRequest.multi_query` (`features/knowledge/api/search.ts`), which the
+ * `RagSearchRequest.multi_query` (`features/rag/api/search.ts`), which the
  * sidebar's number input has always clamped to.
  */
 export const MULTI_QUERY_MIN = 1;

@@ -84,7 +84,7 @@ import {
   type TutorLaunchGrounding,
 } from "../grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
-import { parseGroundedPassageCitations } from "@/features/knowledge/api/grounding";
+import { parseGroundedPassageCitations } from "@/features/rag/api/grounding";
 import { extractTurnTrust } from "../turnTrust";
 import { TutorLanding } from "./TutorLanding";
 import { TutorTrustStrip } from "./TutorTrustStrip";

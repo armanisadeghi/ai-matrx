@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from "react";
-import type { PageDetail } from "@/features/knowledge/types/documents";
+import type { PageDetail } from "@/features/rag/types/documents";
 
 export interface RawTextPaneProps {
   page: PageDetail | null;

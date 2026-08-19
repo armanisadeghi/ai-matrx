@@ -10,7 +10,7 @@
  * Project and task are NOT part of the Knowledge search API — they affect agent
  * invocation via call-api scope injection but not chunk retrieval today.
  */
-import type { RagSearchFilters } from "@/features/knowledge/api/search";
+import type { RagSearchFilters } from "@/features/rag/api/search";
 
 export interface ActiveContextForRagSearch {
   organizationId: string | null;

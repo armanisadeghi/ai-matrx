@@ -7,8 +7,8 @@
  * live indexed content and a reachable retrieval backend.
  */
 
-import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
-import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
+import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
+import type { RagHitView } from "@/features/rag/components/hit-card/types";
 
 const BASE: RagHitView = {
   sourceKind: "cld_file",

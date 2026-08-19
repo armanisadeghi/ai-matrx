@@ -13,9 +13,9 @@
  * Selection lives in `?store_id=<uuid>`, so the selected store's values are
  * routed identity — reliable across refresh and deep link.
  *
- * Emitter: `features/knowledge/components/data-stores/DataStoresPage.tsx` via
+ * Emitter: `features/rag/components/data-stores/DataStoresPage.tsx` via
  * `buildRagDataStoresContextData` in
- * `features/knowledge/agent-context/buildRagDataStoresContextData.ts`.
+ * `features/rag/agent-context/buildRagDataStoresContextData.ts`.
  *
  * NOT THE SAME SURFACE AS `/knowledge/repositories`. That route lists
  * `code.code_repositories` — git repos with branches, file counts, and an
@@ -23,7 +23,7 @@
  * has no surface today; folding it in here would mean declaring values this
  * page never emits.
  *
- * SHARING DOCTRINE (features/knowledge/FEATURE.md): data stores are NOT shared
+ * SHARING DOCTRINE (features/rag/FEATURE.md): data stores are NOT shared
  * through `iam.permissions` / ShareButton. Read access is published via
  * `rag.data_store_grants` audiences (global / industry / organization) and
  * write access stays gated by store ownership. `store_access` and
@@ -37,7 +37,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { DATA_STORE_KINDS } from "@/features/knowledge/types/data-stores-ext";
+import { DATA_STORE_KINDS } from "@/features/rag/types/data-stores-ext";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [

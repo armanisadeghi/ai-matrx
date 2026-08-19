@@ -4,8 +4,8 @@ import {
   createRagAiCopyBundle,
   identifiersOnlyRagAiCopyOptions,
   withRagAiSections,
-} from "@/features/knowledge/components/search/ragAiCopy";
-import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
+} from "@/features/rag/components/search/ragAiCopy";
+import type { RagHitView } from "@/features/rag/components/hit-card/types";
 
 const VIEW: RagHitView = {
   sourceKind: "cld_file",

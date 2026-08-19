@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/library-ingest.ts
+ * features/rag/api/library-ingest.ts
  *
  * Client for P1's admin library-ingest endpoint:
  *

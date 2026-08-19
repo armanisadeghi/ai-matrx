@@ -7,7 +7,7 @@
  * subscribe/unsubscribe. The `/knowledge` home keeps a teaser pane linking here.
  */
 
-import { LibraryCatalogPage } from "@/features/knowledge/components/library-catalog/LibraryCatalogPage";
+import { LibraryCatalogPage } from "@/features/rag/components/library-catalog/LibraryCatalogPage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

@@ -59,18 +59,18 @@ import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePrevie
 import {
   citationOpensInWindow,
   useOpenCitation,
-} from "@/features/knowledge/components/source-inspector/useOpenCitation";
+} from "@/features/rag/components/source-inspector/useOpenCitation";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { components } from "@/types/python-generated/api-types";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
-import { useLibraryDoc } from "@/features/knowledge/hooks/useLibrary";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
-import type { LibraryChunkPreview } from "@/features/knowledge/types/library";
-import type { StageName } from "@/features/knowledge/api/stages";
-import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
+import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import type { LibraryChunkPreview } from "@/features/rag/types/library";
+import type { StageName } from "@/features/rag/api/stages";
+import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingJobView } from "./ProcessingJobView";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";

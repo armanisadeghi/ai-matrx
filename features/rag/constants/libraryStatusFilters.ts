@@ -16,7 +16,7 @@
  * Re-typing the literals in any of those is how a filter vocabulary drifts.
  */
 
-import type { DocStatus } from "@/features/knowledge/types/library";
+import type { DocStatus } from "@/features/rag/types/library";
 
 /** A value the status filter can hold — a pipeline status, or "all". */
 export type LibraryStatusFilter = DocStatus | "all";

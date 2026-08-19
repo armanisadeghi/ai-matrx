@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { KnowledgePipelineDiagram } from "./KnowledgePipelineDiagram";
 
 /**
@@ -30,7 +30,7 @@ import { KnowledgePipelineDiagram } from "./KnowledgePipelineDiagram";
  * Built around the rebuilt pipeline diagram and grounded entirely in surfaces
  * that exist today. Where the guided "concept walkthrough" references something
  * not yet built, it is labelled honestly. The full vision + truthful built/
- * missing map lives in `features/knowledge/FEATURE.md`.
+ * missing map lives in `features/rag/FEATURE.md`.
  */
 
 interface Capability {

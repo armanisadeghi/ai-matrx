@@ -17,8 +17,8 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type {
   DataStore,
   DataStoreWithMemberCount,
-} from "@/features/knowledge/types/data-stores";
-import type { EnrichedMember } from "@/features/knowledge/hooks/useDataStores";
+} from "@/features/rag/types/data-stores";
+import type { EnrichedMember } from "@/features/rag/hooks/useDataStores";
 
 /** Cap the emitted member list so a huge store can't blow the payload. */
 const MAX_MEMBERS = 300;

@@ -5,7 +5,7 @@
  * counts and a status badge. The "where did my content go?" page.
  */
 
-import { LibraryPage } from "@/features/knowledge/components/library/LibraryPage";
+import { LibraryPage } from "@/features/rag/components/library/LibraryPage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

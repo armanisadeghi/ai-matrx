@@ -27,19 +27,19 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { runStageStream, type StageName } from "@/features/knowledge/api/stages";
+import { runStageStream, type StageName } from "@/features/rag/api/stages";
 import {
   ingestFileStream,
   type IngestStreamEvent,
-} from "@/features/knowledge/api/ingest";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+} from "@/features/rag/api/ingest";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { supabase } from "@/utils/supabase/client";
 import type {
   ProcessingFrame,
   ProcessingResultSummary,
   ProcessingStageId,
   StagePreview,
-} from "@/features/knowledge/components/library/ProcessingProgressDialog";
+} from "@/features/rag/components/library/ProcessingProgressDialog";
 
 export type JobStatus = "running" | "succeeded" | "failed" | "cancelled";
 

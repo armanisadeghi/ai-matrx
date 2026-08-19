@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/knowledge-jobs.ts
+ * features/rag/api/rag-jobs.ts
  *
  * Client for the scheduled auto-Knowledge lifecycle (aidream kg_032):
  *

@@ -13,8 +13,8 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
-import type { ChunkRow } from "@/features/knowledge/types/documents";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import type { ChunkRow } from "@/features/rag/types/documents";
 
 export interface ChunksPaneProps {
   chunks: ChunkRow[];

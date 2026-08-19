@@ -23,7 +23,7 @@ import {
   Workflow,
   ChevronDown,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
  *
  * Everything here describes what the system actually does; the copy is grounded
  * in real surfaces (`/files`, `/knowledge/library`, `/agents`, `/knowledge-graph`,
- * `/knowledge/search`). See `features/knowledge/FEATURE.md`.
+ * `/knowledge/search`). See `features/rag/FEATURE.md`.
  */
 
 type Tone = "flow" | "hub" | "gate" | "ask";

@@ -25,10 +25,10 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

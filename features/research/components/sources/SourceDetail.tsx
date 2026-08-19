@@ -91,7 +91,7 @@ import {
   formatSnippetRelevance,
 } from "./sourceScoreDisplay";
 import MarkdownStream from "@/components/MarkdownStream";
-import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import type {
   ResearchContent,
   ResearchAnalysis,

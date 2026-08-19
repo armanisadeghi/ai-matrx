@@ -42,8 +42,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useUserRole } from "@/features/organizations/hooks";
 import { useIndustries, useOrgIndustries } from "@/features/industries/hooks";
-import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
-import { EntitlementChip } from "@/features/knowledge/components/library-catalog/EntitlementChip";
+import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
+import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 
 export function OrgIndustriesSection({ orgId }: { orgId: string }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);

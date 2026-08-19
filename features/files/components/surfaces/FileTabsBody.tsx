@@ -35,7 +35,7 @@ import {
   Share2,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,

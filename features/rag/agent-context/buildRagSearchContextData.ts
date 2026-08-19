@@ -4,8 +4,8 @@ import {
   type RagDataStoreEntry,
   type RagQueryTermCoverageEntry,
 } from "@/features/surfaces/manifests/knowledge-search.manifest";
-import { getHighlightTerms } from "@/features/knowledge/components/hit-card/query-highlighting";
-import type { RagSearchHit, RagSearchResponse } from "@/features/knowledge/api/search";
+import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
+import type { RagSearchHit, RagSearchResponse } from "@/features/rag/api/search";
 
 /**
  * Placement visibility for the `matrx-user/knowledge-search` surface menu.

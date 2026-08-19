@@ -7,7 +7,7 @@
  * has no meaningful guest experience.
  */
 
-import { DataStoresPage } from "@/features/knowledge/components/data-stores/DataStoresPage";
+import { DataStoresPage } from "@/features/rag/components/data-stores/DataStoresPage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

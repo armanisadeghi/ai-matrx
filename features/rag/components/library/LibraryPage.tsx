@@ -23,7 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildRagLibraryContextData } from "@/features/knowledge/agent-context/buildRagLibraryContextData";
+import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { fileHandler } from "@/features/files/handler/handler";
-import { useProcessingRunner } from "@/features/knowledge/hooks/useProcessingRunner";
+import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingProgressSheet } from "./ProcessingProgressSheet";
 import { LibraryTrashSheet } from "./LibraryTrashSheet";
 import { ActiveJobsStrip } from "./ActiveJobsStrip";
@@ -87,19 +87,19 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useLibrary, useLibrarySummary } from "@/features/knowledge/hooks/useLibrary";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
   LIBRARY_STATUS_FILTER_VALUES,
   STATUS_FILTERS,
   type LibraryStatusFilter,
-} from "@/features/knowledge/constants/libraryStatusFilters";
-import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
+} from "@/features/rag/constants/libraryStatusFilters";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import type {
   DocStatus,
   LibraryDocSummary,
-} from "@/features/knowledge/types/library";
+} from "@/features/rag/types/library";
 import { StatusBadge } from "./StatusBadge";
 import { LibraryDocDetailSheet } from "./LibraryDocDetailSheet";
 import { QuickSearchDialog } from "./QuickSearchDialog";

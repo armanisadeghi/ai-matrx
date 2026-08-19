@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/ingest.ts
+ * features/rag/api/ingest.ts
  *
  * Wrapper around the Knowledge team's `/knowledge/ingest` and `/knowledge/ingest/stream`
  * endpoints, scoped to the file-centric UX:

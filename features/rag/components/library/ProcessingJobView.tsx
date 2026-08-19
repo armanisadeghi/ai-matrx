@@ -50,7 +50,7 @@ import type {
   ProcessingStageId,
   StagePreview,
 } from "./ProcessingProgressDialog";
-import type { ProcessingJob } from "@/features/knowledge/hooks/useProcessingRunner";
+import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { STAGE_META, StageHero } from "./StageAnimations";
 
 const STAGES: ProcessingStageId[] = ["extract", "clean", "chunk", "embed"];

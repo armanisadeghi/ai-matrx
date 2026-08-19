@@ -96,7 +96,7 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "sourceInspectorWindow",
       description:
-        "Knowledge-owned citation surface (features/knowledge/components/source-inspector/) — renders PdfPreview at the cited page beside the page's extraction + matched chunk. Composes PDF parts, never forks them.",
+        "Knowledge-owned citation surface (features/rag/components/source-inspector/) — renders PdfPreview at the cited page beside the page's extraction + matched chunk. Composes PDF parts, never forks them.",
     },
   ],
 

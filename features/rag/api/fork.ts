@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/fork.ts
+ * features/rag/api/fork.ts
  *
  * Fork a (shared / library) processed_document into a user-owned copy.
  *

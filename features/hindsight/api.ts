@@ -7,7 +7,7 @@
  * The two triggers (`review`, `drain`) declare NO request body in the contract,
  * so `apiPost` would derive `never` for their body. Those use the raw
  * `postJson` escape hatch with a contract-DERIVED response type — the same
- * pattern `features/knowledge/api/search-lab.ts` uses for `/knowledge/search-lab/inventory`.
+ * pattern `features/rag/api/search-lab.ts` uses for `/knowledge/search-lab/inventory`.
  */
 import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
 import { postJson } from "@/lib/python-client";

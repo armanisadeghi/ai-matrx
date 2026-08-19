@@ -44,11 +44,11 @@ import { getQueryHighlightSegments } from "./query-highlighting";
 import {
   RagAiCopyButton,
   RagContentActions,
-} from "@/features/knowledge/components/search/RagContentActions";
+} from "@/features/rag/components/search/RagContentActions";
 import {
   createRagAiCopyBundle,
   type RagAiCopyBundle,
-} from "@/features/knowledge/components/search/ragAiCopy";
+} from "@/features/rag/components/search/ragAiCopy";
 import {
   EMPTY_RAG_REFERENCE_AVAILABILITY,
   type RagReferenceAvailability,

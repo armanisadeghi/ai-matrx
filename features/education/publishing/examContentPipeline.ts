@@ -1,4 +1,4 @@
-import type { GroundingResult } from "@/features/knowledge/api/grounding";
+import type { GroundingResult } from "@/features/rag/api/grounding";
 
 export interface ExamDeckPlan {
   key: "foundations" | "reasoning" | "practice";

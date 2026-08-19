@@ -18,24 +18,24 @@ import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown
 import {
   RagAiCopyButton,
   RagContentActions,
-} from "@/features/knowledge/components/search/RagContentActions";
+} from "@/features/rag/components/search/RagContentActions";
 import {
   withRagAiSections,
   type RagAiCopyBundle,
   type RagAiCopySection,
   type RagAiSectionKey,
-} from "@/features/knowledge/components/search/ragAiCopy";
+} from "@/features/rag/components/search/ragAiCopy";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { SelectedPdfPages } from "@/features/knowledge/components/search/SelectedPdfPages";
+import { SelectedPdfPages } from "@/features/rag/components/search/SelectedPdfPages";
 import {
   fetchDerivativeChunks,
   fetchDerivations,
   type DerivativeChunkRow,
-} from "@/features/knowledge/api/derivations";
+} from "@/features/rag/api/derivations";
 import {
   usePageBundle,
   type PageBundle,
-} from "@/features/knowledge/components/source-inspector/usePageBundle";
+} from "@/features/rag/components/source-inspector/usePageBundle";
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { listResultsForFilePage } from "@/features/page-extraction/api/runs";
@@ -45,7 +45,7 @@ import type {
   RagReferenceAvailability,
   RagReferenceKind,
   RagReferenceRequest,
-} from "@/features/knowledge/components/hit-card/referenceTypes";
+} from "@/features/rag/components/hit-card/referenceTypes";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,

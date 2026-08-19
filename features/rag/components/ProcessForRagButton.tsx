@@ -1,5 +1,5 @@
 /**
- * features/knowledge/components/ProcessForRagButton.tsx
+ * features/rag/components/ProcessForRagButton.tsx
  *
  * Reusable "Process for Knowledge" toolbar/menu button. Designed to drop into
  * any per-source-kind editor — Notes, code editors, agent-app editors —
@@ -23,7 +23,7 @@ import { Loader2, Rocket } from "lucide-react";
 import type {
   IngestProgress,
   IngestRequestBody,
-} from "@/features/knowledge/api/ingest";
+} from "@/features/rag/api/ingest";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import { cn } from "@/lib/utils";

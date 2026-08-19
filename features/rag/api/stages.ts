@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/stages.ts
+ * features/rag/api/stages.ts
  *
  * Streaming client for the per-stage Knowledge actions:
  *   POST /knowledge/library/{id}/extract

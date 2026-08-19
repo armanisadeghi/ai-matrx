@@ -34,7 +34,7 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import {
   buildRagViewerContextData,
   type RagViewerActivePage,
-} from "@/features/knowledge/agent-context/buildRagViewerContextData";
+} from "@/features/rag/agent-context/buildRagViewerContextData";
 import { BookMarked, GitFork, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -48,21 +48,21 @@ import type { components } from "@/types/python-generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { computeMatches } from "@/features/notes/utils/findMatches";
 import { HighlightedText } from "@/components/text/HighlightedText";
-import { forkProcessedDocument } from "@/features/knowledge/api/fork";
+import { forkProcessedDocument } from "@/features/rag/api/fork";
 import { StatusBadge } from "./StatusBadge";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
-import { useLibraryDoc } from "@/features/knowledge/hooks/useLibrary";
-import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   useDocumentSearch,
   type UseDocumentSearch,
-} from "@/features/knowledge/hooks/useDocumentSearch";
+} from "@/features/rag/hooks/useDocumentSearch";
 import {
   DocumentSearchBar,
   DocumentSearchSummary,
   DocumentSearchResultsList,
 } from "./DocumentSearch";
-import type { DocStatus } from "@/features/knowledge/types/library";
+import type { DocStatus } from "@/features/rag/types/library";
 import { ChunksOnPage } from "./ChunkList";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";

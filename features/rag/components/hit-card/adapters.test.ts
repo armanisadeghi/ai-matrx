@@ -1,10 +1,10 @@
-import type { RagSearchHit } from "@/features/knowledge/api/search";
+import type { RagSearchHit } from "@/features/rag/api/search";
 import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
   normalizeSourceName,
-} from "@/features/knowledge/components/hit-card/adapters";
-import { factsOnlyMetadata } from "@/features/knowledge/components/hit-card/copyMetadata";
+} from "@/features/rag/components/hit-card/adapters";
+import { factsOnlyMetadata } from "@/features/rag/components/hit-card/copyMetadata";
 
 const SOURCE_ID = "e9868104-1234-4123-8123-123456789abc";
 

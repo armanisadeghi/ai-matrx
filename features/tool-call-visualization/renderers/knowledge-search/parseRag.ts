@@ -1,6 +1,6 @@
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
-import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
+import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 /**
  * Parse + normalize the `knowledge_search` tool result, and map a source_kind to its

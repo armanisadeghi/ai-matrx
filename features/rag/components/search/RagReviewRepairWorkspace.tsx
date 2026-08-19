@@ -36,11 +36,11 @@ import type {
   ExtraExtractionInput,
   PageExtractionJobInsert,
 } from "@/features/page-extraction/types";
-import { SelectedPdfPages } from "@/features/knowledge/components/search/SelectedPdfPages";
-import { RagContentActions } from "@/features/knowledge/components/search/RagContentActions";
-import { createRagAiCopyBundle } from "@/features/knowledge/components/search/ragAiCopy";
-import { hitViewFromSearchHit } from "@/features/knowledge/components/hit-card/adapters";
-import type { RagSearchHit } from "@/features/knowledge/api/search";
+import { SelectedPdfPages } from "@/features/rag/components/search/SelectedPdfPages";
+import { RagContentActions } from "@/features/rag/components/search/RagContentActions";
+import { createRagAiCopyBundle } from "@/features/rag/components/search/ragAiCopy";
+import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
+import type { RagSearchHit } from "@/features/rag/api/search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

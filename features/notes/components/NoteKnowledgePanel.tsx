@@ -10,8 +10,8 @@
 import { Database, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
-import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 
 /** Light up `useNoteIngestStatus` everywhere instantly. ProcessForRagButton

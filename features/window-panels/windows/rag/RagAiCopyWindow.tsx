@@ -18,7 +18,7 @@ import {
   type RagAiCopyBundle,
   type RagAiCopyOptions,
   type RagAiSectionKey,
-} from "@/features/knowledge/components/search/ragAiCopy";
+} from "@/features/rag/components/search/ragAiCopy";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { cn } from "@/lib/utils";
 

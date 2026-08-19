@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import {
   useDataStores,
   useDocumentDataStores,
-} from "@/features/knowledge/hooks/useDataStores";
+} from "@/features/rag/hooks/useDataStores";
 
 interface DataStoreBindPanelProps {
   processedDocumentId: string;

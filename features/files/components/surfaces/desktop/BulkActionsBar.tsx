@@ -62,7 +62,7 @@ import {
   updateFolder as updateFolderThunk,
 } from "@/features/files/redux/thunks";
 import { openFolderPicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
-import { ingestFile } from "@/features/knowledge/api/ingest";
+import { ingestFile } from "@/features/rag/api/ingest";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import type { Visibility } from "@/features/files/types";
 

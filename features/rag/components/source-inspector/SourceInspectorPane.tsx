@@ -42,8 +42,8 @@ import { useFileNode } from "@/features/files/hooks/useFileNode";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
-import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
-import { ChunksOnPage } from "@/features/knowledge/components/library/ChunkList";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+import { ChunksOnPage } from "@/features/rag/components/library/ChunkList";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 import { usePageBundle } from "./usePageBundle";
 

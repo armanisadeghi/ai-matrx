@@ -1,5 +1,5 @@
 /**
- * features/knowledge/hooks/useFileIngest.ts
+ * features/rag/hooks/useFileIngest.ts
  *
  * One-call entry point for "process this file for Knowledge" from any
  * cloud-files surface. Uses the streaming endpoint by default so the
@@ -25,7 +25,7 @@ import {
   ingestFileStream,
   type IngestProgress,
   type IngestResponse,
-} from "@/features/knowledge/api/ingest";
+} from "@/features/rag/api/ingest";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 
 export type IngestStatus = "idle" | "running" | "complete" | "error";

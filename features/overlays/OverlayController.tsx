@@ -65,7 +65,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type {
   RagAiCopyBundle,
   RagAiSectionKey,
-} from "@/features/knowledge/components/search/ragAiCopy";
+} from "@/features/rag/components/search/ragAiCopy";
 import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
@@ -384,7 +384,7 @@ const RunControlsWindow = lazyOverlay(
   { ssr: false },
 );
 const RagAiCopyWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/knowledge/RagAiCopyWindow"),
+  () => import("@/features/window-panels/windows/rag/RagAiCopyWindow"),
   { ssr: false },
 );
 const CloudFilesWindow = lazyOverlay(

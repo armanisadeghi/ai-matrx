@@ -14,13 +14,13 @@
  * the searchable probes land it invokes `onResolved` so the caller can bump the
  * context builder's identity and re-push with the now-known flags.
  *
- * Reuses existing fetch paths only (`features/files` + `features/knowledge/api`) — no
+ * Reuses existing fetch paths only (`features/files` + `features/rag/api`) — no
  * new endpoint, no `features/files/handler` internals.
  */
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { prefetchRagStatusesForFiles } from "@/features/files/redux/knowledge-thunks";
-import { fetchFileRagStatus } from "@/features/knowledge/api/knowledge-jobs";
+import { fetchFileRagStatus } from "@/features/rag/api/rag-jobs";
 import {
   hasThreadFileRagProbe,
   setThreadFileRagIndexed,

@@ -38,14 +38,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
-import { useStageAction } from "@/features/knowledge/hooks/useStageAction";
-import { useStagesStatus } from "@/features/knowledge/hooks/useStagesStatus";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { useStageAction } from "@/features/rag/hooks/useStageAction";
+import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";
 import type {
   StageName,
   StagePillName,
   StageStatus,
-} from "@/features/knowledge/api/stages";
+} from "@/features/rag/api/stages";
 
 // ---------------------------------------------------------------------------
 // Pill definitions (label + icon + which stage action drives it)

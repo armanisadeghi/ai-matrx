@@ -15,7 +15,7 @@ import {
   type StageName,
   type StagePhase,
   type StageStreamEvent,
-} from "@/features/knowledge/api/stages";
+} from "@/features/rag/api/stages";
 
 export interface StageProgressFrame {
   stage: StageName;

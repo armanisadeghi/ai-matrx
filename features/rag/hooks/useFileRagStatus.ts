@@ -1,5 +1,5 @@
 /**
- * features/knowledge/hooks/useFileRagStatus.ts
+ * features/rag/hooks/useFileRagStatus.ts
  *
  * React Query hook for a file's scheduled auto-Knowledge lifecycle, plus the
  * on-demand trigger / refresh actions.
@@ -27,8 +27,8 @@ import {
   refreshFileRag,
   triggerFileIngestNow,
   type FileRagStatus,
-} from "@/features/knowledge/api/knowledge-jobs";
-import { subscribeToFileRagJob } from "@/features/knowledge/hooks/knowledge-job-realtime";
+} from "@/features/rag/api/rag-jobs";
+import { subscribeToFileRagJob } from "@/features/rag/hooks/knowledge-job-realtime";
 
 /** Match the `detail` shape `useFileIngest.ts` dispatches for this event. */
 const PROCESSED_EVENT = "cloud-files:document-processed";

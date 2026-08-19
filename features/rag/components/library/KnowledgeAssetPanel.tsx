@@ -21,7 +21,7 @@
  * many runs + the cost BEFORE the user spends. Results: each built card expands
  * to the actual chunks (DerivativeChunkList) with page-number provenance.
  *
- * Backend contract: features/knowledge/api/derivations.ts. State: useKnowledgeAssetRunner.
+ * Backend contract: features/rag/api/derivations.ts. State: useKnowledgeAssetRunner.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -61,11 +61,11 @@ import {
   type DerivationRun,
   type DerivationsEstimate,
   type DeriveEstimate,
-} from "@/features/knowledge/api/derivations";
+} from "@/features/rag/api/derivations";
 import {
   useKnowledgeAssetRunner,
   type OpState,
-} from "@/features/knowledge/hooks/useKnowledgeAssetRunner";
+} from "@/features/rag/hooks/useKnowledgeAssetRunner";
 import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
 import {
   costToUnits,
@@ -76,7 +76,7 @@ import {
   usePageVerificationSummary,
   VERIFICATION_REASON_SHORT,
   type PageVerificationSummary,
-} from "@/features/knowledge/hooks/usePageVerificationSummary";
+} from "@/features/rag/hooks/usePageVerificationSummary";
 import {
   getRepresentationState,
   type RepresentationState,

@@ -19,9 +19,9 @@
  * belong, declared against the component that really loads them. See that
  * file's 2026-07-27 rewrite note.
  *
- * Emitter: `features/knowledge/components/library/LibraryPreviewPage.tsx` via
+ * Emitter: `features/rag/components/library/LibraryPreviewPage.tsx` via
  * `buildRagViewerContextData` in
- * `features/knowledge/agent-context/buildRagViewerContextData.ts`. The page-text
+ * `features/rag/agent-context/buildRagViewerContextData.ts`. The page-text
  * pane pushes its loaded page up through `onActivePageLoaded` so the route can
  * emit it — without that lift, the page text would be declared and unemitted.
  *

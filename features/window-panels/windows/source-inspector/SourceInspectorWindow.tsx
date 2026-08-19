@@ -16,7 +16,7 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { SourceInspectorPane } from "@/features/knowledge/components/source-inspector/SourceInspectorPane";
+import { SourceInspectorPane } from "@/features/rag/components/source-inspector/SourceInspectorPane";
 
 export interface SourceInspectorWindowProps {
   isOpen: boolean;

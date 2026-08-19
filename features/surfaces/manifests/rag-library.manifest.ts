@@ -20,9 +20,9 @@
  * value is populated on exactly one of them.
  *
  * Emitters (both via `buildRagLibraryContextData` in
- * `features/knowledge/agent-context/buildRagLibraryContextData.ts`):
- *   - `features/knowledge/components/library/LibraryPage.tsx`
- *   - `features/knowledge/components/library-catalog/LibraryCatalogPage.tsx`
+ * `features/rag/agent-context/buildRagLibraryContextData.ts`):
+ *   - `features/rag/components/library/LibraryPage.tsx`
+ *   - `features/rag/components/library-catalog/LibraryCatalogPage.tsx`
  *
  * DELIBERATELY NOT DECLARED: the open document's page text and segment
  * previews. Those belong to `matrx-user/knowledge-viewer`, which is the surface for
@@ -39,7 +39,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { LIBRARY_STATUS_FILTER_VALUES } from "@/features/knowledge/constants/libraryStatusFilters";
+import { LIBRARY_STATUS_FILTER_VALUES } from "@/features/rag/constants/libraryStatusFilters";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [

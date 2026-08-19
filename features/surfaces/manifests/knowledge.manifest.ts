@@ -14,7 +14,7 @@
  *                                   manager/SuggestionsManager.tsx`)
  *
  * `/knowledge` itself is DELIBERATELY not a value-bearing route: it is an
- * informational showcase (`features/knowledge/components/KnowledgeShowcasePage
+ * informational showcase (`features/rag/components/KnowledgeShowcasePage
  * .tsx`) that loads no data at all. It is the surface's urlPattern only
  * because it is the feature's front door; it emits nothing, and no manifest
  * value should ever be expected there.

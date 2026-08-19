@@ -1,5 +1,5 @@
 /**
- * features/knowledge/api/search.ts
+ * features/rag/api/search.ts
  *
  * Typed client for `POST /knowledge/search`. Mirror of the Python team's
  * `SearchHitOut` / `SearchResponseOut` shapes.

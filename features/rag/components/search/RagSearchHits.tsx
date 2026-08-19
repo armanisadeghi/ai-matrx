@@ -1,5 +1,5 @@
 /**
- * features/knowledge/components/search/RagSearchHits.tsx
+ * features/rag/components/search/RagSearchHits.tsx
  *
  * Render a list of Knowledge search hits with rich citations. Each row:
  *   - shows the snippet
@@ -24,15 +24,15 @@ import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesMap } from "@/features/files/redux/selectors";
 import { cn } from "@/lib/utils";
-import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
-import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
-import { RagHitCard } from "@/features/knowledge/components/hit-card/RagHitCard";
+import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
 import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
   normalizeSourceName,
-} from "@/features/knowledge/components/hit-card/adapters";
-import { useFilesLibraryProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
+} from "@/features/rag/components/hit-card/adapters";
+import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 
 export interface RagSearchHitsProps {
   hits: RagSearchHit[];

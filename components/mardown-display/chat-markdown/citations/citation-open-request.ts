@@ -1,7 +1,7 @@
 /**
  * citation-open-request — the PURE half of citation click-through.
  *
- * Builds the canonical `CitationInput` (features/knowledge/components/source-inspector/
+ * Builds the canonical `CitationInput` (features/rag/components/source-inspector/
  * useOpenCitation) for a chat `MessageCitationSource`, so the openable target
  * is unit-testable without pulling the overlay/opener graph into jest.
  * `useOpenCitationSource` is the thin hook shell over this.
@@ -15,7 +15,7 @@
  *   - neither → null (not openable).
  */
 
-import type { CitationInput } from "@/features/knowledge/components/source-inspector/useOpenCitation";
+import type { CitationInput } from "@/features/rag/components/source-inspector/useOpenCitation";
 import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
 
 /** Does this source have any click-through target? */
@@ -25,7 +25,7 @@ export function citationSourceIsOpenable(
   return Boolean(source.fileId || source.url);
 }
 
-/** Mirrors `citationHrefFor`'s cld_file deep-link (features/knowledge/api/search.ts)
+/** Mirrors `citationHrefFor`'s cld_file deep-link (features/rag/api/search.ts)
  *  minus the chunk param a provider citation doesn't have. */
 function fileHref(source: MessageCitationSource): string {
   const pageQs =

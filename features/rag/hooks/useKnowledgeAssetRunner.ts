@@ -28,7 +28,7 @@ import {
   type DeriveKind,
   type DerivationRollup,
   type DerivationRun,
-} from "@/features/knowledge/api/derivations";
+} from "@/features/rag/api/derivations";
 
 export type OpStatus =
   "idle" | "running" | "completed" | "failed" | "cancelled";

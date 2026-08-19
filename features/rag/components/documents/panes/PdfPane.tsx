@@ -14,8 +14,8 @@
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import { useMemo } from "react";
-import type { DocumentDetail } from "@/features/knowledge/types/documents";
-import { pageImageUrl } from "@/features/knowledge/api/document";
+import type { DocumentDetail } from "@/features/rag/types/documents";
+import { pageImageUrl } from "@/features/rag/api/document";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 // Deep import, NOT the `@/features/files` barrel. The barrel re-exports PreviewPane,
 // which reaches DocumentViewer -> this file; importing the barrel back from here

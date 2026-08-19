@@ -11,7 +11,7 @@
  * builders with nothing clicked.
  */
 
-import type { ChunkLike } from "@/features/knowledge/components/library/ChunkList";
+import type { ChunkLike } from "@/features/rag/components/library/ChunkList";
 
 /** Where the chunks came from — mirrored into every payload envelope. */
 export interface ChunkScope {

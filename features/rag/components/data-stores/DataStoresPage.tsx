@@ -21,7 +21,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import {
   AlertCircle,
   CloudUpload,
@@ -37,7 +37,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,30 +56,30 @@ import {
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
 import dynamic from "next/dynamic";
-import { RichMemberTable } from "@/features/knowledge/components/data-stores/RichMemberTable";
+import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
 import {
   useDataStoreDetail,
   useDataStores,
   type EnrichedMember,
   useDataStoreMembersRich,
-} from "@/features/knowledge/hooks/useDataStores";
+} from "@/features/rag/hooks/useDataStores";
 import {
   DATA_STORE_KINDS,
   SOURCE_KINDS,
-} from "@/features/knowledge/types/data-stores-ext";
-import type { DataStoreWithMemberCount } from "@/features/knowledge/types/data-stores";
+} from "@/features/rag/types/data-stores-ext";
+import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores";
 import { fileHandler } from "@/features/files/handler/handler";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { DataStorePublishPanel } from "@/features/knowledge/components/data-stores/DataStorePublishPanel";
+import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
-import { useStoreProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
+import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
-import { buildRagDataStoresContextData } from "@/features/knowledge/agent-context/buildRagDataStoresContextData";
+import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 /** Canonical `ui_surface.name` this page emits. */

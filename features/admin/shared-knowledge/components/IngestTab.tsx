@@ -36,7 +36,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   ingestLibraryFile,
   isLibraryIngestNotLive,
-} from "@/features/knowledge/api/library-ingest";
+} from "@/features/rag/api/library-ingest";
 import type { SharedKnowledgeDirectory } from "../types";
 
 type IngestPhase =

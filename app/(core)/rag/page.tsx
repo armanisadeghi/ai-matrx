@@ -6,7 +6,7 @@
  * 404; this is the canonical entry point.
  */
 
-import { RagHomePage } from "@/features/knowledge/components/RagHomePage";
+import { RagHomePage } from "@/features/rag/components/RagHomePage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 

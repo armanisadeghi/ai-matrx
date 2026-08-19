@@ -1,4 +1,4 @@
-import { GoogleEmbeddingLab } from "@/features/knowledge/components/GoogleEmbeddingLab";
+import { GoogleEmbeddingLab } from "@/features/rag/components/GoogleEmbeddingLab";
 
 export default function EmbeddingsPage() {
   return <GoogleEmbeddingLab />;

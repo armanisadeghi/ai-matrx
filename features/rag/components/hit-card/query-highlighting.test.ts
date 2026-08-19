@@ -1,7 +1,7 @@
 import {
   getHighlightTerms,
   getQueryHighlightSegments,
-} from "@/features/knowledge/components/hit-card/query-highlighting";
+} from "@/features/rag/components/hit-card/query-highlighting";
 
 describe("query highlighting", () => {
   it("removes standalone stop words from the meaningful term list", () => {

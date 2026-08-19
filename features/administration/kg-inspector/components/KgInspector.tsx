@@ -58,11 +58,11 @@ import {
 } from "../utils/organizationNames";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { citationHrefFor, type RagSearchHit } from "@/features/knowledge/api/search";
+import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import {
   useOpenCitation,
   shouldOpenInNewTab,
-} from "@/features/knowledge/components/source-inspector/useOpenCitation";
+} from "@/features/rag/components/source-inspector/useOpenCitation";
 import {
   listKgEntities,
   listKgEntityMentions,

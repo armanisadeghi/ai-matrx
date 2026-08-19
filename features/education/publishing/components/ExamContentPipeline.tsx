@@ -33,7 +33,7 @@ import {
   retrieveGroundedPassages,
   serializeGroundedPassages,
   type GroundingSource,
-} from "@/features/knowledge/api/grounding";
+} from "@/features/rag/api/grounding";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { asJsonObject } from "@/lib/supabase/mergeJsonColumn";

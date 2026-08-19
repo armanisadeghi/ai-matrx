@@ -29,7 +29,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";

@@ -8,7 +8,7 @@ import type { Layout } from "react-resizable-panels";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResizablePanel } from "@/components/ui/resizable";
-import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { cn } from "@/lib/utils";
 import {
   deleteSessionThunk,

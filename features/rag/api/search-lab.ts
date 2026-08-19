@@ -1,12 +1,12 @@
 /**
- * features/knowledge/api/search-lab.ts
+ * features/rag/api/search-lab.ts
  *
  * Typed client for the /knowledge/search-lab/* endpoints — diagnostics,
  * query-expansion preview, content inventory, and the transparent
  * Claude agent loop.
  *
  * Consumed by the multi-tab Knowledge search experience in
- * `features/knowledge/components/search/`.
+ * `features/rag/components/search/`.
  */
 import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
 import { apiPost } from "@/lib/api/typed-client";

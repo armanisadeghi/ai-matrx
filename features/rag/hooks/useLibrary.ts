@@ -31,7 +31,7 @@ import type {
   LibraryDocSummary,
   LibraryListResponse,
   LibrarySummary,
-} from "@/features/knowledge/types/library";
+} from "@/features/rag/types/library";
 
 // ---------------------------------------------------------------------------
 // Wire shapes (snake_case from FastAPI)

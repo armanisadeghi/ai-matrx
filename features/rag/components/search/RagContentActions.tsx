@@ -9,7 +9,7 @@ import { useOpenRagAiCopyWindow } from "@/features/overlays/openers/ragAiCopyWin
 import type {
   RagAiCopyBundle,
   RagAiSectionKey,
-} from "@/features/knowledge/components/search/ragAiCopy";
+} from "@/features/rag/components/search/ragAiCopy";
 import { cn } from "@/lib/utils";
 
 async function writeClipboard(text: string): Promise<void> {

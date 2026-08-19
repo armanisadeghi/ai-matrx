@@ -15,8 +15,8 @@ import {
 import {
   DocumentSearchResultsList,
   DocumentSearchSummary,
-} from "@/features/knowledge/components/library/DocumentSearch";
-import type { UseDocumentSearch } from "@/features/knowledge/hooks/useDocumentSearch";
+} from "@/features/rag/components/library/DocumentSearch";
+import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,7 +33,7 @@ import {
   setPendingScrollPage,
   setScrollSource,
 } from "../state/pdfStudioSlice";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { fetchChunksForPage } from "../state/thunks";
 import type { ApiChunkRow } from "../state/types";
 

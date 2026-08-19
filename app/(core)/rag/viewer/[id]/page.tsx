@@ -21,7 +21,7 @@
  */
 
 import { notFound } from "next/navigation";
-import { LibraryPreviewPage } from "@/features/knowledge/components/library/LibraryPreviewPage";
+import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
 
 interface RagViewerPageProps {
   params: Promise<{ id: string }>;

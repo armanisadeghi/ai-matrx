@@ -1,5 +1,5 @@
 import type { UseFileDocumentState } from "@/features/files/hooks/useFileDocument";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { CloudFile, CloudShareLink } from "@/features/files/types";
 import { formatFileSize } from "@/features/files/utils/format";
 

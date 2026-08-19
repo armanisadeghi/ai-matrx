@@ -16,7 +16,7 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
   description:
     "Retrieval-augmented generation: data stores (collections of files/notes/transcripts), the Matrx Library (processed documents, pages, chunks), semantic search, ingest pipelines, and the Shared Knowledge Resources issuance system (library grants to industries / organizations / everyone). Reads are direct-to-Supabase via rag.fn_* RPCs; ingest/search compute rides aidream.",
   docs: [
-    { label: "Knowledge FEATURE.md", href: "/features/knowledge/FEATURE.md" },
+    { label: "Knowledge FEATURE.md", href: "/features/rag/FEATURE.md" },
     {
       label: "Industries FEATURE.md",
       href: "/features/industries/FEATURE.md",
@@ -125,30 +125,30 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
   components: [
     {
       name: "RagHomePage",
-      filePath: "features/knowledge/components/RagHomePage.tsx",
+      filePath: "features/rag/components/RagHomePage.tsx",
       description: "Knowledge home dashboard.",
     },
     {
       name: "DataStoresPage",
-      filePath: "features/knowledge/components/data-stores/DataStoresPage.tsx",
+      filePath: "features/rag/components/data-stores/DataStoresPage.tsx",
       description: "Data-store management workspace.",
     },
     {
       name: "DataStorePublishPanel",
       filePath:
-        "features/knowledge/components/data-stores/DataStorePublishPanel.tsx",
+        "features/rag/components/data-stores/DataStorePublishPanel.tsx",
       description:
         "Publish a library store to an audience — industry / organization / everyone (Shared Knowledge grants).",
       notes: ["Super-admin only; the ONE grant-mutation UI"],
     },
     {
       name: "DataStoreBindPanel",
-      filePath: "features/knowledge/components/data-stores/DataStoreBindPanel.tsx",
+      filePath: "features/rag/components/data-stores/DataStoreBindPanel.tsx",
       description: "Bind members (files/notes/transcripts) into a store.",
     },
     {
       name: "LibraryCatalogPane",
-      filePath: "features/knowledge/components/data-stores/LibraryCatalogPane.tsx",
+      filePath: "features/rag/components/data-stores/LibraryCatalogPane.tsx",
       description:
         "Tenant-facing catalog of discoverable library stores (subscribe/unsubscribe). P3 grows this into /knowledge/library-catalog.",
     },
@@ -161,42 +161,42 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "useDataStoreGrants",
-      filePath: "features/knowledge/hooks/useDataStoreGrants.ts",
+      filePath: "features/rag/hooks/useDataStoreGrants.ts",
       description:
         "Grants list + publish/revoke via rag.fn_list_data_store_grants / rag.library_grant_publish / _revoke (gate: super-admin OR store owner). Also exports fetchDataStoreGrants for batch consumers.",
     },
     {
       name: "useDataStores",
-      filePath: "features/knowledge/hooks/useDataStores.ts",
+      filePath: "features/rag/hooks/useDataStores.ts",
       description:
         "Caller-visible stores via rag.fn_list_user_data_stores / fn_get_user_data_store; writes RLS-gated.",
     },
     {
       name: "useLibraryCatalog",
-      filePath: "features/knowledge/hooks/useLibraryCatalog.ts",
+      filePath: "features/rag/hooks/useLibraryCatalog.ts",
       description:
         "Discoverable library catalog via rag.fn_list_library_catalog (+ per-caller entitlement chips) and library_subscribe / _unsubscribe.",
     },
     {
       name: "useLibrary",
-      filePath: "features/knowledge/hooks/useLibrary.ts",
+      filePath: "features/rag/hooks/useLibrary.ts",
       description:
         "Library documents list/detail/pages/chunks + delete family via rag.fn_* RPCs.",
     },
     {
       name: "useFileIngest",
-      filePath: "features/knowledge/hooks/useFileIngest.ts",
+      filePath: "features/rag/hooks/useFileIngest.ts",
       description:
         "Tenant self-serve 'process this file for Knowledge' (aidream /knowledge/ingest, streaming).",
     },
     {
       name: "useRagSearch",
-      filePath: "features/knowledge/hooks/useRagSearch.ts",
+      filePath: "features/rag/hooks/useRagSearch.ts",
       description: "Knowledge search calls (aidream /knowledge/search).",
     },
     {
       name: "library-ingest API client",
-      filePath: "features/knowledge/api/library-ingest.ts",
+      filePath: "features/rag/api/library-ingest.ts",
       description:
         "Curation ingest client for POST /knowledge/library/stores/{id}/ingest (P1 contract; 501-aware).",
     },

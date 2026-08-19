@@ -1,5 +1,5 @@
 /**
- * features/knowledge/components/FileRagStatusChip.tsx
+ * features/rag/components/FileRagStatusChip.tsx
  *
  * Compact Knowledge-lifecycle chip for a file, with optional inline actions.
  * Visual language matches RagStatusCell (Lightbulb / Loader2, muted dots).
@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 import {
   useFileRagActions,
   useFileRagStatus,
-} from "@/features/knowledge/hooks/useFileRagStatus";
-import type { FileRagState } from "@/features/knowledge/api/knowledge-jobs";
+} from "@/features/rag/hooks/useFileRagStatus";
+import type { FileRagState } from "@/features/rag/api/rag-jobs";
 
 export interface FileRagStatusChipProps {
   fileId: string | null;

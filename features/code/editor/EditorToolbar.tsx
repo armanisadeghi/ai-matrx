@@ -15,7 +15,7 @@ import {
   selectTerminalOpen,
   setOpen as setTerminalOpen,
 } from "../redux/terminalSlice";
-import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 
 interface EditorToolbarProps {
   rightSlotAvailable: boolean;

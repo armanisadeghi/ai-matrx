@@ -153,7 +153,7 @@ import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 import { PdfStudioChunksPane } from "./PdfStudioChunksPane";
-import type { UseDocumentSearch } from "@/features/knowledge/hooks/useDocumentSearch";
+import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 
 export type { PaneKey } from "../state/types";
 import type { PaneKey } from "../state/types";

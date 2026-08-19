@@ -5,8 +5,8 @@ import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import {
   buildRagSearchContext,
   type RagSearchContextPayload,
-} from "@/features/knowledge/utils/build-rag-search-context";
-import type { RagSearchFilters } from "@/features/knowledge/api/search";
+} from "@/features/rag/utils/build-rag-search-context";
+import type { RagSearchFilters } from "@/features/rag/api/search";
 
 /** Surface-A working context → `/knowledge/search` scope fields. */
 export function useRagSearchContext(

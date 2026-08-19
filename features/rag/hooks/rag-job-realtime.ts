@@ -1,5 +1,5 @@
 /**
- * features/knowledge/hooks/knowledge-job-realtime.ts
+ * features/rag/hooks/knowledge-job-realtime.ts
  *
  * Refcounted Supabase Realtime subscription on `cld_file_rag_jobs`, keyed by
  * file_id. This is what replaced the old 3s/15s polling in `useFileRagStatus`:

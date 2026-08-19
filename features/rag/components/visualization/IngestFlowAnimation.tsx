@@ -7,7 +7,7 @@
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import type { UseFileIngestState } from "@/features/knowledge/hooks/useFileIngest";
+import type { UseFileIngestState } from "@/features/rag/hooks/useFileIngest";
 
 // Types live in the shell so consumers get them without pulling the Impl
 // (and React Flow) into their static graph.

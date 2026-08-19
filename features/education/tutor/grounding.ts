@@ -28,7 +28,7 @@ import {
   retrieveGroundedPassages,
   serializeGroundedPassages,
   type GroundingResult,
-} from "@/features/knowledge/api/grounding";
+} from "@/features/rag/api/grounding";
 
 /** A specific item a surface wants the tutor grounded in (AskTutor entry). */
 export interface TutorGroundingSeed {

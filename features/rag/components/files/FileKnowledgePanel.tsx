@@ -23,8 +23,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { ingestFile } from "@/features/knowledge/api/ingest";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { ingestFile } from "@/features/rag/api/ingest";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 
 export interface FileKnowledgePanelProps {

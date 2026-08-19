@@ -21,7 +21,7 @@ import { Loader2, Search as SearchIcon, ExternalLink } from "lucide-react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 
 // Search hit — DERIVED from the generated contract (never hand-mirrored).
 type ApiHit = components["schemas"]["LibraryTestSearchHit"];

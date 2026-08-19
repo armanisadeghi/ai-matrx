@@ -24,11 +24,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
   fetchDerivativeChunks,
   type DerivativeChunkRow,
-} from "@/features/knowledge/api/derivations";
+} from "@/features/rag/api/derivations";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -44,7 +44,7 @@ import {
   CHUNK_CSV_COLUMNS,
   CHUNK_CUSTOM_OPTIONS,
   type ChunkScope,
-} from "@/features/knowledge/chunk-copy";
+} from "@/features/rag/chunk-copy";
 
 /** The structural shape ChunkCard needs. Any endpoint chunk row that carries
  *  these fields renders without adaptation. */

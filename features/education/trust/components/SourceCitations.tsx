@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import CitationChip from "@/components/official/citation-chip/CitationChip";
 import type { SourceCitation, TrustEnvelope } from "../types";
 import { citationIsOpenable, openCitationSource } from "../open-source";
-import { useOpenCitation } from "@/features/knowledge/components/source-inspector/useOpenCitation";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 
 const KIND_ICON = {
   url: LinkIcon,

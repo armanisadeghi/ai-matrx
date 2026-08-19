@@ -36,19 +36,19 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import {
   useLibraryCatalog,
   type LibraryCatalogItem,
-} from "@/features/knowledge/hooks/useLibraryCatalog";
-import { useDataStoreDetail } from "@/features/knowledge/hooks/useDataStores";
-import { useStoreProvenance } from "@/features/knowledge/hooks/useLibraryProvenance";
+} from "@/features/rag/hooks/useLibraryCatalog";
+import { useDataStoreDetail } from "@/features/rag/hooks/useDataStores";
+import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   EntitlementChip,
   entitlementLabel,
-} from "@/features/knowledge/components/library-catalog/EntitlementChip";
+} from "@/features/rag/components/library-catalog/EntitlementChip";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildRagLibraryContextData } from "@/features/knowledge/agent-context/buildRagLibraryContextData";
+import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,

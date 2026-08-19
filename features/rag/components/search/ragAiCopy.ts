@@ -1,6 +1,6 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import { factsOnlyMetadata } from "@/features/knowledge/components/hit-card/copyMetadata";
-import type { RagHitView } from "@/features/knowledge/components/hit-card/types";
+import { factsOnlyMetadata } from "@/features/rag/components/hit-card/copyMetadata";
+import type { RagHitView } from "@/features/rag/components/hit-card/types";
 
 export const RAG_AI_SECTION_KEYS = [
   "retrieved",

@@ -110,7 +110,7 @@ function humanSize(bytes: number | null | undefined): string | null {
 /**
  * Link-out routing — where the user lands when opening the source's full native
  * surface in a new tab. Distinct from the inline preview (no chunk anchor); the
- * Knowledge citation router (`features/knowledge/api/search.ts#citationHrefFor`) needs a
+ * Knowledge citation router (`features/rag/api/search.ts#citationHrefFor`) needs a
  * chunk id we don't carry here, so this is the chunk-less sibling for sources.
  */
 export function sourceLinkFor(kind: string, id: string): string | null {

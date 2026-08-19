@@ -55,7 +55,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Pause, Play, RotateCcw, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RagFlowVisualizationProps } from "./RagFlowVisualization";

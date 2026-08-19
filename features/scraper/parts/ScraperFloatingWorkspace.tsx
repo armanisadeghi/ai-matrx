@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
-import { ProcessForRagButton } from "@/features/knowledge/components/ProcessForRagButton";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   useScraperApi,

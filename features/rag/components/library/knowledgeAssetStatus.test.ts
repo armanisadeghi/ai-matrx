@@ -1,6 +1,6 @@
 import { getRepresentationState } from "./knowledgeAssetStatus";
-import type { DerivationRun } from "@/features/knowledge/api/derivations";
-import type { OpState } from "@/features/knowledge/hooks/useKnowledgeAssetRunner";
+import type { DerivationRun } from "@/features/rag/api/derivations";
+import type { OpState } from "@/features/rag/hooks/useKnowledgeAssetRunner";
 
 const idleOp: OpState = {
   kind: "section_summary",

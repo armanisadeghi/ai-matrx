@@ -26,12 +26,12 @@ import {
   Binary,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
-import { useLibrarySummary } from "@/features/knowledge/hooks/useLibrary";
-import { useLibraryCatalog } from "@/features/knowledge/hooks/useLibraryCatalog";
-import { LibraryCatalogPane } from "@/features/knowledge/components/data-stores/LibraryCatalogPane";
-import { EntitlementChip } from "@/features/knowledge/components/library-catalog/EntitlementChip";
-import { RagHubHeader } from "@/features/knowledge/components/shell/RagHubHeader";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
+import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
+import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
+import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();

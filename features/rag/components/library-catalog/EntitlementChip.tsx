@@ -15,7 +15,7 @@
 
 import { Building2, Check, Globe, Lock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CatalogEntitlement } from "@/features/knowledge/hooks/useLibraryCatalog";
+import type { CatalogEntitlement } from "@/features/rag/hooks/useLibraryCatalog";
 
 export function entitlementLabel(
   entitledVia: CatalogEntitlement,

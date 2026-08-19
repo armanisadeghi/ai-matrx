@@ -25,7 +25,7 @@
  */
 
 import { useMemo } from "react";
-import { RAG_VOCAB } from "@/features/knowledge/constants/vocabulary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 // eslint-disable-next-line no-restricted-syntax -- inside the IngestFlowAnimation dynamic(ssr:false) front-door gate; React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import {
   ReactFlow,
@@ -66,7 +66,7 @@ import {
   type FlowEdgeLiveStats,
 } from "./edges/FlowEdge";
 import type { IngestHandle, IngestFlowAnimationProps } from "./IngestFlowAnimation";
-import type { IngestProgress, IngestResponse } from "@/features/knowledge/api/ingest";
+import type { IngestProgress, IngestResponse } from "@/features/rag/api/ingest";
 
 // ---------------------------------------------------------------------------
 // Types
