@@ -282,7 +282,16 @@ export function extractImagePrompt(answerText: string): string | null {
 export interface GeneratePageImageArgs {
   /** The image_producer role's resolved agent (surface config). */
   agentId: string;
-  /** Full image spec — description, alt intent, placement, page context. */
+  /**
+   * Full image spec — description, alt intent, placement, page context.
+   * THE USER-INPUT LAW: this is machine-built structured content (buildSpec
+   * joins URL + description + alt + placement + style), never a human's
+   * typed message, so it travels as the `intent_or_content` runtime
+   * variable — the SAME name the two default paths
+   * (`generatePageImageTwoStep` / `generatePageImageAllInOne`) already use
+   * for this exact spec. Any agent bound to the `image_producer` surface
+   * role must declare `intent_or_content` to receive it.
+   */
   prompt: string;
   surfaceKey: string;
   /**
@@ -314,7 +323,11 @@ export function generatePageImage(args: GeneratePageImageArgs) {
         {
           agentId: args.agentId,
           surfaceKey: args.surfaceKey,
-          userText: args.prompt,
+          // Kick phrase only — matches the sibling paths' "Generate the
+          // image now." The actual spec rides as a variable (below), never
+          // as user_input.
+          userText: "Generate the image now.",
+          variables: { intent_or_content: args.prompt },
           live: {
             instanceId: liveWindowId(args.surfaceKey, args.liveInstanceId),
             label: "Generating the image",
