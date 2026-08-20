@@ -118,16 +118,21 @@ export function OfflineStudyPanel() {
             study.
           </p>
           {/* Never a dead end: the instruction names a place, so this offers
-              the way there rather than leaving the learner to find it. */}
-          <Button asChild variant="outline" size="sm" className="mt-3" disabled={!online}>
-            <Link href="/education/flashcards">
-              <Layers className="mr-1.5 h-4 w-4" />
-              Browse your decks
-            </Link>
-          </Button>
-          {!online && (
-            <p className="mt-2 text-xs">
-              Your deck list needs a connection — this opens as soon as
+              the way there rather than leaving the learner to find it. With no
+              signal the deck list cannot load, so we say that instead of
+              offering a link that would land on an error — and never a
+              `disabled` <Button asChild>, which only paints an anchor grey
+              while it stays fully clickable. */}
+          {online ? (
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link href="/education/flashcards">
+                <Layers className="mr-1.5 h-4 w-4" />
+                Browse your decks
+              </Link>
+            </Button>
+          ) : (
+            <p className="mt-3 text-xs">
+              Your deck list needs a connection — open it as soon as
               you&apos;re back.
             </p>
           )}
