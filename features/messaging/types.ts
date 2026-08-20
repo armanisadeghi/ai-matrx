@@ -159,6 +159,9 @@ export interface Message {
   client_message_id: string | null;
   /** Generic actionable-message envelope (deep-link chips). Null for plain DMs. */
   action_data: MessageActionData | null;
+  /** Effective actor and feature provenance. The authenticated sender remains
+   * `sender_id`; agent-mediated DMs identify the acting Holder here. */
+  metadata: Record<string, unknown>;
 }
 
 // ============================================

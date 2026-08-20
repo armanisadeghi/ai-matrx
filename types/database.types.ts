@@ -1113,6 +1113,7 @@ export type Database = {
       }
       review_queue: {
         Row: {
+          conversation_id: string | null
           created_at: string
           domain_id: string
           feature_id: string | null
@@ -1129,6 +1130,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          conversation_id?: string | null
           created_at?: string
           domain_id: string
           feature_id?: string | null
@@ -1145,6 +1147,7 @@ export type Database = {
           url: string
         }
         Update: {
+          conversation_id?: string | null
           created_at?: string
           domain_id?: string
           feature_id?: string | null

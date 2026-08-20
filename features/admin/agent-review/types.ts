@@ -5,8 +5,11 @@ export type ReviewQueueUpdate =
   Database["agent"]["Tables"]["review_queue"]["Update"];
 
 export const REVIEW_STATUSES = [
-  "pending",
-  "changes_requested",
+  "submitted",
+  "agent_review",
+  "agent_changes_requested",
+  "ready_for_human",
+  "human_changes_requested",
   "approved",
   "archived",
 ] as const;
@@ -18,8 +21,21 @@ export function isReviewStatus(value: string): value is ReviewStatus {
 }
 
 export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
-  pending: "Needs review",
-  changes_requested: "Changes requested",
+  submitted: "Submitted",
+  agent_review: "Agent review",
+  agent_changes_requested: "Agent repair",
+  ready_for_human: "Ready for you",
+  human_changes_requested: "Your changes requested",
   approved: "Approved",
   archived: "Archived",
 };
+
+export const REVIEW_STAGE_ORDER: ReviewStatus[] = [
+  "submitted",
+  "agent_review",
+  "agent_changes_requested",
+  "ready_for_human",
+  "human_changes_requested",
+  "approved",
+  "archived",
+];
