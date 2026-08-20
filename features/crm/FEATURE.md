@@ -3,7 +3,7 @@
 Cross-repo Public Relations program: /Users/armanisadeghi/code/common-docs/systems/public-relations/PLAN.md (+ RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live` · **Tier:** `1` · **Last updated:** `2026-08-18`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-20`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -66,15 +66,18 @@ schema exists to prevent.
 | `outreach_list_member` | component of `outreach_list` | ❌        | per-member state, attempts, dialer claim                |
 | `party_merge`          | component of `party`         | ❌        | the exact unmerge record                                |
 | `merge_candidate`      | component of `party`         | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
-| `saved_view`           | entity                       | ✅        | a named, re-runnable party-list query (smart view)      |
+| `saved_view`           | entity                       | ✅        | a named, re-runnable CRM-list query (smart view); `list_key` says WHICH list (`parties`/`deals`) |
+| `deal`                 | entity                       | ✅        | money through a pipeline; stage-derived status, value, owner, expected close |
+| `deal_stage_event`     | component of `deal`          | ❌        | trigger-appended stage history — cycle time is derivable, never designed later |
 
 `party_kind ('person','organization')` is the **only** closed set. Expert, lead,
 vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
 the `party_role` dimension attached by a `party → category` edge. **A new kind of
-person never needs a migration.**
+person never needs a migration.** Pipeline STAGES are the same shape — see § Deals.
 
 DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
-[`migrations/crm_02_core.sql`](../../migrations/crm_02_core.sql).
+[`migrations/crm_02_core.sql`](../../migrations/crm_02_core.sql),
+[`migrations/crm_11_deals_pipelines.sql`](../../migrations/crm_11_deals_pipelines.sql).
 
 ---
 
@@ -588,6 +591,69 @@ edit it, which `iam.has_access` already confers — nothing invented).
   party column). No per-view member counts on the bar — counting every view on
   every load is a query per chip.
 
+## Deals + pipelines (`/crm/deals`) — ruled twice by Arman, built 2026-08-20
+
+**The unit of money.** `crm.deal` + `crm.deal_stage_event`, the `/crm/deals`
+list + kanban board, and `/crm/deals/[dealId]`. Feature code:
+`features/crm/deals/` (types, service, views codec, hooks) +
+`components/deals/`. DB contract + design rationale:
+[`migrations/crm_11_deals_pipelines.sql`](../../migrations/crm_11_deals_pipelines.sql).
+Rules paid for once:
+
+- **Pipelines and stages are `platform.categories`, ONE dimension
+  `deal_pipeline`** — a top-level row is a pipeline, its children (parent_id)
+  are the stages in `position` order (the `web_entity_type` nesting shape).
+  Stage semantics ride category `metadata`: `{outcome: "won"|"lost",
+  probability: 0..100}`. A new pipeline or stage is a ROW, never a migration —
+  Arman's roles-are-categories ruling applied to stages. `cat_list` was widened
+  to return `metadata` (`migrations/cat_list_metadata.sql`) so the canonical
+  category reader serves it; never read `platform.categories` directly.
+- **THE STAGE IS THE AUTHORITY; `status` IS DERIVED.** Every writer — the board
+  drag, the record page's stage flow, an agent, the server — just writes
+  `stage_id`. DB triggers (`crm._deal_stage_shape` / `_deal_stage_track`)
+  validate the stage belongs to the pipeline, derive `status`/`closed_at`,
+  stamp `stage_entered_at`, and append the `deal_stage_event` history row.
+  Never write `status`, `closed_at` or `stage_entered_at` from any client.
+- **A won deal IS an outcome.** The same trigger writes ONE
+  `platform.outcome_event` (`deal_won`, `match_method='manual'`, confidence
+  100, `status='confirmed'`, `dedupe_key='crm_deal:{id}:won'` — re-winning
+  dedupes) and advances the primary party's `lifecycle_stage_id` /
+  `became_customer_at` **forward-only** (fills NULLs, never demotes a human's
+  verdict). That is the explicit answer to "are lifecycle columns derived from
+  deals?": independent columns, forward-derived on won. The exception is
+  recorded in aidream `outcome_attribution/FEATURE.md`;
+  `platform.decide_outcome_event` stays the only decider.
+- **Direct browser writes are CORRECT here** (unlike `party`): a deal has no
+  identity-dedup hazard — the resolver governs identity, and every deal
+  invariant lives in the DB triggers, so no client can bypass them. Same class
+  as `crm.outreach_list`. This is NOT the P1 bypass pattern.
+- **The timeline is `crm.interaction.deal_id`** — never a new table.
+  `logInteraction` takes `dealId`; the deal record mounts the SAME
+  `InteractionTimeline` bound to the deal's primary party (an interaction
+  always belongs to someone, so a party-less deal disables the composer and
+  says why).
+- **Smart views are the SAME store** — `crm.saved_view` gained `list_key`
+  (`'parties'` default / `'deals'`), the saved-views service + `SavedViewBar`
+  are generic over a codec (`SavedViewCodec`), and the deals definition lives
+  in `deals/views.ts`. Never a private filter store, and a deals view can never
+  pollute the party bar.
+- **The board** (`DealsBoard`) is the repo's first kanban — `@dnd-kit`,
+  PointerSensor distance 6 (clicks still open the record; the card is a door),
+  one write per drop (`moveDealToStage`). Bounded at `BOARD_DEAL_CAP` (500)
+  and it SAYS when it truncated. Won/Lost columns render real cards, tinted.
+- **Merge/unmerge/purge know about deals**: `crm_merge_parties` repoints
+  `deal.primary_party_id` to the winner (recorded under `moved.deal_primary`),
+  unmerge replays it, purge nulls it.
+- **Agent surface:** `crm_deal` is a registered writable `agent_data` resource
+  in aidream (aliases `deal`/`opportunity`; stage-derived columns readonly) and
+  `reference_pickable` with `content_role='source'`, so it rides the universal
+  picker. `EntityRef token="crm_deal"` resolves `/crm/deals/{id}`.
+- **Browser-verified live 2026-08-20** against the real DB under a real
+  authenticated session: create → stage move (record flow AND board drag) →
+  won (outcome event with `decided_by` stamped from `auth.uid()`, lifecycle
+  advance) → cleanup. Out of scope for this build (a follow-up chip):
+  forecasting, quota/revenue reporting, deal-stage automation.
+
 ## Dedup + merge review (`/crm/duplicates`)
 
 Detection is `crm_detect_merge_candidates` per org (the review page's Scan
@@ -743,6 +809,25 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-20 — **Deals + pipelines shipped (Arman's ruling ×2 — STATE.md P4/Q2).**
+  DB: `crm.deal` (entity, versioned) + `crm.deal_stage_event` (hand-built
+  component per the crm_02 recipe), the `deal_pipeline` category dimension
+  (pipeline = top-level row, stages = children with `metadata.outcome`/
+  `probability`), `deal_lost_reason`, `interaction.deal_id`,
+  `saved_view.list_key`, the stage-authority triggers (status/closed_at
+  derived; history appended; won → ONE dedupe-keyed `platform.outcome_event`
+  + forward-only party lifecycle), merge/unmerge/purge patched for
+  `primary_party_id`, `outcome_kind` widened with `deal_won`, `cat_list`
+  widened to return `metadata` — applied live + ledgered
+  (`crm_11_deals_pipelines.sql`, `cat_list_metadata.sql`), certified in-migration,
+  14-scenario DB smoke green. FE: `/crm/deals` (list + the repo's first kanban,
+  @dnd-kit) and `/crm/deals/[dealId]` (stage flow, facts, deal-bound timeline,
+  stage history, notes, tasks/files), `PartyDealsCard` on the party record
+  (doors both directions), `SavedViewBar`/saved-views service genericized over
+  a codec, `PartyNotes` generalized to `crm_deal`, `crm_deal` in the entity
+  registry / association targets / nav / admin map. aidream: generated models +
+  `crm_deal` agent_data seed (aliases deal/opportunity). Browser-verified live:
+  create → move → drag → won (outcome + lifecycle) → cleanup. See § Deals.
 - 2026-08-19 — **The party-resolver bypass is closed; this client no longer
   creates parties.** `createParty` (a raw `crm.party` insert) and the hand-rolled
   `findOrCreateCompanyByName` matcher are deleted. All three callers — the create
