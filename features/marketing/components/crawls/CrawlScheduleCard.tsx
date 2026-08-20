@@ -16,6 +16,7 @@ import {
 import {
   browserTimezone,
   cadenceForFrequency,
+  crawlCadenceRefusal,
   crawlCadenceForm,
   describeCrawlCadence,
   frequencyHasTimeOfDay,
@@ -79,6 +80,14 @@ export function CrawlScheduleCard({
   );
   const storedForm = useMemo(
     () => crawlCadenceForm(storedCadence),
+    [storedCadence],
+  );
+  // A stored cadence can be one the floor refuses — a row written before the
+  // `web_crawl_schedule_cadence_floor` trigger existed. The server DISABLES it
+  // on the next tick, so telling the user it "keeps running as set" would be a
+  // straight lie about what their site is doing.
+  const storedRefusal = useMemo(
+    () => (storedCadence ? crawlCadenceRefusal(storedCadence) : null),
     [storedCadence],
   );
 
@@ -189,7 +198,18 @@ export function CrawlScheduleCard({
         </p>
       ) : null}
 
-      {isCustomCadence ? (
+      {storedRefusal ? (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-[10px] leading-4 text-destructive">
+          This site’s schedule is not allowed to run —{" "}
+          <span className="font-medium">
+            {describeCrawlCadence(storedCadence, timezone)}
+          </span>
+          . {storedRefusal} It is switched off automatically; choose a frequency
+          below to replace it.
+        </p>
+      ) : null}
+
+      {isCustomCadence && !storedRefusal ? (
         <p className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[10px] leading-4 text-muted-foreground">
           This site uses a custom schedule —{" "}
           <span className="font-medium text-foreground">
