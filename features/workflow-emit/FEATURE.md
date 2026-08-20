@@ -87,6 +87,25 @@ Recorded as an unfinished-work alarm in
 gap in aidream's archived workflow handoff. All three predicted the vision
 correctly; none of them was wrong about a single detail.
 
+## Verified in the browser against real runs (2026-08-19)
+
+Three real completed runs, replayed from the durable log on the run permalink
+(`/workflows/runs/<runId>`), all three emit modes, zero console errors:
+
+| Run | Mode | What rendered |
+|---|---|---|
+| `e0c68ed1` Study Pack v1 | `full` | "SHOWN ALONG THE WAY" → step **"Show the study pack"** → title "Study pack" → the real quiz payload as a sortable 8-row MCQ table via `ResultValue`, plus the **"Build a beautiful UI for this output"** Assist chip. |
+| `ac9bfb0e` / `7f9ecd33` Sort a message by urgency | `confirmation` | Step **"Needs attention now"** → one green-checked line, "Urgent — this one needs attention today." No Assist chip (correct for confirmation). |
+| `6f7185e4` | `summary` | Title "Run summary" → `Text: "A Fine Finish"` + the Assist chip. |
+
+**One real defect found and fixed by that pass.** The confirmation branch printed
+its own sentence twice — once as the line, once again as a "Message" field —
+because `hasExtra` compared the unwrapped payload object against the extracted
+string and was always true for a bare `{"message": ...}`. `residualPayload` now
+consumes `message` when the LINE came from it and renders only a genuine
+remainder; a title still outranks `message` and leaves it visible. Guarded by
+`__tests__/emitRenderer.test.tsx`.
+
 ## Verification state (2026-08-19)
 
 - **The generic branch is the whole of live traffic.** Of those 90 emissions,
