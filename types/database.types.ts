@@ -1114,11 +1114,14 @@ export type Database = {
       review_queue: {
         Row: {
           created_at: string
+          domain_id: string | null
+          feature_id: string | null
           feedback: string | null
           feedback_at: string | null
           id: string
           instructions: string
           metadata: Json
+          repo_slug: string | null
           source: string
           status: string
           title: string
@@ -1127,11 +1130,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          domain_id?: string | null
+          feature_id?: string | null
           feedback?: string | null
           feedback_at?: string | null
           id?: string
           instructions: string
           metadata?: Json
+          repo_slug?: string | null
           source?: string
           status?: string
           title: string
@@ -1140,11 +1146,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          domain_id?: string | null
+          feature_id?: string | null
           feedback?: string | null
           feedback_at?: string | null
           id?: string
           instructions?: string
           metadata?: Json
+          repo_slug?: string | null
           source?: string
           status?: string
           title?: string
@@ -35363,6 +35372,7 @@ export type Database = {
           schema_name: string
           table_name: string
           table_ref: unknown
+          taxonomy_node_id: string | null
           title_column: string | null
           token: string
           version_store: string
@@ -35400,6 +35410,7 @@ export type Database = {
           schema_name: string
           table_name: string
           table_ref?: unknown
+          taxonomy_node_id?: string | null
           title_column?: string | null
           token: string
           version_store?: string
@@ -35437,6 +35448,7 @@ export type Database = {
           schema_name?: string
           table_name?: string
           table_ref?: unknown
+          taxonomy_node_id?: string | null
           title_column?: string | null
           token?: string
           version_store?: string
@@ -35449,6 +35461,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "reference_categories"
             referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "entity_types_taxonomy_node_id_fkey"
+            columns: ["taxonomy_node_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomy_node"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -36363,6 +36382,27 @@ export type Database = {
         }
         Relationships: []
       }
+      repo: {
+        Row: {
+          github_full_name: string | null
+          is_active: boolean
+          slug: string
+          synced_at: string | null
+        }
+        Insert: {
+          github_full_name?: string | null
+          is_active?: boolean
+          slug: string
+          synced_at?: string | null
+        }
+        Update: {
+          github_full_name?: string | null
+          is_active?: boolean
+          slug?: string
+          synced_at?: string | null
+        }
+        Relationships: []
+      }
       rulebook: {
         Row: {
           created_at: string
@@ -36557,6 +36597,56 @@ export type Database = {
           url_path_template?: string
         }
         Relationships: []
+      }
+      taxonomy_node: {
+        Row: {
+          anchors: Json
+          created_at: string
+          docs_path: string | null
+          id: string
+          level: string
+          name: string
+          notes: string | null
+          parent_id: string | null
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          anchors?: Json
+          created_at?: string
+          docs_path?: string | null
+          id?: string
+          level: string
+          name: string
+          notes?: string | null
+          parent_id?: string | null
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          anchors?: Json
+          created_at?: string
+          docs_path?: string | null
+          id?: string
+          level?: string
+          name?: string
+          notes?: string | null
+          parent_id?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxonomy_node_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomy_node"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_entity_state: {
         Row: {
@@ -50971,6 +51061,95 @@ export type Database = {
   }
   scheduler: {
     Tables: {
+      agent_schedule: {
+        Row: {
+          approved_by: string
+          approved_on: string
+          cadence: string
+          created_at: string
+          enabled: boolean
+          id: string
+          instructions_path: string
+          notes: string | null
+          provider: string
+          task_key: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by: string
+          approved_on: string
+          cadence: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          instructions_path: string
+          notes?: string | null
+          provider?: string
+          task_key: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string
+          approved_on?: string
+          cadence?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          instructions_path?: string
+          notes?: string | null
+          provider?: string
+          task_key?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agent_schedule_claim: {
+        Row: {
+          claimed_at: string
+          claimed_by: string
+          completed_at: string | null
+          id: string
+          machine: string | null
+          result_note: string | null
+          status: string
+          task_key: string
+          window_key: string
+        }
+        Insert: {
+          claimed_at?: string
+          claimed_by: string
+          completed_at?: string | null
+          id?: string
+          machine?: string | null
+          result_note?: string | null
+          status?: string
+          task_key: string
+          window_key: string
+        }
+        Update: {
+          claimed_at?: string
+          claimed_by?: string
+          completed_at?: string | null
+          id?: string
+          machine?: string | null
+          result_note?: string | null
+          status?: string
+          task_key?: string
+          window_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_schedule_claim_task_key_fkey"
+            columns: ["task_key"]
+            isOneToOne: false
+            referencedRelation: "agent_schedule"
+            referencedColumns: ["task_key"]
+          },
+        ]
+      }
       sch_agent_task: {
         Row: {
           agent_id: string | null
