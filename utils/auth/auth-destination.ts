@@ -260,19 +260,24 @@ export function preserveAuthDestination(
   source: AuthDestinationSource,
   extraParams?: Record<string, string | undefined | null>,
 ): string {
-  let url = target;
-  if (extraParams) {
-    const [pathAndQuery, hash] = url.split("#");
-    const [path, query = ""] = pathAndQuery.split("?");
-    const params = new URLSearchParams(query);
-    for (const [key, value] of Object.entries(extraParams)) {
-      if (value === undefined || value === null || value === "") continue;
-      params.set(key, value);
-    }
-    const rebuilt = params.toString() ? `${path}?${params.toString()}` : path;
-    url = hash ? `${rebuilt}#${hash}` : rebuilt;
-  }
+  const url = extraParams ? withAuthFlowParams(target, extraParams) : target;
   return withAuthDestination(url, readAuthDestination(source));
+}
+
+/** Add auth-flow status/chrome params without ever placing them after a hash. */
+export function withAuthFlowParams(
+  target: string,
+  paramsToSet: Record<string, string | undefined | null>,
+): string {
+  const [pathAndQuery, hash] = target.split("#");
+  const [path, query = ""] = pathAndQuery.split("?");
+  const params = new URLSearchParams(query);
+  for (const [key, value] of Object.entries(paramsToSet)) {
+    if (value === undefined || value === null || value === "") continue;
+    params.set(key, value);
+  }
+  const rebuilt = params.toString() ? `${path}?${params.toString()}` : path;
+  return hash ? `${rebuilt}#${hash}` : rebuilt;
 }
 
 /**
@@ -285,6 +290,7 @@ export function preserveAuthDestination(
 export function captureAuthDestination(
   pathname: string | undefined | null,
   search?: string | URLSearchParams | null,
+  hash?: string | null,
 ): string | null {
   if (!pathname) return null;
   const path = pathOf(pathname);
@@ -296,7 +302,9 @@ export function captureAuthDestination(
   const rawSearch =
     search instanceof URLSearchParams
       ? search.toString()
-      : (search ?? "").toString().replace(/^\?/, "");
+      : search
+        ? search.toString().replace(/^\?/, "")
+        : "";
 
   const params = new URLSearchParams(rawSearch || inlineQuery);
   for (const key of [...params.keys()]) {
@@ -304,7 +312,9 @@ export function captureAuthDestination(
   }
 
   const query = params.toString();
-  return normalizeAuthDestination(query ? `${path}?${query}` : path);
+  const fragment = hash?.replace(/^#/, "").trim();
+  const destination = `${query ? `${path}?${query}` : path}${fragment ? `#${fragment}` : ""}`;
+  return normalizeAuthDestination(destination);
 }
 
 /** `/login` carrying `destination`. The one way to build a sign-in link. */

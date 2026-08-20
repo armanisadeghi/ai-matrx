@@ -21,10 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useExitIntent } from "@/features/auth/hooks/useExitIntent";
 import { useUserType } from "@/features/auth/hooks/useUserType";
 import { cn } from "@/lib/utils";
-import {
-  loginHref,
-  signUpHref as signUpHref_,
-} from "@/utils/auth/auth-destination";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 interface ExitIntentSignupModalProps {
   /** Module name woven into the headline ("Chat", "Files", etc.). */
@@ -40,7 +37,11 @@ interface ExitIntentSignupModalProps {
  * Desktop: Dialog. Mobile: bottom Drawer (consistent with the rest of
  * the app's modal/drawer pattern).
  */
-export function ExitIntentSignupModal({ moduleName }: ExitIntentSignupModalProps) {
+export function ExitIntentSignupModal({
+  moduleName,
+}: ExitIntentSignupModalProps) {
+  const signUpHref = useLoginHref("/sign-up");
+  const signInHref = useLoginHref();
   const userType = useUserType();
   const isMobile = useIsMobile();
   const isGuest = userType !== "authenticated";
@@ -52,13 +53,6 @@ export function ExitIntentSignupModal({ moduleName }: ExitIntentSignupModalProps
   // `redirectTo` is the ONE param we write — `returnUrl` is a read-only
   // legacy alias (utils/auth/auth-destination.ts), and hand-building it here
   // skipped the destination validation every other auth surface applies.
-  const destination =
-    typeof window !== "undefined"
-      ? window.location.pathname + window.location.search
-      : null;
-  const signUpHref = signUpHref_(destination);
-  const signInHref = loginHref(destination);
-
   const content = (
     <div className="flex flex-col items-center text-center gap-5 pt-2 pb-4 px-1">
       <div
@@ -125,7 +119,9 @@ export function ExitIntentSignupModal({ moduleName }: ExitIntentSignupModalProps
         <DrawerContent className="pb-safe">
           <DrawerHeader className="text-center">
             <DrawerTitle>Before you go</DrawerTitle>
-            <DrawerDescription>Free forever for core features</DrawerDescription>
+            <DrawerDescription>
+              Free forever for core features
+            </DrawerDescription>
           </DrawerHeader>
           {content}
         </DrawerContent>

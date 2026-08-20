@@ -11,6 +11,7 @@ import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transf
 import {
   authDestinationOr,
   normalizeAuthDestination,
+  withAuthFlowParams,
   readAuthDestination,
   withAuthDestination,
 } from "@/utils/auth/auth-destination";
@@ -145,7 +146,9 @@ export async function signUpAction(
   // yet is never a problem. Only the three allowed bands pass through.
   const ageBandRaw = formData.get("ageBand")?.toString();
   const signupAgeBand =
-    ageBandRaw === "under_13" || ageBandRaw === "13_17" || ageBandRaw === "adult"
+    ageBandRaw === "under_13" ||
+    ageBandRaw === "13_17" ||
+    ageBandRaw === "adult"
       ? ageBandRaw
       : undefined;
 
@@ -154,9 +157,7 @@ export async function signUpAction(
     password,
     options: {
       emailRedirectTo: confirmUrl,
-      ...(signupAgeBand
-        ? { data: { education_age_band: signupAgeBand } }
-        : {}),
+      ...(signupAgeBand ? { data: { education_age_band: signupAgeBand } } : {}),
     },
   });
 
@@ -433,7 +434,7 @@ export async function resetPasswordAction(formData: FormData) {
   // moment they had finally earned their destination.
   const destination = authDestinationOr(formData);
   return redirect(
-    `${destination}${destination.includes("?") ? "&" : "?"}success=${encodeURIComponent("Password updated")}`,
+    withAuthFlowParams(destination, { success: "Password updated" }),
   );
 }
 

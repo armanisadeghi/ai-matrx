@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { getFingerprint } from "@/lib/services/fingerprint-service";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
+import { rememberValidatedAccount } from "@/utils/auth/remembered-account";
 
 /**
  * Syncs authentication state to Redux for ALL public routes.
@@ -91,6 +92,15 @@ export function usePublicAuthSync() {
           }
 
           // Dispatch to Redux with access token (authReady set automatically)
+          const userMetadata = {
+            avatarUrl: user.user_metadata?.avatar_url || null,
+            fullName: user.user_metadata?.full_name || null,
+            name: user.user_metadata?.name || null,
+            preferredUsername: user.user_metadata?.preferred_username || null,
+            picture: user.user_metadata?.picture || null,
+          };
+          rememberValidatedAccount(window.localStorage, userMetadata);
+
           dispatch(
             setUser({
               id: user.id,
@@ -102,14 +112,7 @@ export function usePublicAuthSync() {
                 provider: user.app_metadata?.provider || null,
                 providers: user.app_metadata?.providers || [],
               },
-              userMetadata: {
-                avatarUrl: user.user_metadata?.avatar_url || null,
-                fullName: user.user_metadata?.full_name || null,
-                name: user.user_metadata?.name || null,
-                preferredUsername:
-                  user.user_metadata?.preferred_username || null,
-                picture: user.user_metadata?.picture || null,
-              },
+              userMetadata,
               identities:
                 user.identities?.map((i) => ({
                   provider: i.provider || null,

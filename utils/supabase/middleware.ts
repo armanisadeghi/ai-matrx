@@ -16,6 +16,7 @@ import {
   loginHref,
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
+import { routeRequiresAuthentication } from "@/utils/auth/protected-routes";
 
 export async function updateSession(
   request: NextRequest,
@@ -144,15 +145,7 @@ export async function updateSession(
   // Handle unauthenticated users trying to access routes that require a valid session.
   // Most routes allow guests — they render with limited functionality.
   // Only hard-block routes where unauthenticated access is genuinely harmful.
-  const requiresAuth =
-    pathname.startsWith("/administration") || // Admin-only tools
-    pathname.startsWith("/api/admin") || // Admin API routes
-    pathname === "/dashboard" || // Personalized hub; crashes on guest stub user
-    pathname.startsWith("/dashboard/") ||
-    pathname === "/launchpad" || // Personalized favorites + signed-in destinations
-    pathname.startsWith("/launchpad/") ||
-    pathname === "/scraper" || // Lives in (transitional); no public landing yet
-    pathname.startsWith("/scraper/");
+  const requiresAuth = routeRequiresAuthentication(pathname);
 
   if (!user && requiresAuth) {
     // THE CAPTURE POINT. This is where a destination is born: the page the

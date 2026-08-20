@@ -8,6 +8,9 @@ import {
   authDestinationOr,
   normalizeAuthDestination,
   preserveAuthDestination,
+  readAuthDestination,
+  withAuthDestination,
+  withAuthFlowParams,
 } from "@/utils/auth/auth-destination";
 
 export async function GET(request: NextRequest) {
@@ -19,9 +22,12 @@ export async function GET(request: NextRequest) {
   // destination) carrying the user's real destination nested inside it.
   const rawRedirectTo = searchParams.get("redirectTo");
   const redirectTo =
-    type === "recovery" &&
-    (!rawRedirectTo || !normalizeAuthDestination(rawRedirectTo))
-      ? (rawRedirectTo ?? "/reset-password")
+    type === "recovery"
+      ? withAuthDestination(
+          "/reset-password",
+          readAuthDestination(rawRedirectTo) ??
+            normalizeAuthDestination(rawRedirectTo),
+        )
       : authDestinationOr(rawRedirectTo ? { redirectTo: rawRedirectTo } : null);
 
   if (process.env.NODE_ENV === "development") {
@@ -41,7 +47,9 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       // redirect user to specified redirect URL with success message
-      const successUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}success=${encodeURIComponent("Email confirmed! Welcome to AI Matrx!")}`;
+      const successUrl = withAuthFlowParams(redirectTo, {
+        success: "Email confirmed! Welcome to AI Matrx!",
+      });
       redirect(successUrl);
     } else {
       console.error("Email confirmation failed:", error);

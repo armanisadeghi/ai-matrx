@@ -1,11 +1,8 @@
 // app/(core)/chat/page.tsx
 //
-// `/chat` IS the product for everyone — authed or not. The platform is
-// public: guests chat via fingerprint identity (server-side anonymous user;
-// see aidream's guest registry) and their conversations survive signup.
-// NEVER branch guests to a marketing landing or login here — that exact
-// regression (commit 716b965cc) blocked anonymous users from the core
-// product for two months before being ripped out on 2026-07-28.
+// `/chat` is an account workspace. The proxy gates this entire route family
+// before mandate or conversation data can resolve, preserving the exact
+// destination for sign-in. Public acquisition lives on marketing surfaces.
 
 import { redirect } from "next/navigation";
 

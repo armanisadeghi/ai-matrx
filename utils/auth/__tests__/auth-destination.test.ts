@@ -16,12 +16,15 @@ import {
   preserveAuthDestination,
   readAuthDestination,
   withAuthDestination,
+  withAuthFlowParams,
 } from "@/utils/auth/auth-destination";
 
 describe("normalizeAuthDestination", () => {
   it("accepts a plain same-site path", () => {
     expect(normalizeAuthDestination("/tasks")).toBe("/tasks");
-    expect(normalizeAuthDestination("/tasks?view=board")).toBe("/tasks?view=board");
+    expect(normalizeAuthDestination("/tasks?view=board")).toBe(
+      "/tasks?view=board",
+    );
   });
 
   it("unwraps encoded values that rode through a provider or email link", () => {
@@ -64,14 +67,22 @@ describe("normalizeAuthDestination", () => {
 
 describe("readAuthDestination — every alias is honoured", () => {
   it("reads the canonical param", () => {
-    expect(readAuthDestination(new URLSearchParams("redirectTo=/tasks"))).toBe("/tasks");
+    expect(readAuthDestination(new URLSearchParams("redirectTo=/tasks"))).toBe(
+      "/tasks",
+    );
   });
 
   it("reads legacy aliases that used to be silently ignored", () => {
     // 17 `/login?next=` and 8 `?returnUrl=` call sites shipped dead.
-    expect(readAuthDestination(new URLSearchParams("next=/vault"))).toBe("/vault");
-    expect(readAuthDestination(new URLSearchParams("returnUrl=/notes"))).toBe("/notes");
-    expect(readAuthDestination(new URLSearchParams("return_to=/files"))).toBe("/files");
+    expect(readAuthDestination(new URLSearchParams("next=/vault"))).toBe(
+      "/vault",
+    );
+    expect(readAuthDestination(new URLSearchParams("returnUrl=/notes"))).toBe(
+      "/notes",
+    );
+    expect(readAuthDestination(new URLSearchParams("return_to=/files"))).toBe(
+      "/files",
+    );
   });
 
   it("prefers the canonical param over an alias on the same URL", () => {
@@ -141,16 +152,22 @@ describe("withAuthDestination — NEVER creates a second destination", () => {
 
   it("is idempotent across repeated hops", () => {
     const once = withAuthDestination("/login", "/tasks");
-    expect(withAuthDestination(withAuthDestination(once, "/x"), "/y")).toBe(once);
+    expect(withAuthDestination(withAuthDestination(once, "/x"), "/y")).toBe(
+      once,
+    );
   });
 });
 
 describe("preserveAuthDestination — the error-path workhorse", () => {
   it("carries the destination onto an error re-render", () => {
     // Wrong password: /login?redirectTo=/tasks -> /login?error=...&redirectTo=/tasks
-    const out = preserveAuthDestination("/login", "/login?redirectTo=%2Ftasks", {
-      error: "Invalid login credentials",
-    });
+    const out = preserveAuthDestination(
+      "/login",
+      "/login?redirectTo=%2Ftasks",
+      {
+        error: "Invalid login credentials",
+      },
+    );
     expect(readAuthDestination(out)).toBe("/tasks");
     expect(out).toContain("error=Invalid+login+credentials");
   });
@@ -180,20 +197,40 @@ describe("preserveAuthDestination — the error-path workhorse", () => {
 
 describe("captureAuthDestination", () => {
   it("captures a path with its query", () => {
-    expect(captureAuthDestination("/tasks", "?view=board")).toBe("/tasks?view=board");
-    expect(captureAuthDestination("/tasks?view=board")).toBe("/tasks?view=board");
+    expect(captureAuthDestination("/tasks", "?view=board")).toBe(
+      "/tasks?view=board",
+    );
+    expect(captureAuthDestination("/tasks?view=board")).toBe(
+      "/tasks?view=board",
+    );
+  });
+
+  it("captures the current fragment for client-side sign-in entrances", () => {
+    expect(
+      captureAuthDestination("/chat/thread", "?mode=focus", "#message-20"),
+    ).toBe("/chat/thread?mode=focus#message-20");
   });
 
   it("strips auth chrome so a stale banner is never baked in", () => {
-    expect(captureAuthDestination("/tasks", "?view=board&error=nope&success=yay")).toBe(
-      "/tasks?view=board",
+    expect(
+      captureAuthDestination("/tasks", "?view=board&error=nope&success=yay"),
+    ).toBe("/tasks?view=board");
+    expect(captureAuthDestination("/tasks", "?redirectTo=%2Fold")).toBe(
+      "/tasks",
     );
-    expect(captureAuthDestination("/tasks", "?redirectTo=%2Fold")).toBe("/tasks");
   });
 
   it("refuses to capture an auth page", () => {
     expect(captureAuthDestination("/login")).toBeNull();
     expect(captureAuthDestination("/")).toBeNull();
+  });
+});
+
+describe("withAuthFlowParams", () => {
+  it("adds status params before a destination fragment", () => {
+    expect(
+      withAuthFlowParams("/tasks?view=board#today", { success: "Saved" }),
+    ).toBe("/tasks?view=board&success=Saved#today");
   });
 });
 

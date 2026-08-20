@@ -10,9 +10,11 @@ interface AuthIslandProps {
     name: string;
     avatarUrl?: string;
   } | null;
+  /** Callers must provide the request-aware canonical login URL. */
+  loginHref: string;
 }
 
-export default function AuthIsland({ user }: AuthIslandProps) {
+export default function AuthIsland({ user, loginHref }: AuthIslandProps) {
   if (user) {
     return (
       <Link
@@ -39,7 +41,7 @@ export default function AuthIsland({ user }: AuthIslandProps) {
 
   return (
     <Link
-      href="/login"
+      href={loginHref}
       className="shell-auth-island matrx-glass-thin-border shell-tactile"
     >
       <span className="shell-auth-island-icon">

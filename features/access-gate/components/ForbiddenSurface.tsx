@@ -38,6 +38,10 @@ import { headers } from "next/headers";
 import { ArrowLeft, Lock, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import {
+  captureAuthDestination,
+  loginHref,
+} from "@/utils/auth/auth-destination";
 
 export async function ForbiddenSurface() {
   const [{ isAuthenticated }, headerList] = await Promise.all([
@@ -47,6 +51,8 @@ export async function ForbiddenSurface() {
   // `proxy.ts` stamps the request path; it is the only way a boundary can know
   // where the user was trying to go.
   const pathname = headerList.get("x-pathname") || "/dashboard";
+  const search = headerList.get("x-search-params") || "";
+  const signInHref = loginHref(captureAuthDestination(pathname, search));
 
   return (
     <div className="flex h-full min-h-64 w-full items-center justify-center p-6">
@@ -72,7 +78,7 @@ export async function ForbiddenSurface() {
         <div className="mt-5 flex flex-wrap items-center gap-2">
           {isAuthenticated ? null : (
             <Button asChild size="sm">
-              <Link href={`/login?next=${encodeURIComponent(pathname)}`}>
+              <Link href={signInHref}>
                 <LogIn className="mr-1.5 h-4 w-4" aria-hidden />
                 Sign in
               </Link>

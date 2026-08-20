@@ -1,19 +1,24 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useTransition } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { LogIn, LayoutDashboard } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { createClient } from '@/utils/supabase/client';
-import { safeRequestIdleCallback, safeCancelIdleCallback } from '@/utils/browser-compat';
-import type { User } from '@supabase/supabase-js';
+import React, { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { LogIn, LayoutDashboard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/utils/supabase/client";
+import {
+  safeRequestIdleCallback,
+  safeCancelIdleCallback,
+} from "@/utils/browser-compat";
+import type { User } from "@supabase/supabase-js";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 const BUTTON_CLASS =
-  'w-full sm:w-auto text-base border border-zinc-300 dark:border-zinc-700 min-w-[140px]';
+  "w-full sm:w-auto text-base border border-zinc-300 dark:border-zinc-700 min-w-[140px]";
 
 export function AuthAwareButton() {
+  const loginHref = useLoginHref();
   const [user, setUser] = useState<User | null>(null);
   const [checked, setChecked] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -40,7 +45,7 @@ export function AuthAwareButton() {
 
   if (!checked || !user) {
     return (
-      <Link href="/login" className="w-full sm:w-auto">
+      <Link href={loginHref} className="w-full sm:w-auto">
         <Button
           variant="ghost"
           size="lg"
@@ -56,12 +61,12 @@ export function AuthAwareButton() {
   const displayName =
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
-    (user.email ? user.email.split('@')[0] : 'User');
+    (user.email ? user.email.split("@")[0] : "User");
 
   const initials = displayName
-    .split(' ')
+    .split(" ")
     .map((n: string) => n[0])
-    .join('')
+    .join("")
     .toUpperCase()
     .slice(0, 2);
 
@@ -72,7 +77,7 @@ export function AuthAwareButton() {
       disabled={isPending}
       onClick={() => {
         if (isPending) return;
-        startTransition(() => router.push('/dashboard'));
+        startTransition(() => router.push("/dashboard"));
       }}
       className={`${BUTTON_CLASS} hover:bg-zinc-100 dark:hover:bg-zinc-800 gap-2`}
     >
@@ -87,4 +92,3 @@ export function AuthAwareButton() {
     </Button>
   );
 }
-

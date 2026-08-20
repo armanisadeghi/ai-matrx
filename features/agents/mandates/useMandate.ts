@@ -12,6 +12,7 @@ import {
   resolveMandate,
   type ResolvedMandate,
 } from "./service";
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface MandateState {
   mandate: ResolvedMandate | null;
@@ -20,7 +21,9 @@ export interface MandateState {
 }
 
 export function useMandate(mandateKey: string): MandateState {
-  const [state, setState] = useState<MandateState & { key: string; epoch: number }>({
+  const [state, setState] = useState<
+    MandateState & { key: string; epoch: number }
+  >({
     key: mandateKey,
     epoch: 0,
     mandate: null,
@@ -31,7 +34,13 @@ export function useMandate(mandateKey: string): MandateState {
   // Reset for a new mandate key during render (the documented adjust-state-on-
   // prop-change pattern) — never synchronously inside the effect.
   if (state.key !== mandateKey) {
-    setState({ key: mandateKey, epoch: 0, mandate: null, loading: true, error: null });
+    setState({
+      key: mandateKey,
+      epoch: 0,
+      mandate: null,
+      loading: true,
+      error: null,
+    });
   }
 
   // Bump the epoch when this mandate's cached resolution is invalidated so the
@@ -50,11 +59,17 @@ export function useMandate(mandateKey: string): MandateState {
     resolveMandate(mandateKey)
       .then((mandate) => {
         if (!cancelled) {
-          setState((prev) => ({ ...prev, key: mandateKey, mandate, loading: false, error: null }));
+          setState((prev) => ({
+            ...prev,
+            key: mandateKey,
+            mandate,
+            loading: false,
+            error: null,
+          }));
         }
       })
       .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = extractErrorMessage(error);
         console.error(`[mandates] ${mandateKey} failed to resolve:`, message);
         if (!cancelled) {
           setState((prev) => ({

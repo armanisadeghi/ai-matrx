@@ -20,11 +20,12 @@
 // landing, replace this with the ModuleLanding + directory registration.
 
 import Link from "next/link";
-import { LogIn, ArrowRight, LayoutGrid, type LucideIcon } from "lucide-react";
+import { LogIn, LayoutGrid, type LucideIcon } from "lucide-react";
+import { ModuleSignInGateActions } from "./ModuleSignInGateActions";
+import { RememberedSignInHeading } from "@/features/auth/components/RememberedSignInHeading";
 
 export function ModuleSignInGate({
   title,
-  route,
   description,
   icon: Icon = LogIn,
 }: {
@@ -37,8 +38,6 @@ export function ModuleSignInGate({
   /** Optional Lucide icon for the panel header (server-side only). */
   icon?: LucideIcon;
 }) {
-  const loginHref = `/login?redirectTo=${encodeURIComponent(route)}`;
-  const signupHref = `/sign-up?redirectTo=${encodeURIComponent(route)}`;
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col items-center justify-center px-5 py-12 text-center">
@@ -46,28 +45,16 @@ export function ModuleSignInGate({
           <Icon className="h-7 w-7 text-primary" strokeWidth={1.75} />
         </div>
         <h1 className="mt-5 text-xl font-semibold text-foreground sm:text-2xl">
-          Sign in to use {title}
+          <RememberedSignInHeading
+            fallback={<>Sign in to use {title}</>}
+            destinationLabel={title}
+          />
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {description ??
             `${title} is part of your AI Matrx workspace. Sign in to pick up where you left off, or create a free account to get started.`}
         </p>
-        <div className="mt-6 flex w-full flex-col gap-2">
-          <Link
-            href={loginHref}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <LogIn className="h-4 w-4" />
-            Sign in
-          </Link>
-          <Link
-            href={signupHref}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Create a free account
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
+        <ModuleSignInGateActions />
         <Link
           href="/features"
           className="mt-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"

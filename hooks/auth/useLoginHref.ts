@@ -23,21 +23,32 @@
  */
 
 import { usePathname, useSearchParams } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import {
   captureAuthDestination,
   readAuthDestination,
   withAuthDestination,
 } from "@/utils/auth/auth-destination";
 
+function subscribeToHash(onChange: () => void): () => void {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+
+function currentHash(): string {
+  return window.location.hash;
+}
+
 export function useAuthDestination(): string | null {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hash = useSyncExternalStore(subscribeToHash, currentHash, () => "");
 
   // Already mid-flow → carry the existing destination, never mint a second.
   const existing = readAuthDestination(searchParams);
   if (existing) return existing;
 
-  return captureAuthDestination(pathname, searchParams);
+  return captureAuthDestination(pathname, searchParams, hash);
 }
 
 export function useLoginHref(target: string = "/login"): string {

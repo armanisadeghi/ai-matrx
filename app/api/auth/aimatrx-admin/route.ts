@@ -3,13 +3,21 @@ import {
   generatePKCEParams,
   buildAuthorizeURL,
 } from "@/lib/auth/aimatrx-oauth";
+import { trustedAppRedirect } from "@/utils/auth/trusted-app-redirect";
 
 export async function GET(request: NextRequest) {
   const { origin, searchParams } = new URL(request.url);
 
   // Optional: after successful admin login, redirect the user to this URL
   // instead of the default /dashboard. Used by external SPAs (e.g. aidream dashboard).
-  const appRedirect = searchParams.get("app_redirect");
+  const rawAppRedirect = searchParams.get("app_redirect");
+  const appRedirect = trustedAppRedirect(rawAppRedirect);
+  if (rawAppRedirect && !appRedirect) {
+    return NextResponse.json(
+      { error: "app_redirect_not_allowed" },
+      { status: 400 },
+    );
+  }
 
   const redirectUri = `${origin}/auth/callback/admin`;
 

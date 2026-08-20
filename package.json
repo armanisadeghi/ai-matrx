@@ -110,6 +110,7 @@
     "check:api-contracts:accept": "tsx scripts/check-api-contracts.ts --accept",
     "check:backend-boundaries": "tsx scripts/check-backend-boundaries.ts",
     "check:backend-boundaries:strict": "tsx scripts/check-backend-boundaries.ts --strict",
+    "check:auth-destinations": "jest utils/auth/__tests__ --runInBand --no-coverage",
     "gen:entity-types": "tsx scripts/generate-entity-types.ts",
     "gen:directive-nouns": "node scripts/gen-directive-nouns.mjs",
     "check:entity-types": "tsx scripts/generate-entity-types.ts --check",

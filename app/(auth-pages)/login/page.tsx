@@ -25,6 +25,7 @@ import {
   preserveAuthDestination,
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
+import { RememberedSignInHeading } from "@/features/auth/components/RememberedSignInHeading";
 
 interface SignInProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -77,7 +78,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
   return (
     <AuthPageContainer
-      title="Sign in to your account"
+      title={<RememberedSignInHeading />}
       subtitle={
         <>
           Don't have an account?{" "}

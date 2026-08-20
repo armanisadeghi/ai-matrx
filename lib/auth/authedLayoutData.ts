@@ -20,6 +20,7 @@ import {
   getAdminStatus,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
+import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 // Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
 // is deleted in this PR. Callers receive userData and inject it into the
 // Redux preloaded state; `lib/sync/identity::attachStore` then makes it
@@ -44,7 +45,7 @@ export async function loadAuthedLayoutData(): Promise<AuthedLayoutData> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(await currentRequestLoginHref());
   }
 
   const [

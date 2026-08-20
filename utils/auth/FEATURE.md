@@ -10,7 +10,8 @@ page — the destination survives.
 ## The law
 
 1. **Capture once.** The bounce that sends a signed-out user to `/login` turns
-   the page they asked for (path **and** query) into the destination.
+   the page they asked for (path, query, **and client-visible fragment**) into
+   the destination.
 2. **Never mint a second.** `withAuthDestination()` is a **no-op when the target
    already carries one**. Every later hop can only pass it along.
 3. **Never lose it on an error path.** Every redirect that re-renders an auth
@@ -22,13 +23,15 @@ page — the destination survives.
 
 | Function | Use it for |
 |---|---|
-| `captureAuthDestination(pathname, search)` | THE capture point — a bounce or a client "Sign in" link |
+| `captureAuthDestination(pathname, search, hash?)` | THE capture point — a bounce or a client "Sign in" link |
 | `readAuthDestination(source)` | Read from `URLSearchParams` / `FormData` / Next `searchParams` / a URL string. `null` when absent |
 | `authDestinationOr(source, fallback?)` | Read at the END of a flow, where someone must be sent somewhere (`/dashboard`) |
 | `withAuthDestination(target, dest)` | Attach — **never overwrites an existing one** |
 | `preserveAuthDestination(target, source, extra?)` | The workhorse: carry forward + add `error`/`success` |
 | `loginHref(dest)` / `signUpHref(dest)` | Build a sign-in / sign-up link |
 | `useLoginHref()` ([hook](../../hooks/auth/useLoginHref.ts)) | Client components — captures the current route automatically |
+| `serverLoginHref()` ([helper](./server-login-href.ts)) | Server layouts/actions — rebuilds the request from the canonical proxy headers |
+| `withAuthFlowParams(target, params)` | Adds an auth result query without moving it behind an existing fragment |
 
 **`encodedRedirect(type, path, message, destinationSource)`** ([`utils/utils.ts`](../utils.ts))
 — **always pass the 4th argument** on an auth surface. Omitting it is how the
@@ -91,6 +94,20 @@ sales page after signing in.
   bounce.** That bounce sends every authenticated visitor to `landing`; ordered
   the other way it eats the destination.
 - **Logout is not a destination flow.** Sign-out goes to a bare `/login`.
+- **A remembered account is display data, never authority.**
+  [`remembered-account.ts`](./remembered-account.ts) stores only a display name,
+  optional avatar URL, and timestamp. Tokens, ids, email addresses, roles, and
+  the identity-scoped Redux profile cache never cross into this guest-readable
+  record.
+- **Protected product routes stop before product data loads.**
+  [`protected-routes.ts`](./protected-routes.ts) is the shared proxy policy.
+  A guest must see the sign-in experience, never a database, mandate, or
+  permissions error from inside the product.
+- **External app redirects are registered capabilities, not user input.**
+  [`trusted-app-redirect.ts`](./trusted-app-redirect.ts) requires an exact
+  first-party origin and the exact `/oauth/callback` path before any access or
+  refresh token may leave this app. Validate both before OAuth starts and in
+  the callback.
 - **`x-pathname` + `x-search-params`** are set in
   [`utils/supabase/middleware.ts`](../supabase/middleware.ts) so server layouts
   can rebuild the destination. Both must be set — `app/(admin)/layout.tsx` read
@@ -101,9 +118,22 @@ sales page after signing in.
 [`__tests__/auth-destination.test.ts`](./__tests__/auth-destination.test.ts) —
 the rules. [`__tests__/auth-flow.e2e.test.ts`](./__tests__/auth-flow.e2e.test.ts)
 — full journeys hop by hop (wrong-then-right password, the reset odyssey, OAuth,
-50-hop walks, open-redirect refusal). `npx jest utils/auth/__tests__`.
+50-hop walks, open-redirect refusal). `auth-entrypoints.test.ts` scans every
+tracked and untracked source file and rejects raw internal login links and the
+nonexistent `/signup` route. `pnpm check:auth-destinations` runs the complete
+auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-20** — Closed the signed-out product-error and lost-return-route
+  classes platform-wide: protected routes stop before data resolution; header,
+  dialogs, conversion prompts, module gates, module signup CTAs, and server
+  redirects all use canonical destination capture; client fragments survive;
+  cold signed-out visitors get a remembered-account-safe sign-in heading;
+  callback and recovery error paths preserve their destination; external app
+  token callbacks require an exact allowlist. Added source, route-policy,
+  remembered-account, fragment, and malicious-redirect regressions to the
+  release gates.
 
 - **2026-08-12** — Expanded the funnel guard to every tracked source file via
   `git grep`, including root files, `actions/`, hooks, and providers.

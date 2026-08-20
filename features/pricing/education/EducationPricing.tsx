@@ -21,12 +21,13 @@ import {
   Check,
   Infinity as InfinityIcon,
   Loader2,
-  Sparkles,
+  BadgeCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEntitlementTier } from "@/features/entitlements/state/selectors";
 import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 function formatPrice(amountCents: number, currency: string): string {
   return new Intl.NumberFormat("en-US", {
@@ -43,7 +44,12 @@ const FREE_ALWAYS = [
   "Every card cited back to your own material",
 ];
 
-export function EducationPricing({ pricing }: { pricing: EducationPricingData }) {
+export function EducationPricing({
+  pricing,
+}: {
+  pricing: EducationPricingData;
+}) {
+  const loginHref = useLoginHref();
   const router = useRouter();
   const tier = useAppSelector(selectEntitlementTier);
   const isPremium = tier === "premium" || tier === "trial";
@@ -64,14 +70,17 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
         body: JSON.stringify({ priceId: pricing.premium.priceId }),
       });
       if (res.status === 401) {
-        router.push("/login?next=/pricing");
+        router.push(loginHref);
         return;
       }
       if (res.status === 503) {
         void announceComingSoon("education.premium-checkout");
         return;
       }
-      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
       if (!res.ok || !body.url) {
         toast.error(body.error ?? "Couldn't start checkout. Please try again.");
         return;
@@ -95,7 +104,9 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
             Free
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-4xl font-semibold tracking-tight tabular-nums">$0</span>
+            <span className="text-4xl font-semibold tracking-tight tabular-nums">
+              $0
+            </span>
             <span className="text-sm text-muted-foreground">forever</span>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -106,8 +117,14 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
 
         <div className="flex flex-col gap-2.5">
           {pricing.freeHighlights.map((h) => (
-            <div key={h.capability} className="flex items-start gap-2.5 text-sm">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={2.25} />
+            <div
+              key={h.capability}
+              className="flex items-start gap-2.5 text-sm"
+            >
+              <Check
+                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                strokeWidth={2.25}
+              />
               <span>
                 <span className="font-medium tabular-nums">{h.monthly}</span>{" "}
                 {h.label.toLowerCase()} / month
@@ -115,8 +132,14 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
             </div>
           ))}
           {FREE_ALWAYS.map((line) => (
-            <div key={line} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
+            <div
+              key={line}
+              className="flex items-start gap-2.5 text-sm text-muted-foreground"
+            >
+              <Check
+                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                strokeWidth={2}
+              />
               <span>{line}</span>
             </div>
           ))}
@@ -137,7 +160,7 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
       {/* Premium */}
       <div className="relative flex flex-col gap-5 rounded-2xl border border-foreground bg-foreground p-6 text-background lg:p-8">
         <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-background/15 px-2.5 py-1 text-[11px] font-medium">
-          <Sparkles className="h-3 w-3" /> Premium
+          <BadgeCheck className="h-3 w-3" /> Premium
         </span>
         <div className="flex flex-col gap-1">
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-background/60">
@@ -148,10 +171,14 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
               <span className="text-4xl font-semibold tracking-tight tabular-nums">
                 {formatPrice(premium.amountCents, premium.currency)}
               </span>
-              <span className="text-sm text-background/60">/ {premium.interval}</span>
+              <span className="text-sm text-background/60">
+                / {premium.interval}
+              </span>
             </div>
           ) : (
-            <div className="text-2xl font-semibold tracking-tight">Coming soon</div>
+            <div className="text-2xl font-semibold tracking-tight">
+              Coming soon
+            </div>
           )}
           <p className="text-sm text-background/70">
             {premium?.description ??
@@ -172,7 +199,10 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
             "Priority generation on capacity",
           ].map((line) => (
             <div key={line} className="flex items-start gap-2.5">
-              <InfinityIcon className="mt-0.5 h-4 w-4 shrink-0 text-background/80" strokeWidth={2.25} />
+              <InfinityIcon
+                className="mt-0.5 h-4 w-4 shrink-0 text-background/80"
+                strokeWidth={2.25}
+              />
               <span>{line}</span>
             </div>
           ))}
@@ -193,7 +223,9 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
           >
             {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {premium ? "Upgrade to Premium" : "Not available yet"}
-            {premium && !checkingOut ? <ArrowRight className="h-3.5 w-3.5" /> : null}
+            {premium && !checkingOut ? (
+              <ArrowRight className="h-3.5 w-3.5" />
+            ) : null}
           </button>
         )}
         <p className="text-center text-xs text-background/60">

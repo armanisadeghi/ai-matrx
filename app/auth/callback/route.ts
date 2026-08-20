@@ -13,7 +13,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { safeForwardedHost } from "@/utils/auth/safe-redirect";
 import {
   authDestinationOr,
+  normalizeAuthDestination,
   preserveAuthDestination,
+  readAuthDestination,
+  withAuthDestination,
 } from "@/utils/auth/auth-destination";
 import {
   GUEST_OAUTH_FP_COOKIE,
@@ -23,6 +26,7 @@ import {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const timestamp = new Date().toISOString();
+  let redirectTo: string | null = null;
 
   try {
     const code = searchParams.get("code");
@@ -36,19 +40,18 @@ export async function GET(request: Request) {
     // validator refuses as a *final* destination (it is an auth page). So the
     // recovery default is applied here, where it is the correct next HOP, and
     // the user's real destination rides nested inside it as its own param.
-    const recoveryDefault =
+    const decodedRedirectTo = redirectToParam
+      ? decodeURIComponent(redirectToParam)
+      : null;
+    redirectTo =
       type === "recovery"
-        ? redirectToParam
-          ? decodeURIComponent(redirectToParam)
-          : "/reset-password"
-        : null;
-    const redirectTo =
-      recoveryDefault && recoveryDefault.startsWith("/reset-password")
-        ? recoveryDefault
+        ? withAuthDestination(
+            "/reset-password",
+            readAuthDestination(decodedRedirectTo) ??
+              normalizeAuthDestination(decodedRedirectTo),
+          )
         : authDestinationOr(
-            redirectToParam
-              ? { redirectTo: decodeURIComponent(redirectToParam) }
-              : null,
+            decodedRedirectTo ? { redirectTo: decodedRedirectTo } : null,
           );
 
     console.log(
@@ -200,7 +203,11 @@ export async function GET(request: Request) {
     console.error(`[${timestamp}] Auth callback - UNEXPECTED ERROR: ${errMsg}`);
     console.error(`[${timestamp}] Auth callback - Stack: ${errStack}`);
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent("An unexpected error occurred. Please try again.")}`,
+      `${origin}${preserveAuthDestination(
+        "/login",
+        { redirectTo },
+        { error: "An unexpected error occurred. Please try again." },
+      )}`,
     );
   }
 }

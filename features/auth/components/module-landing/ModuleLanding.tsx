@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CheckCircle2, Zap, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { loginHref } from "@/utils/auth/auth-destination";
+import { loginHref, withAuthDestination } from "@/utils/auth/auth-destination";
 import { AuthedWorkspaceCTA } from "./AuthedWorkspaceCTA";
 import { ModuleLandingConversionNudges } from "../conversion/ModuleLandingConversionNudges";
 import { MODULE_LANDING_DIRECTORY } from "./landings/directory";
@@ -116,6 +116,14 @@ export function ModuleLanding({
   relatedModules,
 }: ModuleLandingProps) {
   const signInUrl = loginHref(signInDestination ?? workspaceHref);
+  const primaryCtaUrl =
+    primaryCtaHref.startsWith("/sign-up") ||
+    primaryCtaHref.startsWith("/signup")
+      ? withAuthDestination(
+          primaryCtaHref.replace(/^\/signup(?=\?|$)/, "/sign-up"),
+          workspaceHref,
+        )
+      : primaryCtaHref;
   const relatedEntries = (relatedModules ?? [])
     .map((href) => MODULE_LANDING_DIRECTORY.find((e) => e.href === href))
     .filter((entry): entry is NonNullable<typeof entry> => entry != null);
@@ -156,7 +164,7 @@ export function ModuleLanding({
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href={primaryCtaHref}>
+              <Link href={primaryCtaUrl}>
                 {primaryCtaLabel}
                 <ArrowRight className="h-4 w-4" />
               </Link>

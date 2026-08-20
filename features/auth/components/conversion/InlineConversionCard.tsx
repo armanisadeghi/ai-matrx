@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { UserPlus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  loginHref,
-  signUpHref as signUpHref_,
-} from "@/utils/auth/auth-destination";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 interface InlineConversionCardProps {
   /** Headline on the card. */
@@ -33,20 +30,11 @@ export function InlineConversionCard({
   // `redirectTo` is the ONE param we write — `returnUrl` is a read-only
   // legacy alias (utils/auth/auth-destination.ts), and hand-building it here
   // skipped the destination validation every other auth surface applies.
-  const destination =
-    typeof window !== "undefined"
-      ? window.location.pathname + window.location.search
-      : null;
-  const signUpHref = signUpHref_(destination);
-  const signInHref = loginHref(destination);
+  const signUpHref = useLoginHref("/sign-up");
+  const signInHref = useLoginHref();
 
   return (
-    <div
-      className={cn(
-        "mx-auto max-w-3xl px-4 sm:px-6 my-12",
-        className,
-      )}
-    >
+    <div className={cn("mx-auto max-w-3xl px-4 sm:px-6 my-12", className)}>
       <div
         className={cn(
           "relative rounded-2xl p-6 sm:p-8 overflow-hidden",
@@ -65,9 +53,7 @@ export function InlineConversionCard({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-foreground">
-              {heading}
-            </h3>
+            <h3 className="text-lg font-semibold text-foreground">{heading}</h3>
             <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>

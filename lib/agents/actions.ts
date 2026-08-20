@@ -9,6 +9,7 @@ import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
+import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],
@@ -69,7 +70,7 @@ export async function createAgentFromSeed(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    redirect("/login");
+    redirect(await currentRequestLoginHref("/agents/new"));
   }
 
   const { data, error } = await supabase
@@ -103,7 +104,9 @@ export async function createSystemAgentFromSeed(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    redirect("/login");
+    redirect(
+      await currentRequestLoginHref("/administration/agents/system-agents"),
+    );
   }
 
   const isAdmin = await checkIsSuperAdmin(supabase, user.id);

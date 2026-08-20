@@ -13,6 +13,8 @@ import { exchangeCodeForTokens, fetchUserInfo } from "@/lib/auth/aimatrx-oauth";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { safeForwardedHost } from "@/utils/auth/safe-redirect";
+import { trustedAppRedirect } from "@/utils/auth/trusted-app-redirect";
+import { requireEnv } from "@/utils/supabase/env";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -38,7 +40,9 @@ export async function GET(request: NextRequest) {
   const codeVerifier = request.cookies.get(
     "aimatrx_admin_code_verifier",
   )?.value;
-  const appRedirect = request.cookies.get("aimatrx_admin_app_redirect")?.value;
+  const appRedirect = trustedAppRedirect(
+    request.cookies.get("aimatrx_admin_app_redirect")?.value ?? null,
+  );
 
   if (!storedState || storedState !== state) {
     return NextResponse.redirect(
@@ -134,8 +138,14 @@ export async function GET(request: NextRequest) {
     response.cookies.delete("aimatrx_admin_app_redirect");
 
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      requireEnv(
+        "NEXT_PUBLIC_SUPABASE_URL",
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+      ),
+      requireEnv(
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      ),
       {
         // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
         cookieOptions: authCookieOptions(request.headers.get("host")),

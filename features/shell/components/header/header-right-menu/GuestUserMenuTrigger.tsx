@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { UserPlus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 /**
  * Avatar-slot replacement for unauthenticated visitors. The primary
@@ -22,10 +25,11 @@ export default function GuestUserMenuTrigger({
 }: {
   menuCheckboxId?: string;
 }) {
+  const loginHref = useLoginHref();
   return (
     <div className="flex items-center gap-1.5 h-11 pr-1">
       <Link
-        href="/login"
+        href={loginHref}
         className={cn(
           "inline-flex items-center h-7 px-2 rounded-md text-xs font-medium",
           "text-foreground hover:bg-[var(--matrx-glass-bg-hover)] transition-colors",
