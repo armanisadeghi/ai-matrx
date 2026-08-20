@@ -398,6 +398,25 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
 - **Every resolved identity is a door.** The selected organization, existing party,
   existing employer, created parties/companies, and partially-created failed records
   use `EntityRef` or a count link back to the CRM.
+- **API connectors ride the SAME spine (2026-08-20).** The first one is **Google
+  Contacts (People API)**: server adapter + registry in aidream
+  (`services/crm/contact_connectors/`, endpoints `GET /crm/import/connectors`,
+  `POST /crm/import/connectors/{key}/fetch|/cursor`), client half in
+  `import/connectors/` (`service.ts` — fetch → `ParsedImportData`;
+  `campaign.ts` — the sensitive-scope gate), source cards in
+  `components/import/ConnectorSources.tsx`. A connector fetch enters the wizard
+  at the same map → dry-run → commit steps as a file; each record carries the
+  source's stable id (`rowMeta[].externalId` → `RowPlan.externalId`), which
+  dedups within the feed, previews against prior syncs
+  (`findExistingMediumOwners` channel `external_id` + `platformSlug`), and rides
+  the resolve call as `externalIds` — the resolver's strongest key, so a second
+  sync enriches instead of duplicating. Incremental sync: the server keeps a
+  per-(connection, org) sync token; the wizard advances it via `/cursor` ONLY
+  after a fully-successful commit. Source-side deletions are reported in the
+  parse warnings, never applied. Import never sets consent/opt-in state.
+  🚨 `contacts.readonly` is SENSITIVE and not yet Google-approved — the
+  authorize action is super-admin-gated by `import/connectors/campaign.ts`
+  until its own verification campaign closes (`lib/googleScopes.ts`).
 - Cross-repo vision, exhaustive source inventory, official MCP shortlist, and
   Extend/Local briefs:
   `/Users/armanisadeghi/code/common-docs/systems/crm/IMPORT-SOURCES.md`.

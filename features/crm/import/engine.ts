@@ -603,6 +603,7 @@ export async function planImport(args: {
     const domainRaw = cell(row, mapping, "primary_domain");
     const plan: RowPlan = {
       rowNumber: i + 1,
+      externalId: parsed.rowMeta?.[i]?.externalId || undefined,
       status: displayName ? "create" : "invalid",
       displayName,
       firstName: firstName || undefined,
@@ -627,8 +628,11 @@ export async function planImport(args: {
   const claimed = new Map<string, number>(); // identity key → rowNumber
   for (const plan of drafts) {
     if (plan.status !== "create") continue;
-    const identities =
-      kind === "person"
+    const identities = [
+      // The source's own record id claims first — a connector feed can list
+      // the same person twice with different emails, and the id settles it.
+      ...(plan.externalId ? [`x:${plan.externalId}`] : []),
+      ...(kind === "person"
         ? [
             ...plan.emails.map((e) => `e:${e}`),
             ...plan.phones.map((p) => `p:${p}`),
@@ -636,7 +640,8 @@ export async function planImport(args: {
         : [
             ...(plan.primaryDomain ? [`d:${plan.primaryDomain}`] : []),
             `n:${plan.displayName.toLowerCase()}`,
-          ];
+          ]),
+    ];
     const hit = identities.find((k) => claimed.has(k));
     if (hit !== undefined) {
       plan.status = "duplicate_in_file";
@@ -670,31 +675,63 @@ export async function planImport(args: {
     ),
   ];
 
-  const [emailOwners, phoneOwners, domainOwners, nameOwners, employerMatches] =
-    await Promise.all([
-      findExistingMediumOwners({
-        orgId,
-        channel: "email",
-        valueKeys: allEmails,
-      }),
-      findExistingMediumOwners({
-        orgId,
-        channel: "phone",
-        valueKeys: allPhones,
-      }),
-      findPartiesByDomains({ orgId, domains: allDomains }),
-      findPartiesByNames({ orgId, kind: "organization", names: allNames }),
-      findPartiesByNames({ orgId, kind: "organization", names: employerNames }),
-    ]);
+  // Connector rows carry the source's stable record id; a party that already
+  // owns it (from a previous sync) is a match even with no email or phone —
+  // the same strongest-first order the server resolver applies.
+  const allExternalIds =
+    parsed.connector === undefined
+      ? []
+      : [
+          ...new Set(
+            candidates
+              .map((p) => p.externalId?.toLowerCase())
+              .filter((v): v is string => !!v),
+          ),
+        ];
+
+  const [
+    externalIdOwners,
+    emailOwners,
+    phoneOwners,
+    domainOwners,
+    nameOwners,
+    employerMatches,
+  ] = await Promise.all([
+    parsed.connector
+      ? findExistingMediumOwners({
+          orgId,
+          channel: "external_id",
+          platformSlug: parsed.connector.platformSlug,
+          valueKeys: allExternalIds,
+        })
+      : Promise.resolve(new Map<string, PartyRef>()),
+    findExistingMediumOwners({
+      orgId,
+      channel: "email",
+      valueKeys: allEmails,
+    }),
+    findExistingMediumOwners({
+      orgId,
+      channel: "phone",
+      valueKeys: allPhones,
+    }),
+    findPartiesByDomains({ orgId, domains: allDomains }),
+    findPartiesByNames({ orgId, kind: "organization", names: allNames }),
+    findPartiesByNames({ orgId, kind: "organization", names: employerNames }),
+  ]);
 
   for (const plan of candidates) {
+    const byExternalId = plan.externalId
+      ? externalIdOwners.get(plan.externalId.toLowerCase())
+      : undefined;
     const existing =
-      kind === "person"
+      byExternalId ??
+      (kind === "person"
         ? (plan.emails.map((e) => emailOwners.get(e)).find(Boolean) ??
           plan.phones.map((p) => phoneOwners.get(p)).find(Boolean))
         : ((plan.primaryDomain
             ? domainOwners.get(plan.primaryDomain)
-            : undefined) ?? nameOwners.get(plan.displayName.toLowerCase()));
+            : undefined) ?? nameOwners.get(plan.displayName.toLowerCase())));
     if (existing) {
       plan.status = "exists";
       plan.existing = existing;
@@ -722,6 +759,7 @@ export async function planImport(args: {
   return {
     kind,
     orgId,
+    connector: parsed.connector,
     rows: drafts,
     newCompanyNames,
     counts: {
@@ -857,6 +895,18 @@ export async function commitImport(
             plan.kind === "organization" ? p.primaryDomain : undefined,
           emails: p.emails,
           phones: p.phones,
+          // Connector rows carry the source's stable record id as an
+          // external-id identity point — the resolver's strongest key, and
+          // what lets the SECOND sync enrich instead of duplicate.
+          externalIds:
+            plan.connector && p.externalId
+              ? [
+                  {
+                    platform: plan.connector.platformSlug,
+                    value: p.externalId,
+                  },
+                ]
+              : undefined,
         })),
       );
     } catch (e) {

@@ -50,7 +50,34 @@ export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
 /** CSV header (as parsed) → the field it feeds, or null = ignored. */
 export type ImportMapping = Record<string, ImportField | null>;
 
-export type ImportFileFormat = "csv" | "tsv" | "xlsx" | "xls" | "vcard";
+export type ImportFileFormat =
+  | "csv"
+  | "tsv"
+  | "xlsx"
+  | "xls"
+  | "vcard"
+  /** An API contact connector (Google People, …) — not a file at all. */
+  | "connector";
+
+/**
+ * Provenance of a connector-sourced parse — which adapter and connection read
+ * the records, and the sync cursor to persist AFTER a successful commit.
+ * Provider-generic: Microsoft Graph and every later connector reuse it.
+ */
+export interface ImportConnectorMeta {
+  /** Server connector registry key, e.g. 'google_people'. */
+  providerKey: string;
+  /** `crm.contact_medium.platform_slug` for external-id identity points. */
+  platformSlug: string;
+  connectionId: string;
+  accountEmail?: string;
+  /** Delta cursor — persisted via the /cursor endpoint only after commit. */
+  syncToken?: string;
+  /** True when this run read only changes since the last sync. */
+  incremental: boolean;
+  /** Deleted at the SOURCE since last sync — reported, never applied. */
+  deletedExternalIds: string[];
+}
 
 export interface ParsedImportData {
   headers: string[];
@@ -64,6 +91,14 @@ export interface ParsedImportData {
   sourceLabel: string;
   /** Excel only: the first non-empty worksheet selected for import. */
   sheetName?: string;
+  /** Connector sources only: adapter provenance + sync cursor. */
+  connector?: ImportConnectorMeta;
+  /**
+   * Connector sources only: per-row source metadata aligned by index with
+   * `rows`. The external id is the source's stable record id — the strongest
+   * identity key the resolver has, and what makes a re-sync idempotent.
+   */
+  rowMeta?: { externalId?: string }[];
 }
 
 export type RowStatus =
@@ -97,6 +132,8 @@ export interface RowPlan {
   /** For `exists` / `duplicate_in_file`: who already owns the identity. */
   existing?: PartyRef;
   duplicateOfRow?: number;
+  /** Connector sources: the source's stable record id for this row. */
+  externalId?: string;
   /** Non-fatal issues (a bad second email on an otherwise good row, …). */
   problems: string[];
 }
@@ -104,6 +141,9 @@ export interface RowPlan {
 export interface ImportPlan {
   kind: PartyKind;
   orgId: string;
+  /** Carried from the parse so commit can stamp external ids + the wizard can
+   * persist the sync cursor after a successful commit. */
+  connector?: ImportConnectorMeta;
   rows: RowPlan[];
   /** Distinct employer names that will be created (not yet in the org). */
   newCompanyNames: string[];

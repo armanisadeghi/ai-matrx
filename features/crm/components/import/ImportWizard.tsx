@@ -58,6 +58,8 @@ import type {
   RowPlan,
 } from "../../import/types";
 import { IMPORT_FIELD_LABELS } from "../../import/types";
+import { persistConnectorCursor } from "../../import/connectors/service";
+import { ConnectorSources } from "./ConnectorSources";
 
 type Step = "source" | "map" | "preview" | "done";
 
@@ -198,12 +200,37 @@ export function ImportWizard() {
       const res = await commitImport(
         plan,
         (done, total) => setProgress({ done, total }),
-        // Provenance: which file each of these contacts came from, stamped on
-        // the row as `source_detail`.
+        // Provenance: which file (or connector account) each of these contacts
+        // came from, stamped on the row as `source_detail`.
         fileName ?? undefined,
       );
       setResult(res);
       setStep("done");
+      // Connector imports: advance the incremental-sync cursor only when the
+      // WHOLE commit landed. On any failure the cursor stays put, the next
+      // sync re-reads the same delta, and the resolver makes that idempotent.
+      if (plan.connector?.syncToken && res.failed.length === 0) {
+        try {
+          await persistConnectorCursor({
+            providerKey: plan.connector.providerKey,
+            connectionId: plan.connector.connectionId,
+            orgId: plan.orgId,
+            syncToken: plan.connector.syncToken,
+            counts: {
+              created: res.created.filter((r) => !r.matchedExisting).length,
+              matched: res.created.filter((r) => r.matchedExisting).length,
+            },
+          });
+        } catch (e) {
+          toast.error(
+            `Imported, but saving the sync position failed — the next sync will simply re-read the same contacts (nothing is lost). ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+      } else if (plan.connector?.syncToken && res.failed.length > 0) {
+        toast.error(
+          "Some rows failed, so the sync position was NOT advanced — the next sync will retry them.",
+        );
+      }
       // The resolver matches contacts we already had rather than duplicating
       // them, so "imported N" is only the new ones. Saying so is the whole
       // point — a silent match reads as a lost row.
@@ -388,6 +415,12 @@ export function ImportWizard() {
                 Pick an organization first — imported records belong to it.
               </p>
             )}
+
+            <ConnectorSources
+              orgId={resolvedOrgId}
+              kind={kind}
+              onLoaded={loadParsedData}
+            />
 
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">

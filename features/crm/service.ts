@@ -335,6 +335,18 @@ export interface ResolvePartyInput {
    */
   emails?: string[];
   phones?: string[];
+  /**
+   * Stable ids at an external source (a Google People resourceName, a Graph
+   * contact id). The resolver's STRONGEST match key — the only kind that earns
+   * `is_identity_key` — so a connector re-sync matches the party it created
+   * last time even when every email changed.
+   */
+  externalIds?: {
+    platform: string;
+    value: string;
+    handle?: string;
+    profileUrl?: string;
+  }[];
   /** Flexible per-record data (crm.party.attributes jsonb), e.g. research provenance. */
   attributes?: Record<string, unknown>;
   /**
@@ -376,6 +388,14 @@ function resolveRequestBody(input: ResolvePartyInput) {
     legal_name: input.legalName?.trim() || null,
     emails: (input.emails ?? []).map((v) => v.trim()).filter(Boolean),
     phones: (input.phones ?? []).map((v) => v.trim()).filter(Boolean),
+    external_ids: (input.externalIds ?? [])
+      .filter((ref) => ref.platform.trim() && ref.value.trim())
+      .map((ref) => ({
+        platform: ref.platform.trim(),
+        value: ref.value.trim(),
+        handle: ref.handle?.trim() || null,
+        profile_url: ref.profileUrl?.trim() || null,
+      })),
     attributes: input.attributes ?? {},
     allow_name_match: input.allowNameMatch ?? false,
   };
@@ -1209,12 +1229,17 @@ export async function findExistingMediumOwners(args: {
   orgId: string;
   channel: ContactChannel;
   valueKeys: string[];
+  /**
+   * Required with `channel: "external_id"`: the same value on two platforms is
+   * two different identities, so a platform-less external-id match would lie.
+   */
+  platformSlug?: string;
 }): Promise<Map<string, PartyRef>> {
   const out = new Map<string, PartyRef>();
   if (args.valueKeys.length === 0) return out;
 
   for (const keys of chunk(args.valueKeys, 200)) {
-    const { data, error } = await supabase
+    let query = supabase
       .schema("crm")
       .from("party_contact_point")
       // Table-name embeds are unambiguous here (exactly one FK each);
@@ -1229,6 +1254,10 @@ export async function findExistingMediumOwners(args: {
       .is("party.deleted_at", null)
       .is("party.canonical_id", null)
       .eq("party.record_class", CRM_PRIMARY_RECORD_CLASS);
+    if (args.platformSlug) {
+      query = query.eq("medium.platform_slug", args.platformSlug);
+    }
+    const { data, error } = await query;
     if (error) throw pgError(error);
     for (const row of data ?? []) {
       const key = row.medium?.value_key;

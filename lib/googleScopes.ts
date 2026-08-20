@@ -18,6 +18,7 @@ export const GOOGLE_SCOPE = {
   webmastersReadonly: "https://www.googleapis.com/auth/webmasters.readonly",
   analyticsReadonly: "https://www.googleapis.com/auth/analytics.readonly",
   youtubeReadonly: "https://www.googleapis.com/auth/youtube.readonly",
+  contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
 } as const;
 
 export type GoogleScope = (typeof GOOGLE_SCOPE)[keyof typeof GOOGLE_SCOPE];
@@ -113,6 +114,29 @@ export const GOOGLE_OUTREACH_INBOX_SCOPES = [
   GOOGLE_SCOPE.gmailReadonly,
 ] as const;
 
+/**
+ * 🚨 SENSITIVE, and NOT in the approved campaign set — its own future campaign.
+ *
+ * CRM contact import through the Google People API (read-only). RULED BY ARMAN
+ * 2026-08-19 (`common-docs/projects/crm/STATE.md` Q3): the Google People
+ * connector is the FIRST API contact connector — the consumer is real, so this
+ * is registered here (and in the aidream mirror) like `gmail.readonly` was.
+ *
+ * It is deliberately absent from `GOOGLE_FIRST_CAMPAIGN_CLOUD_SCOPES`: that
+ * submission is APPROVED and frozen, and adding an unapproved sensitive scope
+ * to the production consent path is the exact code/console mismatch the
+ * campaign existed to remove. Until Google approves this scope in its own
+ * campaign, ONLY the internal-test gate may request it
+ * (`features/crm/import/connectors/campaign.ts` — super-admin testers see the
+ * connect action; everyone else sees an explicit "awaiting Google
+ * verification" status on the /crm/import source tile). Queue + process:
+ * `common-docs/projects/google-oauth-verification/PLAN.md`.
+ */
+export const GOOGLE_CONTACTS_IMPORT_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.contactsReadonly,
+] as const;
+
 export const googleServices = {
   workspace_files: {
     name: "Google Docs & Sheets",
@@ -132,6 +156,13 @@ export const googleServices = {
     scope: GOOGLE_SCOPE.webmastersReadonly,
     description: "Read Search Console data for the user's verified sites.",
     classification: "non-sensitive",
+  },
+  contacts_import: {
+    name: "Google Contacts import",
+    scope: GOOGLE_SCOPE.contactsReadonly,
+    description:
+      "Read the user's Google Contacts to import them into their CRM.",
+    classification: "sensitive",
   },
 } as const;
 
