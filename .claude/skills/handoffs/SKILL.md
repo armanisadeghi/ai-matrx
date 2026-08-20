@@ -30,10 +30,17 @@ The first lines after the title, before remaining work, before Done, before anyt
 - **VISION MISSING** is loud and legal. Do not paraphrase Arman into a vision. Do not invent one from an interview summary. An inferred paragraph is not a vision. If he has not written it, say so at the top and in the orphan-list Notes. The work may still be listed; it may not pretend to have his words.
 - Frontmatter `vision:` holds the links. Empty `vision: []` means VISION MISSING. Frontmatter `scope:` is `feature` | `program` | `tail`. Frontmatter `feature:` is the owning feature name.
 
-## Where they live
+## Where they live (re-ruled by Arman, 2026-08-20)
 
-- `docs/handoffs/<topic>.md` (kebab-case), in whichever repo owns most of the **remaining** work (matrx-frontend or aidream). Unowned ones are listed in the cross-repo orphan list — see The orphan list.
-- Cross-repo work gets **ONE doc** — never twins. Frontmatter `repos:` lists every repo involved; cross-repo file references use absolute paths.
+- **Cross-repo work** (the remaining work touches 2+ repos): `HANDOFF.md` in the owning
+  registry node's home in common-docs (per `policies/feature-registry.md` — the node doc kit).
+  ONE doc — never twins. Frontmatter `repos:` lists every repo involved; cross-repo file
+  references use absolute paths.
+- **Single-repo work**: `docs/handoffs/<topic>.md` (kebab-case) in the owning repo.
+- Handoffs written under the old rule sit wherever they sit until the doc-migration board
+  (common-docs `operations/doc-migration.md`) rehomes them — follow the register's links, and
+  rehome-on-touch when you groom one.
+- Unowned handoffs are listed in the cross-repo orphan list — see The orphan list.
 - **This doctrine is cross-repo and canonical in `common-docs/skills/handoffs/SKILL.md`.** Every repo carries a real synced copy (see the banner at the top of this file) so it works in a one-repo sandbox. Edit the canonical, run `python3 common-docs/meta/scripts/sync_skills.py`, commit each repo — never edit a copy.
 - **The orphan register is NOT a handoff and does not live in a repo** — `common-docs/operations/unassigned-handoffs.md`. See The orphan list below.
 

@@ -104,8 +104,14 @@ claims. Rules of evidence:
 Two structures are law: the register's rows (each staffed Feature/Program keeps its own handoff —
 the row's link target) and the handoffs-skill format. Within that:
 
-1. **One cluster STATE doc** (placement per document-types; usually
-   `common-docs/projects/<cluster-slug>/STATE.md`), structured like the exemplar:
+1. **One cluster STATE doc** — placement per the Feature Registry (ruled 2026-08-20): the
+   owning node's home per `common-docs/meta/registry.yaml` (target shape
+   `systems/<domain>/<feature>/STATE.md`; a genuinely cross-feature cluster converges in its
+   `projects/<slug>/` campaign dir with a `touches:` list). **STATE.md now ABSORBS any
+   in-bundle `systems/*/FEATURE.md` for the same node** — merge it in and delete the
+   FEATURE.md with a repointed trail; never leave two docs both claiming verified truth.
+   Update the registry (`docs:` path, `status`) in the same session. Structure per the
+   exemplar:
    - **Identity** — the cluster in one sentence, its staffed parts, the pipeline in one line,
      and the facts that keep getting re-derived wrong.
    - **Vision — Arman's words, merged.** Every verbatim quote from every CORE doc, deduplicated,

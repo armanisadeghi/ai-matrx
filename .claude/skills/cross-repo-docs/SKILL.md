@@ -36,26 +36,38 @@ committing — other machines and cloud sessions read from the remote.
 skill is distributed as a real committed file in each repo (see § Shared skills), so it works
 offline; only editing/syncing them needs the bundle.
 
-**Layout — lifecycle-based, six fixed root branches** (the enumerated vocabulary lives in
+**Subjects are governed by the Feature Registry** (`policies/feature-registry.md` +
+`meta/registry.yaml`, ruled 2026-08-20): every capability is a node — Domain → Feature →
+Sub-feature — anchored to real code, no orphans, ONE doc home per node. Find (or propose)
+the node BEFORE deciding where a doc goes.
+
+**Layout — seven fixed root branches** (the enumerated vocabulary lives in
 `policies/document-types.md` § The bundle's root branches, and every repo's docs guard enforces
 that exact set — a pointer into anything else fails the gate):
-- `systems/<system>/FEATURE.md` — durable cross-repo truth, one dir per system (may also hold
-  `VISION.md`, briefs, references).
-- `projects/<project>/` — time-bounded cross-repo work (plans, campaigns, proposals); every
-  project doc carries a `Status:` line; finished → `projects/archive/`.
-- `policies/` — platform doctrine, including the **document-types taxonomy and authority
-  ladder** (`policies/document-types.md` — VISION > POLICY > SOR > repo FEATURE.md > guides;
-  plans/handoffs/history have no authority). Read it before creating any doc.
+- `systems/` — registry-node homes (target shape `systems/<domain>/<feature>/`), each holding
+  the node doc kit: `VISION.md` (Arman's words), `STATE.md` (the ONE verified truth + pending
+  list — absorbs the old SOR FEATURE.md), `DECISIONS.md` (rulings ledger), `HANDOFF.md` (the
+  work order — cross-repo work orders live HERE, ruled 2026-08-20), plus satellites.
+- `projects/<project>/` — time-bounded CROSS-FEATURE campaigns declaring `touches:` (registry
+  slugs); every project doc carries a `Status:` line; finished → `projects/archive/`.
+- `policies/` — platform doctrine, including the **Feature Registry policy** and the
+  **document-types taxonomy and authority ladder** (`policies/document-types.md` — VISION >
+  POLICY > STATE > repo local-mechanics docs > guides; plans/handoffs/history have no
+  authority). Read both before creating any doc.
 - `operations/` — live shared **registers**: the lists, boards, and rosters that agents in more
-  than one repo write to (the unassigned-handoff list, the DB changeover board). A register
-  cannot live in a repo — see rule 2 below.
-- `meta/` — the bundle's machinery (OKF spec, lint + sync scripts). `skills/` stays at root
-  (symlink-stable). Adding a seventh branch means editing the policy AND every repo's guard in
-  the same change. No loose root `.md` besides README/index/log.
+  than one repo write to (the unassigned-handoff list, the attention board, the doc-migration
+  board). A register cannot live in a repo — see rule 2 below.
+- `inbox/` — Arman's protected dump lane: lint-exempt, **agent deletion forbidden**, triaged
+  daily by the docs-steward per `inbox/README.md`. Agents never file their own material here.
+- `meta/` — the bundle's machinery (OKF spec, `registry.yaml`, lint + sync scripts). `skills/`
+  stays at root (symlink-stable). Adding another branch means editing the policy AND every
+  repo's guard in the same change. No loose root `.md` besides README/index/log.
 
-**Filing test:** durable truth → `systems/`. Work → `projects/`. Doctrine → `policies/`.
-Shared register → `operations/`. Finished → archive now, same session. Single-repo → not here
-at all.
+**Filing test:** node truth → the node's home in `systems/`. Cross-feature work →
+`projects/`. Doctrine → `policies/`. Shared register → `operations/`. Raw Arman input →
+`inbox/` (his lane, not yours). Finished → archive now, same session. Genuinely repo-local
+mechanics → that repo; **everything with meaning is centralized here** (Arman's
+centralization ruling, 2026-08-20 — repo FEATURE.md files hold local mechanics only).
 
 This skill's canonical copy lives at
 `skills/cross-repo-docs/SKILL.md` inside that repo; `~/.claude/skills/cross-repo-docs` is a
