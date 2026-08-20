@@ -161,7 +161,10 @@ export async function GET(request: NextRequest) {
       first_touch_captured_at: acquisitionValue(guest, "captured_at"),
       ip_address: ipString(guest?.ip_address),
       user_agent: userAgent,
-      traffic_kind: classifyAcquisitionTraffic(userAgent),
+      traffic_kind: classifyAcquisitionTraffic(
+        userAgent,
+        acquisitionValue(guest, "referrer"),
+      ),
       client_description: describeAcquisitionClient(userAgent),
       last_sign_in_at: user.last_sign_in_at ?? null,
     });
@@ -196,7 +199,10 @@ export async function GET(request: NextRequest) {
       first_touch_captured_at: acquisitionValue(guest, "captured_at"),
       ip_address: ipString(guest.ip_address),
       user_agent: userAgent,
-      traffic_kind: classifyAcquisitionTraffic(userAgent),
+      traffic_kind: classifyAcquisitionTraffic(
+        userAgent,
+        acquisitionValue(guest, "referrer"),
+      ),
       client_description: describeAcquisitionClient(userAgent),
       last_sign_in_at: null,
     });

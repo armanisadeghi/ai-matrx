@@ -53,9 +53,7 @@ export async function GET(
       const { data, error } = await admin
         .from("guest_executions")
         .select("fingerprint")
-        .or(
-          `auth_user_id.eq.${userId},converted_to_user_id.eq.${userId}`,
-        )
+        .or(`auth_user_id.eq.${userId},converted_to_user_id.eq.${userId}`)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -95,12 +93,19 @@ export async function GET(
 
     let errorsQuery = admin
       .from("system_error")
-      .select("id,occurred_at,kind,error_text,error_type,request_id,route,source_app,resolved_at")
+      .select(
+        "id,occurred_at,kind,error_text,error_type,request_id,route,source_app,resolved_at",
+      )
       .order("occurred_at", { ascending: false })
       .limit(LIMIT);
     if (userId) errorsQuery = errorsQuery.eq("user_id", userId);
-    else if (requestIds.length) errorsQuery = errorsQuery.in("request_id", requestIds);
-    else errorsQuery = errorsQuery.eq("id", "00000000-0000-0000-0000-000000000000");
+    else if (requestIds.length)
+      errorsQuery = errorsQuery.in("request_id", requestIds);
+    else
+      errorsQuery = errorsQuery.eq(
+        "id",
+        "00000000-0000-0000-0000-000000000000",
+      );
     if (from) errorsQuery = errorsQuery.gte("occurred_at", from);
 
     let logsQuery = admin
@@ -110,7 +115,8 @@ export async function GET(
       .order("ts", { ascending: false })
       .limit(LIMIT);
     if (userId) logsQuery = logsQuery.eq("user_id", userId);
-    else if (requestIds.length) logsQuery = logsQuery.in("request_id", requestIds);
+    else if (requestIds.length)
+      logsQuery = logsQuery.in("request_id", requestIds);
     else logsQuery = logsQuery.eq("id", "00000000-0000-0000-0000-000000000000");
     if (from) logsQuery = logsQuery.gte("ts", from);
 
@@ -120,20 +126,32 @@ export async function GET(
       .select("id,created_at")
       .order("created_at", { ascending: false })
       .limit(LIMIT);
-    if (userId) runtimeRequestsQuery = runtimeRequestsQuery.eq("created_by", userId);
-    else runtimeRequestsQuery = runtimeRequestsQuery.eq("id", "00000000-0000-0000-0000-000000000000");
-    if (from) runtimeRequestsQuery = runtimeRequestsQuery.gte("created_at", from);
+    if (userId)
+      runtimeRequestsQuery = runtimeRequestsQuery.eq("created_by", userId);
+    else
+      runtimeRequestsQuery = runtimeRequestsQuery.eq(
+        "id",
+        "00000000-0000-0000-0000-000000000000",
+      );
+    if (from)
+      runtimeRequestsQuery = runtimeRequestsQuery.gte("created_at", from);
 
-    const [errorsResult, logsResult, runtimeRequestsResult] = await Promise.all([
-      errorsQuery,
-      logsQuery,
-      runtimeRequestsQuery,
-    ]);
+    const [errorsResult, logsResult, runtimeRequestsResult] = await Promise.all(
+      [errorsQuery, logsQuery, runtimeRequestsQuery],
+    );
     if (errorsResult.error) throw errorsResult.error;
     if (logsResult.error) throw logsResult.error;
-    if (runtimeRequestsResult.error) throw runtimeRequestsResult.error;
+    const sourceWarnings: string[] = [];
+    if (runtimeRequestsResult.error) {
+      sourceWarnings.push(
+        `Runtime telemetry is unavailable: ${runtimeRequestsResult.error.message}`,
+      );
+    }
 
-    const runtimeIds = runtimeRequestsResult.data.map((row) => row.id);
+    const runtimeRequests = runtimeRequestsResult.error
+      ? []
+      : runtimeRequestsResult.data;
+    const runtimeIds = runtimeRequests.map((row) => row.id);
     const runtimeExecutionsResult = runtimeIds.length
       ? await admin
           .schema("runtime")
@@ -143,9 +161,19 @@ export async function GET(
           .order("created_at", { ascending: false })
           .limit(LIMIT)
       : { data: [], error: null };
-    if (runtimeExecutionsResult.error) throw runtimeExecutionsResult.error;
+    if (runtimeExecutionsResult.error) {
+      sourceWarnings.push(
+        `Runtime execution telemetry is unavailable: ${runtimeExecutionsResult.error.message}`,
+      );
+    }
+    const runtimeExecutions = runtimeExecutionsResult.error
+      ? []
+      : runtimeExecutionsResult.data;
 
-    const featureMap = new Map<string, { requests: number; failures: number }>();
+    const featureMap = new Map<
+      string,
+      { requests: number; failures: number }
+    >();
     for (const row of apiRows) {
       const feature = featureFromPath(row.path);
       const current = featureMap.get(feature) ?? { requests: 0, failures: 0 };
@@ -167,7 +195,7 @@ export async function GET(
         cost: null,
         is_problem: (row.status_code ?? 0) >= 400,
       })),
-      ...runtimeExecutionsResult.data.map((row) => ({
+      ...runtimeExecutions.map((row) => ({
         id: `runtime:${row.id}`,
         occurred_at: row.created_at,
         kind: "runtime" as const,
@@ -205,15 +233,23 @@ export async function GET(
       })),
     ].sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
 
-    const failedRequests = apiRows.filter((row) => (row.status_code ?? 0) >= 400).length;
-    const runtimeCost = runtimeExecutionsResult.data.reduce((sum, row) => sum + row.cost, 0);
-    const hasMeaningfulUse = apiRows.some((row) => (row.status_code ?? 500) < 400);
+    const failedRequests = apiRows.filter(
+      (row) => (row.status_code ?? 0) >= 400,
+    ).length;
+    const runtimeCost = runtimeExecutions.reduce(
+      (sum, row) => sum + row.cost,
+      0,
+    );
+    const hasMeaningfulUse = apiRows.some(
+      (row) => (row.status_code ?? 500) < 400,
+    );
     const verdict: AcquisitionJourney["verdict"] =
       apiRows.length === 0 && runtimeIds.length === 0
         ? "no_activity"
-        : (errorsResult.data.length > 0 || failedRequests > 0) && !hasMeaningfulUse
+        : (errorsResult.data.length > 0 || failedRequests > 0) &&
+            !hasMeaningfulUse
           ? "blocked"
-          : runtimeExecutionsResult.data.length > 0
+          : runtimeExecutions.length > 0
             ? "engaged"
             : "exploring";
 
@@ -223,9 +259,10 @@ export async function GET(
       successful_requests: apiRows.length - failedRequests,
       failed_requests: failedRequests,
       runtime_requests: runtimeIds.length,
-      runtime_executions: runtimeExecutionsResult.data.length,
+      runtime_executions: runtimeExecutions.length,
       runtime_cost: runtimeCost,
       errors: errorsResult.data.length + logsResult.data.length,
+      source_warnings: sourceWarnings,
       last_activity: events[0]?.occurred_at ?? null,
       feature_usage: [...featureMap.entries()]
         .map(([feature, counts]) => ({ feature, ...counts }))

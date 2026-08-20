@@ -6,15 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Cpu, ExternalLink, Route, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type {
@@ -46,7 +40,10 @@ const VERDICT = {
   no_activity: ["No activity after arrival", "text-slate-700 bg-slate-500/10"],
   blocked: ["Likely blocked by a problem", "text-rose-700 bg-rose-500/10"],
   exploring: ["Exploring the product", "text-amber-700 bg-amber-500/10"],
-  engaged: ["Reached runtime-powered work", "text-emerald-700 bg-emerald-500/10"],
+  engaged: [
+    "Reached runtime-powered work",
+    "text-emerald-700 bg-emerald-500/10",
+  ],
   converted: ["Converted", "text-emerald-700 bg-emerald-500/10"],
 } as const;
 
@@ -89,7 +86,9 @@ export function UserAcquisitionTableClient() {
   const [timeframe, setTimeframe] = useState<Timeframe>("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<AdminUserAcquisitionRow | null>(null);
+  const [selected, setSelected] = useState<AdminUserAcquisitionRow | null>(
+    null,
+  );
   const [journey, setJourney] = useState<AcquisitionJourney | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(false);
   const [journeyError, setJourneyError] = useState<string | null>(null);
@@ -113,7 +112,9 @@ export function UserAcquisitionTableClient() {
       if (!parsed.success) throw new Error("Journey response was invalid");
       setJourney(parsed.data);
     } catch (caught) {
-      setJourneyError(caught instanceof Error ? caught.message : "Failed to load journey");
+      setJourneyError(
+        caught instanceof Error ? caught.message : "Failed to load journey",
+      );
     } finally {
       setJourneyLoading(false);
     }
@@ -198,7 +199,10 @@ export function UserAcquisitionTableClient() {
             size="sm"
             variant="outline"
             className="h-7 gap-1 px-2 text-xs"
-            onClick={() => void openJourney(row)}
+            onClick={(event) => {
+              event.stopPropagation();
+              void openJourney(row);
+            }}
           >
             <Route className="h-3.5 w-3.5" /> View
           </Button>
@@ -239,6 +243,13 @@ export function UserAcquisitionTableClient() {
             <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600">
               <Cpu className="h-3.5 w-3.5" /> Bot
             </span>
+          ) : row.traffic_kind === "local_test" ? (
+            <Badge
+              variant="outline"
+              className="border-violet-500/40 bg-violet-500/10 text-violet-700"
+            >
+              Local / agent test
+            </Badge>
           ) : (
             <span className="text-xs capitalize text-muted-foreground">
               {row.traffic_kind}
@@ -281,15 +292,25 @@ export function UserAcquisitionTableClient() {
         width: 220,
         cell: (row) =>
           row.referrer ? (
-            <a
-              href={row.referrer}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block truncate text-xs text-primary hover:underline"
-              title={row.referrer}
-            >
-              {row.referrer}
-            </a>
+            <div className="flex min-w-0 items-center gap-1.5">
+              {row.traffic_kind === "local_test" ? (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-violet-500/40 bg-violet-500/10 px-1.5 text-[10px] text-violet-700"
+                >
+                  Local / agent test
+                </Badge>
+              ) : null}
+              <a
+                href={row.referrer}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block min-w-0 truncate text-xs text-primary hover:underline"
+                title={row.referrer}
+              >
+                {row.referrer}
+              </a>
+            </div>
           ) : (
             <span className="text-xs text-muted-foreground">
               Direct / unknown
@@ -489,16 +510,19 @@ export function UserAcquisitionTableClient() {
           }}
         />
       </div>
-      <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
-          <SheetHeader className="border-b p-5 text-left">
-            <SheetTitle>{selected?.display_name ?? "User journey"}</SheetTitle>
-            <SheetDescription>
-              HTTP activity, runtime work, cost, and captured problems in one chronology.
-            </SheetDescription>
-          </SheetHeader>
+      {selected ? (
+        <SidePanelSurface
+          title={selected.display_name}
+          description="HTTP activity, runtime work, cost, and captured problems in one chronology."
+          onClose={() => setSelected(null)}
+          defaultWidth={720}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto p-5">
-            {journeyLoading ? <p className="text-sm text-muted-foreground">Loading the journey…</p> : null}
+            {journeyLoading ? (
+              <p className="text-sm text-muted-foreground">
+                Loading the journey…
+              </p>
+            ) : null}
             {journeyError ? (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                 {journeyError}
@@ -506,8 +530,24 @@ export function UserAcquisitionTableClient() {
             ) : null}
             {journey ? (
               <div className="space-y-5">
-                <div className={`rounded-lg p-4 ${VERDICT[journey.verdict][1]}`}>
-                  <div className="text-sm font-semibold">{VERDICT[journey.verdict][0]}</div>
+                {journey.source_warnings.length ? (
+                  <div className="space-y-2">
+                    {journey.source_warnings.map((warning) => (
+                      <div
+                        key={warning}
+                        className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800"
+                      >
+                        {warning}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                <div
+                  className={`rounded-lg p-4 ${VERDICT[journey.verdict][1]}`}
+                >
+                  <div className="text-sm font-semibold">
+                    {VERDICT[journey.verdict][0]}
+                  </div>
                   <div className="mt-1 text-xs opacity-80">
                     Last observed {fmtDate(journey.last_activity)}
                   </div>
@@ -520,7 +560,9 @@ export function UserAcquisitionTableClient() {
                     ["Runtime cost", fmtCost(journey.runtime_cost)],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-md border p-3">
-                      <div className="text-[11px] text-muted-foreground">{label}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {label}
+                      </div>
                       <div className="font-semibold tabular-nums">{value}</div>
                     </div>
                   ))}
@@ -530,47 +572,86 @@ export function UserAcquisitionTableClient() {
                   {journey.feature_usage.length ? (
                     <div className="space-y-1.5">
                       {journey.feature_usage.map((item) => (
-                        <div key={item.feature} className="flex items-center rounded-md border px-3 py-2 text-sm">
+                        <div
+                          key={item.feature}
+                          className="flex items-center rounded-md border px-3 py-2 text-sm"
+                        >
                           <span>{item.feature}</span>
-                          <span className="ml-auto tabular-nums text-muted-foreground">{item.requests} requests</span>
+                          <span className="ml-auto tabular-nums text-muted-foreground">
+                            {item.requests} requests
+                          </span>
                           {item.failures ? (
-                            <Badge variant="destructive" className="ml-2">{item.failures} failed</Badge>
+                            <Badge variant="destructive" className="ml-2">
+                              {item.failures} failed
+                            </Badge>
                           ) : null}
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-sm text-muted-foreground">No feature requests were captured.</p>}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No feature requests were captured.
+                    </p>
+                  )}
                 </section>
                 <section>
-                  <h3 className="mb-2 text-sm font-semibold">Activity timeline</h3>
+                  <h3 className="mb-2 text-sm font-semibold">
+                    Activity timeline
+                  </h3>
                   <div className="space-y-2">
                     {journey.events.map((event) => (
-                      <details key={event.id} className={`rounded-md border p-3 ${event.is_problem ? "border-rose-500/30 bg-rose-500/5" : ""}`}>
+                      <details
+                        key={event.id}
+                        className={`rounded-md border p-3 ${event.is_problem ? "border-rose-500/30 bg-rose-500/5" : ""}`}
+                      >
                         <summary className="cursor-pointer list-none">
                           <div className="flex items-start gap-2">
-                            {event.is_problem ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" /> : <Route className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                            {event.is_problem ? (
+                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                            ) : (
+                              <Route className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            )}
                             <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-medium">{event.title}</div>
-                              <div className="text-[11px] text-muted-foreground">{fmtDate(event.occurred_at)} · {event.kind}{event.status ? ` · ${event.status}` : ""}</div>
+                              <div className="truncate text-sm font-medium">
+                                {event.title}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground">
+                                {fmtDate(event.occurred_at)} · {event.kind}
+                                {event.status ? ` · ${event.status}` : ""}
+                              </div>
                             </div>
-                            {event.cost ? <span className="text-xs font-medium tabular-nums">{fmtCost(event.cost)}</span> : null}
+                            {event.cost ? (
+                              <span className="text-xs font-medium tabular-nums">
+                                {fmtCost(event.cost)}
+                              </span>
+                            ) : null}
                           </div>
                         </summary>
                         <div className="mt-3 space-y-1 border-t pt-3 font-mono text-xs text-muted-foreground">
-                          {event.request_id ? <div>request {event.request_id}</div> : null}
+                          {event.request_id ? (
+                            <div>request {event.request_id}</div>
+                          ) : null}
                           {event.route ? <div>route {event.route}</div> : null}
-                          {event.detail ? <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words">{event.detail}</pre> : null}
+                          {event.detail ? (
+                            <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words">
+                              {event.detail}
+                            </pre>
+                          ) : null}
                         </div>
                       </details>
                     ))}
-                    {!journey.events.length ? <p className="text-sm text-muted-foreground">No owned activity records were found.</p> : null}
+                    {!journey.events.length ? (
+                      <p className="text-sm text-muted-foreground">
+                        No owned activity records were found.
+                      </p>
+                    ) : null}
                   </div>
                 </section>
               </div>
             ) : null}
           </div>
-        </SheetContent>
-      </Sheet>
+        </SidePanelSurface>
+      ) : null}
     </div>
   );
 }

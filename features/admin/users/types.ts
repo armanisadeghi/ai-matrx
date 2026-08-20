@@ -110,7 +110,7 @@ export const AdminUserAcquisitionRowSchema = z.object({
   first_touch_captured_at: z.string().nullable(),
   ip_address: z.string().nullable(),
   user_agent: z.string().nullable(),
-  traffic_kind: z.enum(["browser", "bot", "unknown"]),
+  traffic_kind: z.enum(["browser", "bot", "local_test", "unknown"]),
   client_description: z.string(),
   last_sign_in_at: z.string().nullable(),
 });
@@ -147,6 +147,7 @@ export const AcquisitionJourneySchema = z.object({
   runtime_executions: z.number(),
   runtime_cost: z.number(),
   errors: z.number(),
+  source_warnings: z.array(z.string()),
   last_activity: z.string().nullable(),
   feature_usage: z.array(
     z.object({

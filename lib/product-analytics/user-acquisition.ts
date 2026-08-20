@@ -22,16 +22,33 @@ export const FirstTouchPayloadSchema = z.object({
 
 export type FirstTouchPayload = z.infer<typeof FirstTouchPayloadSchema>;
 
-export type AcquisitionTrafficKind = "browser" | "bot" | "unknown";
+export type AcquisitionTrafficKind =
+  "browser" | "bot" | "local_test" | "unknown";
 
 const BOT_USER_AGENT =
   /\b([a-z0-9_-]*bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headlesschrome|lighthouse|semrush|ahrefs|bytespider)\b/i;
 
 export function classifyAcquisitionTraffic(
   userAgent: string | null,
+  referrer: string | null = null,
 ): AcquisitionTrafficKind {
+  if (isLocalAcquisitionReferrer(referrer)) return "local_test";
   if (!userAgent) return "unknown";
   return BOT_USER_AGENT.test(userAgent) ? "bot" : "browser";
+}
+
+export function isLocalAcquisitionReferrer(referrer: string | null): boolean {
+  if (!referrer) return false;
+  try {
+    const hostname = new URL(referrer).hostname.toLowerCase();
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]"
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function describeAcquisitionClient(userAgent: string | null): string {

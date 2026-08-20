@@ -18,6 +18,18 @@ describe("user acquisition telemetry", () => {
     ).toBe("browser");
   });
 
+  test("marks localhost referrers as local or agent testing", () => {
+    expect(
+      classifyAcquisitionTraffic(
+        "Mozilla/5.0 Chrome/149.0.0.0",
+        "http://localhost:3000/administration",
+      ),
+    ).toBe("local_test");
+    expect(classifyAcquisitionTraffic(null, "http://127.0.0.1:3000/")).toBe(
+      "local_test",
+    );
+  });
+
   test("describes the client without exposing the raw agent as the label", () => {
     expect(
       describeAcquisitionClient(
