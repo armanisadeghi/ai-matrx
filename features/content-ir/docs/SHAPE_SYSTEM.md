@@ -56,6 +56,15 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/cont
 
 ## Workflow I/O as kinds (engine primitives live; rollout incomplete)
 
+> ⚠️ **2026-08-20 — this section's counts are historical and its rollout framing is superseded.**
+> Arman's Kinds-Everywhere ruling makes Content IR the platform's native type system: interior
+> kind instances CARRY `__kind` as a declared model field (the workflow engine's marker-free
+> wire-shape doctrine is reversed for interior payloads; out-of-band survives only for external
+> egress and unconverted legacy models), and the workflow rollout runs as Stage 2–3 of the plan
+> of record, `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`. Current measured
+> coverage (2026-08-20): 35 of ~214 node types declare a real `output_kind`. The bullets below
+> stand as the 2026-07-15 record.
+
 - `NodeSpec.input_kind/output_kind` and per-node authored overrides `data.input_kind`/`data.output_kind` exist. As of 2026-07-15: 0/126 registered node types declare an input kind, 37/126 declare an output kind, 0/88 actions declare either, and no live workflow node has an authored override.
 - Scheduler behavior is implemented for declarations that exist: input kind gates pre-execute (fatal, per-field); output drift logs loudly and is non-fatal; kind and verdict fields are carried on completion events/outcomes. An undeclared or skipped check remains null, not passed.
 - Catalog runtime: `matrx_graph.kinds` (`get_kind`/`validate_against_kind`/`invalidate_kind_catalog_cache`, loud-fail-open). LLM binding: `matrx_ai.kinds.response_format_for_kind(slug)` (portable strict schema via the lint gate).
