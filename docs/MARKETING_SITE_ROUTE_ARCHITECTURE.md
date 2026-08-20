@@ -1,5 +1,26 @@
 # Marketing Site Platform — Route Architecture
 
+> 🚨 **HISTORICAL — the 2026-07 route contract. DO NOT build from it.** Verified 2026-08-19 by the
+> SEO Engine convergence: its entire contract is **site-first** (`/marketing/sites/[siteId]/*`)
+> while production is **brand-first** (`/marketing/brands/[brandId]/sites/[siteId]/*`). The word
+> "brand" appears nowhere in this document, and the whole `brands/` hierarchy plus ~40 workspace
+> routes and 20 site modes it never names are live.
+>
+> It also promises as **implemented** two routes that do not exist — `/marketing/batches` and
+> `/marketing/batches/[batchId]` — and one that was deleted on 2026-07-20
+> (`/marketing/sites/[siteId]/screenshots`); claims `/marketing` "redirects to the managed-site
+> portfolio" when it is a pillar hub and `features/marketing/FEATURE.md` explicitly forbids that
+> redirect; and lists `/marketing/connections` (+ `/google`, `/bing`, `/bing/callback`) as not
+> implemented when all four are live. `/marketing/sites/[siteId]/cost` has no brand-first
+> counterpart at all, so the legacy shim redirects it into a 404 — a real dead end.
+>
+> **THE LIVE ROUTE CONTRACT IS CODE:** `features/marketing/lib/routes.ts` (`marketingRoutes`) +
+> `features/marketing/lib/route-sections.ts`, test-enforced against the filesystem by
+> `route-sections.test.ts` and `marketing-route-navigation.test.ts`.
+>
+> Kept for the approved decisions it records. Current state: [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md).
+
+
 **Status:** Approved route contract
 
 **Implementation status:** Core site, crawl, inspection, analysis, sharing, and

@@ -1,5 +1,11 @@
 # Marketing Site Platform — Approved Implementation Plan
 
+> 🚨 **HISTORICAL — the 2026-07 approved implementation plan, delivered.** Kept as the record of
+> what was approved and why. It predates the brand-first routing that shipped, so read its route
+> and product-model sections alongside the live contract in `features/marketing/lib/routes.ts`.
+> Current state: [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md).
+
+
 **Status:** Approved for implementation  
 **Frontend:** `matrx-frontend`  
 **Database:** Supabase project `txzxabzwovsujtloxrus`, schema `web`  

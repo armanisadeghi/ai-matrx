@@ -1,5 +1,10 @@
 # Marketing Site Platform — Decision Register
 
+> **Still authoritative for the decisions it records.** Its "Already settled — not being
+> re-asked" list and its approved service boundary are merged into [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md) §5a, which is
+> the one place to read every settled ruling for this cluster.
+
+
 **Status:** Approved on 2026-07-18  
 **Decision:** Recommendations 1–23 and 25–26 are approved. Decision 24 is
 explicitly rejected: no legacy crawler data will be migrated.  

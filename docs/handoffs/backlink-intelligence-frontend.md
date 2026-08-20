@@ -73,18 +73,17 @@ ruling/opinion layer. Remaining work is the chips `TASK-BL-*` in
 ## Remaining work
 
 Chips in `.matrx/AGENT_TASKS.md`, priority order. Arman's 2026-08-11 ask —
-a clean UI — is the first three:
+a clean UI — is the first two. *(TASK-BL-UI-A shipped; struck from this list 2026-08-19.)*
+Cluster state: [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md).
 
-1. **TASK-BL-UI-A** — plain-language pass (the surface speaks provider and
-   pipeline vocabulary to a non-technical user).
-2. **TASK-BL-UI-B** — verdict-first Overview + coherent tab set (14 tiles and
+1. **TASK-BL-UI-B** — verdict-first Overview + coherent tab set (14 tiles and
    no health answer; Anchors appears twice; three levels of nav before a row).
-3. **TASK-BL-UI-C** — mobile pass (hover-only explainers, banned `vh`, iOS
+2. **TASK-BL-UI-C** — mobile pass (hover-only explainers, banned `vh`, iOS
    zoom-triggering inputs, no `pb-safe`).
-4. **TASK-BL-AGENTS** — bind the two dead-end surface roles.
-5. **TASK-BL-DISAVOW** · **TASK-BL-DRILL** · **TASK-BL-MOVERS** ·
+3. **TASK-BL-AGENTS** — bind the two dead-end surface roles.
+4. **TASK-BL-DISAVOW** · **TASK-BL-DRILL** · **TASK-BL-MOVERS** ·
    **TASK-BL-ANCHORFOOT** · **TASK-BL-WATCH** — the feature remainder.
-6. **TASK-BL-7** — the false "site deleted" error (platform-wide).
+5. **TASK-BL-7** — the false "site deleted" error (platform-wide).
 
 A correctness batch (broken deep link, unreachable tab branch, inert counts
 that should be doors, empty drawer, orphaned batch progress, missing retry)

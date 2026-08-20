@@ -6,6 +6,21 @@ repos: [matrx-frontend, aidream]
 
 # Per-page analysis workers — stabilization to the finish line
 
+> 🚨 **Corrected 2026-08-19 by the SEO Engine convergence — two of the four bugs are FIXED.**
+> **Bug 2 (no lease/heartbeat) is CLOSED:** `web_crawl/service.py:1366-1466 run_analysis` takes a
+> lease from `prepare_analysis`, runs a background `_heartbeat()` on `RUN_LEASE_HEARTBEAT_EVERY`,
+> and cancels the work task on lease loss; pinned by `tests/test_analysis_session_liveness.py`.
+> **Bug 3 (all inserts at the END, no error stored) is CLOSED:** `analysis.py:2974-2985 flush_rows()`
+> writes every 500 results inside the page loop, and `service.py:1437-1458` persists a terminal
+> error on every death path including `CancelledError` (`WORKER_STOPPED_ERROR`).
+> **Bug 1 is NARROWER than written:** the named hot spot was fixed (`991c28fb3`, GSC cannibalization
+> loader 20+ min → seconds) and per-loader timings are now instrumented (`analysis.py:2908-2927
+> _timed`), but there is **no perf regression test** and no artifact proving the stated target of a
+> 500-page site in low single-digit minutes. **Bug 4 (FE progress/failure invisibility) is still
+> open.** The check count below should read **68**, not ~63 — 42 catalogued page + 17 cross-page +
+> 5 site + 4 crawlability.
+> Cluster state: [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md).
+
 The `web.analysis_result` audit workers (commissioned by Arman's 2026-08-08
 ruling; parent doc: [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md))
 are BUILT, MERGED, and DEPLOYED — and they genuinely work on small/medium

@@ -7,10 +7,24 @@ repos: [matrx-frontend, aidream, matrx-scraper]
 # Retire the legacy `web.gsc_page_stat` GSC pipeline
 
 The replacement spine is live: aidream ingests all six dimension profiles
-into `seo.search_performance_daily`, and `/marketing/search-console` reads it
-through the `seo.gsc_perf_*` RPCs. The legacy scraper pipeline
-(`matrx-scraper gsc_sync.py` → `web.gsc_page_stat`, page×date only, 28-day
-window) remains only until the page-level readers below migrate.
+into `seo.search_performance_daily` (**14,194,333 rows, 7 sites, 2025-04-06 →
+2026-08-16**), and `/marketing/search-console` reads it through 21
+`seo.gsc_perf_*` RPCs.
+
+> 🔴 **URGENCY RAISED 2026-08-19.** This is no longer "legacy remains until the readers migrate."
+> **`web.gsc_page_stat` is DEAD DATA**: its newest `date` is **2026-07-26** and its last write was
+> **2026-08-04**; the last successful `gsc_sync` was 2026-07-28 and the only attempt since
+> (2026-08-12) failed. The four readers below are therefore **serving ~25-day-old numbers in
+> production today**, while the replacement carries ~14 months more history on every site.
+> **The ≥90-day precondition is MET** (495–498 distinct `page`-profile dates per site vs five weeks
+> in the legacy table) — the first checkbox below is satisfied and retirement is unblocked on the
+> data axis.
+>
+> Related and unresolved: the credential-resolution failure that killed the sync. The documented
+> "409" is stale — the current symptoms are **403** ("the Google connection belongs to neither the
+> requesting user nor the given organization") and **404** ("Google connection not found").
+>
+> Cluster state: [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md).
 
 ## Resources
 
@@ -24,9 +38,9 @@ window) remains only until the page-level readers below migrate.
 
 Before retiring the table, verify:
 
-- [ ] Replacement table has ≥90 days of `page`-profile history for every
-      GSC-bound site (nightly backfill has caught up) — compare
-      `seo.gsc_perf_freshness` per site against `web.gsc_page_stat` ranges.
+- [x] **MET (verified 2026-08-19).** Replacement holds 495–498 distinct
+      `page`-profile dates per GSC-bound site (2025-04-06 → 2026-08-16); the
+      legacy table covers five weeks and stops at 2026-07-26.
 - [ ] Numbers reconcile: per site/date, replacement `page`-profile totals vs
       `web.gsc_page_stat` sums (small GSC aggregation variance is expected;
       property profile is truth).
@@ -43,6 +57,9 @@ Then:
    - `PageSearchConsoleCard` range totals + per-query table →
      `gsc_perf_breakdown(dimension='query', page_eq=…)`.
 2. Point the Integrations `GscSyncRow` "Sync now" at the replacement route
+   — note `syncGscSearchPerformance` is **already imported in the same file**
+   (`SiteIntegrationsWorkspace.tsx:70`, used at `:415`/`:418`) but `GscSyncRow`
+   at `:1259` still calls `syncGsc`
    (`features/marketing/search-console/sync.ts`) and retire
    `crawler/direct-client.ts::syncGsc` + the scraper route
    `POST /crawler/sites/{id}/gsc/sync` (aidream/matrx-scraper side).

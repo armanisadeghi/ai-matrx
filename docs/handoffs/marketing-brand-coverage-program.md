@@ -1,87 +1,99 @@
 ---
 status: active
-updated: 2026-08-12
+updated: 2026-08-19
 repos: [matrx-frontend, aidream]
-vision: [docs/MARKETING_PROGRAM_BOARD.md]
+vision: [/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md]
 ---
 
-# Marketing — Brand-first platform + coverage program (incl. access model)
+# Marketing — Brand-first websites platform + coverage program
 
-The websites-vertical work order: brands, sites, crawls, coverage, GSC, and the
-`web.*` access model. (The former `marketing-access-and-rls-performance.md`
-handoff is merged in here — this is now the ONE doc for this vertical.)
-Module-shape / pillar build-out is a sibling: [marketing-module.md](marketing-module.md).
+The websites-vertical work order: brands, sites, crawls, coverage, GSC, and the `web.*` access
+model.
 
-## Vision — Arman's words
+**Cluster state, Arman's merged vision, the verified numbers and the question ledger live in ONE
+place:** [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md).
+Read it before taking anything here. His words for this vertical are STATE §2.2 (brands and sites)
+and §2.3 (the access model, including the **retracted** "everyone gets full access to view"
+misreading that must never be re-proposed).
 
-- "a website is only one of many assets a company has that a marketing company has to manage… they will also have an Instagram account, accounts on Facebook, an x, TikTok, and YouTube… Let's build this correctly right now… Let's think about putting the structure in place today that we will be able to grow into tomorrow."
-- Brand is the anchor name: "the name 'Brand' makes a lot more sense" — built for marketing companies, but "for 95% of our orgs, it's actually their own brand or brands they're managing."
-- Discovery review: "having this page that is this highly dynamic UI that allows a user who's a marketing expert to go through everything we have found and essentially tell us what these things are… oh, wow. That's the company's logo."
-- Routing: "marketing/brands/[id]/sites/[id]… That would then leave room for… marketing/resources, marketing/tools/meta-tile-checker… marketing/brands/[id]/socials/instagram/[id]".
-- Core-first: "I'm not focused on the AI integration parts because we still need to just get the core working where we can connect a site… properly reads the sitemap and that you can click to see the sitemaps and we can actually manage them… if we're connecting to Google Search Console, where is that data going?… we need to have our canonical pages act as somewhat of our anchors so that then everything attaches to those… an exhaustive list of external links and then also internal links and that they all eventually reconcile somewhere."
-- Editing doctrine: "give me FULL AND COMPLETE access to edit ALL editable things at that level. No hiding data from the user… easy and direct to edit either directly in the table or via a window panel component or both."
-- Errors: nothing silent, ever; everything lands in the admin Error Inspector. Bar: "BETTER be better than" Botify/Screaming Frog-class tools.
-
-### Access model (Arman's words — the corrections ARE the architecture)
-
-- ~~"EVERYONE gets full access to view"~~ — **RETRACTED as a misreading (2026-08-08).** Arman's actual point was that security must never lock the OWNER out of public data they scraped ("I scraped a site and now I'm locked out of it!") — NOT that every user sees every other tenant's sites. Org-scoped visibility is the correct end state. Do not re-propose platform-wide public view of scraped data.
-- "the level of security needs to be THE ABSOLUTE FUCKING least so that people just don't see sites they don't fucking own because no one wants to see someone else's data." **Both halves are the spec: minimum machinery, but nobody sees another tenant's data.**
-- "Pages of a site should have absolutely no org id and absolutely no security policies because they are part of a site. **A site is a single row.**" — "these rows would not have their own independent policies and would only inherit from the parent."
-- "**it's not security policies that keeps one user's agents out of another's list, it's the fact that the page doesn't query things that it doesn't need to show.**"
-- "individual visibility is important but for sharing, using our canonical sharing component, not by default hard-coded."
-- "A super admin does not get any additional things visible in the marketing page, just like a super admin doesn't get any more messages or agents or chats than any other user."
-- "Why would a system even return 4,000 pages when pagination would limit to 25?"
-
-**Live state (verified against the DB 2026-07-28):** every `web.brand` and `web.site` is `visibility='internal'`; `platform.entity_types.default_visibility` is NULL for both. **This IS the ruled end state (2026-08-08)** — org-scoped visibility is correct; the earlier "public backfill" flowed from the retracted misreading above. The hygiene half shipped 2026-08-08: `default_visibility='internal'` set for `web_site`/`web_brand`, creation paths inherit it via `platform.entity_default_visibility()` (column defaults + `web.create_site`), FE no longer hardcodes `p_visibility`.
+Module shape / pillars is a sibling: [marketing-module.md](marketing-module.md).
 
 ## Resources
 
-- **Access machinery:** policies come ONLY from `iam.apply_rls(schema, table, token, variant)` — never hand-write a `web` policy. Registry: `platform.entity_types` (`web_site`/`web_brand` = entity; the other ~23 `web` tables = `is_component=true`, `rls_variant='component'`) + `platform.entity_relationships` (each child's composition parent + fk column). Resolver: `iam.has_access_for_base` — a component recurses to its parent's access, and `visibility='public'` is a READ GRANT to any viewer, not a display flag. Reverted-state migrations (applied + ledgered): `migrations/web_restore_canonical_rls.sql`, `web_drop_force_public_visibility.sql`, `web_create_site_default_internal.sql`.
+- **Access machinery:** policies come ONLY from `iam.apply_rls(schema, table, token, variant)` —
+  never hand-write a `web` policy. Registry: `platform.entity_types` (`web_site`/`web_brand` =
+  entity; the other ~23 `web` tables = `is_component=true`, `rls_variant='component'`) +
+  `platform.entity_relationships`. Resolver: `iam.has_access_for_base` — a component recurses to
+  its parent's access, and `visibility='public'` is a READ GRANT to any viewer, not a display flag.
 - **Live coordination board (status + parking lot):** [docs/MARKETING_PROGRAM_BOARD.md](../MARKETING_PROGRAM_BOARD.md).
-- [features/marketing/FEATURE.md](../../features/marketing/FEATURE.md) — authoritative; read before any code. Invariants: routes only via `lib/routes.ts`, statuses only via `lib/site-status.ts`, toast only via `@/lib/toast`, machine writes → `discovered_item` only, whole-row click (no hover-underline name-links).
-- Data layer: `features/marketing/data/service.ts` (+hooks.ts) — follow its exact patterns (column-list constants, bounded ranges, id tie-breaks, batched `.in()` enrichment).
-- Scraper commands: `features/marketing/crawler/direct-client.ts` (streamCommand; auto-captures failures to the Error Inspector, source `marketing-crawler`).
-- Server twin: aidream `packages/matrx-scraper` — `web_crawl/sitemap_sync.py`, `web_crawl/service.py`, `web_crawl/FEATURE.md`. All logic in importable service functions (future workflow nodes).
-- DB: schema `web` on project `txzxabzwovsujtloxrus`. New-table recipe (registry rows → `iam.apply_rls` → grants → base triggers) is modeled in [migrations/web_sitemaps.sql](../../migrations/web_sitemaps.sql). Migrations via Supabase MCP + `public._schema_migrations` ledger + `pnpm db-types`. ON CONFLICT arbiters must be plain (NULLS NOT DISTINCT) uniques — partial/expression indexes broke the scraper twice.
-- Test login: `/login` admin@admin.com / Password1234#. Turbopack trap: new/moved route dirs sometimes need a dev-server restart.
+- **The live route contract is CODE:** `features/marketing/lib/routes.ts` + `route-sections.ts`,
+  test-enforced against the filesystem. `docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md` is HISTORICAL
+  and site-first — do not build from it.
+- [features/marketing/FEATURE.md](../../features/marketing/FEATURE.md) — authoritative; read before
+  any code. Invariants: routes only via `lib/routes.ts`, statuses only via `lib/site-status.ts`,
+  toast only via `@/lib/toast`, machine writes → `discovered_item` only, whole-row click.
+- Data layer: `features/marketing/data/service.ts` (+`hooks.ts`) — follow its exact patterns.
+- Scraper commands: `features/marketing/crawler/direct-client.ts`.
+- Server twin: aidream `packages/matrx-scraper` — `web_crawl/sitemap_sync.py`, `service.py`,
+  `web_crawl/FEATURE.md`.
+- DB: schema `web` on `txzxabzwovsujtloxrus`. New-table recipe modeled in
+  [migrations/web_sitemaps.sql](../../migrations/web_sitemaps.sql). ON CONFLICT arbiters must be
+  plain (NULLS NOT DISTINCT) uniques — partial/expression indexes broke the scraper twice.
+- Test login: `/login` admin@admin.com / Password1234#.
 
 ## Remaining work
 
-1. **Component RLS cost — DONE 2026-08-08 (THE COMPONENT-ACCESS PRECEDENT implemented platform-wide).** `iam.accessible_entity_ids(token, level)` (STABLE, SECURITY DEFINER) resolves the caller's visible parents once per query; the `iam.apply_rls` component variant now generates `parent_fk IN (SELECT unnest(iam.accessible_entity_ids('<parent>', …)))` — a hashed SubPlan evaluated once — and 96 component tables were regenerated (all 23 `web` + chat/agent/app/research/crm/… ; missing `seo_site_*_value → web_site` composition edges registered). Measured: `web.page` site listing 15ms / `web.gsc_page_stat` (70k rows) 8ms, helper evaluated exactly once (vs the 762ms per-row incident); cross-tenant proof: non-member sees 0 rows, unscoped selects return only visible-parent rows. Hygiene shipped in the same session: `entity_types.default_visibility='internal'` for `web_site`/`web_brand`, the `platform.entity_default_visibility()` resolver feeding column defaults + `web.create_site`, and the FE stopped hardcoding `p_visibility`. Migrations (applied + ledgered): `component_access_precedent_helper.sql`, `component_access_precedent_apply_rls.sql`, `component_access_precedent_sweep.sql`, `web_visibility_inherit_entity_default.sql`. Bespoke-policy component tables (files.*, docproc, transcripts studio_*, workbench udt_*, runtime.*, pdf, workflow.node_data_slot) were deliberately NOT clobbered — their extra lanes need per-family canonicalization (tracked in FOUND_DEFECTS).
-2. **Audit FE queries for over-fetching** — independent of RLS: pages should query only what they display. Check `features/marketing/data/service.ts` for unbounded reads (`AUDIT_PAGE_SIZE` range ~:2419; `gsc_page_stat` ordering ~:636 pulls broadly).
-3. **Social properties routes** — discovery promotion already creates typed `web.property` rows; remaining scope is the dedicated `brands/[id]/socials/...` route family from Arman's URL sketch. (Distinct from the reserved `/marketing/social` publishing pillar in [marketing-module.md](marketing-module.md).)
-4. **Soft-delete vs upsert-arbiter rule — RULED + FE SHIPPED 2026-08-08.** Arman's ruling: **the crawler represents REALITY** — a user "delete" of a `web.page`/`web.sitemap` is a **DISMISSAL**, not history-rewriting; revive-on-reobserve is correct behavior, and the revived row must carry the marker. Scraper core landed v0.1.90 (existence-meaning upserts revive soft-deleted rows; GSC stat upserts deliberately untouched); the dismissal-marker stamping (`metadata.dismissals` = `[{dismissed_at, revived_at, revive_reason}]` on revive + a crawl event) ships in aidream matrx-scraper in parallel. FE done (this repo): Delete→**Dismiss** verb + revive-aware confirm copy on pages/sitemaps, Restore, deliberate Dismissed views (Pages `?scope=dismissed`, Sitemaps header toggle), and the "Previously dismissed ×N" badge over `metadata.dismissals` (`features/marketing/lib/dismissals.ts`). Crawl sessions keep real Delete (our own run records). Still owed server-side: `analysis_item(org,key)`, `provider(org,key)`, `site_item_config(site,item)` when they get delete UIs.
-5. **Undiagnosed crawl-persistence incident (2026-07-21, still open).** `canonical_crawl_persistence_error` — "We could not save one of the captured pages" — on the titaniumsuccess site crawl at 00:30; at 01:39 a crawl stream died mid-run ("Stream ended before its completion event", client saw Failed-to-fetch; coincided with an aidream redeploy window). Diagnose from scraper logs; suspect the soft-delete/upsert-arbiter class (item above). If a fresh crawl on that site reproduces neither, close this.
-6. **Crawl-report parity program — "not catching up to Screaming Frog is not an option" (Arman, 2026-08-08).** 10 report views exist (`features/marketing/lib/crawl-reports.ts`: response-codes, page-titles, meta-descriptions, headings, canonicals, directives, images, content, structured-data, performance). Six evidence classes separate us from Screaming Frog/Botify; each is a self-contained slice = new crawler evidence (aidream `matrx-scraper`) + a report view (never an empty page, never a client-side guess). Law: extend the snapshot/link evidence contracts, don't fork parallel stores.
-   - **Wave 1 (mostly data we already hold or can record cheaply):** (a) *Redirect & canonical chain resolution* — **DONE 2026-08-08**: scraper v0.1.95 captures real hops on EVERY transport (Playwright `redirected_from` walks added to both browser paths; non-HTML and failed fetches keep their chains; the fabricated-301 fallback replaced with honest `status:null` hops) and persists the chain to `web.crawl_url.metadata.redirect_chain` on success AND failure paths (redirect-to-404/410 evidence survives without a snapshot); FE response-codes renders hop-by-hop chains + loop / redirect-to-missing / chain findings (`summarizeRedirectChain` — loop keys keep paths exact so `/a`→`/a/` is never a loop) with an explicit "crawled before chain evidence existed — re-crawl" banner via the `crawlHasChainEvidence` probe, and canonicals resolves session-wide canonical chains (`listCrawlCanonicalMap` → `evaluateCanonicalChain`: chain / loop / canonical-to-error / target-not-crawled + resolved A→B→C paths + target HTTP), canonical matching unified on the parity normalizer. Verified against a live production crawl (datadestruction.com, real 301 chains in `crawl_url.metadata`). (b) *Near-duplicate content similarity* — **DONE 2026-08-08**: scraper v0.1.94 writes versioned capture-time fingerprints (`extracted.fingerprint` = exact sha256 + 64-bit shingle simhash, `parser/hashing.compute_text_fingerprint`, pure-Python for cross-deploy stability); FE content report gained a Pages | Duplicates toggle — exact groups + near-dup clusters with a visible 80–100% threshold control (90% default), word counts, page-workspace links, explicit "predates fingerprints — re-crawl" empty state (`lib/duplicate-clusters.ts` pure + tested, `DuplicateClustersPanel.tsx`). No backfill worker by design — a re-crawl populates naturally.
-   - **Wave 2 (new capture at crawl time, browser-render modes):** (c) *structured-data VALIDATION* (schema.org type/required-property errors, not just presence — we persist the raw JSON-LD already); (d) *accessibility findings* (axe-core pass during browser render, persisted per snapshot); (e) *CWV lab metrics* (nav/paint timings from the render we already run) + CrUX field data by URL; (f) *rendered-vs-source comparison* (diff HTTP body vs rendered DOM: JS-injected titles/canonicals/links). Each becomes its own chip when Wave 1 lands; all six get report views + audit-rollup integration.
-7. **Crawl robustness batch — SHIPPED BOTH HALVES 2026-08-08** (FE v0.4.307–308 live on aimatrx.com; scraper v0.1.90–92 live at scraper.app.matrxserver.com; board bullets carry per-item status). FE: one `crawl_defaults` round-trip (`features/marketing/crawler/crawl-defaults.ts`), active-crawl-aware `/crawls` + cancel everywhere + cancel-to-terminal deletes, regex validation, `urls_classified` Skipped counter. Server: regex 422, tldextract scope, transient-failure page-state isolation (404 single-counted), reviving upserts, one-active-full-crawl 409 + queued-cancel-goes-terminal, and **deploy-cancelled crawls auto-resume** (WORKER_STOPPED_ERROR joined STALE_SESSION_ERROR in the boot sweep — found because a live crawl died across two deploys during this session; the v0.1.92 boot sweep auto-resumed it, verified in the DB). Adversarially reviewed (13 findings; all real bugs fixed, rest logged/board). Still open in this vertical: GSC-credential 409 killing sync sessions (chip dispatched) · FE regex validator blocks Python-only idioms like `(?i)` · no FE binding for the resume endpoint (auto-resume covers the deploy case). Brand-asset authority + `property(kind='website')` soft-delete drift: DONE 2026-08-08 (canonical upload/Files rendering, atomic single primary + identity sync, site↔property lifecycle triggers + brand delete guard + drift backfill — board bullets carry the detail).
-8. **Human checks wanted (Arman or human-driven browser):** brand-move Radix Select click-through (`web.move_site_brand`) · duplicate test brands/sites ("Titanium Success" ×2, "AI Matrx" ×2) deleted via UI · GSC columns/coverage cells eyeballed on a real site (data is live in DB).
-9. **EntityModeHeader / RouteModeNav overlap at ~1500–1700px** with Marketing's 13 modes — fix in the shared shell primitive (`features/shell/components/header/RouteModeNav.tsx` / `EntityModeHeader.tsx`), test with the marketing site shell.
-10. **Access page grantee picker** — `/access` takes raw UUIDs; needs the platform user/org picker.
-11. **Repo-wide sonner→`@/lib/toast` migration** — separate task chip; recipe in `lib/toast.ts` header.
-12. **Backlog (post-coverage):** GSC-submitted-sitemaps vs ours diff UI; external-link domain rollup UI; brand-level discovery inbox aggregation. (The analysis/finding workers + score-column unhide shipped 2026-08-08 — see Done.)
-13. **Google OAuth / GA4 open threads** (extracted from the deleted `matrx-marketing-platform-handoff-2026-07-19.md`; last verified 2026-07-19 — re-verify current state first, some may have closed since): (a) organization OAuth needs one final production click-through — the canonical permission function passes but no org connection row was ever written; (b) enable `analyticsadmin.googleapis.com` in Google Cloud project `34576215171`, then reconnect/refresh the personal connection and verify GA4 property discovery (Search Console discovery already verified, 33 properties; the connection sits `needs_attention` solely because of this disabled API); (c) verify reconnect/disconnect/revoke for both personal and org connections, and the org flow across owner/admin/member/personal-org/shared-site roles. GA4 *sync* and PageSpeed *history* as data pipelines are server work owned by aidream `docs/handoffs/seo-vertical.md`. The rest of that deleted doc's 2026-07 P1/P2 roadmap (integration binding/sync authorities, crawl scheduling, analysis catalog, findings queues, CMS/task/publish workflow, agency reporting, its route-gap list) is superseded by this doc + seo-vertical.md + website-factory-vision.md at the level that matters; its concrete 2026-07 route/table sketches live in git history under the deleted filename if ever needed.
+The full ordered cluster list with evidence is STATE §4. This vertical owns:
+
+1. 🔴 **`web.gsc_page_stat` is dead data and four readers still serve it** — see
+   [gsc-page-stat-retirement.md](gsc-page-stat-retirement.md), whose urgency was raised 2026-08-19.
+2. 🔴 **`/marketing/sites/[siteId]/cost` is a dead end** — the historical route doc promises it, no
+   brand-first equivalent exists, and the legacy shim redirects into a 404.
+3. **Audit FE queries for over-fetching** — pages should query only what they display.
+   `AUDIT_PAGE_SIZE` range ~`:2419`; `gsc_page_stat` ordering ~`:636` pulls broadly.
+4. **Social properties routes** — discovery promotion already creates typed `web.property` rows;
+   remaining scope is the `brands/[id]/socials/...` route family from Arman's URL sketch.
+5. **Undiagnosed crawl-persistence incident (2026-07-21)** — `canonical_crawl_persistence_error`
+   on the titaniumsuccess crawl. If a fresh crawl reproduces neither symptom, close it.
+6. **Screaming Frog parity, Wave 2 remainder.** *(Corrected 2026-08-19: (c) structured-data
+   VALIDATION is **DONE** — `seo_audit.py:3862 check_structured_data_validity`; (e)'s **CrUX field
+   data is DONE** — `performance.py:203-206`.)* Genuinely absent: **(d)** axe-core accessibility
+   findings per snapshot (only a Lighthouse aggregate score exists), **(e2)** nav/paint lab timings
+   harvested from our own render, and **(f)** rendered-vs-source comparison. Law: extend the
+   snapshot/link evidence contracts, never fork a parallel store.
+7. **Per-page analysis** — two of its four bugs are now fixed; see
+   [per-page-analysis-stabilization.md](per-page-analysis-stabilization.md).
+8. **`web.site_item_config` is 0 rows platform-wide** — per-site check configuration exists as a
+   table and has never been used.
+9. **`web.page` records crawled assets as pages** (365 image, 69 json, 47 xml) plus duplicate rows
+   per URL. `searchPagesForMetaApply` works around it with a `content_type_last` filter.
+10. **Human checks wanted (Arman or a human browser):** brand-move Radix Select click-through
+    (`web.move_site_brand`); GSC columns/coverage cells eyeballed on a real site.
+11. **EntityModeHeader / RouteModeNav overlap at ~1500–1700px** with Marketing's 13 modes — fix in
+    the shared shell primitive, test with the marketing site shell.
+12. **Access page grantee picker** — `/access` takes raw UUIDs; needs the platform user/org picker.
+13. **Backlog:** GSC-submitted-sitemaps vs ours diff UI; external-link domain rollup UI;
+    brand-level discovery inbox aggregation.
+14. **Google OAuth / GA4 open threads** (last verified 2026-07-19, re-verify first): organization
+    OAuth needs one production click-through; enable `analyticsadmin.googleapis.com` in GCP
+    `34576215171`; verify reconnect/disconnect/revoke for personal and org connections across roles.
+    GA4 *sync* and PageSpeed *history* as pipelines are aidream's, in `seo-vertical.md`.
 
 ## Done
 
-- **Per-page audit analysis workers COMMISSIONED — BOTH HALVES BUILT 2026-08-08** (item 5 of the rulings; the foundation of item 6's per-URL issue flags). Server: matrx-scraper 0.1.96 `web_crawl/analysis.py` — 15 deterministic catalogue checks per page (title/meta presence+length+duplication, H1, thin content, image alt, robots conflicts, canonical presence/conflicts, broken+redirecting internal links, exact duplicate content) over stored snapshot/link evidence; immutable `web.analysis_result` rows with `metadata.reasoning` (canvas rung 3), `web.finding` lifecycle reconciliation (open/refresh on warn+fail, resolve on pass, suppression untouched), auto-runs after every full/list crawl (failure → durable `crawl_warning`), standalone `POST /crawler/sites/{id}/analyze`. FE: Sites-portfolio Health column unhidden (server-served sort; unscored sites appended, never dropped), Audit-tab Catalogue-analysis panel + Analyze-now command, findings/finding-detail drill to the page workspace. Verified end-to-end against a real crawled site's evidence (cosmeticinjectables.com sample: 44 pages × 15 checks → 660 results, 28 findings, idempotent re-run, score views populate). **2026-08-12 status: deployed and populated for small/medium sites (16k+ results, 1.3k findings live), but NOT finished — large-evidence sites (datadestruction.com) silently die at the 30-min stale reaper with zero rows and no stored error, and the extended worker regressed ~100x in runtime. Full state + bug punch list: [per-page-analysis-stabilization.md](per-page-analysis-stabilization.md).**
+Full verified list: STATE §3. Headlines: the brand-first platform through Wave 5, brand layer,
+full CRUD, discovery promotion + pagination + bulk review, sitemaps, coverage matrix, link
+resolution, page workspace, 10 crawl reports, site audit rollup, Copy/Copy-for-AI fleet-wide; THE
+COMPONENT-ACCESS PRECEDENT (`iam.accessible_entity_ids`, 96 component tables regenerated, measured
+15ms/8ms vs the 762ms per-row incident) and the tenant-isolation revert; the crawl robustness batch
+and the deploy-cancelled auto-resume; redirect/canonical chain resolution; near-duplicate
+fingerprints; dismissal memory; the per-page catalogue analysis workers (**68** checks, 79,397
+results, 5,654 findings live).
 
-- **Discovery inbox pagination + bulk review — DONE 2026-08-08** (FE v0.4.314): controlled pagination with exact counts replaces the silent 500 cap; multi-select with bulk confirm/dismiss/restore/type-assign/delete, all promotion through the canonical per-item functions. Board bullet carries the detail.
-- Full program through Wave 5 + brand layer + brand-first routing + full CRUD + discovery promotion + sitemaps + coverage matrix + link resolution + page workspace + crawl reports + site audit rollup + Copy/Copy-for-AI fleet-wide — see `features/marketing/FEATURE.md` (authoritative) and git history.
-- **GSC sync live end-to-end** — 70,945 `web.gsc_page_stat` rows across 7 synced sites, data through 2026-07-26 (verified in DB 2026-07-28). The CardinalityViolation fix, vault credential path, and scraper env are all proven in production.
-- Tenant-isolation breach reverted + verified against a real non-member account; canonical policies regenerated for all 25 `web` tables; `anon` holds zero `web` grants — see the three `web_*` migrations above.
-- `/marketing` is a real multi-pillar hub (no longer a redirect to `/brands`) — shipped by the module build-out, see [marketing-module.md](marketing-module.md).
-- Site-level screenshots dead link removed from `SiteOverview.tsx` (site gallery deleted by design; captures live on page workspace + crawl session).
-- Prod-only coverage-route 404 fixed (`.vercelignore` bare `coverage` pattern) · www↔apex crawl-scope fix · single-page fetch E2E · markdown page render · page-observation evidence completion (2026-07-28, Codex).
-- Site-overview hero image fixed (2026-08-08): root cause was a matrx-files FileRecord contract drift (`file_id` vs `id`) that broke EVERY cold `InlineMediaRef` hydration platform-wide — FE compensates loudly in `features/files/redux/converters.ts`; service-side fix is a spawned chip. Crawl UX humanized: 9,999-page default (was 500, silently truncating), plain-language launch labels, real `crawl_warning` message text in the feed, consecutive progress checkpoints collapsed, live-polling crawl detail page, "In Google" KPI routes to Connect Search Console when GSC is off.
+## Settled — do not re-open
 
-## Decisions needed
-
-All five long-standing decisions were RULED 2026-08-08 (Arman, in-session):
-
-1. **Component RLS performance → RULED, platform precedent.** THE COMPONENT-ACCESS PRECEDENT is recorded in `/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md` (top of doc): RLS = organization not secrecy; component tables keep only a thin ONCE-PER-QUERY parent-visibility membrane (InitPlan shape via the `iam.apply_rls` component variant); per-row resolver calls on components are banned; dropping policies entirely was rejected because one unscoped agent query must degrade to empty, never to everyone's rows. Implementation chip dispatched 2026-08-08.
-2. **Visibility end-state → RESOLVED: org-scoped (`internal`) IS the correct end state.** The old "everyone gets full access to view scraped data" line in the Access-model section above was a MISREADING of Arman's words and must never be re-proposed — his actual point (2026-08-08, emphatic): *security should never lock the owner/org out of their own scraped public data; that's an organization concern, not secrecy* — never "2M users all see each other's sites." Creation paths reading `platform.entity_types.default_visibility` (set to `internal`) instead of hardcoding is still good hygiene; fold into the RLS-precedent chip.
-3. **Org memberships granted during the 07-21 incident** (arman@titaniumsuccess.com as admin on All Green / IOPBM / Titanium orgs) — housekeeping, still Arman's to keep or revoke; no system impact.
-4. **Captured-HTML retention → RULED: content-hash dedupe — SHIPPED (scraper v0.1.95, live 2026-08-08).** Unchanged captures append the snapshot row but reference the previously stored files (body + markdown deduped independently; `metadata.artifact_reuse` opts the DB guard into the reuse validator; compensation/retention proven unable to purge shared files). Same release ships dismissal memory (`metadata.dismissals` + durable revive event) per the reality-vs-plan ruling in item 4 above.
-5. **`web.analysis_result` → RULED: commission the workers — BUILT 2026-08-08** (see Done: both halves shipped; deterministic `system_rules` provider live in matrx-scraper 0.1.96, FE score columns + audit/findings integration landed). The AI-provider items in the catalogue (premium text / vision / Lighthouse / GSC providers) remain future work on the same rows.
+All five long-standing decisions were RULED 2026-08-08 and are recorded, with every other settled
+ruling for this cluster, in STATE §5a: component RLS performance (THE COMPONENT-ACCESS PRECEDENT),
+org-scoped `internal` visibility as the end state, captured-HTML content-hash dedupe, commissioning
+the deterministic analysis workers, and the crawler-represents-REALITY dismissal rule. Item 3 (the
+2026-07-21 org memberships) is Arman's housekeeping and sits in the STATE question ledger as Q9.
