@@ -19,6 +19,14 @@ Three consumers, one answer path: the value-picker column filter, the option
 list pre-filled when a `choice` format is declared, and the column profile
 panel. Typed wrappers are `getColumnFacets` / `getTableProfile` in `service.ts`.
 
+🚨 **LOCAL DATA FIRST — the RPC is the FALLBACK, not the default.** When the
+browser already holds every row the facets describe, they are computed in
+memory (`computeColumnFacets`, `column-filters.ts`): instant, offline-safe, no
+spinner, no request. Most user tables fit on one page, so most columns never
+touch the network at all. Ask the server ONLY when `localRows` does not cover
+`totalCount` (`localFacetsAreComplete`) — counts from a partial set look
+authoritative and are wrong. **Never fetch first and ask questions later.**
+
 Both RPCs are **SECURITY INVOKER** — `udt_dataset_rows` RLS is already the right
 gate, and a DEFINER read would be a second, weaker authority over the same rows.
 Refusals are meaningful: a field name that is not a column RAISES (never an
