@@ -20,7 +20,6 @@ import {
   Trash2,
   ExternalLink,
   KeyRound,
-  Info,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,22 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuthenticator } from "../../hooks/use-authenticator";
 import type { AuthenticatorEntry } from "../../authenticator-types";
 import { AuthenticatorEnrollDialog } from "./AuthenticatorEnrollDialog";
+
+/** `totp_label` holds the URI's raw `Issuer:account` path. Show the account
+ *  alone when the issuer is already the card's title — nobody wants to read
+ *  "GitHub · GitHub:me@example.com". */
+function accountLabel(entry: AuthenticatorEntry): string | null {
+  const label = entry.label?.trim();
+  if (!label) return null;
+  const idx = label.indexOf(":");
+  if (idx === -1) return label;
+  const prefix = label.slice(0, idx).trim();
+  const rest = label.slice(idx + 1).trim();
+  if (!rest) return label;
+  return prefix.toLowerCase() === (entry.issuer ?? "").trim().toLowerCase()
+    ? rest
+    : label;
+}
 
 function EntryCard({
   entry,
@@ -46,6 +61,7 @@ function EntryCard({
   const title =
     entry.issuer || entry.label || entry.display_name || "Authenticator";
   const origin = entry.login_urls[0];
+  const account = accountLabel(entry);
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -61,8 +77,9 @@ function EntryCard({
               </Badge>
             </div>
             <p className="truncate text-sm text-muted-foreground">
-              {entry.display_name}
-              {entry.label && entry.label !== title ? ` · ${entry.label}` : ""}
+              {[entry.display_name, account]
+                .filter((part) => part && part !== title)
+                .join(" · ")}
             </p>
             {origin ? (
               <a
@@ -81,9 +98,11 @@ function EntryCard({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Enabled</span>
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              Enabled
+            </span>
             <Switch
               checked={entry.enabled}
               disabled={busy}
@@ -105,7 +124,7 @@ function EntryCard({
 
       <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
         <Link
-          href="/vault"
+          href={`/vault?item=${encodeURIComponent(entry.credential_item_id)}`}
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
           View credential in Vault
@@ -138,10 +157,9 @@ export function AuthenticatorWorkspace() {
                   Authenticator
                 </h1>
                 <p className="max-w-xl text-sm text-muted-foreground">
-                  Matrx can produce the rotating six-digit codes for accounts you
-                  enroll here, so it can sign in on your behalf without
-                  interrupting you. Codes are never shown — they are typed
-                  straight into the sign-in page.
+                  Six-digit codes Matrx can produce for you when it signs in on
+                  your behalf. Codes are never shown — they are typed straight
+                  into the sign-in page.
                 </p>
               </div>
             </div>
@@ -153,15 +171,6 @@ export function AuthenticatorWorkspace() {
               <Plus className="h-4 w-4" />
               Add authenticator
             </Button>
-          </div>
-
-          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-            <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>
-              Deleting an authenticator here does not remove two-factor from the
-              account at the website — your phone app and backup codes still
-              work. Keep those somewhere we do not hold them.
-            </p>
           </div>
 
           {error ? (
@@ -182,8 +191,8 @@ export function AuthenticatorWorkspace() {
                 No authenticators yet
               </p>
               <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                Add one to a saved website login and Matrx can complete its
-                six-digit code step for you.
+                Add one and Matrx can complete an account&apos;s six-digit code
+                step for you.
               </p>
               <Button
                 className="mt-4 gap-1.5"
@@ -218,7 +227,6 @@ export function AuthenticatorWorkspace() {
         enrollable={enrollable}
         busy={busy}
         onEnroll={actions.enroll}
-        onEnrollQr={actions.enrollFromQr}
       />
 
       <ConfirmDialog

@@ -210,7 +210,6 @@
     "lab:run": "bash scripts/build-lab/run.sh"
   },
   "dependencies": {
-    "@matrx/agents": "workspace:*",
     "@ai-sdk/google": "^3.0.43",
     "@anthropic-ai/sdk": "latest",
     "@babel/standalone": "^7.29.1",
@@ -226,6 +225,7 @@
     "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
+    "@matrx/agents": "workspace:*",
     "@mermaid-js/layout-elk": "^0.2.2",
     "@modelcontextprotocol/sdk": "1.29.0",
     "@monaco-editor/react": "^4.7.0",
@@ -329,6 +329,7 @@
     "json5": "^2.2.3",
     "jsonlint-mod": "latest",
     "jspdf": "^3.0.4",
+    "jsqr": "^1.4.0",
     "jszip": "^3.10.1",
     "katex": "latest",
     "konva": "^10.3.0",

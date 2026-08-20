@@ -68,7 +68,12 @@ export async function fetchAuthenticators(): Promise<AuthenticatorEntry[]> {
   return resp.entries ?? [];
 }
 
-/** Enroll from a pasted setup key or a full otpauth:// URI. */
+/** Enroll from a setup key or a full otpauth:// URI.
+ *
+ *  Every route lands here: pasted key, pasted/dropped QR screenshot, and camera
+ *  scan all decode to an otpauth URI **in the browser** (`lib/qr/decode.ts`), so
+ *  a QR image never travels anywhere. The server's multipart `/enroll/qr` route
+ *  still exists for clients without a local decoder; this one does not use it. */
 export function enrollAuthenticator(
   credentialItemId: string,
   enrollmentInput: string,
@@ -80,20 +85,6 @@ export function enrollAuthenticator(
       enrollment_input: enrollmentInput,
     }),
   });
-}
-
-/** Enroll from a QR-code image. The image is decoded and destroyed server-side;
- *  it is never uploaded to storage, never attached, never persisted. */
-export function enrollAuthenticatorFromQr(
-  credentialItemId: string,
-  image: File,
-): Promise<AuthenticatorEntry> {
-  const form = new FormData();
-  form.append("image", image);
-  return authFetch<AuthenticatorEntry>(
-    `/enroll/qr?credential_item_id=${encodeURIComponent(credentialItemId)}`,
-    { method: "POST", body: form },
-  );
 }
 
 /** Per-account consent toggle — effective on the next code generation. */

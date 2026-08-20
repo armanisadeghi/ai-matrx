@@ -14,13 +14,13 @@ import { toast } from "@/lib/toast";
 import {
   deleteAuthenticator,
   enrollAuthenticator,
-  enrollAuthenticatorFromQr,
   fetchAuthenticators,
   setAuthenticatorEnabled,
 } from "../authenticator-service";
 import type { AuthenticatorEntry } from "../authenticator-types";
-import { fetchVaultItems } from "../vault-service";
-import type { VaultItem } from "../types";
+import { createVaultItem, fetchVaultItems } from "../vault-service";
+import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
+import type { EnrollTarget } from "../components/authenticator/AuthenticatorEnrollDialog";
 
 export interface EnrollableItem {
   id: string;
@@ -54,13 +54,19 @@ export function useAuthenticator() {
       if (!mounted.current) return;
       setEntries(list);
       const enrolledIds = new Set(list.map((e) => e.credential_item_id));
-      // Eligible = website-login items that do not already hold an authenticator.
+      // Eligible = ANY item the user holds that does not already carry an
+      // authenticator. A seed is one more sealed field on a credential item —
+      // the server never required a website_login, and filtering to that key
+      // is what made the surface dead-end with "no eligible logins". Website
+      // logins sort first because they are the common case.
+      const eligible = items.filter((it) => !enrolledIds.has(it.id));
+      const rank = (it: VaultItem) =>
+        it.definition_key === WEBSITE_LOGIN_DEFINITION_KEY ? 0 : 1;
       setEnrollable(
-        items
-          .filter(
-            (it) =>
-              it.definition_key === "website_login" &&
-              !enrolledIds.has(it.id),
+        eligible
+          .sort(
+            (a, b) =>
+              rank(a) - rank(b) || a.display_name.localeCompare(b.display_name),
           )
           .map((it) => ({
             id: it.id,
@@ -99,16 +105,26 @@ export function useAuthenticator() {
   );
 
   const actions = {
-    enroll: (itemId: string, input: string) =>
-      run(
-        () => enrollAuthenticator(itemId, input),
-        "Authenticator enrolled — Matrx can now produce this account's codes.",
-      ),
-    enrollFromQr: (itemId: string, image: File) =>
-      run(
-        () => enrollAuthenticatorFromQr(itemId, image),
-        "Authenticator enrolled from QR code.",
-      ),
+    /**
+     * Enroll a seed. When the target is a new login, the vault item is created
+     * first and the seed lands on it — one user action, one toast, so nobody
+     * has to leave and go build a Vault entry before they can save the code
+     * that is on screen in front of them right now.
+     */
+    enroll: (target: EnrollTarget, secret: string) =>
+      run(async () => {
+        let itemId = target.itemId;
+        if (target.kind === "new") {
+          const created = await createVaultItem({
+            display_name: target.displayName || "New login",
+            definition_key: WEBSITE_LOGIN_DEFINITION_KEY,
+            login_urls: target.loginUrl ? [target.loginUrl] : undefined,
+          });
+          itemId = created.id;
+        }
+        if (!itemId) throw new Error("No login chosen for this authenticator.");
+        return enrollAuthenticator(itemId, secret);
+      }, "Authenticator on — Matrx can now produce this account's codes."),
     setEnabled: (itemId: string, enabled: boolean) =>
       run(
         () => setAuthenticatorEnabled(itemId, enabled),

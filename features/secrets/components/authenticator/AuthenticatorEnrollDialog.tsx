@@ -1,80 +1,144 @@
 "use client";
 
 /**
- * Enroll an authenticator onto an existing website-login vault item.
+ * Enroll an authenticator — the same job Google, 1Password, and Bitwarden do,
+ * done the way they do it.
  *
- * Three input routes, all landing in the same sealed write (spec §Enrollment):
- *   1. paste the setup key,
- *   2. paste the otpauth:// URI,
- *   3. upload a QR-code image (decoded + destroyed server-side).
+ * **Secret first, account second.** The person is standing in front of a
+ * website's two-factor screen with a QR code on it; the only thing they can act
+ * on is that code. So the code comes first, by whichever route suits the device
+ * they are on — paste a screenshot, drop an image, pick a file, or scan with the
+ * camera — and it is decoded LOCALLY and shown back to them ("GitHub ·
+ * me@x.com") before anything is committed. Which vault login it lands on comes
+ * after, prefilled from what the code said, with **Create a new login** right
+ * there in the list so the surface never dead-ends on "you have no eligible
+ * items" (the failure this replaced).
  *
- * 🚨 There is NO code shown here and no "reveal" — the surface is enroll only.
- * The consent copy is shown at the moment of enrollment, in plain language.
+ * **Two steps, because the second one is a real decision.** Step 1 is the
+ * mechanics; step 2 is the consent moment the spec requires (D-14 first
+ * capture), where the plain-language explanation of what Matrx can now do
+ * lives — not stacked on top of the intake, where it is a wall of text in front
+ * of a person who has not decided anything yet.
+ *
+ * 🚨 No code is shown here and there is no "reveal" — the surface is enroll
+ * only (D-15). The decoded secret never leaves this component except as the
+ * enrollment request body.
  */
 
-import { useState } from "react";
-import { KeyRound, QrCode, ClipboardPaste, Upload } from "lucide-react";
-
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  KeyRound,
+  Loader2,
+  Plus,
+  ShieldCheck,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Spinner } from "@/components/ui/spinner";
+import {
+  Credenza,
+  CredenzaBody,
+  CredenzaContent,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/ui/credenza-modal/credenza";
+import { QrCodeInput } from "@/components/qr/QrCodeInput";
+import {
+  InvalidEnrollmentInputError,
+  describeEnrollment,
+  parseEnrollmentInput,
+} from "../../authenticator-otpauth";
 import type { EnrollableItem } from "../../hooks/use-authenticator";
+
+/** Sentinel option value: enroll onto a login created on the spot. */
+const NEW_LOGIN = "__new__";
+
+export interface EnrollTarget {
+  /** An existing vault item, or a login to create with this display name. */
+  kind: "existing" | "new";
+  itemId?: string;
+  displayName?: string;
+  loginUrl?: string;
+}
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   enrollable: EnrollableItem[];
   busy: boolean;
-  onEnroll: (itemId: string, input: string) => Promise<unknown>;
-  onEnrollQr: (itemId: string, image: File) => Promise<unknown>;
+  /** Performs the write. `secret` is the raw setup key or otpauth URI. */
+  onEnroll: (target: EnrollTarget, secret: string) => Promise<unknown>;
 }
 
-function ConsentCopy() {
+/** The consent moment (spec §"What we tell the person"). Headline + the five
+ *  promises stay visible; the honest trade-off paragraph is one click away, so
+ *  the step reads as a decision rather than a document. */
+function ConsentStep({ name }: { name: string }) {
   return (
-    <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-      <p className="font-medium text-foreground">
-        You are giving Matrx the ability to produce this account&apos;s six-digit
-        codes.
-      </p>
-      <ul className="mt-2 list-disc space-y-1 pl-5">
-        <li>
-          A code is produced only for <strong>this account</strong>, only on{" "}
-          <strong>this website</strong>, and only when signing in.
+    <div className="space-y-3">
+      <div className="flex items-start gap-2.5 rounded-md border border-border bg-muted/40 p-3">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <p className="text-sm text-foreground">
+          Matrx will be able to produce the six-digit codes for{" "}
+          <span className="font-medium">{name}</span> — the same codes your phone
+          app makes — so it can sign in for you without interrupting you.
+        </p>
+      </div>
+
+      <ul className="space-y-1.5 text-sm text-muted-foreground">
+        <li className="flex gap-2">
+          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          Only this account, only on its website, only when signing in.
         </li>
-        <li>
-          The AI agent never sees the secret and never sees the code — our system
-          types it.
+        <li className="flex gap-2">
+          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          The AI never sees the secret or the code — our system types it.
         </li>
-        <li>
-          We still stop and ask you before anything sensitive: security settings,
-          payments, adding or removing a sign-in method, account recovery.
+        <li className="flex gap-2">
+          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          We still stop and ask before anything sensitive: security settings,
+          payments, sign-in methods, account recovery.
         </li>
-        <li>
-          You can turn this off or delete the secret at any time; both take effect
+        <li className="flex gap-2">
+          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          Turn it off or delete the secret at any time — both take effect
           immediately.
         </li>
-        <li>
-          Keep your backup codes somewhere we do not hold them — that is how you
-          get in without us.
+        <li className="flex gap-2">
+          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          Keep your backup codes somewhere we do not hold them.
         </li>
       </ul>
+
+      <details className="group rounded-md border border-border bg-card p-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground">
+          What you are trading away
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Normally your password and your code are two separate things kept in
+          two separate places, so someone who steals one still cannot get in. If
+          we hold both, they are in one place. You are trading that separation
+          for being signed in without being interrupted. We keep a record of
+          every code produced — the account, the site, and the time — never the
+          secret and never the code.
+        </p>
+      </details>
     </div>
   );
 }
@@ -85,18 +149,21 @@ export function AuthenticatorEnrollDialog({
   enrollable,
   busy,
   onEnroll,
-  onEnrollQr,
 }: Props) {
-  const [itemId, setItemId] = useState<string>("");
-  const [pasteValue, setPasteValue] = useState("");
-  const [qrFile, setQrFile] = useState<File | null>(null);
-  const [mode, setMode] = useState<"paste" | "qr">("paste");
+  const [step, setStep] = useState<"secret" | "confirm">("secret");
+  const [rawInput, setRawInput] = useState("");
+  /** A failure from the QR reader (no code in the image, camera blocked). The
+   *  parse failure below is derived, never stored. */
+  const [decodeError, setDecodeError] = useState<string | null>(null);
+  const [itemId, setItemId] = useState<string>(NEW_LOGIN);
+  const [newName, setNewName] = useState("");
 
   const reset = () => {
-    setItemId("");
-    setPasteValue("");
-    setQrFile(null);
-    setMode("paste");
+    setStep("secret");
+    setRawInput("");
+    setDecodeError(null);
+    setItemId(NEW_LOGIN);
+    setNewName("");
   };
 
   const close = (next: boolean) => {
@@ -104,119 +171,220 @@ export function AuthenticatorEnrollDialog({
     onOpenChange(next);
   };
 
-  const canSubmit =
-    !!itemId &&
-    (mode === "paste" ? pasteValue.trim().length > 0 : !!qrFile);
+  /** Parse whatever is in the box on every keystroke / decode, so the person
+   *  sees the account name the moment we can read it. */
+  const { parsed, error: parseError } = useMemo(() => {
+    const text = rawInput.trim();
+    if (!text) return { parsed: null, error: null as string | null };
+    try {
+      return { parsed: parseEnrollmentInput(text), error: null as string | null };
+    } catch (err) {
+      return {
+        parsed: null,
+        error:
+          err instanceof InvalidEnrollmentInputError
+            ? err.message
+            : "That setup key could not be read.",
+      };
+    }
+  }, [rawInput]);
+
+  /**
+   * When a NEW code arrives, prefill the login name from it and preselect an
+   * existing login whose name or URL matches the issuer — nobody should retype
+   * "GitHub" when the QR already said it. Keyed on the code itself via a ref,
+   * so a later render (or the vault list refreshing) can never walk over a
+   * choice the person made deliberately.
+   */
+  const autoTargetedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!parsed || autoTargetedFor.current === parsed.raw) return;
+    autoTargetedFor.current = parsed.raw;
+
+    const suggestion = parsed.issuer || parsed.account;
+    if (suggestion) setNewName((current) => current || suggestion);
+
+    const needle = parsed.issuer?.toLowerCase();
+    if (!needle) return;
+    const match = enrollable.find(
+      (it) =>
+        it.displayName.toLowerCase().includes(needle) ||
+        it.loginUrls.some((u) => u.toLowerCase().includes(needle)),
+    );
+    if (match) setItemId(match.id);
+  }, [parsed, enrollable]);
+
+  const target: EnrollTarget = useMemo(
+    () =>
+      itemId === NEW_LOGIN
+        ? { kind: "new", displayName: newName.trim(), loginUrl: undefined }
+        : { kind: "existing", itemId },
+    [itemId, newName],
+  );
+
+  const targetName =
+    itemId === NEW_LOGIN
+      ? newName.trim() || (parsed ? describeEnrollment(parsed) : "this account")
+      : (enrollable.find((it) => it.id === itemId)?.displayName ??
+        "this account");
+
+  const canContinue =
+    !!parsed && (itemId !== NEW_LOGIN || newName.trim().length > 0);
 
   const submit = async () => {
-    if (!canSubmit) return;
-    const ok =
-      mode === "paste"
-        ? await onEnroll(itemId, pasteValue.trim())
-        : await onEnrollQr(itemId, qrFile as File);
+    if (!parsed || !canContinue) return;
+    const ok = await onEnroll(target, parsed.raw);
     if (ok) close(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Add an authenticator</DialogTitle>
-          <DialogDescription>
-            Enroll a rotating six-digit code onto one of your saved website
-            logins.
-          </DialogDescription>
-        </DialogHeader>
+    <Credenza open={open} onOpenChange={close}>
+      <CredenzaContent className="md:max-w-lg">
+        <CredenzaHeader>
+          <CredenzaTitle className="flex items-center gap-2">
+            {step === "confirm" ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setStep("secret")}
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            ) : null}
+            {step === "secret" ? "Add an authenticator" : "Turn on codes"}
+          </CredenzaTitle>
+        </CredenzaHeader>
 
-        <div className="space-y-4">
-          <ConsentCopy />
+        <CredenzaBody className="space-y-4">
+          {step === "secret" ? (
+            <>
+              <QrCodeInput
+                disabled={busy}
+                hint="A screenshot works — the image is read here and never uploaded."
+                onDecoded={(text) => {
+                  setDecodeError(null);
+                  setRawInput(text);
+                }}
+                onError={setDecodeError}
+              />
 
-          <div className="space-y-1.5">
-            <Label htmlFor="auth-item">Which login</Label>
-            {enrollable.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No eligible website logins. Save a website login in your Vault
-                first, then add its authenticator here.
-              </p>
-            ) : (
-              <Select value={itemId} onValueChange={setItemId}>
-                <SelectTrigger id="auth-item">
-                  <SelectValue placeholder="Choose a saved login" />
-                </SelectTrigger>
-                <SelectContent>
-                  {enrollable.map((it) => (
-                    <SelectItem key={it.id} value={it.id}>
-                      {it.displayName}
-                      {it.loginUrls[0] ? ` · ${it.loginUrls[0]}` : ""}
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="auth-key"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Or type the setup key the site shows
+                </Label>
+                <Input
+                  id="auth-key"
+                  value={rawInput}
+                  onChange={(e) => {
+                    setDecodeError(null);
+                    setRawInput(e.target.value);
+                  }}
+                  placeholder="JBSWY3DPEHPK3PXP"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="font-mono"
+                />
+              </div>
+
+              {parsed ? (
+                <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-2.5 text-sm">
+                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">
+                      {describeEnrollment(parsed)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {parsed.digits} digits · every {parsed.period}s
+                      {parsed.algorithm === "SHA1" ? "" : ` · ${parsed.algorithm}`}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {decodeError || parseError ? (
+                <p className="text-sm text-destructive">
+                  {decodeError ?? parseError}
+                </p>
+              ) : null}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-item">Save it on</Label>
+                <Select value={itemId} onValueChange={setItemId}>
+                  <SelectTrigger id="auth-item">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NEW_LOGIN}>
+                      <span className="flex items-center gap-1.5">
+                        <Plus className="h-3.5 w-3.5" />
+                        A new login
+                      </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+                    {enrollable.length ? (
+                      <>
+                        <SelectSeparator />
+                        <SelectGroup>
+                          <SelectLabel>Your saved logins</SelectLabel>
+                          {enrollable.map((it) => (
+                            <SelectItem key={it.id} value={it.id}>
+                              {it.displayName}
+                              {it.loginUrls[0] ? ` · ${it.loginUrls[0]}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </>
+                    ) : null}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "paste" | "qr")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="paste" className="gap-1.5">
-                <ClipboardPaste className="h-4 w-4" />
-                Paste key
-              </TabsTrigger>
-              <TabsTrigger value="qr" className="gap-1.5">
-                <QrCode className="h-4 w-4" />
-                Upload QR
-              </TabsTrigger>
-            </TabsList>
+              {itemId === NEW_LOGIN ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="auth-new-name">Name this login</Label>
+                  <Input
+                    id="auth-new-name"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="GitHub"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Creates a Vault login you can add the username and password
+                    to afterwards.
+                  </p>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <ConsentStep name={targetName} />
+          )}
+        </CredenzaBody>
 
-            <TabsContent value="paste" className="space-y-1.5 pt-2">
-              <Label htmlFor="auth-key" className="flex items-center gap-1.5">
-                <KeyRound className="h-4 w-4" />
-                Setup key or otpauth:// link
-              </Label>
-              <Textarea
-                id="auth-key"
-                value={pasteValue}
-                onChange={(e) => setPasteValue(e.target.value)}
-                placeholder="JBSWY3DPEHPK3PXP  —  or  otpauth://totp/..."
-                rows={3}
-                autoComplete="off"
-                spellCheck={false}
-              />
-              <p className="text-xs text-muted-foreground">
-                Copy the &quot;can&apos;t scan it?&quot; text the website shows
-                next to its QR code.
-              </p>
-            </TabsContent>
-
-            <TabsContent value="qr" className="space-y-1.5 pt-2">
-              <Label htmlFor="auth-qr" className="flex items-center gap-1.5">
-                <Upload className="h-4 w-4" />
-                QR-code image
-              </Label>
-              <input
-                id="auth-qr"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setQrFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-sm file:text-foreground hover:file:bg-accent"
-              />
-              <p className="text-xs text-muted-foreground">
-                The image is decoded on our server and destroyed immediately — it
-                is never stored.
-              </p>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <DialogFooter>
+        <CredenzaFooter>
           <Button variant="ghost" onClick={() => close(false)} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!canSubmit || busy}>
-            {busy ? <Spinner className="mr-2 h-4 w-4" /> : null}
-            Enroll authenticator
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          {step === "secret" ? (
+            <Button
+              onClick={() => setStep("confirm")}
+              disabled={!canContinue || busy}
+            >
+              Continue
+            </Button>
+          ) : (
+            <Button onClick={submit} disabled={busy}>
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Turn on codes
+            </Button>
+          )}
+        </CredenzaFooter>
+      </CredenzaContent>
+    </Credenza>
   );
 }
