@@ -57,15 +57,23 @@ answer them (the page/action/question rule).
 1. **Study the real data.** Call the live source(s) (real API calls, real
    credentials from the platform's existing config — never fabricate samples).
    Capture representative raw responses into the pilot's scratch area.
-2. **Propose the shapes as simple markdown tables** — one table per proposed
+2. **Complete the source (standard step — Arman, 2026-08-20).** Every source we
+   distill is almost always PARTIALLY consumed — past unstructured handling made
+   full use impossible, which is the disease this pipeline cures. Survey the
+   provider's full API surface vs what we call today (endpoints, verticals,
+   parameters, response sections) and dispatch a reconnaissance chip so a
+   parallel session maps what else the provider offers; its findings feed the
+   pilot ledger and become follow-up capability work. Distillation does not
+   block on the recon — but firing it is mandatory.
+3. **Propose the shapes as simple markdown tables** — one table per proposed
    kind: field · type · required/optional · source path in the raw payload ·
    kept-or-dropped-and-why. Plus one table listing DROPPED top-level sections
    and why. Multiple related sources stay SEPARATE at first — do not bastardize
    one to fit the other's mold. After separate agreement, present a merge
    analysis: what can share a kind without losing provenance identity, what
    stays provider-specific.
-3. **Iterate with Arman until he agrees on every table.** Only then write code.
-4. **Build the pydantic models in a parallel path** (new module; do not modify
+4. **Iterate with Arman until he agrees on every table.** Only then write code.
+5. **Build the pydantic models in a parallel path** (new module; do not modify
    the live node/service path yet). Kind models declare the discriminator as a
    real field (Stripe-style: part of the data, never injected/stripped). Nested
    kinds are nested models. Check whether the kind SDK (`@kind` decorator /
@@ -73,10 +81,10 @@ answer them (the page/action/question rule).
    so; if not, follow the registration recipe in aidream's `workflow-io-kinds`
    skill (seed SQL + ledger + cache invalidation + live verify) and record the
    friction points in this skill's "SDK wishlist" section below.
-5. **Register the kinds** (system org, `visibility='public'`, canonical examples
+6. **Register the kinds** (system org, `visibility='public'`, canonical examples
    validated BEFORE seeding, `kind_edge` rows for nesting) and **verify TS type
    generation picks them up** (the generated-types artifact both apps consume).
-6. **Gate: Arman approves the registered set.** Then update the pilot state doc
+7. **Gate: Arman approves the registered set.** Then update the pilot state doc
    (mark Stage A DONE with the registered slugs) and **fire the Stage B chip**
    with a fully standalone prompt (name the kinds, the demo endpoint, the pilot
    doc). If you cannot create a background task/chip from your session, write
@@ -193,6 +201,25 @@ answer them (the page/action/question rule).
   adding a field gets noticed instead of silently discarded. This is the
   configuration-equivalence lesson (`on_unmapped='drop'` silently discarded
   1,139 combinations) applied at every data boundary.
+
+## The three projections of one result (Arman, 2026-08-20)
+
+One core engine per source in the entire codebase (duplicated API clients are a
+defect — fix on sight). The engine's result gets its KIND immediately at that
+boundary. From there, three projections:
+
+1. **The kind** — the ONE canonical form. UI surfaces render it directly; it is
+   what travels, persists, and registers. Never lossy by accident (the adapter
+   law above).
+2. **Raw provider payload** — available ON DEMAND, argument-driven
+   (`include_raw=`), off by default so caches don't fill with duplicates. Exists
+   because sometimes the raw dump is the right thing to hand an agent, and
+   because heavy manipulation can be lossy in ways we only discover later.
+3. **The AI view** — a context-controlled projection of the kind (trimmed,
+   summarized, token-budgeted) produced at the TOOL boundary, not in the engine
+   and not in the kind. The tool receives the kind and decides what the model
+   sees; the UI receives the kind untrimmed. Tools may also WRAP a kind (their
+   runtime wrapper) — they never mutate the data kind's fields.
 
 ## SDK wishlist (Stage A agents append friction here; the SDK build consumes it)
 
