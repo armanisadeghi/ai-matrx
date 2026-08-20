@@ -3,18 +3,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Cpu, ExternalLink, X } from "lucide-react";
+import { AlertTriangle, Cpu, ExternalLink, Route, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type {
   AdminUserAcquisitionRow,
+  AcquisitionJourney,
   AcquisitionIdentityState,
 } from "../types";
-import { AdminUserAcquisitionRowSchema } from "../types";
+import {
+  AcquisitionJourneySchema,
+  AdminUserAcquisitionRowSchema,
+} from "../types";
 
 type Timeframe = "7d" | "30d" | "90d" | "all";
 
@@ -30,6 +41,14 @@ const STATE_LABEL: Record<AcquisitionIdentityState, string> = {
   account: "Account",
   converted: "Converted",
 };
+
+const VERDICT = {
+  no_activity: ["No activity after arrival", "text-slate-700 bg-slate-500/10"],
+  blocked: ["Likely blocked by a problem", "text-rose-700 bg-rose-500/10"],
+  exploring: ["Exploring the product", "text-amber-700 bg-amber-500/10"],
+  engaged: ["Reached runtime-powered work", "text-emerald-700 bg-emerald-500/10"],
+  converted: ["Converted", "text-emerald-700 bg-emerald-500/10"],
+} as const;
 
 function fmtDate(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "—";
@@ -70,6 +89,35 @@ export function UserAcquisitionTableClient() {
   const [timeframe, setTimeframe] = useState<Timeframe>("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<AdminUserAcquisitionRow | null>(null);
+  const [journey, setJourney] = useState<AcquisitionJourney | null>(null);
+  const [journeyLoading, setJourneyLoading] = useState(false);
+  const [journeyError, setJourneyError] = useState<string | null>(null);
+
+  const openJourney = useCallback(async (row: AdminUserAcquisitionRow) => {
+    setSelected(row);
+    setJourney(null);
+    setJourneyError(null);
+    setJourneyLoading(true);
+    try {
+      const response = await fetch(
+        `/api/admin/users/acquisition/${encodeURIComponent(row.row_id)}`,
+        { cache: "no-store" },
+      );
+      const body: unknown = await response.json();
+      if (!response.ok) throw new Error("Failed to load this user journey");
+      if (typeof body !== "object" || body === null || !("journey" in body)) {
+        throw new Error("Journey response was incomplete");
+      }
+      const parsed = AcquisitionJourneySchema.safeParse(body.journey);
+      if (!parsed.success) throw new Error("Journey response was invalid");
+      setJourney(parsed.data);
+    } catch (caught) {
+      setJourneyError(caught instanceof Error ? caught.message : "Failed to load journey");
+    } finally {
+      setJourneyLoading(false);
+    }
+  }, []);
 
   const load = useCallback(async (value: Timeframe) => {
     setLoading(true);
@@ -139,6 +187,23 @@ export function UserAcquisitionTableClient() {
 
   const columns = useMemo(
     (): MatrxColumnDef<AdminUserAcquisitionRow>[] => [
+      {
+        id: "journey",
+        header: "Journey",
+        sortable: false,
+        filter: false,
+        width: 110,
+        cell: (row) => (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => void openJourney(row)}
+          >
+            <Route className="h-3.5 w-3.5" /> View
+          </Button>
+        ),
+      },
       {
         id: "display_name",
         accessorKey: "display_name",
@@ -322,7 +387,7 @@ export function UserAcquisitionTableClient() {
         width: 105,
       },
     ],
-    [],
+    [openJourney],
   );
 
   return (
@@ -424,6 +489,88 @@ export function UserAcquisitionTableClient() {
           }}
         />
       </div>
+      <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
+        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
+          <SheetHeader className="border-b p-5 text-left">
+            <SheetTitle>{selected?.display_name ?? "User journey"}</SheetTitle>
+            <SheetDescription>
+              HTTP activity, runtime work, cost, and captured problems in one chronology.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            {journeyLoading ? <p className="text-sm text-muted-foreground">Loading the journey…</p> : null}
+            {journeyError ? (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {journeyError}
+              </div>
+            ) : null}
+            {journey ? (
+              <div className="space-y-5">
+                <div className={`rounded-lg p-4 ${VERDICT[journey.verdict][1]}`}>
+                  <div className="text-sm font-semibold">{VERDICT[journey.verdict][0]}</div>
+                  <div className="mt-1 text-xs opacity-80">
+                    Last observed {fmtDate(journey.last_activity)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    ["API requests", journey.api_requests],
+                    ["Failed", journey.failed_requests],
+                    ["Runtime work", journey.runtime_executions],
+                    ["Runtime cost", fmtCost(journey.runtime_cost)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-md border p-3">
+                      <div className="text-[11px] text-muted-foreground">{label}</div>
+                      <div className="font-semibold tabular-nums">{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold">Features used</h3>
+                  {journey.feature_usage.length ? (
+                    <div className="space-y-1.5">
+                      {journey.feature_usage.map((item) => (
+                        <div key={item.feature} className="flex items-center rounded-md border px-3 py-2 text-sm">
+                          <span>{item.feature}</span>
+                          <span className="ml-auto tabular-nums text-muted-foreground">{item.requests} requests</span>
+                          {item.failures ? (
+                            <Badge variant="destructive" className="ml-2">{item.failures} failed</Badge>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-sm text-muted-foreground">No feature requests were captured.</p>}
+                </section>
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold">Activity timeline</h3>
+                  <div className="space-y-2">
+                    {journey.events.map((event) => (
+                      <details key={event.id} className={`rounded-md border p-3 ${event.is_problem ? "border-rose-500/30 bg-rose-500/5" : ""}`}>
+                        <summary className="cursor-pointer list-none">
+                          <div className="flex items-start gap-2">
+                            {event.is_problem ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" /> : <Route className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium">{event.title}</div>
+                              <div className="text-[11px] text-muted-foreground">{fmtDate(event.occurred_at)} · {event.kind}{event.status ? ` · ${event.status}` : ""}</div>
+                            </div>
+                            {event.cost ? <span className="text-xs font-medium tabular-nums">{fmtCost(event.cost)}</span> : null}
+                          </div>
+                        </summary>
+                        <div className="mt-3 space-y-1 border-t pt-3 font-mono text-xs text-muted-foreground">
+                          {event.request_id ? <div>request {event.request_id}</div> : null}
+                          {event.route ? <div>route {event.route}</div> : null}
+                          {event.detail ? <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words">{event.detail}</pre> : null}
+                        </div>
+                      </details>
+                    ))}
+                    {!journey.events.length ? <p className="text-sm text-muted-foreground">No owned activity records were found.</p> : null}
+                  </div>
+                </section>
+              </div>
+            ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

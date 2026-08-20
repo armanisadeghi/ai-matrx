@@ -12,7 +12,8 @@
  *   - Deduped: each distinct captured entry is persisted at most once per session.
  *   - Throttled: debounced flush, capped per flush.
  *   - Production only: dev/local errors never pollute the prod dashboard.
- *   - Authenticated only: attributed errors; anon/public-page noise stays out.
+ *   - Authenticated errors use the canonical RPC; known guests use the internal
+ *     endpoint and retain fingerprint attribution.
  *   - Never persists its OWN RPC failure (relation "log_client_error") — no loop.
  *   - Fire-and-forget + try/caught: persistence never breaks the app.
  *
@@ -75,16 +76,16 @@ async function flush(): Promise<void> {
   flushScheduled = false;
   if (process.env.NODE_ENV !== "production") return;
 
-  // Authenticated-only — attribute to a real user; keep anon/public noise out.
+  let isAuthenticated = false;
   try {
     const [{ getStore }, { selectIsAuthenticated }] = await Promise.all([
       import("@/lib/redux/store-singleton"),
       import("@/lib/redux/selectors/userSelectors"),
     ]);
     const store = getStore();
-    if (!store || !selectIsAuthenticated(store.getState())) return;
+    isAuthenticated = Boolean(store && selectIsAuthenticated(store.getState()));
   } catch {
-    return;
+    isAuthenticated = false;
   }
 
   const now = Date.now();
@@ -115,7 +116,12 @@ async function flush(): Promise<void> {
   if (retryInMs !== null) scheduleFlush(retryInMs);
   if (pending.length === 0) return;
 
-  const { supabase } = await import("@/utils/supabase/client");
+  const [{ supabase }, { getCachedFingerprint }] = await Promise.all([
+    import("@/utils/supabase/client"),
+    import("@/lib/services/fingerprint-service"),
+  ]);
+  const fingerprint = isAuthenticated ? null : getCachedFingerprint();
+  if (!isAuthenticated && !fingerprint) return;
   for (const candidate of pending) {
     // Re-read after the async import. AccessGate may have reconciled this exact
     // capture while the flush was preparing; persistence must use the settled
@@ -131,19 +137,7 @@ async function flush(): Promise<void> {
     }
     persistedIds.add(e.id); // mark before the await so a re-fire never double-sends
     try {
-      await supabase.rpc("log_client_error", {
-        p_source: e.source,
-        p_message: e.message,
-        p_code: e.code ?? undefined,
-        p_route: e.route || undefined,
-        p_request_id: e.requestId ?? undefined,
-        p_conversation_id:
-          e.conversationId && UUID_RE.test(e.conversationId)
-            ? e.conversationId
-            : undefined,
-        p_stack: e.stack ?? e.callSite ?? undefined,
-        p_payload: toJson(e.raw),
-        p_context: toJson({
+      const context = toJson({
           tier: e.tier,
           relation: e.relation,
           operation: e.operation,
@@ -156,8 +150,39 @@ async function flush(): Promise<void> {
           occurrences: e.count,
           url: e.url,
           name: e.name,
-        }),
-      });
+        });
+      if (isAuthenticated) {
+        await supabase.rpc("log_client_error", {
+          p_source: e.source,
+          p_message: e.message,
+          p_code: e.code ?? undefined,
+          p_route: e.route || undefined,
+          p_request_id: e.requestId ?? undefined,
+          p_conversation_id:
+            e.conversationId && UUID_RE.test(e.conversationId)
+              ? e.conversationId
+              : undefined,
+          p_stack: e.stack ?? e.callSite ?? undefined,
+          p_payload: toJson(e.raw),
+          p_context: context,
+        });
+      } else {
+        await fetch("/api/diagnostics/client-error", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            fingerprint,
+            source: e.source,
+            message: e.message,
+            code: e.code ?? null,
+            route: e.route || null,
+            request_id: e.requestId ?? null,
+            stack: e.stack ?? e.callSite ?? null,
+            payload: toJson(e.raw),
+            context,
+          }),
+        });
+      }
     } catch {
       /* persistence is best-effort — never break the app */
     }

@@ -30,6 +30,7 @@ not own or duplicate organization or membership data.
 - `app/api/admin/users/route.ts` — server-only auth roster plus profile, admin-level, and organization projections.
 - `app/api/admin/users/organizations/route.ts` — super-admin-only directory and membership mutation endpoint.
 - `app/api/admin/users/acquisition/route.ts` — super-admin projection joining auth users, guest-registry provenance, and the canonical usage rollup.
+- `app/api/admin/users/acquisition/[rowId]/route.ts` — per-identity owned-observability join over the HTTP ledger, runtime spine, Error Inspector/server incidents, and AI Dream logs.
 - `features/admin/users/server/organizationMembershipAdmin.ts` — shared server projection and audited mutation caller.
 
 ---
@@ -59,6 +60,21 @@ each identity so a cohort's full exposure is visible.
 Historical landing pages were never retained. Those rows say `Not captured`.
 The first-touch collector begins truthful forward capture and never backfills a
 guess from an AI surface, UUID, or latest page.
+
+The **Journey** door joins `public.api_request_log` (nearly every AI Dream HTTP
+request; health/liveness exclusions are deliberate), `runtime.global_request`
++ `runtime.global_execution` (runtime-admitted work, nested status, meters, and
+cost), `public.system_error` (AI Dream 5xx plus persisted frontend captures),
+and attributed `public.app_log` warnings/errors. It states an engagement verdict,
+feature usage, failures, runtime work/cost, and the request-ID chronology.
+
+### Deferred observability
+
+**Do not query Vercel or Supabase platform logs from this surface.** They remain
+incident-investigation tools, not the acquisition source of truth. A future
+project may ingest Vercel function failures and Supabase API/Auth/Postgres gateway
+events only after defining retention, user/request correlation, privacy, and
+cost. The owned ledgers above remain the canonical everyday view.
 
 ---
 
@@ -124,6 +140,7 @@ guess from an AI surface, UUID, or latest page.
 
 ## Change log
 
+- `2026-08-19` — Added the per-identity Journey sheet: feature usage, owned AI Dream HTTP requests, runtime request/execution and cost, frontend/server errors, server warning/error context, a dropoff verdict, and a chronological forensic trail. External Vercel/Supabase log ingestion is explicitly deferred.
 - `2026-08-19` — Added User Acquisition: real guest/account/conversion state, bot/browser classification, created/first/last activity, first-touch page/referrer/UTM context, IP/client details, and canonical all-time stored LLM cost. Reused `guest_executions`, `auth.users`, `AdminUserRef`, and `admin_user_usage_rollup`; no new table.
 - `2026-08-13` — The Accounts roster is now agent-READABLE: `AccountsTableClient` mounts a `SurfaceRuntimeProvider` for `matrx-admin/users` and emits 20 surface values through the new builder `features/admin/users/lib/admin-users-scope.ts`. Two behavioural notes for anyone editing this file. **(1) `MatrxDataTable` is now in `controlled-local` mode** — search, column filters, sort and page live in `queryState` here, not inside the table (the table still does the filtering). That is what lets the page report how many accounts match the admin's live query; `visible_user_count` is computed by calling the table's own `filterAndSortRows`, so it cannot drift from what the table renders. Keep it that way rather than counting rows by hand. **(2) `getScope` must stay SYNCHRONOUS** — the Surface Context window polls it every 400ms while open, so a fetching emitter would hammer `/api/admin/users` behind an idle debug panel; every emitted value is a derivation over state this component has already rendered. Privacy posture is deliberate and documented in the manifest header: roster-wide values are counts only, `roster_sample` is capped at 10 and carries **no email addresses**, and only the account focused via `?user=` ships admin-relevant fields. **No agent write targets, by design** — admin level, magic links, password resets, email/DM sending and the onboarding toggle are all permissions / credentials / outbound communication and stay human; the ruling is argued in full in `admin-users.manifest.ts`.
 - `2026-08-09` — No Dead Ends sweep: a named user is now reachable. Accounts and `…/users/admins` both honour `?user=<id>`, and `AdminUserRef` makes the name itself a link (Door #1) with "Account" and "Admin level" joining its menu. Closes FOUND_DEFECTS D138's most-hit symptom; a canonical `/users/<id>` route and a `user` registry token remain open.

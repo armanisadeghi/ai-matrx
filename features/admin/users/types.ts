@@ -118,3 +118,47 @@ export const AdminUserAcquisitionRowSchema = z.object({
 export type AdminUserAcquisitionRow = z.infer<
   typeof AdminUserAcquisitionRowSchema
 >;
+
+export const AcquisitionJourneyEventSchema = z.object({
+  id: z.string(),
+  occurred_at: z.string(),
+  kind: z.enum(["api", "runtime", "error", "server_log"]),
+  title: z.string(),
+  detail: z.string().nullable(),
+  status: z.string().nullable(),
+  request_id: z.string().nullable(),
+  route: z.string().nullable(),
+  cost: z.number().nullable(),
+  is_problem: z.boolean(),
+});
+
+export const AcquisitionJourneySchema = z.object({
+  verdict: z.enum([
+    "no_activity",
+    "blocked",
+    "exploring",
+    "engaged",
+    "converted",
+  ]),
+  api_requests: z.number(),
+  successful_requests: z.number(),
+  failed_requests: z.number(),
+  runtime_requests: z.number(),
+  runtime_executions: z.number(),
+  runtime_cost: z.number(),
+  errors: z.number(),
+  last_activity: z.string().nullable(),
+  feature_usage: z.array(
+    z.object({
+      feature: z.string(),
+      requests: z.number(),
+      failures: z.number(),
+    }),
+  ),
+  events: AcquisitionJourneyEventSchema.array(),
+});
+
+export type AcquisitionJourneyEvent = z.infer<
+  typeof AcquisitionJourneyEventSchema
+>;
+export type AcquisitionJourney = z.infer<typeof AcquisitionJourneySchema>;

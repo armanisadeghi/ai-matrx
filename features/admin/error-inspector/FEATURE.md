@@ -146,7 +146,10 @@ The in-memory store is per-session. `lib/diagnostics/persistCapturedErrors.ts`
 captures to the canonical universal error sink **`public.system_error`** (the same
 queryable store + admin dashboard the server writes), so client + server errors
 live in one place. Conservative — **NOT** the in-memory firehose: **red-tier only**,
-deduped (once per entry/session), throttled, **production + authenticated only**.
+deduped (once per entry/session), throttled, and **production only**. Authenticated
+captures use `public.log_client_error`; known guest captures use
+`POST /api/diagnostics/client-error`, which verifies the fingerprint against
+`guest_executions` and writes the same sink with guest attribution.
 
 **A provisional access question never races into the repair queue.** A
 `record-unavailable (...unknown)` capture waits up to 10 seconds for AccessGate
@@ -162,6 +165,10 @@ path is the auth-checked `SECURITY DEFINER` RPC **`public.log_client_error`**
 blocks capture, fail-safe (returns NULL, never raises). `source_app='matrx-frontend'`
 distinguishes client rows. The ad-hoc API-route writers (audio error logger,
 tool-ui-incident) can adopt this RPC over time.
+
+**Unknown public noise never persists.** The guest endpoint refuses fingerprints
+that do not exist in `guest_executions`; the existing red-only, dedupe, and
+per-flush cap remain the volume boundary.
 
 ## Tiers + downgrade rules (`lib/diagnostics/errorTierRules.ts`)
 
@@ -291,6 +298,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-19 — **Guest red errors survive the browser session.** Known guest fingerprints now persist through the internal diagnostics endpoint into `public.system_error`, retaining the same red-only, production, dedupe, and throttle boundaries as authenticated capture.
 - 2026-08-18 — **Guarded Hindsight transcript delimiters stay local.** Raw model/tool transcript tokens can legitimately form malformed Markdown pairs; the renderer guard still neutralizes and records them locally, while only this route is yellow so ordinary answer delimiter defects remain red.
 - 2026-08-18 — **Supabase browser transport loss stays local across every route.** The structured adapter tags only classifier-proven status-0 network failures as `TypeError`; the tier rule keeps them visible for retry UX without filing client wifi/sleep/deployment handoffs as server repair work. HTTP and database responses stay red.
 - 2026-08-18 — **Transient PostgREST schema-cache restarts recover before alarming.** The global Supabase boundary retries the exact request on `PGRST002` (the query did not execute); success produces no capture, while exhaustion produces one canonical structured error. The scopes result mapper and organization loader no longer mirror that already-captured error through `console.error`, eliminating two causal duplicate repair rows.
