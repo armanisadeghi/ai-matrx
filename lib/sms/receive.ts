@@ -905,7 +905,17 @@ export async function honorUnresolvedSmsPolicyKeyword(
   policyKeyword: Exclude<SmsPolicyKeyword, null>,
   providerEventKey: string,
 ): Promise<boolean> {
-  if (policyKeyword === "help") return false;
+  // 🚨 OPT-OUT ONLY, DELIBERATELY ASYMMETRIC. The TCPA is asymmetric and so is
+  // this: a revocation must be honored on a bare keyword, but consent is NEVER
+  // created by one. Honoring `opt_in` here would be a hole, not a courtesy --
+  // classifySmsPolicyKeyword maps a bare "YES" to opt_in, "YES" is the
+  // commonest human reply to any question, and honor_consent_decision's opt_in
+  // branch clears unsubscribed_at/suppressed_at AND sets
+  // consent_basis='express', our strongest consent claim. One word from a
+  // number we have never met must not resurrect a suppressed contact and grant
+  // express consent. A genuine START from an enrolled number still works: it
+  // resolves context and goes through reconcileCanonicalSmsConsent.
+  if (policyKeyword !== "opt_out") return false;
   const supabase = createAdminClient();
   const input = inboundContextInput(payload);
 
