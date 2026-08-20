@@ -380,7 +380,11 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    (`STEP_CHIP_CLASS` / `STEP_RUN_BUTTON_CLASS` in `NodeStepRail.tsx`) — the
    NodePanel's "Page" chip consumes it so the strip cannot drift.
 
-3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
+3. **Pillar map — RULED FOR REBUILD (Arman, 2026-08-20, Q14): "this entire UI
+   is completely garbage and has to be rebuilt."** Do not polish or extend the
+   current implementation; the rebuild happens in a focused session WITH Arman.
+   Evidence pass + session agenda: `docs/handoffs/content-plan-map-rebuild.md`.
+   What exists today (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
    layouts (radial orbit / tidy tree / pillar columns — `pillar-map/layouts.ts`,
    unit-tested; choice persists in localStorage). Every dimension encoded
@@ -824,6 +828,10 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-20 — **Pillar map ruled for REBUILD** (Arman, Q14 — "completely
+  garbage… no agent has ever actually used it"). Evidence pass driven at 295
+  real nodes; findings + session agenda in
+  `docs/handoffs/content-plan-map-rebuild.md`; flow 3 flagged do-not-polish.
 - 2026-08-19 — **Page-hub UI polish tail.** One shared `StepEmptyState` for every
   step tab's absence (prerequisite + door/run, never gray text); Build/Publish
   split by `NodeRealityCard variant` instead of rendering the same card twice;
