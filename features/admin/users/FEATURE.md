@@ -64,15 +64,14 @@ guess from an AI surface, UUID, or latest page.
 
 The **Journey** door joins `public.api_request_log` (nearly every AI Dream HTTP
 request; health/liveness exclusions are deliberate), `runtime.global_request`
-
-- `runtime.global_execution` (runtime-admitted work, nested status, meters, and
-  cost), `public.system_error` (AI Dream 5xx plus persisted frontend captures),
-  and attributed `public.app_log` warnings/errors. It states an engagement verdict,
-  feature usage, failures, runtime work/cost, and the request-ID chronology. The
-  Journey door opens the canonical non-blocking `SidePanelSurface`; secondary
-  telemetry failures appear as source warnings without hiding successfully loaded
-  history. Localhost and loopback referrers are visibly classified as local/agent
-  testing, not ordinary acquired traffic.
+and `runtime.global_execution` (runtime-admitted work, nested status, meters,
+and cost), `public.system_error` (AI Dream 5xx plus persisted frontend captures),
+and attributed `public.app_log` warnings/errors. It states an engagement verdict,
+feature usage, failures, runtime work/cost, and the request-ID chronology. The
+Journey door opens the canonical non-blocking `SidePanelSurface`; secondary
+telemetry failures appear as source warnings without hiding successfully loaded
+history. Localhost and loopback referrers are visibly classified as local/agent
+testing, not ordinary acquired traffic.
 
 ### Deferred observability
 
