@@ -684,7 +684,9 @@ async function reconcileCanonicalSmsConsent(
     p_decision: policyKeyword,
     p_via: "sms_keyword",
     p_reason: "sms_keyword",
-    p_medium_id: context.contactMediumId,
+    // Omitted, not null: an unresolved medium means the authority falls through
+    // to the (org, channel, value_key) path below rather than dropping the STOP.
+    p_medium_id: context.contactMediumId ?? undefined,
     p_organization_id: context.organizationId,
     p_channel: "phone",
     p_value_key: normalizeSmsEndpoint(context.source),
