@@ -2,6 +2,10 @@ import {
   siteCommandProgressFromEvent,
   type CrawlLiveEvent,
 } from "@/features/marketing/crawler/direct-client";
+import {
+  crawlPacingFromEvent,
+  pacingSourceLabel,
+} from "@/features/marketing/crawler/crawl-pacing";
 
 export interface PresentedCrawlEvent {
   label: string;
@@ -266,6 +270,41 @@ export function presentLiveCrawlEvent(
         message: `${pageSubject(event)} needs review.`,
         tone: "warning",
       };
+    case "crawl_pacing": {
+      // A crawl ramps continuously, so every step would drown the feed. Only
+      // the two moments a human acts on become rows: the opening decision
+      // ("why is this crawl slow?") and the host pushing back ("we found the
+      // limit"). Routine climbs move the header indicator silently.
+      const pacing = crawlPacingFromEvent(event);
+      if (!pacing) return null;
+      const reason = typeof event.reason === "string" ? event.reason : "";
+      const rate = `${pacing.currentRps.toFixed(2)} req/s`;
+      if (reason === "plan_resolved") {
+        const site = pacing.platformDisplay
+          ? `${pacing.platformDisplay}${pacing.frontedBy ? ` behind ${pacing.frontedBy}` : ""}`
+          : "this host";
+        return {
+          label: "Crawl speed set",
+          message:
+            `Starting ${site} at ${rate}, climbing to at most ` +
+            `${pacing.ceilingRps.toFixed(2)} req/s · ${pacingSourceLabel(pacing)}` +
+            (pacing.userMaxReduced
+              ? " — lower than your configured maximum, which this host will not take."
+              : "."),
+          tone: pacing.userMaxReduced ? "warning" : "default",
+        };
+      }
+      if (reason === "ramp_up") return null;
+      return {
+        label: "Slowed down",
+        message:
+          `${pacing.host} pushed back — now ${rate}` +
+          (pacing.discoveredCeilingRps !== null
+            ? `, holding under ${pacing.discoveredCeilingRps.toFixed(2)} req/s from here on.`
+            : "."),
+        tone: "warning",
+      };
+    }
     case "crawl_warning": {
       // The scraper's own human-authored message (CrawlWarningEvent.message).
       // Discarding it for a fixed string made every notice meaningless — the

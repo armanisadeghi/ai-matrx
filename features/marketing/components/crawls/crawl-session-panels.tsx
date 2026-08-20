@@ -91,8 +91,11 @@ export function CrawlScopePanel({ scope }: { scope: Json }) {
           value: boolLabel(request.list_mode),
         },
         {
-          label: "Host rate limit",
-          value: `${jsonNumber(request, ["host_rps"])} rps · burst ${jsonNumber(request, ["host_burst"])}`,
+          // Not the rate the crawl RAN at. Since 2026-08-20 this is the ceiling
+          // the ramp climbs toward; the rate actually used is detected per host
+          // and reported live by `crawl_pacing` events.
+          label: "Host rate ceiling",
+          value: `up to ${jsonNumber(request, ["host_rps"])} rps · burst ${jsonNumber(request, ["host_burst"])}`,
           span: 2,
         },
         {

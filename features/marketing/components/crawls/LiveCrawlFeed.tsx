@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
+  Gauge,
   Loader2,
   Radar,
 } from "lucide-react";
@@ -19,6 +20,10 @@ import {
   type PresentedCrawlEvent,
 } from "@/features/marketing/components/crawls/live-crawl-event-presenter";
 import type { CrawlLiveEvent } from "@/features/marketing/crawler/direct-client";
+import {
+  latestCrawlPacing,
+  pacingSourceLabel,
+} from "@/features/marketing/crawler/crawl-pacing";
 import { cn } from "@/lib/utils";
 import type { CrawlRealtimeStatus } from "@/features/marketing/data/useSiteCrawlActivity";
 
@@ -58,6 +63,10 @@ export function LiveCrawlFeed({
 }) {
   const { sitePath } = useMarketingSite();
   const counters = useMemo(() => summarizeLiveCrawlEvents(events), [events]);
+  // The crawl rate is no longer the number the user typed: it is detected,
+  // ramped and clamped per host. Vision point 8 — a silently-clamped setting is
+  // a defect — so the live rate and the rule behind it are always on screen.
+  const pacing = useMemo(() => latestCrawlPacing(events), [events]);
   const isActive = ["connecting", "running", "canceling"].includes(status);
 
   const rows = useMemo(() => {
@@ -163,6 +172,32 @@ export function LiveCrawlFeed({
           </div>
         ))}
       </div>
+
+      {pacing ? (
+        <div
+          className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/60 bg-muted/10 px-3 py-1 text-[11px] text-muted-foreground"
+          title={pacing.notes.join("\n")}
+        >
+          <Gauge className="h-3 w-3 shrink-0" />
+          <span className="font-semibold tabular-nums text-foreground">
+            {pacing.currentRps.toFixed(2)} req/s
+          </span>
+          <span>
+            of {pacing.ceilingRps.toFixed(2)} max · {pacingSourceLabel(pacing)}
+          </span>
+          {pacing.discoveredCeilingRps !== null ? (
+            <span className="text-amber-600 dark:text-amber-500">
+              · {pacing.host} limits us at{" "}
+              {pacing.discoveredCeilingRps.toFixed(2)} req/s
+            </span>
+          ) : null}
+          {pacing.userMaxReduced ? (
+            <span className="text-amber-600 dark:text-amber-500">
+              · below your configured maximum
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {isActive && counters.lastDiscoveredUrl ? (
         <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 bg-muted/10 px-3 py-1 text-[11px] text-muted-foreground">

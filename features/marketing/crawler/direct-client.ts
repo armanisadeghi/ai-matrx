@@ -104,6 +104,7 @@ export const CRAWL_LIVE_EVENT_TYPES = [
   "issue_detected",
   "crawl_completed",
   "crawl_warning",
+  "crawl_pacing",
   "initialize_step",
   ...SITE_COMMAND_PROGRESS_EVENT_TYPES,
 ] as const;
