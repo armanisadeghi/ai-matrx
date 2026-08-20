@@ -397,6 +397,45 @@
         }
       }
     },
+    "/search-kinds/search": {
+      "post": {
+        "tags": [
+          "Search Kinds"
+        ],
+        "summary": "Search As Kinds",
+        "operationId": "search_as_kinds_search_kinds_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchKindsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/communications/voice/conversation-relay/session-reference": {
       "post": {
         "tags": [
@@ -10069,6 +10108,59 @@
                     }
                   ],
                   "title": "Response Browser Login Materialize Vault Browser Login  Item Id  Materialize Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/browser-login/{item_id}/authenticator-materialize": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Browser Authenticator Materialize",
+        "description": "Deliver one current TOTP code to the authorized matrx-extend executor.\n\nThis is not a reveal surface. The still-pending delegated ``credential_login``\nrow is the one-shot capability; the service binds it to this user,\nconversation, account, origin, and exact DOM attempt before generation.\n``no-store`` prevents intermediary/browser caching.",
+        "operationId": "browser_authenticator_materialize_vault_browser_login__item_id__authenticator_materialize_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrowserAuthenticatorMaterializeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserAuthenticatorMaterializeResponse"
                 }
               }
             }
@@ -50120,7 +50212,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TypeResult"
+                  "$ref": "#/components/schemas/aidream__services__authenticator__seams__TypeResult"
                 }
               }
             }
@@ -50189,6 +50281,183 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/internal/sandbox/runs": {
+      "post": {
+        "tags": [
+          "cloud-browser-sandbox"
+        ],
+        "summary": "Sandbox Start Run",
+        "operationId": "sandbox_start_run_browser_manager_internal_sandbox_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/internal/sandbox/runs/{run_id}/command": {
+      "post": {
+        "tags": [
+          "cloud-browser-sandbox"
+        ],
+        "summary": "Sandbox Command",
+        "operationId": "sandbox_command_browser_manager_internal_sandbox_runs__run_id__command_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxCommandRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/internal/sandbox/runs/{run_id}/capture": {
+      "post": {
+        "tags": [
+          "cloud-browser-sandbox"
+        ],
+        "summary": "Sandbox Capture",
+        "operationId": "sandbox_capture_browser_manager_internal_sandbox_runs__run_id__capture_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/internal/sandbox/runs/{run_id}/stop": {
+      "post": {
+        "tags": [
+          "cloud-browser-sandbox"
+        ],
+        "summary": "Sandbox Stop Run",
+        "operationId": "sandbox_stop_run_browser_manager_internal_sandbox_runs__run_id__stop_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopRunResponse"
                 }
               }
             }
@@ -58025,6 +58294,138 @@
         "title": "AcceptsInjectedScope",
         "description": "Fields the FE ``callApi`` may inject on every POST/PUT/PATCH body.\n\n``lib/api/call-api.ts::buildRequestBody`` always merges\n``organization_id`` / ``project_id`` / ``task_id`` from the active app\ncontext onto the JSON body. A request model with ``extra=\"forbid\"`` that\nomits these fields 422s with ``extra_forbidden`` the moment the user has\nan org selected — the entire class of failure behind the 2026-07-15\n``/skills/ingest`` incident.\n\n**Rule:** every FastAPI body model that sets ``extra=\"forbid\"`` MUST\ninherit this (or :class:`ScopedRequest`, which does). Guard:\n``scripts/check_request_accepts_org_scope.py``."
       },
+      "ActionEventFacts": {
+        "properties": {
+          "actor": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "human",
+              "system"
+            ],
+            "title": "Actor"
+          },
+          "action_kind": {
+            "type": "string",
+            "title": "Action Kind"
+          },
+          "target_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Description"
+          },
+          "safe_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safe Url"
+          },
+          "origin_host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Host"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ended At"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "result_class": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "timeout",
+              "navigation",
+              "browser",
+              "validation",
+              "blocked",
+              "conflict"
+            ],
+            "title": "Result Class"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "capture_suppressed_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Suppressed Reason"
+          },
+          "chromium_version": {
+            "type": "string",
+            "title": "Chromium Version"
+          },
+          "worker_version": {
+            "type": "string",
+            "title": "Worker Version"
+          },
+          "adapter_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adapter Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "actor",
+          "action_kind",
+          "started_at",
+          "ended_at",
+          "duration_ms",
+          "result_class",
+          "chromium_version",
+          "worker_version"
+        ],
+        "title": "ActionEventFacts"
+      },
       "ActionResult": {
         "properties": {
           "ok": {
@@ -58057,6 +58458,105 @@
           "detail"
         ],
         "title": "ActionResult"
+      },
+      "ActivatePageCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "activate_page",
+            "title": "Command",
+            "default": "activate_page"
+          },
+          "target_page_id": {
+            "type": "string",
+            "title": "Target Page Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_page_id"
+        ],
+        "title": "ActivatePageCommand"
+      },
+      "ActivatePageResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "active_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Page Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ActivatePageResult"
       },
       "ActivePageIdsResponse": {
         "properties": {
@@ -69950,6 +70450,134 @@
         "title": "BrokeredGrant",
         "description": "What was granted — embedded in every credential for client display\nand debugging; the authoritative copy lives in the signed token."
       },
+      "BrowserAuthenticatorMaterializeRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Conversation Id"
+          },
+          "tool_invocation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Tool Invocation Id"
+          },
+          "page_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Page Url"
+          },
+          "code_selector": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code Selector"
+          },
+          "submit": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Submit"
+          },
+          "extension_instance_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Extension Instance Id"
+          },
+          "client_build": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Build"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "tool_invocation_id",
+          "page_url",
+          "code_selector",
+          "submit",
+          "extension_instance_id"
+        ],
+        "title": "BrowserAuthenticatorMaterializeRequest",
+        "description": "One action-time-authorized local-Chrome authenticator delivery.\n\nThe agent controls none of the identity/fencing fields below: matrx-extend\nderives them from the delegated call and its assigned tab. Unknown keys are\nforbidden so a seed or code can never ride the request."
+      },
+      "BrowserAuthenticatorMaterializeResponse": {
+        "properties": {
+          "injection_id": {
+            "type": "string",
+            "title": "Injection Id"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6,8}$",
+            "title": "Code"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "injection_id",
+          "origin",
+          "code",
+          "expires_at"
+        ],
+        "title": "BrowserAuthenticatorMaterializeResponse",
+        "description": "TRANSIENT local-extension payload. Never log, persist, or return it as\na tool result. The extension drops ``code`` immediately after typing."
+      },
       "BrowserCaptureContextRequest": {
         "properties": {
           "organization_id": {
@@ -73113,6 +73741,149 @@
         "title": "CaptureHealth",
         "description": "Capture-failure counter over the alarm window."
       },
+      "CaptureResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkerError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "worker_id": {
+            "type": "string",
+            "title": "Worker Id"
+          },
+          "controller": {
+            "$ref": "#/components/schemas/ControllerState"
+          },
+          "fencing_revision": {
+            "type": "integer",
+            "title": "Fencing Revision"
+          },
+          "sequence_applied": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence Applied"
+          },
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed",
+            "default": false
+          },
+          "queue_depth": {
+            "type": "integer",
+            "title": "Queue Depth"
+          },
+          "queue_state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "draining",
+              "closed"
+            ],
+            "title": "Queue State"
+          },
+          "run_mode": {
+            "type": "string",
+            "enum": [
+              "handoff_capable",
+              "automation_only"
+            ],
+            "title": "Run Mode"
+          },
+          "worker_health": {
+            "type": "string",
+            "enum": [
+              "starting",
+              "healthy",
+              "degraded",
+              "browser_crashed",
+              "stopping",
+              "stopped"
+            ],
+            "title": "Worker Health"
+          },
+          "chromium_version": {
+            "type": "string",
+            "title": "Chromium Version"
+          },
+          "worker_version": {
+            "type": "string",
+            "title": "Worker Version"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "captured": {
+            "type": "boolean",
+            "title": "Captured",
+            "default": false
+          },
+          "suppressed_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppressed Reason"
+          },
+          "artifact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapturedArtifact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ok",
+          "run_id",
+          "profile_id",
+          "worker_id",
+          "controller",
+          "fencing_revision",
+          "queue_depth",
+          "queue_state",
+          "run_mode",
+          "worker_health",
+          "chromium_version",
+          "worker_version",
+          "observed_at"
+        ],
+        "title": "CaptureResponse"
+      },
       "CaptureSite": {
         "properties": {
           "site_id": {
@@ -73137,6 +73908,88 @@
         ],
         "title": "CaptureSite",
         "description": "One site the caller may capture into."
+      },
+      "CapturedArtifact": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "screenshot",
+              "trace",
+              "video"
+            ],
+            "title": "Kind"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "byte_count": {
+            "type": "integer",
+            "title": "Byte Count"
+          },
+          "content_hash": {
+            "type": "string",
+            "title": "Content Hash"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "uploaded": {
+            "type": "boolean",
+            "title": "Uploaded",
+            "default": false
+          },
+          "image_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Base64"
+          },
+          "masked_selector_count": {
+            "type": "integer",
+            "title": "Masked Selector Count",
+            "default": 0
+          },
+          "redaction_policy_version": {
+            "type": "string",
+            "title": "Redaction Policy Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "media_type",
+          "byte_count",
+          "content_hash",
+          "redaction_policy_version"
+        ],
+        "title": "CapturedArtifact"
       },
       "CapturedLink": {
         "properties": {
@@ -77776,6 +78629,136 @@
         ],
         "title": "Clearance"
       },
+      "ClickCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "click",
+            "title": "Command",
+            "default": "click"
+          },
+          "selector": {
+            "type": "string",
+            "title": "Selector"
+          },
+          "wait_after_ms": {
+            "type": "integer",
+            "title": "Wait After Ms",
+            "default": 0
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 10000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "ClickCommand"
+      },
+      "ClickResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "text_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Preview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ClickResult"
+      },
       "ClientContext": {
         "properties": {
           "surface": {
@@ -77909,6 +78892,88 @@
           "workflow_id"
         ],
         "title": "CloneTemplateResponse"
+      },
+      "ClosePageCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "close_page",
+            "title": "Command",
+            "default": "close_page"
+          },
+          "target_page_id": {
+            "type": "string",
+            "title": "Target Page Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_page_id"
+        ],
+        "title": "ClosePageCommand"
+      },
+      "ClosePageResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed",
+            "default": false
+          },
+          "active_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Page Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ClosePageResult"
       },
       "ClusterDetailResponse": {
         "properties": {
@@ -81068,6 +82133,215 @@
           "total"
         ],
         "title": "CombinedRatingSide"
+      },
+      "CommandResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkerError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "worker_id": {
+            "type": "string",
+            "title": "Worker Id"
+          },
+          "controller": {
+            "$ref": "#/components/schemas/ControllerState"
+          },
+          "fencing_revision": {
+            "type": "integer",
+            "title": "Fencing Revision"
+          },
+          "sequence_applied": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence Applied"
+          },
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed",
+            "default": false
+          },
+          "queue_depth": {
+            "type": "integer",
+            "title": "Queue Depth"
+          },
+          "queue_state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "draining",
+              "closed"
+            ],
+            "title": "Queue State"
+          },
+          "run_mode": {
+            "type": "string",
+            "enum": [
+              "handoff_capable",
+              "automation_only"
+            ],
+            "title": "Run Mode"
+          },
+          "worker_health": {
+            "type": "string",
+            "enum": [
+              "starting",
+              "healthy",
+              "degraded",
+              "browser_crashed",
+              "stopping",
+              "stopped"
+            ],
+            "title": "Worker Health"
+          },
+          "chromium_version": {
+            "type": "string",
+            "title": "Chromium Version"
+          },
+          "worker_version": {
+            "type": "string",
+            "title": "Worker Version"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NavigateResult"
+              },
+              {
+                "$ref": "#/components/schemas/ClickResult"
+              },
+              {
+                "$ref": "#/components/schemas/FillResult"
+              },
+              {
+                "$ref": "#/components/schemas/matrx_scraper__ai_browser__actions__TypeResult"
+              },
+              {
+                "$ref": "#/components/schemas/SelectOptionResult"
+              },
+              {
+                "$ref": "#/components/schemas/WaitForResult"
+              },
+              {
+                "$ref": "#/components/schemas/GetElementResult"
+              },
+              {
+                "$ref": "#/components/schemas/QuerySelectorsResult"
+              },
+              {
+                "$ref": "#/components/schemas/EvalJsResult"
+              },
+              {
+                "$ref": "#/components/schemas/ScrollResult"
+              },
+              {
+                "$ref": "#/components/schemas/GetHtmlResult"
+              },
+              {
+                "$ref": "#/components/schemas/GetTextResult"
+              },
+              {
+                "$ref": "#/components/schemas/ActivatePageResult"
+              },
+              {
+                "$ref": "#/components/schemas/ClosePageResult"
+              },
+              {
+                "$ref": "#/components/schemas/HandleDialogResult"
+              },
+              {
+                "$ref": "#/components/schemas/DownloadResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "active_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Page Id"
+          },
+          "page_inventory_revision": {
+            "type": "integer",
+            "title": "Page Inventory Revision",
+            "default": 0
+          },
+          "human_required": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HumanRequiredSignal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_facts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionEventFacts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ok",
+          "run_id",
+          "profile_id",
+          "worker_id",
+          "controller",
+          "fencing_revision",
+          "queue_depth",
+          "queue_state",
+          "run_mode",
+          "worker_health",
+          "chromium_version",
+          "worker_version",
+          "observed_at"
+        ],
+        "title": "CommandResponse"
       },
       "CommitChoiceRequest": {
         "properties": {
@@ -84334,6 +85608,80 @@
           "state"
         ],
         "title": "ControlRequestResponse"
+      },
+      "ControllerState": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "provisioning",
+              "agent_control",
+              "handoff_requested",
+              "human_control",
+              "resume_pending",
+              "stopping",
+              "stopped",
+              "failed"
+            ],
+            "title": "State"
+          },
+          "controller_kind": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "human",
+              "none"
+            ],
+            "title": "Controller Kind"
+          },
+          "controller_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller Ref"
+          },
+          "fencing_revision": {
+            "type": "integer",
+            "title": "Fencing Revision"
+          },
+          "handoff_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handoff Id"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "human_input_enabled": {
+            "type": "boolean",
+            "title": "Human Input Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "controller_kind",
+          "controller_ref",
+          "fencing_revision",
+          "handoff_id",
+          "since",
+          "human_input_enabled"
+        ],
+        "title": "ControllerState"
       },
       "ConversationContinueRequest": {
         "properties": {
@@ -93838,6 +95186,112 @@
         ],
         "title": "DomainUpsertRequest"
       },
+      "DownloadResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "download_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Id"
+          },
+          "suggested_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Filename"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "byte_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Byte Count"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "uploaded": {
+            "type": "boolean",
+            "title": "Uploaded",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "DownloadResult"
+      },
       "DraftActionRequest": {
         "properties": {
           "organization_id": {
@@ -96462,6 +97916,75 @@
         ],
         "title": "EssentialState",
         "description": "The three parts that ARE the podcast."
+      },
+      "EvalJsCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "eval_js",
+            "title": "Command",
+            "default": "eval_js"
+          },
+          "expression": {
+            "type": "string",
+            "title": "Expression"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expression"
+        ],
+        "title": "EvalJsCommand"
+      },
+      "EvalJsResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "EvalJsResult"
       },
       "EvidenceReference": {
         "properties": {
@@ -101267,6 +102790,104 @@
         "title": "FileVersionRecord",
         "description": "Client-safe projection of a ``files.file_versions`` row.\n\nThe versions endpoints used to return the raw row via ``select(\"*\")``,\nwhich leaked the version's ``storage_uri`` (server-only S3 location). This\nmodel is the explicit projection: everything a client needs to render the\nversion history, and NOT the storage location. To fetch a version's bytes,\nuse ``GET /files/{id}/versions/{n}/download`` (never the raw location)."
       },
+      "FillCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "fill",
+            "title": "Command",
+            "default": "fill"
+          },
+          "selector": {
+            "type": "string",
+            "title": "Selector"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 10000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector",
+          "value"
+        ],
+        "title": "FillCommand"
+      },
+      "FillResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "FillResult"
+      },
       "FilterRequest": {
         "properties": {
           "filters": {
@@ -103922,6 +105543,354 @@
         ],
         "title": "GetConversationResponse"
       },
+      "GetElementCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "get_element",
+            "title": "Command",
+            "default": "get_element"
+          },
+          "selector": {
+            "type": "string",
+            "title": "Selector"
+          },
+          "include_html": {
+            "type": "boolean",
+            "title": "Include Html",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "GetElementCommand"
+      },
+      "GetElementResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "found": {
+            "type": "boolean",
+            "title": "Found",
+            "default": false
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "inner_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inner Html"
+          },
+          "outer_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outer Html"
+          },
+          "attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Attributes"
+          },
+          "bounding_box": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bounding Box"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GetElementResult"
+      },
+      "GetHtmlCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "get_html",
+            "title": "Command",
+            "default": "get_html"
+          },
+          "cap": {
+            "type": "integer",
+            "title": "Cap",
+            "default": 500000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GetHtmlCommand"
+      },
+      "GetHtmlResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GetHtmlResult"
+      },
+      "GetTextCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "get_text",
+            "title": "Command",
+            "default": "get_text"
+          },
+          "selector": {
+            "type": "string",
+            "title": "Selector",
+            "default": "body"
+          },
+          "cap": {
+            "type": "integer",
+            "title": "Cap",
+            "default": 50000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GetTextCommand"
+      },
+      "GetTextResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GetTextResult"
+      },
       "GetToolResponse": {
         "properties": {
           "tool": {
@@ -104884,6 +106853,108 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HandleDialogCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "handle_dialog",
+            "title": "Command",
+            "default": "handle_dialog"
+          },
+          "dialog_id": {
+            "type": "string",
+            "title": "Dialog Id"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "dismiss"
+            ],
+            "title": "Action"
+          },
+          "prompt_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dialog_id",
+          "action"
+        ],
+        "title": "HandleDialogCommand"
+      },
+      "HandleDialogResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "dialog_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialog Id"
+          },
+          "handled": {
+            "type": "boolean",
+            "title": "Handled",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "HandleDialogResult"
+      },
       "HeldOutOutcome": {
         "properties": {
           "turn_key": {
@@ -105159,6 +107230,87 @@
           "submit_selector"
         ],
         "title": "HumanLoginRequest"
+      },
+      "HumanRequiredSignal": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "credentials_missing",
+              "credentials_rejected",
+              "mfa_required",
+              "totp_unavailable",
+              "push_approval_required",
+              "webauthn_required",
+              "captcha_required",
+              "provider_consent_required",
+              "account_selection_required",
+              "sensitive_action_approval",
+              "payment_approval",
+              "destructive_change_approval",
+              "unrecognized_page",
+              "session_revoked_by_provider",
+              "agent_requested",
+              "user_requested",
+              "operator_requested"
+            ],
+            "title": "Reason"
+          },
+          "detected_by": {
+            "type": "string",
+            "enum": [
+              "adapter",
+              "heuristic",
+              "tool"
+            ],
+            "title": "Detected By"
+          },
+          "safe_origin": {
+            "type": "string",
+            "title": "Safe Origin"
+          },
+          "safe_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safe Instructions"
+          },
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Detected At"
+          },
+          "adapter_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adapter Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "detected_by",
+          "safe_origin",
+          "page_id",
+          "detected_at"
+        ],
+        "title": "HumanRequiredSignal"
       },
       "IceBlock": {
         "properties": {
@@ -119284,6 +121436,182 @@
         ],
         "title": "NavLink"
       },
+      "NavigateCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "navigate",
+            "title": "Command",
+            "default": "navigate"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "wait_until": {
+            "type": "string",
+            "enum": [
+              "load",
+              "domcontentloaded",
+              "networkidle"
+            ],
+            "title": "Wait Until",
+            "default": "load"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 30000
+          },
+          "extract_text": {
+            "type": "boolean",
+            "title": "Extract Text",
+            "default": false
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          },
+          "viewport": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewport"
+          },
+          "proxy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "NavigateCommand"
+      },
+      "NavigateResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status"
+          },
+          "text_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Preview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "NavigateResult"
+      },
       "NodeAgentChatContext": {
         "properties": {
           "mandate_key": {
@@ -132155,6 +134483,122 @@
         ],
         "title": "QuarantinedRowSummary"
       },
+      "QuerySelectorsCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "query_selectors",
+            "title": "Command",
+            "default": "query_selectors"
+          },
+          "selectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Selectors"
+          },
+          "attributes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attributes"
+          },
+          "limit_per_selector": {
+            "type": "integer",
+            "title": "Limit Per Selector",
+            "default": 50
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selectors"
+        ],
+        "title": "QuerySelectorsCommand"
+      },
+      "QuerySelectorsResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "results": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Results"
+          },
+          "match_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Match Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "QuerySelectorsResult"
+      },
       "QueryVariant": {
         "type": "string",
         "enum": [
@@ -141851,6 +144295,91 @@
         "title": "SandboxBindingState",
         "description": "Current sandbox binding for a conversation + whether the next agent run\nwill actually get the sandbox tools. ``armed`` tells the truth so a client\nnever has to guess why tools didn't appear (the failure mode that left users\nwith zero working boxes for days)."
       },
+      "SandboxCommandRequest": {
+        "properties": {
+          "command": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NavigateCommand"
+              },
+              {
+                "$ref": "#/components/schemas/ClickCommand"
+              },
+              {
+                "$ref": "#/components/schemas/FillCommand"
+              },
+              {
+                "$ref": "#/components/schemas/TypeTextCommand"
+              },
+              {
+                "$ref": "#/components/schemas/SelectOptionCommand"
+              },
+              {
+                "$ref": "#/components/schemas/WaitForCommand"
+              },
+              {
+                "$ref": "#/components/schemas/GetElementCommand"
+              },
+              {
+                "$ref": "#/components/schemas/QuerySelectorsCommand"
+              },
+              {
+                "$ref": "#/components/schemas/EvalJsCommand"
+              },
+              {
+                "$ref": "#/components/schemas/ScrollCommand"
+              },
+              {
+                "$ref": "#/components/schemas/GetHtmlCommand"
+              },
+              {
+                "$ref": "#/components/schemas/GetTextCommand"
+              },
+              {
+                "$ref": "#/components/schemas/ActivatePageCommand"
+              },
+              {
+                "$ref": "#/components/schemas/ClosePageCommand"
+              },
+              {
+                "$ref": "#/components/schemas/HandleDialogCommand"
+              },
+              {
+                "$ref": "#/components/schemas/WaitForDownloadCommand"
+              }
+            ],
+            "title": "Command",
+            "discriminator": {
+              "propertyName": "command",
+              "mapping": {
+                "activate_page": "#/components/schemas/ActivatePageCommand",
+                "click": "#/components/schemas/ClickCommand",
+                "close_page": "#/components/schemas/ClosePageCommand",
+                "eval_js": "#/components/schemas/EvalJsCommand",
+                "fill": "#/components/schemas/FillCommand",
+                "get_element": "#/components/schemas/GetElementCommand",
+                "get_html": "#/components/schemas/GetHtmlCommand",
+                "get_text": "#/components/schemas/GetTextCommand",
+                "handle_dialog": "#/components/schemas/HandleDialogCommand",
+                "navigate": "#/components/schemas/NavigateCommand",
+                "query_selectors": "#/components/schemas/QuerySelectorsCommand",
+                "scroll": "#/components/schemas/ScrollCommand",
+                "select_option": "#/components/schemas/SelectOptionCommand",
+                "type_text": "#/components/schemas/TypeTextCommand",
+                "wait_for": "#/components/schemas/WaitForCommand",
+                "wait_for_download": "#/components/schemas/WaitForDownloadCommand"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command"
+        ],
+        "title": "SandboxCommandRequest",
+        "description": "A canonical worker command from one approved sandbox server."
+      },
       "SandboxEnvResponse": {
         "properties": {
           "env": {
@@ -142612,6 +145141,125 @@
         ],
         "title": "ScreenshotResponse"
       },
+      "ScrollCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "scroll",
+            "title": "Command",
+            "default": "scroll"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "top",
+              "bottom"
+            ],
+            "title": "Direction",
+            "default": "down"
+          },
+          "pixels": {
+            "type": "integer",
+            "title": "Pixels",
+            "default": 500
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScrollCommand"
+      },
+      "ScrollResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "pixels": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pixels"
+          },
+          "scroll_y": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scroll Y"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ScrollResult"
+      },
       "ScrubRequest": {
         "properties": {
           "output_mode": {
@@ -143010,6 +145658,86 @@
         ],
         "title": "SearchKeywordsRequest"
       },
+      "SearchKindsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "brave",
+              "google"
+            ],
+            "title": "Provider",
+            "default": "brave"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Count",
+            "description": "Result count (Brave only; Google returns its page).",
+            "default": 10
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country",
+            "default": "us"
+          },
+          "include_raw": {
+            "type": "boolean",
+            "title": "Include Raw",
+            "description": "Also stream the raw provider payload (the second projection). Off by default.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchKindsRequest"
+      },
       "SearchRequestFilters": {
         "properties": {
           "source_kinds": {
@@ -143132,6 +145860,124 @@
         ],
         "title": "SeededCompetitor",
         "description": "One competitor that made it into the request, and why it qualified."
+      },
+      "SelectOptionCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "select_option",
+            "title": "Command",
+            "default": "select_option"
+          },
+          "selector": {
+            "type": "string",
+            "title": "Selector"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 10000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "SelectOptionCommand"
+      },
+      "SelectOptionResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "selected_values": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "SelectOptionResult"
       },
       "SelectedFileResponse": {
         "properties": {
@@ -157814,34 +160660,45 @@
         "title": "TypeLeak",
         "description": "One exact point where typing stops."
       },
-      "TypeResult": {
+      "TypeTextCommand": {
         "properties": {
-          "status": {
+          "command": {
             "type": "string",
-            "title": "Status"
+            "const": "type_text",
+            "title": "Command",
+            "default": "type_text"
           },
-          "confidence": {
-            "type": "number",
-            "title": "Confidence",
-            "default": 0
+          "selector": {
+            "type": "string",
+            "title": "Selector"
           },
-          "detail": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Detail"
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "clear_first": {
+            "type": "boolean",
+            "title": "Clear First",
+            "default": false
+          },
+          "press_enter": {
+            "type": "boolean",
+            "title": "Press Enter",
+            "default": false
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 10000
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "status"
+          "selector",
+          "text"
         ],
-        "title": "TypeResult"
+        "title": "TypeTextCommand"
       },
       "UnarchiveWorkflowResponse": {
         "properties": {
@@ -164067,6 +166924,150 @@
         ],
         "title": "VoiceShare"
       },
+      "WaitForCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "wait_for",
+            "title": "Command",
+            "default": "wait_for"
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "visible",
+              "attached",
+              "detached",
+              "hidden"
+            ],
+            "title": "State",
+            "default": "visible"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 10000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "WaitForCommand"
+      },
+      "WaitForDownloadCommand": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "wait_for_download",
+            "title": "Command",
+            "default": "wait_for_download"
+          },
+          "download_id": {
+            "type": "string",
+            "title": "Download Id"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms",
+            "default": 60000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "download_id"
+        ],
+        "title": "WaitForDownloadCommand"
+      },
+      "WaitForResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "waited_for": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waited For"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "WaitForResult"
+      },
       "WalkHop": {
         "properties": {
           "hop": {
@@ -165762,6 +168763,126 @@
           "type"
         ],
         "title": "WorkbookInputPart"
+      },
+      "WorkerError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "browser_controlled_by_human",
+              "stale_fencing_token",
+              "unknown_fencing_revision",
+              "queue_draining",
+              "worker_shutting_down",
+              "not_bootstrapped",
+              "already_bootstrapped",
+              "run_mismatch",
+              "profile_mismatch",
+              "lease_expired",
+              "access_revoked",
+              "sequence_out_of_order",
+              "sequence_conflict",
+              "sequence_too_old",
+              "sequence_required",
+              "sequence_not_permitted",
+              "illegal_controller_transition",
+              "controller_transition_conflict",
+              "command_not_supported",
+              "invalid_command_arguments",
+              "parameter_not_available_on_persistent_run",
+              "eval_js_not_permitted",
+              "unknown_page",
+              "unknown_dialog",
+              "command_deadline_exceeded",
+              "capture_target_missing",
+              "capture_upload_failed",
+              "checkpoint_in_progress",
+              "checkpoint_failed",
+              "chromium_unclean_exit",
+              "profile_locked_locally",
+              "browser_crashed",
+              "worker_degraded",
+              "reopen_required",
+              "unauthorized_worker_call",
+              "audience_mismatch",
+              "credential_expired",
+              "credential_replayed"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable"
+          },
+          "retry_after_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry After Ms"
+          },
+          "current_fencing_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Fencing Revision"
+          },
+          "current_controller": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Controller"
+          },
+          "last_sequence_applied": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sequence Applied"
+          },
+          "conflicting_handoff_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflicting Handoff Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "title": "WorkerError",
+        "description": "S2 §9.1. Carries NO resolver detail and NO page content — the same rule the\nurl_guard rejections follow, extended to every error. The human-readable\n``message`` is a fixed phrase, never a page body, dialog text, or query string."
       },
       "WorkerHealthResponse": {
         "properties": {
@@ -168081,6 +171202,35 @@
         ],
         "title": "TranscriptionResponse"
       },
+      "aidream__services__authenticator__seams__TypeResult": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 0
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TypeResult"
+      },
       "aidream__services__conversation_context__compaction__RestoreResponse": {
         "properties": {
           "restored_message_ids": {
@@ -169115,6 +172265,106 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
+      },
+      "matrx_scraper__ai_browser__actions__TypeResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "typed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Typed"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "text_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Preview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "TypeResult"
       }
     }
   }

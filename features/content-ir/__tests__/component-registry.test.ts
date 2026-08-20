@@ -132,6 +132,20 @@ describe("compiled bootstrap (system-components)", () => {
       plan_page_draft: "plan_page_draft",
       plan_page_review: "plan_page_review",
       cms_page_build: "cms_page_build",
+      // Search kind family (Search Kinds Pilot)
+      web_search_results: "web_search_results",
+      web_result: "web_result",
+      news_result: "news_result",
+      video_result: "video_result",
+      faq_item: "faq_item",
+      discussion_result: "discussion_result",
+      local_place: "local_place",
+      entity_card: "entity_card",
+      ai_answer: "ai_answer",
+      rating: "rating",
+      opening_hours: "opening_hours",
+      postal_address: "postal_address",
+      geo_coordinates: "geo_coordinates",
     });
   });
 });

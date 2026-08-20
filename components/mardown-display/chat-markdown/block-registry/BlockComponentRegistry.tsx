@@ -32,6 +32,26 @@ import PodcastEpisodeBlock from "../../blocks/media-io/PodcastEpisodeBlock";
 import MemoryAidBlock from "../../blocks/memory-aid/MemoryAidBlock";
 import MemoryHintBlock from "../../blocks/memory-aid/MemoryHintBlock";
 import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
+// Search kind family (Search Kinds Pilot) — one canonical component per kind.
+import WebSearchResultsBlockImpl from "../../blocks/search-kinds/WebSearchResultsBlock";
+import {
+  WebResultBlock as WebResultBlockImpl,
+  NewsResultBlock as NewsResultBlockImpl,
+  VideoResultBlock as VideoResultBlockImpl,
+  FaqItemBlock as FaqItemBlockImpl,
+  DiscussionResultBlock as DiscussionResultBlockImpl,
+} from "../../blocks/search-kinds/item-blocks";
+import {
+  LocalPlaceBlock as LocalPlaceBlockImpl,
+  EntityCardBlock as EntityCardBlockImpl,
+  AiAnswerKindBlock as AiAnswerKindBlockImpl,
+} from "../../blocks/search-kinds/place-entity-blocks";
+import {
+  RatingBlock as RatingBlockImpl,
+  OpeningHoursBlock as OpeningHoursBlockImpl,
+  PostalAddressBlock as PostalAddressBlockImpl,
+  GeoCoordinatesBlock as GeoCoordinatesBlockImpl,
+} from "../../blocks/search-kinds/primitive-blocks";
 import PlanPageResearchBlock from "../../blocks/page-pipeline/PlanPageResearchBlock";
 import PlanPageOutlineBlock from "../../blocks/page-pipeline/PlanPageOutlineBlock";
 import PlanPageDraftBlock from "../../blocks/page-pipeline/PlanPageDraftBlock";
@@ -394,6 +414,86 @@ export const BlockComponents = {
   SeoPackageBlock: (props: React.ComponentProps<typeof SeoPackageBlock>) => (
     <LazyBlockWrapper>
       <SeoPackageBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Search kind family (Search Kinds Pilot).
+  WebSearchResultsBlock: (
+    props: React.ComponentProps<typeof WebSearchResultsBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <WebSearchResultsBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  WebResultBlock: (props: React.ComponentProps<typeof WebResultBlockImpl>) => (
+    <LazyBlockWrapper>
+      <WebResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  NewsResultBlock: (props: React.ComponentProps<typeof NewsResultBlockImpl>) => (
+    <LazyBlockWrapper>
+      <NewsResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  VideoResultBlock: (
+    props: React.ComponentProps<typeof VideoResultBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <VideoResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  FaqItemBlock: (props: React.ComponentProps<typeof FaqItemBlockImpl>) => (
+    <LazyBlockWrapper>
+      <FaqItemBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  DiscussionResultBlock: (
+    props: React.ComponentProps<typeof DiscussionResultBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <DiscussionResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LocalPlaceBlock: (props: React.ComponentProps<typeof LocalPlaceBlockImpl>) => (
+    <LazyBlockWrapper>
+      <LocalPlaceBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  EntityCardBlock: (props: React.ComponentProps<typeof EntityCardBlockImpl>) => (
+    <LazyBlockWrapper>
+      <EntityCardBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  AiAnswerKindBlock: (
+    props: React.ComponentProps<typeof AiAnswerKindBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <AiAnswerKindBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  RatingBlock: (props: React.ComponentProps<typeof RatingBlockImpl>) => (
+    <LazyBlockWrapper>
+      <RatingBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  OpeningHoursBlock: (
+    props: React.ComponentProps<typeof OpeningHoursBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <OpeningHoursBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PostalAddressBlock: (
+    props: React.ComponentProps<typeof PostalAddressBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <PostalAddressBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  GeoCoordinatesBlock: (
+    props: React.ComponentProps<typeof GeoCoordinatesBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <GeoCoordinatesBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   MultipleChoiceQuiz: (

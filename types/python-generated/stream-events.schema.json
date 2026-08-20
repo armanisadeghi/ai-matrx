@@ -541,48 +541,6 @@
     "title": "ToolEventPayload",
     "type": "object"
   },
-  "BrokerPayload": {
-    "additionalProperties": false,
-    "properties": {
-      "broker_id": {
-        "title": "Broker Id",
-        "type": "string"
-      },
-      "value": {
-        "title": "Value"
-      },
-      "source": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Source"
-      },
-      "source_id": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Source Id"
-      }
-    },
-    "required": [
-      "broker_id",
-      "value"
-    ],
-    "title": "BrokerPayload",
-    "type": "object"
-  },
   "HeartbeatPayload": {
     "additionalProperties": false,
     "properties": {
@@ -10395,7 +10353,6 @@
           "completion",
           "error",
           "tool_event",
-          "broker",
           "heartbeat",
           "end",
           "render_block",
@@ -10445,7 +10402,6 @@
       "completion",
       "error",
       "tool_event",
-      "broker",
       "heartbeat",
       "end",
       "render_block",

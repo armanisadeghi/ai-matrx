@@ -275,6 +275,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search-kinds/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search As Kinds */
+        post: operations["search_as_kinds_search_kinds_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/communications/voice/conversation-relay/session-reference": {
         parameters: {
             query?: never;
@@ -3959,6 +3976,31 @@ export interface paths {
          *     enforcement cannot drift; refusals are audited. `no-store`.
          */
         post: operations["browser_login_materialize_vault_browser_login__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/browser-login/{item_id}/authenticator-materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Authenticator Materialize
+         * @description Deliver one current TOTP code to the authorized matrx-extend executor.
+         *
+         *     This is not a reveal surface. The still-pending delegated ``credential_login``
+         *     row is the one-shot capability; the service binds it to this user,
+         *     conversation, account, origin, and exact DOM attempt before generation.
+         *     ``no-store`` prevents intermediary/browser caching.
+         */
+        post: operations["browser_authenticator_materialize_vault_browser_login__item_id__authenticator_materialize_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19166,6 +19208,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/browser-manager/internal/sandbox/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sandbox Start Run */
+        post: operations["sandbox_start_run_browser_manager_internal_sandbox_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/internal/sandbox/runs/{run_id}/command": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sandbox Command */
+        post: operations["sandbox_command_browser_manager_internal_sandbox_runs__run_id__command_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/internal/sandbox/runs/{run_id}/capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sandbox Capture */
+        post: operations["sandbox_capture_browser_manager_internal_sandbox_runs__run_id__capture_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/internal/sandbox/runs/{run_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sandbox Stop Run */
+        post: operations["sandbox_stop_run_browser_manager_internal_sandbox_runs__run_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media-heal/drain": {
         parameters: {
             query?: never;
@@ -21739,6 +21849,49 @@ export interface components {
              */
             task_id?: string | null;
         };
+        /** ActionEventFacts */
+        ActionEventFacts: {
+            /**
+             * Actor
+             * @enum {string}
+             */
+            actor: "agent" | "human" | "system";
+            /** Action Kind */
+            action_kind: string;
+            /** Target Description */
+            target_description?: string | null;
+            /** Safe Url */
+            safe_url?: string | null;
+            /** Origin Host */
+            origin_host?: string | null;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Ended At
+             * Format: date-time
+             */
+            ended_at: string;
+            /** Duration Ms */
+            duration_ms: number;
+            /**
+             * Result Class
+             * @enum {string}
+             */
+            result_class: "ok" | "not_found" | "timeout" | "navigation" | "browser" | "validation" | "blocked" | "conflict";
+            /** Error Code */
+            error_code?: string | null;
+            /** Capture Suppressed Reason */
+            capture_suppressed_reason?: string | null;
+            /** Chromium Version */
+            chromium_version: string;
+            /** Worker Version */
+            worker_version: string;
+            /** Adapter Version */
+            adapter_version?: string | null;
+        };
         /** ActionResult */
         ActionResult: {
             /** Ok */
@@ -21754,6 +21907,33 @@ export interface components {
              * @default true
              */
             changed?: boolean;
+        };
+        /** ActivatePageCommand */
+        ActivatePageCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "activate_page";
+            /** Target Page Id */
+            target_page_id: string;
+        };
+        /** ActivatePageResult */
+        ActivatePageResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Active Page Id */
+            active_page_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
@@ -26665,6 +26845,62 @@ export interface components {
             expires_at: number;
         };
         /**
+         * BrowserAuthenticatorMaterializeRequest
+         * @description One action-time-authorized local-Chrome authenticator delivery.
+         *
+         *     The agent controls none of the identity/fencing fields below: matrx-extend
+         *     derives them from the delegated call and its assigned tab. Unknown keys are
+         *     forbidden so a seed or code can never ride the request.
+         */
+        BrowserAuthenticatorMaterializeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Tool Invocation Id */
+            tool_invocation_id: string;
+            /** Page Url */
+            page_url: string;
+            /** Code Selector */
+            code_selector: string;
+            /** Submit */
+            submit: {
+                [key: string]: string;
+            };
+            /** Extension Instance Id */
+            extension_instance_id: string;
+            /** Client Build */
+            client_build?: string | null;
+        };
+        /**
+         * BrowserAuthenticatorMaterializeResponse
+         * @description TRANSIENT local-extension payload. Never log, persist, or return it as
+         *     a tool result. The extension drops ``code`` immediately after typing.
+         */
+        BrowserAuthenticatorMaterializeResponse: {
+            /** Injection Id */
+            injection_id: string;
+            /** Origin */
+            origin: string;
+            /** Code */
+            code: string;
+            /** Expires At */
+            expires_at: string;
+        };
+        /**
          * BrowserCaptureContextRequest
          * @description Executor-derived page URL — never agent-supplied. Answers the
          *     known/unknown branch (does a login recipe exist for this origin?).
@@ -28019,6 +28255,62 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** CaptureResponse */
+        CaptureResponse: {
+            /** Ok */
+            ok: boolean;
+            error?: components["schemas"]["WorkerError"] | null;
+            /** Run Id */
+            run_id: string;
+            /** Profile Id */
+            profile_id: string;
+            /** Worker Id */
+            worker_id: string;
+            controller: components["schemas"]["ControllerState"];
+            /** Fencing Revision */
+            fencing_revision: number;
+            /** Sequence Applied */
+            sequence_applied?: number | null;
+            /**
+             * Replayed
+             * @default false
+             */
+            replayed?: boolean;
+            /** Queue Depth */
+            queue_depth: number;
+            /**
+             * Queue State
+             * @enum {string}
+             */
+            queue_state: "open" | "draining" | "closed";
+            /**
+             * Run Mode
+             * @enum {string}
+             */
+            run_mode: "handoff_capable" | "automation_only";
+            /**
+             * Worker Health
+             * @enum {string}
+             */
+            worker_health: "starting" | "healthy" | "degraded" | "browser_crashed" | "stopping" | "stopped";
+            /** Chromium Version */
+            chromium_version: string;
+            /** Worker Version */
+            worker_version: string;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /**
+             * Captured
+             * @default false
+             */
+            captured?: boolean;
+            /** Suppressed Reason */
+            suppressed_reason?: string | null;
+            artifact?: components["schemas"]["CapturedArtifact"] | null;
+        };
         /**
          * CaptureSite
          * @description One site the caller may capture into.
@@ -28030,6 +28322,38 @@ export interface components {
             label: string;
             /** Organization Id */
             organization_id: string;
+        };
+        /** CapturedArtifact */
+        CapturedArtifact: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "screenshot" | "trace" | "video";
+            /** Media Type */
+            media_type: string;
+            /** Byte Count */
+            byte_count: number;
+            /** Content Hash */
+            content_hash: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /**
+             * Uploaded
+             * @default false
+             */
+            uploaded?: boolean;
+            /** Image Base64 */
+            image_base64?: string | null;
+            /**
+             * Masked Selector Count
+             * @default 0
+             */
+            masked_selector_count?: number;
+            /** Redaction Policy Version */
+            redaction_policy_version: string;
         };
         /**
          * CapturedLink
@@ -29477,6 +29801,55 @@ export interface components {
          * @enum {string}
          */
         Clearance: "public" | "internal" | "restricted" | "privileged";
+        /** ClickCommand */
+        ClickCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "click";
+            /** Selector */
+            selector: string;
+            /**
+             * Wait After Ms
+             * @default 0
+             */
+            wait_after_ms?: number;
+            /**
+             * Timeout Ms
+             * @default 10000
+             */
+            timeout_ms?: number;
+        };
+        /** ClickResult */
+        ClickResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Selector */
+            selector?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Text Preview */
+            text_preview?: string | null;
+        };
         /**
          * ClientContext
          * @description Request envelope describing the calling client's surface + capabilities + state.
@@ -29548,6 +29921,34 @@ export interface components {
         CloneTemplateResponse: {
             /** Workflow Id */
             workflow_id: string;
+        };
+        /** ClosePageCommand */
+        ClosePageCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "close_page";
+            /** Target Page Id */
+            target_page_id: string;
+        };
+        /** ClosePageResult */
+        ClosePageResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Closed
+             * @default false
+             */
+            closed?: boolean;
+            /** Active Page Id */
+            active_page_id?: string | null;
         };
         /** ClusterDetailResponse */
         ClusterDetailResponse: {
@@ -30762,6 +31163,65 @@ export interface components {
             ratings: components["schemas"]["CombinedRatingItem"][];
             /** Total */
             total: number;
+        };
+        /** CommandResponse */
+        CommandResponse: {
+            /** Ok */
+            ok: boolean;
+            error?: components["schemas"]["WorkerError"] | null;
+            /** Run Id */
+            run_id: string;
+            /** Profile Id */
+            profile_id: string;
+            /** Worker Id */
+            worker_id: string;
+            controller: components["schemas"]["ControllerState"];
+            /** Fencing Revision */
+            fencing_revision: number;
+            /** Sequence Applied */
+            sequence_applied?: number | null;
+            /**
+             * Replayed
+             * @default false
+             */
+            replayed?: boolean;
+            /** Queue Depth */
+            queue_depth: number;
+            /**
+             * Queue State
+             * @enum {string}
+             */
+            queue_state: "open" | "draining" | "closed";
+            /**
+             * Run Mode
+             * @enum {string}
+             */
+            run_mode: "handoff_capable" | "automation_only";
+            /**
+             * Worker Health
+             * @enum {string}
+             */
+            worker_health: "starting" | "healthy" | "degraded" | "browser_crashed" | "stopping" | "stopped";
+            /** Chromium Version */
+            chromium_version: string;
+            /** Worker Version */
+            worker_version: string;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Result */
+            result?: components["schemas"]["NavigateResult"] | components["schemas"]["ClickResult"] | components["schemas"]["FillResult"] | components["schemas"]["matrx_scraper__ai_browser__actions__TypeResult"] | components["schemas"]["SelectOptionResult"] | components["schemas"]["WaitForResult"] | components["schemas"]["GetElementResult"] | components["schemas"]["QuerySelectorsResult"] | components["schemas"]["EvalJsResult"] | components["schemas"]["ScrollResult"] | components["schemas"]["GetHtmlResult"] | components["schemas"]["GetTextResult"] | components["schemas"]["ActivatePageResult"] | components["schemas"]["ClosePageResult"] | components["schemas"]["HandleDialogResult"] | components["schemas"]["DownloadResult"] | null;
+            /** Active Page Id */
+            active_page_id?: string | null;
+            /**
+             * Page Inventory Revision
+             * @default 0
+             */
+            page_inventory_revision?: number;
+            human_required?: components["schemas"]["HumanRequiredSignal"] | null;
+            event_facts?: components["schemas"]["ActionEventFacts"] | null;
         };
         /**
          * CommitChoiceRequest
@@ -32053,6 +32513,32 @@ export interface components {
             request_id: string;
             /** State */
             state: string;
+        };
+        /** ControllerState */
+        ControllerState: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "provisioning" | "agent_control" | "handoff_requested" | "human_control" | "resume_pending" | "stopping" | "stopped" | "failed";
+            /**
+             * Controller Kind
+             * @enum {string}
+             */
+            controller_kind: "agent" | "human" | "none";
+            /** Controller Ref */
+            controller_ref: string | null;
+            /** Fencing Revision */
+            fencing_revision: number;
+            /** Handoff Id */
+            handoff_id: string | null;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /** Human Input Enabled */
+            human_input_enabled: boolean;
         };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
@@ -35639,6 +36125,32 @@ export interface components {
              */
             proxy_type?: string;
         };
+        /** DownloadResult */
+        DownloadResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Download Id */
+            download_id?: string | null;
+            /** Suggested Filename */
+            suggested_filename?: string | null;
+            /** State */
+            state?: string | null;
+            /** Byte Count */
+            byte_count?: number | null;
+            /** Content Hash */
+            content_hash?: string | null;
+            /**
+             * Uploaded
+             * @default false
+             */
+            uploaded?: boolean;
+        };
         /**
          * DraftActionRequest
          * @description Typed empty body for approve/send actions in the generated contract.
@@ -36628,6 +37140,29 @@ export interface components {
              * @enum {string}
              */
             episode: "completed" | "pending" | "failed" | "skipped";
+        };
+        /** EvalJsCommand */
+        EvalJsCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "eval_js";
+            /** Expression */
+            expression: string;
+        };
+        /** EvalJsResult */
+        EvalJsResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Value */
+            value?: unknown;
         };
         /** EvidenceReference */
         EvidenceReference: {
@@ -38441,6 +38976,38 @@ export interface components {
             /** Change Summary */
             change_summary?: string | null;
         };
+        /** FillCommand */
+        FillCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "fill";
+            /** Selector */
+            selector: string;
+            /** Value */
+            value: string;
+            /**
+             * Timeout Ms
+             * @default 10000
+             */
+            timeout_ms?: number;
+        };
+        /** FillResult */
+        FillResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Selector */
+            selector?: string | null;
+            /** Value */
+            value?: string | null;
+        };
         /** FilterRequest */
         FilterRequest: {
             /** Filters */
@@ -39518,6 +40085,144 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** GetElementCommand */
+        GetElementCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "get_element";
+            /** Selector */
+            selector: string;
+            /**
+             * Include Html
+             * @default false
+             */
+            include_html?: boolean;
+        };
+        /** GetElementResult */
+        GetElementResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Selector */
+            selector?: string | null;
+            /**
+             * Found
+             * @default false
+             */
+            found?: boolean;
+            /** Text */
+            text?: string | null;
+            /** Inner Html */
+            inner_html?: string | null;
+            /** Outer Html */
+            outer_html?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: string;
+            };
+            /** Bounding Box */
+            bounding_box?: {
+                [key: string]: number;
+            } | null;
+        };
+        /** GetHtmlCommand */
+        GetHtmlCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "get_html";
+            /**
+             * Cap
+             * @default 500000
+             */
+            cap?: number;
+        };
+        /** GetHtmlResult */
+        GetHtmlResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Url */
+            url?: string | null;
+            /** Html */
+            html?: string | null;
+        };
+        /** GetTextCommand */
+        GetTextCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "get_text";
+            /**
+             * Selector
+             * @default body
+             */
+            selector?: string;
+            /**
+             * Cap
+             * @default 50000
+             */
+            cap?: number;
+        };
+        /** GetTextResult */
+        GetTextResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Url */
+            url?: string | null;
+            /** Text */
+            text?: string | null;
+        };
         /** GetToolResponse */
         GetToolResponse: {
             tool: components["schemas"]["ToolRecord"];
@@ -39898,6 +40603,41 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HandleDialogCommand */
+        HandleDialogCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "handle_dialog";
+            /** Dialog Id */
+            dialog_id: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "accept" | "dismiss";
+            /** Prompt Text */
+            prompt_text?: string | null;
+        };
+        /** HandleDialogResult */
+        HandleDialogResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Dialog Id */
+            dialog_id?: string | null;
+            /**
+             * Handled
+             * @default false
+             */
+            handled?: boolean;
+        };
         /**
          * HeldOutOutcome
          * @description One held-out turn, re-executed for real and ranked against its own record.
@@ -40005,6 +40745,32 @@ export interface components {
             fields: components["schemas"]["HumanLoginField"][];
             /** Submit Selector */
             submit_selector: string;
+        };
+        /** HumanRequiredSignal */
+        HumanRequiredSignal: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "credentials_missing" | "credentials_rejected" | "mfa_required" | "totp_unavailable" | "push_approval_required" | "webauthn_required" | "captcha_required" | "provider_consent_required" | "account_selection_required" | "sensitive_action_approval" | "payment_approval" | "destructive_change_approval" | "unrecognized_page" | "session_revoked_by_provider" | "agent_requested" | "user_requested" | "operator_requested";
+            /**
+             * Detected By
+             * @enum {string}
+             */
+            detected_by: "adapter" | "heuristic" | "tool";
+            /** Safe Origin */
+            safe_origin: string;
+            /** Safe Instructions */
+            safe_instructions?: string | null;
+            /** Page Id */
+            page_id: string;
+            /**
+             * Detected At
+             * Format: date-time
+             */
+            detected_at: string;
+            /** Adapter Version */
+            adapter_version?: string | null;
         };
         /** IceBlock */
         IceBlock: {
@@ -45489,6 +46255,69 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** NavigateCommand */
+        NavigateCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "navigate";
+            /** Url */
+            url: string;
+            /**
+             * Wait Until
+             * @default load
+             * @enum {string}
+             */
+            wait_until?: "load" | "domcontentloaded" | "networkidle";
+            /**
+             * Timeout Ms
+             * @default 30000
+             */
+            timeout_ms?: number;
+            /**
+             * Extract Text
+             * @default false
+             */
+            extract_text?: boolean;
+            /** User Agent */
+            user_agent?: string | null;
+            /** Viewport */
+            viewport?: {
+                [key: string]: number;
+            } | null;
+            /** Proxy */
+            proxy?: string | null;
+        };
+        /** NavigateResult */
+        NavigateResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Url */
+            url?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Http Status */
+            http_status?: number | null;
+            /** Text Preview */
+            text_preview?: string | null;
+        };
         /**
          * NodeAgentChatContext
          * @description Everything the studio needs to open a Node Agent chat for one node:
@@ -50656,6 +51485,54 @@ export interface components {
             /** Errors */
             errors: string[];
         };
+        /** QuerySelectorsCommand */
+        QuerySelectorsCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "query_selectors";
+            /** Selectors */
+            selectors: string[];
+            /** Attributes */
+            attributes?: string[] | null;
+            /**
+             * Limit Per Selector
+             * @default 50
+             */
+            limit_per_selector?: number;
+        };
+        /** QuerySelectorsResult */
+        QuerySelectorsResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Results */
+            results?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                }[];
+            };
+            /** Match Counts */
+            match_counts?: {
+                [key: string]: number;
+            };
+        };
         /**
          * QueryVariant
          * @enum {string}
@@ -54451,6 +55328,14 @@ export interface components {
             reason?: string | null;
         };
         /**
+         * SandboxCommandRequest
+         * @description A canonical worker command from one approved sandbox server.
+         */
+        SandboxCommandRequest: {
+            /** Command */
+            command: components["schemas"]["NavigateCommand"] | components["schemas"]["ClickCommand"] | components["schemas"]["FillCommand"] | components["schemas"]["TypeTextCommand"] | components["schemas"]["SelectOptionCommand"] | components["schemas"]["WaitForCommand"] | components["schemas"]["GetElementCommand"] | components["schemas"]["QuerySelectorsCommand"] | components["schemas"]["EvalJsCommand"] | components["schemas"]["ScrollCommand"] | components["schemas"]["GetHtmlCommand"] | components["schemas"]["GetTextCommand"] | components["schemas"]["ActivatePageCommand"] | components["schemas"]["ClosePageCommand"] | components["schemas"]["HandleDialogCommand"] | components["schemas"]["WaitForDownloadCommand"];
+        };
+        /**
          * SandboxEnvResponse
          * @description Decrypted env dict for the current user's next sandbox.
          *
@@ -54801,6 +55686,44 @@ export interface components {
             /** Preview Url */
             preview_url: string;
         };
+        /** ScrollCommand */
+        ScrollCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "scroll";
+            /**
+             * Direction
+             * @default down
+             * @enum {string}
+             */
+            direction?: "up" | "down" | "top" | "bottom";
+            /**
+             * Pixels
+             * @default 500
+             */
+            pixels?: number;
+            /** Selector */
+            selector?: string | null;
+        };
+        /** ScrollResult */
+        ScrollResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Direction */
+            direction?: string | null;
+            /** Pixels */
+            pixels?: number | null;
+            /** Scroll Y */
+            scroll_y?: number | null;
+        };
         /**
          * ScrubRequest
          * @description Composite scrub call — wipes the categories opted-in via flags.
@@ -55060,6 +55983,49 @@ export interface components {
              */
             search_type?: string;
         };
+        /** SearchKindsRequest */
+        SearchKindsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Provider
+             * @default brave
+             * @enum {string}
+             */
+            provider?: "brave" | "google";
+            /** Query */
+            query: string;
+            /**
+             * Count
+             * @description Result count (Brave only; Google returns its page).
+             * @default 10
+             */
+            count?: number;
+            /**
+             * Country
+             * @default us
+             */
+            country?: string;
+            /**
+             * Include Raw
+             * @description Also stream the raw provider payload (the second projection). Off by default.
+             * @default false
+             */
+            include_raw?: boolean;
+        };
         /** SearchRequestFilters */
         SearchRequestFilters: {
             /** Source Kinds */
@@ -55102,6 +56068,40 @@ export interface components {
              * @default false
              */
             explicitly_enabled?: boolean;
+        };
+        /** SelectOptionCommand */
+        SelectOptionCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "select_option";
+            /** Selector */
+            selector: string;
+            /** Value */
+            value?: string | null;
+            /** Label */
+            label?: string | null;
+            /**
+             * Timeout Ms
+             * @default 10000
+             */
+            timeout_ms?: number;
+        };
+        /** SelectOptionResult */
+        SelectOptionResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Selector */
+            selector?: string | null;
+            /** Selected Values */
+            selected_values?: string[] | null;
         };
         /** SelectedFileResponse */
         SelectedFileResponse: {
@@ -60770,17 +61770,32 @@ export interface components {
             /** Depth */
             depth: number;
         };
-        /** TypeResult */
-        TypeResult: {
-            /** Status */
-            status: string;
+        /** TypeTextCommand */
+        TypeTextCommand: {
             /**
-             * Confidence
-             * @default 0
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
-            confidence?: number;
-            /** Detail */
-            detail?: string | null;
+            command: "type_text";
+            /** Selector */
+            selector: string;
+            /** Text */
+            text: string;
+            /**
+             * Clear First
+             * @default false
+             */
+            clear_first?: boolean;
+            /**
+             * Press Enter
+             * @default false
+             */
+            press_enter?: boolean;
+            /**
+             * Timeout Ms
+             * @default 10000
+             */
+            timeout_ms?: number;
         };
         /** UnarchiveWorkflowResponse */
         UnarchiveWorkflowResponse: {
@@ -63220,6 +64235,59 @@ export interface components {
              */
             is_brand?: boolean;
         };
+        /** WaitForCommand */
+        WaitForCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "wait_for";
+            /** Selector */
+            selector?: string | null;
+            /** Text */
+            text?: string | null;
+            /**
+             * State
+             * @default visible
+             * @enum {string}
+             */
+            state?: "visible" | "attached" | "detached" | "hidden";
+            /**
+             * Timeout Ms
+             * @default 10000
+             */
+            timeout_ms?: number;
+        };
+        /** WaitForDownloadCommand */
+        WaitForDownloadCommand: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            command: "wait_for_download";
+            /** Download Id */
+            download_id: string;
+            /**
+             * Timeout Ms
+             * @default 60000
+             */
+            timeout_ms?: number;
+        };
+        /** WaitForResult */
+        WaitForResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Waited For */
+            waited_for?: string | null;
+            /** Url */
+            url?: string | null;
+        };
         /**
          * WalkHop
          * @description One human answer in the walk — evidence, verbatim (D-40 typed hop).
@@ -63796,6 +64864,33 @@ export interface components {
             type: "input_workbook";
             /** Workbook Ids */
             workbook_ids: (string | components["schemas"]["LiveResourceRefInput"])[];
+        };
+        /**
+         * WorkerError
+         * @description S2 §9.1. Carries NO resolver detail and NO page content — the same rule the
+         *     url_guard rejections follow, extended to every error. The human-readable
+         *     ``message`` is a fixed phrase, never a page body, dialog text, or query string.
+         */
+        WorkerError: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "browser_controlled_by_human" | "stale_fencing_token" | "unknown_fencing_revision" | "queue_draining" | "worker_shutting_down" | "not_bootstrapped" | "already_bootstrapped" | "run_mismatch" | "profile_mismatch" | "lease_expired" | "access_revoked" | "sequence_out_of_order" | "sequence_conflict" | "sequence_too_old" | "sequence_required" | "sequence_not_permitted" | "illegal_controller_transition" | "controller_transition_conflict" | "command_not_supported" | "invalid_command_arguments" | "parameter_not_available_on_persistent_run" | "eval_js_not_permitted" | "unknown_page" | "unknown_dialog" | "command_deadline_exceeded" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_in_progress" | "checkpoint_failed" | "chromium_unclean_exit" | "profile_locked_locally" | "browser_crashed" | "worker_degraded" | "reopen_required" | "unauthorized_worker_call" | "audience_mismatch" | "credential_expired" | "credential_replayed";
+            /** Message */
+            message: string;
+            /** Retryable */
+            retryable: boolean;
+            /** Retry After Ms */
+            retry_after_ms?: number | null;
+            /** Current Fencing Revision */
+            current_fencing_revision?: number | null;
+            /** Current Controller */
+            current_controller?: string | null;
+            /** Last Sequence Applied */
+            last_sequence_applied?: number | null;
+            /** Conflicting Handoff Id */
+            conflicting_handoff_id?: string | null;
         };
         /** WorkerHealthResponse */
         WorkerHealthResponse: {
@@ -64683,6 +65778,18 @@ export interface components {
             segments?: components["schemas"]["TranscriptionSegment"][];
             meta: components["schemas"]["TranscriptionMeta"];
         };
+        /** TypeResult */
+        aidream__services__authenticator__seams__TypeResult: {
+            /** Status */
+            status: string;
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence?: number;
+            /** Detail */
+            detail?: string | null;
+        };
         /** RestoreResponse */
         aidream__services__conversation_context__compaction__RestoreResponse: {
             /** Restored Message Ids */
@@ -65119,6 +66226,35 @@ export interface components {
             /** Error Message */
             error_message?: string | null;
         };
+        /** TypeResult */
+        matrx_scraper__ai_browser__actions__TypeResult: {
+            /** Success */
+            success: boolean;
+            /** Session Id */
+            session_id?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /** Selector */
+            selector?: string | null;
+            /** Typed */
+            typed?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Text Preview */
+            text_preview?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -65403,6 +66539,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaAllResponse"];
+                };
+            };
+        };
+    };
+    search_as_kinds_search_kinds_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchKindsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -72099,6 +73268,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrowserLoginLegacyMaterializeResponse"] | components["schemas"]["BrowserLoginNamedFieldsMaterializeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_authenticator_materialize_vault_browser_login__item_id__authenticator_materialize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserAuthenticatorMaterializeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserAuthenticatorMaterializeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -98505,7 +99709,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TypeResult"];
+                    "application/json": components["schemas"]["aidream__services__authenticator__seams__TypeResult"];
                 };
             };
             /** @description Validation Error */
@@ -98543,6 +99747,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MintResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sandbox_start_run_browser_manager_internal_sandbox_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sandbox_command_browser_manager_internal_sandbox_runs__run_id__command_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SandboxCommandRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sandbox_capture_browser_manager_internal_sandbox_runs__run_id__capture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptureResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sandbox_stop_run_browser_manager_internal_sandbox_runs__run_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopRunResponse"];
                 };
             };
             /** @description Validation Error */

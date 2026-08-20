@@ -43,6 +43,7 @@
 import type { CanonicalBlockIR } from "../core/ir-types";
 import type { KindSchema } from "../core/kind-schema.types";
 import type { KindDefinition } from "../registry/kind-registry.types";
+import { makeSearchKindBridge } from "./search-results";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -53,6 +54,12 @@ import {
 // Schemas
 // ---------------------------------------------------------------------------
 
+/**
+ * MERGED KIND (Search Kinds Pilot, 2026-08-20): `faq_item` is shared by
+ * authored FAQs (this SEO package) and provider "people also ask" results
+ * (`web_search_results.faqs`). The search fields are all OPTIONAL — authored
+ * FAQs carry none of them; the search adapters always fill source/position.
+ */
 export const faqItemKindSchema: KindSchema = {
   kind: "faq_item",
   fields: {
@@ -63,8 +70,18 @@ export const faqItemKindSchema: KindSchema = {
     },
     answer: {
       type: "string",
+      nullable: true,
       description: "A direct, self-contained answer — no more than a paragraph.",
     },
+    source: {
+      type: "string",
+      nullable: true,
+      description: "Provider that returned this item, e.g. 'brave' | 'google'.",
+    },
+    position: { type: "number", nullable: true },
+    source_title: { type: "string", nullable: true },
+    source_url: { type: "string", nullable: true },
+    favicon: { type: "string", nullable: true },
   },
 };
 
@@ -302,6 +319,10 @@ export const SEO_PACKAGE_KIND_DEFINITIONS: KindDefinition[] = [
     kind: "faq_item",
     schemaSource: "system",
     tier: "eager",
+    // Standalone rendering (Search Kinds Pilot): a bare faq_item routes to its
+    // own component; SeoPackageBlock keeps rendering its nested FAQs itself.
+    legacyBlockType: "faq_item",
+    toLegacyServerData: makeSearchKindBridge("faq_item"),
     persistence: { persistStructured: true },
     schema: faqItemKindSchema,
   },

@@ -314,6 +314,16 @@ export function isBlockLoading(block: {
  *    tag/fence surface); never emitted upstream. STREAMING bridges: chunks and
  *    sections are child-kind arrays, so sources and sections appear one at a
  *    time.
+ *  - `web_search_results` + its item kinds (`web_result`, `news_result`,
+ *    `video_result`, `faq_item`, `discussion_result`, `local_place`,
+ *    `entity_card`, `ai_answer`) + the primitives (`rating`, `opening_hours`,
+ *    `postal_address`, `geo_coordinates`) — the merged provider-agnostic
+ *    search kind family (Search Kinds Pilot), produced ONLY by
+ *    `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only —
+ *    no tag/fence surface); never emitted upstream. STREAMING bridges: the
+ *    collection carries child-kind arrays, so results appear as their
+ *    objects close; the collection component delegates every nested instance
+ *    to its kind's canonical component (db overrides included).
  */
 export type FeSynthesizedBlockType =
   | "media_block"
@@ -340,6 +350,19 @@ export type FeSynthesizedBlockType =
   | "cms_page_build"
   | "ingested_sources"
   | "study_notes"
+  | "web_search_results"
+  | "web_result"
+  | "news_result"
+  | "video_result"
+  | "faq_item"
+  | "discussion_result"
+  | "local_place"
+  | "entity_card"
+  | "ai_answer"
+  | "rating"
+  | "opening_hours"
+  | "postal_address"
+  | "geo_coordinates"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -359,7 +382,6 @@ export type ProtocolBlockType =
   | "consolidated_reasoning"
   | "decision"
   | "artifact"
-  | "matrxBroker"
   | "info"
   | "task"
   | "database"
@@ -433,6 +455,19 @@ export type ShapeBlockType =
   | "cms_page_build"
   | "ingested_sources"
   | "study_notes"
+  | "web_search_results"
+  | "web_result"
+  | "news_result"
+  | "video_result"
+  | "faq_item"
+  | "discussion_result"
+  | "local_place"
+  | "entity_card"
+  | "ai_answer"
+  | "rating"
+  | "opening_hours"
+  | "postal_address"
+  | "geo_coordinates"
   | "chart"
   | "map"
   | "stats"
@@ -541,6 +576,30 @@ const expectUnifiedArtifactStage: BlockRenderFn = (ctx) => {
 /** Shared registration for the generic XML control tags — plain markdown. */
 const renderControlTagMarkdown: BlockRenderFn = (ctx) =>
   ctx.block.content ? ctx.renderBasicMarkdown(ctx.block.content) : null;
+
+/**
+ * Shared three-branch registration for the search kind family (all thirteen
+ * kinds share the uniform `{ value, isComplete }` streaming bridge): bridged
+ * serverData → the kind's canonical component; still loading → loader;
+ * otherwise readable JSON — never hidden.
+ */
+const searchKindEntry =
+  (Component: React.ComponentType<{ serverData?: unknown }>): BlockRenderFn =>
+  ({ block, index }) => {
+    if (block.serverData) {
+      return <Component key={index} serverData={block.serverData} />;
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  };
 
 // ── Code-language sub-dispatch (its own table) ───────────────────────────────
 
@@ -821,15 +880,6 @@ const PROTOCOL_BLOCK_DISPATCH = {
       />
     );
   },
-
-  matrxBroker: ({ index }) => (
-    <p
-      key={index}
-      className="my-1 text-sm text-yellow-600 dark:text-yellow-400"
-    >
-      This block type is deprecated.
-    </p>
-  ),
 
   info: renderControlTagMarkdown,
   task: renderControlTagMarkdown,
@@ -1865,6 +1915,24 @@ const SHAPE_BLOCK_DISPATCH = {
       />
     );
   },
+
+  // Kind-routed search kind family (Search Kinds Pilot): STREAMING bridges —
+  // serverData is the uniform `{ value, isComplete }` wrapper; the collection
+  // delegates every nested instance to its kind's canonical component. Same
+  // loader / readable-JSON fallback contract as the entries above.
+  web_search_results: searchKindEntry(BlockComponents.WebSearchResultsBlock),
+  web_result: searchKindEntry(BlockComponents.WebResultBlock),
+  news_result: searchKindEntry(BlockComponents.NewsResultBlock),
+  video_result: searchKindEntry(BlockComponents.VideoResultBlock),
+  faq_item: searchKindEntry(BlockComponents.FaqItemBlock),
+  discussion_result: searchKindEntry(BlockComponents.DiscussionResultBlock),
+  local_place: searchKindEntry(BlockComponents.LocalPlaceBlock),
+  entity_card: searchKindEntry(BlockComponents.EntityCardBlock),
+  ai_answer: searchKindEntry(BlockComponents.AiAnswerKindBlock),
+  rating: searchKindEntry(BlockComponents.RatingBlock),
+  opening_hours: searchKindEntry(BlockComponents.OpeningHoursBlock),
+  postal_address: searchKindEntry(BlockComponents.PostalAddressBlock),
+  geo_coordinates: searchKindEntry(BlockComponents.GeoCoordinatesBlock),
 
   // NOTE: like `table` — normally consumed by the unified artifact stage
   // (TranscriptArtifact); preserved legacy path below.

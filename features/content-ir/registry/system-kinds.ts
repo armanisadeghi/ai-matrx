@@ -88,6 +88,7 @@ import { PLAN_PAGE_REVIEW_KIND_DEFINITIONS } from "../kinds/plan-page-review";
 import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
 import { INGESTED_SOURCES_KIND_DEFINITIONS } from "../kinds/ingested-sources";
 import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
+import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -137,6 +138,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...CMS_PAGE_BUILD_KIND_DEFINITIONS,
   ...INGESTED_SOURCES_KIND_DEFINITIONS,
   ...STUDY_NOTES_KIND_DEFINITIONS,
+  // Search kind family (Search Kinds Pilot, 2026-08-20): the merged
+  // provider-agnostic web-search collection + item kinds + primitives.
+  // Python-owned models: aidream/aidream/services/search_kinds/models.py.
+  ...SEARCH_RESULTS_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",
