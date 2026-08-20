@@ -56,6 +56,17 @@ export interface OutboxAttempt {
     | "selected"
     | null;
   responseTranscript: string | null;
+  /**
+   * Durable pointers to media the learner produced, when the upload landed
+   * BEFORE the connection died (FastFire and the voice surfaces upload the clip
+   * first, then record the attempt — so the id can exist while the write fails).
+   * Dropping them here silently detached a learner's own audio from the attempt
+   * it belongs to, which is a lost answer wearing a saved answer's clothes.
+   */
+  responseAudioFileId: string | null;
+  responseImageFileId: string | null;
+  /** Which grader produced `result`/`score`, when one ran before the drop. */
+  gradedBy: string | null;
   latencyMs: number | null;
   /** When the learner answered. Becomes the FSRS review instant on replay. */
   capturedAt: string;
@@ -90,6 +101,9 @@ class StudyOfflineDb extends Dexie {
     this.version(STUDY_OFFLINE_SCHEMA_VERSION).stores({
       // ++seq = autoincrement primary key (replay order).
       // &attemptId = unique, so a double-capture cannot queue twice.
+      // Non-indexed columns (responseAudioFileId, gradedBy, ...) are free-form
+      // in Dexie — only INDEXES live in this string, so widening the captured
+      // payload needs no version bump and leaves already-queued rows readable.
       attempts: "++seq, &attemptId, userId, capturedAt",
       // The deck key is [userId+setId], NOT setId. Keyed on setId alone, two
       // learners sharing a device collided: B opening set S read A's cached

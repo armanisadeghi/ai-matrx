@@ -109,11 +109,29 @@ export function OfflineStudyPanel() {
           <Skeleton className="h-16 w-full" />
         </div>
       ) : decks.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          You haven&apos;t downloaded any decks yet. Open a deck while you have
-          a signal and choose <span className="font-medium">Download</span> to
-          study it anywhere.
-        </p>
+        <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          <p>
+            You haven&apos;t downloaded any decks yet. Open a deck while you
+            have a signal and press{" "}
+            <span className="font-medium text-foreground">Download</span> — it
+            sits next to Export on the deck page, and in the header while you
+            study.
+          </p>
+          {/* Never a dead end: the instruction names a place, so this offers
+              the way there rather than leaving the learner to find it. */}
+          <Button asChild variant="outline" size="sm" className="mt-3" disabled={!online}>
+            <Link href="/education/flashcards">
+              <Layers className="mr-1.5 h-4 w-4" />
+              Browse your decks
+            </Link>
+          </Button>
+          {!online && (
+            <p className="mt-2 text-xs">
+              Your deck list needs a connection — this opens as soon as
+              you&apos;re back.
+            </p>
+          )}
+        </div>
       ) : (
         <ul className="space-y-2">
           {decks.map((deck) => (

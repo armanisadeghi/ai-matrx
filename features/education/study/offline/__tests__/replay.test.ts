@@ -91,6 +91,9 @@ function attempt(n: number, result: "correct" | "incorrect") {
     scoreValue: null,
     responseKind: null,
     responseTranscript: null,
+    responseAudioFileId: null,
+    responseImageFileId: null,
+    gradedBy: null,
     latencyMs: 1200,
     capturedAt: new Date(Date.UTC(2026, 7, 17, 10, n)).toISOString(),
   };

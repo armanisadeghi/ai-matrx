@@ -3,10 +3,28 @@
  *
  * The offline-tolerant wrapper around the ONE attempt writer.
  *
- * Every study mode already funnels through `studyService.recordAttempt`, so
- * offline support belongs in one wrapper here rather than in each mode — a
- * second capture path per mode is exactly the duplication the study spine
- * exists to prevent.
+ * Every study mode funnels through `studyService.recordAttempt` — but that is a
+ * statement about the SERVICE, not about this wrapper, and for a year the two
+ * were confused. Calling the service directly still reaches the spine online
+ * and still LOSES the answer offline; only this wrapper queues it. So the rule
+ * is: **a study mode calls `recordAttemptOfflineAware`, never
+ * `studyService.recordAttempt`.** Direct service calls belong to the replay
+ * loop (which is already the offline path) and to server-side/admin writers.
+ *
+ * Current in-app callers, all seven study modes:
+ *   classic review / Learn / Write  → `flashcards/data/useFlashcardStudy.ts`
+ *   Test (multiple choice)          → `flashcards/data/useQuizStudy.ts`
+ *   Due review                      → `flashcards/data/useDueReview.ts`
+ *   Weak-area drill                 → `flashcards/data/useWeakAreaDrill.ts`
+ *   Match                           → `flashcards/data/useMatchGame.ts`
+ *   FastFire                        → `flashcards/fast-fire/agents/gradeCard.thunk.ts`
+ *   Voice test                      → `flashcards/fast-fire/agents/gradeSpokenAnswer.thunk.ts`
+ *
+ * The wrapper is LOSSLESS: every field of `RecordAttemptInput` that describes
+ * what the learner did survives the queue. Anything this file forgets to carry
+ * is silently destroyed on the offline path only, which is the hardest class of
+ * bug to notice — so add new observation fields HERE and in `outbox.ts`
+ * together, never to the online path alone.
  *
  * Behaviour:
  *   • Online, RPC succeeds → the real result, unchanged. `queued` is false.
@@ -40,8 +58,14 @@ export interface OfflineAwareAttemptResult {
  * refused this". Supabase surfaces transport failures as a TypeError from
  * fetch ("Failed to fetch" / "NetworkError" / "Load failed" on Safari), while
  * a refusal arrives as a PostgrestError with a code.
+ *
+ * Exported because the offline READ path (`features/flashcards/data/offlineDeck.ts`)
+ * needs the identical distinction: a deck fetch that failed because the network
+ * is gone should fall back to the downloaded snapshot, while a fetch the server
+ * actively refused (RLS, deleted set) must surface as the error it is. A second
+ * copy of this predicate would drift the moment one browser's wording changed.
  */
-function isNetworkFailure(error: unknown): boolean {
+export function isNetworkFailure(error: unknown): boolean {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return true;
   }
@@ -114,6 +138,9 @@ export async function recordAttemptOfflineAware(
     scoreValue: attempt.scoreValue ?? null,
     responseKind: attempt.responseKind ?? null,
     responseTranscript: attempt.responseTranscript ?? null,
+    responseAudioFileId: attempt.responseAudioFileId ?? null,
+    responseImageFileId: attempt.responseImageFileId ?? null,
+    gradedBy: attempt.gradedBy ?? null,
     latencyMs: attempt.latencyMs ?? null,
     capturedAt,
   });

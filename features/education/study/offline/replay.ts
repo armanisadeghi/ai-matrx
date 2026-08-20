@@ -184,6 +184,11 @@ function toInput(attempt: OutboxAttempt) {
     scoreValue: attempt.scoreValue,
     responseKind: attempt.responseKind,
     responseTranscript: attempt.responseTranscript,
+    // `?? null` rather than a bare read: rows queued before these columns
+    // existed carry `undefined`, and an explicit null is what the RPC expects.
+    responseAudioFileId: attempt.responseAudioFileId ?? null,
+    responseImageFileId: attempt.responseImageFileId ?? null,
+    gradedBy: attempt.gradedBy ?? null,
     latencyMs: attempt.latencyMs,
     // The two fields that make replay safe and correctly scheduled.
     attemptId: attempt.attemptId,
