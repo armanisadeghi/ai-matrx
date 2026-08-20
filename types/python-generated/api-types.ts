@@ -12238,6 +12238,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crm/parties/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Party Door
+         * @description Find-or-create ONE party through the governed resolver. The only create path.
+         */
+        post: operations["resolve_party_door_crm_parties_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/resolve-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Parties Batch Door
+         * @description Resolve a whole import chunk through the SAME resolver a single save uses.
+         *
+         *     Sequential on purpose: two rows naming the same company must not race each
+         *     other into two organizations. The resolver's IntegrityError adoption covers
+         *     concurrent *writers*, but ordering our own rows is free and removes the race.
+         */
+        post: operations["resolve_parties_batch_door_crm_parties_resolve_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-processing/{cld_file_id}": {
         parameters: {
             query?: never;
@@ -16473,6 +16517,52 @@ export interface paths {
          *     ``fallback=true`` so the user is never left powerless (priority #4).
          */
         post: operations["run_suggestions_runs__run_id__suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/extract-proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Extract Proposal
+         * @description Resolve ``?extract=<fingerprint>`` back to the chip that produced it.
+         *
+         *     The proposal is the sweep's own typed output — steps, occurrences, and the
+         *     name its mandated agent chose. Nothing is re-detected here.
+         */
+        get: operations["get_extract_proposal_workflows__definition_id__extract_proposal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Workflow
+         * @description Create the sub-workflow and rewire every named occurrence to call it.
+         *
+         *     ``dry_run=true`` runs every gate and reports exactly what would happen
+         *     without writing anything — what the studio's confirm dialog shows.
+         */
+        post: operations["extract_workflow_workflows__definition_id__extract_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -21523,69 +21613,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{stream_slug}/{path}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Proxy Stream Http */
-        get: operations["proxy_stream_http__stream_slug___path__head__get__stream_slug_path"];
-        put?: never;
-        /** Proxy Stream Http */
-        post: operations["proxy_stream_http__stream_slug___path__head__post__stream_slug_path"];
-        delete?: never;
-        options?: never;
-        /** Proxy Stream Http */
-        head: operations["proxy_stream_http__stream_slug___path__head__head__stream_slug_path"];
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/parties/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resolve Party Door
-         * @description Find-or-create ONE party through the governed resolver. The only create path.
-         */
-        post: operations["resolve_party_door_crm_parties_resolve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/parties/resolve-batch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resolve Parties Batch Door
-         * @description Resolve a whole import chunk through the SAME resolver a single save uses.
-         *
-         *     Sequential on purpose: two rows naming the same company must not race each
-         *     other into two organizations. The resolver's IntegrityError adoption covers
-         *     concurrent *writers*, but ordering our own rows is free and removes the race.
-         */
-        post: operations["resolve_parties_batch_door_crm_parties_resolve_batch_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -21643,7 +21670,7 @@ export interface components {
              * Changed
              * @default true
              */
-            changed: boolean;
+            changed?: boolean;
         };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
@@ -21667,7 +21694,7 @@ export interface components {
              * @default search
              * @enum {string}
              */
-            via: "crawl" | "search";
+            via?: "crawl" | "search";
         };
         /** ActivityVerdict */
         ActivityVerdict: {
@@ -21686,12 +21713,12 @@ export interface components {
              * @default unknown
              * @enum {string}
              */
-            status: "active" | "stale" | "moved" | "unknown";
+            status?: "active" | "stale" | "moved" | "unknown";
             /**
              * Window Days
              * @default 30
              */
-            window_days: number;
+            window_days?: number;
             /** Last Seen At */
             last_seen_at?: string | null;
             /** Checked At */
@@ -21704,17 +21731,17 @@ export interface components {
              * Summary
              * @default
              */
-            summary: string;
+            summary?: string;
             /**
              * Searched
              * @default false
              */
-            searched: boolean;
+            searched?: boolean;
             /**
              * Search Failed
              * @default false
              */
-            search_failed: boolean;
+            search_failed?: boolean;
         };
         /** AddAssetRequest */
         AddAssetRequest: {
@@ -21763,7 +21790,7 @@ export interface components {
              * @default member
              * @enum {string}
              */
-            role: "member" | "admin";
+            role?: "member" | "admin";
         };
         /** AddItemsResponse */
         AddItemsResponse: {
@@ -21895,32 +21922,32 @@ export interface components {
              * Library Filter
              * @default any
              */
-            library_filter: string;
+            library_filter?: string;
             /**
              * Limit
              * @default 10
              */
-            limit: number;
+            limit?: number;
             /**
              * Multi Query
              * @default 1
              */
-            multi_query: number;
+            multi_query?: number;
             /**
              * Use Hyde
              * @default false
              */
-            use_hyde: boolean;
+            use_hyde?: boolean;
             /**
              * Use Mmr
              * @default true
              */
-            use_mmr: boolean;
+            use_mmr?: boolean;
             /**
              * Rerank
              * @default true
              */
-            rerank: boolean;
+            rerank?: boolean;
         };
         /** AdminSearchResponse */
         AdminSearchResponse: {
@@ -21966,68 +21993,68 @@ export interface components {
              * Admitted
              * @default false
              */
-            admitted: boolean;
+            admitted?: boolean;
             /** Quality Score */
             quality_score?: number | null;
             /**
              * Baseline Score
              * @default 0.5
              */
-            baseline_score: number;
+            baseline_score?: number;
             /** Improvement */
             improvement?: number | null;
             /**
              * Required Improvement
              * @default 0.05
              */
-            required_improvement: number;
+            required_improvement?: number;
             /** Cost Ratio */
             cost_ratio?: number | null;
             /**
              * Max Cost Ratio
              * @default 1.1
              */
-            max_cost_ratio: number;
+            max_cost_ratio?: number;
             /**
              * Judged
              * @default 0
              */
-            judged: number;
+            judged?: number;
             /**
              * Wins
              * @default 0
              */
-            wins: number;
+            wins?: number;
             /**
              * Ties
              * @default 0
              */
-            ties: number;
+            ties?: number;
             /**
              * Losses
              * @default 0
              */
-            losses: number;
+            losses?: number;
             /**
              * Errored
              * @default 0
              */
-            errored: number;
+            errored?: number;
             /**
              * Skipped For Budget
              * @default 0
              */
-            skipped_for_budget: number;
+            skipped_for_budget?: number;
             /**
              * Spend Usd
              * @default 0
              */
-            spend_usd: number;
+            spend_usd?: number;
             /**
              * Statement
              * @default
              */
-            statement: string;
+            statement?: string;
             /** Outcomes */
             outcomes?: components["schemas"]["HeldOutOutcome"][];
         };
@@ -22054,12 +22081,12 @@ export interface components {
              * Apply Quotas
              * @default true
              */
-            apply_quotas: boolean;
+            apply_quotas?: boolean;
             /**
              * User Ask
              * @default
              */
-            user_ask: string;
+            user_ask?: string;
         };
         /** AdoptIntentResponse */
         AdoptIntentResponse: {
@@ -22080,17 +22107,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -22126,25 +22153,25 @@ export interface components {
              * @description Maximum execution attempts allowed for each item.
              * @default 3
              */
-            max_attempts: number;
+            max_attempts?: number;
             /**
              * Lease Seconds
              * @description Seconds an item claim remains valid without renewal.
              * @default 900
              */
-            lease_seconds: number;
+            lease_seconds?: number;
             /**
              * Max Concurrency
              * @description Maximum assignment items executed concurrently by this run.
              * @default 5
              */
-            max_concurrency: number;
+            max_concurrency?: number;
             /**
              * Retry Delay Seconds
              * @description Delay before a retryable item becomes claimable again.
              * @default 0
              */
-            retry_delay_seconds: number;
+            retry_delay_seconds?: number;
             /**
              * Metadata
              * @description Caller metadata preserved on the durable assignment session.
@@ -22229,12 +22256,12 @@ export interface components {
              * Stream
              * @default true
              */
-            stream: boolean;
+            stream?: boolean;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
         };
         /**
          * AgentConfigSettings
@@ -22265,7 +22292,7 @@ export interface components {
              * @description Context object type (document / text / …).
              * @default
              */
-            type: string;
+            type?: string;
             /**
              * Label
              * @description Human label for the slot.
@@ -22302,12 +22329,12 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /**
              * Agent Type
              * @default
              */
-            agent_type: string;
+            agent_type?: string;
             /** Category */
             category?: string | null;
             /** Tags */
@@ -22316,12 +22343,12 @@ export interface components {
              * Is Active
              * @default true
              */
-            is_active: boolean;
+            is_active?: boolean;
             /**
              * Version
              * @default 1
              */
-            version: number;
+            version?: number;
             /** Model Id */
             model_id?: string | null;
             /**
@@ -22369,17 +22396,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -22401,24 +22428,24 @@ export interface components {
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /**
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /**
              * Category
              * @default
              */
-            category: string;
+            category?: string;
             /** Tags */
             tags?: string[];
             /**
              * Type
              * @default agent
              */
-            type: string;
+            type?: string;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -22497,22 +22524,22 @@ export interface components {
              * Stream
              * @default true
              */
-            stream: boolean;
+            stream?: boolean;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /**
              * Tools
              * @default []
              */
-            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
@@ -22523,34 +22550,34 @@ export interface components {
              * Context
              * @default {}
              */
-            context: {
+            context?: {
                 [key: string]: unknown;
             };
             /**
              * Writable Variables
              * @default []
              */
-            writable_variables: string[];
+            writable_variables?: string[];
             /**
              * Allow Context Create
              * @default false
              */
-            allow_context_create: boolean;
+            allow_context_create?: boolean;
             /**
              * Prior Messages
              * @default []
              */
-            prior_messages: components["schemas"]["ChatMessageInput"][];
+            prior_messages?: components["schemas"]["ChatMessageInput"][];
             /**
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /**
              * Block Mode
              * @default false
              */
-            block_mode: boolean;
+            block_mode?: boolean;
             /** Snapshot */
             snapshot?: boolean | null;
             /** Memory */
@@ -22561,18 +22588,18 @@ export interface components {
              * Memory Scope
              * @default thread
              */
-            memory_scope: string;
+            memory_scope?: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
             /**
              * Max Iterations
              * @default 100
              */
-            max_iterations: number;
+            max_iterations?: number;
             /**
              * Max Retries Per Iteration
              * @default 2
              */
-            max_retries_per_iteration: number;
+            max_retries_per_iteration?: number;
             /** Skill Config */
             skill_config?: {
                 [key: string]: unknown;
@@ -22611,7 +22638,7 @@ export interface components {
              * @description If true, `agent_id` is treated as a pinned version_id instead of a current-agent id.
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /**
              * User Input
              * @description User message to append before running. Accepts a string or a list of content parts.
@@ -22674,7 +22701,7 @@ export interface components {
              * @description Permit the agent to spawn new context objects via the context tool's create action.
              * @default false
              */
-            allow_context_create: boolean;
+            allow_context_create?: boolean;
             /**
              * Tools
              * @description Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.
@@ -22719,19 +22746,19 @@ export interface components {
              * @description Persist each item's conversation and messages when true.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Debug
              * @description Enable verbose execution diagnostics for the agent run.
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Block Mode
              * @description Return block-oriented output events when supported by the agent.
              * @default false
              */
-            block_mode: boolean;
+            block_mode?: boolean;
             /**
              * Snapshot
              * @description Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events.
@@ -22752,7 +22779,7 @@ export interface components {
              * @description Observational-memory scope, normally the current thread.
              * @default thread
              */
-            memory_scope: string;
+            memory_scope?: string;
             /**
              * Cache Bypass
              * @description Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.
@@ -22765,13 +22792,13 @@ export interface components {
              * @description Maximum agent reasoning/tool-loop iterations.
              * @default 100
              */
-            max_iterations: number;
+            max_iterations?: number;
             /**
              * Max Retries Per Iteration
              * @description Maximum provider retries allowed within one agent iteration.
              * @default 2
              */
-            max_retries_per_iteration: number;
+            max_retries_per_iteration?: number;
         };
         /**
          * AgentSummary
@@ -22786,7 +22813,7 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Category */
             category?: string | null;
             /** Tags */
@@ -22795,12 +22822,12 @@ export interface components {
              * Agent Type
              * @default
              */
-            agent_type: string;
+            agent_type?: string;
             /**
              * Version
              * @default 1
              */
-            version: number;
+            version?: number;
             orchestra?: components["schemas"]["OrchestraBadge"] | null;
         };
         /**
@@ -22816,7 +22843,7 @@ export interface components {
              * Prompt
              * @default
              */
-            prompt: string;
+            prompt?: string;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -22828,17 +22855,17 @@ export interface components {
              * @default ask
              * @enum {string}
              */
-            auth_mode: "ask" | "auto";
+            auth_mode?: "ask" | "auto";
             /**
              * Max Runtime Seconds
              * @default 600
              */
-            max_runtime_seconds: number;
+            max_runtime_seconds?: number;
             /**
              * Max Concurrent
              * @default 1
              */
-            max_concurrent: number;
+            max_concurrent?: number;
         };
         /** AgentTaskResponse */
         AgentTaskResponse: {
@@ -22861,7 +22888,7 @@ export interface components {
              * @default ask
              * @enum {string}
              */
-            auth_mode: "ask" | "auto";
+            auth_mode?: "ask" | "auto";
             /** Max Runtime Seconds */
             max_runtime_seconds: number;
             /** Max Concurrent */
@@ -22891,7 +22918,7 @@ export interface components {
              * Is Concept
              * @default false
              */
-            is_concept: boolean;
+            is_concept?: boolean;
             /** Linked */
             linked?: components["schemas"]["AgentToolEntityMapLink"][];
         };
@@ -22914,7 +22941,7 @@ export interface components {
              * Include Parent
              * @default true
              */
-            include_parent: boolean;
+            include_parent?: boolean;
             /**
              * Organization Id
              * @description Admin-only org override — should match the org used for the search.
@@ -22950,7 +22977,7 @@ export interface components {
              * Snippet
              * @default
              */
-            snippet: string;
+            snippet?: string;
             /** Score */
             score?: number | null;
             /** Vector Rank */
@@ -23006,7 +23033,7 @@ export interface components {
              * Limit
              * @default 10
              */
-            limit: number;
+            limit?: number;
             /** Source Kinds */
             source_kinds?: string[] | null;
             /** Data Store Id */
@@ -23015,22 +23042,22 @@ export interface components {
              * Multi Query
              * @default 1
              */
-            multi_query: number;
+            multi_query?: number;
             /**
              * Use Hyde
              * @default false
              */
-            use_hyde: boolean;
+            use_hyde?: boolean;
             /**
              * Rerank
              * @default true
              */
-            rerank: boolean;
+            rerank?: boolean;
             /**
              * Use Mmr
              * @default true
              */
-            use_mmr: boolean;
+            use_mmr?: boolean;
             /** Scope Ids */
             scope_ids?: string[] | null;
             /**
@@ -23050,7 +23077,7 @@ export interface components {
              * Tool Name
              * @default knowledge_search
              */
-            tool_name: string;
+            tool_name?: string;
             /** Args */
             args: {
                 [key: string]: unknown;
@@ -23077,7 +23104,7 @@ export interface components {
              * @description When True, agent_id refers to an agx_version row instead of agx_agent.
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /**
              * Description Override
              * @description Optional override of the projected tool's description. When omitted, the agent's own description is used.
@@ -23098,13 +23125,13 @@ export interface components {
              * @default inline
              * @enum {string}
              */
-            result_mode: "inline" | "reference" | "inline_once";
+            result_mode?: "inline" | "reference" | "inline_once";
             /**
              * Handoff
              * @description Agent-as-Router (Pattern 1): a successful call ENDS the caller's loop — the child's answer streams to the client and persists as the conversation's own assistant response; control returns to the caller only on error. Mutually exclusive with result_mode != 'inline' (a handoff answer IS the response, never a descriptor).
              * @default false
              */
-            handoff: boolean;
+            handoff?: boolean;
         };
         /** AgentUsageReportResponse */
         AgentUsageReportResponse: {
@@ -23125,27 +23152,27 @@ export interface components {
              * Usage Count
              * @default 0
              */
-            usage_count: number;
+            usage_count?: number;
             /**
              * Breaking
              * @default 0
              */
-            breaking: number;
+            breaking?: number;
             /**
              * Silent Breaking
              * @default 0
              */
-            silent_breaking: number;
+            silent_breaking?: number;
             /**
              * Warning
              * @default 0
              */
-            warning: number;
+            warning?: number;
             /**
              * Info
              * @default 0
              */
-            info: number;
+            info?: number;
         };
         /**
          * AgentUserInputBody
@@ -23167,7 +23194,7 @@ export interface components {
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
              * @default false
              */
-            use_user_agent_overrides: boolean;
+            use_user_agent_overrides?: boolean;
         };
         /**
          * AgentVariableDefinition
@@ -23191,7 +23218,7 @@ export interface components {
              * @description Must be provided before the agent runs.
              * @default false
              */
-            required: boolean;
+            required?: boolean;
             /** @description UI input component config (defaults to a textarea). */
             customComponent?: components["schemas"]["VariableComponentSpec"] | null;
             /** @description When set, filled from a scope context item and inherits its component. */
@@ -23207,17 +23234,17 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /**
              * Required
              * @default false
              */
-            required: boolean;
+            required?: boolean;
             /**
              * Default Value
              * @default
              */
-            default_value: string;
+            default_value?: string;
         };
         /** AgentVariableInput */
         AgentVariableInput: {
@@ -23231,7 +23258,7 @@ export interface components {
              * @description What this variable contains.
              * @default
              */
-            description: string;
+            description?: string;
         };
         /**
          * AgentVersion
@@ -23289,7 +23316,7 @@ export interface components {
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /** Change Note */
             change_note?: string | null;
             /** Changed At */
@@ -23306,12 +23333,12 @@ export interface components {
              * Total Invocations
              * @default 0
              */
-            total_invocations: number;
+            total_invocations?: number;
             /**
              * Total Scored
              * @default 0
              */
-            total_scored: number;
+            total_scored?: number;
         };
         /** AgreementRow */
         AgreementRow: {
@@ -23395,14 +23422,14 @@ export interface components {
              * Country Iso
              * @default US
              */
-            country_iso: string;
+            country_iso?: string;
             /** City */
             city?: string | null;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** AiVisibilityProviderResult */
         AiVisibilityProviderResult: {
@@ -23423,17 +23450,17 @@ export interface components {
              * Answer Text
              * @default
              */
-            answer_text: string;
+            answer_text?: string;
             /**
              * Target Mentioned
              * @default false
              */
-            target_mentioned: boolean;
+            target_mentioned?: boolean;
             /**
              * Target Cited
              * @default false
              */
-            target_cited: boolean;
+            target_cited?: boolean;
             /** Target Recommendation Rank */
             target_recommendation_rank?: number | null;
             /** Target Recommendation Subject */
@@ -23442,7 +23469,7 @@ export interface components {
              * Citation Count
              * @default 0
              */
-            citation_count: number;
+            citation_count?: number;
             /** Analysis */
             analysis?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -23484,22 +23511,22 @@ export interface components {
              * Providers Completed
              * @default 0
              */
-            providers_completed: number;
+            providers_completed?: number;
             /**
              * Providers Failed
              * @default 0
              */
-            providers_failed: number;
+            providers_failed?: number;
             /**
              * Target Mentions
              * @default 0
              */
-            target_mentions: number;
+            target_mentions?: number;
             /**
              * Target Citations
              * @default 0
              */
-            target_citations: number;
+            target_citations?: number;
             /** Top Cited Domains */
             top_cited_domains?: [
                 string,
@@ -23548,11 +23575,11 @@ export interface components {
                 [key: string]: unknown;
             };
             /** @default on_demand */
-            trigger: components["schemas"]["CollectionTrigger"];
+            trigger?: components["schemas"]["CollectionTrigger"];
             /** Credential Reference Id */
             credential_reference_id?: string | null;
             /** @default platform_secret */
-            credential_reference_kind: components["schemas"]["CredentialReferenceKind"];
+            credential_reference_kind?: components["schemas"]["CredentialReferenceKind"];
             /** Request Id */
             request_id?: string | null;
             /** Execution Id */
@@ -23561,12 +23588,12 @@ export interface components {
              * Resume Existing
              * @default false
              */
-            resume_existing: boolean;
+            resume_existing?: boolean;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
@@ -23574,21 +23601,21 @@ export interface components {
              * Per Detector Enabled
              * @default {}
              */
-            per_detector_enabled: {
+            per_detector_enabled?: {
                 [key: string]: boolean;
             };
             /**
              * Default Tier Per Detector
              * @default {}
              */
-            default_tier_per_detector: {
+            default_tier_per_detector?: {
                 [key: string]: string;
             };
             /**
              * Default Redaction Mode
              * @default reversible
              */
-            default_redaction_mode: string;
+            default_redaction_mode?: string;
         };
         /** AnalysisPreferencesPutResponse */
         AnalysisPreferencesPutResponse: {
@@ -23626,7 +23653,7 @@ export interface components {
              * Window Days
              * @default 28
              */
-            window_days: number;
+            window_days?: number;
             /** Request Id */
             request_id?: string | null;
         };
@@ -23638,7 +23665,7 @@ export interface components {
              * Agent Type
              * @default page_summary
              */
-            agent_type: string;
+            agent_type?: string;
             /** Agent Id */
             agent_id?: string | null;
             /** User Input */
@@ -23650,7 +23677,7 @@ export interface components {
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
              * @default false
              */
-            use_user_agent_overrides: boolean;
+            use_user_agent_overrides?: boolean;
         };
         /** AnalyzeRefreshBody */
         AnalyzeRefreshBody: {
@@ -23662,12 +23689,12 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /**
              * Only Stale
              * @default false
              */
-            only_stale: boolean;
+            only_stale?: boolean;
         };
         /** AnalyzeRequest */
         AnalyzeRequest: {
@@ -23675,7 +23702,7 @@ export interface components {
              * Agent Type
              * @default page_summary
              */
-            agent_type: string;
+            agent_type?: string;
             /** Agent Id */
             agent_id?: string | null;
             /** User Input */
@@ -23687,7 +23714,7 @@ export interface components {
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
              * @default false
              */
-            use_user_agent_overrides: boolean;
+            use_user_agent_overrides?: boolean;
         };
         /**
          * AncillaryItem
@@ -23740,7 +23767,7 @@ export interface components {
              * Label Category
              * @default custom
              */
-            label_category: string;
+            label_category?: string;
             /** Extracted Text */
             extracted_text?: string | null;
             /** Normalized Value */
@@ -23757,7 +23784,7 @@ export interface components {
              * Source
              * @default user
              */
-            source: string;
+            source?: string;
         };
         /** AnnotationOut */
         AnnotationOut: {
@@ -23803,7 +23830,7 @@ export interface components {
              * Is User Locked
              * @default true
              */
-            is_user_locked: boolean;
+            is_user_locked?: boolean;
             /** Entity Id */
             entity_id?: string | null;
             /** Created By */
@@ -23907,7 +23934,7 @@ export interface components {
              * Classified
              * @default true
              */
-            classified: boolean;
+            classified?: boolean;
             metadata?: components["schemas"]["JsonValue"] | null;
             /** Occurrences */
             occurrences?: number | null;
@@ -23998,17 +24025,17 @@ export interface components {
              * Pages Reclassified
              * @default 0
              */
-            pages_reclassified: number;
+            pages_reclassified?: number;
             /**
              * Already Active
              * @default false
              */
-            already_active: boolean;
+            already_active?: boolean;
             /**
              * Message
              * @default
              */
-            message: string;
+            message?: string;
         };
         /**
          * ApplyTagsRequest
@@ -24029,12 +24056,12 @@ export interface components {
              * Created
              * @default 0
              */
-            created: number;
+            created?: number;
             /**
              * Assignments
              * @default 0
              */
-            assignments: number;
+            assignments?: number;
         };
         /**
          * ApplyWorkflowPatchRequest
@@ -24181,7 +24208,7 @@ export interface components {
              * Deleted
              * @default false
              */
-            deleted: boolean;
+            deleted?: boolean;
         };
         /** Asset */
         Asset: {
@@ -24196,7 +24223,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
             /**
              * Folder
              * @description Logical folder containing the asset master.
@@ -24212,7 +24239,7 @@ export interface components {
              * @description Variant key selected as the asset's canonical representation.
              * @default original
              */
-            primary_key: string;
+            primary_key?: string;
             /**
              * Primary Url
              * @description Always-usable URL for the primary variant.
@@ -24268,7 +24295,7 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            share_level: "read" | "write" | "admin";
+            share_level?: "read" | "write" | "admin";
             /** Signed Url Ttl */
             signed_url_ttl?: number | null;
             /** Metadata */
@@ -24290,14 +24317,14 @@ export interface components {
              * Level
              * @default 3
              */
-            level: number;
+            level?: number;
             /** Max Size Bytes */
             max_size_bytes?: number | null;
             /**
              * Max Inline Bytes
              * @default 262144
              */
-            max_inline_bytes: number;
+            max_inline_bytes?: number;
         };
         /**
          * AssetPdfCompressResponse
@@ -24317,7 +24344,7 @@ export interface components {
              * Mime Type
              * @default application/pdf
              */
-            mime_type: string;
+            mime_type?: string;
             /** Data Url */
             data_url?: string | null;
             /** Signed Url */
@@ -24358,7 +24385,7 @@ export interface components {
              * @description Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.
              * @default 262144
              */
-            max_inline_bytes: number;
+            max_inline_bytes?: number;
         };
         /**
          * AssetPreviewResponse
@@ -24457,7 +24484,7 @@ export interface components {
              * Signed Url Ttl
              * @default 3600
              */
-            signed_url_ttl: number;
+            signed_url_ttl?: number;
         };
         /** AssetVariant */
         AssetVariant: {
@@ -24694,7 +24721,7 @@ export interface components {
              * Signed Ttl
              * @default 3600
              */
-            signed_ttl: number;
+            signed_ttl?: number;
         };
         /**
          * AudioExtractionResult
@@ -24803,13 +24830,13 @@ export interface components {
              * @description Land reference-only strengths as draft rules on the rulebook.
              * @default true
              */
-            capture_gaps: boolean;
+            capture_gaps?: boolean;
             /**
              * Compare Vanilla
              * @description Three-way harness: also run a RAW vanilla model (same tier as the Masterwork's primary agent, no Rulebook) on vanilla_input and judge it against the same reference. A paid call — opt-in.
              * @default false
              */
-            compare_vanilla: boolean;
+            compare_vanilla?: boolean;
             /**
              * Vanilla Input
              * @description compare_vanilla only: the SAME input the Masterwork was given (the text to edit, or the job brief), so the vanilla arm is a fair fight.
@@ -24905,7 +24932,7 @@ export interface components {
              * Role
              * @default unknown
              */
-            role: string;
+            role?: string;
             /** Cluster */
             cluster?: string | null;
             /** Plan Priority */
@@ -24916,41 +24943,41 @@ export interface components {
              * Inbound Links
              * @default 0
              */
-            inbound_links: number;
+            inbound_links?: number;
             /**
              * Outbound Links
              * @default 0
              */
-            outbound_links: number;
+            outbound_links?: number;
             /**
              * Active Backlinks
              * @default 0
              */
-            active_backlinks: number;
+            active_backlinks?: number;
             /**
              * Dofollow Backlinks
              * @default 0
              */
-            dofollow_backlinks: number;
+            dofollow_backlinks?: number;
             /** Backlink Quality */
             backlink_quality?: number | null;
             /**
              * Clicks
              * @default 0
              */
-            clicks: number;
+            clicks?: number;
             /**
              * Impressions
              * @default 0
              */
-            impressions: number;
+            impressions?: number;
             /** Average Position */
             average_position?: number | null;
             /**
              * Educational Clicks
              * @default 0
              */
-            educational_clicks: number;
+            educational_clicks?: number;
         };
         /**
          * AuthorityRankRequest
@@ -24967,7 +24994,7 @@ export interface components {
              * @description Re-rank sources that already have an authority score.
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** AuthorityRouteRecommendation */
         AuthorityRouteRecommendation: {
@@ -25033,12 +25060,12 @@ export interface components {
              * Guidance
              * @default
              */
-            guidance: string;
+            guidance?: string;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** AuthorityRouterResult */
         AuthorityRouterResult: {
@@ -25053,7 +25080,7 @@ export interface components {
              * Router Version
              * @default authority-router-v1
              */
-            router_version: string;
+            router_version?: string;
             /**
              * Generated At
              * Format: date-time
@@ -25067,28 +25094,28 @@ export interface components {
              * Edge Scan Truncated
              * @default false
              */
-            edge_scan_truncated: boolean;
+            edge_scan_truncated?: boolean;
             /**
              * Backlink Scan Truncated
              * @default false
              */
-            backlink_scan_truncated: boolean;
+            backlink_scan_truncated?: boolean;
             /**
              * Gsc Scan Truncated
              * @default false
              */
-            gsc_scan_truncated: boolean;
+            gsc_scan_truncated?: boolean;
             /**
              * Executive Summary
              * @default
              */
-            executive_summary: string;
+            executive_summary?: string;
             /**
              * Overall Verdict
              * @default healthy
              * @enum {string}
              */
-            overall_verdict: "healthy" | "opportunities" | "urgent";
+            overall_verdict?: "healthy" | "opportunities" | "urgent";
             /** Pages */
             pages?: components["schemas"]["AuthorityPage"][];
             /** Candidates */
@@ -25204,12 +25231,12 @@ export interface components {
              * Limit
              * @default 25
              */
-            limit: number;
+            limit?: number;
             /**
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /** Backlink Ids */
             backlink_ids?: string[];
         };
@@ -25251,22 +25278,22 @@ export interface components {
              * Claimed
              * @default 0
              */
-            claimed: number;
+            claimed?: number;
             /**
              * Completed
              * @default 0
              */
-            completed: number;
+            completed?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Skipped
              * @default 0
              */
-            skipped: number;
+            skipped?: number;
             /** Queue */
             queue?: {
                 [key: string]: number;
@@ -25295,22 +25322,22 @@ export interface components {
              * Profile
              * @default bootstrap
              */
-            profile: string;
+            profile?: string;
             /**
              * Detail Limit
              * @default 1000
              */
-            detail_limit: number;
+            detail_limit?: number;
             /**
              * Detail Max Rows
              * @default 10000
              */
-            detail_max_rows: number;
+            detail_max_rows?: number;
             /**
              * Force Refresh
              * @default true
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
             /** Source Crawl Session Id */
@@ -25319,7 +25346,7 @@ export interface components {
              * Enrichment Limit
              * @default 25
              */
-            enrichment_limit: number;
+            enrichment_limit?: number;
         };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
@@ -25343,12 +25370,12 @@ export interface components {
              * Cascade Tool Pairs
              * @default true
              */
-            cascade_tool_pairs: boolean;
+            cascade_tool_pairs?: boolean;
             /**
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         /** BatchDeleteResponse */
         BatchDeleteResponse: {
@@ -25369,12 +25396,12 @@ export interface components {
              * Use Proxy
              * @default true
              */
-            use_proxy: boolean;
+            use_proxy?: boolean;
             /**
              * Fast
              * @default false
              */
-            fast: boolean;
+            fast?: boolean;
         };
         /** BatchScrapeResponse */
         BatchScrapeResponse: {
@@ -25399,12 +25426,12 @@ export interface components {
              * Skipped Unchanged
              * @default 0
              */
-            skipped_unchanged: number;
+            skipped_unchanged?: number;
             /**
              * Skipped No Content
              * @default 0
              */
-            skipped_no_content: number;
+            skipped_no_content?: number;
             /** Errors */
             errors?: string[];
         };
@@ -25440,14 +25467,14 @@ export interface components {
              * Beat Summary
              * @default
              */
-            beat_summary: string;
+            beat_summary?: string;
             /** Topics */
             topics?: string[];
             /**
              * Typical Angle
              * @default
              */
-            typical_angle: string;
+            typical_angle?: string;
             /** Campaign Fit */
             campaign_fit?: ("strong" | "moderate" | "weak" | "none") | null;
             /** Campaign Fit Reason */
@@ -25458,12 +25485,12 @@ export interface components {
              * Insufficient Evidence
              * @default false
              */
-            insufficient_evidence: boolean;
+            insufficient_evidence?: boolean;
             /**
              * Pages Analyzed
              * @default 0
              */
-            pages_analyzed: number;
+            pages_analyzed?: number;
             /** Evidence Urls */
             evidence_urls?: string[];
             /** Derived At */
@@ -25472,7 +25499,7 @@ export interface components {
              * Summary
              * @default
              */
-            summary: string;
+            summary?: string;
         };
         /** BgRemoveParams */
         BgRemoveParams: {
@@ -25481,34 +25508,34 @@ export interface components {
              * @default u2net
              * @enum {string}
              */
-            model: "u2net" | "u2netp" | "u2net_human_seg" | "u2net_cloth_seg" | "silueta" | "isnet-general-use" | "isnet-anime" | "birefnet-general" | "birefnet-portrait";
+            model?: "u2net" | "u2netp" | "u2net_human_seg" | "u2net_cloth_seg" | "silueta" | "isnet-general-use" | "isnet-anime" | "birefnet-general" | "birefnet-portrait";
             /**
              * Alpha Matting
              * @default false
              */
-            alpha_matting: boolean;
+            alpha_matting?: boolean;
             /**
              * Alpha Matting Foreground Threshold
              * @default 240
              */
-            alpha_matting_foreground_threshold: number;
+            alpha_matting_foreground_threshold?: number;
             /**
              * Alpha Matting Background Threshold
              * @default 10
              */
-            alpha_matting_background_threshold: number;
+            alpha_matting_background_threshold?: number;
             /**
              * Alpha Matting Erode Size
              * @default 10
              */
-            alpha_matting_erode_size: number;
+            alpha_matting_erode_size?: number;
             /** Background Color */
             background_color?: string | null;
             /**
              * Post Process Mask
              * @default true
              */
-            post_process_mask: boolean;
+            post_process_mask?: boolean;
         };
         /** BindingResult */
         BindingResult: {
@@ -25548,7 +25575,7 @@ export interface components {
              * Owner Type
              * @default user
              */
-            owner_type: string;
+            owner_type?: string;
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -25590,12 +25617,12 @@ export interface components {
              * Max Link Pages
              * @default 1
              */
-            max_link_pages: number;
+            max_link_pages?: number;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
         };
@@ -25627,22 +25654,22 @@ export interface components {
              * Window Days
              * @default 28
              */
-            window_days: number;
+            window_days?: number;
             /**
              * Max Query Fanout
              * @default 50
              */
-            max_query_fanout: number;
+            max_query_fanout?: number;
             /**
              * Max Calls
              * @default 100
              */
-            max_calls: number;
+            max_calls?: number;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
         };
@@ -25726,7 +25753,7 @@ export interface components {
              * Handling
              * @default revealable
              */
-            handling: string;
+            handling?: string;
         };
         /** Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post */
         Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
@@ -25736,14 +25763,14 @@ export interface components {
              * Level
              * @default 3
              */
-            level: number;
+            level?: number;
             /** Max Size Bytes */
             max_size_bytes?: number | null;
             /**
              * Max Inline Bytes
              * @default 262144
              */
-            max_inline_bytes: number;
+            max_inline_bytes?: number;
         };
         /** Body_assets_preview_multipart_assets_preview_multipart_post */
         Body_assets_preview_multipart_assets_preview_multipart_post: {
@@ -25758,7 +25785,7 @@ export interface components {
              * Max Inline Bytes
              * @default 262144
              */
-            max_inline_bytes: number;
+            max_inline_bytes?: number;
         };
         /** Body_batch_extract_utilities_pdf_batch_extract_post */
         Body_batch_extract_utilities_pdf_batch_extract_post: {
@@ -25815,7 +25842,7 @@ export interface components {
              * Model
              * @default stt-default
              */
-            model: string;
+            model?: string;
         };
         /** Body_upload_asset_assets_post */
         Body_upload_asset_assets_post: {
@@ -25826,7 +25853,7 @@ export interface components {
              * @description One of: podcast, social, web, email, logo, avatar, favicon, raw
              * @default raw
              */
-            preset: string;
+            preset?: string;
             /**
              * Folder
              * @description Logical folder path; defaults to Assets/<uuid>
@@ -25837,7 +25864,7 @@ export interface components {
              * @default public
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
             /**
              * Share With
              * @description Comma-separated user IDs (legacy)
@@ -25848,12 +25875,12 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            share_level: "read" | "write" | "admin";
+            share_level?: "read" | "write" | "admin";
             /**
              * Signed Url Ttl
              * @default 3600
              */
-            signed_url_ttl: number;
+            signed_url_ttl?: number;
             /**
              * Include Social Baseline
              * @description Override preset baseline default
@@ -25886,7 +25913,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public" | "shared" | "private";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /**
              * Share With
              * @description Comma-separated user IDs
@@ -25897,7 +25924,7 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            share_level: "read" | "write" | "admin";
+            share_level?: "read" | "write" | "admin";
             /** Change Summary */
             change_summary?: string | null;
             /**
@@ -25939,7 +25966,7 @@ export interface components {
              * @description personal (default; research artifacts can be paywalled/sensitive) | public | shared
              * @default personal
              */
-            visibility: string;
+            visibility?: string;
         };
         /** Body_upload_podcast_image_media_podcast_upload_image_post */
         Body_upload_podcast_image_media_podcast_upload_image_post: {
@@ -25967,7 +25994,7 @@ export interface components {
              * @description Logical folder under the user's namespace
              * @default vision-uploads
              */
-            folder: string;
+            folder?: string;
         };
         /** BoundAgentTruth */
         BoundAgentTruth: {
@@ -26011,7 +26038,7 @@ export interface components {
              * @default 2
              * @enum {integer}
              */
-            provider_account_key_version: 1 | 2;
+            provider_account_key_version?: 1 | 2;
             /** Provider Account Fingerprint */
             provider_account_fingerprint?: string | null;
             /** Provider Account Label */
@@ -26053,7 +26080,7 @@ export interface components {
              * Deletions Supported
              * @default false
              */
-            deletions_supported: boolean;
+            deletions_supported?: boolean;
         };
         /** BridgeCheckpoint */
         BridgeCheckpoint: {
@@ -26087,7 +26114,7 @@ export interface components {
              * @default true
              * @constant
              */
-            store: true;
+            store?: true;
         };
         /** BridgeEntry */
         BridgeEntry: {
@@ -26131,7 +26158,7 @@ export interface components {
              * Current Version
              * @default 1
              */
-            current_version: number;
+            current_version?: number;
             updated_at?: components["schemas"]["JsonValue"] | null;
             /** Checksum */
             checksum?: string | null;
@@ -26143,13 +26170,13 @@ export interface components {
              * @default 1
              * @constant
              */
-            schema_version: 1;
+            schema_version?: 1;
             /**
              * Status
              * @default ok
              * @constant
              */
-            status: "ok";
+            status?: "ok";
             provider: components["schemas"]["BridgeProvider"];
             capabilities: components["schemas"]["BridgeCapabilities"];
             checkpoint?: components["schemas"]["BridgeCheckpoint"] | null;
@@ -26255,7 +26282,7 @@ export interface components {
              * Deduped
              * @default false
              */
-            deduped: boolean;
+            deduped?: boolean;
         };
         /** BridgeQuotaResponse */
         BridgeQuotaResponse: {
@@ -26273,7 +26300,7 @@ export interface components {
              * @default 1
              * @constant
              */
-            schema_version: 1;
+            schema_version?: 1;
             action: components["schemas"]["BridgeAction"];
             provider: components["schemas"]["BridgeProvider"];
             /** Session Id */
@@ -26285,17 +26312,17 @@ export interface components {
              * Accepted
              * @default 0
              */
-            accepted: number;
+            accepted?: number;
             /**
              * Duplicates
              * @default 0
              */
-            duplicates: number;
+            duplicates?: number;
             /**
              * Conflicts
              * @default 0
              */
-            conflicts: number;
+            conflicts?: number;
             /** Receipts */
             receipts?: components["schemas"]["BridgeProjectionReceipt"][];
             /** Entries */
@@ -26308,14 +26335,14 @@ export interface components {
              * Has More
              * @default false
              */
-            has_more: boolean;
+            has_more?: boolean;
             checkpoint?: components["schemas"]["BridgeCheckpoint"] | null;
             health?: components["schemas"]["BridgeHealth"] | null;
             /**
              * Deleted
              * @default false
              */
-            deleted: boolean;
+            deleted?: boolean;
             /** Hookspecificoutput */
             hookSpecificOutput?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -26343,7 +26370,7 @@ export interface components {
              * @default 1
              * @enum {integer}
              */
-            provider_account_key_version: 1 | 2;
+            provider_account_key_version?: 1 | 2;
             /** Provider Account Fingerprint */
             provider_account_fingerprint?: string | null;
             /** Provider Account Label */
@@ -26366,7 +26393,7 @@ export interface components {
              * Corrupt Line Count
              * @default 0
              */
-            corrupt_line_count: number;
+            corrupt_line_count?: number;
         };
         /** BriefRunHistoryResult */
         BriefRunHistoryResult: {
@@ -26394,22 +26421,22 @@ export interface components {
              * Brief Line Count
              * @default 0
              */
-            brief_line_count: number;
+            brief_line_count?: number;
             /**
              * Angle
              * @default
              */
-            angle: string;
+            angle?: string;
             /**
              * Is Current
              * @default false
              */
-            is_current: boolean;
+            is_current?: boolean;
             /**
              * Error
              * @default
              */
-            error: string;
+            error?: string;
         };
         /**
          * BringUpReadiness
@@ -26456,17 +26483,17 @@ export interface components {
              * Max Pages
              * @default 25
              */
-            max_pages: number;
+            max_pages?: number;
             /**
              * Max Links Per Page
              * @default 60
              */
-            max_links_per_page: number;
+            max_links_per_page?: number;
             /**
              * Recheck
              * @default false
              */
-            recheck: boolean;
+            recheck?: boolean;
             /** Only Page Urls */
             only_page_urls?: string[];
         };
@@ -26480,21 +26507,21 @@ export interface components {
              * Eligible Pages
              * @default 0
              */
-            eligible_pages: number;
+            eligible_pages?: number;
             /** Already Checked */
             already_checked: number;
             /**
              * Unreachable
              * @default 0
              */
-            unreachable: number;
+            unreachable?: number;
             /** Pages To Check */
             pages_to_check: number;
             /**
              * Estimated Cost Usd
              * @default 0
              */
-            estimated_cost_usd: number;
+            estimated_cost_usd?: number;
             /** Reason */
             reason?: string | null;
             /** Not A Candidate */
@@ -26595,17 +26622,17 @@ export interface components {
              * Secret
              * @default true
              */
-            secret: boolean;
+            secret?: boolean;
             /**
              * Step
              * @default 0
              */
-            step: number;
+            step?: number;
             /**
              * Clear First
              * @default true
              */
-            clear_first: boolean;
+            clear_first?: boolean;
         };
         /**
          * BrowserCaptureRequest
@@ -26648,7 +26675,7 @@ export interface components {
              * @default host
              * @enum {string}
              */
-            uri_match_mode: "host" | "exact" | "never";
+            uri_match_mode?: "host" | "exact" | "never";
             /** Notes */
             notes?: string | null;
             /** Field Values */
@@ -26684,7 +26711,7 @@ export interface components {
              * Proceed
              * @default false
              */
-            proceed: boolean;
+            proceed?: boolean;
             /** Recipe Id */
             recipe_id?: string | null;
             /** Recipe Version */
@@ -26695,7 +26722,7 @@ export interface components {
              * Propose Recipe
              * @default false
              */
-            propose_recipe: boolean;
+            propose_recipe?: boolean;
             /** Guidance */
             guidance?: string | null;
             /** Detail */
@@ -26721,12 +26748,12 @@ export interface components {
              * Timeout Ms
              * @default 25000
              */
-            timeout_ms: number;
+            timeout_ms?: number;
             /**
              * Use Proxy
              * @default true
              */
-            use_proxy: boolean;
+            use_proxy?: boolean;
         };
         /**
          * BrowserFetchResult
@@ -26739,7 +26766,7 @@ export interface components {
              * Status Code
              * @default 0
              */
-            status_code: number;
+            status_code?: number;
             /** Final Url */
             final_url: string;
             /** Title */
@@ -26748,19 +26775,19 @@ export interface components {
              * Content Type
              * @default
              */
-            content_type: string;
+            content_type?: string;
             /**
              * Html
              * @default
              */
-            html: string;
+            html?: string;
             /** Error */
             error?: string | null;
             /**
              * Truncated
              * @default false
              */
-            truncated: boolean;
+            truncated?: boolean;
         };
         /**
          * BrowserInspectRequest
@@ -26781,7 +26808,7 @@ export interface components {
              * Timeout Ms
              * @default 25000
              */
-            timeout_ms: number;
+            timeout_ms?: number;
             /** Kinds */
             kinds?: string[];
             /** Expect Text */
@@ -26794,7 +26821,7 @@ export interface components {
              * Use Proxy
              * @default false
              */
-            use_proxy: boolean;
+            use_proxy?: boolean;
         };
         /**
          * BrowserInspectResult
@@ -26811,7 +26838,7 @@ export interface components {
              * Title
              * @default
              */
-            title: string;
+            title?: string;
             /** Console Errors */
             console_errors?: string[];
             /** Failed Requests */
@@ -26830,7 +26857,7 @@ export interface components {
              * Retryable
              * @default false
              */
-            retryable: boolean;
+            retryable?: boolean;
         };
         /** BrowserLoginMatch */
         BrowserLoginMatch: {
@@ -26842,7 +26869,7 @@ export interface components {
              * Definition Key
              * @default website_login
              */
-            definition_key: string;
+            definition_key?: string;
             /** Host */
             host: string;
         } & {
@@ -26961,7 +26988,7 @@ export interface components {
              * Step
              * @default 0
              */
-            step: number;
+            step?: number;
             /** Selector */
             selector: string;
             /** Field Key */
@@ -26972,7 +26999,7 @@ export interface components {
              * Clear First
              * @default true
              */
-            clear_first: boolean;
+            clear_first?: boolean;
         };
         /**
          * BrowserRecipeProposalRequest
@@ -27019,7 +27046,7 @@ export interface components {
              * Human Confirmed
              * @default false
              */
-            human_confirmed: boolean;
+            human_confirmed?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -27058,7 +27085,7 @@ export interface components {
              * Weight
              * @default 0.5
              */
-            weight: number;
+            weight?: number;
             /** Label */
             label?: string | null;
         };
@@ -27132,7 +27159,7 @@ export interface components {
              * Variant Count
              * @default 5
              */
-            variant_count: number;
+            variant_count?: number;
         };
         /** BuildOnceResponse */
         BuildOnceResponse: {
@@ -27150,7 +27177,7 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         /**
          * BuildRequest
@@ -27172,7 +27199,7 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         /** BuiltinPromptCatalogResponse */
         BuiltinPromptCatalogResponse: {
@@ -27214,7 +27241,7 @@ export interface components {
              * Errors
              * @default []
              */
-            errors: {
+            errors?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
         };
@@ -27286,7 +27313,7 @@ export interface components {
              * Use Paid Providers
              * @default false
              */
-            use_paid_providers: boolean;
+            use_paid_providers?: boolean;
         };
         /** BulkFileDeleteRequest */
         BulkFileDeleteRequest: {
@@ -27296,7 +27323,7 @@ export interface components {
              * Hard Delete
              * @default false
              */
-            hard_delete: boolean;
+            hard_delete?: boolean;
         };
         /** BulkFileMoveRequest */
         BulkFileMoveRequest: {
@@ -27413,34 +27440,34 @@ export interface components {
              * Rows Supplied
              * @default 0
              */
-            rows_supplied: number;
+            rows_supplied?: number;
             /**
              * Would Enrich
              * @default 0
              */
-            would_enrich: number;
+            would_enrich?: number;
             /**
              * Blocked
              * @default 0
              */
-            blocked: number;
+            blocked?: number;
             /**
              * Duplicates
              * @default 0
              */
-            duplicates: number;
+            duplicates?: number;
             /**
              * Unusable
              * @default 0
              */
-            unusable: number;
+            unusable?: number;
             /** Entries */
             entries?: components["schemas"]["BulkRowResult"][];
             /**
              * Summary
              * @default
              */
-            summary: string;
+            summary?: string;
         };
         /** BulkReport */
         BulkReport: {
@@ -27448,64 +27475,64 @@ export interface components {
              * Rows Supplied
              * @default 0
              */
-            rows_supplied: number;
+            rows_supplied?: number;
             /**
              * Rows Attempted
              * @default 0
              */
-            rows_attempted: number;
+            rows_attempted?: number;
             /**
              * Parties Created
              * @default 0
              */
-            parties_created: number;
+            parties_created?: number;
             /**
              * Candidates Found
              * @default 0
              */
-            candidates_found: number;
+            candidates_found?: number;
             /**
              * Personal Found
              * @default 0
              */
-            personal_found: number;
+            personal_found?: number;
             /**
              * Blocked
              * @default 0
              */
-            blocked: number;
+            blocked?: number;
             /**
              * Duplicates
              * @default 0
              */
-            duplicates: number;
+            duplicates?: number;
             /**
              * Unusable
              * @default 0
              */
-            unusable: number;
+            unusable?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Not Attempted
              * @default 0
              */
-            not_attempted: number;
+            not_attempted?: number;
             /**
              * Budget Exhausted
              * @default false
              */
-            budget_exhausted: boolean;
+            budget_exhausted?: boolean;
             /** Results */
             results?: components["schemas"]["BulkRowResult"][];
             /**
              * Summary
              * @default
              */
-            summary: string;
+            summary?: string;
         };
         /** BulkResponse */
         BulkResponse: {
@@ -27545,7 +27572,7 @@ export interface components {
              * Normalized Domain
              * @default
              */
-            normalized_domain: string;
+            normalized_domain?: string;
             /** Person Name */
             person_name?: string | null;
             /** Company Name */
@@ -27559,24 +27586,24 @@ export interface components {
              * Why
              * @default
              */
-            why: string;
+            why?: string;
             /** Party Id */
             party_id?: string | null;
             /**
              * Party Created
              * @default false
              */
-            party_created: boolean;
+            party_created?: boolean;
             /**
              * Candidates Found
              * @default 0
              */
-            candidates_found: number;
+            candidates_found?: number;
             /**
              * Personal Found
              * @default 0
              */
-            personal_found: number;
+            personal_found?: number;
             /** Candidates */
             candidates?: components["schemas"]["ContactCandidateView"][];
         };
@@ -27651,22 +27678,22 @@ export interface components {
              * Conversation
              * @default false
              */
-            conversation: boolean;
+            conversation?: boolean;
             /**
              * Agent
              * @default false
              */
-            agent: boolean;
+            agent?: boolean;
             /**
              * Tools
              * @default false
              */
-            tools: boolean;
+            tools?: boolean;
             /**
              * Models
              * @default false
              */
-            models: boolean;
+            models?: boolean;
         };
         /**
          * Calibration
@@ -27683,7 +27710,7 @@ export interface components {
              * Cases
              * @default 0
              */
-            cases: number;
+            cases?: number;
             /** Raw Agreement */
             raw_agreement?: number | null;
             /** Cohens Kappa */
@@ -27693,7 +27720,7 @@ export interface components {
              * @default insufficient_data
              * @enum {string}
              */
-            band: "insufficient_data" | "not_usable" | "usable" | "production";
+            band?: "insufficient_data" | "not_usable" | "usable" | "production";
             /** Confusion */
             confusion?: {
                 [key: string]: {
@@ -27704,7 +27731,7 @@ export interface components {
              * Note
              * @default
              */
-            note: string;
+            note?: string;
         };
         /**
          * CallTimelineResponse
@@ -27794,32 +27821,32 @@ export interface components {
              * Ok
              * @default true
              */
-            ok: boolean;
+            ok?: boolean;
             /**
              * Lookback Hours
              * @default 24
              */
-            lookback_hours: number;
+            lookback_hours?: number;
             /**
              * Failures
              * @default 0
              */
-            failures: number;
+            failures?: number;
             /**
              * Threshold
              * @default 5
              */
-            threshold: number;
+            threshold?: number;
             /**
              * Breached
              * @default false
              */
-            breached: boolean;
+            breached?: boolean;
             /**
              * Assist Written
              * @default false
              */
-            assist_written: boolean;
+            assist_written?: boolean;
             /** Addressee User Id */
             addressee_user_id?: string | null;
             /** Last Failure At */
@@ -27853,31 +27880,31 @@ export interface components {
              * Anchor Text
              * @default
              */
-            anchor_text: string;
+            anchor_text?: string;
             /**
              * Text Source
              * @default
              * @enum {string}
              */
-            text_source: "anchor" | "image_alt" | "";
+            text_source?: "anchor" | "image_alt" | "";
             /** Rel */
             rel?: string | null;
             /**
              * Nofollow
              * @default false
              */
-            nofollow: boolean;
+            nofollow?: boolean;
             /**
              * Link Type
              * @default external
              * @enum {string}
              */
-            link_type: "internal" | "subdomain" | "external";
+            link_type?: "internal" | "subdomain" | "external";
             /**
              * Region
              * @default body
              */
-            region: string;
+            region?: string;
         };
         /** CardImageRequest */
         CardImageRequest: {
@@ -27903,7 +27930,7 @@ export interface components {
              * @default front
              * @enum {string}
              */
-            face: "front" | "back";
+            face?: "front" | "back";
         };
         /** CartesianPlan */
         CartesianPlan: {
@@ -27923,7 +27950,7 @@ export interface components {
              * @description Whether combinations keep product order or are securely shuffled once.
              * @default declared
              */
-            order: components["schemas"]["AssignmentOrder"];
+            order?: components["schemas"]["AssignmentOrder"];
             /**
              * Limit
              * @description Optional cap on materialized Cartesian combinations.
@@ -27938,31 +27965,31 @@ export interface components {
              * Title
              * @default
              */
-            title: string;
+            title?: string;
             /**
              * Result
              * @default error
              */
-            result: string;
+            result?: string;
             /**
              * Reason
              * @default
              */
-            reason: string;
+            reason?: string;
             /** Verdict */
             verdict?: string | null;
             /**
              * Consecutive Failures
              * @default 0
              */
-            consecutive_failures: number;
+            consecutive_failures?: number;
             /** Replay Group Id */
             replay_group_id?: string | null;
             /**
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
         };
         /** CatalogEntryResponse */
         CatalogEntryResponse: {
@@ -28080,12 +28107,12 @@ export interface components {
              * Sort Order
              * @default 0
              */
-            sort_order: number;
+            sort_order?: number;
             /**
              * Is System
              * @default false
              */
-            is_system: boolean;
+            is_system?: boolean;
         };
         /** CategoryList */
         CategoryList: {
@@ -28154,12 +28181,12 @@ export interface components {
              * Sort Order
              * @default 0
              */
-            sort_order: number;
+            sort_order?: number;
             /**
              * Is Active
              * @default true
              */
-            is_active: boolean;
+            is_active?: boolean;
         };
         /**
          * ChangeHistoryOut
@@ -28176,7 +28203,7 @@ export interface components {
              * Has More
              * @default false
              */
-            has_more: boolean;
+            has_more?: boolean;
         };
         /**
          * ChangeHistoryRow
@@ -28255,7 +28282,7 @@ export interface components {
              * @default replace
              * @enum {string}
              */
-            reducer: "replace" | "append" | "merge" | "sum" | "last_writer_wins" | "topic_map";
+            reducer?: "replace" | "append" | "merge" | "sum" | "last_writer_wins" | "topic_map";
             /** Description */
             description?: string | null;
             /** Default */
@@ -28321,7 +28348,7 @@ export interface components {
              * Skipped Files
              * @default 0
              */
-            skipped_files: number;
+            skipped_files?: number;
             /** Notes */
             notes?: string[];
         };
@@ -28386,7 +28413,7 @@ export interface components {
              * Stream
              * @default true
              */
-            stream: boolean;
+            stream?: boolean;
             /** Store */
             store: boolean;
             /** Previous Interaction Id */
@@ -28535,34 +28562,34 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /**
              * Max Iterations
              * @default 100
              */
-            max_iterations: number;
+            max_iterations?: number;
             /**
              * Max Retries Per Iteration
              * @default 2
              */
-            max_retries_per_iteration: number;
+            max_retries_per_iteration?: number;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /** System Instruction */
             system_instruction?: string | components["schemas"]["SystemInstructionInput"] | null;
             /**
              * Tools
              * @default []
              */
-            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
@@ -28590,24 +28617,24 @@ export interface components {
              * Context
              * @default {}
              */
-            context: {
+            context?: {
                 [key: string]: unknown;
             };
             /**
              * Writable Variables
              * @default []
              */
-            writable_variables: string[];
+            writable_variables?: string[];
             /**
              * Allow Context Create
              * @default false
              */
-            allow_context_create: boolean;
+            allow_context_create?: boolean;
             /**
              * Block Mode
              * @default false
              */
-            block_mode: boolean;
+            block_mode?: boolean;
             /** Snapshot */
             snapshot?: boolean | null;
             /** Memory */
@@ -28618,7 +28645,7 @@ export interface components {
              * Memory Scope
              * @default thread
              */
-            memory_scope: string;
+            memory_scope?: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
             /** Metadata */
             metadata?: {
@@ -28628,7 +28655,7 @@ export interface components {
              * Deprecated Keys Found
              * @default []
              */
-            deprecated_keys_found: string[][];
+            deprecated_keys_found?: string[][];
         } & {
             [key: string]: unknown;
         };
@@ -28823,13 +28850,13 @@ export interface components {
              * @description Prefer the saved cleaned corpus over the raw one when it exists.
              * @default true
              */
-            use_cleaned: boolean;
+            use_cleaned?: boolean;
             /**
              * Min Confidence
              * @description Drop findings below this certainty before they reach the Expert.
              * @default 0
              */
-            min_confidence: number;
+            min_confidence?: number;
         };
         /** ChunkDetail */
         ChunkDetail: {
@@ -28915,7 +28942,7 @@ export interface components {
              * Results
              * @default []
              */
-            results: components["schemas"]["CitationLookupResult"][];
+            results?: components["schemas"]["CitationLookupResult"][];
         } & {
             [key: string]: unknown;
         };
@@ -28992,7 +29019,7 @@ export interface components {
              * Is Public
              * @default false
              */
-            is_public: boolean;
+            is_public?: boolean;
             /** Tags */
             tags?: string[] | null;
             /**
@@ -29009,7 +29036,7 @@ export interface components {
              * Large Employer
              * @default false
              */
-            large_employer: boolean;
+            large_employer?: boolean;
         };
         /** ClaimPatch */
         ClaimPatch: {
@@ -29089,7 +29116,7 @@ export interface components {
              * Uncertainty
              * @default
              */
-            uncertainty: string;
+            uncertainty?: string;
             /** Confidence */
             confidence?: number | null;
         };
@@ -29138,7 +29165,7 @@ export interface components {
          */
         ClaudeManagedRestRequest: {
             /** @default start */
-            action: components["schemas"]["ClaudeManagedAction"];
+            action?: components["schemas"]["ClaudeManagedAction"];
             conversation: components["schemas"]["BridgeConversation"];
             /** Prompt */
             prompt: string;
@@ -29146,7 +29173,7 @@ export interface components {
              * Workspace Root
              * @default /home/agent
              */
-            workspace_root: string;
+            workspace_root?: string;
             /** Session Id */
             session_id?: string | null;
             /** Fork Up To Message Id */
@@ -29157,7 +29184,7 @@ export interface components {
              * Max Turns
              * @default 20
              */
-            max_turns: number;
+            max_turns?: number;
             /** Max Budget Usd */
             max_budget_usd?: number | null;
             /**
@@ -29165,7 +29192,7 @@ export interface components {
              * @default acceptEdits
              * @enum {string}
              */
-            permission_mode: "acceptEdits" | "plan";
+            permission_mode?: "acceptEdits" | "plan";
             /**
              * Agent Id
              * @description Saved AI Matrx agent to run inside Claude Code.
@@ -29229,7 +29256,7 @@ export interface components {
              * @description Re-clean every segment even when a cached clean of the same raw text exists.
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** CleanRequest */
         CleanRequest: {
@@ -29259,7 +29286,7 @@ export interface components {
              * Cleaner Version
              * @default v1
              */
-            cleaner_version: string;
+            cleaner_version?: string;
             /** Params */
             params?: {
                 [key: string]: unknown;
@@ -29274,7 +29301,7 @@ export interface components {
              * Rag Boost
              * @default 0
              */
-            rag_boost: number;
+            rag_boost?: number;
             /** Cost Usd */
             cost_usd?: number | null;
             /** Reason */
@@ -29346,7 +29373,7 @@ export interface components {
              * Is Error
              * @default false
              */
-            is_error: boolean;
+            is_error?: boolean;
             /** Error Message */
             error_message?: string | null;
             /** Duration Ms */
@@ -29391,7 +29418,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** CmsAlignBody */
         CmsAlignBody: {
@@ -29409,12 +29436,12 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /**
              * Sync Status
              * @default true
              */
-            sync_status: boolean;
+            sync_status?: boolean;
         };
         /** CmsAlignItemResult */
         CmsAlignItemResult: {
@@ -29428,17 +29455,17 @@ export interface components {
              * Ok
              * @default true
              */
-            ok: boolean;
+            ok?: boolean;
             /**
              * Changed
              * @default false
              */
-            changed: boolean;
+            changed?: boolean;
             /**
              * Detail
              * @default
              */
-            detail: string;
+            detail?: string;
             /** Error */
             error?: string | null;
             /** Error Code */
@@ -29460,24 +29487,24 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /** Items */
             items?: components["schemas"]["CmsAlignItemResult"][];
             /**
              * Applied
              * @default 0
              */
-            applied: number;
+            applied?: number;
             /**
              * Unchanged
              * @default 0
              */
-            unchanged: number;
+            unchanged?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /** Statuses Advanced */
             statuses_advanced?: string[];
             /** Errors */
@@ -29525,12 +29552,12 @@ export interface components {
              * Pages
              * @default 0
              */
-            pages: number;
+            pages?: number;
             /**
              * Calls
              * @default 0
              */
-            calls: number;
+            calls?: number;
             /** Calls By Step */
             calls_by_step?: {
                 [key: string]: number;
@@ -29541,7 +29568,7 @@ export interface components {
              * Basis
              * @default
              */
-            basis: string;
+            basis?: string;
         };
         /** CmsFillEffortEstimate */
         CmsFillEffortEstimate: {
@@ -29551,14 +29578,14 @@ export interface components {
              * Pages
              * @default 0
              */
-            pages: number;
+            pages?: number;
             /** Site Tier */
             site_tier?: string | null;
             /**
              * Default Tier
              * @default advanced
              */
-            default_tier: string;
+            default_tier?: string;
             /** Overrides */
             overrides?: {
                 [key: string]: number;
@@ -29578,12 +29605,12 @@ export interface components {
              * Step
              * @default p6_build
              */
-            step: string;
+            step?: string;
             /**
              * Step Label
              * @default
              */
-            step_label: string;
+            step_label?: string;
             /** Status */
             status: string;
             /** Attempts */
@@ -29607,7 +29634,7 @@ export interface components {
              * Write
              * @default false
              */
-            write: boolean;
+            write?: boolean;
         };
         /** CmsFillStartBody */
         CmsFillStartBody: {
@@ -29625,21 +29652,21 @@ export interface components {
              * Include Review
              * @default true
              */
-            include_review: boolean;
+            include_review?: boolean;
             /** Effort Tier */
             effort_tier?: ("quick" | "standard" | "thorough" | "advanced") | null;
             /**
              * Overwrite
              * @default false
              */
-            overwrite: boolean;
+            overwrite?: boolean;
             /** Overwrite Steps */
             overwrite_steps?: string[] | null;
             /**
              * Include Published
              * @default false
              */
-            include_published: boolean;
+            include_published?: boolean;
             /** Node Ids */
             node_ids?: string[] | null;
         };
@@ -29672,57 +29699,57 @@ export interface components {
              * @default none
              * @enum {string}
              */
-            status: "none" | "pending" | "processing" | "completed" | "failed" | "cancelled";
+            status?: "none" | "pending" | "processing" | "completed" | "failed" | "cancelled";
             /**
              * Total
              * @default 0
              */
-            total: number;
+            total?: number;
             /**
              * Pending
              * @default 0
              */
-            pending: number;
+            pending?: number;
             /**
              * Blocked
              * @default 0
              */
-            blocked: number;
+            blocked?: number;
             /**
              * In Progress
              * @default 0
              */
-            in_progress: number;
+            in_progress?: number;
             /**
              * Succeeded
              * @default 0
              */
-            succeeded: number;
+            succeeded?: number;
             /**
              * Skipped
              * @default 0
              */
-            skipped: number;
+            skipped?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Dead Letter
              * @default 0
              */
-            dead_letter: number;
+            dead_letter?: number;
             /**
              * Pages
              * @default 0
              */
-            pages: number;
+            pages?: number;
             /**
              * Pages Built
              * @default 0
              */
-            pages_built: number;
+            pages_built?: number;
             /** Steps */
             steps?: components["schemas"]["CmsFillStepCounts"][];
             /** Cost Usd */
@@ -29750,47 +29777,47 @@ export interface components {
              * Label
              * @default
              */
-            label: string;
+            label?: string;
             /**
              * Total
              * @default 0
              */
-            total: number;
+            total?: number;
             /**
              * Pending
              * @default 0
              */
-            pending: number;
+            pending?: number;
             /**
              * Blocked
              * @default 0
              */
-            blocked: number;
+            blocked?: number;
             /**
              * In Progress
              * @default 0
              */
-            in_progress: number;
+            in_progress?: number;
             /**
              * Succeeded
              * @default 0
              */
-            succeeded: number;
+            succeeded?: number;
             /**
              * Skipped
              * @default 0
              */
-            skipped: number;
+            skipped?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Dead Letter
              * @default 0
              */
-            dead_letter: number;
+            dead_letter?: number;
             /** Cost Usd */
             cost_usd?: number | null;
         };
@@ -29809,7 +29836,7 @@ export interface components {
              * Pages At Tier
              * @default 0
              */
-            pages_at_tier: number;
+            pages_at_tier?: number;
             estimate?: components["schemas"]["CmsFillCostEstimate"];
         };
         /**
@@ -29833,7 +29860,7 @@ export interface components {
              * Count
              * @default 0
              */
-            count: number;
+            count?: number;
             /** Warnings */
             warnings?: string[];
         };
@@ -29905,12 +29932,12 @@ export interface components {
              * Research Topic Ids
              * @default []
              */
-            research_topic_ids: string[];
+            research_topic_ids?: string[];
             /**
              * Research Tag Ids
              * @default []
              */
-            research_tag_ids: string[];
+            research_tag_ids?: string[];
         };
         /** CmsPublishBody */
         CmsPublishBody: {
@@ -29928,17 +29955,17 @@ export interface components {
              * Only Plan Linked
              * @default false
              */
-            only_plan_linked: boolean;
+            only_plan_linked?: boolean;
             /**
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /**
              * Sync Status
              * @default true
              */
-            sync_status: boolean;
+            sync_status?: boolean;
         };
         /** CmsPublishResult */
         CmsPublishResult: {
@@ -29952,37 +29979,37 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /**
              * Requested
              * @default 0
              */
-            requested: number;
+            requested?: number;
             /**
              * Published
              * @default 0
              */
-            published: number;
+            published?: number;
             /**
              * Would Publish
              * @default 0
              */
-            would_publish: number;
+            would_publish?: number;
             /**
              * Skipped No Changes
              * @default 0
              */
-            skipped_no_changes: number;
+            skipped_no_changes?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Remaining Candidates
              * @default 0
              */
-            remaining_candidates: number;
+            remaining_candidates?: number;
             /** Results */
             results?: components["schemas"]["PublishBatchItemResult"][];
             /** Statuses Advanced */
@@ -30004,7 +30031,7 @@ export interface components {
              * Write Links
              * @default true
              */
-            write_links: boolean;
+            write_links?: boolean;
         };
         /** CmsReconcileConflict */
         CmsReconcileConflict: {
@@ -30024,7 +30051,7 @@ export interface components {
              * Is Published
              * @default false
              */
-            is_published: boolean;
+            is_published?: boolean;
             /** Resolve Options */
             resolve_options?: string[];
         };
@@ -30059,12 +30086,12 @@ export interface components {
              * Is Published
              * @default false
              */
-            is_published: boolean;
+            is_published?: boolean;
             /**
              * Linked
              * @default true
              */
-            linked: boolean;
+            linked?: boolean;
         };
         /** CmsReconcileOrphan */
         CmsReconcileOrphan: {
@@ -30080,7 +30107,7 @@ export interface components {
              * Is Published
              * @default false
              */
-            is_published: boolean;
+            is_published?: boolean;
             /** Live Url */
             live_url: string;
             /** Stale Link Node Id */
@@ -30110,7 +30137,7 @@ export interface components {
              * Links Written
              * @default 0
              */
-            links_written: number;
+            links_written?: number;
             /** Warnings */
             warnings?: string[];
         };
@@ -30139,7 +30166,7 @@ export interface components {
              * Count
              * @default 0
              */
-            count: number;
+            count?: number;
             /** Warnings */
             warnings?: string[];
         };
@@ -30157,12 +30184,12 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /**
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         /**
          * CmsValidationContent
@@ -30259,14 +30286,14 @@ export interface components {
              * Validate Enabled
              * @default true
              */
-            validate_enabled: boolean;
+            validate_enabled?: boolean;
             /**
              * Deprecated
              * @default false
              */
-            deprecated: boolean;
+            deprecated?: boolean;
             /** @default {} */
-            parameters: components["schemas"]["JsonValue"];
+            parameters?: components["schemas"]["JsonValue"];
         };
         /** CodeExecPart */
         CodeExecPart: {
@@ -30284,12 +30311,12 @@ export interface components {
              * Language
              * @default python
              */
-            language: string;
+            language?: string;
             /**
              * Code
              * @default
              */
-            code: string;
+            code?: string;
         };
         /** CodeResultPart */
         CodeResultPart: {
@@ -30307,12 +30334,12 @@ export interface components {
              * Output
              * @default
              */
-            output: string;
+            output?: string;
             /**
              * Outcome
              * @default success
              */
-            outcome: string;
+            outcome?: string;
         };
         /**
          * CodeTruthCallSite
@@ -30376,7 +30403,7 @@ export interface components {
              * Required
              * @default false
              */
-            required: boolean;
+            required?: boolean;
         };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
@@ -30385,7 +30412,7 @@ export interface components {
              * @default 1
              * @constant
              */
-            schema_version: 1;
+            schema_version?: 1;
             action: components["schemas"]["BridgeAction"];
             provider: components["schemas"]["BridgeProvider"];
             /** Provider Session Id */
@@ -30398,7 +30425,7 @@ export interface components {
              * Stream Key
              * @default main
              */
-            stream_key: string;
+            stream_key?: string;
             hook_event?: components["schemas"]["BridgeHookEvent"] | null;
             /** Entries */
             entries?: components["schemas"]["BridgeEntry"][];
@@ -30410,14 +30437,14 @@ export interface components {
              * Writer Lease Seconds
              * @default 300
              */
-            writer_lease_seconds: number;
+            writer_lease_seconds?: number;
             /** After Source Sequence */
             after_source_sequence?: number | null;
             /**
              * Limit
              * @default 250
              */
-            limit: number;
+            limit?: number;
             /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
@@ -30462,7 +30489,7 @@ export interface components {
              * Schema Version
              * @default 1
              */
-            schema_version: number;
+            schema_version?: number;
             /** Provider */
             provider: string;
             /** Sessions */
@@ -30478,22 +30505,22 @@ export interface components {
              * Created Observations
              * @default 0
              */
-            created_observations: number;
+            created_observations?: number;
             /**
              * Existing Observations
              * @default 0
              */
-            existing_observations: number;
+            existing_observations?: number;
             /**
              * Reused Completed Run
              * @default false
              */
-            reused_completed_run: boolean;
+            reused_completed_run?: boolean;
             /**
              * From Cache
              * @default false
              */
-            from_cache: boolean;
+            from_cache?: boolean;
             /** Cache Age Seconds */
             cache_age_seconds?: number | null;
             /** Freshness Ttl Seconds */
@@ -30594,13 +30621,13 @@ export interface components {
              * Folder Path
              * @default Images/Generated/image-studio
              */
-            folder_path: string;
+            folder_path?: string;
             /**
              * Visibility
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public" | "shared" | "private";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -30613,7 +30640,7 @@ export interface components {
              * Include Source
              * @default false
              */
-            include_source: boolean;
+            include_source?: boolean;
             /** Source Filename */
             source_filename?: string | null;
             /** Base Filename */
@@ -30646,12 +30673,12 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            mode: "user" | "system";
+            mode?: "user" | "system";
             /**
              * Cascade Tool Pairs
              * @default true
              */
-            cascade_tool_pairs: boolean;
+            cascade_tool_pairs?: boolean;
             /** Summary Metadata */
             summary_metadata?: {
                 [key: string]: unknown;
@@ -30764,27 +30791,27 @@ export interface components {
              * Location Code
              * @default 2840
              */
-            location_code: number;
+            location_code?: number;
             /**
              * Language Code
              * @default en
              */
-            language_code: string;
+            language_code?: string;
             /**
              * Max Competitors
              * @default 5
              */
-            max_competitors: number;
+            max_competitors?: number;
             /**
              * Pages Per Competitor
              * @default 3
              */
-            pages_per_competitor: number;
+            pages_per_competitor?: number;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** CompetitorAutopsyResult */
         CompetitorAutopsyResult: {
@@ -30850,22 +30877,22 @@ export interface components {
              * Location Code
              * @default 2840
              */
-            location_code: number;
+            location_code?: number;
             /**
              * Language Code
              * @default en
              */
-            language_code: string;
+            language_code?: string;
             /**
              * Max Competitors
              * @default 12
              */
-            max_competitors: number;
+            max_competitors?: number;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** CompetitorDiscoveryResponse */
         CompetitorDiscoveryResponse: {
@@ -30926,7 +30953,7 @@ export interface components {
              * @default competitor_opportunity_autopsy_v1
              * @constant
              */
-            __kind: "competitor_opportunity_autopsy_v1";
+            __kind?: "competitor_opportunity_autopsy_v1";
             /** Strategist Version */
             strategist_version: string;
             /** Site Id */
@@ -31043,7 +31070,7 @@ export interface components {
              * Is This Device
              * @default false
              */
-            is_this_device: boolean;
+            is_this_device?: boolean;
             /** Sandbox Id */
             sandbox_id?: string | null;
             /** Tier */
@@ -31124,12 +31151,12 @@ export interface components {
              * Accept Role Address
              * @default false
              */
-            accept_role_address: boolean;
+            accept_role_address?: boolean;
             /**
              * Accept Unverified
              * @default false
              */
-            accept_unverified: boolean;
+            accept_unverified?: boolean;
         };
         /** ConfirmOutletContactRequest */
         ConfirmOutletContactRequest: {
@@ -31156,12 +31183,12 @@ export interface components {
              * Accept Low Confidence
              * @default false
              */
-            accept_low_confidence: boolean;
+            accept_low_confidence?: boolean;
             /**
              * Accept Role Address
              * @default false
              */
-            accept_role_address: boolean;
+            accept_role_address?: boolean;
         };
         /** ConfirmedOutletContact */
         ConfirmedOutletContact: {
@@ -31185,7 +31212,7 @@ export interface components {
              * Contact Points Added
              * @default 0
              */
-            contact_points_added: number;
+            contact_points_added?: number;
         };
         /**
          * ConformanceState
@@ -31216,7 +31243,7 @@ export interface components {
              * Already Used
              * @default false
              */
-            already_used: boolean;
+            already_used?: boolean;
         };
         /**
          * ConnectionSummary
@@ -31261,14 +31288,14 @@ export interface components {
              * Channel
              * @default email
              */
-            channel: string;
+            channel?: string;
             /** Address */
             address: string;
             /**
              * Is Role Address
              * @default false
              */
-            is_role_address: boolean;
+            is_role_address?: boolean;
             /** Source */
             source: string;
             /** Source Detail */
@@ -31279,7 +31306,7 @@ export interface components {
              * Confidence
              * @default 0
              */
-            confidence: number;
+            confidence?: number;
             /** Provider Confidence */
             provider_confidence?: number | null;
             /**
@@ -31287,7 +31314,7 @@ export interface components {
              * @default unverified
              * @enum {string}
              */
-            verification_status: "unverified" | "verified" | "invalid" | "risky";
+            verification_status?: "unverified" | "verified" | "invalid" | "risky";
             /** Mx Valid */
             mx_valid?: boolean | null;
             /** Verified At */
@@ -31296,7 +31323,7 @@ export interface components {
              * Verification Reason
              * @default
              */
-            verification_reason: string;
+            verification_reason?: string;
             /** Engagement Score */
             engagement_score?: number | null;
             /** Engagement Reasons */
@@ -31306,7 +31333,7 @@ export interface components {
              * @default candidate
              * @enum {string}
              */
-            status: "candidate" | "confirmed" | "rejected" | "stale";
+            status?: "candidate" | "confirmed" | "rejected" | "stale";
             /** Confirmed Contact Point Id */
             confirmed_contact_point_id?: string | null;
             /** Why */
@@ -31364,7 +31391,7 @@ export interface components {
              * Content Type
              * @default plain_text
              */
-            content_type: string;
+            content_type?: string;
         };
         /** ContentSaveRequest */
         ContentSaveRequest: {
@@ -31380,12 +31407,12 @@ export interface components {
              * Content Type
              * @default html
              */
-            content_type: string;
+            content_type?: string;
             /**
              * Char Count
              * @default 0
              */
-            char_count: number;
+            char_count?: number;
         };
         /**
          * ContentType
@@ -31425,12 +31452,12 @@ export interface components {
              * Context Id
              * @default
              */
-            context_id: string;
+            context_id?: string;
             /**
              * Context Name
              * @default
              */
-            context_name: string;
+            context_name?: string;
             /** Context Data */
             context_data?: {
                 [key: string]: unknown;
@@ -31439,17 +31466,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -31562,7 +31589,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -31650,32 +31677,32 @@ export interface components {
              * Last Request Input Tokens
              * @default 0
              */
-            last_request_input_tokens: number;
+            last_request_input_tokens?: number;
             /**
              * Last Request Cached Tokens
              * @default 0
              */
-            last_request_cached_tokens: number;
+            last_request_cached_tokens?: number;
             /**
              * Last Request Output Tokens
              * @default 0
              */
-            last_request_output_tokens: number;
+            last_request_output_tokens?: number;
             /**
              * Total Chars Visible To Model
              * @default 0
              */
-            total_chars_visible_to_model: number;
+            total_chars_visible_to_model?: number;
             /**
              * Message Count Visible
              * @default 0
              */
-            message_count_visible: number;
+            message_count_visible?: number;
             /**
              * Cache State
              * @default {}
              */
-            cache_state: {
+            cache_state?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Last Trim Summary */
@@ -31706,7 +31733,7 @@ export interface components {
              * @default a1
              * @enum {string}
              */
-            variation: "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
+            variation?: "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
             /** Scope Slug */
             scope_slug?: string | null;
             /** Scope Type Slug */
@@ -31783,7 +31810,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -31795,23 +31822,23 @@ export interface components {
              * Retry
              * @default false
              */
-            retry: boolean;
+            retry?: boolean;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /**
              * Stream
              * @default true
              */
-            stream: boolean;
+            stream?: boolean;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Tools
              * @default []
              */
-            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
@@ -31822,24 +31849,24 @@ export interface components {
              * Context
              * @default {}
              */
-            context: {
+            context?: {
                 [key: string]: unknown;
             };
             /**
              * Writable Variables
              * @default []
              */
-            writable_variables: string[];
+            writable_variables?: string[];
             /**
              * Allow Context Create
              * @default false
              */
-            allow_context_create: boolean;
+            allow_context_create?: boolean;
             /**
              * Block Mode
              * @default false
              */
-            block_mode: boolean;
+            block_mode?: boolean;
             /** Snapshot */
             snapshot?: boolean | null;
             /** Memory */
@@ -31850,7 +31877,7 @@ export interface components {
              * Memory Scope
              * @default thread
              */
-            memory_scope: string;
+            memory_scope?: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
             /** Skill Config */
             skill_config?: {
@@ -31872,12 +31899,12 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /**
              * Run Enrich
              * @default false
              */
-            run_enrich: boolean;
+            run_enrich?: boolean;
         };
         /**
          * ConversationRecord
@@ -31965,7 +31992,7 @@ export interface components {
              * @description Whether rows keep declared order or are securely shuffled once.
              * @default declared
              */
-            order: components["schemas"]["AssignmentOrder"];
+            order?: components["schemas"]["AssignmentOrder"];
             /**
              * Limit
              * @description Optional maximum number of coordinated rows to materialize.
@@ -31983,7 +32010,7 @@ export interface components {
              * Overwrite
              * @default false
              */
-            overwrite: boolean;
+            overwrite?: boolean;
         };
         /**
          * CopyInfo
@@ -32051,12 +32078,12 @@ export interface components {
              * Truncated
              * @default false
              */
-            truncated: boolean;
+            truncated?: boolean;
             /**
              * Cleaned
              * @default false
              */
-            cleaned: boolean;
+            cleaned?: boolean;
             /** Conversation Id */
             conversation_id?: string | null;
             /** Message Id */
@@ -32080,22 +32107,22 @@ export interface components {
              * Calls
              * @default 0
              */
-            calls: number;
+            calls?: number;
             /**
              * Input Tokens
              * @default 0
              */
-            input_tokens: number;
+            input_tokens?: number;
             /**
              * Output Tokens
              * @default 0
              */
-            output_tokens: number;
+            output_tokens?: number;
             /**
              * Estimated Cost Usd
              * @default 0
              */
-            estimated_cost_usd: number;
+            estimated_cost_usd?: number;
         };
         /** CourtListenerWebhookAccepted */
         CourtListenerWebhookAccepted: {
@@ -32104,7 +32131,7 @@ export interface components {
              * @default accepted
              * @constant
              */
-            status: "accepted";
+            status?: "accepted";
         };
         /** CourtPresetResponse */
         CourtPresetResponse: {
@@ -32166,7 +32193,7 @@ export interface components {
              * @description One-sentence description of the agent.
              * @default
              */
-            summary: string;
+            summary?: string;
             /**
              * Variables
              * @description Variables the agent will be given, each with a description.
@@ -32178,7 +32205,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            response_format: "text" | "json" | "json_schema";
+            response_format?: "text" | "json" | "json_schema";
             /**
              * Output Schema
              * @description Required when response_format='json_schema'. Validated against provider rules.
@@ -32198,13 +32225,13 @@ export interface components {
              * @description Optional example variable values.
              * @default
              */
-            sample_inputs: string;
+            sample_inputs?: string;
             /**
              * Model Guidance
              * @description Model preference/guidance, e.g. cost vs speed vs intelligence.
              * @default
              */
-            model_guidance: string;
+            model_guidance?: string;
             /**
              * Tools
              * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
@@ -32230,7 +32257,7 @@ export interface components {
              * @default file
              * @enum {string}
              */
-            kind: "file" | "folder";
+            kind?: "file" | "folder";
             /** Name */
             name: string;
             /** Content */
@@ -32246,7 +32273,7 @@ export interface components {
              * Text
              * @default
              */
-            text: string;
+            text?: string;
         };
         /** CreateDraftRequest */
         CreateDraftRequest: {
@@ -32294,7 +32321,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public" | "shared" | "private";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -32328,12 +32355,12 @@ export interface components {
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /**
              * Intent
              * @default
              */
-            intent: string;
+            intent?: string;
             /** Parent Plan Id */
             parent_plan_id?: string | null;
         };
@@ -32359,7 +32386,7 @@ export interface components {
              * @default google_workspace
              * @enum {string}
              */
-            provider: "google_workspace" | "microsoft_365" | "smtp";
+            provider?: "google_workspace" | "microsoft_365" | "smtp";
             /** Connection Id */
             connection_id?: string | null;
             /** From Address */
@@ -32392,7 +32419,7 @@ export interface components {
              * Title
              * @default Untitled interview
              */
-            title: string;
+            title?: string;
             /**
              * Vision Statement
              * @description The human's opening statement of the vision — becomes turn 0.
@@ -32413,7 +32440,7 @@ export interface components {
              * @default viewer
              * @enum {string}
              */
-            permission_level: "viewer" | "editor";
+            permission_level?: "viewer" | "editor";
             /** Expires At */
             expires_at?: string | null;
             /** Max Uses */
@@ -32496,7 +32523,7 @@ export interface components {
              * @description IANA timezone name.
              * @default UTC
              */
-            timezone: string;
+            timezone?: string;
             /**
              * Webhook Secret
              * @description Optional secret required as X-Matrx-Trigger-Secret on webhook fires.
@@ -32510,7 +32537,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
             /** Description */
             description?: string | null;
             /** Definition Version Id */
@@ -32537,7 +32564,7 @@ export interface components {
              * @default internal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
         };
         /** CredentialCreateRequest */
         CredentialCreateRequest: {
@@ -32564,7 +32591,7 @@ export interface components {
              * Is Default
              * @default false
              */
-            is_default: boolean;
+            is_default?: boolean;
             /** Api Key */
             api_key?: string | null;
             /** Refresh Token */
@@ -32618,12 +32645,12 @@ export interface components {
             /** Display Name */
             display_name?: string | null;
             /** @default {} */
-            metadata: components["schemas"]["CredentialMetadata"];
+            metadata?: components["schemas"]["CredentialMetadata"];
             /**
              * Is Default
              * @default false
              */
-            is_default: boolean;
+            is_default?: boolean;
             /** Last Verified At */
             last_verified_at?: string | null;
             /** Last Verified Status */
@@ -32683,7 +32710,7 @@ export interface components {
              * Sites
              * @default []
              */
-            sites: (string | null)[];
+            sites?: (string | null)[];
         };
         /** CredentialVerifyResponse */
         CredentialVerifyResponse: {
@@ -32698,7 +32725,7 @@ export interface components {
              *       "sites": []
              *     }
              */
-            details: components["schemas"]["CredentialVerifyDetails"];
+            details?: components["schemas"]["CredentialVerifyDetails"];
         };
         /**
          * CrmFoldSettings
@@ -32710,12 +32737,12 @@ export interface components {
              * @default auto
              * @enum {string}
              */
-            mode: "auto" | "manual" | "off";
+            mode?: "auto" | "manual" | "off";
             /**
              * Include Toxic
              * @default false
              */
-            include_toxic: boolean;
+            include_toxic?: boolean;
             /** Reputation Verdicts */
             reputation_verdicts?: string[] | null;
             /** Updated By */
@@ -32733,7 +32760,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -32798,17 +32825,17 @@ export interface components {
              * @default refused
              * @enum {string}
              */
-            status: "proposed" | "refused" | "not_admitted" | "error";
+            status?: "proposed" | "refused" | "not_admitted" | "error";
             /**
              * Subject Id
              * @default
              */
-            subject_id: string;
+            subject_id?: string;
             /**
              * Subject Label
              * @default
              */
-            subject_label: string;
+            subject_label?: string;
             /** Enrollment Id */
             enrollment_id?: string | null;
             /** Review Id */
@@ -32823,12 +32850,12 @@ export interface components {
              * Turns Scanned
              * @default 0
              */
-            turns_scanned: number;
+            turns_scanned?: number;
             /**
              * Turns Usable
              * @default 0
              */
-            turns_usable: number;
+            turns_usable?: number;
             /** Scan Truncated */
             scan_truncated?: string[];
             cluster?: components["schemas"]["TrajectoryCluster"] | null;
@@ -32842,7 +32869,7 @@ export interface components {
              * Reviewer Cost Usd
              * @default 0
              */
-            reviewer_cost_usd: number;
+            reviewer_cost_usd?: number;
             /** Error */
             error?: string | null;
         };
@@ -32877,7 +32904,7 @@ export interface components {
              * Execute
              * @default true
              */
-            execute: boolean;
+            execute?: boolean;
         };
         /**
          * CrystallizationSubjectOut
@@ -32894,7 +32921,7 @@ export interface components {
              * Conversations
              * @default 0
              */
-            conversations: number;
+            conversations?: number;
         };
         /**
          * CrystallizationSweepResult
@@ -32909,29 +32936,29 @@ export interface components {
              * Status
              * @default ok
              */
-            status: string;
+            status?: string;
             /** Addressee User Id */
             addressee_user_id?: string | null;
             /**
              * Subjects Examined
              * @default 0
              */
-            subjects_examined: number;
+            subjects_examined?: number;
             /**
              * Subjects Skipped No History
              * @default 0
              */
-            subjects_skipped_no_history: number;
+            subjects_skipped_no_history?: number;
             /**
              * Candidates
              * @default 0
              */
-            candidates: number;
+            candidates?: number;
             /**
              * Assists Created
              * @default 0
              */
-            assists_created: number;
+            assists_created?: number;
             /** Refusals */
             refusals?: {
                 [key: string]: string;
@@ -32952,7 +32979,7 @@ export interface components {
              * Doc
              * @default
              */
-            doc: string;
+            doc?: string;
             /** Item Schema */
             item_schema?: {
                 [key: string]: unknown;
@@ -32961,7 +32988,7 @@ export interface components {
              * Deprecated
              * @default false
              */
-            deprecated: boolean;
+            deprecated?: boolean;
         };
         /** CustomTool */
         CustomTool: {
@@ -32975,7 +33002,7 @@ export interface components {
              * @description Human-readable description shown to the model.
              * @default
              */
-            description: string;
+            description?: string;
             /** @description JSON Schema describing the tool's input parameters. */
             input_schema?: components["schemas"]["CustomToolInputSchema"];
         };
@@ -32986,7 +33013,7 @@ export interface components {
              * @default object
              * @constant
              */
-            type: "object";
+            type?: "object";
             /** Properties */
             properties?: {
                 [key: string]: components["schemas"]["JsonSchemaProperty"];
@@ -33146,17 +33173,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -33169,7 +33196,7 @@ export interface components {
              * @default asc
              * @enum {string}
              */
-            direction: "asc" | "desc";
+            direction?: "asc" | "desc";
         };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
@@ -33210,7 +33237,7 @@ export interface components {
              * Kind
              * @default general
              */
-            kind: string;
+            kind?: string;
             /** Short Code */
             short_code?: string | null;
             /** Organization Id */
@@ -33335,7 +33362,7 @@ export interface components {
              * Is Public
              * @default false
              */
-            is_public: boolean;
+            is_public?: boolean;
             /**
              * Fields
              * @description Explicit schema. Required when no rows are supplied.
@@ -33365,12 +33392,12 @@ export interface components {
              * Row Count
              * @default 0
              */
-            row_count: number;
+            row_count?: number;
             /**
              * Field Count
              * @default 0
              */
-            field_count: number;
+            field_count?: number;
             /** Created At */
             created_at?: string | null;
             /** Updated At */
@@ -33420,12 +33447,12 @@ export interface components {
              * Row Count
              * @default 0
              */
-            row_count: number;
+            row_count?: number;
             /**
              * Field Count
              * @default 0
              */
-            field_count: number;
+            field_count?: number;
             /** Created At */
             created_at?: string | null;
             /** Updated At */
@@ -33447,12 +33474,12 @@ export interface components {
              * Label
              * @default
              */
-            label: string;
+            label?: string;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -33477,12 +33504,12 @@ export interface components {
              * Label
              * @default
              */
-            label: string;
+            label?: string;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -33499,7 +33526,7 @@ export interface components {
              * Limit
              * @default 50
              */
-            limit: number;
+            limit?: number;
         };
         /**
          * DbRecordRef
@@ -33515,12 +33542,12 @@ export interface components {
              * Label
              * @default
              */
-            label: string;
+            label?: string;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -33562,26 +33589,26 @@ export interface components {
              * Country Iso
              * @default US
              */
-            country_iso: string;
+            country_iso?: string;
             /** City */
             city?: string | null;
             /**
              * Cadence Days
              * @default 7
              */
-            cadence_days: number;
+            cadence_days?: number;
             /**
              * Max Prompts Per Run
              * @default 10
              */
-            max_prompts_per_run: number;
+            max_prompts_per_run?: number;
             /** Coverage Tracker Id */
             coverage_tracker_id?: string | null;
             /**
              * Declared By
              * @default user
              */
-            declared_by: string;
+            declared_by?: string;
             /** Declared Ref */
             declared_ref?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -33626,32 +33653,32 @@ export interface components {
              * Timespan
              * @default 1d
              */
-            timespan: string;
+            timespan?: string;
             /**
              * Max Records
              * @default 100
              */
-            max_records: number;
+            max_records?: number;
             /**
              * Cadence Minutes
              * @default 240
              */
-            cadence_minutes: number;
+            cadence_minutes?: number;
             /**
              * Alert Min Hit Score
              * @default 60
              */
-            alert_min_hit_score: number;
+            alert_min_hit_score?: number;
             /**
              * Capture Pages
              * @default true
              */
-            capture_pages: boolean;
+            capture_pages?: boolean;
             /**
              * Declared By
              * @default user
              */
-            declared_by: string;
+            declared_by?: string;
             /** Declared Ref */
             declared_ref?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -33707,7 +33734,7 @@ export interface components {
              * @default 1
              * @constant
              */
-            version: "1";
+            version?: "1";
             /** Nodes */
             nodes?: components["schemas"]["NodeDef"][];
             /** Edges */
@@ -33722,7 +33749,7 @@ export interface components {
              * Strict Channels
              * @default false
              */
-            strict_channels: boolean;
+            strict_channels?: boolean;
             /**
              * Entry Nodes
              * @description Optional. If set, the scheduler starts from these node ids. If empty, the compiler derives entry nodes (nodes with no incoming edges).
@@ -33750,13 +33777,13 @@ export interface components {
              * @default 1
              * @constant
              */
-            version: "1";
+            version?: "1";
             /**
              * Summary
              * @description One-line human-readable description of what the patch does.
              * @default
              */
-            summary: string;
+            summary?: string;
             /** Ops */
             ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Input"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
         };
@@ -33770,13 +33797,13 @@ export interface components {
              * @default 1
              * @constant
              */
-            version: "1";
+            version?: "1";
             /**
              * Summary
              * @description One-line human-readable description of what the patch does.
              * @default
              */
-            summary: string;
+            summary?: string;
             /** Ops */
             ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Output"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
         };
@@ -33871,7 +33898,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -34050,7 +34077,7 @@ export interface components {
              * Rag Boost
              * @default 0
              */
-            rag_boost: number;
+            rag_boost?: number;
         };
         /** DeriveRequest */
         DeriveRequest: {
@@ -34121,12 +34148,12 @@ export interface components {
              * Chars
              * @default 0
              */
-            chars: number;
+            chars?: number;
             /**
              * Truncated
              * @default false
              */
-            truncated: boolean;
+            truncated?: boolean;
             producer: components["schemas"]["ProducerRef"];
         };
         /**
@@ -34144,7 +34171,7 @@ export interface components {
              * Capturable
              * @default true
              */
-            capturable: boolean;
+            capturable?: boolean;
             /** Notes */
             notes?: string[];
         };
@@ -34164,7 +34191,7 @@ export interface components {
              * @default cx_request
              * @enum {string}
              */
-            kind: "cx_request" | "wf_node";
+            kind?: "cx_request" | "wf_node";
             /** Id */
             id?: string | null;
             /** Iteration */
@@ -34280,7 +34307,7 @@ export interface components {
              * @default standard
              * @enum {string}
              */
-            mode: "standard" | "relaxed";
+            mode?: "standard" | "relaxed";
         };
         /** DetectRepeatedRegionsRequest */
         DetectRepeatedRegionsRequest: {
@@ -34297,12 +34324,12 @@ export interface components {
              * Min Pages Ratio
              * @default 0.3333333333333333
              */
-            min_pages_ratio: number;
+            min_pages_ratio?: number;
             /**
              * Min Confidence
              * @default 0.5
              */
-            min_confidence: number;
+            min_confidence?: number;
         };
         /** DetectorRunInfo */
         DetectorRunInfo: {
@@ -34363,32 +34390,32 @@ export interface components {
              * Limit
              * @default 20
              */
-            limit: number;
+            limit?: number;
             /**
              * Multi Query
              * @default 1
              */
-            multi_query: number;
+            multi_query?: number;
             /**
              * Use Hyde
              * @default false
              */
-            use_hyde: boolean;
+            use_hyde?: boolean;
             /**
              * Rerank
              * @default true
              */
-            rerank: boolean;
+            rerank?: boolean;
             /**
              * Use Mmr
              * @default true
              */
-            use_mmr: boolean;
+            use_mmr?: boolean;
             /**
              * Only Children
              * @default true
              */
-            only_children: boolean;
+            only_children?: boolean;
             /** Source Kinds */
             source_kinds?: string[] | null;
             /** Embedding Models */
@@ -34399,7 +34426,7 @@ export interface components {
              * Admin Bypass Acl
              * @default false
              */
-            admin_bypass_acl: boolean;
+            admin_bypass_acl?: boolean;
             /** Include Sources */
             include_sources?: {
                 [key: string]: string;
@@ -34459,19 +34486,19 @@ export interface components {
              * Entries
              * @default []
              */
-            entries: components["schemas"]["DictionaryEntry"][];
+            entries?: components["schemas"]["DictionaryEntry"][];
             /**
              * Custom Entries
              * @default []
              */
-            custom_entries: components["schemas"]["DictionaryEntry"][];
+            custom_entries?: components["schemas"]["DictionaryEntry"][];
             /** Max Inline Chars */
             max_inline_chars?: number | null;
             /**
              * Source Count
              * @default 0
              */
-            source_count: number;
+            source_count?: number;
         };
         /** DictionaryEntry */
         DictionaryEntry: {
@@ -34481,7 +34508,7 @@ export interface components {
              * Sounds Like
              * @default []
              */
-            sounds_like: string[];
+            sounds_like?: string[];
             /** Pronunciation */
             pronunciation?: string | null;
             /** Ipa */
@@ -34569,12 +34596,12 @@ export interface components {
              * Matrx Version
              * @default 1
              */
-            matrx_version: number;
+            matrx_version?: number;
             /**
              * Kind
              * @default output_directive
              */
-            kind: string;
+            kind?: string;
             /** Type */
             type: string;
             /** Items */
@@ -34587,7 +34614,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** DirectiveConfirmResult */
         DirectiveConfirmResult: {
@@ -34611,7 +34638,7 @@ export interface components {
              * Kind
              * @default output_directive
              */
-            kind: string;
+            kind?: string;
             /** Type */
             type: string;
             /** Items */
@@ -34624,7 +34651,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** DirectiveItemApplied */
         DirectiveItemApplied: {
@@ -34632,7 +34659,7 @@ export interface components {
              * Kind
              * @default directive_apply.item
              */
-            kind: string;
+            kind?: string;
             /** Type */
             type: string;
             /** Index */
@@ -34655,7 +34682,7 @@ export interface components {
              * Kind
              * @default directive_apply.failed
              */
-            kind: string;
+            kind?: string;
             /** Type */
             type: string;
             /** Index */
@@ -34682,12 +34709,12 @@ export interface components {
              * Summary
              * @default
              */
-            summary: string;
+            summary?: string;
             /**
              * Idempotency Key
              * @default
              */
-            idempotency_key: string;
+            idempotency_key?: string;
             /** Error */
             error?: string | null;
             /** Detail */
@@ -34729,24 +34756,24 @@ export interface components {
              * Reply
              * @default
              */
-            reply: string;
+            reply?: string;
             /**
              * Findings Created
              * @default 0
              */
-            findings_created: number;
+            findings_created?: number;
             /** Finding Ids */
             finding_ids?: string[];
             /**
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
             /**
              * Status
              * @default completed
              */
-            status: string;
+            status?: string;
             /** Reason */
             reason?: string | null;
         };
@@ -34808,7 +34835,7 @@ export interface components {
              * Limit
              * @default 2000
              */
-            limit: number;
+            limit?: number;
         };
         /** DismissBatchResponse */
         DismissBatchResponse: {
@@ -34850,12 +34877,12 @@ export interface components {
              * Written
              * @default 0
              */
-            written: number;
+            written?: number;
             /**
              * Redirects Written
              * @default 0
              */
-            redirects_written: number;
+            redirects_written?: number;
             /** Redirects Skipped */
             redirects_skipped?: string[];
             /** Errors */
@@ -34893,12 +34920,12 @@ export interface components {
              * Rationale
              * @default
              */
-            rationale: string;
+            rationale?: string;
             /**
              * Remove Node
              * @default true
              */
-            remove_node: boolean;
+            remove_node?: boolean;
         };
         /** DistinctValuesResponse */
         DistinctValuesResponse: {
@@ -34941,13 +34968,13 @@ export interface components {
              * @description Body text for heading/paragraph/quote blocks, or ONE list line for a bullet/numbered block (one block per line). Ignored by table/page_break.
              * @default
              */
-            text: string;
+            text?: string;
             /**
              * Level
              * @description Heading depth 1-6 for 'heading' blocks (1 = chapter title). Ignored elsewhere.
              * @default 1
              */
-            level: number;
+            level?: number;
             /**
              * Rows
              * @description Table cells for 'table' blocks, outer list = rows, inner list = one row's cell strings. The first row is styled as the header when `header` is true.
@@ -34958,7 +34985,7 @@ export interface components {
              * @description For 'table' blocks: treat the first row of `rows` as a styled header row.
              * @default true
              */
-            header: boolean;
+            header?: boolean;
         };
         /**
          * Docket
@@ -35103,17 +35130,17 @@ export interface components {
              * Raw Content Chars
              * @default 0
              */
-            raw_content_chars: number;
+            raw_content_chars?: number;
             /**
              * Clean Content Chars
              * @default 0
              */
-            clean_content_chars: number;
+            clean_content_chars?: number;
             /**
              * Chunk Count
              * @default 0
              */
-            chunk_count: number;
+            chunk_count?: number;
             /** Section Histogram */
             section_histogram?: {
                 [key: string]: number;
@@ -35132,17 +35159,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -35228,17 +35255,17 @@ export interface components {
              * Version
              * @default 1
              */
-            version: number;
+            version?: number;
             /**
              * Is Current
              * @default true
              */
-            is_current: boolean;
+            is_current?: boolean;
             /**
              * Status
              * @default success
              */
-            status: string;
+            status?: string;
             /** Error */
             error?: string | null;
             /** Created At */
@@ -35275,22 +35302,22 @@ export interface components {
              * Scanned
              * @default 0
              */
-            scanned: number;
+            scanned?: number;
             /**
              * Already Linked
              * @default 0
              */
-            already_linked: number;
+            already_linked?: number;
             /**
              * Created
              * @default 0
              */
-            created: number;
+            created?: number;
             /**
              * Matched
              * @default 0
              */
-            matched: number;
+            matched?: number;
             /** Folded */
             folded?: components["schemas"]["FoldedDomain"][];
             /** Skipped */
@@ -35308,17 +35335,17 @@ export interface components {
              * Scrape Allowed
              * @default true
              */
-            scrape_allowed: boolean;
+            scrape_allowed?: boolean;
             /**
              * Enabled
              * @default true
              */
-            enabled: boolean;
+            enabled?: boolean;
             /**
              * Proxy Type
              * @default datacenter
              */
-            proxy_type: string;
+            proxy_type?: string;
         };
         /**
          * DraftActionRequest
@@ -35353,12 +35380,12 @@ export interface components {
              * Guidance
              * @default
              */
-            guidance: string;
+            guidance?: string;
             /**
              * Accept
              * @default false
              */
-            accept: boolean;
+            accept?: boolean;
         };
         /**
          * DraftOutcome
@@ -35425,7 +35452,7 @@ export interface components {
              * Limit
              * @default 50
              */
-            limit: number;
+            limit?: number;
         };
         /** DrainResponse */
         DrainResponse: {
@@ -35444,27 +35471,27 @@ export interface components {
              * Enrollments Seen
              * @default 0
              */
-            enrollments_seen: number;
+            enrollments_seen?: number;
             /**
              * Enrollments Reviewed
              * @default 0
              */
-            enrollments_reviewed: number;
+            enrollments_reviewed?: number;
             /**
              * Findings Created
              * @default 0
              */
-            findings_created: number;
+            findings_created?: number;
             /**
              * Assists Created
              * @default 0
              */
-            assists_created: number;
+            assists_created?: number;
             /**
              * Replays Reaped
              * @default 0
              */
-            replays_reaped: number;
+            replays_reaped?: number;
             /** Skipped */
             skipped?: {
                 [key: string]: number;
@@ -35547,7 +35574,7 @@ export interface components {
              * @description False when ≥1 node type is not registered in the supplied registry — their input contracts were NOT checked, so a green report is hollow and cannot be fully trusted. A caller running against the bare default_registry (no builtins) gets ok=True only because validation was skipped; this flag exposes that.
              * @default true
              */
-            registry_complete: boolean;
+            registry_complete?: boolean;
         };
         /**
          * DryRunRequest
@@ -35632,7 +35659,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -35650,7 +35677,7 @@ export interface components {
              * Count
              * @default 1
              */
-            count: number;
+            count?: number;
         };
         /**
          * DuplicateScheduleGroup
@@ -35685,7 +35712,7 @@ export interface components {
              * Enabled
              * @default true
              */
-            enabled: boolean;
+            enabled?: boolean;
             /** Created At */
             created_at?: string | null;
             /**
@@ -35693,7 +35720,7 @@ export interface components {
              * @description True for the OLDEST schedule in the group -- the one that is not redundant.
              * @default false
              */
-            is_original: boolean;
+            is_original?: boolean;
         };
         /** DuplicateScheduleResponse */
         DuplicateScheduleResponse: {
@@ -35870,7 +35897,7 @@ export interface components {
              * Output Dimensionality
              * @default 1536
              */
-            output_dimensionality: number;
+            output_dimensionality?: number;
             /** Task Type */
             task_type?: string | null;
             /** Title */
@@ -35929,7 +35956,7 @@ export interface components {
              * Can Promote
              * @default false
              */
-            can_promote: boolean;
+            can_promote?: boolean;
             /** Promotion Blocker */
             promotion_blocker?: string | null;
         };
@@ -35947,7 +35974,7 @@ export interface components {
              * Missing
              * @default false
              */
-            missing: boolean;
+            missing?: boolean;
         };
         /**
          * EnrichDirective
@@ -35994,17 +36021,17 @@ export interface components {
              * Review Cost
              * @default 0
              */
-            review_cost: number;
+            review_cost?: number;
             /**
              * Replay Cost
              * @default 0
              */
-            replay_cost: number;
+            replay_cost?: number;
             /**
              * Total Cost
              * @default 0
              */
-            total_cost: number;
+            total_cost?: number;
         };
         /** EnrollmentDetailOut */
         EnrollmentDetailOut: {
@@ -36013,7 +36040,7 @@ export interface components {
              * Pending Examples
              * @default 0
              */
-            pending_examples: number;
+            pending_examples?: number;
             spend: components["schemas"]["EnrollmentSpend"];
             /** Reviews */
             reviews?: components["schemas"]["ReviewOut"][];
@@ -36053,7 +36080,7 @@ export interface components {
              * @default since_watermark
              * @enum {string}
              */
-            window_mode: "since_watermark" | "last_n_runs";
+            window_mode?: "since_watermark" | "last_n_runs";
             /** Window N */
             window_n?: number | null;
             /**
@@ -36061,7 +36088,7 @@ export interface components {
              * @default with_context
              * @enum {string}
              */
-            lens_visibility: "with_context" | "unit_only";
+            lens_visibility?: "with_context" | "unit_only";
             /** Status */
             status: string;
             /** Example Watermark At */
@@ -36082,32 +36109,32 @@ export interface components {
              * Review Cost
              * @default 0
              */
-            review_cost: number;
+            review_cost?: number;
             /**
              * Replay Cost
              * @default 0
              */
-            replay_cost: number;
+            replay_cost?: number;
             /**
              * Total Cost
              * @default 0
              */
-            total_cost: number;
+            total_cost?: number;
             /**
              * Review Count
              * @default 0
              */
-            review_count: number;
+            review_count?: number;
             /**
              * Replay Count
              * @default 0
              */
-            replay_count: number;
+            replay_count?: number;
             /**
              * Replay Failed Count
              * @default 0
              */
-            replay_failed_count: number;
+            replay_failed_count?: number;
         };
         /** EnrollmentUpdateRequest */
         EnrollmentUpdateRequest: {
@@ -36187,7 +36214,7 @@ export interface components {
              * Label Category
              * @default custom
              */
-            label_category: string;
+            label_category?: string;
             /** Canonical Value */
             canonical_value: string;
             /** Normalized Value */
@@ -36352,7 +36379,7 @@ export interface components {
              * Rerun
              * @default false
              */
-            rerun: boolean;
+            rerun?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -36369,7 +36396,7 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /** Version Number */
             version_number?: number | null;
             /** Revision */
@@ -36380,7 +36407,7 @@ export interface components {
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /** Model Id */
             model_id: string;
             /** Messages */
@@ -36407,7 +36434,7 @@ export interface components {
              * Auto Context Disabled
              * @default false
              */
-            auto_context_disabled: boolean;
+            auto_context_disabled?: boolean;
             /** Tool Config */
             tool_config?: {
                 [key: string]: unknown;
@@ -36509,7 +36536,7 @@ export interface components {
              * Total Cost
              * @default 0
              */
-            total_cost: string;
+            total_cost?: string;
             /** Total Meters */
             total_meters?: {
                 [key: string]: string;
@@ -36537,7 +36564,7 @@ export interface components {
              * Cost
              * @default 0
              */
-            cost: string;
+            cost?: string;
             /** Meters */
             meters?: {
                 [key: string]: string;
@@ -36557,7 +36584,7 @@ export interface components {
              * Depth
              * @default 0
              */
-            depth: number;
+            depth?: number;
             /** Children */
             children?: components["schemas"]["ExecutionTreeNode"][];
         };
@@ -36569,12 +36596,12 @@ export interface components {
              * Multi Query
              * @default 3
              */
-            multi_query: number;
+            multi_query?: number;
             /**
              * Use Hyde
              * @default true
              */
-            use_hyde: boolean;
+            use_hyde?: boolean;
         };
         /** ExpandResponse */
         ExpandResponse: {
@@ -36616,17 +36643,17 @@ export interface components {
              * Kind
              * @default
              */
-            kind: string;
+            kind?: string;
             /**
              * Samples Satisfying
              * @default 0
              */
-            samples_satisfying: number;
+            samples_satisfying?: number;
             /**
              * Sample Count
              * @default 0
              */
-            sample_count: number;
+            sample_count?: number;
             /** Verdict */
             verdict?: string | null;
         };
@@ -36681,17 +36708,17 @@ export interface components {
              * Total Chars
              * @default 0
              */
-            total_chars: number;
+            total_chars?: number;
             /**
              * Hidden Conversation Count
              * @default 0
              */
-            hidden_conversation_count: number;
+            hidden_conversation_count?: number;
             /**
              * Can Read Material
              * @default true
              */
-            can_read_material: boolean;
+            can_read_material?: boolean;
         };
         /**
          * ExpertEvidence
@@ -36713,7 +36740,7 @@ export interface components {
              * Detail
              * @default
              */
-            detail: string;
+            detail?: string;
         };
         /** ExpertExtraction */
         ExpertExtraction: {
@@ -36767,7 +36794,7 @@ export interface components {
              * Real Char Count
              * @default 0
              */
-            real_char_count: number;
+            real_char_count?: number;
             /** Failure Reason */
             failure_reason?: string | null;
             /** Content Id */
@@ -36778,7 +36805,7 @@ export interface components {
              * Needs User Action
              * @default false
              */
-            needs_user_action: boolean;
+            needs_user_action?: boolean;
         };
         /** ExtensionContentSubmit */
         ExtensionContentSubmit: {
@@ -36789,7 +36816,7 @@ export interface components {
              * @default 1
              * @enum {integer}
              */
-            capture_level: 1 | 2 | 3;
+            capture_level?: 1 | 2 | 3;
             /** Images */
             images?: components["schemas"]["ExtensionMeasuredImage"][];
             media?: components["schemas"]["ExtensionMedia"] | null;
@@ -36915,7 +36942,7 @@ export interface components {
              * Is Included
              * @default true
              */
-            is_included: boolean;
+            is_included?: boolean;
             /**
              * Next Level
              * @enum {integer}
@@ -36928,7 +36955,7 @@ export interface components {
              * @default scrape
              * @enum {string}
              */
-            task_kind: "scrape" | "enrich";
+            task_kind?: "scrape" | "enrich";
             enrich?: components["schemas"]["EnrichDirective"] | null;
             /** Last Attempt At */
             last_attempt_at?: string | null;
@@ -36940,7 +36967,7 @@ export interface components {
              * Server Attempts
              * @default 0
              */
-            server_attempts: number;
+            server_attempts?: number;
             /** Last Server Attempt At */
             last_server_attempt_at?: string | null;
             /** Last Server Failure Reason */
@@ -36949,7 +36976,7 @@ export interface components {
              * Server Gave Up
              * @default false
              */
-            server_gave_up: boolean;
+            server_gave_up?: boolean;
             /** Policy Category */
             policy_category?: string | null;
             /** Policy Reason */
@@ -36997,7 +37024,7 @@ export interface components {
              * @default updated
              * @enum {string}
              */
-            kind: "added" | "updated" | "deleted";
+            kind?: "added" | "updated" | "deleted";
             /**
              * Occurred At
              * Format: date-time
@@ -37021,12 +37048,12 @@ export interface components {
              * Captures Started
              * @default 0
              */
-            captures_started: number;
+            captures_started?: number;
             /**
              * Search Changes Processed
              * @default 0
              */
-            search_changes_processed: number;
+            search_changes_processed?: number;
             /** Errors */
             errors?: string[];
         };
@@ -37039,7 +37066,7 @@ export interface components {
              * Include Preview
              * @default true
              */
-            include_preview: boolean;
+            include_preview?: boolean;
         };
         /** ExtractAtBboxResponse */
         ExtractAtBboxResponse: {
@@ -37060,14 +37087,29 @@ export interface components {
              * Intersecting Images
              * @default []
              */
-            intersecting_images: components["schemas"]["IntersectingImageOut"][];
+            intersecting_images?: components["schemas"]["IntersectingImageOut"][];
             /** Preview Png Base64 */
             preview_png_base64?: string | null;
             /**
              * Notes
              * @default []
              */
-            notes: string[];
+            notes?: string[];
+        };
+        /**
+         * ExtractOccurrence
+         * @description One workflow to pull the run out of.
+         */
+        ExtractOccurrence: {
+            /** Definition Id */
+            definition_id: string;
+            /** Node Ids */
+            node_ids: string[];
+            /**
+             * Expected Updated At
+             * @description Optimistic-concurrency guard: the definition's updated_at the client last saw (ISO 8601). A concurrent studio edit turns the rewire into a 409 instead of a silent clobber.
+             */
+            expected_updated_at?: string | null;
         };
         /** ExtractPagesRequest */
         ExtractPagesRequest: {
@@ -37079,7 +37121,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -37106,61 +37148,25 @@ export interface components {
             /** Local Path */
             local_path?: string | null;
         };
-        /** ExtractRequest */
-        ExtractRequest: {
+        /** ExtractResult */
+        ExtractResult: {
+            /** Dry Run */
+            dry_run: boolean;
+            /** Child Definition Id */
+            child_definition_id?: string | null;
+            /** Child Name */
+            child_name: string;
             /**
-             * Intent
-             * @enum {string}
+             * Child Description
+             * @default
              */
-            intent: "extract" | "get_or_extract" | "replace_extract";
-            /**
-             * Source Kind
-             * @description One of cld_file/note/code_file/external_url/inline/legacy
-             */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** File Content Hash */
-            file_content_hash: string;
-            /**
-             * Extractor Name
-             * @default pymupdf
-             */
-            extractor_name: string;
-            /**
-             * Extractor Version
-             * @default v1
-             */
-            extractor_version: string;
-            /** Name */
-            name: string;
-            /** Mime Type */
-            mime_type?: string | null;
-            /** Total Pages */
-            total_pages?: number | null;
-            /** Source Hash */
-            source_hash: string;
-            /** Storage Uri */
-            storage_uri?: string | null;
-            /** Content */
-            content?: string | null;
-            /** Structured Json */
-            structured_json?: {
-                [key: string]: unknown;
-            } | null;
-            /** Organization Id */
-            organization_id?: string | null;
-            /** Metadata */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Rag Boost
-             * @default 0
-             */
-            rag_boost: number;
-            /** Reason */
-            reason?: string | null;
+            child_description?: string;
+            /** Steps */
+            steps?: components["schemas"]["ExtractedStep"][];
+            /** Occurrences */
+            occurrences?: components["schemas"]["OccurrenceOutcome"][];
+            /** Assist Status */
+            assist_status?: string | null;
         };
         /** ExtractTablesRequest */
         ExtractTablesRequest: {
@@ -37177,7 +37183,7 @@ export interface components {
              * Output Format
              * @default csv
              */
-            output_format: string;
+            output_format?: string;
         };
         /** ExtractTextRequest */
         ExtractTextRequest: {
@@ -37194,39 +37200,48 @@ export interface components {
              * Force Ocr
              * @default false
              */
-            force_ocr: boolean;
+            force_ocr?: boolean;
             /**
              * Use Ocr Threshold
              * @default 100
              */
-            use_ocr_threshold: number;
+            use_ocr_threshold?: number;
             /**
              * Include Page Markers
              * @default false
              */
-            include_page_markers: boolean;
+            include_page_markers?: boolean;
             /**
              * Include Page Metadata
              * @default false
              */
-            include_page_metadata: boolean;
+            include_page_metadata?: boolean;
             /**
              * Include Block Metadata
              * @default false
              */
-            include_block_metadata: boolean;
+            include_block_metadata?: boolean;
             /**
              * Include Word Metadata
              * @default false
              */
-            include_word_metadata: boolean;
+            include_word_metadata?: boolean;
             /**
              * Persist
              * @default false
              */
-            persist: boolean;
+            persist?: boolean;
             /** Document Name */
             document_name?: string | null;
+        };
+        /** ExtractedStep */
+        ExtractedStep: {
+            /** Node Id */
+            node_id: string;
+            /** Spec Type */
+            spec_type: string;
+            /** Label */
+            label: string;
         };
         /** ExtractedTextPageOut */
         ExtractedTextPageOut: {
@@ -37249,6 +37264,52 @@ export interface components {
             text: string;
             /** Pages */
             pages: components["schemas"]["ExtractedTextPageOut"][];
+        };
+        /**
+         * ExtractionProposal
+         * @description The typed proposal riding on the assist's ``navigate`` action.
+         *
+         *     Parsed, never re-derived — the sweep already did the detection and had the
+         *     mandated namer agent title it.
+         */
+        ExtractionProposal: {
+            /** Assist Id */
+            assist_id: string;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Workflow Name */
+            workflow_name: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Steps */
+            steps?: components["schemas"]["ProposalStep"][];
+            /** Occurrences */
+            occurrences?: components["schemas"]["ProposalOccurrence"][];
+            /**
+             * Status
+             * @default pending
+             */
+            status?: string;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /**
+             * Body
+             * @default
+             */
+            body?: string;
+            /**
+             * Reasoning
+             * @default
+             */
+            reasoning?: string;
+            /** Confidence */
+            confidence?: number | null;
         };
         /** FailStageRequest */
         FailStageRequest: {
@@ -37385,7 +37446,7 @@ export interface components {
              * Verdict
              * @default false_reap
              */
-            verdict: string;
+            verdict?: string;
         };
         /** FaultDomainCount */
         FaultDomainCount: {
@@ -37411,7 +37472,7 @@ export interface components {
              * Show Thinking
              * @default false
              */
-            show_thinking: boolean;
+            show_thinking?: boolean;
             /** Apply Choice */
             apply_choice?: ("A" | "B") | null;
         };
@@ -37426,12 +37487,12 @@ export interface components {
              * @default string
              * @enum {string}
              */
-            data_type: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array";
+            data_type?: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array";
             /**
              * Is Required
              * @default false
              */
-            is_required: boolean;
+            is_required?: boolean;
             default_value?: components["schemas"]["JsonValue"] | null;
             /** Validation Rules */
             validation_rules?: {
@@ -37460,12 +37521,12 @@ export interface components {
              * @default string
              * @enum {string}
              */
-            data_type: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array";
+            data_type?: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array";
             /**
              * Is Required
              * @default false
              */
-            is_required: boolean;
+            is_required?: boolean;
             default_value?: components["schemas"]["JsonValue"] | null;
             /** Validation Rules */
             validation_rules?: {
@@ -37491,17 +37552,17 @@ export interface components {
              * @default revealable
              * @enum {string}
              */
-            handling: "visible" | "revealable" | "sealed";
+            handling?: "visible" | "revealable" | "sealed";
             /**
              * Editable
              * @default true
              */
-            editable: boolean;
+            editable?: boolean;
             /**
              * Inject Into Sandbox
              * @default false
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
             /** Description */
             description?: string | null;
         } & {
@@ -37545,14 +37606,14 @@ export interface components {
              * Detectors Run
              * @default {}
              */
-            detectors_run: {
+            detectors_run?: {
                 [key: string]: components["schemas"]["DetectorRunInfo"];
             };
             /**
              * Progress
              * @default {}
              */
-            progress: {
+            progress?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Classification */
@@ -37565,7 +37626,7 @@ export interface components {
              * Summary Counts
              * @default {}
              */
-            summary_counts: {
+            summary_counts?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Text Source Map */
@@ -37578,7 +37639,7 @@ export interface components {
              * Metadata
              * @default {}
              */
-            metadata: {
+            metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Started At */
@@ -37613,17 +37674,17 @@ export interface components {
              * Text Sources
              * @default []
              */
-            text_sources: string[];
+            text_sources?: string[];
             /**
              * Elapsed Ms
              * @default 0
              */
-            elapsed_ms: number;
+            elapsed_ms?: number;
             /**
              * Summary
              * @default {}
              */
-            summary: {
+            summary?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Payload */
@@ -37636,7 +37697,7 @@ export interface components {
              * Payload Bytes
              * @default 0
              */
-            payload_bytes: number;
+            payload_bytes?: number;
             /** Error */
             error?: string | null;
             /** Created At */
@@ -37654,12 +37715,12 @@ export interface components {
              * Chunk Count
              * @default 0
              */
-            chunk_count: number;
+            chunk_count?: number;
             /**
              * Has Clean Content
              * @default false
              */
-            has_clean_content: boolean;
+            has_clean_content?: boolean;
             /** Updated At */
             updated_at?: string | null;
         };
@@ -37669,14 +37730,14 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /** Field Id */
             field_id?: string | null;
             /**
              * Run Enrich
              * @default false
              */
-            run_enrich: boolean;
+            run_enrich?: boolean;
         };
         /** FileLineageSummary */
         FileLineageSummary: {
@@ -37692,12 +37753,12 @@ export interface components {
              * Has Descendants
              * @default false
              */
-            has_descendants: boolean;
+            has_descendants?: boolean;
             /**
              * Descendant Count
              * @default 0
              */
-            descendant_count: number;
+            descendant_count?: number;
         };
         /** FilePageOut */
         FilePageOut: {
@@ -37743,7 +37804,7 @@ export interface components {
              * Metadata
              * @default {}
              */
-            metadata: {
+            metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Created At */
@@ -37803,7 +37864,7 @@ export interface components {
              * Share Revoke
              * @default false
              */
-            share_revoke: boolean;
+            share_revoke?: boolean;
             /** Permissions */
             permissions?: {
                 [key: string]: unknown;
@@ -37822,7 +37883,7 @@ export interface components {
              * Restore From Trash
              * @default false
              */
-            restore_from_trash: boolean;
+            restore_from_trash?: boolean;
             /** Copy To */
             copy_to?: string | null;
         };
@@ -37863,7 +37924,7 @@ export interface components {
              * Attempt Count
              * @default 0
              */
-            attempt_count: number;
+            attempt_count?: number;
             /** Skipped Reason */
             skipped_reason?: string | null;
             error?: components["schemas"]["FileRagJobError"] | null;
@@ -37873,7 +37934,7 @@ export interface components {
              * Chunk Count
              * @default 0
              */
-            chunk_count: number;
+            chunk_count?: number;
             /** Document Updated At */
             document_updated_at?: string | null;
         };
@@ -37897,12 +37958,12 @@ export interface components {
              * Visibility
              * @default personal
              */
-            visibility: string;
+            visibility?: string;
             /**
              * Current Version
              * @default 1
              */
-            current_version: number;
+            current_version?: number;
             /** Parent Folder Id */
             parent_folder_id?: string | null;
             /** Metadata */
@@ -37976,7 +38037,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
             /** File Name */
             file_name?: string | null;
             /** Mime Type */
@@ -38035,7 +38096,7 @@ export interface components {
              * Run Enrich
              * @default false
              */
-            run_enrich: boolean;
+            run_enrich?: boolean;
         };
         /** FileTreeNode */
         FileTreeNode: {
@@ -38098,17 +38159,17 @@ export interface components {
              * Match All
              * @default true
              */
-            match_all: boolean;
+            match_all?: boolean;
             /**
              * Limit
              * @default 100
              */
-            limit: number;
+            limit?: number;
             /**
              * Offset
              * @default 0
              */
-            offset: number;
+            offset?: number;
         };
         /** FilterRowsResponse */
         FilterRowsResponse: {
@@ -38138,7 +38199,7 @@ export interface components {
              * Free Tier Status
              * @default
              */
-            free_tier_status: string;
+            free_tier_status?: string;
             /** Provider Used */
             provider_used?: string | null;
             /** Provider Result */
@@ -38149,12 +38210,12 @@ export interface components {
              * Reason
              * @default
              */
-            reason: string;
+            reason?: string;
             /**
              * Changed
              * @default false
              */
-            changed: boolean;
+            changed?: boolean;
         };
         /** FinalizeUploadRequest */
         FinalizeUploadRequest: {
@@ -38188,7 +38249,7 @@ export interface components {
              * Use Paid Providers
              * @default true
              */
-            use_paid_providers: boolean;
+            use_paid_providers?: boolean;
         };
         /** FindSimilarBody */
         FindSimilarBody: {
@@ -38202,7 +38263,7 @@ export interface components {
              * Max Hits Per Page
              * @default 5
              */
-            max_hits_per_page: number;
+            max_hits_per_page?: number;
         };
         /** FindSimilarCandidate */
         FindSimilarCandidate: {
@@ -38267,7 +38328,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /**
          * FindingEffectivenessRow
@@ -38301,57 +38362,57 @@ export interface components {
              * Findings Total
              * @default 0
              */
-            findings_total: number;
+            findings_total?: number;
             /**
              * Proposed Count
              * @default 0
              */
-            proposed_count: number;
+            proposed_count?: number;
             /**
              * Evidencing Count
              * @default 0
              */
-            evidencing_count: number;
+            evidencing_count?: number;
             /**
              * Ready Count
              * @default 0
              */
-            ready_count: number;
+            ready_count?: number;
             /**
              * Approved Count
              * @default 0
              */
-            approved_count: number;
+            approved_count?: number;
             /**
              * Applied Count
              * @default 0
              */
-            applied_count: number;
+            applied_count?: number;
             /**
              * Rejected Count
              * @default 0
              */
-            rejected_count: number;
+            rejected_count?: number;
             /**
              * Reverted Count
              * @default 0
              */
-            reverted_count: number;
+            reverted_count?: number;
             /**
              * Superseded Count
              * @default 0
              */
-            superseded_count: number;
+            superseded_count?: number;
             /**
              * Undecided Count
              * @default 0
              */
-            undecided_count: number;
+            undecided_count?: number;
             /**
              * Machine Applicable Count
              * @default 0
              */
-            machine_applicable_count: number;
+            machine_applicable_count?: number;
             /** Accept Rate */
             accept_rate?: number | null;
             /** Revert Rate */
@@ -38370,7 +38431,7 @@ export interface components {
              * Cost Signal Findings
              * @default 0
              */
-            cost_signal_findings: number;
+            cost_signal_findings?: number;
             /** Pre Apply Request Count */
             pre_apply_request_count?: number | null;
             /** Post Apply Request Count */
@@ -38399,7 +38460,7 @@ export interface components {
              * Fixer Version
              * @default findingfix-v1
              */
-            fixer_version: string;
+            fixer_version?: string;
             /** Proposal */
             proposal?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -38420,7 +38481,7 @@ export interface components {
              * Enrollment Created
              * @default false
              */
-            enrollment_created: boolean;
+            enrollment_created?: boolean;
             /** Assist Id */
             assist_id?: string | null;
             /**
@@ -38432,7 +38493,7 @@ export interface components {
              * Snapshots Pinned
              * @default 0
              */
-            snapshots_pinned: number;
+            snapshots_pinned?: number;
         };
         /**
          * FindingFromWalkRequest
@@ -38459,7 +38520,7 @@ export interface components {
              * @default assistant_message
              * @enum {string}
              */
-            unit_kind: "assistant_message" | "agent_request" | "wf_node_outcome";
+            unit_kind?: "assistant_message" | "agent_request" | "wf_node_outcome";
             /** Unit Id */
             unit_id: string;
             /** Hops */
@@ -38508,7 +38569,7 @@ export interface components {
              * Machine Applicable
              * @default false
              */
-            machine_applicable: boolean;
+            machine_applicable?: boolean;
             /** Confidence */
             confidence?: number | null;
             /** Status */
@@ -38584,7 +38645,7 @@ export interface components {
              * @default queued
              * @constant
              */
-            mode: "queued";
+            mode?: "queued";
         };
         /** FireTriggerRequest */
         FireTriggerRequest: {
@@ -38608,7 +38669,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -38622,12 +38683,12 @@ export interface components {
              * Reason
              * @default flatten_annotations
              */
-            reason: string;
+            reason?: string;
             /**
              * Widgets
              * @default true
              */
-            widgets: boolean;
+            widgets?: boolean;
         };
         /**
          * FocalPoint
@@ -38674,17 +38735,17 @@ export interface components {
              * Limit
              * @default 250
              */
-            limit: number;
+            limit?: number;
             /**
              * Include Toxic
              * @default false
              */
-            include_toxic: boolean;
+            include_toxic?: boolean;
             /**
              * Refold
              * @default false
              */
-            refold: boolean;
+            refold?: boolean;
             /** Verdicts */
             verdicts?: string[];
         };
@@ -38717,12 +38778,12 @@ export interface components {
              * Limit
              * @default 250
              */
-            limit: number;
+            limit?: number;
             /**
              * Refold
              * @default false
              */
-            refold: boolean;
+            refold?: boolean;
         };
         /**
          * FoldSerpProspectsRequest
@@ -38752,12 +38813,12 @@ export interface components {
              * Limit
              * @default 250
              */
-            limit: number;
+            limit?: number;
             /**
              * Refold
              * @default false
              */
-            refold: boolean;
+            refold?: boolean;
         };
         /** FoldedDomain */
         FoldedDomain: {
@@ -38790,7 +38851,7 @@ export interface components {
              * Visibility
              * @default personal
              */
-            visibility: string;
+            visibility?: string;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -38891,7 +38952,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -38903,23 +38964,23 @@ export interface components {
              * Retry
              * @default false
              */
-            retry: boolean;
+            retry?: boolean;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /**
              * Stream
              * @default true
              */
-            stream: boolean;
+            stream?: boolean;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Tools
              * @default []
              */
-            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
@@ -38930,24 +38991,24 @@ export interface components {
              * Context
              * @default {}
              */
-            context: {
+            context?: {
                 [key: string]: unknown;
             };
             /**
              * Writable Variables
              * @default []
              */
-            writable_variables: string[];
+            writable_variables?: string[];
             /**
              * Allow Context Create
              * @default false
              */
-            allow_context_create: boolean;
+            allow_context_create?: boolean;
             /**
              * Block Mode
              * @default false
              */
-            block_mode: boolean;
+            block_mode?: boolean;
             /** Snapshot */
             snapshot?: boolean | null;
             /** Memory */
@@ -38958,7 +39019,7 @@ export interface components {
              * Memory Scope
              * @default thread
              */
-            memory_scope: string;
+            memory_scope?: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
             /** Skill Config */
             skill_config?: {
@@ -38972,7 +39033,7 @@ export interface components {
              * Exclusive
              * @default false
              */
-            exclusive: boolean;
+            exclusive?: boolean;
             /** Fork Title */
             fork_title?: string | null;
         };
@@ -39000,7 +39061,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
         };
         /**
          * ForkRequest
@@ -39025,7 +39086,7 @@ export interface components {
              * Exclusive
              * @default false
              */
-            exclusive: boolean;
+            exclusive?: boolean;
             /** Title */
             title?: string | null;
         };
@@ -39037,7 +39098,7 @@ export interface components {
              * Attempt
              * @default 1
              */
-            attempt: number;
+            attempt?: number;
         } & {
             [key: string]: unknown;
         };
@@ -39101,7 +39162,7 @@ export interface components {
              * @default square
              * @enum {string}
              */
-            size: "square" | "portrait" | "landscape" | "wide" | "tall";
+            size?: "square" | "portrait" | "landscape" | "wide" | "tall";
             /**
              * Style
              * @description Optional style hint (e.g. 'editorial illustration'); folded into the prompt.
@@ -39112,7 +39173,7 @@ export interface components {
              * @description Number of images to generate.
              * @default 1
              */
-            count: number;
+            count?: number;
             /**
              * Model
              * @description Catalog model name; defaults to the platform's primary image model.
@@ -39131,14 +39192,14 @@ export interface components {
              * Max Nodes
              * @default 40
              */
-            max_nodes: number;
+            max_nodes?: number;
             /** Guidance */
             guidance?: string | null;
             /**
              * Apply
              * @default true
              */
-            apply: boolean;
+            apply?: boolean;
             /** Research Topic Id */
             research_topic_id?: string | null;
         };
@@ -39244,7 +39305,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Keyword Override */
             keyword_override?: string | null;
         };
@@ -39314,13 +39375,13 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            level: "read" | "write" | "admin";
+            level?: "read" | "write" | "admin";
             /**
              * Grantee Type
              * @default user
              * @enum {string}
              */
-            grantee_type: "user" | "group";
+            grantee_type?: "user" | "group";
             /** Expires At */
             expires_at?: string | null;
         };
@@ -39337,12 +39398,12 @@ export interface components {
              * Can Use
              * @default true
              */
-            can_use: boolean;
+            can_use?: boolean;
             /**
              * Can Manage
              * @default false
              */
-            can_manage: boolean;
+            can_manage?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -39461,7 +39522,7 @@ export interface components {
              * Is Default
              * @default false
              */
-            is_default: boolean;
+            is_default?: boolean;
         };
         /** GscPageSummary */
         GscPageSummary: {
@@ -39481,12 +39542,12 @@ export interface components {
              * Clicks
              * @default 0
              */
-            clicks: number;
+            clicks?: number;
             /**
              * Impressions
              * @default 0
              */
-            impressions: number;
+            impressions?: number;
             /** Ctr */
             ctr?: number | null;
             /** Position */
@@ -39497,7 +39558,7 @@ export interface components {
              * Has Data
              * @default false
              */
-            has_data: boolean;
+            has_data?: boolean;
         };
         /** GscSearchPerformanceSyncBody */
         GscSearchPerformanceSyncBody: {
@@ -39526,7 +39587,7 @@ export interface components {
              * @description Re-fetch days already stored instead of skipping them (repairs partial or stale data).
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /**
              * Request Id
              * @description Optional caller correlation id stamped onto the collection run for later lookup.
@@ -39538,7 +39599,7 @@ export interface components {
              * @default incremental
              * @enum {string}
              */
-            mode: "incremental" | "backfill";
+            mode?: "incremental" | "backfill";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -39557,7 +39618,7 @@ export interface components {
              * @default ran
              * @enum {string}
              */
-            status: "ran" | "errored" | "skipped_for_budget";
+            status?: "ran" | "errored" | "skipped_for_budget";
             /** Run Id */
             run_id?: string | null;
             /** Definition Id */
@@ -39597,7 +39658,7 @@ export interface components {
              * Cascade Tool Pairs
              * @default true
              */
-            cascade_tool_pairs: boolean;
+            cascade_tool_pairs?: boolean;
         };
         /** HideResponse */
         HideResponse: {
@@ -39615,27 +39676,27 @@ export interface components {
              * Review Cost
              * @default 0
              */
-            review_cost: number;
+            review_cost?: number;
             /**
              * Replay Cost
              * @default 0
              */
-            replay_cost: number;
+            replay_cost?: number;
             /**
              * Total Cost
              * @default 0
              */
-            total_cost: number;
+            total_cost?: number;
             /**
              * Review Count
              * @default 0
              */
-            review_count: number;
+            review_count?: number;
             /**
              * Replay Count
              * @default 0
              */
-            replay_count: number;
+            replay_count?: number;
             /** By Enrollment */
             by_enrollment?: components["schemas"]["EnrollmentCostRow"][];
         };
@@ -39713,7 +39774,7 @@ export interface components {
              * Diagnostics
              * @default []
              */
-            diagnostics: components["schemas"]["IdeDiagnostic"][];
+            diagnostics?: components["schemas"]["IdeDiagnostic"][];
             workspace?: components["schemas"]["IdeWorkspaceState"] | null;
             git?: components["schemas"]["IdeGitState"] | null;
         };
@@ -39734,67 +39795,67 @@ export interface components {
              * Window Days
              * @default 7
              */
-            window_days: number;
+            window_days?: number;
             /**
              * Sent
              * @default 0
              */
-            sent: number;
+            sent?: number;
             /**
              * Delivered
              * @default 0
              */
-            delivered: number;
+            delivered?: number;
             /**
              * Hard Bounced
              * @default 0
              */
-            hard_bounced: number;
+            hard_bounced?: number;
             /**
              * Soft Bounced
              * @default 0
              */
-            soft_bounced: number;
+            soft_bounced?: number;
             /**
              * Complained
              * @default 0
              */
-            complained: number;
+            complained?: number;
             /**
              * Replied
              * @default 0
              */
-            replied: number;
+            replied?: number;
             /**
              * Unsubscribed
              * @default 0
              */
-            unsubscribed: number;
+            unsubscribed?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Failure Streak
              * @default 0
              */
-            failure_streak: number;
+            failure_streak?: number;
             /**
              * Hard Bounce Rate
              * @default 0
              */
-            hard_bounce_rate: number;
+            hard_bounce_rate?: number;
             /**
              * Complaint Rate
              * @default 0
              */
-            complaint_rate: number;
+            complaint_rate?: number;
             /**
              * Reply Rate
              * @default 0
              */
-            reply_rate: number;
+            reply_rate?: number;
             /**
              * Computed At
              * Format: date-time
@@ -39835,7 +39896,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "public" | "shared";
+            visibility?: "personal" | "public" | "shared";
             /**
              * Folder
              * @description Logical destination folder; defaults beside the source image.
@@ -39847,13 +39908,13 @@ export interface components {
              * @default png
              * @enum {string}
              */
-            format: "png" | "jpeg" | "webp" | "avif";
+            format?: "png" | "jpeg" | "webp" | "avif";
             /**
              * Quality
              * @description Encoder quality from 1 to 100 for lossy output formats.
              * @default 90
              */
-            quality: number;
+            quality?: number;
             /**
              * Preset
              * @description Optional asset preset used to render additional variants.
@@ -40129,7 +40190,7 @@ export interface components {
              * Correlated
              * @default false
              */
-            correlated: boolean;
+            correlated?: boolean;
             /** Matched Send Provider Message Id */
             matched_send_provider_message_id?: string | null;
             /** Interaction Id */
@@ -40144,12 +40205,12 @@ export interface components {
              * Suppressed
              * @default false
              */
-            suppressed: boolean;
+            suppressed?: boolean;
             /**
              * Already Ingested
              * @default false
              */
-            already_ingested: boolean;
+            already_ingested?: boolean;
             /** Detail */
             detail?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -40200,7 +40261,7 @@ export interface components {
              * @default user_message
              * @enum {string}
              */
-            kind: "user_message" | "system_message";
+            kind?: "user_message" | "system_message";
             /**
              * Text
              * @description The message text to inject.
@@ -40212,19 +40273,19 @@ export interface components {
              * @default next_boundary
              * @enum {string}
              */
-            delivery: "next_boundary" | "turn_end";
+            delivery?: "next_boundary" | "turn_end";
             /**
              * Is Visible To User
              * @description Whether the injected message is shown in the user's transcript.
              * @default true
              */
-            is_visible_to_user: boolean;
+            is_visible_to_user?: boolean;
             /**
              * Is Visible To Model
              * @description Whether the model sees the injected message (almost always true).
              * @default true
              */
-            is_visible_to_model: boolean;
+            is_visible_to_model?: boolean;
         };
         /** InboxEnqueueResponse */
         InboxEnqueueResponse: {
@@ -40254,24 +40315,24 @@ export interface components {
              * Delivery
              * @default next_boundary
              */
-            delivery: string;
+            delivery?: string;
             /** Queued At */
             queued_at?: string | null;
             /**
              * Is Visible To User
              * @default true
              */
-            is_visible_to_user: boolean;
+            is_visible_to_user?: boolean;
             /**
              * Is Visible To Model
              * @default true
              */
-            is_visible_to_model: boolean;
+            is_visible_to_model?: boolean;
             /**
              * Source
              * @default user
              */
-            source: string;
+            source?: string;
         };
         /** InboxMutationResponse */
         InboxMutationResponse: {
@@ -40303,7 +40364,7 @@ export interface components {
              * @description Whether the materialized combinations may repeat.
              * @default allow_repeats
              */
-            uniqueness: components["schemas"]["AssignmentUniqueness"];
+            uniqueness?: components["schemas"]["AssignmentUniqueness"];
         };
         /** IndexRepositoryResponse */
         IndexRepositoryResponse: {
@@ -40331,12 +40392,12 @@ export interface components {
              * Subject
              * @default
              */
-            subject: string;
+            subject?: string;
             /**
              * Claim
              * @default
              */
-            claim: string;
+            claim?: string;
         };
         /**
          * IngestChatRequest
@@ -40475,7 +40536,7 @@ export interface components {
              * @default exemplar
              * @enum {string}
              */
-            mode: "instructional" | "exemplar";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this body of work is from ('my blog, 2019-2026').
@@ -40522,7 +40583,7 @@ export interface components {
              * @default instructional
              * @enum {string}
              */
-            mode: "instructional" | "exemplar";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this dump came from ('everything about my SEO method').
@@ -40575,7 +40636,7 @@ export interface components {
              * @default instructional
              * @enum {string}
              */
-            mode: "instructional" | "exemplar";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this came from ('Chapter 3', 'the 2024 handbook').
@@ -40586,7 +40647,7 @@ export interface components {
              * @description Pages handed to the distiller per extraction chunk (documents only).
              * @default 6
              */
-            pages_per_chunk: number;
+            pages_per_chunk?: number;
             /**
              * Approach
              * @description Registered Distillation Approach key stamped on every rule's source_ref.approach. Defaults to this lane's own stamps ('file', or 'monologue' for a recording); the corpus lane passes 'body_of_work'.
@@ -40703,7 +40764,7 @@ export interface components {
              * @default instructional
              * @enum {string}
              */
-            mode: "instructional" | "exemplar";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this came from ('Chapter 3', 'recorded call, Aug 10').
@@ -40714,7 +40775,7 @@ export interface components {
              * @description Words per extraction chunk.
              * @default 2500
              */
-            chunk_words: number;
+            chunk_words?: number;
             /**
              * Approach
              * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults from mode: instructional -> 'source', exemplar -> 'exemplar'. The file lane sets 'file' when it delegates a transcript down this lane.
@@ -40747,7 +40808,7 @@ export interface components {
              * Show Thinking
              * @default false
              */
-            show_thinking: boolean;
+            show_thinking?: boolean;
         };
         /**
          * InjectRunRequest
@@ -40761,7 +40822,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
         };
         /** InjuryCreate */
         InjuryCreate: {
@@ -40779,19 +40840,19 @@ export interface components {
              * Pain
              * @default 0
              */
-            pain: number;
+            pain?: number;
             /**
              * Industrial
              * @default 100
              */
-            industrial: number;
+            industrial?: number;
             /** Side */
             side?: ("left" | "right" | "default") | null;
             /**
              * Ag
              * @default false
              */
-            ag: boolean;
+            ag?: boolean;
         };
         /** InjuryPatch */
         InjuryPatch: {
@@ -40828,7 +40889,7 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             input_schema?: components["schemas"]["CustomToolInputSchema"];
         };
         /** InpaintParams */
@@ -40838,12 +40899,12 @@ export interface components {
              * @default telea
              * @enum {string}
              */
-            method: "telea" | "ns";
+            method?: "telea" | "ns";
             /**
              * Radius
              * @default 3
              */
-            radius: number;
+            radius?: number;
         };
         /**
          * InputDataType
@@ -40860,7 +40921,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -40880,7 +40941,7 @@ export interface components {
              * After Page
              * @default 0
              */
-            after_page: number;
+            after_page?: number;
             /** Source Pages */
             source_pages?: number[] | null;
             /** Source Page Ranges */
@@ -40889,22 +40950,22 @@ export interface components {
              * Include Links
              * @default true
              */
-            include_links: boolean;
+            include_links?: boolean;
             /**
              * Include Annotations
              * @default true
              */
-            include_annotations: boolean;
+            include_annotations?: boolean;
             /**
              * Include Widgets
              * @default true
              */
-            include_widgets: boolean;
+            include_widgets?: boolean;
             /**
              * Join Duplicates
              * @default false
              */
-            join_duplicates: boolean;
+            join_duplicates?: boolean;
         };
         /** InspectedScreenshot */
         InspectedScreenshot: {
@@ -40925,7 +40986,7 @@ export interface components {
              * Question
              * @default
              */
-            question: string;
+            question?: string;
             /** Answer */
             answer: string;
         };
@@ -40949,7 +41010,7 @@ export interface components {
              * Reasoning
              * @default
              */
-            reasoning: string;
+            reasoning?: string;
         };
         /** InternalGraphRequest */
         InternalGraphRequest: {
@@ -40981,12 +41042,12 @@ export interface components {
              * Width
              * @default 0
              */
-            width: number;
+            width?: number;
             /**
              * Height
              * @default 0
              */
-            height: number;
+            height?: number;
             bbox?: components["schemas"]["BboxInput"] | null;
         };
         /**
@@ -41053,7 +41114,7 @@ export interface components {
              * Entity Type
              * @default conversation
              */
-            entity_type: string;
+            entity_type?: string;
             /** Entity Id */
             entity_id?: string | null;
             /** Scope Ids */
@@ -41063,7 +41124,7 @@ export interface components {
             /** Channel */
             channel?: string | null;
             /** @default internal */
-            clearance: components["schemas"]["Clearance"];
+            clearance?: components["schemas"]["Clearance"];
         } & {
             [key: string]: unknown;
         };
@@ -41117,27 +41178,27 @@ export interface components {
              * Key
              * @default
              */
-            key: string;
+            key?: string;
             /**
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /**
              * Category
              * @default
              */
-            category: string;
+            category?: string;
             /**
              * Severity
              * @default
              */
-            severity: string;
+            severity?: string;
             /**
              * Disposition
              * @default
              */
-            disposition: string;
+            disposition?: string;
         };
         /**
          * IssueClassRecord
@@ -41233,7 +41294,7 @@ export interface components {
              * Tags
              * @default []
              */
-            tags: string[];
+            tags?: string[];
         };
         /** ItemResponse */
         ItemResponse: {
@@ -41244,7 +41305,7 @@ export interface components {
              * Created
              * @default true
              */
-            created: boolean;
+            created?: boolean;
         };
         /**
          * IterationAgentConfig
@@ -41263,7 +41324,7 @@ export interface components {
              * Model
              * @default claude-sonnet-4-5
              */
-            model: string;
+            model?: string;
             /** Tools */
             tools?: string[];
             /** Variables */
@@ -41301,7 +41362,7 @@ export interface components {
              * Current Version
              * @default 0
              */
-            current_version: number;
+            current_version?: number;
             /** Selected Version */
             selected_version?: number | null;
         };
@@ -41328,7 +41389,7 @@ export interface components {
              * Current Version
              * @default 0
              */
-            current_version: number;
+            current_version?: number;
             /** Selected Version */
             selected_version?: number | null;
         };
@@ -41353,12 +41414,12 @@ export interface components {
              * Window Days
              * @default 30
              */
-            window_days: number;
+            window_days?: number;
             /**
              * Use Search
              * @default true
              */
-            use_search: boolean;
+            use_search?: boolean;
         };
         /** JournalistBeatRequest */
         JournalistBeatRequest: {
@@ -41386,7 +41447,7 @@ export interface components {
              * Jsonrpc
              * @default 2.0
              */
-            jsonrpc: string;
+            jsonrpc?: string;
             /** Id */
             id?: number | string | null;
             result?: components["schemas"]["JsonValue"] | null;
@@ -41404,7 +41465,7 @@ export interface components {
              * Type
              * @default object
              */
-            type: "object" | null;
+            type?: "object" | null;
             /** Properties */
             properties?: {
                 [key: string]: components["schemas"]["JsonSchemaProperty"];
@@ -41524,12 +41585,12 @@ export interface components {
              * Language
              * @default en
              */
-            language: string;
+            language?: string;
             /**
              * Limit
              * @default 200
              */
-            limit: number;
+            limit?: number;
         };
         /** KeywordClassifyResult */
         KeywordClassifyResult: {
@@ -41542,22 +41603,22 @@ export interface components {
              * Eligible
              * @default 0
              */
-            eligible: number;
+            eligible?: number;
             /**
              * Batches
              * @default 0
              */
-            batches: number;
+            batches?: number;
             /**
              * Updated
              * @default 0
              */
-            updated: number;
+            updated?: number;
             /**
              * Skipped Error
              * @default 0
              */
-            skipped_error: number;
+            skipped_error?: number;
             /** Missing Keyword Ids */
             missing_keyword_ids?: string[];
         };
@@ -41624,32 +41685,32 @@ export interface components {
              * Language
              * @default en
              */
-            language: string;
+            language?: string;
             /**
              * Industry Context
              * @default none
              */
-            industry_context: string;
+            industry_context?: string;
             /**
              * Refresh Volume
              * @default true
              */
-            refresh_volume: boolean;
+            refresh_volume?: boolean;
             /**
              * Classify
              * @default true
              */
-            classify: boolean;
+            classify?: boolean;
             /**
              * Location Code
              * @default 2840
              */
-            location_code: number;
+            location_code?: number;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** KeywordResearchIngestSummary */
         KeywordResearchIngestSummary: {
@@ -41659,27 +41720,27 @@ export interface components {
              * Keywords Created
              * @default 0
              */
-            keywords_created: number;
+            keywords_created?: number;
             /**
              * Keywords Already Existed
              * @default 0
              */
-            keywords_already_existed: number;
+            keywords_already_existed?: number;
             /**
              * Edges Written
              * @default 0
              */
-            edges_written: number;
+            edges_written?: number;
             /**
              * Edges Skipped Rejected
              * @default 0
              */
-            edges_skipped_rejected: number;
+            edges_skipped_rejected?: number;
             /**
              * Edges Skipped Self
              * @default 0
              */
-            edges_skipped_self: number;
+            edges_skipped_self?: number;
         };
         /**
          * KeywordResearchList
@@ -41734,19 +41795,19 @@ export interface components {
              * Is Stale
              * @default false
              */
-            is_stale: boolean;
+            is_stale?: boolean;
             /**
              * Result Count
              * @default 0
              */
-            result_count: number;
+            result_count?: number;
             /** Created At */
             created_at: string;
             /**
              * Position
              * @default 0
              */
-            position: number;
+            position?: number;
         };
         /** KeywordSerpIntentBody */
         KeywordSerpIntentBody: {
@@ -41767,13 +41828,13 @@ export interface components {
              * Guidance
              * @default
              */
-            guidance: string;
+            guidance?: string;
             /**
              * Tier
              * @default cheap
              * @enum {string}
              */
-            tier: "cheap" | "thorough" | "advanced";
+            tier?: "cheap" | "thorough" | "advanced";
         };
         /** KeywordStrategyEstimate */
         KeywordStrategyEstimate: {
@@ -41805,7 +41866,7 @@ export interface components {
              * Basis
              * @default
              */
-            basis: string;
+            basis?: string;
         };
         /** KeywordVideoSearchResult */
         KeywordVideoSearchResult: {
@@ -41836,17 +41897,17 @@ export interface components {
              * Created Observations
              * @default 0
              */
-            created_observations: number;
+            created_observations?: number;
             /**
              * Existing Observations
              * @default 0
              */
-            existing_observations: number;
+            existing_observations?: number;
             /**
              * From Cache
              * @default false
              */
-            from_cache: boolean;
+            from_cache?: boolean;
         };
         /** KeywordVolumeRefreshBody */
         KeywordVolumeRefreshBody: {
@@ -41871,17 +41932,17 @@ export interface components {
              * Language
              * @default en
              */
-            language: string;
+            language?: string;
             /**
              * Location Code
              * @default 2840
              */
-            location_code: number;
+            location_code?: number;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** KeywordVolumeRefreshResult */
         KeywordVolumeRefreshResult: {
@@ -41894,17 +41955,17 @@ export interface components {
              * Requested Phrases
              * @default 0
              */
-            requested_phrases: number;
+            requested_phrases?: number;
             /**
              * Skipped Fresh
              * @default 0
              */
-            skipped_fresh: number;
+            skipped_fresh?: number;
             /**
              * Fetched Phrases
              * @default 0
              */
-            fetched_phrases: number;
+            fetched_phrases?: number;
             /** Rejected Phrases */
             rejected_phrases?: components["schemas"]["KeywordVolumeRejectedPhrase"][];
             /** Batches */
@@ -41974,7 +42035,7 @@ export interface components {
              * Is Contract Artifact
              * @default false
              */
-            is_contract_artifact: boolean;
+            is_contract_artifact?: boolean;
             /** Emitted Json Schema */
             emitted_json_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -41984,27 +42045,27 @@ export interface components {
              * Edges
              * @default []
              */
-            edges: components["schemas"]["KindEdgeDescriptor"][];
+            edges?: components["schemas"]["KindEdgeDescriptor"][];
             /**
              * Components
              * @default []
              */
-            components: components["schemas"]["KindComponentDescriptor"][];
+            components?: components["schemas"]["KindComponentDescriptor"][];
             /**
              * Surfaces
              * @default []
              */
-            surfaces: components["schemas"]["KindSurfaceDescriptor"][];
+            surfaces?: components["schemas"]["KindSurfaceDescriptor"][];
             /**
              * Examples
              * @default []
              */
-            examples: components["schemas"]["KindExampleDescriptor"][];
+            examples?: components["schemas"]["KindExampleDescriptor"][];
             /**
              * Metadata
              * @default {}
              */
-            metadata: {
+            metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Updated At */
@@ -42216,7 +42277,7 @@ export interface components {
              * Default Redact
              * @default false
              */
-            default_redact: boolean;
+            default_redact?: boolean;
         };
         /** LabelCatalogResponse */
         LabelCatalogResponse: {
@@ -42250,7 +42311,7 @@ export interface components {
             /** Conversation Id */
             conversation_id?: string | null;
             /** @default generic */
-            content_type: components["schemas"]["ContentType"];
+            content_type?: components["schemas"]["ContentType"];
             /** Studio Session Id */
             studio_session_id?: string | null;
             /** Persist Transcript Id */
@@ -42259,29 +42320,29 @@ export interface components {
              * Persist Label
              * @default false
              */
-            persist_label: boolean;
+            persist_label?: boolean;
             /**
              * Max Chars
              * @default 8000
              */
-            max_chars: number;
+            max_chars?: number;
             /**
              * Label Max Chars
              * @default 50
              */
-            label_max_chars: number;
+            label_max_chars?: number;
             /**
              * Top N
              * @default 5
              */
-            top_n: number;
+            top_n?: number;
             /** Forbidden Words */
             forbidden_words?: string[];
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
         };
         /** LandscapeBrief */
         LandscapeBrief: {
@@ -42305,12 +42366,12 @@ export interface components {
              * Confidence Reason
              * @default
              */
-            confidence_reason: string;
+            confidence_reason?: string;
             /**
              * Guidance
              * @default
              */
-            guidance: string;
+            guidance?: string;
             /** Auto Accept At */
             auto_accept_at?: string | null;
             /** Reviewed At */
@@ -42383,7 +42444,7 @@ export interface components {
              * Type
              * @default o
              */
-            type: string;
+            type?: string;
             /** Court */
             court?: string | null;
             /** Judge */
@@ -42406,12 +42467,12 @@ export interface components {
              * Limit
              * @default 20
              */
-            limit: number;
+            limit?: number;
             /**
              * Highlight
              * @default true
              */
-            highlight: boolean;
+            highlight?: boolean;
         };
         /** LegalStatsResponse */
         LegalStatsResponse: {
@@ -42540,7 +42601,7 @@ export interface components {
              * Skipped Canonical
              * @default 0
              */
-            skipped_canonical: number;
+            skipped_canonical?: number;
         };
         /** LibraryDocDetail */
         LibraryDocDetail: {
@@ -42824,7 +42885,7 @@ export interface components {
              * Limit
              * @default 10
              */
-            limit: number;
+            limit?: number;
         };
         /** LibraryTestSearchResponse */
         LibraryTestSearchResponse: {
@@ -42880,7 +42941,7 @@ export interface components {
              * Is Internal
              * @default false
              */
-            is_internal: boolean;
+            is_internal?: boolean;
             /** Source Url */
             source_url: string;
             /** Source Id */
@@ -42957,17 +43018,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -43058,7 +43119,7 @@ export interface components {
              * @default reference
              * @constant
              */
-            mode: "reference";
+            mode?: "reference";
         } & {
             [key: string]: unknown;
         };
@@ -43321,7 +43382,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type: "user" | "org";
+            principal_type?: "user" | "org";
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -43344,7 +43405,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type: "user" | "org";
+            principal_type?: "user" | "org";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
@@ -43359,7 +43420,7 @@ export interface components {
              * Is Enabled
              * @default true
              */
-            is_enabled: boolean;
+            is_enabled?: boolean;
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -43378,13 +43439,13 @@ export interface components {
              * Label
              * @default Candidate
              */
-            label: string;
+            label?: string;
             /**
              * Selection
              * @default current
              * @enum {string}
              */
-            selection: "current" | "mandate_pinned" | "latest" | "agent" | "version";
+            selection?: "current" | "mandate_pinned" | "latest" | "agent" | "version";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
@@ -43438,7 +43499,7 @@ export interface components {
              * Passes User Input
              * @default false
              */
-            passes_user_input: boolean;
+            passes_user_input?: boolean;
             /** Call Sites */
             call_sites?: components["schemas"]["CodeTruthCallSite"][];
             bound_agent?: components["schemas"]["BoundAgentTruth"] | null;
@@ -43501,7 +43562,7 @@ export interface components {
              * Contract
              * @default {}
              */
-            contract: {
+            contract?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /** Provenance */
@@ -43661,13 +43722,13 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /**
              * Provenance
              * @default unresolved
              * @enum {string}
              */
-            provenance: "system" | "org" | "user" | "run" | "mandate-pinned" | "latest" | "agent" | "version" | "unresolved";
+            provenance?: "system" | "org" | "user" | "run" | "mandate-pinned" | "latest" | "agent" | "version" | "unresolved";
             /** Applied Config Overrides */
             applied_config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -43676,7 +43737,7 @@ export interface components {
              * Output
              * @default
              */
-            output: string;
+            output?: string;
             /** Artifact */
             artifact?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -43692,7 +43753,7 @@ export interface components {
              * Duration Ms
              * @default 0
              */
-            duration_ms: number;
+            duration_ms?: number;
             /** Error */
             error?: string | null;
             /** Verdict Note */
@@ -43763,12 +43824,12 @@ export interface components {
              * Label
              * @default
              */
-            label: string;
+            label?: string;
             /**
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Input Schema */
             input_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -43777,7 +43838,7 @@ export interface components {
              * Mode
              * @default ui
              */
-            mode: string;
+            mode?: string;
         };
         /** ManifestFact */
         ManifestFact: {
@@ -43808,7 +43869,7 @@ export interface components {
              * Sort Order
              * @default 1000
              */
-            sort_order: number;
+            sort_order?: number;
         };
         /** ManifestResponse */
         ManifestResponse: {
@@ -43849,22 +43910,22 @@ export interface components {
              * Auto Context
              * @default true
              */
-            auto_context: boolean;
+            auto_context?: boolean;
             /**
              * Group Key
              * @default general
              */
-            group_key: string;
+            group_key?: string;
             /**
              * Sort Order
              * @default 1000
              */
-            sort_order: number;
+            sort_order?: number;
             /**
              * Always Available
              * @default false
              */
-            always_available: boolean;
+            always_available?: boolean;
         };
         /**
          * ManifestWriteTargetEntry
@@ -43888,34 +43949,34 @@ export interface components {
              * Value Type
              * @default string
              */
-            value_type: string;
+            value_type?: string;
             /**
              * Mode
              * @default draft
              */
-            mode: string;
+            mode?: string;
             /**
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /**
              * Apply Policy
              * @default manual
              */
-            apply_policy: string;
+            apply_policy?: string;
             /** Updates Value */
             updates_value?: string | null;
             /**
              * Group Key
              * @default general
              */
-            group_key: string;
+            group_key?: string;
             /**
              * Sort Order
              * @default 1000
              */
-            sort_order: number;
+            sort_order?: number;
         };
         /**
          * ManualCredentialsRequest
@@ -43933,7 +43994,7 @@ export interface components {
              * Transport
              * @default http
              */
-            transport: string;
+            transport?: string;
             /** Config Id */
             config_id?: string | null;
             /** Endpoint Override */
@@ -43979,7 +44040,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
         };
         /** MappingIssue */
         MappingIssue: {
@@ -44006,13 +44067,13 @@ export interface components {
              * @default reversible
              * @enum {string}
              */
-            mode: "reversible" | "destructive" | "annotation";
+            mode?: "reversible" | "destructive" | "annotation";
             /**
              * Substitute Style
              * @default bracket
              * @enum {string}
              */
-            substitute_style: "bracket" | "shape";
+            substitute_style?: "bracket" | "shape";
             /** Substitute Formats */
             substitute_formats?: {
                 [key: string]: string;
@@ -44043,7 +44104,7 @@ export interface components {
              * Notes
              * @default []
              */
-            notes: string[];
+            notes?: string[];
         };
         /** McpDiscoveredTool */
         McpDiscoveredTool: {
@@ -44120,7 +44181,7 @@ export interface components {
              * Already On List
              * @default false
              */
-            already_on_list: boolean;
+            already_on_list?: boolean;
         };
         /** MediaListRefreshRequest */
         MediaListRefreshRequest: {
@@ -44143,7 +44204,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** MediaListRefreshResult */
         MediaListRefreshResult: {
@@ -44153,37 +44214,37 @@ export interface components {
              * List Name
              * @default
              */
-            list_name: string;
+            list_name?: string;
             /**
              * Members Total
              * @default 0
              */
-            members_total: number;
+            members_total?: number;
             /**
              * Members Checked
              * @default 0
              */
-            members_checked: number;
+            members_checked?: number;
             /**
              * Members Due Not Reached
              * @default 0
              */
-            members_due_not_reached: number;
+            members_due_not_reached?: number;
             /**
              * Role Changes
              * @default 0
              */
-            role_changes: number;
+            role_changes?: number;
             /**
              * Beats Derived
              * @default 0
              */
-            beats_derived: number;
+            beats_derived?: number;
             /**
              * Assists Created
              * @default 0
              */
-            assists_created: number;
+            assists_created?: number;
             /** Errors */
             errors?: string[];
             /** Members */
@@ -44214,7 +44275,7 @@ export interface components {
              * Max Results
              * @default 20
              */
-            max_results: number;
+            max_results?: number;
         };
         /** MediaListSearchResult */
         MediaListSearchResult: {
@@ -44224,24 +44285,24 @@ export interface components {
              * Articles Seen
              * @default 0
              */
-            articles_seen: number;
+            articles_seen?: number;
             /**
              * Bylines Found
              * @default 0
              */
-            bylines_found: number;
+            bylines_found?: number;
             /** Prospects */
             prospects?: components["schemas"]["MediaListProspect"][];
             /**
              * Search Failed
              * @default false
              */
-            search_failed: boolean;
+            search_failed?: boolean;
             /**
              * Summary
              * @default
              */
-            summary: string;
+            summary?: string;
         };
         /**
          * MediaRef
@@ -44305,7 +44366,7 @@ export interface components {
              * @description True iff the resolver matched the reference to a cld_files row.
              * @default false
              */
-            is_ours: boolean;
+            is_ours?: boolean;
             /**
              * Resolver Error
              * @description Set when resolution failed; surface to the caller for logging.
@@ -44316,7 +44377,7 @@ export interface components {
              * @description Set to True by the boundary normaliser. Resolvers short-circuit when this is True (idempotency). Internal — clients do not set.
              * @default false
              */
-            is_resolved: boolean;
+            is_resolved?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -44329,27 +44390,27 @@ export interface components {
              * Enabled
              * @default true
              */
-            enabled: boolean;
+            enabled?: boolean;
             /**
              * Cadence Days
              * @default 14
              */
-            cadence_days: number;
+            cadence_days?: number;
             /**
              * Window Days
              * @default 30
              */
-            window_days: number;
+            window_days?: number;
             /**
              * Use Search
              * @default true
              */
-            use_search: boolean;
+            use_search?: boolean;
             /**
              * Derive Beats
              * @default true
              */
-            derive_beats: boolean;
+            derive_beats?: boolean;
             /** Campaign Context */
             campaign_context?: string | null;
         };
@@ -44436,7 +44497,7 @@ export interface components {
              * Checked
              * @default false
              */
-            checked: boolean;
+            checked?: boolean;
             /** Skipped Reason */
             skipped_reason?: string | null;
             /** Previous Status */
@@ -44447,12 +44508,12 @@ export interface components {
              * Role Changed
              * @default false
              */
-            role_changed: boolean;
+            role_changed?: boolean;
             /**
              * Beat Derived
              * @default false
              */
-            beat_derived: boolean;
+            beat_derived?: boolean;
             /** Error */
             error?: string | null;
         };
@@ -44462,22 +44523,22 @@ export interface components {
              * Count
              * @default 0
              */
-            count: number;
+            count?: number;
             /**
              * Cost
              * @default 0
              */
-            cost: number;
+            cost?: number;
             /**
              * Input Tokens
              * @default 0
              */
-            input_tokens: number;
+            input_tokens?: number;
             /**
              * Output Tokens
              * @default 0
              */
-            output_tokens: number;
+            output_tokens?: number;
         };
         /** MemoryCostSummary */
         MemoryCostSummary: {
@@ -44527,7 +44588,7 @@ export interface components {
              * Links To Site
              * @default false
              */
-            links_to_site: boolean;
+            links_to_site?: boolean;
             /** Sentiment */
             sentiment?: string | null;
             /** Sentiment Score */
@@ -44546,7 +44607,7 @@ export interface components {
              * Is Competitor
              * @default false
              */
-            is_competitor: boolean;
+            is_competitor?: boolean;
             /** Competitor Key */
             competitor_key?: string | null;
             /** Outcome Event Id */
@@ -44585,14 +44646,14 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             /** Sources */
             sources: components["schemas"]["MergePdfSource"][];
             /**
              * Filename
              * @default merged.pdf
              */
-            filename: string;
+            filename?: string;
         };
         /** MergePlanRequest */
         MergePlanRequest: {
@@ -44637,7 +44698,7 @@ export interface components {
              * Inclusive
              * @default true
              */
-            inclusive: boolean;
+            inclusive?: boolean;
         };
         /** MessageStanding */
         MessageStanding: {
@@ -44655,7 +44716,7 @@ export interface components {
              * Verdict
              * @default
              */
-            verdict: string;
+            verdict?: string;
         };
         /**
          * MessageUpdate
@@ -44694,18 +44755,18 @@ export interface components {
              * @default control
              * @constant
              */
-            mode: "control";
+            mode?: "control";
             /**
              * Client Kind
              * @default web_panel
              * @enum {string}
              */
-            client_kind: "web_panel" | "desktop" | "other";
+            client_kind?: "web_panel" | "desktop" | "other";
             /**
              * Takeover
              * @default false
              */
-            takeover: boolean;
+            takeover?: boolean;
         };
         /**
          * MintResponse
@@ -44723,7 +44784,7 @@ export interface components {
              * @default selkies_webrtc
              * @constant
              */
-            protocol: "selkies_webrtc";
+            protocol?: "selkies_webrtc";
             /** Stream Session Id */
             stream_session_id: string;
             /**
@@ -44775,7 +44836,7 @@ export interface components {
              * Message
              * @default
              */
-            message: string;
+            message?: string;
         };
         /**
          * MissingInputField
@@ -44789,13 +44850,13 @@ export interface components {
              * Required
              * @default true
              */
-            required: boolean;
+            required?: boolean;
             /**
              * Reason
              * @default missing
              * @enum {string}
              */
-            reason: "missing" | "invalid";
+            reason?: "missing" | "invalid";
             /** Message */
             message?: string | null;
             /** Json Schema */
@@ -44823,27 +44884,27 @@ export interface components {
              * Chunk Count
              * @default 10
              */
-            chunk_count: number;
+            chunk_count?: number;
             /**
              * Chunk Delay Ms
              * @default 200
              */
-            chunk_delay_ms: number;
+            chunk_delay_ms?: number;
             /**
              * Heartbeat Interval Ms
              * @default 10000
              */
-            heartbeat_interval_ms: number;
+            heartbeat_interval_ms?: number;
             /**
              * Max Lifetime Ms
              * @default 120000
              */
-            max_lifetime_ms: number;
+            max_lifetime_ms?: number;
             /**
              * Include Preamble
              * @default true
              */
-            include_preamble: boolean;
+            include_preamble?: boolean;
         };
         /**
          * ModelCapabilitySummary
@@ -44861,13 +44922,13 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
+            output_type?: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
             /**
              * Interaction
              * @default turn
              * @enum {string}
              */
-            interaction: "turn" | "realtime" | "extraction";
+            interaction?: "turn" | "realtime" | "extraction";
             /** Features */
             features?: string[];
             /** Native Tools */
@@ -44876,42 +44937,42 @@ export interface components {
              * Supports Vision
              * @default false
              */
-            supports_vision: boolean;
+            supports_vision?: boolean;
             /**
              * Supports Audio Input
              * @default false
              */
-            supports_audio_input: boolean;
+            supports_audio_input?: boolean;
             /**
              * Supports Function Calling
              * @default false
              */
-            supports_function_calling: boolean;
+            supports_function_calling?: boolean;
             /**
              * Supports Web Search
              * @default false
              */
-            supports_web_search: boolean;
+            supports_web_search?: boolean;
             /**
              * Multilingual
              * @default false
              */
-            multilingual: boolean;
+            multilingual?: boolean;
             /**
              * Accepts Documents
              * @default false
              */
-            accepts_documents: boolean;
+            accepts_documents?: boolean;
             /**
              * Accepts Video
              * @default false
              */
-            accepts_video: boolean;
+            accepts_video?: boolean;
             /**
              * Accepts Youtube
              * @default false
              */
-            accepts_youtube: boolean;
+            accepts_youtube?: boolean;
         };
         /**
          * ModelCostBreakdown
@@ -44942,35 +45003,35 @@ export interface components {
              * Common Name
              * @default
              */
-            common_name: string;
+            common_name?: string;
             /**
              * Provider
              * @default
              */
-            provider: string;
+            provider?: string;
             /** Context Window */
             context_window?: number | null;
             /**
              * Is Premium
              * @default false
              */
-            is_premium: boolean;
+            is_premium?: boolean;
             /**
              * Is Primary
              * @default false
              */
-            is_primary: boolean;
+            is_primary?: boolean;
             /**
              * Is Deprecated
              * @default false
              */
-            is_deprecated: boolean;
+            is_deprecated?: boolean;
             /**
              * Output Type
              * @default text
              * @enum {string}
              */
-            output_type: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
+            output_type?: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
             capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
         };
         /**
@@ -45058,7 +45119,7 @@ export interface components {
              * Conditional
              * @default false
              */
-            conditional: boolean;
+            conditional?: boolean;
             /** Note */
             note?: string | null;
         };
@@ -45107,12 +45168,12 @@ export interface components {
              * Provenance
              * @default system
              */
-            provenance: string;
+            provenance?: string;
             /**
              * Can Edit
              * @default true
              */
-            can_edit: boolean;
+            can_edit?: boolean;
             /** Node Id */
             node_id: string;
             /** Node Label */
@@ -45233,18 +45294,18 @@ export interface components {
              * Required
              * @default false
              */
-            required: boolean;
+            required?: boolean;
             /**
              * Satisfied
              * @default false
              */
-            satisfied: boolean;
+            satisfied?: boolean;
             /**
              * Provenance
              * @default none
              * @enum {string}
              */
-            provenance: "upstream" | "static" | "seed" | "none";
+            provenance?: "upstream" | "static" | "seed" | "none";
             /** Source Node Id */
             source_node_id?: string | null;
             /** Value */
@@ -45270,24 +45331,24 @@ export interface components {
              * In Frontier
              * @default false
              */
-            in_frontier: boolean;
+            in_frontier?: boolean;
             /** Step */
             step?: number | null;
             /**
              * Attempt
              * @default 1
              */
-            attempt: number;
+            attempt?: number;
             /**
              * Already Ran
              * @default false
              */
-            already_ran: boolean;
+            already_ran?: boolean;
             /**
              * Executable
              * @default false
              */
-            executable: boolean;
+            executable?: boolean;
             /** Fields */
             fields?: components["schemas"]["NodeInputStatusField"][];
             /** Missing */
@@ -45341,7 +45402,7 @@ export interface components {
              * Attempt
              * @default 1
              */
-            attempt: number;
+            attempt?: number;
             /** Output */
             output?: {
                 [key: string]: unknown;
@@ -45511,7 +45572,7 @@ export interface components {
              * Source Index
              * @default 0
              */
-            source_index: number;
+            source_index?: number;
             /** File Id */
             file_id?: string | null;
             /** Page */
@@ -45549,22 +45610,22 @@ export interface components {
              * Template
              * @default full
              */
-            template: string;
+            template?: string;
             /**
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -45608,7 +45669,7 @@ export interface components {
              * Label
              * @default
              */
-            label: string;
+            label?: string;
             /** Title Column */
             title_column?: string | null;
             /** Identity Fields */
@@ -45646,7 +45707,7 @@ export interface components {
              * Transport
              * @default http
              */
-            transport: string;
+            transport?: string;
             /** Config Id */
             config_id?: string | null;
             /** Endpoint Override */
@@ -45700,7 +45761,7 @@ export interface components {
              * @description Run the pass inline and return its counts instead of scheduling it. For tests and admin tooling — the room never waits.
              * @default false
              */
-            wait: boolean;
+            wait?: boolean;
         };
         /** ObserveTurnResult */
         ObserveTurnResult: {
@@ -45717,22 +45778,22 @@ export interface components {
              * Turns Mirrored
              * @default 0
              */
-            turns_mirrored: number;
+            turns_mirrored?: number;
             /**
              * Questions Closed
              * @default 0
              */
-            questions_closed: number;
+            questions_closed?: number;
             /**
              * Scribe Applied
              * @default false
              */
-            scribe_applied: boolean;
+            scribe_applied?: boolean;
             /**
              * Verdicts
              * @default 0
              */
-            verdicts: number;
+            verdicts?: number;
         };
         /** ObservedEmailCandidate */
         ObservedEmailCandidate: {
@@ -45774,6 +45835,34 @@ export interface components {
                 };
             };
         };
+        /** OccurrenceOutcome */
+        OccurrenceOutcome: {
+            /** Definition Id */
+            definition_id: string;
+            /**
+             * Definition Name
+             * @default
+             */
+            definition_name?: string;
+            /**
+             * Applied
+             * @default false
+             */
+            applied?: boolean;
+            /**
+             * Call Node Id
+             * @default
+             */
+            call_node_id?: string;
+            /** Removed Node Ids */
+            removed_node_ids?: string[];
+            /** Reattached Edge Ids */
+            reattached_edge_ids?: string[];
+            /** Issues */
+            issues?: string[];
+            /** Updated At */
+            updated_at?: string | null;
+        };
         /**
          * OfficeConvertRequest
          * @description Conversion options. `target` exists for forward-compat; only "pdf".
@@ -45783,7 +45872,7 @@ export interface components {
              * Target
              * @default pdf
              */
-            target: string;
+            target?: string;
             /** Visibility */
             visibility?: string | null;
         };
@@ -45817,7 +45906,7 @@ export interface components {
              * @description Whole-document markdown (all portions joined) — the main AI-facing body.
              * @default
              */
-            markdown: string;
+            markdown?: string;
             /**
              * Portions
              * @description Per-slide / per-sheet / per-section breakdown of the document, in order.
@@ -45898,7 +45987,7 @@ export interface components {
              * @description Access level of the stored file ('personal' by default; 'public' when requested).
              * @default personal
              */
-            visibility: string;
+            visibility?: string;
         };
         /**
          * OfficePortionOut
@@ -45930,7 +46019,7 @@ export interface components {
              * @description AI-ready markdown rendering of just this portion's content.
              * @default
              */
-            markdown: string;
+            markdown?: string;
         };
         /** OkResponse */
         OkResponse: {
@@ -46200,12 +46289,12 @@ export interface components {
              * Storm Window Count
              * @default 0
              */
-            storm_window_count: number;
+            storm_window_count?: number;
             /**
              * Storm Window Max
              * @default 0
              */
-            storm_window_max: number;
+            storm_window_max?: number;
         };
         /**
          * OpsSnapshotResponse
@@ -46216,7 +46305,7 @@ export interface components {
              * Live Run Count
              * @default 0
              */
-            live_run_count: number;
+            live_run_count?: number;
             /** Runs By Execution Target */
             runs_by_execution_target?: {
                 [key: string]: number;
@@ -46259,12 +46348,12 @@ export interface components {
              * Member Count
              * @default 0
              */
-            member_count: number;
+            member_count?: number;
             /**
              * Mode
              * @default supervisor
              */
-            mode: string;
+            mode?: string;
             /** Tagline */
             tagline?: string | null;
             /** Member Titles */
@@ -46329,7 +46418,7 @@ export interface components {
              * Inject Into Sandbox
              * @default true
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
         };
         /** OrganizationSecretListResponse */
         OrganizationSecretListResponse: {
@@ -46516,26 +46605,26 @@ export interface components {
              * Color
              * @default #ef4444
              */
-            color: string;
+            color?: string;
             /** Fill */
             fill?: string | null;
             /**
              * Fill Opacity
              * @default 0.18
              */
-            fill_opacity: number;
+            fill_opacity?: number;
             /**
              * Stroke Width
              * @default 2
              */
-            stroke_width: number;
+            stroke_width?: number;
             /** Label */
             label?: string | null;
             /**
              * Font Size
              * @default 10
              */
-            font_size: number;
+            font_size?: number;
         };
         /** OverridePageTextBody */
         OverridePageTextBody: {
@@ -46559,7 +46648,7 @@ export interface components {
              * Analyzer Version
              * @default pageanalyze-v1
              */
-            analyzer_version: string;
+            analyzer_version?: string;
             /** Artifact */
             artifact?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -46597,7 +46686,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** PageAnalyzeBody */
         PageAnalyzeBody: {
@@ -46622,7 +46711,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** PageAuditBody */
         PageAuditBody: {
@@ -46647,7 +46736,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** PageAuditIssue */
         PageAuditIssue: {
@@ -46693,12 +46782,12 @@ export interface components {
              * Use Cache
              * @default true
              */
-            use_cache: boolean;
+            use_cache?: boolean;
             /**
              * Capture Screenshot
              * @default false
              */
-            capture_screenshot: boolean;
+            capture_screenshot?: boolean;
             /** Organization Id */
             organization_id?: string | null;
             /** Site Id */
@@ -46714,7 +46803,7 @@ export interface components {
              * Status Code
              * @default 0
              */
-            status_code: number;
+            status_code?: number;
             /** Final Url */
             final_url: string;
             /** Title */
@@ -46723,7 +46812,7 @@ export interface components {
              * Content Type
              * @default
              */
-            content_type: string;
+            content_type?: string;
             /** Scraped At */
             scraped_at?: string | null;
             /** Published At */
@@ -46738,22 +46827,22 @@ export interface components {
              * From Cache
              * @default false
              */
-            from_cache: boolean;
+            from_cache?: boolean;
             /**
              * Char Count
              * @default 0
              */
-            char_count: number;
+            char_count?: number;
             /**
              * Content
              * @default
              */
-            content: string;
+            content?: string;
             /**
              * Content Truncated
              * @default false
              */
-            content_truncated: boolean;
+            content_truncated?: boolean;
             /** Links To Target */
             links_to_target?: components["schemas"]["CapturedLink"][];
             /** Screenshot File Id */
@@ -46768,7 +46857,7 @@ export interface components {
              * Screenshot Highlighted
              * @default false
              */
-            screenshot_highlighted: boolean;
+            screenshot_highlighted?: boolean;
             /** Screenshot Failure Reason */
             screenshot_failure_reason?: string | null;
             /** Failure Reason */
@@ -46794,12 +46883,12 @@ export interface components {
              * Raw Text
              * @default
              */
-            raw_text: string;
+            raw_text?: string;
             /**
              * Cleaned Text
              * @default
              */
-            cleaned_text: string;
+            cleaned_text?: string;
             /** Section Kind */
             section_kind?: string | null;
             /** Section Subtype */
@@ -46810,12 +46899,12 @@ export interface components {
              * Is Continuation
              * @default false
              */
-            is_continuation: boolean;
+            is_continuation?: boolean;
             /**
              * Used Ocr
              * @default false
              */
-            used_ocr: boolean;
+            used_ocr?: boolean;
             /** Extraction Method */
             extraction_method?: string | null;
             /** Blocks */
@@ -46856,7 +46945,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** PageKeywordMapResult */
         PageKeywordMapResult: {
@@ -46873,7 +46962,7 @@ export interface components {
              * Mapper Version
              * @default pagemap-v1
              */
-            mapper_version: string;
+            mapper_version?: string;
             /** Artifact */
             artifact?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -46906,17 +46995,17 @@ export interface components {
              * Limit
              * @default 1000
              */
-            limit: number;
+            limit?: number;
             /**
              * Max Spam Score
              * @default 30
              */
-            max_spam_score: number;
+            max_spam_score?: number;
             /**
              * Force Refresh
              * @default true
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
         };
@@ -46988,7 +47077,7 @@ export interface components {
              * Has Psi Data
              * @default false
              */
-            has_psi_data: boolean;
+            has_psi_data?: boolean;
             gsc: components["schemas"]["GscPageSummary"];
             config: components["schemas"]["PagePerformanceConfig"];
         };
@@ -47050,12 +47139,12 @@ export interface components {
              * Raw Char Count
              * @default 0
              */
-            raw_char_count: number;
+            raw_char_count?: number;
             /**
              * Cleaned Char Count
              * @default 0
              */
-            cleaned_char_count: number;
+            cleaned_char_count?: number;
             /** Section Kind */
             section_kind?: string | null;
             /** Section Subtype */
@@ -47068,12 +47157,12 @@ export interface components {
              * Used Ocr
              * @default false
              */
-            used_ocr: boolean;
+            used_ocr?: boolean;
             /**
              * Has Image
              * @default false
              */
-            has_image: boolean;
+            has_image?: boolean;
         };
         /** PagespeedSyncBody */
         PagespeedSyncBody: {
@@ -47097,7 +47186,7 @@ export interface components {
              * @default mobile
              * @enum {string}
              */
-            strategy: "mobile" | "desktop" | "both";
+            strategy?: "mobile" | "desktop" | "both";
             /** Request Id */
             request_id?: string | null;
         };
@@ -47179,7 +47268,7 @@ export interface components {
              * Answers
              * @default 0
              */
-            answers: number;
+            answers?: number;
             /** Mention Rate */
             mention_rate?: number | null;
             /** Citation Rate */
@@ -47194,7 +47283,7 @@ export interface components {
              * Headline
              * @default
              */
-            headline: string;
+            headline?: string;
         };
         /** PanelView */
         PanelView: {
@@ -47236,7 +47325,7 @@ export interface components {
              * Run Count
              * @default 0
              */
-            run_count: number;
+            run_count?: number;
         };
         /** PatchFolderRequest */
         PatchFolderRequest: {
@@ -47308,14 +47397,14 @@ export interface components {
              * @default image
              * @enum {string}
              */
-            kind: "image" | "pdf";
+            kind?: "image" | "pdf";
             quad?: components["schemas"]["ScanQuad"] | null;
             /**
              * Rotation
              * @default 0
              * @enum {integer}
              */
-            rotation: 0 | 90 | 180 | 270;
+            rotation?: 0 | 90 | 180 | 270;
         };
         /** PdfFromImagesRequest */
         PdfFromImagesRequest: {
@@ -47325,22 +47414,22 @@ export interface components {
              * Filename
              * @default scanned.pdf
              */
-            filename: string;
+            filename?: string;
             /**
              * Folder Path
              * @default Scans
              */
-            folder_path: string;
+            folder_path?: string;
             /**
              * Force Ocr
              * @default false
              */
-            force_ocr: boolean;
+            force_ocr?: boolean;
             /**
              * Use Ocr Threshold
              * @default 100
              */
-            use_ocr_threshold: number;
+            use_ocr_threshold?: number;
         };
         /** PdfFullPipelineRequest */
         PdfFullPipelineRequest: {
@@ -47370,7 +47459,7 @@ export interface components {
              *       "include_chunk_metadata": false
              *     }
              */
-            options: components["schemas"]["PdfPipelineOptions"];
+            options?: components["schemas"]["PdfPipelineOptions"];
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -47403,7 +47492,7 @@ export interface components {
              * Signed Ttl
              * @default 3600
              */
-            signed_ttl: number;
+            signed_ttl?: number;
         };
         /**
          * PdfPageSelectionResult
@@ -47424,7 +47513,7 @@ export interface components {
              * Source Bytes Fetched
              * @default 0
              */
-            source_bytes_fetched: number;
+            source_bytes_fetched?: number;
             /**
              * Source Fetch Strategy
              * @enum {string}
@@ -47440,67 +47529,67 @@ export interface components {
              * Extract Text
              * @default true
              */
-            extract_text: boolean;
+            extract_text?: boolean;
             /**
              * Force Ocr
              * @default false
              */
-            force_ocr: boolean;
+            force_ocr?: boolean;
             /**
              * Use Ocr Threshold
              * @default 100
              */
-            use_ocr_threshold: number;
+            use_ocr_threshold?: number;
             /**
              * Extract Tables
              * @default false
              */
-            extract_tables: boolean;
+            extract_tables?: boolean;
             /**
              * Chunk And Process With Ai
              * @default false
              */
-            chunk_and_process_with_ai: boolean;
+            chunk_and_process_with_ai?: boolean;
             /**
              * Chunk Size
              * @default 2000
              */
-            chunk_size: number;
+            chunk_size?: number;
             /**
              * Overlap Size
              * @default 200
              */
-            overlap_size: number;
+            overlap_size?: number;
             /**
              * Template Name
              * @default default
              */
-            template_name: string;
+            template_name?: string;
             /**
              * Include Page Markers
              * @default false
              */
-            include_page_markers: boolean;
+            include_page_markers?: boolean;
             /**
              * Include Page Metadata
              * @default false
              */
-            include_page_metadata: boolean;
+            include_page_metadata?: boolean;
             /**
              * Include Block Metadata
              * @default false
              */
-            include_block_metadata: boolean;
+            include_block_metadata?: boolean;
             /**
              * Include Word Metadata
              * @default false
              */
-            include_word_metadata: boolean;
+            include_word_metadata?: boolean;
             /**
              * Include Chunk Metadata
              * @default false
              */
-            include_chunk_metadata: boolean;
+            include_chunk_metadata?: boolean;
             /** Upload Result To */
             upload_result_to?: string | null;
         };
@@ -47552,7 +47641,7 @@ export interface components {
              *       "include_chunk_metadata": false
              *     }
              */
-            options: components["schemas"]["PdfPipelineOptions"];
+            options?: components["schemas"]["PdfPipelineOptions"];
         };
         /** PdfStudioBundleSchema */
         PdfStudioBundleSchema: {
@@ -47633,14 +47722,14 @@ export interface components {
              * Arguments
              * @default {}
              */
-            arguments: {
+            arguments?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Iteration
              * @default 0
              */
-            iteration: number;
+            iteration?: number;
             /** Created At */
             created_at?: string | null;
             /** Expires At */
@@ -47702,7 +47791,7 @@ export interface components {
              * Unresolved Errors
              * @default 0
              */
-            unresolved_errors: number;
+            unresolved_errors?: number;
             /** Last Error At */
             last_error_at?: string | null;
         };
@@ -47716,22 +47805,22 @@ export interface components {
              * Enqueued
              * @default 0
              */
-            enqueued: number;
+            enqueued?: number;
             /**
              * Skipped No Evidence
              * @default 0
              */
-            skipped_no_evidence: number;
+            skipped_no_evidence?: number;
             /**
              * Skipped Unchanged
              * @default 0
              */
-            skipped_unchanged: number;
+            skipped_unchanged?: number;
             /**
              * Skipped Status
              * @default 0
              */
-            skipped_status: number;
+            skipped_status?: number;
             /** Errors */
             errors?: string[];
         };
@@ -47760,7 +47849,7 @@ export interface components {
              * Limit
              * @default 25
              */
-            limit: number;
+            limit?: number;
         };
         /** PersonalizeRunBody */
         PersonalizeRunBody: {
@@ -47785,12 +47874,12 @@ export interface components {
              * Limit
              * @default 25
              */
-            limit: number;
+            limit?: number;
             /**
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** PicklistBinding */
         PicklistBinding: {
@@ -47809,7 +47898,7 @@ export interface components {
              * @description Multi-select picklist.
              * @default false
              */
-            multiple: boolean;
+            multiple?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -47826,12 +47915,12 @@ export interface components {
              * Is Public
              * @default false
              */
-            is_public: boolean;
+            is_public?: boolean;
             /**
              * Public Read
              * @default false
              */
-            public_read: boolean;
+            public_read?: boolean;
             /**
              * Items
              * @description Structured items. Mutually exclusive with `labels`.
@@ -47864,7 +47953,7 @@ export interface components {
              * Item Count
              * @default 0
              */
-            item_count: number;
+            item_count?: number;
             created_at?: components["schemas"]["JsonValue"] | null;
             updated_at?: components["schemas"]["JsonValue"] | null;
             /** Items */
@@ -47909,12 +47998,12 @@ export interface components {
              * Is Public
              * @default false
              */
-            is_public: boolean;
+            is_public?: boolean;
             /**
              * Public Read
              * @default false
              */
-            public_read: boolean;
+            public_read?: boolean;
         };
         /** PicklistItemUpdate */
         PicklistItemUpdate: {
@@ -47949,7 +48038,7 @@ export interface components {
              * Item Count
              * @default 0
              */
-            item_count: number;
+            item_count?: number;
             created_at?: components["schemas"]["JsonValue"] | null;
             updated_at?: components["schemas"]["JsonValue"] | null;
         } & {
@@ -48019,102 +48108,102 @@ export interface components {
              * Total Keywords
              * @default 0
              */
-            total_keywords: number;
+            total_keywords?: number;
             /**
              * Stale Keywords
              * @default 0
              */
-            stale_keywords: number;
+            stale_keywords?: number;
             /**
              * Total Sources
              * @default 0
              */
-            total_sources: number;
+            total_sources?: number;
             /**
              * Included Sources
              * @default 0
              */
-            included_sources: number;
+            included_sources?: number;
             /**
              * Sources Pending
              * @default 0
              */
-            sources_pending: number;
+            sources_pending?: number;
             /**
              * Sources Success
              * @default 0
              */
-            sources_success: number;
+            sources_success?: number;
             /**
              * Sources Thin
              * @default 0
              */
-            sources_thin: number;
+            sources_thin?: number;
             /**
              * Sources Failed
              * @default 0
              */
-            sources_failed: number;
+            sources_failed?: number;
             /**
              * Sources Complete
              * @default 0
              */
-            sources_complete: number;
+            sources_complete?: number;
             /**
              * Total Content
              * @default 0
              */
-            total_content: number;
+            total_content?: number;
             /**
              * Total Analyses
              * @default 0
              */
-            total_analyses: number;
+            total_analyses?: number;
             /**
              * Failed Analyses
              * @default 0
              */
-            failed_analyses: number;
+            failed_analyses?: number;
             /**
              * Keyword Syntheses
              * @default 0
              */
-            keyword_syntheses: number;
+            keyword_syntheses?: number;
             /**
              * Failed Keyword Syntheses
              * @default 0
              */
-            failed_keyword_syntheses: number;
+            failed_keyword_syntheses?: number;
             /**
              * Topic Syntheses
              * @default 0
              */
-            topic_syntheses: number;
+            topic_syntheses?: number;
             /**
              * Failed Topic Syntheses
              * @default 0
              */
-            failed_topic_syntheses: number;
+            failed_topic_syntheses?: number;
             /**
              * Project Syntheses
              * @default 0
              */
-            project_syntheses: number;
+            project_syntheses?: number;
             /**
              * Failed Project Syntheses
              * @default 0
              */
-            failed_project_syntheses: number;
+            failed_project_syntheses?: number;
             /**
              * Total Tags
              * @default 0
              */
-            total_tags: number;
+            total_tags?: number;
             /**
              * Total Documents
              * @default 0
              */
-            total_documents: number;
+            total_documents?: number;
         };
         /**
          * PlanAiRunDetail
@@ -48138,26 +48227,26 @@ export interface components {
              * Total Cost
              * @default 0
              */
-            total_cost: number;
+            total_cost?: number;
             /**
              * Request
              * @default {}
              */
-            request: {
+            request?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Result
              * @default {}
              */
-            result: {
+            result?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Error
              * @default {}
              */
-            error: {
+            error?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
@@ -48189,24 +48278,24 @@ export interface components {
              * Node Route
              * @default
              */
-            node_route: string;
+            node_route?: string;
             /** Model Id */
             model_id?: string | null;
             /**
              * Headline
              * @default
              */
-            headline: string;
+            headline?: string;
             /**
              * Total Cost
              * @default 0
              */
-            total_cost: number;
+            total_cost?: number;
             /**
              * Error
              * @default
              */
-            error: string;
+            error?: string;
         };
         /** PlanAssistRequest */
         PlanAssistRequest: {
@@ -48235,7 +48324,7 @@ export interface components {
              * @description The user's rough input for the agent (dictated braindump, shape description, or empty to work from what the plan already holds).
              * @default
              */
-            instruction: string;
+            instruction?: string;
         };
         /** PlanBlockerEntry */
         PlanBlockerEntry: {
@@ -48271,7 +48360,7 @@ export interface components {
              * Actor
              * @default user
              */
-            actor: string;
+            actor?: string;
             /** Created At */
             created_at?: string | null;
         };
@@ -48300,22 +48389,22 @@ export interface components {
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /**
              * Intent
              * @default
              */
-            intent: string;
+            intent?: string;
             /**
              * Notes
              * @default
              */
-            notes: string;
+            notes?: string;
             /**
              * Phase
              * @default sketch
              */
-            phase: string;
+            phase?: string;
             /** Input Shape */
             input_shape?: {
                 [key: string]: unknown;
@@ -48328,7 +48417,7 @@ export interface components {
              * Has Internal Graph
              * @default false
              */
-            has_internal_graph: boolean;
+            has_internal_graph?: boolean;
             /** Promoted Definition Id */
             promoted_definition_id?: string | null;
             /** Parent Plan Id */
@@ -48339,14 +48428,14 @@ export interface components {
              * Origin
              * @default human
              */
-            origin: string;
+            origin?: string;
             /** Conversation Id */
             conversation_id?: string | null;
             /**
              * Allow Stand In In Production
              * @default false
              */
-            allow_stand_in_in_production: boolean;
+            allow_stand_in_in_production?: boolean;
             /** Alternatives */
             alternatives?: {
                 [key: string]: unknown;
@@ -48365,12 +48454,12 @@ export interface components {
              * Status
              * @default active
              */
-            status: string;
+            status?: string;
             /**
              * Version
              * @default 1
              */
-            version: number;
+            version?: number;
             /** Created At */
             created_at?: string | null;
             /** Updated At */
@@ -48394,12 +48483,12 @@ export interface components {
              * Source
              * @default authored
              */
-            source: string;
+            source?: string;
             /**
              * Is Stand In
              * @default false
              */
-            is_stand_in: boolean;
+            is_stand_in?: boolean;
         };
         /**
          * PlannedPageResult
@@ -48493,7 +48582,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -48511,7 +48600,7 @@ export interface components {
              * @description Topic, partial content, full content, or a single file URL according to input_data_type.
              * @default
              */
-            input_data: string;
+            input_data?: string;
             /**
              * File Urls
              * @description Publicly accessible source URLs; takes precedence for file-based input.
@@ -48523,25 +48612,25 @@ export interface components {
              * @description Optional transformation applied after source preparation.
              * @default none
              */
-            post_prep_option: components["schemas"]["PostPrepOption"];
+            post_prep_option?: components["schemas"]["PostPrepOption"];
             /**
              * Target Audience
              * @description Optional target audience the prepared content is re-pitched for before scripting; empty skips the adaptation stage.
              * @default
              */
-            target_audience: string;
+            target_audience?: string;
             /**
              * Audience Guidance
              * @description Optional extra steering (tone, length, emphasis) for the audience adaptation stage.
              * @default
              */
-            audience_guidance: string;
+            audience_guidance?: string;
             /**
              * Number Of Speakers
              * @description Deprecated host-count alias used only when host_count is omitted.
              * @default 2
              */
-            number_of_speakers: number;
+            number_of_speakers?: number;
             /**
              * Host Count
              * @description Number of hosts, from one solo speaker through a 10-person roundtable.
@@ -48552,19 +48641,19 @@ export interface components {
              * @description Conversation format such as interview, debate, panel, or storytelling.
              * @default
              */
-            format: string;
+            format?: string;
             /**
              * Theme
              * @description Optional freeform framing or editorial angle for the episode.
              * @default
              */
-            theme: string;
+            theme?: string;
             /**
              * Language
              * @description Human-readable script language; empty derives it from podcast_type.
              * @default
              */
-            language: string;
+            language?: string;
             /**
              * Speakers
              * @description Ordered cast; missing names or voices are filled by the server palette.
@@ -48592,7 +48681,7 @@ export interface components {
              * @description Development-only cost control that truncates the script before TTS.
              * @default false
              */
-            truncate_audio_for_testing: boolean;
+            truncate_audio_for_testing?: boolean;
             /**
              * Max Images
              * @description Maximum generated supporting images; zero skips image generation.
@@ -48613,7 +48702,7 @@ export interface components {
              * @description Generate the transcript-derived feature image when true.
              * @default true
              */
-            include_feature_image: boolean;
+            include_feature_image?: boolean;
             /**
              * Dictionary
              * @description Resolved custom dictionary forwarded to script and audio agents for spelling and pronunciation.
@@ -48632,7 +48721,7 @@ export interface components {
              * @default live
              * @enum {string}
              */
-            run_mode: "live" | "shadow";
+            run_mode?: "live" | "shadow";
         };
         /**
          * PodcastMediaUploadResponse
@@ -48705,7 +48794,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -48730,7 +48819,7 @@ export interface components {
              * @description live or shadow. A shadow run finishes with NO episode by design — episode_id stays null and that is completion, not a defect.
              * @default live
              */
-            run_mode: string;
+            run_mode?: string;
             /**
              * Outcome
              * @description running = genuinely alive, keep observing. completed = essential work was done and has now been stamped. resumed = essential work was pending and the server restarted it from its checkpoint. failed = terminal and unrecoverable.
@@ -48774,7 +48863,7 @@ export interface components {
              * @description What this run has cost in total.
              * @default 0
              */
-            total_cost_usd: number;
+            total_cost_usd?: number;
             /** @description Stage counts for a progress indicator. */
             progress: components["schemas"]["RunProgress"];
             /**
@@ -48934,7 +49023,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public" | "shared" | "private";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -48973,7 +49062,7 @@ export interface components {
              * N
              * @default 5
              */
-            n: number;
+            n?: number;
         };
         /** PreviewFiresResponse */
         PreviewFiresResponse: {
@@ -48983,7 +49072,7 @@ export interface components {
              * Event Driven
              * @default false
              */
-            event_driven: boolean;
+            event_driven?: boolean;
         };
         /**
          * PreviewSource
@@ -49025,31 +49114,31 @@ export interface components {
              * @default webp
              * @enum {string}
              */
-            format: "jpeg" | "png" | "webp" | "avif";
+            format?: "jpeg" | "png" | "webp" | "avif";
             /**
              * Quality
              * @description Ignored for png
              * @default 85
              */
-            quality: number;
+            quality?: number;
             /**
              * Fit
              * @default cover
              * @enum {string}
              */
-            fit: "cover" | "contain" | "inside";
+            fit?: "cover" | "contain" | "inside";
             /**
              * Position
              * @description Used when fit='cover'. Pass a named anchor string or {x, y} focal point. 'entropy' / 'attention' are smart-crop modes (energy-based, face-based).
              * @default center
              */
-            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"];
+            position?: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"];
             /**
              * Background Color
              * @description Hex color (#rgb / #rrggbb / #rrggbbaa). Used to flatten alpha on jpeg/avif outputs and to pad letterbox when fit='contain' / 'inside'.
              * @default #ffffff
              */
-            background_color: string;
+            background_color?: string;
         };
         /**
          * PrincipalIn
@@ -49062,7 +49151,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            type: "user" | "organization";
+            type?: "user" | "organization";
             /** Organization Id */
             organization_id?: string | null;
         } & {
@@ -49086,12 +49175,12 @@ export interface components {
              * Do Not Contact
              * @default false
              */
-            do_not_contact: boolean;
+            do_not_contact?: boolean;
             /**
              * Interaction Count
              * @default 0
              */
-            interaction_count: number;
+            interaction_count?: number;
             /** Last Interaction At */
             last_interaction_at?: string | null;
             /** Campaigns */
@@ -49100,7 +49189,7 @@ export interface components {
              * Confirmed Wins
              * @default 0
              */
-            confirmed_wins: number;
+            confirmed_wins?: number;
             /** Last Win At */
             last_win_at?: string | null;
             /** Summary */
@@ -49118,7 +49207,7 @@ export interface components {
              * @description If true, each block includes the raw_content field before parsing
              * @default false
              */
-            include_raw: boolean;
+            include_raw?: boolean;
         };
         /** ProcessBlocksResponse */
         ProcessBlocksResponse: {
@@ -49150,7 +49239,7 @@ export interface components {
              * Content Type
              * @default pdf
              */
-            content_type: string;
+            content_type?: string;
             /** File Name */
             file_name?: string | null;
             /** Storage Uri */
@@ -49161,42 +49250,42 @@ export interface components {
              * Clean Concurrency
              * @default 8
              */
-            clean_concurrency: number;
+            clean_concurrency?: number;
             /**
              * Force Ocr
              * @default false
              */
-            force_ocr: boolean;
+            force_ocr?: boolean;
             /**
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /**
              * Run Clean
              * @default true
              */
-            run_clean: boolean;
+            run_clean?: boolean;
             /**
              * Run Ner
              * @default true
              */
-            run_ner: boolean;
+            run_ner?: boolean;
             /**
              * Run Enrich
              * @default false
              */
-            run_enrich: boolean;
+            run_enrich?: boolean;
             /**
              * Heartbeat Interval S
              * @default 15
              */
-            heartbeat_interval_s: number;
+            heartbeat_interval_s?: number;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
         };
         /** ProcessYouTubeVideosRequest */
         ProcessYouTubeVideosRequest: {
@@ -49206,7 +49295,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** ProcessYouTubeVideosResponse */
         ProcessYouTubeVideosResponse: {
@@ -49275,7 +49364,7 @@ export interface components {
              * Runs
              * @default 0
              */
-            runs: number;
+            runs?: number;
             /** Cost Usd */
             cost_usd?: number | null;
             /**
@@ -49312,32 +49401,32 @@ export interface components {
              * Producers
              * @default 0
              */
-            producers: number;
+            producers?: number;
             /**
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
             /**
              * Measured Cost Usd
              * @default 0
              */
-            measured_cost_usd: number;
+            measured_cost_usd?: number;
             /**
              * Unmeasurable Cost Usd
              * @default 0
              */
-            unmeasurable_cost_usd: number;
+            unmeasurable_cost_usd?: number;
             /**
              * Produced
              * @default 0
              */
-            produced: number;
+            produced?: number;
             /**
              * Accepted
              * @default 0
              */
-            accepted: number;
+            accepted?: number;
             /** Yield Rate */
             yield_rate?: number | null;
             /** Cost Per Accepted Usd */
@@ -49353,17 +49442,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -49422,7 +49511,7 @@ export interface components {
              * Accept Weak
              * @default false
              */
-            accept_weak: boolean;
+            accept_weak?: boolean;
         };
         /** PromotePlanResponse */
         PromotePlanResponse: {
@@ -49447,12 +49536,12 @@ export interface components {
              * Topic Edge
              * @default false
              */
-            topic_edge: boolean;
+            topic_edge?: boolean;
             /**
              * Source Edges
              * @default 0
              */
-            source_edges: number;
+            source_edges?: number;
         };
         /**
          * PromptStanding
@@ -49477,7 +49566,7 @@ export interface components {
              * Verdict
              * @default
              */
-            verdict: string;
+            verdict?: string;
         };
         /** PromptStartRequest */
         PromptStartRequest: {
@@ -49540,17 +49629,17 @@ export interface components {
              * Stream
              * @default true
              */
-            stream: boolean;
+            stream?: boolean;
             /**
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Tools
              * @default []
              */
-            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
@@ -49560,7 +49649,7 @@ export interface components {
              * Context
              * @default {}
              */
-            context: {
+            context?: {
                 [key: string]: unknown;
             };
         };
@@ -49575,13 +49664,13 @@ export interface components {
              * Prompt
              * @default
              */
-            prompt: string;
+            prompt?: string;
             defaultValue?: components["schemas"]["JsonValue"] | null;
             /**
              * Required
              * @default false
              */
-            required: boolean;
+            required?: boolean;
         };
         /** PromptWarmRequest */
         PromptWarmRequest: {
@@ -49604,13 +49693,13 @@ export interface components {
              * @default unprovable
              * @enum {string}
              */
-            status: "proven" | "unprovable" | "failed";
+            status?: "proven" | "unprovable" | "failed";
             /**
              * Evidence Class
              * @default none
              * @enum {string}
              */
-            evidence_class: "loop_iteration" | "same_unit_regression" | "none";
+            evidence_class?: "loop_iteration" | "same_unit_regression" | "none";
             /** Snapshot Id */
             snapshot_id?: string | null;
             /** Replay Group Id */
@@ -49623,23 +49712,48 @@ export interface components {
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
             /**
              * Claim
              * @default
              */
-            claim: string;
+            claim?: string;
             /**
              * Note
              * @default
              */
-            note: string;
+            note?: string;
             /** Error */
             error?: string | null;
             /** Arms */
             arms?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
+        };
+        /** ProposalOccurrence */
+        ProposalOccurrence: {
+            /** Definition Id */
+            definition_id: string;
+            /**
+             * Definition Name
+             * @default
+             */
+            definition_name?: string;
+            /** Node Ids */
+            node_ids?: string[];
+        };
+        /** ProposalStep */
+        ProposalStep: {
+            /**
+             * Type
+             * @default
+             */
+            type?: string;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
         };
         /**
          * ProspectCaptureBody
@@ -49695,7 +49809,7 @@ export interface components {
              * Site Choice Required
              * @default false
              */
-            site_choice_required: boolean;
+            site_choice_required?: boolean;
         };
         /**
          * ProspectCaptureResult
@@ -49743,12 +49857,12 @@ export interface components {
              * Source Label
              * @default Imported list
              */
-            source_label: string;
+            source_label?: string;
             /**
              * Enrich Authority
              * @default true
              */
-            enrich_authority: boolean;
+            enrich_authority?: boolean;
         };
         /** ProspectImportPreview */
         ProspectImportPreview: {
@@ -49766,7 +49880,7 @@ export interface components {
              * Estimated Cost Usd
              * @default 0
              */
-            estimated_cost_usd: string;
+            estimated_cost_usd?: string;
         };
         /** ProspectImportReport */
         ProspectImportReport: {
@@ -49776,27 +49890,27 @@ export interface components {
              * Created
              * @default 0
              */
-            created: number;
+            created?: number;
             /**
              * Matched
              * @default 0
              */
-            matched: number;
+            matched?: number;
             /**
              * Skipped
              * @default 0
              */
-            skipped: number;
+            skipped?: number;
             /**
              * Enriched
              * @default 0
              */
-            enriched: number;
+            enriched?: number;
             /**
              * Unmeasured
              * @default 0
              */
-            unmeasured: number;
+            unmeasured?: number;
             /** Entries */
             entries?: components["schemas"]["ImportEntryPlan"][];
             /** Errors */
@@ -49931,52 +50045,52 @@ export interface components {
              * Ok
              * @default true
              */
-            ok: boolean;
+            ok?: boolean;
             /**
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
             /**
              * Retention Days
              * @default 180
              */
-            retention_days: number;
+            retention_days?: number;
             /**
              * Cutoff
              * @default
              */
-            cutoff: string;
+            cutoff?: string;
             /**
              * Candidates
              * @default 0
              */
-            candidates: number;
+            candidates?: number;
             /**
              * Deleted
              * @default 0
              */
-            deleted: number;
+            deleted?: number;
             /**
              * Pinned Skipped
              * @default 0
              */
-            pinned_skipped: number;
+            pinned_skipped?: number;
             /**
              * Newly Pinned
              * @default 0
              */
-            newly_pinned: number;
+            newly_pinned?: number;
             /**
              * Hit Batch Limit
              * @default false
              */
-            hit_batch_limit: boolean;
+            hit_batch_limit?: boolean;
             /**
              * Referenced Ids
              * @default 0
              */
-            referenced_ids: number;
+            referenced_ids?: number;
             /** Reference Sources */
             reference_sources?: string[];
             /** Error */
@@ -50014,14 +50128,14 @@ export interface components {
              * Country Iso
              * @default US
              */
-            country_iso: string;
+            country_iso?: string;
             /** City */
             city?: string | null;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /**
          * PublicWorkflowRecord
@@ -50131,14 +50245,14 @@ export interface components {
              * Messages Seen
              * @default 0
              */
-            messages_seen: number;
+            messages_seen?: number;
             /** Outcomes */
             outcomes?: components["schemas"]["InboundOutcome"][];
             /**
              * History Gap Recovered
              * @default false
              */
-            history_gap_recovered: boolean;
+            history_gap_recovered?: boolean;
             /** Note */
             note?: string | null;
         };
@@ -50173,22 +50287,22 @@ export interface components {
              * Accepted Cases
              * @default 0
              */
-            accepted_cases: number;
+            accepted_cases?: number;
             /**
              * Rejected Cases
              * @default 0
              */
-            rejected_cases: number;
+            rejected_cases?: number;
             /**
              * Accepted Publication Opportunities
              * @default 0
              */
-            accepted_publication_opportunities: number;
+            accepted_publication_opportunities?: number;
             /**
              * Rejected Publication Opportunities
              * @default 0
              */
-            rejected_publication_opportunities: number;
+            rejected_publication_opportunities?: number;
         };
         /** QuarantinedRowSummary */
         QuarantinedRowSummary: {
@@ -50212,79 +50326,79 @@ export interface components {
              * Get Organized Data
              * @default false
              */
-            get_organized_data: boolean;
+            get_organized_data?: boolean;
             /**
              * Get Structured Data
              * @default false
              */
-            get_structured_data: boolean;
+            get_structured_data?: boolean;
             /**
              * Get Overview
              * @default false
              */
-            get_overview: boolean;
+            get_overview?: boolean;
             /**
              * Get Text Data
              * @default true
              */
-            get_text_data: boolean;
+            get_text_data?: boolean;
             /**
              * Get Main Image
              * @default false
              */
-            get_main_image: boolean;
+            get_main_image?: boolean;
             /**
              * Get Links
              * @default false
              */
-            get_links: boolean;
+            get_links?: boolean;
             /**
              * Get Content Filter Removal Details
              * @default false
              */
-            get_content_filter_removal_details: boolean;
+            get_content_filter_removal_details?: boolean;
             /**
              * Include Highlighting Markers
              * @default true
              */
-            include_highlighting_markers: boolean;
+            include_highlighting_markers?: boolean;
             /**
              * Include Media
              * @default true
              */
-            include_media: boolean;
+            include_media?: boolean;
             /**
              * Include Media Links
              * @default true
              */
-            include_media_links: boolean;
+            include_media_links?: boolean;
             /**
              * Include Media Description
              * @default true
              */
-            include_media_description: boolean;
+            include_media_description?: boolean;
             /**
              * Include Anchors
              * @default true
              */
-            include_anchors: boolean;
+            include_anchors?: boolean;
             /**
              * Anchor Size
              * @default 100
              */
-            anchor_size: number;
+            anchor_size?: number;
             /** Urls */
             urls: string[];
             /**
              * Use Cache
              * @default true
              */
-            use_cache: boolean;
+            use_cache?: boolean;
             /**
              * Stream
              * @default false
              */
-            stream: boolean;
+            stream?: boolean;
         };
         /** RankPortfolioItem */
         RankPortfolioItem: {
@@ -50363,22 +50477,22 @@ export interface components {
              * Provider
              * @default brave
              */
-            provider: string;
+            provider?: string;
             /**
              * Language
              * @default en
              */
-            language: string;
+            language?: string;
             /**
              * Device
              * @default desktop
              */
-            device: string;
+            device?: string;
             /**
              * Country
              * @default US
              */
-            country: string;
+            country?: string;
             /** Target Page Id */
             target_page_id?: string | null;
             /** Group */
@@ -50391,14 +50505,14 @@ export interface components {
              * Cadence Days
              * @default 7
              */
-            cadence_days: number;
+            cadence_days?: number;
             /** Location Name */
             location_name?: string | null;
             /**
              * Search Type
              * @default organic
              */
-            search_type: string;
+            search_type?: string;
             /** Engine */
             engine?: string | null;
         };
@@ -50498,7 +50612,7 @@ export interface components {
              * Start Char
              * @default 0
              */
-            start_char: number;
+            start_char?: number;
         };
         /**
          * RealtimeTool
@@ -50521,12 +50635,12 @@ export interface components {
              * Canonical Name
              * @default
              */
-            canonical_name: string;
+            canonical_name?: string;
             /**
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Parameters */
             parameters?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -50550,7 +50664,7 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             client?: components["schemas"]["ClientContext"] | null;
         };
         /** RealtimeToolsResponse */
@@ -50581,7 +50695,7 @@ export interface components {
              * Write Edges
              * @default true
              */
-            write_edges: boolean;
+            write_edges?: boolean;
         };
         /** ReconcileMatch */
         ReconcileMatch: {
@@ -50612,7 +50726,7 @@ export interface components {
              * Edges Written
              * @default 0
              */
-            edges_written: number;
+            edges_written?: number;
         };
         /**
          * RecoveryApplyAck
@@ -50674,7 +50788,7 @@ export interface components {
              * @default node_error
              * @enum {string}
              */
-            surface: "node_error" | "node_output" | "node_inputs" | "checkpoint" | "run_summary" | "validation_issue" | "stream_log" | "raw_value";
+            surface?: "node_error" | "node_output" | "node_inputs" | "checkpoint" | "run_summary" | "validation_issue" | "stream_log" | "raw_value";
             /** Workflow Id */
             workflow_id: string;
             /** Run Id */
@@ -50705,7 +50819,7 @@ export interface components {
              * @description True when the agent call failed and the response is a deterministic fallback (typically a force_fail with the error message in rationale). The UI should warn the user before applying a fallback proposal.
              * @default false
              */
-            fallback: boolean;
+            fallback?: boolean;
         };
         /** RedactPatternRequest */
         RedactPatternRequest: {
@@ -50717,7 +50831,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -50735,12 +50849,12 @@ export interface components {
              * Flags
              * @default 0
              */
-            flags: number;
+            flags?: number;
             /**
              * Scrub Metadata
              * @default true
              */
-            scrub_metadata: boolean;
+            scrub_metadata?: boolean;
         };
         /** RedactRegionsRequest */
         RedactRegionsRequest: {
@@ -50752,7 +50866,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -50770,7 +50884,7 @@ export interface components {
              * Scrub Metadata
              * @default true
              */
-            scrub_metadata: boolean;
+            scrub_metadata?: boolean;
         };
         /** RedactRepeatedRegionsRequest */
         RedactRepeatedRegionsRequest: {
@@ -50782,7 +50896,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -50800,17 +50914,17 @@ export interface components {
              * Min Pages Ratio
              * @default 0.3333333333333333
              */
-            min_pages_ratio: number;
+            min_pages_ratio?: number;
             /**
              * Min Confidence
              * @default 0.5
              */
-            min_confidence: number;
+            min_confidence?: number;
             /**
              * Scrub Metadata
              * @default true
              */
-            scrub_metadata: boolean;
+            scrub_metadata?: boolean;
         };
         /**
          * RedactionRegion
@@ -50832,17 +50946,17 @@ export interface components {
              * @default BLOCK
              * @enum {string}
              */
-            replacement: "BLOCK" | "REMOVE";
+            replacement?: "BLOCK" | "REMOVE";
             /**
              * Text
              * @default
              */
-            text: string;
+            text?: string;
             /**
              * Preserve Text
              * @default false
              */
-            preserve_text: boolean;
+            preserve_text?: boolean;
         };
         /** RedactionSpanInput */
         RedactionSpanInput: {
@@ -50852,7 +50966,7 @@ export interface components {
              * Category
              * @default pii
              */
-            category: string;
+            category?: string;
             /** Page Number */
             page_number: number;
             /** Bbox */
@@ -50863,19 +50977,19 @@ export interface components {
              * Char Start
              * @default 0
              */
-            char_start: number;
+            char_start?: number;
             /**
              * Char End
              * @default 0
              */
-            char_end: number;
+            char_end?: number;
             /** Original Text */
             original_text: string;
             /**
              * Confidence Tier
              * @default n/a
              */
-            confidence_tier: string;
+            confidence_tier?: string;
         };
         /** RedirectRead */
         RedirectRead: {
@@ -50926,7 +51040,7 @@ export interface components {
              * Mode
              * @default catch_up
              */
-            mode: string;
+            mode?: string;
         };
         /**
          * RefreshScheduleRequest
@@ -50986,7 +51100,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            extraction_kind: "text" | "table" | "image";
+            extraction_kind?: "text" | "table" | "image";
         };
         /** RegionExtractResponse */
         RegionExtractResponse: {
@@ -51006,7 +51120,7 @@ export interface components {
              * Tables
              * @default []
              */
-            tables: {
+            tables?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Image Png Base64 */
@@ -51017,7 +51131,7 @@ export interface components {
              * Notes
              * @default []
              */
-            notes: string[];
+            notes?: string[];
         };
         /** RegisterSelectedFileRequest */
         RegisterSelectedFileRequest: {
@@ -51048,7 +51162,7 @@ export interface components {
              * @description When True, the executor short-circuits dispatch and emits tool_delegated for the client to execute. When False (default), the server runs the tool via its registry implementation.
              * @default false
              */
-            delegate: boolean;
+            delegate?: boolean;
         };
         /** RegistryDbRow */
         RegistryDbRow: {
@@ -51094,27 +51208,27 @@ export interface components {
              * Declared
              * @default 0
              */
-            declared: number;
+            declared?: number;
             /**
              * Created
              * @default 0
              */
-            created: number;
+            created?: number;
             /**
              * Updated
              * @default 0
              */
-            updated: number;
+            updated?: number;
             /**
              * Unchanged
              * @default 0
              */
-            unchanged: number;
+            unchanged?: number;
             /**
              * Vanished
              * @default 0
              */
-            vanished: number;
+            vanished?: number;
             /** Broken Pins */
             broken_pins?: string[];
             /** Import Failures */
@@ -51123,7 +51237,7 @@ export interface components {
              * Applied
              * @default false
              */
-            applied: boolean;
+            applied?: boolean;
             /** Skipped Reason */
             skipped_reason?: string | null;
         };
@@ -51148,7 +51262,7 @@ export interface components {
              * Title
              * @default
              */
-            title: string;
+            title?: string;
             /** Expectation */
             expectation?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -51160,7 +51274,7 @@ export interface components {
              * @default human_click
              * @enum {string}
              */
-            origin: "human_click" | "finding" | "walk" | "sweep";
+            origin?: "human_click" | "finding" | "walk" | "sweep";
             /** Origin Finding Id */
             origin_finding_id?: string | null;
             /** Corrected Output Ref */
@@ -51178,7 +51292,7 @@ export interface components {
              * Title
              * @default
              */
-            title: string;
+            title?: string;
             /** Expectation */
             expectation?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -51189,7 +51303,7 @@ export interface components {
              * Origin
              * @default human_click
              */
-            origin: string;
+            origin?: string;
             /** Origin Finding Id */
             origin_finding_id?: string | null;
             /** Corrected Output Ref */
@@ -51202,7 +51316,7 @@ export interface components {
              * Status
              * @default active
              */
-            status: string;
+            status?: string;
             /** Last Replay Group Id */
             last_replay_group_id?: string | null;
             /** Last Result */
@@ -51219,7 +51333,7 @@ export interface components {
              * Consecutive Failures
              * @default 0
              */
-            consecutive_failures: number;
+            consecutive_failures?: number;
             /** Created At */
             created_at?: string | null;
         };
@@ -51287,7 +51401,7 @@ export interface components {
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
             /** Faithful */
             faithful?: boolean | null;
         };
@@ -51427,7 +51541,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -51441,18 +51555,18 @@ export interface components {
              * Dpi
              * @default 150
              */
-            dpi: number;
+            dpi?: number;
             /**
              * Fmt
              * @default png
              * @enum {string}
              */
-            fmt: "png" | "jpg" | "jpeg" | "webp" | "tiff";
+            fmt?: "png" | "jpg" | "jpeg" | "webp" | "tiff";
             /**
              * Jpeg Quality
              * @default 85
              */
-            jpeg_quality: number;
+            jpeg_quality?: number;
             /** Pages */
             pages?: number[] | null;
         };
@@ -51471,33 +51585,33 @@ export interface components {
              * Page
              * @default 1
              */
-            page: number;
+            page?: number;
             /**
              * Dpi
              * @default 150
              */
-            dpi: number;
+            dpi?: number;
             /**
              * Fmt
              * @default png
              * @enum {string}
              */
-            fmt: "png" | "jpg" | "jpeg" | "webp" | "tiff";
+            fmt?: "png" | "jpg" | "jpeg" | "webp" | "tiff";
             /**
              * Jpeg Quality
              * @default 85
              */
-            jpeg_quality: number;
+            jpeg_quality?: number;
             /**
              * Alpha
              * @default false
              */
-            alpha: boolean;
+            alpha?: boolean;
             /**
              * Annotations
              * @default true
              */
-            annotations: boolean;
+            annotations?: boolean;
         };
         /** RenderRequest */
         RenderRequest: {
@@ -51509,18 +51623,18 @@ export interface components {
              * Overlays
              * @default []
              */
-            overlays: components["schemas"]["OverlaySpecIn"][];
+            overlays?: components["schemas"]["OverlaySpecIn"][];
             /**
              * Dpi
              * @default 144
              */
-            dpi: number;
+            dpi?: number;
             /**
              * Return Format
              * @default png
              * @constant
              */
-            return_format: "png";
+            return_format?: "png";
         };
         /** RenderResponse */
         RenderResponse: {
@@ -51556,23 +51670,23 @@ export interface components {
              * Page
              * @default 1
              */
-            page: number;
+            page?: number;
             /**
              * Max Side
              * @default 256
              */
-            max_side: number;
+            max_side?: number;
             /**
              * Fmt
              * @default jpeg
              * @enum {string}
              */
-            fmt: "png" | "jpg" | "jpeg" | "webp";
+            fmt?: "png" | "jpg" | "jpeg" | "webp";
             /**
              * Jpeg Quality
              * @default 80
              */
-            jpeg_quality: number;
+            jpeg_quality?: number;
         };
         /** ReorderPagesRequest */
         ReorderPagesRequest: {
@@ -51584,7 +51698,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -51623,7 +51737,7 @@ export interface components {
              * Cascade Tool Pairs
              * @default true
              */
-            cascade_tool_pairs: boolean;
+            cascade_tool_pairs?: boolean;
             /** Summary Metadata */
             summary_metadata?: {
                 [key: string]: unknown;
@@ -51678,13 +51792,13 @@ export interface components {
              * Limit
              * @default 100
              */
-            limit: number;
+            limit?: number;
             /**
              * Only Default Error Class
              * @description If True, only retry the InterfaceError class that the original flush-sequentialization fix targeted. If False, retry all unrecovered rows regardless of cause.
              * @default true
              */
-            only_default_error_class: boolean;
+            only_default_error_class?: boolean;
         };
         /**
          * ReplayOut
@@ -51772,7 +51886,7 @@ export interface components {
              * Variant
              * @default candidate
              */
-            variant: string;
+            variant?: string;
         };
         /**
          * ReplayResponse
@@ -51804,7 +51918,7 @@ export interface components {
              * @default completed
              * @enum {string}
              */
-            status: "queued" | "completed" | "failed";
+            status?: "queued" | "completed" | "failed";
             /** Verdict */
             verdict?: string | null;
             /** Reason */
@@ -51835,7 +51949,7 @@ export interface components {
              * Limit
              * @default 25
              */
-            limit: number;
+            limit?: number;
         };
         /** ReplyRunBody */
         ReplyRunBody: {
@@ -51860,12 +51974,12 @@ export interface components {
              * Limit
              * @default 25
              */
-            limit: number;
+            limit?: number;
             /**
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /**
          * ReplyThreadView
@@ -51932,7 +52046,7 @@ export interface components {
              * @default digital_pr_reputation_brief_v1
              * @constant
              */
-            __kind: "digital_pr_reputation_brief_v1";
+            __kind?: "digital_pr_reputation_brief_v1";
             /** Analyst Version */
             analyst_version: string;
             /** Site Id */
@@ -52027,7 +52141,7 @@ export interface components {
              * Requires Human Review
              * @default false
              */
-            requires_human_review: boolean;
+            requires_human_review?: boolean;
         };
         /** ReputationIntelligenceBody */
         ReputationIntelligenceBody: {
@@ -52050,7 +52164,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** ReputationRunResult */
         ReputationRunResult: {
@@ -52067,17 +52181,17 @@ export interface components {
              * Accepted Cases
              * @default 0
              */
-            accepted_cases: number;
+            accepted_cases?: number;
             /**
              * Rejected Cases
              * @default 0
              */
-            rejected_cases: number;
+            rejected_cases?: number;
             /**
              * Publication Opportunities
              * @default 0
              */
-            publication_opportunities: number;
+            publication_opportunities?: number;
             evidence_coverage: components["schemas"]["aidream__services__seo__reputation_intelligence__EvidenceCoverage"];
             brief: components["schemas"]["ReputationBrief"];
         };
@@ -52103,7 +52217,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
         };
         /**
          * ResearchRefreshState
@@ -52137,22 +52251,22 @@ export interface components {
              * Consecutive Refresh Failures
              * @default 0
              */
-            consecutive_refresh_failures: number;
+            consecutive_refresh_failures?: number;
             /**
              * Is Claimed
              * @default false
              */
-            is_claimed: boolean;
+            is_claimed?: boolean;
             /**
              * Keywords Total
              * @default 0
              */
-            keywords_total: number;
+            keywords_total?: number;
             /**
              * Keywords Never Searched
              * @default 0
              */
-            keywords_never_searched: number;
+            keywords_never_searched?: number;
             /** Latest Document Version */
             latest_document_version?: number | null;
             /** Latest Document At */
@@ -52239,7 +52353,7 @@ export interface components {
              * Source Count
              * @default 0
              */
-            source_count: number;
+            source_count?: number;
             /** Updated At */
             updated_at?: string | null;
         };
@@ -52315,13 +52429,13 @@ export interface components {
              * Limit
              * @default 2000
              */
-            limit: number;
+            limit?: number;
             /**
              * Resolution Note
              * @description Why these errors are being marked resolved.
              * @default manual-resolve-batch
              */
-            resolution_note: string;
+            resolution_note?: string;
         };
         /** ResolveBatchResponse */
         ResolveBatchResponse: {
@@ -52342,6 +52456,106 @@ export interface components {
              * Format: date-time
              */
             resolved_at: string;
+        };
+        /** ResolvePartyBatchRequest */
+        ResolvePartyBatchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Parties */
+            parties: components["schemas"]["ResolvePartyRequest"][];
+        };
+        /** ResolvePartyExternalRef */
+        ResolvePartyExternalRef: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Platform */
+            platform: string;
+            /** Value */
+            value: string;
+            /** Handle */
+            handle?: string | null;
+            /** Profile Url */
+            profile_url?: string | null;
+        };
+        /** ResolvePartyRequest */
+        ResolvePartyRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Kind
+             * @default person
+             * @enum {string}
+             */
+            kind?: "person" | "organization";
+            /** Display Name */
+            display_name: string;
+            /** Source */
+            source: string;
+            /** Source Detail */
+            source_detail?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Job Title */
+            job_title?: string | null;
+            /** Headline */
+            headline?: string | null;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Primary Domain */
+            primary_domain?: string | null;
+            /** Emails */
+            emails?: string[];
+            /** Phones */
+            phones?: string[];
+            /** External Ids */
+            external_ids?: components["schemas"]["ResolvePartyExternalRef"][];
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Allow Name Match
+             * @default false
+             */
+            allow_name_match?: boolean;
         };
         /** ResolvePathArgs */
         ResolvePathArgs: {
@@ -52375,7 +52589,7 @@ export interface components {
              * Rationale
              * @default
              */
-            rationale: string;
+            rationale?: string;
         };
         /** ResolveRequest */
         ResolveRequest: {
@@ -52417,6 +52631,69 @@ export interface components {
             /** Label */
             label?: string | null;
         };
+        /** ResolvedPartyBatchItem */
+        ResolvedPartyBatchItem: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Index */
+            index: number;
+            resolved?: components["schemas"]["ResolvedPartyView"] | null;
+            /** Error */
+            error?: string | null;
+        };
+        /** ResolvedPartyView */
+        ResolvedPartyView: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Party Id */
+            party_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Party Kind */
+            party_kind: string;
+            /** Created */
+            created: boolean;
+            /** Matched By */
+            matched_by: string;
+            /**
+             * Canonical Followed
+             * @default false
+             */
+            canonical_followed?: boolean;
+            /**
+             * Contact Points Added
+             * @default 0
+             */
+            contact_points_added?: number;
+            /** Fields Filled */
+            fields_filled?: string[];
+        };
         /** ResolvedPath */
         ResolvedPath: {
             /** Adapter Id */
@@ -52441,7 +52718,7 @@ export interface components {
              * Max Chars
              * @default 5000
              */
-            max_chars: number;
+            max_chars?: number;
         };
         ResourceRefInput: components["schemas"]["LiveResourceRefInput"] | components["schemas"]["SnapshotContentResourceRefInput"] | components["schemas"]["SnapshotTextResourceRefInput"] | components["schemas"]["SnapshotBodyResourceRefInput"] | components["schemas"]["SnapshotDescriptionResourceRefInput"] | components["schemas"]["SnapshotValueResourceRefInput"];
         /** ResponseFormatJsonObject */
@@ -52510,7 +52787,7 @@ export interface components {
              * Delete Summary
              * @default true
              */
-            delete_summary: boolean;
+            delete_summary?: boolean;
         };
         /** RestoreRequestBody */
         RestoreRequestBody: {
@@ -52585,13 +52862,13 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
             /**
              * Mode
              * @default inline
              * @enum {string}
              */
-            mode: "inline" | "queued";
+            mode?: "inline" | "queued";
         };
         /**
          * RetentionRunResult
@@ -52612,7 +52889,7 @@ export interface components {
              * Claim Ttl Minutes
              * @default 10
              */
-            claim_ttl_minutes: number;
+            claim_ttl_minutes?: number;
         };
         /** RetryFailRequest */
         RetryFailRequest: {
@@ -52624,7 +52901,7 @@ export interface components {
              * Promote To Extension
              * @default false
              */
-            promote_to_extension: boolean;
+            promote_to_extension?: boolean;
         };
         /** RetryNodeRequest */
         RetryNodeRequest: {
@@ -52647,7 +52924,7 @@ export interface components {
              * @description If True (default), the retried invocation runs at attempt+1 so the prior failure outcome stays as a forensic record. If False, the original outcome is overwritten by the new attempt. Leave True unless you have a specific reason to discard history.
              * @default true
              */
-            attempt_bump: boolean;
+            attempt_bump?: boolean;
             /**
              * Dispatch Id
              * @description Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation to retry. Omit for ordinary nodes; required together with item_index when several items of this node are pending (the endpoint never guesses — it 422s with the pending correlations).
@@ -52662,7 +52939,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
         };
         /** RetryNowResponse */
         RetryNowResponse: {
@@ -52710,12 +52987,12 @@ export interface components {
              * Kind
              * @default
              */
-            kind: string;
+            kind?: string;
             /**
              * Id
              * @default
              */
-            id: string;
+            id?: string;
             /** Stats */
             stats?: {
                 [key: string]: unknown;
@@ -52740,7 +53017,7 @@ export interface components {
              * Example Count
              * @default 0
              */
-            example_count: number;
+            example_count?: number;
             /** Examples */
             examples?: components["schemas"]["ReviewExample"][];
             /** Reviewer Conversation Id */
@@ -52771,34 +53048,34 @@ export interface components {
              * @default completed
              * @enum {string}
              */
-            status: "completed" | "skipped" | "failed";
+            status?: "completed" | "skipped" | "failed";
             /** Reason */
             reason?: string | null;
             /**
              * Example Count
              * @default 0
              */
-            example_count: number;
+            example_count?: number;
             /**
              * Findings Created
              * @default 0
              */
-            findings_created: number;
+            findings_created?: number;
             /**
              * Assists Created
              * @default 0
              */
-            assists_created: number;
+            assists_created?: number;
             /**
              * Replays Run
              * @default 0
              */
-            replays_run: number;
+            replays_run?: number;
             /**
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
         };
         /**
          * ReviewThreadOut
@@ -52815,7 +53092,7 @@ export interface components {
              * Available
              * @default false
              */
-            available: boolean;
+            available?: boolean;
             /** Messages */
             messages?: components["schemas"]["ThreadMessageOut"][];
             /** Reason */
@@ -52933,7 +53210,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** RobotsCheckResult */
         RobotsCheckResult: {
@@ -52960,7 +53237,7 @@ export interface components {
              * Raw Robots Txt
              * @default
              */
-            raw_robots_txt: string;
+            raw_robots_txt?: string;
             /** Sitemaps */
             sitemaps?: string[];
             /** Syntax Errors */
@@ -52969,7 +53246,7 @@ export interface components {
              * Truncated
              * @default false
              */
-            truncated: boolean;
+            truncated?: boolean;
             /** Checks */
             checks?: components["schemas"]["RobotsPathCheck"][];
         };
@@ -52996,7 +53273,7 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /** Definition Agent Id */
             definition_agent_id: string;
             /** Conversation Id */
@@ -53036,7 +53313,7 @@ export interface components {
              * @default 90
              * @enum {integer}
              */
-            rotation: 0 | 90 | 180 | 270;
+            rotation?: 0 | 90 | 180 | 270;
         };
         /** RotatePageResponse */
         RotatePageResponse: {
@@ -53055,7 +53332,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -53099,24 +53376,24 @@ export interface components {
              * Message Count
              * @default 0
              */
-            message_count: number;
+            message_count?: number;
             /**
              * Expert Turn Count
              * @default 0
              */
-            expert_turn_count: number;
+            expert_turn_count?: number;
             /**
              * Expert Chars
              * @default 0
              */
-            expert_chars: number;
+            expert_chars?: number;
             /** First Expert Line */
             first_expert_line?: string | null;
             /**
              * Rules Produced
              * @default 0
              */
-            rules_produced: number;
+            rules_produced?: number;
         };
         /**
          * Ruleset
@@ -53133,7 +53410,7 @@ export interface components {
              * Allowed Aliases
              * @default []
              */
-            allowed_aliases: string[];
+            allowed_aliases?: string[];
             /** Input Rules */
             input_rules?: components["schemas"]["LeakRule"][] | null;
         };
@@ -53153,32 +53430,32 @@ export interface components {
              * Total Cost Usd
              * @default 0
              */
-            total_cost_usd: number;
+            total_cost_usd?: number;
             /**
              * Total Input Tokens
              * @default 0
              */
-            total_input_tokens: number;
+            total_input_tokens?: number;
             /**
              * Total Output Tokens
              * @default 0
              */
-            total_output_tokens: number;
+            total_output_tokens?: number;
             /**
              * Total Cached Tokens
              * @default 0
              */
-            total_cached_tokens: number;
+            total_cached_tokens?: number;
             /**
              * Request Count
              * @default 0
              */
-            request_count: number;
+            request_count?: number;
             /**
              * Avg Request Duration Ms
              * @default 0
              */
-            avg_request_duration_ms: number;
+            avg_request_duration_ms?: number;
             /** By Model */
             by_model?: components["schemas"]["ModelCostBreakdown"][];
         };
@@ -53251,7 +53528,7 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         /**
          * RunFormField
@@ -53276,7 +53553,7 @@ export interface components {
              * Required
              * @default false
              */
-            required: boolean;
+            required?: boolean;
             /** Input Kind */
             input_kind?: string | null;
             /** Output Kind */
@@ -53318,14 +53595,14 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Default */
             default?: unknown;
             /**
              * Required
              * @default false
              */
-            required: boolean;
+            required?: boolean;
         };
         /** RunListResponse */
         RunListResponse: {
@@ -53349,7 +53626,7 @@ export interface components {
              * Guidance
              * @default
              */
-            guidance: string;
+            guidance?: string;
         };
         /** RunPanelBody */
         RunPanelBody: {
@@ -53372,7 +53649,7 @@ export interface components {
              * Force
              * @default true
              */
-            force: boolean;
+            force?: boolean;
         };
         /** RunPipelineRequest */
         RunPipelineRequest: {
@@ -53383,7 +53660,7 @@ export interface components {
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
              * @default false
              */
-            use_user_agent_overrides: boolean;
+            use_user_agent_overrides?: boolean;
         };
         /** RunProgress */
         RunProgress: {
@@ -53560,7 +53837,7 @@ export interface components {
              * Force
              * @default true
              */
-            force: boolean;
+            force?: boolean;
         };
         /**
          * RunView
@@ -53597,7 +53874,7 @@ export interface components {
              * Reconnected
              * @default false
              */
-            reconnected: boolean;
+            reconnected?: boolean;
             /** Current Url */
             current_url?: string | null;
             /** Started At */
@@ -53670,7 +53947,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
             /**
              * Step Concurrency
              * @description Max node invocations of one super-step executing at once (BS-6 bounded fan-out). A 50-item map with step_concurrency=3 runs 3 at a time instead of all 50 — the declarative form of rate-limited fan-out (analysis semaphores, TTS quotas, scrape politeness). None = unbounded. Persisted on the run so resume/queued execution honors it too.
@@ -53682,7 +53959,7 @@ export interface components {
              * @default inline
              * @enum {string}
              */
-            mode: "inline" | "queued";
+            mode?: "inline" | "queued";
             /**
              * Callback Url
              * @description Optional URL POSTed the terminal run summary (run_id, status, outputs/error, duration, cost) exactly once when the run completes / fails / cancels — by ANY path, including worker runs and cancels. Gives external callers single-request semantics with zero polling. Delivery is retried with exponential backoff and never blocks the run; the outcome is recorded on the run's metadata (_callback).
@@ -53699,7 +53976,7 @@ export interface components {
              * Lease Seconds
              * @default 1800
              */
-            lease_seconds: number;
+            lease_seconds?: number;
         };
         /** RuntimeHeartbeatResponse */
         RuntimeHeartbeatResponse: {
@@ -53718,31 +53995,31 @@ export interface components {
              * Type
              * @default conversation
              */
-            type: string;
+            type?: string;
             /**
              * App
              * @default matrx-local
              */
-            app: string;
+            app?: string;
             /**
              * Surface
              * @default desktop_ai
              */
-            surface: string;
+            surface?: string;
             /** Conversation Id */
             conversation_id?: string | null;
             /**
              * Link Kind
              * @default conversation
              */
-            link_kind: string;
+            link_kind?: string;
             /** Link Id */
             link_id?: string | null;
             /**
              * Lease Seconds
              * @default 1800
              */
-            lease_seconds: number;
+            lease_seconds?: number;
             /** Idempotency Key */
             idempotency_key?: string | null;
         };
@@ -53827,14 +54104,14 @@ export interface components {
              * @description Workspace root inside the sandbox
              * @default /home/agent
              */
-            root_path: string;
+            root_path?: string;
             /**
              * Target Kind
              * @description Semantic filesystem namespace. This is explicit so routing never guesses the target OS or machine kind from path syntax.
              * @default sandbox
              * @enum {string}
              */
-            target_kind: "sandbox" | "local_machine";
+            target_kind?: "sandbox" | "local_machine";
         };
         /**
          * SandboxBindingState
@@ -53858,7 +54135,7 @@ export interface components {
              * Armed
              * @default false
              */
-            armed: boolean;
+            armed?: boolean;
             /** Reason */
             reason?: string | null;
         };
@@ -53931,29 +54208,29 @@ export interface components {
              * Intro
              * @default
              */
-            intro: string;
+            intro?: string;
             /** Sections */
             sections?: components["schemas"]["SaveDraftSectionBody"][];
             /**
              * Call To Action
              * @default
              */
-            call_to_action: string;
+            call_to_action?: string;
             /**
              * Meta Title
              * @default
              */
-            meta_title: string;
+            meta_title?: string;
             /**
              * Meta Description
              * @default
              */
-            meta_description: string;
+            meta_description?: string;
             /**
              * Note
              * @default
              */
-            note: string;
+            note?: string;
         };
         /**
          * SaveDraftRequest
@@ -53984,7 +54261,7 @@ export interface components {
              * Route
              * @default
              */
-            route: string;
+            route?: string;
             /** Artifact Id */
             artifact_id: string;
             /** Summary */
@@ -53993,7 +54270,7 @@ export interface components {
              * Superseded Review
              * @default false
              */
-            superseded_review: boolean;
+            superseded_review?: boolean;
         };
         /** SaveDraftSectionBody */
         SaveDraftSectionBody: {
@@ -54003,17 +54280,17 @@ export interface components {
              * Level
              * @default 2
              */
-            level: number;
+            level?: number;
             /**
              * Intent
              * @default
              */
-            intent: string;
+            intent?: string;
             /**
              * Body
              * @default
              */
-            body: string;
+            body?: string;
             /** Bullets */
             bullets?: string[];
         };
@@ -54130,7 +54407,7 @@ export interface components {
              * Cyclic
              * @default false
              */
-            cyclic: boolean;
+            cyclic?: boolean;
         };
         /**
          * SchemaTypesResponse
@@ -54226,7 +54503,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -54240,27 +54517,27 @@ export interface components {
              * Metadata
              * @default true
              */
-            metadata: boolean;
+            metadata?: boolean;
             /**
              * Attachments
              * @default true
              */
-            attachments: boolean;
+            attachments?: boolean;
             /**
              * Javascript
              * @default true
              */
-            javascript: boolean;
+            javascript?: boolean;
             /**
              * Flatten Annotations
              * @default false
              */
-            flatten_annotations: boolean;
+            flatten_annotations?: boolean;
             /**
              * Reason
              * @default strip_all_pii
              */
-            reason: string;
+            reason?: string;
         };
         /** SearchAndScrapeLimitedRequest */
         SearchAndScrapeLimitedRequest: {
@@ -54268,84 +54545,84 @@ export interface components {
              * Get Organized Data
              * @default false
              */
-            get_organized_data: boolean;
+            get_organized_data?: boolean;
             /**
              * Get Structured Data
              * @default false
              */
-            get_structured_data: boolean;
+            get_structured_data?: boolean;
             /**
              * Get Overview
              * @default false
              */
-            get_overview: boolean;
+            get_overview?: boolean;
             /**
              * Get Text Data
              * @default true
              */
-            get_text_data: boolean;
+            get_text_data?: boolean;
             /**
              * Get Main Image
              * @default false
              */
-            get_main_image: boolean;
+            get_main_image?: boolean;
             /**
              * Get Links
              * @default false
              */
-            get_links: boolean;
+            get_links?: boolean;
             /**
              * Get Content Filter Removal Details
              * @default false
              */
-            get_content_filter_removal_details: boolean;
+            get_content_filter_removal_details?: boolean;
             /**
              * Include Highlighting Markers
              * @default true
              */
-            include_highlighting_markers: boolean;
+            include_highlighting_markers?: boolean;
             /**
              * Include Media
              * @default true
              */
-            include_media: boolean;
+            include_media?: boolean;
             /**
              * Include Media Links
              * @default true
              */
-            include_media_links: boolean;
+            include_media_links?: boolean;
             /**
              * Include Media Description
              * @default true
              */
-            include_media_description: boolean;
+            include_media_description?: boolean;
             /**
              * Include Anchors
              * @default true
              */
-            include_anchors: boolean;
+            include_anchors?: boolean;
             /**
              * Anchor Size
              * @default 100
              */
-            anchor_size: number;
+            anchor_size?: number;
             /** Keyword */
             keyword: string;
             /**
              * Country Code
              * @default all
              */
-            country_code: string;
+            country_code?: string;
             /**
              * Max Page Read
              * @default 10
              */
-            max_page_read: number;
+            max_page_read?: number;
             /**
              * Search Type
              * @default all
              */
-            search_type: string;
+            search_type?: string;
         };
         /** SearchAndScrapeRequest */
         SearchAndScrapeRequest: {
@@ -54353,84 +54630,84 @@ export interface components {
              * Get Organized Data
              * @default false
              */
-            get_organized_data: boolean;
+            get_organized_data?: boolean;
             /**
              * Get Structured Data
              * @default false
              */
-            get_structured_data: boolean;
+            get_structured_data?: boolean;
             /**
              * Get Overview
              * @default false
              */
-            get_overview: boolean;
+            get_overview?: boolean;
             /**
              * Get Text Data
              * @default true
              */
-            get_text_data: boolean;
+            get_text_data?: boolean;
             /**
              * Get Main Image
              * @default false
              */
-            get_main_image: boolean;
+            get_main_image?: boolean;
             /**
              * Get Links
              * @default false
              */
-            get_links: boolean;
+            get_links?: boolean;
             /**
              * Get Content Filter Removal Details
              * @default false
              */
-            get_content_filter_removal_details: boolean;
+            get_content_filter_removal_details?: boolean;
             /**
              * Include Highlighting Markers
              * @default true
              */
-            include_highlighting_markers: boolean;
+            include_highlighting_markers?: boolean;
             /**
              * Include Media
              * @default true
              */
-            include_media: boolean;
+            include_media?: boolean;
             /**
              * Include Media Links
              * @default true
              */
-            include_media_links: boolean;
+            include_media_links?: boolean;
             /**
              * Include Media Description
              * @default true
              */
-            include_media_description: boolean;
+            include_media_description?: boolean;
             /**
              * Include Anchors
              * @default true
              */
-            include_anchors: boolean;
+            include_anchors?: boolean;
             /**
              * Anchor Size
              * @default 100
              */
-            anchor_size: number;
+            anchor_size?: number;
             /** Keywords */
             keywords: string[];
             /**
              * Country Code
              * @default all
              */
-            country_code: string;
+            country_code?: string;
             /**
              * Total Results Per Keyword
              * @default 10
              */
-            total_results_per_keyword: number;
+            total_results_per_keyword?: number;
             /**
              * Search Type
              * @default all
              */
-            search_type: string;
+            search_type?: string;
         };
         /** SearchExamplesResponse */
         SearchExamplesResponse: {
@@ -54460,17 +54737,17 @@ export interface components {
              * Country Code
              * @default all
              */
-            country_code: string;
+            country_code?: string;
             /**
              * Total Results Per Keyword
              * @default 5
              */
-            total_results_per_keyword: number;
+            total_results_per_keyword?: number;
             /**
              * Search Type
              * @default all
              */
-            search_type: string;
+            search_type?: string;
         };
         /** SearchRequestFilters */
         SearchRequestFilters: {
@@ -54513,7 +54790,7 @@ export interface components {
              * Explicitly Enabled
              * @default false
              */
-            explicitly_enabled: boolean;
+            explicitly_enabled?: boolean;
         };
         /** SelectedFileResponse */
         SelectedFileResponse: {
@@ -54618,7 +54895,7 @@ export interface components {
              * Can Run Campaign
              * @default false
              */
-            can_run_campaign: boolean;
+            can_run_campaign?: boolean;
             /** Issues */
             issues?: components["schemas"]["SendingRefusal"][];
             /** Organization Id */
@@ -54714,7 +54991,7 @@ export interface components {
              * Can Run Campaign
              * @default false
              */
-            can_run_campaign: boolean;
+            can_run_campaign?: boolean;
             /** Issues */
             issues?: components["schemas"]["SendingRefusal"][];
             /** Organization Id */
@@ -54748,12 +55025,12 @@ export interface components {
              * Identity Count
              * @default 0
              */
-            identity_count: number;
+            identity_count?: number;
             /**
              * Ready Identity Count
              * @default 0
              */
-            ready_identity_count: number;
+            ready_identity_count?: number;
         };
         /**
          * SendingRefusal
@@ -54777,7 +55054,7 @@ export interface components {
              * Transient
              * @default false
              */
-            transient: boolean;
+            transient?: boolean;
         };
         /**
          * SeoCapability
@@ -54835,7 +55112,7 @@ export interface components {
              * Request Count
              * @default 0
              */
-            request_count: number;
+            request_count?: number;
             /** Reported Cost */
             reported_cost?: string | null;
             /** Estimated Cost */
@@ -54844,7 +55121,7 @@ export interface components {
              * Currency
              * @default USD
              */
-            currency: string;
+            currency?: string;
             /** Error */
             error?: {
                 [key: string]: unknown;
@@ -54926,17 +55203,17 @@ export interface components {
              * Depth
              * @default 30
              */
-            depth: number;
+            depth?: number;
             /**
              * Enrich Authority
              * @default true
              */
-            enrich_authority: boolean;
+            enrich_authority?: boolean;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
         };
@@ -54969,22 +55246,22 @@ export interface components {
              * Customer Segment
              * @default
              */
-            customer_segment: string;
+            customer_segment?: string;
             /**
              * Footprint
              * @default regional
              */
-            footprint: string;
+            footprint?: string;
             /**
              * Footprint Detail
              * @default
              */
-            footprint_detail: string;
+            footprint_detail?: string;
             /**
              * Why
              * @default
              */
-            why: string;
+            why?: string;
         };
         /** SessionPayload */
         SessionPayload: {
@@ -55007,7 +55284,7 @@ export interface components {
              * Document
              * @default
              */
-            document: string;
+            document?: string;
         };
         /** SetActiveBody */
         SetActiveBody: {
@@ -55118,14 +55395,14 @@ export interface components {
              * @default front
              * @enum {string}
              */
-            face: "front" | "back";
+            face?: "front" | "back";
             /** Limit */
             limit?: number | null;
             /**
              * Skip Existing
              * @default true
              */
-            skip_existing: boolean;
+            skip_existing?: boolean;
         };
         /** SetPolicyRequest */
         SetPolicyRequest: {
@@ -55175,7 +55452,7 @@ export interface components {
              * Scenario
              * @default happy
              */
-            scenario: string;
+            scenario?: string;
             /** Data */
             data?: {
                 [key: string]: unknown;
@@ -55185,7 +55462,7 @@ export interface components {
              * @default authored
              * @enum {string}
              */
-            source: "authored" | "captured" | "generated";
+            source?: "authored" | "captured" | "generated";
             /** Is Stand In */
             is_stand_in?: boolean | null;
         };
@@ -55240,7 +55517,7 @@ export interface components {
              * Guidance
              * @default
              */
-            guidance: string;
+            guidance?: string;
         };
         /**
          * ShadowSweepIn
@@ -55283,7 +55560,7 @@ export interface components {
              * Ok
              * @default true
              */
-            ok: boolean;
+            ok?: boolean;
             /** New Model */
             new_model?: string | null;
             /** From Model */
@@ -55292,42 +55569,42 @@ export interface components {
              * Selected
              * @default 0
              */
-            selected: number;
+            selected?: number;
             /**
              * Checked
              * @default 0
              */
-            checked: number;
+            checked?: number;
             /**
              * Skipped For Budget
              * @default 0
              */
-            skipped_for_budget: number;
+            skipped_for_budget?: number;
             /**
              * Hit Cost Ceiling
              * @default false
              */
-            hit_cost_ceiling: boolean;
+            hit_cost_ceiling?: boolean;
             /**
              * Passed
              * @default 0
              */
-            passed: number;
+            passed?: number;
             /**
              * Failed
              * @default 0
              */
-            failed: number;
+            failed?: number;
             /**
              * Errored
              * @default 0
              */
-            errored: number;
+            errored?: number;
             /**
              * Total Cost Usd
              * @default 0
              */
-            total_cost_usd: number;
+            total_cost_usd?: number;
             /** Outcomes */
             outcomes?: components["schemas"]["CaseOutcome"][];
             /** Assist Id */
@@ -55399,7 +55676,7 @@ export interface components {
              * @description Worksheet tab name shown at the bottom of the workbook.
              * @default Sheet1
              */
-            name: string;
+            name?: string;
             /**
              * Columns
              * @description Column header labels written as the sheet's first row.
@@ -55415,7 +55692,7 @@ export interface components {
              * @description Freeze the header row so it stays visible while scrolling.
              * @default true
              */
-            freeze_header: boolean;
+            freeze_header?: boolean;
         };
         /** SheetValuesResponse */
         SheetValuesResponse: {
@@ -55459,13 +55736,13 @@ export interface components {
              * @description Provider label to put on provider_retry events
              * @default anthropic
              */
-            provider: string;
+            provider?: string;
             /**
              * Model
              * @description Model label to put on provider_retry events
              * @default claude-sonnet-4-20250514
              */
-            model: string;
+            model?: string;
             /**
              * Request Id
              * @description Optional request id for action URLs
@@ -55483,7 +55760,7 @@ export interface components {
              * @description Milliseconds to wait between simulated events.
              * @default 250
              */
-            event_spacing_ms: number;
+            event_spacing_ms?: number;
         };
         /** SiteCredentialRequest */
         SiteCredentialRequest: {
@@ -55533,7 +55810,7 @@ export interface components {
              * Is Default
              * @default false
              */
-            is_default: boolean;
+            is_default?: boolean;
         };
         /** SiteIntakeApplyBody */
         SiteIntakeApplyBody: {
@@ -55556,7 +55833,7 @@ export interface components {
              * Confirmed Summary
              * @default
              */
-            confirmed_summary: string;
+            confirmed_summary?: string;
             /** Answers */
             answers?: components["schemas"]["IntakeAnswer"][];
             /** Keyword Rulings */
@@ -55567,7 +55844,7 @@ export interface components {
              * Run Topic Valuation
              * @default true
              */
-            run_topic_valuation: boolean;
+            run_topic_valuation?: boolean;
             /** Intake Run Id */
             intake_run_id?: string | null;
         };
@@ -55592,7 +55869,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** SiteLinkGapBody */
         SiteLinkGapBody: {
@@ -55617,22 +55894,22 @@ export interface components {
              * Limit
              * @default 1000
              */
-            limit: number;
+            limit?: number;
             /**
              * Max Spam Score
              * @default 30
              */
-            max_spam_score: number;
+            max_spam_score?: number;
             /**
              * Enrich Authority
              * @default true
              */
-            enrich_authority: boolean;
+            enrich_authority?: boolean;
             /**
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
         };
@@ -55659,12 +55936,12 @@ export interface components {
              * Enrich Authority
              * @default true
              */
-            enrich_authority: boolean;
+            enrich_authority?: boolean;
             /**
              * Estimated Enrichment Cost Usd
              * @default 0
              */
-            estimated_enrichment_cost_usd: string;
+            estimated_enrichment_cost_usd?: string;
         };
         /** SitePerformanceAutomation */
         SitePerformanceAutomation: {
@@ -55734,22 +56011,22 @@ export interface components {
              * Good
              * @default 0
              */
-            good: number;
+            good?: number;
             /**
              * Needs Work
              * @default 0
              */
-            needs_work: number;
+            needs_work?: number;
             /**
              * Poor
              * @default 0
              */
-            poor: number;
+            poor?: number;
             /**
              * Total
              * @default 0
              */
-            total: number;
+            total?: number;
         };
         /** SitePerformancePercentiles */
         SitePerformancePercentiles: {
@@ -55757,7 +56034,7 @@ export interface components {
              * Count
              * @default 0
              */
-            count: number;
+            count?: number;
             /** Median */
             median?: number | null;
             /** P25 */
@@ -55803,12 +56080,12 @@ export interface components {
              * Gsc Clicks
              * @default 0
              */
-            gsc_clicks: number;
+            gsc_clicks?: number;
             /**
              * Gsc Impressions
              * @default 0
              */
-            gsc_impressions: number;
+            gsc_impressions?: number;
             /**
              * Reason
              * @enum {string}
@@ -55865,7 +56142,7 @@ export interface components {
              * Valuations Written
              * @default 0
              */
-            valuations_written: number;
+            valuations_written?: number;
             /** Unknown Topic Slugs */
             unknown_topic_slugs?: string[];
             /** Open Questions */
@@ -55916,12 +56193,12 @@ export interface components {
              * Skill Type
              * @default reference
              */
-            skill_type: string;
+            skill_type?: string;
             /**
              * Body
              * @default
              */
-            body: string;
+            body?: string;
             /** Icon Name */
             icon_name?: string | null;
             /** Model Preference */
@@ -55934,7 +56211,7 @@ export interface components {
              * Disable Auto Invocation
              * @default false
              */
-            disable_auto_invocation: boolean;
+            disable_auto_invocation?: boolean;
             /** Platform Targets */
             platform_targets?: string[];
             /** Version */
@@ -55948,7 +56225,7 @@ export interface components {
              * Is Public
              * @default false
              */
-            is_public: boolean;
+            is_public?: boolean;
         };
         /**
          * SkillInfo
@@ -55965,12 +56242,12 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /**
              * Skill Type
              * @default
              */
-            skill_type: string;
+            skill_type?: string;
             /** Category Path */
             category_path?: string[];
         };
@@ -56056,7 +56333,7 @@ export interface components {
              * Disable Auto Invocation
              * @default false
              */
-            disable_auto_invocation: boolean;
+            disable_auto_invocation?: boolean;
             /** Platform Targets */
             platform_targets?: string[];
             /** Version */
@@ -56070,22 +56347,22 @@ export interface components {
              * Is Active
              * @default true
              */
-            is_active: boolean;
+            is_active?: boolean;
             /**
              * Is System
              * @default false
              */
-            is_system: boolean;
+            is_system?: boolean;
             /**
              * Is Public
              * @default false
              */
-            is_public: boolean;
+            is_public?: boolean;
             /**
              * Sort Order
              * @default 0
              */
-            sort_order: number;
+            sort_order?: number;
             /** User Id */
             user_id?: string | null;
             /** Organization Id */
@@ -56123,7 +56400,7 @@ export interface components {
              * Max Steps
              * @default 1000
              */
-            max_steps: number;
+            max_steps?: number;
         };
         /**
          * SkipProposal
@@ -56174,20 +56451,20 @@ export interface components {
              * @description Free-text slide body used when `bullets` is empty.
              * @default
              */
-            body: string;
+            body?: string;
             /**
              * Notes
              * @description Speaker notes attached to the slide (visible in presenter view only).
              * @default
              */
-            notes: string;
+            notes?: string;
             /**
              * Layout
              * @description Slide layout: 'title' (title slide), 'title_content' (title + body/bullets), 'section' (section divider), or 'blank'.
              * @default title_content
              * @enum {string}
              */
-            layout: "title" | "title_content" | "section" | "blank";
+            layout?: "title" | "title_content" | "section" | "blank";
         };
         /** SmsActionAuthorizationRequest */
         SmsActionAuthorizationRequest: {
@@ -56217,7 +56494,7 @@ export interface components {
              * Expand Pad Pt
              * @default 1
              */
-            expand_pad_pt: number;
+            expand_pad_pt?: number;
         };
         /** SnapBboxResponse */
         SnapBboxResponse: {
@@ -56271,14 +56548,14 @@ export interface components {
              * Ok
              * @default true
              */
-            ok: boolean;
+            ok?: boolean;
             /** Captured At */
             captured_at?: string | null;
             /**
              * Stale
              * @default false
              */
-            stale: boolean;
+            stale?: boolean;
             /** Stale Hours */
             stale_hours?: number | null;
             /** Exact Rows */
@@ -56305,17 +56582,17 @@ export interface components {
              * Retention Days
              * @default 180
              */
-            retention_days: number;
+            retention_days?: number;
             /**
              * Pinned Rows
              * @default 0
              */
-            pinned_rows: number;
+            pinned_rows?: number;
             /**
              * Prune Eligible Rows
              * @default 0
              */
-            prune_eligible_rows: number;
+            prune_eligible_rows?: number;
             /** Error */
             error?: string | null;
         };
@@ -56367,14 +56644,14 @@ export interface components {
              * Char Count
              * @default 0
              */
-            char_count: number;
+            char_count?: number;
             /** Content Type */
             content_type?: string | null;
             /**
              * Is Good Scrape
              * @default false
              */
-            is_good_scrape: boolean;
+            is_good_scrape?: boolean;
             /** Quality Override */
             quality_override?: ("good" | "bad" | "complete") | null;
             /**
@@ -56392,12 +56669,12 @@ export interface components {
              * Is Current
              * @default true
              */
-            is_current: boolean;
+            is_current?: boolean;
             /**
              * Version
              * @default 1
              */
-            version: number;
+            version?: number;
             /** Extracted Links */
             extracted_links?: {
                 [key: string]: unknown;
@@ -56443,12 +56720,12 @@ export interface components {
              * Is Included
              * @default true
              */
-            is_included: boolean;
+            is_included?: boolean;
             /**
              * Is Stale
              * @default false
              */
-            is_stale: boolean;
+            is_stale?: boolean;
             /**
              * Scrape Status
              * @enum {string}
@@ -56462,22 +56739,22 @@ export interface components {
              * Keyword Count
              * @default 0
              */
-            keyword_count: number;
+            keyword_count?: number;
             /**
              * Has Content
              * @default false
              */
-            has_content: boolean;
+            has_content?: boolean;
             /**
              * Has Analysis
              * @default false
              */
-            has_analysis: boolean;
+            has_analysis?: boolean;
             /**
              * Server Attempts
              * @default 0
              */
-            server_attempts: number;
+            server_attempts?: number;
             /** Last Server Attempt At */
             last_server_attempt_at?: string | null;
             /** Last Server Failure Reason */
@@ -56486,7 +56763,7 @@ export interface components {
              * Server Gave Up
              * @default false
              */
-            server_gave_up: boolean;
+            server_gave_up?: boolean;
             /** Policy Category */
             policy_category?: string | null;
             /** Policy Reason */
@@ -56535,7 +56812,7 @@ export interface components {
              * Is Primary Source
              * @default false
              */
-            is_primary_source: boolean;
+            is_primary_source?: boolean;
             /** Assigned By */
             assigned_by: string;
         };
@@ -56547,7 +56824,7 @@ export interface components {
              * Is Primary Source
              * @default false
              */
-            is_primary_source: boolean;
+            is_primary_source?: boolean;
         };
         /** SourceUpdate */
         SourceUpdate: {
@@ -56581,13 +56858,13 @@ export interface components {
              * @description Provider voice id; empty lets the server select a gender-matched voice.
              * @default
              */
-            voice: string;
+            voice?: string;
             /**
              * Gender
              * @description Speaker gender used for voice matching: male, female, neutral, or empty.
              * @default
              */
-            gender: string;
+            gender?: string;
         };
         /** SpeechRequest */
         SpeechRequest: {
@@ -56612,20 +56889,20 @@ export interface components {
              * Model
              * @default tts-default
              */
-            model: string;
+            model?: string;
             /** Voice */
             voice?: string | null;
             /**
              * Format
              * @default wav
              */
-            format: string;
+            format?: string;
             /**
              * Quality
              * @default fast
              * @enum {string}
              */
-            quality: "fast" | "high_quality";
+            quality?: "fast" | "high_quality";
         };
         /** SpeechResponse */
         SpeechResponse: {
@@ -56657,7 +56934,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -56714,7 +56991,7 @@ export interface components {
          */
         StagePipeConfig: {
             /** @default ai */
-            pipe: components["schemas"]["PipeRequest"];
+            pipe?: components["schemas"]["PipeRequest"];
             /**
              * Escalate After Seconds
              * @description For human_then_ai / ai_then_human: how long to wait before handing the decision to the other pipe. None = wait indefinitely.
@@ -56726,7 +57003,7 @@ export interface components {
              * Skippable
              * @default true
              */
-            skippable: boolean;
+            skippable?: boolean;
         };
         /**
          * StageRef
@@ -56858,7 +57135,7 @@ export interface components {
             /** @description Defaults to human-with-AI-fallback — the one-click posture. */
             pipe_policy?: components["schemas"]["PipePolicy-Input"] | null;
             /** @default research */
-            start_stage: components["schemas"]["LoopStage"];
+            start_stage?: components["schemas"]["LoopStage"];
         };
         /**
          * StartRunBody
@@ -56891,13 +57168,13 @@ export interface components {
              * @default handoff_capable
              * @enum {string}
              */
-            mode: "handoff_capable" | "automation_only";
+            mode?: "handoff_capable" | "automation_only";
             /**
              * Execution Target
              * @default browser_fleet
              * @enum {string}
              */
-            execution_target: "browser_fleet" | "sandbox" | "local_surface";
+            execution_target?: "browser_fleet" | "sandbox" | "local_surface";
             /** Activation Key */
             activation_key: string;
             /** Runtime Execution Id */
@@ -56923,7 +57200,7 @@ export interface components {
              * Status
              * @default paused
              */
-            status: string;
+            status?: string;
             /** Frontier */
             frontier?: components["schemas"]["FrontierInvocation"][];
         } & {
@@ -56953,29 +57230,29 @@ export interface components {
              * Navigation
              * @default []
              */
-            navigation: components["schemas"]["NavLink"][];
+            navigation?: components["schemas"]["NavLink"][];
             /**
              * Components
              * @default []
              */
-            components: components["schemas"]["ComponentRead"][];
+            components?: components["schemas"]["ComponentRead"][];
             /**
              * Replaced Component Ids
              * @default []
              */
-            replaced_component_ids: string[];
+            replaced_component_ids?: string[];
             /**
              * Rejected Theme Properties
              * @default []
              */
-            rejected_theme_properties: string[];
+            rejected_theme_properties?: string[];
             /** Nav Token */
             nav_token: string;
             /**
              * Notes
              * @default []
              */
-            notes: string[];
+            notes?: string[];
         };
         /** StatelessApplicant */
         StatelessApplicant: {
@@ -56985,7 +57262,7 @@ export interface components {
              * Employee Id
              * @default
              */
-            employee_id: string;
+            employee_id?: string;
             /**
              * Date Of Birth
              * @description YYYY-MM-DD
@@ -57035,7 +57312,7 @@ export interface components {
              * Large Employer
              * @default false
              */
-            large_employer: boolean;
+            large_employer?: boolean;
         };
         /** StatelessClaimOut */
         StatelessClaimOut: {
@@ -57057,12 +57334,12 @@ export interface components {
              * Pain
              * @default 0
              */
-            pain: number;
+            pain?: number;
             /**
              * Industrial
              * @default 100
              */
-            industrial: number;
+            industrial?: number;
         };
         /** StatelessInjuryAttributes */
         StatelessInjuryAttributes: {
@@ -57126,29 +57403,29 @@ export interface components {
              * Is Blocked
              * @default false
              */
-            is_blocked: boolean;
+            is_blocked?: boolean;
             /** Blocked Reason */
             blocked_reason?: string | null;
             /**
              * Bytes Used
              * @default 0
              */
-            bytes_used: number;
+            bytes_used?: number;
             /**
              * Files Count
              * @default 0
              */
-            files_count: number;
+            files_count?: number;
             /**
              * Daily Upload Count
              * @default 0
              */
-            daily_upload_count: number;
+            daily_upload_count?: number;
             /**
              * Daily Upload Bytes
              * @default 0
              */
-            daily_upload_bytes: number;
+            daily_upload_bytes?: number;
             /** Max Storage Bytes */
             max_storage_bytes?: number | null;
             /** Max File Size Bytes */
@@ -57187,17 +57464,17 @@ export interface components {
              * Confidence
              * @default 0
              */
-            confidence: number;
+            confidence?: number;
             /**
              * Reason
              * @default
              */
-            reason: string;
+            reason?: string;
             /**
              * Applied
              * @default false
              */
-            applied: boolean;
+            applied?: boolean;
         };
         /** StoryAngleGenerateBody */
         StoryAngleGenerateBody: {
@@ -57205,12 +57482,12 @@ export interface components {
              * Max Angles
              * @default 12
              */
-            max_angles: number;
+            max_angles?: number;
             /**
              * Capture Pages
              * @default 8
              */
-            capture_pages: number;
+            capture_pages?: number;
         };
         /**
          * StoryAngleGenerateResult
@@ -57269,7 +57546,7 @@ export interface components {
              * Persist Output
              * @default false
              */
-            persist_output: boolean;
+            persist_output?: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -57283,7 +57560,7 @@ export interface components {
              * Reason
              * @default strip_metadata
              */
-            reason: string;
+            reason?: string;
         };
         /** StripRepeatedRegionsRequest */
         StripRepeatedRegionsRequest: {
@@ -57302,12 +57579,12 @@ export interface components {
              * Min Pages Ratio
              * @default 0.3333333333333333
              */
-            min_pages_ratio: number;
+            min_pages_ratio?: number;
             /**
              * Min Confidence
              * @default 0.5
              */
-            min_confidence: number;
+            min_confidence?: number;
         };
         /** StructuralVerdict */
         StructuralVerdict: {
@@ -57375,7 +57652,7 @@ export interface components {
              * Force Refresh
              * @default false
              */
-            force_refresh: boolean;
+            force_refresh?: boolean;
         };
         /** StructuredDataValidateResult */
         StructuredDataValidateResult: {
@@ -57400,12 +57677,12 @@ export interface components {
              * Error Count
              * @default 0
              */
-            error_count: number;
+            error_count?: number;
             /**
              * Warning Count
              * @default 0
              */
-            warning_count: number;
+            warning_count?: number;
         };
         /**
          * StuckRow
@@ -57505,7 +57782,7 @@ export interface components {
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
              * @default false
              */
-            use_user_agent_overrides: boolean;
+            use_user_agent_overrides?: boolean;
             /** Topic Id */
             topic_id?: string | null;
         };
@@ -57623,32 +57900,32 @@ export interface components {
              * Inherited From Base
              * @default false
              */
-            inherited_from_base: boolean;
+            inherited_from_base?: boolean;
             /**
              * Value Bindings
              * @default []
              */
-            value_bindings: string[];
+            value_bindings?: string[];
             /**
              * Values
              * @default []
              */
-            values: components["schemas"]["ManifestValueEntry"][];
+            values?: components["schemas"]["ManifestValueEntry"][];
             /**
              * Groups
              * @default []
              */
-            groups: components["schemas"]["ManifestGroupEntry"][];
+            groups?: components["schemas"]["ManifestGroupEntry"][];
             /**
              * Write Targets
              * @default []
              */
-            write_targets: components["schemas"]["ManifestWriteTargetEntry"][];
+            write_targets?: components["schemas"]["ManifestWriteTargetEntry"][];
             /**
              * Client Tools
              * @default []
              */
-            client_tools: components["schemas"]["ManifestClientToolEntry"][];
+            client_tools?: components["schemas"]["ManifestClientToolEntry"][];
             /** Intro */
             intro?: string | null;
         };
@@ -57679,13 +57956,13 @@ export interface components {
              * @description False (default for manual) = full pass; True = only the delta since the group's high-water mark.
              * @default false
              */
-            incremental: boolean;
+            incremental?: boolean;
             /**
              * Trigger Type
              * @default manual
              * @enum {string}
              */
-            trigger_type: "manual" | "batch";
+            trigger_type?: "manual" | "batch";
         };
         /** SweepResult */
         SweepResult: {
@@ -57731,7 +58008,7 @@ export interface components {
              * @default initial
              * @enum {string}
              */
-            iteration_mode: "initial" | "rebuild" | "update";
+            iteration_mode?: "initial" | "rebuild" | "update";
             /** Agent Id */
             agent_id?: string | null;
             /** User Input */
@@ -57743,7 +58020,7 @@ export interface components {
              * @description When true, load the caller's `user_preferences.research.agent_overrides` JSONB and use it as a fallback layer between `topic.agent_config` and the system defaults. When false (default), user prefs are ignored entirely. Missing/broken overrides silently fall through to defaults.
              * @default false
              */
-            use_user_agent_overrides: boolean;
+            use_user_agent_overrides?: boolean;
         };
         /** SynthesisResponse */
         SynthesisResponse: {
@@ -57778,12 +58055,12 @@ export interface components {
              * Is Current
              * @default true
              */
-            is_current: boolean;
+            is_current?: boolean;
             /**
              * Version
              * @default 1
              */
-            version: number;
+            version?: number;
             /**
              * Iteration Mode
              * @enum {string}
@@ -57793,7 +58070,7 @@ export interface components {
              * Status
              * @default success
              */
-            status: string;
+            status?: string;
             /** Error */
             error?: string | null;
             /** Created At */
@@ -57946,62 +58223,62 @@ export interface components {
              * Intro
              * @default
              */
-            intro: string;
+            intro?: string;
             /**
              * Outro
              * @default
              */
-            outro: string;
+            outro?: string;
             /**
              * Append Sections
              * @default []
              */
-            append_sections: string[];
+            append_sections?: string[];
             /**
              * Prepend Sections
              * @default []
              */
-            prepend_sections: string[];
+            prepend_sections?: string[];
             /**
              * Content Blocks
              * @default []
              */
-            content_blocks: string[];
+            content_blocks?: string[];
             /**
              * Tools List
              * @default []
              */
-            tools_list: string[];
+            tools_list?: string[];
             /**
              * Action Types
              * @default []
              */
-            action_types: string[];
+            action_types?: string[];
             /**
              * Include Date
              * @default true
              */
-            include_date: boolean;
+            include_date?: boolean;
             /**
              * Include Code Guidelines
              * @default false
              */
-            include_code_guidelines: boolean;
+            include_code_guidelines?: boolean;
             /**
              * Include Safety Guidelines
              * @default false
              */
-            include_safety_guidelines: boolean;
+            include_safety_guidelines?: boolean;
             /**
              * Include Actions Guidance
              * @default false
              */
-            include_actions_guidance: boolean;
+            include_actions_guidance?: boolean;
             /**
              * Include Context Block
              * @default true
              */
-            include_context_block: boolean;
+            include_context_block?: boolean;
             /** Version */
             version?: string | null;
             /** Category */
@@ -58061,17 +58338,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -58122,12 +58399,12 @@ export interface components {
              * Keywords Text
              * @default
              */
-            keywords_text: string;
+            keywords_text?: string;
             /**
              * Search Results Text
              * @default
              */
-            search_results_text: string;
+            search_results_text?: string;
         };
         /** TagResponse */
         TagResponse: {
@@ -58141,14 +58418,14 @@ export interface components {
              * Sort Order
              * @default 0
              */
-            sort_order: number;
+            sort_order?: number;
             /** Created At */
             created_at: string;
             /**
              * Source Count
              * @default 0
              */
-            source_count: number;
+            source_count?: number;
         };
         /**
          * TagSuggestionsState
@@ -58192,14 +58469,14 @@ export interface components {
              * Queue
              * @default default
              */
-            queue: string;
+            queue?: string;
             /** Surfaces */
             surfaces?: string[];
             /**
              * Enabled
              * @default true
              */
-            enabled: boolean;
+            enabled?: boolean;
             /** Expires At */
             expires_at?: string | null;
             /** Tags */
@@ -58211,7 +58488,7 @@ export interface components {
              * @description Create even when an identical live schedule already exists. Default false: an identical create returns the EXISTING schedule instead of inserting a twin (see scheduler.duplicate_guard), so a double-click or a retried MCP call cannot produce two always-on schedules doing one job. Set true only when a second schedule is genuinely wanted.
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /**
          * TaskDetailResponse
@@ -58229,7 +58506,7 @@ export interface components {
              * @description True when a create returned an EXISTING identical schedule instead of inserting a new one. The response is a success (HTTP 200, not 201) and `task` is the schedule that was already there — a client must not tell the user it created something new.
              * @default false
              */
-            deduplicated: boolean;
+            deduplicated?: boolean;
         };
         /** TaskInputPart */
         TaskInputPart: {
@@ -58249,22 +58526,22 @@ export interface components {
              * Template
              * @default full
              */
-            template: string;
+            template?: string;
             /**
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -58352,7 +58629,7 @@ export interface components {
              * @default semi
              * @enum {string}
              */
-            autonomy_level: "auto" | "semi" | "manual";
+            autonomy_level?: "auto" | "semi" | "manual";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -58402,12 +58679,12 @@ export interface components {
              * Popularity
              * @default 0
              */
-            popularity: number;
+            popularity?: number;
             /**
              * Step Count
              * @default 0
              */
-            step_count: number;
+            step_count?: number;
             /** Definition */
             definition?: {
                 [key: string]: unknown;
@@ -58427,7 +58704,7 @@ export interface components {
              * Is System
              * @default false
              */
-            is_system: boolean;
+            is_system?: boolean;
             /** Keyword Templates */
             keyword_templates?: string[];
             /** Default Tags */
@@ -58445,7 +58722,7 @@ export interface components {
              * @default semi
              * @enum {string}
              */
-            autonomy_level: "auto" | "semi" | "manual";
+            autonomy_level?: "auto" | "semi" | "manual";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -58490,7 +58767,7 @@ export interface components {
              * Message
              * @default
              */
-            message: string;
+            message?: string;
             /** Available */
             available?: string[];
         };
@@ -58534,12 +58811,12 @@ export interface components {
              * Text
              * @default
              */
-            text: string;
+            text?: string;
             /**
              * Id
              * @default
              */
-            id: string;
+            id?: string;
             /** Citations */
             citations?: components["schemas"]["NormalizedCitation"][];
         };
@@ -58559,12 +58836,12 @@ export interface components {
              * Text
              * @default
              */
-            text: string;
+            text?: string;
             /**
              * Id
              * @default
              */
-            id: string;
+            id?: string;
             /** Provider */
             provider?: ("openai" | "anthropic" | "google" | "cerebras" | "moonshot" | "together" | "groq" | "xai" | "generic_openai") | null;
             /** Signature */
@@ -58594,7 +58871,7 @@ export interface components {
              * Text
              * @default
              */
-            text: string;
+            text?: string;
         };
         /** ThreadMessageView */
         ThreadMessageView: {
@@ -58627,12 +58904,12 @@ export interface components {
              * Call Id
              * @default
              */
-            call_id: string;
+            call_id?: string;
             /**
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /** Arguments */
             arguments?: {
                 [key: string]: unknown;
@@ -58648,12 +58925,12 @@ export interface components {
              * Findings
              * @default []
              */
-            findings: components["schemas"]["ToolFinding"][];
+            findings?: components["schemas"]["ToolFinding"][];
             /**
              * Recent Failures
              * @default []
              */
-            recent_failures: components["schemas"]["ToolFailureRow"][];
+            recent_failures?: components["schemas"]["ToolFailureRow"][];
         };
         /** ToolDetailResponse */
         ToolDetailResponse: {
@@ -58706,7 +58983,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -58733,7 +59010,7 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
             /** Added Tool Ids */
             added_tool_ids?: string[];
             /** Tools */
@@ -58794,7 +59071,7 @@ export interface components {
             /** Message */
             message: string;
             /** @default {} */
-            detail: components["schemas"]["JsonValue"];
+            detail?: components["schemas"]["JsonValue"];
         };
         /**
          * ToolInfo
@@ -58807,7 +59084,7 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Category */
             category?: string | null;
             /** Tags */
@@ -58816,7 +59093,7 @@ export interface components {
              * Admin Only
              * @default false
              */
-            admin_only: boolean;
+            admin_only?: boolean;
         };
         /**
          * ToolRecord
@@ -58860,27 +59137,27 @@ export interface components {
              * Call Id
              * @default
              */
-            call_id: string;
+            call_id?: string;
             /**
              * Tool Use Id
              * @default
              */
-            tool_use_id: string;
+            tool_use_id?: string;
             /**
              * Name
              * @default
              */
-            name: string;
+            name?: string;
             /**
              * Is Error
              * @default false
              */
-            is_error: boolean;
+            is_error?: boolean;
             /**
              * Output Chars
              * @default 0
              */
-            output_chars: number;
+            output_chars?: number;
             /** Output Preview */
             output_preview?: {
                 [key: string]: unknown;
@@ -58940,36 +59217,36 @@ export interface components {
              * Is Active
              * @default true
              */
-            is_active: boolean;
+            is_active?: boolean;
             /**
              * Admin Only
              * @default false
              */
-            admin_only: boolean;
+            admin_only?: boolean;
             /**
              * Validation Exempt
              * @default false
              */
-            validation_exempt: boolean;
+            validation_exempt?: boolean;
             /**
              * Surfaces
              * @default []
              */
-            surfaces: string[];
+            surfaces?: string[];
             /** @default {} */
-            parameters: components["schemas"]["JsonValue"];
+            parameters?: components["schemas"]["JsonValue"];
             /** Version */
             version?: number | null;
             /**
              * Declared In Code
              * @default false
              */
-            declared_in_code: boolean;
+            declared_in_code?: boolean;
             /**
              * Drift Count
              * @default 0
              */
-            drift_count: number;
+            drift_count?: number;
             /** Drift Severity */
             drift_severity?: string | null;
         } & {
@@ -59009,7 +59286,7 @@ export interface components {
              * Inactive
              * @default 0
              */
-            inactive: number;
+            inactive?: number;
         };
         /** ToolTestExecuteRequest */
         ToolTestExecuteRequest: {
@@ -59128,12 +59405,12 @@ export interface components {
              * Language
              * @default en
              */
-            language: string;
+            language?: string;
             /**
              * Limit
              * @default 50
              */
-            limit: number;
+            limit?: number;
         };
         /** TopicAssignResult */
         TopicAssignResult: {
@@ -59146,19 +59423,19 @@ export interface components {
              * Eligible
              * @default 0
              */
-            eligible: number;
+            eligible?: number;
             /** Topics Created */
             topics_created?: string[];
             /**
              * Keywords Assigned
              * @default 0
              */
-            keywords_assigned: number;
+            keywords_assigned?: number;
             /**
              * Unassignable
              * @default 0
              */
-            unassignable: number;
+            unassignable?: number;
             /** Unknown Topic Refs */
             unknown_topic_refs?: string[];
         };
@@ -59178,22 +59455,22 @@ export interface components {
              * Total Llm Calls
              * @default 0
              */
-            total_llm_calls: number;
+            total_llm_calls?: number;
             /**
              * Total Input Tokens
              * @default 0
              */
-            total_input_tokens: number;
+            total_input_tokens?: number;
             /**
              * Total Output Tokens
              * @default 0
              */
-            total_output_tokens: number;
+            total_output_tokens?: number;
             /**
              * Total Estimated Cost Usd
              * @default 0
              */
-            total_estimated_cost_usd: number;
+            total_estimated_cost_usd?: number;
             page_analyses?: components["schemas"]["CostBreakdownItem"];
             keyword_syntheses?: components["schemas"]["CostBreakdownItem"];
             topic_syntheses?: components["schemas"]["CostBreakdownItem"];
@@ -59207,22 +59484,22 @@ export interface components {
              * Total Llm Calls
              * @default 0
              */
-            total_llm_calls: number;
+            total_llm_calls?: number;
             /**
              * Total Input Tokens
              * @default 0
              */
-            total_input_tokens: number;
+            total_input_tokens?: number;
             /**
              * Total Output Tokens
              * @default 0
              */
-            total_output_tokens: number;
+            total_output_tokens?: number;
             /**
              * Total Estimated Cost Usd
              * @default 0
              */
-            total_estimated_cost_usd: number;
+            total_estimated_cost_usd?: number;
             page_analyses?: components["schemas"]["CostBreakdownItem"];
             keyword_syntheses?: components["schemas"]["CostBreakdownItem"];
             topic_syntheses?: components["schemas"]["CostBreakdownItem"];
@@ -59248,7 +59525,7 @@ export interface components {
              * Name
              * @default Untitled Research
              */
-            name: string;
+            name?: string;
             /** Description */
             description?: string | null;
             /**
@@ -59256,7 +59533,7 @@ export interface components {
              * @default semi
              * @enum {string}
              */
-            autonomy_level: "auto" | "semi" | "manual";
+            autonomy_level?: "auto" | "semi" | "manual";
             /** Template Id */
             template_id?: string | null;
             /**
@@ -59264,7 +59541,7 @@ export interface components {
              * @default brave
              * @enum {string}
              */
-            default_search_provider: "brave" | "google";
+            default_search_provider?: "brave" | "google";
             /** Default Search Params */
             default_search_params?: {
                 [key: string]: unknown;
@@ -59273,47 +59550,47 @@ export interface components {
              * Good Scrape Threshold
              * @default 1000
              */
-            good_scrape_threshold: number;
+            good_scrape_threshold?: number;
             /**
              * Max Keywords
              * @default 3
              */
-            max_keywords: number;
+            max_keywords?: number;
             /**
              * Scrapes Per Keyword
              * @default 5
              */
-            scrapes_per_keyword: number;
+            scrapes_per_keyword?: number;
             /**
              * Analyses Per Keyword
              * @default 5
              */
-            analyses_per_keyword: number;
+            analyses_per_keyword?: number;
             /**
              * Max Keyword Syntheses
              * @default 3
              */
-            max_keyword_syntheses: number;
+            max_keyword_syntheses?: number;
             /**
              * Max Topic Syntheses
              * @default 1
              */
-            max_topic_syntheses: number;
+            max_topic_syntheses?: number;
             /**
              * Max Documents
              * @default 1
              */
-            max_documents: number;
+            max_documents?: number;
             /**
              * Max Tag Consolidations
              * @default 0
              */
-            max_tag_consolidations: number;
+            max_tag_consolidations?: number;
             /**
              * Max Auto Tag Calls
              * @default 0
              */
-            max_auto_tag_calls: number;
+            max_auto_tag_calls?: number;
             /** Tone Profile */
             tone_profile?: string | null;
             /** Outputs */
@@ -59355,44 +59632,44 @@ export interface components {
              * Max Keywords
              * @default 3
              */
-            max_keywords: number;
+            max_keywords?: number;
             /** Scrapes Per Keyword */
             scrapes_per_keyword: number;
             /**
              * Analyses Per Keyword
              * @default 5
              */
-            analyses_per_keyword: number;
+            analyses_per_keyword?: number;
             /**
              * Max Keyword Syntheses
              * @default 3
              */
-            max_keyword_syntheses: number;
+            max_keyword_syntheses?: number;
             /**
              * Max Topic Syntheses
              * @default 1
              */
-            max_topic_syntheses: number;
+            max_topic_syntheses?: number;
             /**
              * Max Project Syntheses
              * @default 1
              */
-            max_project_syntheses: number;
+            max_project_syntheses?: number;
             /**
              * Max Documents
              * @default 1
              */
-            max_documents: number;
+            max_documents?: number;
             /**
              * Max Tag Consolidations
              * @default 0
              */
-            max_tag_consolidations: number;
+            max_tag_consolidations?: number;
             /**
              * Max Auto Tag Calls
              * @default 0
              */
-            max_auto_tag_calls: number;
+            max_auto_tag_calls?: number;
             /** Tone Profile */
             tone_profile?: string | null;
             /** Outputs */
@@ -59481,7 +59758,7 @@ export interface components {
              * Truncated
              * @default false
              */
-            truncated: boolean;
+            truncated?: boolean;
             /** Total Available */
             total_available?: number | null;
         };
@@ -59596,7 +59873,7 @@ export interface components {
              * Mention Count
              * @default 0
              */
-            mention_count: number;
+            mention_count?: number;
         };
         /**
          * Trajectory
@@ -59617,12 +59894,12 @@ export interface components {
              * Request Text
              * @default
              */
-            request_text: string;
+            request_text?: string;
             /**
              * Started At
              * @default
              */
-            started_at: string;
+            started_at?: string;
             /** Cost Usd */
             cost_usd?: number | null;
             /** Duration Ms */
@@ -59631,7 +59908,7 @@ export interface components {
              * Final Text
              * @default
              */
-            final_text: string;
+            final_text?: string;
         };
         /**
          * TrajectoryCluster
@@ -59652,22 +59929,22 @@ export interface components {
              * Min Internal Similarity
              * @default 0
              */
-            min_internal_similarity: number;
+            min_internal_similarity?: number;
             /**
              * Max Instance Similarity
              * @default 0
              */
-            max_instance_similarity: number;
+            max_instance_similarity?: number;
             /**
              * Distinct Conversations
              * @default 0
              */
-            distinct_conversations: number;
+            distinct_conversations?: number;
             /**
              * Mean Arg Coverage
              * @default 0
              */
-            mean_arg_coverage: number;
+            mean_arg_coverage?: number;
         };
         /**
          * TrajectoryStep
@@ -59685,22 +59962,22 @@ export interface components {
              * Arg Keys
              * @default []
              */
-            arg_keys: string[];
+            arg_keys?: string[];
             /**
              * Instance
              * @default
              */
-            instance: string;
+            instance?: string;
             /**
              * Args Recovered
              * @default false
              */
-            args_recovered: boolean;
+            args_recovered?: boolean;
             /**
              * Call Id
              * @default
              */
-            call_id: string;
+            call_id?: string;
         };
         /** TranscriptInputPart */
         TranscriptInputPart: {
@@ -59712,17 +59989,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -59746,17 +60023,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -59795,7 +60072,7 @@ export interface components {
              * Model
              * @default stt-default
              */
-            model: string;
+            model?: string;
         };
         /** TranscriptionMeta */
         TranscriptionMeta: {
@@ -59854,7 +60131,7 @@ export interface components {
              * Model
              * @default stt-default
              */
-            model: string;
+            model?: string;
         };
         /**
          * TrashFileEntry
@@ -59937,7 +60214,7 @@ export interface components {
              * Enabled
              * @default true
              */
-            enabled: boolean;
+            enabled?: boolean;
         };
         /**
          * TriggerCreateRequest
@@ -59959,7 +60236,7 @@ export interface components {
              * Enabled
              * @default true
              */
-            enabled: boolean;
+            enabled?: boolean;
         };
         /**
          * TriggerFireRecord
@@ -60188,7 +60465,7 @@ export interface components {
              * Confidence
              * @default 0
              */
-            confidence: number;
+            confidence?: number;
             /** Detail */
             detail?: string | null;
         };
@@ -60557,38 +60834,38 @@ export interface components {
              * Per Detector Enabled
              * @default {}
              */
-            per_detector_enabled: {
+            per_detector_enabled?: {
                 [key: string]: boolean;
             };
             /**
              * Default Tier Per Detector
              * @default {}
              */
-            default_tier_per_detector: {
+            default_tier_per_detector?: {
                 [key: string]: string;
             };
             /**
              * Custom Patterns
              * @default []
              */
-            custom_patterns: components["schemas"]["JsonValue"][];
+            custom_patterns?: components["schemas"]["JsonValue"][];
             /**
              * Default Redaction Mode
              * @default reversible
              */
-            default_redaction_mode: string;
+            default_redaction_mode?: string;
             /**
              * Per File Type Overrides
              * @default {}
              */
-            per_file_type_overrides: {
+            per_file_type_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Substitute Formats
              * @default {}
              */
-            substitute_formats: {
+            substitute_formats?: {
                 [key: string]: string;
             };
             updated_at?: components["schemas"]["JsonValue"] | null;
@@ -60652,7 +60929,7 @@ export interface components {
              * Kind
              * @default general
              */
-            kind: string;
+            kind?: string;
             /** Short Code */
             short_code?: string | null;
             /** Organization Id */
@@ -60684,12 +60961,12 @@ export interface components {
              * Access
              * @default owner
              */
-            access: string;
+            access?: string;
             /**
              * Read Only
              * @default false
              */
-            read_only: boolean;
+            read_only?: boolean;
         };
         /** UserDataStoreDetailMember */
         UserDataStoreDetailMember: {
@@ -60748,12 +61025,12 @@ export interface components {
              * Access
              * @default owner
              */
-            access: string;
+            access?: string;
             /**
              * Read Only
              * @default false
              */
-            read_only: boolean;
+            read_only?: boolean;
         };
         /** UserDataStorePatch */
         UserDataStorePatch: {
@@ -60929,7 +61206,7 @@ export interface components {
              * Inject Into Sandbox
              * @default true
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
         };
         /** UserSecretBulkEnvResponse */
         UserSecretBulkEnvResponse: {
@@ -60967,12 +61244,12 @@ export interface components {
              * Inject Into Sandbox
              * @default true
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
             /**
              * Upsert
              * @default false
              */
-            upsert: boolean;
+            upsert?: boolean;
         };
         /** UserSecretListResponse */
         UserSecretListResponse: {
@@ -60992,7 +61269,7 @@ export interface components {
              * Value Hint
              * @default
              */
-            value_hint: string;
+            value_hint?: string;
             /** Description */
             description?: string | null;
             /** Category */
@@ -61001,17 +61278,17 @@ export interface components {
              * Is Active
              * @default true
              */
-            is_active: boolean;
+            is_active?: boolean;
             /**
              * Inject Into Sandbox
              * @default true
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
             /**
              * Value Version
              * @default 1
              */
-            value_version: number;
+            value_version?: number;
             /** Last Used At */
             last_used_at?: string | null;
             /** Created At */
@@ -61124,7 +61401,7 @@ export interface components {
              * @default external
              * @constant
              */
-            origin: "external";
+            origin?: "external";
             /** Mime Type */
             mime_type?: string | null;
         };
@@ -61136,12 +61413,12 @@ export interface components {
              * Tz
              * @default UTC
              */
-            tz: string;
+            tz?: string;
             /**
              * Next N
              * @default 5
              */
-            next_n: number;
+            next_n?: number;
         };
         /** ValidateCronResponse */
         ValidateCronResponse: {
@@ -61228,7 +61505,7 @@ export interface components {
              * Severity
              * @default error
              */
-            severity: string;
+            severity?: string;
         };
         /** ValidationReportResponse */
         ValidationReportResponse: {
@@ -61241,7 +61518,7 @@ export interface components {
              * Import Failures
              * @default []
              */
-            import_failures: string[];
+            import_failures?: string[];
         };
         /** ValidationResult */
         ValidationResult: {
@@ -61251,7 +61528,7 @@ export interface components {
              * Issues
              * @default []
              */
-            issues: components["schemas"]["ValidationIssue"][];
+            issues?: components["schemas"]["ValidationIssue"][];
         };
         /** VariableAssignmentSpec */
         VariableAssignmentSpec: {
@@ -61260,7 +61537,7 @@ export interface components {
              * @description Allow callers to request a server-side random option assignment.
              * @default false
              */
-            random: boolean;
+            random?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -61327,7 +61604,7 @@ export interface components {
              * Blocking
              * @default false
              */
-            blocking: boolean;
+            blocking?: boolean;
             /** Spilled Text */
             spilled_text?: string | null;
         };
@@ -61347,7 +61624,7 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Default */
             default?: unknown;
         };
@@ -61364,17 +61641,17 @@ export interface components {
              * Caution
              * @default false
              */
-            caution: boolean;
+            caution?: boolean;
             /**
              * Blocking
              * @default false
              */
-            blocking: boolean;
+            blocking?: boolean;
             /**
              * Lossy
              * @default false
              */
-            lossy: boolean;
+            lossy?: boolean;
         };
         /**
          * VariableVerdictKind
@@ -61425,12 +61702,12 @@ export interface components {
              * Definition Key
              * @default website_login
              */
-            definition_key: string;
+            definition_key?: string;
             /**
              * Definition Version
              * @default 1
              */
-            definition_version: number;
+            definition_version?: number;
             /** Provider Key */
             provider_key?: string | null;
             /** Description */
@@ -61462,7 +61739,7 @@ export interface components {
              * Generated
              * @default false
              */
-            generated: boolean;
+            generated?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -61486,7 +61763,7 @@ export interface components {
              * Media Type
              * @default application/octet-stream
              */
-            media_type: string;
+            media_type?: string;
             /** Size Bytes */
             size_bytes: number;
             /**
@@ -61494,12 +61771,12 @@ export interface components {
              * @default revealable
              * @enum {string}
              */
-            handling: "visible" | "revealable" | "sealed";
+            handling?: "visible" | "revealable" | "sealed";
             /**
              * Value Version
              * @default 1
              */
-            value_version: number;
+            value_version?: number;
             /** Last Used At */
             last_used_at?: string | null;
             /** Created At */
@@ -61532,7 +61809,7 @@ export interface components {
              * Clear Description
              * @default false
              */
-            clear_description: boolean;
+            clear_description?: boolean;
             /** File Name */
             file_name?: string | null;
             /** Handling */
@@ -61572,22 +61849,22 @@ export interface components {
              * Can Use
              * @default false
              */
-            can_use: boolean;
+            can_use?: boolean;
             /**
              * Can Edit
              * @default false
              */
-            can_edit: boolean;
+            can_edit?: boolean;
             /**
              * Can Reveal
              * @default false
              */
-            can_reveal: boolean;
+            can_reveal?: boolean;
             /**
              * Can Manage
              * @default false
              */
-            can_manage: boolean;
+            can_manage?: boolean;
         };
         /** VaultEffectiveEnvResponse */
         VaultEffectiveEnvResponse: {
@@ -61633,7 +61910,7 @@ export interface components {
              * Clear Env Key
              * @default false
              */
-            clear_env_key: boolean;
+            clear_env_key?: boolean;
             /** Description */
             description?: string | null;
             /** Is Active */
@@ -61658,32 +61935,32 @@ export interface components {
              * Handling
              * @default revealable
              */
-            handling: string;
+            handling?: string;
             /**
              * Editable
              * @default true
              */
-            editable: boolean;
+            editable?: boolean;
             /**
              * Inject Into Sandbox
              * @default false
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
             /**
              * Value Hint
              * @default
              */
-            value_hint: string;
+            value_hint?: string;
             /**
              * Value Version
              * @default 1
              */
-            value_version: number;
+            value_version?: number;
             /**
              * Is Active
              * @default true
              */
-            is_active: boolean;
+            is_active?: boolean;
             /** Description */
             description?: string | null;
             /** Created At */
@@ -61763,12 +62040,12 @@ export interface components {
              * Can Use
              * @default true
              */
-            can_use: boolean;
+            can_use?: boolean;
             /**
              * Can Manage
              * @default false
              */
-            can_manage: boolean;
+            can_manage?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -61792,17 +62069,17 @@ export interface components {
              * Email
              * @default
              */
-            email: string;
+            email?: string;
             /**
              * Can Use
              * @default true
              */
-            can_use: boolean;
+            can_use?: boolean;
             /**
              * Can Manage
              * @default false
              */
-            can_manage: boolean;
+            can_manage?: boolean;
             /** Granted By */
             granted_by?: string | null;
             /** Created At */
@@ -61858,7 +62135,7 @@ export interface components {
              * Inject Into Sandbox
              * @default false
              */
-            inject_into_sandbox: boolean;
+            inject_into_sandbox?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -61898,12 +62175,12 @@ export interface components {
              * Definition Key
              * @default custom
              */
-            definition_key: string;
+            definition_key?: string;
             /**
              * Definition Version
              * @default 1
              */
-            definition_version: number;
+            definition_version?: number;
             /** Provider Key */
             provider_key?: string | null;
             /** Description */
@@ -61914,7 +62191,7 @@ export interface components {
              * Source
              * @default manual
              */
-            source: string;
+            source?: string;
         } & {
             [key: string]: unknown;
         };
@@ -61937,12 +62214,12 @@ export interface components {
              * Definition Key
              * @default custom
              */
-            definition_key: string;
+            definition_key?: string;
             /**
              * Definition Version
              * @default 1
              */
-            definition_version: number;
+            definition_version?: number;
             /** Provider Key */
             provider_key?: string | null;
             /** Display Name */
@@ -61955,17 +62232,17 @@ export interface components {
              * Status
              * @default active
              */
-            status: string;
+            status?: string;
             /**
              * Source
              * @default manual
              */
-            source: string;
+            source?: string;
             /**
              * Access Mode
              * @default all_members
              */
-            access_mode: string;
+            access_mode?: string;
             /** Lifecycle */
             lifecycle?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -61976,7 +62253,7 @@ export interface components {
              * Uri Match Mode
              * @default host
              */
-            uri_match_mode: string;
+            uri_match_mode?: string;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -61987,7 +62264,7 @@ export interface components {
              * Browser Fill Enabled
              * @default false
              */
-            browser_fill_enabled: boolean;
+            browser_fill_enabled?: boolean;
             /** Created At */
             created_at: string;
             /** Updated At */
@@ -62045,7 +62322,7 @@ export interface components {
              * Clear Notes
              * @default false
              */
-            clear_notes: boolean;
+            clear_notes?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -62278,7 +62555,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** VerifyRequest */
         VerifyRequest: {
@@ -62321,12 +62598,12 @@ export interface components {
              * Max Urls
              * @default 2000
              */
-            max_urls: number;
+            max_urls?: number;
             /**
              * Concurrency
              * @default 8
              */
-            concurrency: number;
+            concurrency?: number;
         };
         /** VersionHealth */
         VersionHealth: {
@@ -62343,17 +62620,17 @@ export interface components {
              * X
              * @default 0
              */
-            x: number;
+            x?: number;
             /**
              * Y
              * @default 0
              */
-            y: number;
+            y?: number;
             /**
              * Zoom
              * @default 1
              */
-            zoom: number;
+            zoom?: number;
         };
         /** ViewportBlock */
         ViewportBlock: {
@@ -62366,7 +62643,7 @@ export interface components {
              * @default disabled
              * @constant
              */
-            resize_negotiation: "disabled";
+            resize_negotiation?: "disabled";
         };
         /**
          * VirtualAdapterDescriptor
@@ -62387,52 +62664,52 @@ export interface components {
              * List
              * @default true
              */
-            list: boolean;
+            list?: boolean;
             /**
              * Read
              * @default true
              */
-            read: boolean;
+            read?: boolean;
             /**
              * Write
              * @default false
              */
-            write: boolean;
+            write?: boolean;
             /**
              * Rename
              * @default false
              */
-            rename: boolean;
+            rename?: boolean;
             /**
              * Delete
              * @default false
              */
-            delete: boolean;
+            delete?: boolean;
             /**
              * Move
              * @default false
              */
-            move: boolean;
+            move?: boolean;
             /**
              * Folders
              * @default false
              */
-            folders: boolean;
+            folders?: boolean;
             /**
              * Binary
              * @default false
              */
-            binary: boolean;
+            binary?: boolean;
             /**
              * Versions
              * @default false
              */
-            versions: boolean;
+            versions?: boolean;
             /**
              * Multi Field
              * @default false
              */
-            multi_field: boolean;
+            multi_field?: boolean;
         };
         /** VirtualContent */
         VirtualContent: {
@@ -62621,14 +62898,14 @@ export interface components {
              * Linked Mentions
              * @default 0
              */
-            linked_mentions: number;
+            linked_mentions?: number;
             /** Avg Hit Score */
             avg_hit_score?: number | null;
             /**
              * Is Brand
              * @default false
              */
-            is_brand: boolean;
+            is_brand?: boolean;
         };
         /**
          * WalkHop
@@ -62727,7 +63004,7 @@ export interface components {
              * Query Error
              * @default false
              */
-            query_error: boolean;
+            query_error?: boolean;
         };
         /** WaterfallResult */
         WaterfallResult: {
@@ -62743,12 +63020,12 @@ export interface components {
              * Personal Found
              * @default 0
              */
-            personal_found: number;
+            personal_found?: number;
             /**
              * Stopped Because
              * @default
              */
-            stopped_because: string;
+            stopped_because?: string;
         };
         /**
          * WaterfallStep
@@ -62763,12 +63040,12 @@ export interface components {
              * From Cache
              * @default false
              */
-            from_cache: boolean;
+            from_cache?: boolean;
             /**
              * Found
              * @default 0
              */
-            found: number;
+            found?: number;
             /** Skipped Reason */
             skipped_reason?: string | null;
             /** Error */
@@ -62963,12 +63240,12 @@ export interface components {
              * Id
              * @default
              */
-            id: string;
+            id?: string;
             /**
              * Status
              * @default
              */
-            status: string;
+            status?: string;
         };
         /** WebpageInputPart */
         WebpageInputPart: {
@@ -62988,17 +63265,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
         };
@@ -63021,7 +63298,7 @@ export interface components {
              * Key
              * @default candidate
              */
-            key: string;
+            key?: string;
             /** Delta */
             delta?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -63041,12 +63318,12 @@ export interface components {
              * Sample Count
              * @default 0
              */
-            sample_count: number;
+            sample_count?: number;
             /**
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
             /** Pinned Model */
             pinned_model?: string | null;
             /** Faithful */
@@ -63081,14 +63358,14 @@ export interface components {
              * Samples
              * @default 3
              */
-            samples: number;
+            samples?: number;
             /** Finding Id */
             finding_id?: string | null;
             /**
              * Judge
              * @default true
              */
-            judge: boolean;
+            judge?: boolean;
         };
         /** WireReplayResult */
         WireReplayResult: {
@@ -63102,7 +63379,7 @@ export interface components {
              * Total Cost Usd
              * @default 0
              */
-            total_cost_usd: number;
+            total_cost_usd?: number;
             /** Reason */
             reason?: string | null;
         };
@@ -63135,7 +63412,7 @@ export interface components {
              * Sample Count
              * @default 0
              */
-            sample_count: number;
+            sample_count?: number;
             /** Samples */
             samples: {
                 [key: string]: unknown;
@@ -63144,12 +63421,12 @@ export interface components {
              * Output Kind
              * @default text
              */
-            output_kind: string;
+            output_kind?: string;
             /**
              * Cost Usd
              * @default 0
              */
-            cost_usd: number;
+            cost_usd?: number;
             /** Fidelity */
             fidelity: {
                 [key: string]: unknown;
@@ -63183,17 +63460,17 @@ export interface components {
              * Convert To Text
              * @default true
              */
-            convert_to_text: boolean;
+            convert_to_text?: boolean;
             /**
              * Optional Context
              * @default false
              */
-            optional_context: boolean;
+            optional_context?: boolean;
             /**
              * Keep Fresh
              * @default false
              */
-            keep_fresh: boolean;
+            keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
             /** Template */
@@ -63215,17 +63492,17 @@ export interface components {
              * Worker Count
              * @default 0
              */
-            worker_count: number;
+            worker_count?: number;
             /**
              * Fresh Count
              * @default 0
              */
-            fresh_count: number;
+            fresh_count?: number;
             /**
              * Workers
              * @default []
              */
-            workers: components["schemas"]["WorkerHeartbeatRecord"][];
+            workers?: components["schemas"]["WorkerHeartbeatRecord"][];
             /** Checked At */
             checked_at?: string | null;
             /** Note */
@@ -63277,17 +63554,17 @@ export interface components {
              * Total Runs
              * @default 0
              */
-            total_runs: number;
+            total_runs?: number;
             /**
              * Total Cost Usd
              * @default 0
              */
-            total_cost_usd: number;
+            total_cost_usd?: number;
             /**
              * Avg Run Cost Usd
              * @default 0
              */
-            avg_run_cost_usd: number;
+            avg_run_cost_usd?: number;
             /** Runs Per Day */
             runs_per_day?: components["schemas"]["DailyCostBreakdown"][];
         };
@@ -63336,12 +63613,12 @@ export interface components {
              * Producers Checked
              * @default 0
              */
-            producers_checked: number;
+            producers_checked?: number;
             /**
              * Assists Created
              * @default 0
              */
-            assists_created: number;
+            assists_created?: number;
             /** Breaches */
             breaches?: components["schemas"]["YieldBreachOut"][];
             /** Error */
@@ -63356,22 +63633,22 @@ export interface components {
              * Min Produced For Verdict
              * @default 20
              */
-            min_produced_for_verdict: number;
+            min_produced_for_verdict?: number;
             /**
              * Yield Floor
              * @default 0.1
              */
-            yield_floor: number;
+            yield_floor?: number;
             /**
              * Never Decided Min Age Days
              * @default 3
              */
-            never_decided_min_age_days: number;
+            never_decided_min_age_days?: number;
             /**
              * No Signal Min Cost Usd
              * @default 1
              */
-            no_signal_min_cost_usd: number;
+            no_signal_min_cost_usd?: number;
         };
         /** YouTubeSearchPage */
         YouTubeSearchPage: {
@@ -63400,7 +63677,7 @@ export interface components {
              * Max Results
              * @default 25
              */
-            max_results: number;
+            max_results?: number;
             /** Page Token */
             page_token?: string | null;
             /**
@@ -63408,17 +63685,17 @@ export interface components {
              * @default relevance
              * @enum {string}
              */
-            order: "date" | "rating" | "relevance" | "title" | "viewCount";
+            order?: "date" | "rating" | "relevance" | "title" | "viewCount";
             /**
              * Region Code
              * @default US
              */
-            region_code: string | null;
+            region_code?: string | null;
             /**
              * Relevance Language
              * @default en
              */
-            relevance_language: string | null;
+            relevance_language?: string | null;
             /** Max Results Per Channel */
             max_results_per_channel?: number | null;
             /** Max Duration Minutes */
@@ -63450,55 +63727,55 @@ export interface components {
              * @default any
              * @enum {string}
              */
-            video_caption: "any" | "closedCaption" | "none";
+            video_caption?: "any" | "closedCaption" | "none";
             /**
              * Video Definition
              * @default any
              * @enum {string}
              */
-            video_definition: "any" | "high" | "standard";
+            video_definition?: "any" | "high" | "standard";
             /**
              * Video Dimension
              * @default any
              * @enum {string}
              */
-            video_dimension: "any" | "2d" | "3d";
+            video_dimension?: "any" | "2d" | "3d";
             /**
              * Video Duration
              * @default any
              * @enum {string}
              */
-            video_duration: "any" | "short" | "medium" | "long";
+            video_duration?: "any" | "short" | "medium" | "long";
             /**
              * Video Embeddable
              * @default any
              * @enum {string}
              */
-            video_embeddable: "any" | "true";
+            video_embeddable?: "any" | "true";
             /**
              * Video License
              * @default any
              * @enum {string}
              */
-            video_license: "any" | "creativeCommon" | "youtube";
+            video_license?: "any" | "creativeCommon" | "youtube";
             /**
              * Video Paid Product Placement
              * @default any
              * @enum {string}
              */
-            video_paid_product_placement: "any" | "true";
+            video_paid_product_placement?: "any" | "true";
             /**
              * Video Syndicated
              * @default any
              * @enum {string}
              */
-            video_syndicated: "any" | "true";
+            video_syndicated?: "any" | "true";
             /**
              * Video Type
              * @default any
              * @enum {string}
              */
-            video_type: "any" | "episode" | "movie";
+            video_type?: "any" | "episode" | "movie";
         };
         /** YouTubeTranscriptRequest */
         YouTubeTranscriptRequest: {
@@ -63519,7 +63796,7 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
         };
         /** YouTubeVideoCandidate */
         YouTubeVideoCandidate: {
@@ -63533,7 +63810,7 @@ export interface components {
              * Description
              * @default
              */
-            description: string;
+            description?: string;
             /** Published At */
             published_at?: string | null;
             /** Channel Id */
@@ -63568,7 +63845,7 @@ export interface components {
              * Processing Status
              * @default unprocessed
              */
-            processing_status: string;
+            processing_status?: string;
             /** Enrichment State */
             enrichment_state?: {
                 [key: string]: unknown;
@@ -63577,17 +63854,17 @@ export interface components {
              * Analysis Available
              * @default false
              */
-            analysis_available: boolean;
+            analysis_available?: boolean;
             /**
              * Analysis Fallback Available
              * @default false
              */
-            analysis_fallback_available: boolean;
+            analysis_fallback_available?: boolean;
             /**
              * Is In Topic
              * @default false
              */
-            is_in_topic: boolean;
+            is_in_topic?: boolean;
             /** Topic Source Id */
             topic_source_id?: string | null;
         };
@@ -63630,7 +63907,7 @@ export interface components {
              * @default unprocessed
              * @enum {string}
              */
-            processing_status: "unprocessed" | "processing" | "completed" | "partial" | "failed";
+            processing_status?: "unprocessed" | "processing" | "completed" | "partial" | "failed";
             /** Enrichment State */
             enrichment_state?: {
                 [key: string]: unknown;
@@ -63673,7 +63950,7 @@ export interface components {
              * Is In Topic
              * @default false
              */
-            is_in_topic: boolean;
+            is_in_topic?: boolean;
             /** Topic Source Id */
             topic_source_id?: string | null;
         };
@@ -63697,12 +63974,68 @@ export interface components {
              * Is Version
              * @default false
              */
-            is_version: boolean;
+            is_version?: boolean;
         };
         /** WarmRequest */
         aidream__api__routers__agents_blocks__WarmRequest: {
             /** Source */
             source?: string | null;
+        };
+        /** ExtractRequest */
+        aidream__api__routers__dedup_strict__ExtractRequest: {
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "extract" | "get_or_extract" | "replace_extract";
+            /**
+             * Source Kind
+             * @description One of cld_file/note/code_file/external_url/inline/legacy
+             */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** File Content Hash */
+            file_content_hash: string;
+            /**
+             * Extractor Name
+             * @default pymupdf
+             */
+            extractor_name?: string;
+            /**
+             * Extractor Version
+             * @default v1
+             */
+            extractor_version?: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Total Pages */
+            total_pages?: number | null;
+            /** Source Hash */
+            source_hash: string;
+            /** Storage Uri */
+            storage_uri?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Structured Json */
+            structured_json?: {
+                [key: string]: unknown;
+            } | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Rag Boost
+             * @default 0
+             */
+            rag_boost?: number;
+            /** Reason */
+            reason?: string | null;
         };
         /** PublishRequest */
         aidream__api__routers__dictionary__PublishRequest: {
@@ -63732,22 +64065,22 @@ export interface components {
              * Regex
              * @default false
              */
-            regex: boolean;
+            regex?: boolean;
             /**
              * Case Sensitive
              * @default false
              */
-            case_sensitive: boolean;
+            case_sensitive?: boolean;
             /**
              * Max Hits
              * @default 200
              */
-            max_hits: number;
+            max_hits?: number;
             /**
              * Include Excluded Pages
              * @default false
              */
-            include_excluded_pages: boolean;
+            include_excluded_pages?: boolean;
         };
         /** HealthResponse */
         aidream__api__routers__health__HealthResponse: {
@@ -63813,23 +64146,23 @@ export interface components {
              * Limit
              * @default 20
              */
-            limit: number;
+            limit?: number;
             /**
              * Rerank
              * @default true
              */
-            rerank: boolean;
+            rerank?: boolean;
             /**
              * Only Children
              * @default true
              */
-            only_children: boolean;
+            only_children?: boolean;
             /**
              * Admin Bypass Acl
              * @description Admin-only: bypass per-user ACL and search every chunk in every tenant. Useful for the admin search-diagnostic UI to answer 'do these chunks even exist?' independent of ownership / org / share grants. Ignored for non-admins.
              * @default false
              */
-            admin_bypass_acl: boolean;
+            admin_bypass_acl?: boolean;
             /**
              * Data Store Id
              * @description Scope the search to one curated bucket (rag.data_stores.id). When set, only chunks from that store's members are returned. Combines with include_sources / source_kinds via AND.
@@ -63850,19 +64183,19 @@ export interface components {
              * @description If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.
              * @default 1
              */
-            multi_query: number;
+            multi_query?: number;
             /**
              * Use Hyde
              * @description Generate a hypothetical-answer passage and embed THAT alongside the query (HyDE). Helps when the natural query phrasing differs from the documents' phrasing.
              * @default false
              */
-            use_hyde: boolean;
+            use_hyde?: boolean;
             /**
              * Use Mmr
              * @description Drop near-duplicate hits from the result set.
              * @default true
              */
-            use_mmr: boolean;
+            use_mmr?: boolean;
             /**
              * Scope Ids
              * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
@@ -63873,7 +64206,7 @@ export interface components {
              * @description Recall-broadening: also surface chunks about same-kind entities that share a KG cluster with the query's matched entities (canonical concept expansion). Off by default — enabling it for a corpus is an eval decision. Cross-spelling (alias) matches work regardless.
              * @default false
              */
-            expand_entity_clusters: boolean;
+            expand_entity_clusters?: boolean;
         };
         /** TranscriptionResponse */
         aidream__api__routers__research__TranscriptionResponse: {
@@ -63916,22 +64249,22 @@ export interface components {
              * Last Tick Claimed
              * @default 0
              */
-            last_tick_claimed: number;
+            last_tick_claimed?: number;
             /**
              * Last Tick Expired Sweeps
              * @default 0
              */
-            last_tick_expired_sweeps: number;
+            last_tick_expired_sweeps?: number;
             /**
              * Total Runs Dispatched
              * @default 0
              */
-            total_runs_dispatched: number;
+            total_runs_dispatched?: number;
             /**
              * Consecutive Errors
              * @default 0
              */
-            consecutive_errors: number;
+            consecutive_errors?: number;
             /** Error Message */
             error_message?: string | null;
         };
@@ -63962,7 +64295,7 @@ export interface components {
              * @description When true, parse + report but do not write to the DB.
              * @default false
              */
-            dry_run: boolean;
+            dry_run?: boolean;
         };
         /** ToolListResponse */
         aidream__api__routers__tool_testing__ToolListResponse: {
@@ -64006,7 +64339,7 @@ export interface components {
              * Import Failures
              * @default []
              */
-            import_failures: string[];
+            import_failures?: string[];
         };
         /** SystemErrorListResponse */
         aidream__services__admin_persistence__wire__SystemErrorListResponse: {
@@ -64026,7 +64359,7 @@ export interface components {
              * @default true
              * @constant
              */
-            success: true;
+            success?: true;
             /** Text */
             text: string;
             /** Language */
@@ -64090,7 +64423,7 @@ export interface components {
              * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
-            store: boolean;
+            store?: boolean;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -64103,12 +64436,12 @@ export interface components {
              * Debug
              * @default false
              */
-            debug: boolean;
+            debug?: boolean;
             /**
              * Tools
              * @default []
              */
-            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
@@ -64117,19 +64450,19 @@ export interface components {
              * Context
              * @default {}
              */
-            context: {
+            context?: {
                 [key: string]: unknown;
             };
             /**
              * Writable Variables
              * @default []
              */
-            writable_variables: string[];
+            writable_variables?: string[];
             /**
              * Allow Context Create
              * @default false
              */
-            allow_context_create: boolean;
+            allow_context_create?: boolean;
         };
         /** EnrollRequest */
         aidream__services__hindsight__enrollment__EnrollRequest: {
@@ -64173,12 +64506,12 @@ export interface components {
              * Review Every N
              * @default 10
              */
-            review_every_n: number;
+            review_every_n?: number;
             /**
              * Max Examples Per Review
              * @default 25
              */
-            max_examples_per_review: number;
+            max_examples_per_review?: number;
             /** Goal */
             goal?: string | null;
             /** Lens Config */
@@ -64189,7 +64522,7 @@ export interface components {
              * Backfill Days
              * @default 14
              */
-            backfill_days: number;
+            backfill_days?: number;
         };
         /** MentionRow */
         aidream__services__knowledge_graph__graph__MentionRow: {
@@ -64266,12 +64599,12 @@ export interface components {
              * Force
              * @default false
              */
-            force: boolean;
+            force?: boolean;
             /**
              * Run Enrich
              * @default false
              */
-            run_enrich: boolean;
+            run_enrich?: boolean;
         };
         /**
          * ReadinessResponse
@@ -64288,12 +64621,12 @@ export interface components {
              * Remaining Today
              * @default 0
              */
-            remaining_today: number;
+            remaining_today?: number;
             /**
              * Remaining This Hour
              * @default 0
              */
-            remaining_this_hour: number;
+            remaining_this_hour?: number;
         };
         /**
          * ResumeRequest
@@ -64338,42 +64671,65 @@ export interface components {
              * Backlinks Reviewed
              * @default 0
              */
-            backlinks_reviewed: number;
+            backlinks_reviewed?: number;
             /**
              * Domains Reviewed
              * @default 0
              */
-            domains_reviewed: number;
+            domains_reviewed?: number;
             /**
              * Competitor Intersections Reviewed
              * @default 0
              */
-            competitor_intersections_reviewed: number;
+            competitor_intersections_reviewed?: number;
             /**
              * Ai Citations Reviewed
              * @default 0
              */
-            ai_citations_reviewed: number;
+            ai_citations_reviewed?: number;
             /**
              * Brand Facts Reviewed
              * @default 0
              */
-            brand_facts_reviewed: number;
+            brand_facts_reviewed?: number;
             /**
              * Rag Hits Reviewed
              * @default 0
              */
-            rag_hits_reviewed: number;
+            rag_hits_reviewed?: number;
             /**
              * Captured Pages Reviewed
              * @default 0
              */
-            captured_pages_reviewed: number;
+            captured_pages_reviewed?: number;
             /**
              * Excluded Low Quality Inputs
              * @default 0
              */
-            excluded_low_quality_inputs: number;
+            excluded_low_quality_inputs?: number;
+        };
+        /** ExtractRequest */
+        aidream__services__workflow_extract__materialize__ExtractRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Occurrences */
+            occurrences: components["schemas"]["ExtractOccurrence"][];
+            /**
+             * Assist Id
+             * @description Assist chip to mark accepted once the extraction lands.
+             */
+            assist_id?: string | null;
+            /**
+             * Dry Run
+             * @description Run every gate and report exactly what WOULD happen, writing nothing. What the studio's confirm dialog is built on.
+             * @default false
+             */
+            dry_run?: boolean;
         };
         /**
          * PresetsResponse
@@ -64405,7 +64761,7 @@ export interface components {
              * Soft
              * @default true
              */
-            soft: boolean;
+            soft?: boolean;
         };
         /** ScannerStatusResponse */
         matrx_scheduler__api__schemas__ScannerStatusResponse: {
@@ -64421,167 +64777,34 @@ export interface components {
              * Last Tick Claimed
              * @default 0
              */
-            last_tick_claimed: number;
+            last_tick_claimed?: number;
             /**
              * Last Tick Expired Sweeps
              * @default 0
              */
-            last_tick_expired_sweeps: number;
+            last_tick_expired_sweeps?: number;
             /**
              * Last Tick Manual Claimed
              * @default 0
              */
-            last_tick_manual_claimed: number;
+            last_tick_manual_claimed?: number;
             /**
              * Total Runs Dispatched
              * @default 0
              */
-            total_runs_dispatched: number;
+            total_runs_dispatched?: number;
             /**
              * In Flight Count
              * @default 0
              */
-            in_flight_count: number;
+            in_flight_count?: number;
             /**
              * Consecutive Errors
              * @default 0
              */
-            consecutive_errors: number;
+            consecutive_errors?: number;
             /** Error Message */
             error_message?: string | null;
-        };
-        /** ResolvePartyBatchRequest */
-        ResolvePartyBatchRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Parties */
-            parties: components["schemas"]["ResolvePartyRequest"][];
-        };
-        /** ResolvePartyExternalRef */
-        ResolvePartyExternalRef: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Platform */
-            platform: string;
-            /** Value */
-            value: string;
-            /** Handle */
-            handle?: string | null;
-            /** Profile Url */
-            profile_url?: string | null;
-        };
-        /** ResolvePartyRequest */
-        ResolvePartyRequest: {
-            /** Organization Id */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Kind
-             * @default person
-             * @enum {string}
-             */
-            kind: "person" | "organization";
-            /** Display Name */
-            display_name: string;
-            /** Source */
-            source: string;
-            /** Source Detail */
-            source_detail?: string | null;
-            /** First Name */
-            first_name?: string | null;
-            /** Last Name */
-            last_name?: string | null;
-            /** Job Title */
-            job_title?: string | null;
-            /** Headline */
-            headline?: string | null;
-            /** Legal Name */
-            legal_name?: string | null;
-            /** Primary Domain */
-            primary_domain?: string | null;
-            /** Emails */
-            emails?: string[];
-            /** Phones */
-            phones?: string[];
-            /** External Ids */
-            external_ids?: components["schemas"]["ResolvePartyExternalRef"][];
-            /** Attributes */
-            attributes?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Allow Name Match
-             * @default false
-             */
-            allow_name_match: boolean;
-        };
-        /** ResolvedPartyBatchItem */
-        ResolvedPartyBatchItem: {
-            /** Index */
-            index: number;
-            resolved?: components["schemas"]["ResolvedPartyView"] | null;
-            /** Error */
-            error?: string | null;
-        };
-        /** ResolvedPartyView */
-        ResolvedPartyView: {
-            /** Party Id */
-            party_id: string;
-            /** Display Name */
-            display_name: string;
-            /** Party Kind */
-            party_kind: string;
-            /** Created */
-            created: boolean;
-            /** Matched By */
-            matched_by: string;
-            /**
-             * Canonical Followed
-             * @default false
-             */
-            canonical_followed: boolean;
-            /**
-             * Contact Points Added
-             * @default 0
-             */
-            contact_points_added: number;
-            /** Fields Filled */
-            fields_filled?: string[];
         };
     };
     responses: never;
@@ -85708,6 +85931,72 @@ export interface operations {
             };
         };
     };
+    resolve_party_door_crm_parties_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolvePartyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolvedPartyView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parties_batch_door_crm_parties_resolve_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolvePartyBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolvedPartyBatchItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     process_file_content_processing__cld_file_id__post: {
         parameters: {
             query?: never;
@@ -93263,6 +93552,74 @@ export interface operations {
             };
         };
     };
+    get_extract_proposal_workflows__definition_id__extract_proposal_get: {
+        parameters: {
+            query: {
+                fingerprint: string;
+            };
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionProposal"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_workflow_workflows__definition_id__extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__services__workflow_extract__materialize__ExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_templates_templates_get: {
         parameters: {
             query?: never;
@@ -100748,7 +101105,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExtractRequest"];
+                "application/json": components["schemas"]["aidream__api__routers__dedup_strict__ExtractRequest"];
             };
         };
         responses: {
@@ -102366,168 +102723,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__head__get__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__head__post__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__head__head__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resolve_party_door_crm_parties_resolve_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolvePartyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResolvedPartyView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resolve_parties_batch_door_crm_parties_resolve_batch_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolvePartyBatchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResolvedPartyBatchItem"][];
-                };
             };
             /** @description Validation Error */
             422: {
