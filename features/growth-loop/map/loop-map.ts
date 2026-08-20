@@ -1110,6 +1110,30 @@ export const GAPS: LoopGap[] = [
     lane: "L1",
     evidence: "aidream/aidream/services/seo/pagespeed_health.py",
   },
+  {
+    id: "G-RECEIPT-TRUTH",
+    title: "A stage advanced on the carrier's refusal",
+    severity: "blocker",
+    status: "closed",
+    at: "plan",
+    breaks: ["human", "ai"],
+    detail:
+      "CLOSED 2026-08-20. The supervisor judged a stage ONLY from the workflow run's status, which says nothing more than 'the graph reached its end without crashing'. The pipe's own answer carries the verdict about whether the WORK happened, and _receipt already extracted it and then discarded the decision, keeping only reason and evidence — so a refusal was recorded as a completion, quoting itself as the completion reason. Live scale, measured against Matrx Main on 2026-08-20: FIVE of the six workflow-backed completed stage runs were AI refusals with receipt decision='failed' and zero evidence items (loop 1866b32e suggest; loop a952f3e3 research + plan; loop 1804c876 research + plan). The only genuine one was the code-pipe serve on loop 89515714 (decision='completed', 2 evidence items). Every AI-pipe stage completion in the loop's entire history was false progress; the loops only reached analyze/brief by advancing over work nobody did. _receipt now returns a PipeReceipt carrying the decision, and a receipt saying 'failed' vetoes a completion — one-directional, so a receipt claiming success can never rescue a crashed run. The failure names itself PipeReceiptRefusedStage and carries a resume hint, because the run row's own error is empty in exactly this case. Four regression tests replay the real stored outputs.",
+    lane: "L6",
+    evidence: "aidream/aidream/services/growth_loop/supervisor.py",
+  },
+  {
+    id: "G-AI-STAGE-EXECUTOR",
+    title: "The AI pipe cannot do any stage's work",
+    severity: "blocker",
+    status: "open",
+    at: "plan",
+    breaks: ["ai"],
+    detail:
+      "OPEN, and it is why the loop is frozen. Only FOUR stages have a real executor: growth_loop.stage.dispatch implements realize, serve, crawl and measure, and returns growth_stage_has_no_code_executor for everything else. The other stages are policy'd human_then_ai, so their 'AI' leg is the generic human-decision fallback agent — an agent with no growth-loop tools, no site context, and no way to write a durable row. It answers honestly every time: 'no tool or data table for a Growth Loop research stage… completing this would require inventing fake result IDs'. Two outcomes, both observed live: confidence at or above the 0.4 floor and the refusal was recorded as a completion (five stages, see G-RECEIPT-TRUTH); confidence below it and the escalation retried three times, hit MAX_ESCALATION_ATTEMPTS, and stamped _decision_escalation.exhausted=true, which the sweeper permanently excludes — loops 1804c876 (brief) and a952f3e3 (analyze) have sat there since 2026-08-15, and no amount of resuming will move them. The AI leg needs a purpose-built Mandate that can actually carry a stage and return durable identifiers; until it exists, the non-code stages are human-only in practice. NEEDS ARMAN: the shape of that Mandate, and whether the five falsely-completed stage rows should be rewound.",
+    lane: "L5",
+    evidence: "aidream/aidream/graph_actions/growth_loop.py",
+  },
 ];
 
 // ---------------------------------------------------------------------------
