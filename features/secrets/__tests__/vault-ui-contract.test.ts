@@ -121,6 +121,17 @@ describe("shared vault UI contract", () => {
     expect(createSource).toContain("Browse all");
   });
 
+  test("protected create fields opt out of password-manager overlays", () => {
+    const createSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
+      "utf8",
+    );
+
+    expect(createSource).toContain('data-lpignore="true"');
+    expect(createSource).toContain("data-1p-ignore");
+    expect(createSource).toContain('data-bwignore="true"');
+  });
+
   test("renders attachments as labeled files and never selects their ciphertext", () => {
     const detailSource = readFileSync(
       join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),

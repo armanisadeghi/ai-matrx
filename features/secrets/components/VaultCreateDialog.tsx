@@ -1227,6 +1227,9 @@ function DefinitionForm({
                       placeholder={draft.def.placeholder_example ?? ""}
                       className="min-w-48 flex-1 font-mono"
                       autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      data-bwignore="true"
                     />
                     {(draft.def.handling ?? "revealable") !== "visible" && (
                       <Button
