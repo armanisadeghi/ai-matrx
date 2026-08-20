@@ -88,8 +88,10 @@ Attach it on that feature's handoff. Do not name a slice of a feature as if it w
 If `vision:` is empty, Notes must include `VISION MISSING`.
 
 **The name is the link.** File a row as `[Name](path)`, never a bare backtick path. common-docs
-files use a bundle-relative href (`/projects/…`, `/systems/…`). Every other repo uses the
-absolute path `/Users/armanisadeghi/code/<repo>/…`.
+files use a path relative to the register (`../projects/…`, `../systems/…`) so the click opens
+in the editor. A leading `/projects/` or `/systems/` is an OKF path — Cursor looks under the
+workspace root and offers to create a file that already exists. Every other repo uses
+`/Users/armanisadeghi/code/<repo>/…`.
 
 - **Taking a handoff over → DELETE its row first**, before reading the doc or touching code
   (step 1 below). Assigned ≠ orphaned.
