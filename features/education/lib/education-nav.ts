@@ -44,7 +44,7 @@ export interface EduToolNavEntry {
 }
 
 /**
- * All 16 application tools. Grouped by what a learner is trying to DO, not by
+ * All 17 application tools. Grouped by what a learner is trying to DO, not by
  * how the code is organized — a student looking for "quiz me" should not have to
  * know whether that lives under assessment or flashcards.
  */
@@ -114,6 +114,13 @@ export const EDU_TOOL_NAV: EduToolNavEntry[] = [
     iconName: "Brain",
     group: "Understand",
     description: "Mnemonics, analogies, and memory palaces",
+  },
+  {
+    slug: "summaries",
+    label: "Study Summaries",
+    iconName: "FileText",
+    group: "Understand",
+    description: "Grounded summaries of anything you bring in",
   },
   {
     slug: "notes",

@@ -76,10 +76,10 @@ export function SummaryDetail({ id }: { id: string }) {
         id={id}
         error={loadError}
         onRetry={() => setReloadKey((k) => k + 1)}
-        // `/education/summaries` has only a `[id]` leaf — there is no list
-        // page to send them to yet, and a door onto a 404 is worse than none.
-        fallbackHref="/education"
-        fallbackLabel="Education"
+        // The summaries library — a real index route since 2026-08-20, so the
+        // way forward is the tool the learner was already in, not the hub.
+        fallbackHref="/education/summaries"
+        fallbackLabel="Study Summaries"
       />
     );
   }

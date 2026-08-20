@@ -28,8 +28,9 @@ export default function EducationLayout({
   return (
     <>
       <EducationHeader />
-      {/* Render-free: drains the offline study outbox on every education
-          route, on `online`, and on tab refocus. */}
+      {/* Drains the offline study outbox on every education route, on `online`,
+          and on tab refocus — and renders the queue-depth chip that is the one
+          in-app door onto /education/offline (renders nothing at zero). */}
       <OfflineStudySyncMount />
       {/* Render-free: asks an undeclared signed-in learner for their age band
           ONCE, up front, so COPPA is settled before any AI action — never

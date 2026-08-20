@@ -21,6 +21,7 @@ import {
   GraduationCap,
   DatabaseZap,
   Trash2,
+  CloudOff,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -203,6 +204,28 @@ export function DataOwnershipPage() {
             <Download className="h-4 w-4" />
           )}
           Download archive
+        </Button>
+      </section>
+
+      {/* Offline study & sync — the always-available door onto /education/offline.
+          That page is otherwise served only by the service worker when a
+          navigation fails, so without this card a learner can never click their
+          way to their downloaded decks or a stuck sync queue (THE DOOR LAW). */}
+      <section className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-3">
+          <CloudOff className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">
+              Offline study &amp; sync
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              The decks you downloaded to study without a signal, and any
+              answers still waiting to upload.
+            </p>
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/education/offline">Open</Link>
         </Button>
       </section>
 

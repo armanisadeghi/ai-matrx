@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Search, ShieldCheck, Library as LibraryIcon } from "lucide-react";
+import Link from "next/link";
+import { Search, ShieldCheck, Library as LibraryIcon, Lightbulb } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,10 +19,13 @@ export function LibraryBrowser({
   initialDecks,
   isSuperAdmin,
   isSignedIn,
+  openSuggestionCount = 0,
 }: {
   initialDecks: PublicDeck[];
   isSuperAdmin: boolean;
   isSignedIn: boolean;
+  /** Open suggestions on the viewer's own decks — the badge on the inbox door. */
+  openSuggestionCount?: number;
 }) {
   const [decks, setDecks] = useState<PublicDeck[]>(initialDecks);
   const [search, setSearch] = useState("");
@@ -50,6 +54,27 @@ export function LibraryBrowser({
       <div className="flex items-center gap-3 mb-2">
         <LibraryIcon className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold tracking-tight">Community Library</h1>
+        {/* The deck owner's own inbox. It was linked only from the admin route
+            map, so the person the suggest-edit flywheel exists for had no way
+            to reach it — the flywheel's other half was unreachable. */}
+        {isSignedIn && (
+          <Button
+            asChild
+            variant={openSuggestionCount > 0 ? "default" : "outline"}
+            size="sm"
+            className="ml-auto gap-1.5 shrink-0"
+          >
+            <Link href="/education/library/suggestions">
+              <Lightbulb className="h-4 w-4" />
+              Suggestions on your decks
+              {openSuggestionCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-background/25 px-1.5 py-0.5 text-[11px] font-semibold leading-none">
+                  {openSuggestionCount}
+                </span>
+              )}
+            </Link>
+          </Button>
+        )}
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
         Free, public study decks from the AI Matrx community. Study a copy, or

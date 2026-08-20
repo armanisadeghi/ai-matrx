@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import { AudioStudyDetail } from "../audio/components/AudioStudyDetail";
 import { MindMapDetail } from "../mindmap/components/MindMapDetail";
 import { MemoryDetail } from "@/features/education/memory/components/MemoryDetail";
+import { SummaryDetail } from "@/features/education/onboard/components/SummaryDetail";
 import { studyMediaService } from "../service";
 import type { EduMediaKind } from "../types";
 
@@ -41,5 +42,10 @@ export function MediaRouter({ mediaId }: { mediaId: string }) {
 
   if (kind === "mind_map") return <MindMapDetail mediaId={mediaId} />;
   if (kind === "memory_aid") return <MemoryDetail mediaId={mediaId} />;
+  // A 'summary' row used to fall through to the audio player — the reverse-
+  // lineage chips and the class hub both route study_media through this URL
+  // (features/education/data/entityRoutes.ts), so every summary opened from
+  // one of those rendered an empty podcast surface. Dispatch it properly.
+  if (kind === "summary") return <SummaryDetail id={mediaId} />;
   return <AudioStudyDetail mediaId={mediaId} />;
 }

@@ -94,7 +94,7 @@ by design, not that it is unfinished.
 | `mind-maps` | ✓ | `/new` | `/[id]` (map) | `/[id]/edit` | — |
 | `memory` | ✓ | `/new` | `/[id]` | `/[id]/edit` | — |
 | `notes` | ✓ | `/new` | `/[id]` | `/[id]/edit` | — |
-| `summaries` | **missing** | — | `/[id]` | — | leaf with no index — see Known gaps |
+| `summaries` | ✓ | — (converter-produced) | `/[id]` | — | index shipped 2026-08-20; `EDU_TOOLS` entry gives it the hub door |
 | `planner` | ✓ (dashboard) | — | — (personal) | — | — |
 | `progress` | ✓ | — | — (personal) | — | `/learning-gain` |
 | `practice-oral` | ✓ (single surface) | — | — | — | — |
@@ -103,25 +103,45 @@ by design, not that it is unfinished.
 | `classes` | ✓ | — (dialog) | `/[classId]` | — | `/join` |
 | `family` | ✓ | — | `/[studentId]` (read-only) | — | — |
 | `creator` | ✓ (dashboard) | — | — | — | public face is `/c/[handle]`, outside `(core)` |
-| `library` | ✓ | — | — (browses `fc_set`) | — | `/suggestions` (owner inbox) |
+| `library` | ✓ | — | — (browses `fc_set`) | — | `/suggestions` (owner inbox, linked from the library header) |
 | `start` | — | onboarding hero | — | — | — |
 | `data` | — | — | — | — | data-ownership / export / delete |
-| `offline` | — | — | — | — | offline shell — see Known gaps |
-| `media` | — | — | `/[id]` (kind router) | — | see Known gaps |
+| `offline` | — | — | — | — | offline shell — doors: the queue-depth chip + `/education/data` |
+| `media` | — | — | `/[id]` (kind router) | — | the canonical `study_media` entity route — see below |
 
 **Admin-only routes:** `/education/admin`, `/education/flashcards/admin`, `/education/learn/admin`,
 `/education/fastfire/capture-test`.
 
-### Known gaps in the route graph (THE DOOR LAW — fix on sight, do not add to this list)
+### The route graph is closed (THE DOOR LAW — fix on sight, never add to a gap list)
 
-- **`/education/offline`** is a real surface with **no link anywhere in the app** — only the service
-  worker names it as its offline fallback. A user can never reach it by clicking.
-- **`/education/summaries`** has a `[id]` leaf and **no index route**, so `/education/summaries`
-  404s. Reachable only from a converter result link.
-- **`/education/media/[id]`** (`MediaRouter`, dispatches by media kind) has **no inbound link** —
-  every media kind has its own typed route.
-- **`/education/library/suggestions`** is linked only from the admin map, so a deck owner has no
-  path to their own suggestion inbox from `/education/library`.
+Every route under `/education` has at least one inbound link a user can click. The four gaps
+recorded here on 2026-08-19 were all closed on 2026-08-20:
+
+- **`/education/offline`** now has two doors. The always-available one is the **"Offline study &
+  sync" card on `/education/data`**. The state-driven one is the **queue-depth chip** rendered by
+  `OfflineStudySyncMount` (mounted in the education layout, so it is present on every route):
+  when answers are waiting in the outbox it says how many and opens the offline surface — a count
+  that describes records is a door. It renders nothing at zero, which is the normal state.
+- **`/education/summaries`** is a real index (`SummaryHome` — the study-media library for
+  `media_kind='summary'`, mirroring `MemoryHome`/`MindMapHome`), and `summaries` now has an
+  `EDU_TOOLS` entry, so the hub's Study-tools grid links it automatically. It has **no `/new` by
+  design**: a summary is produced by the ingest converter, so the empty state routes to
+  `/education/start`.
+- **`/education/media/[id]`** is **not** an id-only fallback — it is the **canonical route for the
+  `study_media` entity token**, declared in
+  [`features/education/data/entityRoutes.ts`](../../../features/education/data/entityRoutes.ts) and
+  rendered as a link by every surface that lists tagged/generated content: the class hub
+  (`useClassContent`, `useClassAssignments`, `ClassProgressPanel`) and the reverse-lineage chips
+  (`convert/lineage.ts`). The typed routes (`/audio-study/[id]`, `/mind-maps/[id]`, `/memory/[id]`,
+  `/summaries/[id]`) are the per-tool surfaces; `media/[id]` is the kind-agnostic URL a caller uses
+  when it holds a `study_media` id and does **not** know the kind. Both are correct and both stay.
+  **`MediaRouter` must handle every `EduMediaKind`** — a `summary` row used to fall through to the
+  audio player, so every summary opened from a class or a lineage chip rendered an empty podcast
+  surface. Add a branch here whenever a kind is added.
+- **`/education/library/suggestions`** is linked from the **Community Library header**, for any
+  signed-in visitor, with the count of open suggestions on their own decks. It was previously
+  reachable only from the admin route map, which meant the suggest-edit flywheel's owner half had
+  no door at all.
 
 > ✅ **`flashcards/[setId]/edit` is built + EDIT-gated** (P7, 2026-07-07): `requireAccess("fc_set",
 > setId, "edit", { redirectTo })` redirects a view-only sharee to the view page, which offers
@@ -162,7 +182,7 @@ by design, not that it is unfinished.
 
 ## 5. Current route tree
 
-**Verified against the filesystem 2026-08-19.** Every entry has a real `page.tsx` rendering a real
+**Verified against the filesystem 2026-08-20.** Every entry has a real `page.tsx` rendering a real
 surface. If you add or remove a route, update this tree in the same change.
 
 ```
@@ -192,8 +212,8 @@ app/(core)/education/
 ├─ mind-maps/       page · new · [id]/(page, edit)
 ├─ memory/          page · new · [id]/(page, edit)
 ├─ notes/           page · new · [id]/(page, edit)
-├─ summaries/       [id]                     ⚠ no index route
-├─ media/           [id]                     ⚠ no inbound link
+├─ summaries/       page · [id]
+├─ media/           [id]                    (canonical study_media entity route)
 ├─ planner/         page
 ├─ progress/        page · learning-gain
 ├─ practice-oral/   page
@@ -202,10 +222,10 @@ app/(core)/education/
 ├─ classes/         page · join · [classId]
 ├─ family/          page · [studentId]
 ├─ creator/         page                     (public face: /c/[handle], outside (core))
-├─ library/         page · suggestions       ⚠ suggestions has no inbound link
+├─ library/         page · suggestions
 ├─ start/           page
 ├─ data/            page
-├─ offline/         page                     ⚠ no inbound link
+├─ offline/         page
 │
 └─ admin/           page   (FeatureAdminMap)
 ```
@@ -213,6 +233,11 @@ app/(core)/education/
 ---
 
 ## Change log
+- **2026-08-20** — The four route-graph gaps are CLOSED. Added `/education/summaries` (index +
+  `EDU_TOOLS` entry), the Community Library's suggestion-inbox door (with open count), the offline
+  surface's two doors (the `/education/data` card + the outbox queue-depth chip), and recorded
+  `media/[id]` as the canonical `study_media` entity route rather than a dead end. Fixed
+  `MediaRouter`, which dispatched `summary` rows to the audio player.
 - **2026-08-19** — Rewritten against the filesystem during the Education doc convergence. The
   headline claim that "everything except flashcards/fastfire is a coming-soon placeholder" was
   false for every tool; the per-tool table listed 9 tools against 21+ on disk; the route tree was

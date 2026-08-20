@@ -1,7 +1,7 @@
 // features/education/data/tools.ts
 //
 // APPLICATION TOOLS registry → /education/<slug> (the interactive app layer).
-// All 16 tools are BUILT and render real routes — nothing here renders a
+// All 17 tools are BUILT and render real routes — nothing here renders a
 // placeholder. `status: "live"` means a working desktop happy path exists;
 // mobile parity and depth vary per tool (see the education-platform program in
 // common-docs for the measured gaps and the IC-13 claim register).
@@ -10,7 +10,7 @@
 // tool to its source-of-truth section in the canonical vision
 // (common-docs/projects/education-platform/VISION.md).
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck } from "lucide-react";
+import { FileText, Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -186,6 +186,24 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Live lecture capture — record → real-time transcription streamed into the editor",
       "Every converted artifact links back to the note (visible lineage both directions)",
       "Registers the converter `notes` target (source → structured, grounded study note)",
+    ],
+  },
+  {
+    slug: "summaries",
+    name: "Study Summaries",
+    tagline: "Grounded summaries of anything you bring in",
+    description: "The library of study summaries the ingest converter produces — markdown plus key points, each one citing the source material it was written from.",
+    icon: FileText,
+    letter: "Su",
+    status: "live", // P9 — produced by the ingest converter (convert/generators/summary.ts); this registry entry is what gives the library its hub door
+    accessTier: "free",
+    visionRef: "VISION §7 Note-Taking (summaries), §12 Universal Ingest",
+    capabilities: [
+      "Library of every summary you own or can see (education.study_media, media_kind='summary')",
+      "Markdown body rendered through the kind-aware MarkdownStream (fenced content-IR blocks render as real artifacts)",
+      "TrustEnvelope citations + confidence, with verify-against-source",
+      "Markdown export on every summary (data-ownership)",
+      "Created by the ingest converter rather than a create form — no /new route by design",
     ],
   },
   {

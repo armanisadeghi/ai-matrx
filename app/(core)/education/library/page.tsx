@@ -5,7 +5,10 @@
 import type { Metadata } from "next";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
-import { fetchInitialPublicDecks } from "@/features/education/library/queries";
+import {
+  fetchInitialPublicDecks,
+  fetchOwnerOpenSuggestionCount,
+} from "@/features/education/library/queries";
 import { LibraryBrowser } from "@/features/education/library/components/LibraryBrowser";
 
 export const metadata: Metadata = createRouteMetadata("/education", {
@@ -18,15 +21,17 @@ export const metadata: Metadata = createRouteMetadata("/education", {
 });
 
 export default async function CommunityLibraryPage() {
-  const [status, initialDecks] = await Promise.all([
+  const [status, initialDecks, openSuggestions] = await Promise.all([
     getCurrentUserAdminStatus(),
     fetchInitialPublicDecks(),
+    fetchOwnerOpenSuggestionCount(),
   ]);
   return (
     <LibraryBrowser
       initialDecks={initialDecks}
       isSuperAdmin={status?.level === "super_admin"}
       isSignedIn={!!status}
+      openSuggestionCount={openSuggestions}
     />
   );
 }
