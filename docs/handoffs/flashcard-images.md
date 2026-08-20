@@ -18,8 +18,15 @@ shipped. See `features/flashcards/FEATURE.md` § Images and
 `aidream/services/education/FEATURE.md`. What it left open is listed below under the judge
 feedback loop and the run-durability limit in the FE FEATURE's *Known limits*.
 
-1. **Editor free lanes** (chip `task_7c28d97b`): upload + Unsplash picker (+credit) in
-   `CardImageSlot`, both stamping durable public `image_url` beside any `image_file_id`.
+**DONE 2026-08-19 — Editor free lanes** (was chip `task_7c28d97b`): upload and the Unsplash
+picker are both wired in `CardImageSlot.tsx` — upload at `:117-163` (`useFileUpload`,
+`visibility:"public"`, signed URLs rejected via `isSignedUrl`, stamps BOTH `file_id` and a durable
+`url` through `fcService.setCardImage`, required alt-text dialog); Unsplash at `:166-190` with
+`UnsplashPickDialog.tsx`, storing `metadata.credit {name,url}` and firing `trackUnsplashUse` on
+attach (ToS-correct: on use, not on browse). This also closes the print-door gap noted below —
+uploads now stamp a public URL beside every `image_file_id`.
+
+**All four numbered lanes are now shipped.** What remains is the "Not chipped" list below.
 **DONE 2026-08-19 — Link-rot re-source sweep** (was chip `task_60e47449`): shipped in aidream
 as `aidream/services/education/image_rot_sweep.py` + system task `education_card_image_rot_sweep`
 (daily, seed `…404`). Verifies hotlinked `fc_detail` image rows with the ONE bounded fetcher,

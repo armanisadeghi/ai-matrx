@@ -1,7 +1,22 @@
 # Retiring `education.flashcard_data` + `education.flashcard_sets`
 
-**Status:** proposal — awaiting Arman's `go`. Nothing applied, no code changed.
+🚨 **Status: DONE — this migration ALREADY RAN. Do not re-run it.** Verified against the live
+database 2026-08-19: `graveyard.education_flashcard_data` (5 rows), `education_flashcard_sets` (2),
+`education_flashcard_set_relations` (3), `education_flashcard_history` (0),
+`education_flashcard_images` (0) — the exact five-table cluster with the exact row counts measured
+below. No `education.flashcard_*` table remains. The header this file carried until now
+("proposal — awaiting Arman's `go`. Nothing applied") described a migration that had already
+completed, and was the most actively misleading line in the education doc set.
+
+🚨 **This is NOT the other legacy flashcard system.** These were the abandoned **Nov-2024
+prototype** tables `education.flashcard_data` / `flashcard_sets`. The *live* legacy system —
+`users.user_flashcard_sets` / `user_flashcard_reviews` (24 sets / 37 reviews, one remaining writer
+in aidream's conversation fork) — has **not** been retired and is tracked in
+`common-docs/projects/education-platform/STATE.md`. The two are constantly conflated; check the
+schema before acting on either.
+
 **Measured live:** 2026-08-12, Matrx Main (`txzxabzwovsujtloxrus`), direct Postgres read.
+Retirement confirmed complete 2026-08-19.
 
 ---
 
