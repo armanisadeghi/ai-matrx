@@ -57,7 +57,7 @@ individually "works". Verified ground truth below is from a three-way full-featu
 | Cursor adapter | matrx-cursor-plugin `0.2.0-alpha.2` | Certified E2E to production (2026-08-12); **distribution-orphaned** (needs public repo or team plan) | repo frozen since 08-12 |
 | VS Code extension | matrx-vscode `v0.1.1` VSIX | Built+certified+packaged; **blocked ~7 days on Arman's 40-min publish checklist** | `OPERATOR_CHECKLIST.md` |
 | Duplicate-binding protection | DB | **FIXED**: partial unique index live, the one pair merged 2026-08-16 | zero duplicate pairs |
-| Outbox durability | matrx-local **v1.4.36** (`15b35f723`) + codex plugin `d07b6a5` | v1.4.35 installed and **did NOT fix it** — post-delivery writes lost the SQLite lock, row 72184 re-POSTed 48×, outbox grew to 22,126, coding-session routes starved to 330–1,040 s. Fixed in v1.4.36; awaiting on-machine confirmation | local sqlite + access.log, 2026-08-19 |
+| Outbox durability | matrx-local **v1.4.38** (`15b35f723`, `90d930061`, `dc092789d`) | Publisher no longer dies (4 wedge causes fixed, verified live); route latency 330 s → 0.30 s. **Queue still not draining** — blocked on MXL-D-079 (large-envelope TLS failure), 23,413 rows pending | local sqlite + access.log + process sample, 2026-08-19 |
 | Codex stable-event-id stability | matrx-codex-plugin | **DEFECT**: one `UserPromptSubmit:<turn_id>` emitted with 16 different payloads in one session → server `entry_mutated`, 88 rows permanently quarantined | quarantine table, 2026-08-19 |
 
 ## Resources
@@ -102,8 +102,27 @@ individually "works". Verified ground truth below is from a three-way full-featu
      ever eligible to be attempted; `attempts=0` on the other 21,907 is correct by design. Lane
      isolation (`be04a6038`) worked throughout. Codex dominates only because Claude Code hooks
      deliver directly (109 claude_code rows vs 22,017 codex).
-   - **Still open:** verify on v1.4.36 that the outbox actually falls to a stable floor on
-     Arman's machine, and that `/coding-session/hooks` latency returns to milliseconds.
+   - **Latency is fixed and verified:** `/coding-session/hooks` went from a 330 s median to
+     **0.30 s**, `/coding-session/status` from 1,040 s to ~2 s, immediately after v1.4.36 booted.
+   - **Three more incarnations of the same failure shape were found and fixed after v1.4.36**,
+     each verified live on Arman's machine within minutes of the previous release:
+     **v1.4.37** (`90d930061`) — a raw `ssl.SSLError: SSLV3_ALERT_BAD_RECORD_MAC` was not
+     classified by `AIDreamClient`, sailed past `except (AIDreamOfflineError, AIDreamError)`, and
+     killed the tick; and **v1.4.38** (`dc092789d`) — `_record_failure` still ran on the shared
+     aiosqlite connection, so it raised `database is locked` *from inside the exception handler*
+     and killed the tick again. Every outbox mutation (enqueue, retire, defer, record-failure,
+     quarantine) now runs on the private `BEGIN IMMEDIATE` boundary, quarantine's copy-then-delete
+     is atomic, and an unexpected error degrades to one deferred row instead of a dead publisher.
+     **On v1.4.38 the publisher no longer dies** — zero new tick failures.
+   - **STILL NOT DRAINING — new, separate root cause: `matrx-local` MXL-D-079.** Large envelopes
+     (the stalled lane head is a run of 155-330 KB rows; largest pending is 2.6 MB) fail TLS
+     *inside the engine process* with `SSLV3_ALERT_BAD_RECORD_MAC`, while `curl` to the same host
+     from the same machine succeeded 6/6 at ~50-130 ms. Because a TLS failure is classified
+     `AIDreamOfflineError` and offline deliberately `break`s the whole tick as "publisher-wide",
+     ONE big row at the oldest lane head starves all 226 lanes. Small envelopes deliver fine.
+     Also filed: **MXL-D-080**, watchfiles pegging ~2 CPU cores in the engine (`/health` 1 ms
+     while every DB-touching route degrades to 10-60 s), which plausibly stops httpx timeouts
+     firing promptly. Neither root cause is identified; both are filed, not fixed.
    - **The 88 quarantined rows are correctly abandoned, not recoverable as-is** (all codex
      `UserPromptSubmit`, all HTTP 409 `entry_mutated`, quarantined 08-17/08-18). Root cause is
      upstream in matrx-codex-plugin: the same `UserPromptSubmit:<turn_id>` was emitted with
