@@ -41,7 +41,12 @@ import {
 } from "@/features/admin/agent-review/service";
 import { AgentReviewWriteTargets } from "@/features/admin/agent-review/components/AgentReviewWriteTargets";
 import {
-  deriveReviewArea,
+  EMPTY_REVIEW_REGISTRY,
+  loadReviewRegistry,
+  type RegistryDomain,
+  type ReviewRegistry,
+} from "@/features/admin/agent-review/registry";
+import {
   REVIEW_LANES,
   REVIEW_LANE_LABELS,
   REVIEW_TOOLS,
@@ -60,11 +65,26 @@ import {
   type ReviewStatus,
 } from "@/features/admin/agent-review/types";
 
-/** Rows whose url carries no usable path still need a home in the picker. */
-const UNPLACED_AREA = "Unplaced";
-
 type LaneFilter = "all" | "unclassified" | ReviewLane;
 type ToolFilter = "all" | ReviewTool;
+
+/** Every facet the board filters on. `all` means the facet is not narrowing. */
+type ReviewFilters = {
+  status: "all" | ReviewStatus;
+  domainId: string;
+  featureId: string;
+  repoSlug: string;
+  lane: LaneFilter;
+  tool: ToolFilter;
+  search: string;
+};
+
+const STATUS_TILES: { value: "all" | ReviewStatus; label: string }[] = [
+  { value: "all", label: "All items" },
+  { value: "pending", label: "Needs review" },
+  { value: "changes_requested", label: "Repair backlog" },
+  { value: "approved", label: "Approved" },
+];
 
 const STATUS_BADGE_CLASS: Record<ReviewStatus, string> = {
   pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
@@ -108,14 +128,19 @@ function isToolFilter(value: string): value is ToolFilter {
   return value === "all" || REVIEW_TOOLS.some((tool) => tool === value);
 }
 
-function rowHumanText(row: ReviewQueueRow, feedback: string): string {
+function rowHumanText(
+  row: ReviewQueueRow,
+  feedback: string,
+  classification: string | null,
+): string {
   const metadata = parseReviewMetadata(row.metadata);
   const triage = metadata.state === "ready" ? metadata.triage : null;
   return [
     `Review item: ${row.title}`,
     `URL: ${row.url}`,
     `Status: ${isReviewStatus(row.status) ? REVIEW_STATUS_LABELS[row.status] : row.status}`,
-    `Source: ${row.source}`,
+    `Repository: ${row.repo_slug ?? row.source}`,
+    `Classification: ${classification ?? "Unclassified"}`,
     triage
       ? `Primary lane: ${REVIEW_LANE_LABELS[triage.lane]}`
       : "Primary lane: Unclassified",
@@ -132,14 +157,31 @@ function rowHumanText(row: ReviewQueueRow, feedback: string): string {
     .join("\n");
 }
 
+/** "Marketing › SEO" for a classified row — the registry names, never the url. */
+function classificationLabel(
+  row: ReviewQueueRow,
+  registry: ReviewRegistry,
+): string | null {
+  const domain = row.domain_id
+    ? registry.domainsById.get(row.domain_id)
+    : undefined;
+  if (!domain) return null;
+  const feature = row.feature_id
+    ? registry.featuresById.get(row.feature_id)
+    : undefined;
+  return feature ? `${domain.name} \u203a ${feature.name}` : domain.name;
+}
+
 function ReviewItemCard({
   row,
+  registry,
   draft,
   onDraftChange,
   onDraftCleared,
   onChanged,
 }: {
   row: ReviewQueueRow;
+  registry: ReviewRegistry;
   /** Unsaved editor text for this row, or undefined when it matches the saved
    * value. Owned by the page so the surface can publish it (and an agent's
    * `review_feedback_draft` can stage into it). */
@@ -149,6 +191,7 @@ function ReviewItemCard({
   onChanged: () => Promise<unknown>;
 }) {
   const feedback = draft ?? row.feedback ?? "";
+  const classification = classificationLabel(row, registry);
   const setFeedback = (next: string) => onDraftChange(row.id, next);
   const [saving, setSaving] = useState(false);
   const metadata = parseReviewMetadata(row.metadata);
@@ -254,8 +297,23 @@ function ReviewItemCard({
                     {triage.priority}
                   </Badge>
                 ) : null}
+                {classification ? (
+                  <Badge
+                    variant="outline"
+                    className="border-border font-normal text-muted-foreground"
+                  >
+                    {classification}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500/50 text-amber-700 dark:text-amber-300"
+                  >
+                    Unclassified
+                  </Badge>
+                )}
                 <span className="text-xs font-normal text-muted-foreground">
-                  {row.source} · {ageLabel(row.created_at)}
+                  {row.repo_slug ?? row.source} · {ageLabel(row.created_at)}
                 </span>
               </div>
               <span className="block line-clamp-2 text-sm font-medium text-foreground">
@@ -416,7 +474,7 @@ function ReviewItemCard({
 
             <CopyButtons
               label={`Review item ${row.title}`}
-              human={() => rowHumanText(row, currentFeedback)}
+              human={() => rowHumanText(row, currentFeedback, classification)}
               agent={() => ({
                 kind: "agent-review-item",
                 location: "Admin — Agent Repair Board",
@@ -434,13 +492,18 @@ function ReviewItemCard({
 
 export default function AgentReviewClient() {
   const [rows, setRows] = useState<ReviewQueueRow[] | null>(null);
+  const [registry, setRegistry] = useState<ReviewRegistry>(
+    EMPTY_REVIEW_REGISTRY,
+  );
   const [error, setError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | ReviewStatus>("all");
+  const [domainFilter, setDomainFilter] = useState("all");
+  const [featureFilter, setFeatureFilter] = useState("all");
+  const [repoFilter, setRepoFilter] = useState("all");
   const [laneFilter, setLaneFilter] = useState<LaneFilter>("all");
   const [toolFilter, setToolFilter] = useState<ToolFilter>("all");
-  const [areaFilter, setAreaFilter] = useState("all");
   /**
    * Unsaved feedback-editor text by row id. Lives here rather than in each
    * card so the surface can publish it (`feedback_drafts`) and the
@@ -502,24 +565,26 @@ export default function AgentReviewClient() {
       }
     }
     void initialLoad();
+
+    // The registry is reference data — a failure here must not blank the
+    // queue, so it is reported and the filters degrade to "all".
+    loadReviewRegistry()
+      .then((data) => {
+        if (active) setRegistry(data);
+      })
+      .catch((registryError: unknown) => {
+        console.error("[agent-review] registry load failed", registryError);
+        toast.error(
+          "Classification registry failed to load — filters are unavailable.",
+        );
+      });
+
     return () => {
       active = false;
     };
   }, []);
 
   const allRows = rows ?? [];
-  const sources = Array.from(new Set(allRows.map((row) => row.source))).sort();
-  // Area options come from the rows THEMSELVES, with counts — never a
-  // hardcoded product map that would silently omit a new feature the day its
-  // first row lands, and never an option that would filter to nothing.
-  const areaCounts = new Map<string, number>();
-  for (const row of allRows) {
-    const area = deriveReviewArea(row.url) ?? UNPLACED_AREA;
-    areaCounts.set(area, (areaCounts.get(area) ?? 0) + 1);
-  }
-  const areaOptions = Array.from(areaCounts.entries()).sort(
-    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-  );
   const repairRows = allRows.filter(
     (row) => row.status === "changes_requested",
   );
@@ -547,32 +612,157 @@ export default function AgentReviewClient() {
     REVIEW_TOOLS.map((tool) => [tool, toolCounts.get(tool) ?? 0]),
   );
 
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredRows = allRows.filter((row) => {
+  const filters: ReviewFilters = {
+    status: statusFilter,
+    domainId: domainFilter,
+    featureId: featureFilter,
+    repoSlug: repoFilter,
+    lane: laneFilter,
+    tool: toolFilter,
+    search: search.trim().toLowerCase(),
+  };
+
+  /**
+   * One matcher for every facet. `skip` drops a single facet so a picker can
+   * count the rows it WOULD show — a count that ignored the other filters
+   * would promise results the click cannot deliver.
+   */
+  function matchesFilters(
+    row: ReviewQueueRow,
+    skip?: keyof ReviewFilters,
+  ): boolean {
     const metadata = parseReviewMetadata(row.metadata);
     const triage = metadata.state === "ready" ? metadata.triage : null;
-    if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
-    if (laneFilter === "unclassified" && triage) return false;
+
     if (
-      laneFilter !== "all" &&
-      laneFilter !== "unclassified" &&
-      triage?.lane !== laneFilter
+      skip !== "status" &&
+      filters.status !== "all" &&
+      row.status !== filters.status
     ) {
       return false;
     }
-    if (toolFilter !== "all" && !triage?.required_tools.includes(toolFilter))
-      return false;
     if (
-      areaFilter !== "all" &&
-      (deriveReviewArea(row.url) ?? UNPLACED_AREA) !== areaFilter
+      skip !== "domainId" &&
+      filters.domainId !== "all" &&
+      row.domain_id !== filters.domainId
     ) {
       return false;
     }
-    if (!normalizedSearch) return true;
-    return [row.title, row.url, row.instructions, row.feedback, row.source]
-      .filter((value): value is string => Boolean(value))
-      .some((value) => value.toLowerCase().includes(normalizedSearch));
-  });
+    if (skip !== "featureId" && filters.featureId !== "all") {
+      if (filters.featureId === "none") {
+        if (row.feature_id) return false;
+      } else if (row.feature_id !== filters.featureId) {
+        return false;
+      }
+    }
+    if (
+      skip !== "repoSlug" &&
+      filters.repoSlug !== "all" &&
+      row.repo_slug !== filters.repoSlug
+    ) {
+      return false;
+    }
+    if (skip !== "lane") {
+      if (filters.lane === "unclassified" && triage) return false;
+      if (
+        filters.lane !== "all" &&
+        filters.lane !== "unclassified" &&
+        triage?.lane !== filters.lane
+      ) {
+        return false;
+      }
+    }
+    if (
+      skip !== "tool" &&
+      filters.tool !== "all" &&
+      !triage?.required_tools.includes(filters.tool)
+    ) {
+      return false;
+    }
+    if (skip !== "search" && filters.search) {
+      const haystack = [
+        row.title,
+        row.url,
+        row.instructions,
+        row.feedback,
+        row.source,
+        row.repo_slug,
+      ].filter((value): value is string => Boolean(value));
+      if (
+        !haystack.some((value) => value.toLowerCase().includes(filters.search))
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  const filteredRows = allRows.filter((row) => matchesFilters(row));
+
+  /** Rows a facet's own options are counted against (every OTHER filter applied). */
+  function rowsForFacet(facet: keyof ReviewFilters): ReviewQueueRow[] {
+    return allRows.filter((row) => matchesFilters(row, facet));
+  }
+
+  function countBy<K>(
+    source: ReviewQueueRow[],
+    key: (row: ReviewQueueRow) => K | null,
+  ): Map<K, number> {
+    const counts = new Map<K, number>();
+    for (const row of source) {
+      const value = key(row);
+      if (value === null) continue;
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  const statusFacetRows = rowsForFacet("status");
+  const statusCounts = countBy(statusFacetRows, (row) => row.status);
+  const domainCounts = countBy(rowsForFacet("domainId"), (row) => row.domain_id);
+  const repoCounts = countBy(rowsForFacet("repoSlug"), (row) => row.repo_slug);
+
+  const featureFacetRows = rowsForFacet("featureId");
+  const featureCounts = countBy(featureFacetRows, (row) => row.feature_id);
+  const featurelessCount = featureFacetRows.filter(
+    (row) => !row.feature_id,
+  ).length;
+
+  // Only the domains that actually carry rows — an option that filters to
+  // nothing is a dead end, and the registry has more nodes than the queue uses.
+  const domainOptions: RegistryDomain[] = registry.domains.filter(
+    (domain) => (domainCounts.get(domain.id) ?? 0) > 0 || domain.id === domainFilter,
+  );
+  const selectedDomain =
+    domainFilter === "all" ? null : registry.domainsById.get(domainFilter);
+  const featureOptions = (
+    selectedDomain
+      ? selectedDomain.features
+      : registry.domains.flatMap((domain) => domain.features)
+  ).filter(
+    (feature) =>
+      (featureCounts.get(feature.id) ?? 0) > 0 || feature.id === featureFilter,
+  );
+  const repoOptions = registry.repos.filter(
+    (repo) => (repoCounts.get(repo.slug) ?? 0) > 0 || repo.slug === repoFilter,
+  );
+
+  /** Picking a domain that does not own the selected feature clears the feature. */
+  function selectDomain(nextDomainId: string) {
+    setDomainFilter(nextDomainId);
+    if (featureFilter === "all" || featureFilter === "none") return;
+    const feature = registry.featuresById.get(featureFilter);
+    if (nextDomainId !== "all" && feature?.domainId !== nextDomainId) {
+      setFeatureFilter("all");
+    }
+  }
+
+  /** Picking a feature pins its domain, so the two controls can never disagree. */
+  function selectFeature(nextFeatureId: string) {
+    setFeatureFilter(nextFeatureId);
+    const feature = registry.featuresById.get(nextFeatureId);
+    if (feature) setDomainFilter(feature.domainId);
+  }
 
   const grouped = new Map<ReviewStatus, ReviewQueueRow[]>();
   for (const row of filteredRows) {
@@ -663,65 +853,93 @@ export default function AgentReviewClient() {
           </div>
 
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            <button
-              type="button"
-              className="min-h-14 min-w-28 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-accent"
-              onClick={() => setLaneFilter("all")}
-            >
-              <span className="block text-lg font-semibold text-foreground">
-                {repairRows.length}
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                All repairs
-              </span>
-            </button>
-            {REVIEW_LANES.map((lane) => (
-              <button
-                key={lane}
-                type="button"
-                className="min-h-14 min-w-28 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-accent"
-                onClick={() => setLaneFilter(lane)}
-              >
-                <span className="block text-lg font-semibold text-foreground">
-                  {laneCounts.get(lane) ?? 0}
-                </span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {REVIEW_LANE_LABELS[lane]}
-                </span>
-              </button>
-            ))}
+            {STATUS_TILES.map((tile) => {
+              const count =
+                tile.value === "all"
+                  ? statusFacetRows.filter((row) => row.status !== "archived")
+                      .length
+                  : (statusCounts.get(tile.value) ?? 0);
+              const active = statusFilter === tile.value;
+              return (
+                <button
+                  key={tile.value}
+                  type="button"
+                  aria-pressed={active}
+                  className={`min-h-14 min-w-28 rounded-md border px-2.5 py-2 text-left transition-colors hover:bg-accent ${
+                    active
+                      ? "border-primary bg-accent"
+                      : "border-border bg-card"
+                  }`}
+                  onClick={() => setStatusFilter(tile.value)}
+                >
+                  <span className="block text-lg font-semibold text-foreground">
+                    {count}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {tile.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-[minmax(12rem,1fr)_13rem_11rem_11rem_11rem]">
+          <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-[minmax(11rem,1fr)_12rem_14rem_11rem_11rem_11rem]">
             <SearchInput
               value={search}
               onValueChange={setSearch}
               placeholder="Search title, route, instructions, or feedback"
               aria-label="Search repair board"
-              className="col-span-2 md:col-span-1"
+              className="col-span-2 xl:col-span-1"
             />
-            <Select value={areaFilter} onValueChange={setAreaFilter}>
-              <SelectTrigger aria-label="Filter by area" className="h-9">
-                <SelectValue placeholder="All areas" />
+            <Select value={domainFilter} onValueChange={selectDomain}>
+              <SelectTrigger aria-label="Filter by domain" className="h-9">
+                <SelectValue placeholder="All domains" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All areas</SelectItem>
-                {areaOptions.map(([area, count]) => (
-                  <SelectItem key={area} value={area}>
-                    {area} ({count})
+                <SelectItem value="all">
+                  All domains ({rowsForFacet("domainId").length})
+                </SelectItem>
+                {domainOptions.map((domain) => (
+                  <SelectItem key={domain.id} value={domain.id}>
+                    {domain.name} ({domainCounts.get(domain.id) ?? 0})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger aria-label="Filter by source" className="h-9">
+            <Select value={featureFilter} onValueChange={selectFeature}>
+              <SelectTrigger aria-label="Filter by feature" className="h-9">
+                <SelectValue placeholder="All features" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  All features ({featureFacetRows.length})
+                </SelectItem>
+                {featurelessCount > 0 ? (
+                  <SelectItem value="none">
+                    Domain only — no feature ({featurelessCount})
+                  </SelectItem>
+                ) : null}
+                {featureOptions.map((feature) => (
+                  <SelectItem key={feature.id} value={feature.id}>
+                    {selectedDomain
+                      ? feature.name
+                      : `${registry.domainsById.get(feature.domainId)?.name ?? "?"} \u203a ${feature.name}`}{" "}
+                    ({featureCounts.get(feature.id) ?? 0})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={repoFilter} onValueChange={setRepoFilter}>
+              <SelectTrigger aria-label="Filter by repository" className="h-9">
                 <SelectValue placeholder="All repositories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All repositories</SelectItem>
-                {sources.map((source) => (
-                  <SelectItem key={source} value={source}>
-                    {source}
+                <SelectItem value="all">
+                  All repositories ({rowsForFacet("repoSlug").length})
+                </SelectItem>
+                {repoOptions.map((repo) => (
+                  <SelectItem key={repo.slug} value={repo.slug}>
+                    {repo.slug} ({repoCounts.get(repo.slug) ?? 0})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -758,7 +976,7 @@ export default function AgentReviewClient() {
             >
               <SelectTrigger
                 aria-label="Filter by required tool"
-                className="col-span-2 h-9 md:col-span-1"
+                className="col-span-2 h-9 xl:col-span-1"
               >
                 <SelectValue placeholder="All tools" />
               </SelectTrigger>
@@ -813,6 +1031,7 @@ export default function AgentReviewClient() {
                         <ReviewItemCard
                           key={row.id}
                           row={row}
+                          registry={registry}
                           draft={feedbackDrafts[row.id]}
                           onDraftChange={setFeedbackDraft}
                           onDraftCleared={clearFeedbackDraft}
@@ -848,6 +1067,7 @@ export default function AgentReviewClient() {
                       <ReviewItemCard
                         key={row.id}
                         row={row}
+                        registry={registry}
                         draft={feedbackDrafts[row.id]}
                         onDraftChange={setFeedbackDraft}
                         onDraftCleared={clearFeedbackDraft}

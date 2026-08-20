@@ -1,5 +1,4 @@
 import {
-  deriveReviewArea,
   metadataWithReviewTriage,
   parseReviewMetadata,
   suggestReviewTriage,
@@ -59,43 +58,5 @@ describe("agent review triage", () => {
     });
 
     expect(parsed.state).toBe("invalid");
-  });
-});
-
-describe("deriveReviewArea", () => {
-  it("keeps the feature under its container", () => {
-    expect(deriveReviewArea("/marketing/content-plan/abc")).toBe(
-      "Marketing › Content Plan",
-    );
-    expect(deriveReviewArea("/administration/users/agent-review")).toBe(
-      "Administration › Users",
-    );
-  });
-
-  it("handles absolute and protocol-relative urls", () => {
-    expect(deriveReviewArea("https://aimatrx.com/marketing/content-plan")).toBe(
-      "Marketing › Content Plan",
-    );
-    expect(deriveReviewArea("//manage.aimatrx.com/education/flashcards")).toBe(
-      "Education › Flashcards",
-    );
-  });
-
-  it("does not turn an id into a feature name", () => {
-    expect(
-      deriveReviewArea("/marketing/1f0c6379-9c85-4cd9-9174-d23599b80026"),
-    ).toBe("Marketing");
-    expect(deriveReviewArea("/marketing/42")).toBe("Marketing");
-  });
-
-  it("falls back to the first segment outside a container", () => {
-    expect(deriveReviewArea("/chat")).toBe("Chat");
-    expect(deriveReviewArea("/crm/parties?tab=x")).toBe("Crm");
-  });
-
-  it("answers null when there is no usable path", () => {
-    expect(deriveReviewArea("")).toBeNull();
-    expect(deriveReviewArea(null)).toBeNull();
-    expect(deriveReviewArea("https://aimatrx.com")).toBeNull();
   });
 });
