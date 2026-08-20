@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-19`
+**Last updated:** `2026-08-20`
 
 ---
 
@@ -44,7 +44,8 @@ not own or duplicate organization or membership data.
 - `auth.users` and `users.profiles` supply account identity and display fields.
 - `auth.users.is_anonymous` is the guest authority. A UUID-looking label is never used to infer status.
 - Supabase Auth `created_at` and `is_anonymous` flow through `mapUserData` into volatile `userAuth`; the Error Inspector derives first-seven-day capture eligibility locally with no query or stored flag.
-- `public.guest_executions` owns browser fingerprint continuity, first/last execution, conversion, IP/user-agent, and `metadata.acquisition` first touch.
+- `public.guest_executions` owns first-party visitor continuity, first/last execution, conversion, IP/user-agent, and `metadata.acquisition` first touch.
+- `public.record_acquisition_first_touch` atomically creates or enriches that row. It preserves the first observed request while linking the browser's guest ID and eventual account ID.
 - `chat.admin_user_usage_rollup` supplies stored all-time AI requests, last activity, and cost.
 
 No new table or Redux slice is owned by this feature.
@@ -58,9 +59,18 @@ the user-agent is automated, and what that identity has cost. The timeframe is
 a **cohort-created/converted filter**; cost remains all-time stored cost for
 each identity so a cohort's full exposure is visible.
 
-Historical landing pages were never retained. Those rows say `Not captured`.
-The first-touch collector begins truthful forward capture and never backfills a
-guess from an AI surface, UUID, or latest page.
+Historical landing pages were never retained. Those rows say **Historical — not
+collected**. A missing referrer on a captured request says **Direct / browser
+withheld** instead. The collector never backfills a guess from an AI surface,
+UUID, or latest page.
+
+Proxy issues the first-party `matrx_acquisition_visitor` cookie and queues the
+first host, path, sanitized referrer, UTM fields, request headers, IP, and client
+classification with `NextFetchEvent.waitUntil`. The database is never on the
+visitor's response path. Browser enrichment later adds timezone, language,
+screen, and the existing guest ID through the same atomic function. Email,
+promoted-guest, and OAuth signup paths link the visitor record to the permanent
+account with `after`, even when the visitor never ran AI.
 
 The **Journey** door joins `public.api_request_log` (nearly every AI Dream HTTP
 request; health/liveness exclusions are deliberate), `runtime.global_request`
@@ -71,7 +81,9 @@ feature usage, failures, runtime work/cost, and the request-ID chronology. The
 Journey door opens the canonical non-blocking `SidePanelSurface`; secondary
 telemetry failures appear as source warnings without hiding successfully loaded
 history. Localhost and loopback referrers are visibly classified as local/agent
-testing, not ordinary acquired traffic.
+testing, not ordinary acquired traffic. Headline people, account, conversion,
+and cost totals exclude local/agent traffic and bots; the table retains both for
+diagnosis.
 
 ### Deferred observability
 
@@ -121,8 +133,9 @@ cost. The owned ledgers above remain the canonical everyday view.
 - The name is a real anchor, not a click handler, so middle-click and cmd-click work. Where a user's name genuinely cannot be an anchor (inside a `<label>` or a button that means something else), render `AdminUserDoorControls` as a sibling instead — an anchor nested in interactive content is invalid DOM. All 12 call sites were verified clear on 2026-08-09.
 - **Never put `href` on a `MatrxDataTable` column whose cell renders `AdminUserRef`.** A column declaring `href` makes the table wrap the whole cell in a `<Link>` (`MatrxDataTable.tsx`), which would nest the name's anchor inside another anchor. Every current user column renders its own cell and declares no `href`; that is deliberate, not an oversight. Row-click navigation is safe alongside it — the table already ignores clicks originating inside an `<a>`.
 - **Guest, visitor, account, and converted are distinct states.** Visitor means a fingerprint observed before an auth identity exists; guest means `auth.users.is_anonymous=true`; converted means a guest-registry lineage now points at a permanent account.
-- **First-touch association is not conversion.** A permanent session observed by the collector links through `guest_executions.metadata.acquisition_user_id`; only the signup/promotion path writes `converted_at` / `converted_to_user_id`.
+- **First-touch association is not conversion.** Signup and OAuth attach `guest_executions.metadata.acquisition_user_id`; only guest promotion writes `converted_at` / `converted_to_user_id`.
 - **Acquisition data is first observed, never reconstructed.** Preserve the first metadata object and show unknown for older rows. A later page is not a landing page.
+- **Local/agent and bot traffic stays visible but never inflates headline acquisition totals.** Classify localhost and loopback from either landing host or referrer.
 
 ---
 
@@ -145,6 +158,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ## Change log
 
+- `2026-08-20` — Moved first touch to zero-blocking Proxy capture backed by atomic `record_acquisition_first_touch`, adopted the server visitor ID for new guest AI use, linked email/OAuth accounts without requiring an AI execution, separated historical gaps from direct/withheld referrers, and excluded localhost/agent and bot rows from headline acquisition and cost totals while retaining them for diagnosis.
 - `2026-08-19` — Reused the already-fetched Supabase Auth creation timestamp and anonymous flag in Redux so guests and first-seven-day accounts retain all frontend diagnostic tiers without a database boolean, expiry job, or additional query.
 - `2026-08-19` — Replaced the blocking Journey sheet with the canonical non-blocking Matrx side panel, stopped row-click propagation, preserved partial journey history when secondary telemetry is unavailable, and marked localhost/loopback referrers as local/agent testing.
 - `2026-08-19` — Added the per-identity Journey panel: feature usage, owned AI Dream HTTP requests, runtime request/execution and cost, frontend/server errors, server warning/error context, a dropoff verdict, and a chronological forensic trail. External Vercel/Supabase log ingestion is explicitly deferred.

@@ -222,7 +222,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/is-prop-valid": "^1.4.0",
-    "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
     "@matrx/agents": "workspace:*",

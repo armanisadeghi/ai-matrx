@@ -1,11 +1,13 @@
 import { z } from "zod";
 
 export const ACQUISITION_STORAGE_KEY = "matrx:first-touch:v1";
+export const ACQUISITION_VISITOR_COOKIE = "matrx_acquisition_visitor";
 
 const nullableText = (max: number) => z.string().trim().max(max).nullable();
 
 export const FirstTouchPayloadSchema = z.object({
   fingerprint: z.string().regex(/^[a-zA-Z0-9]{16,200}$/),
+  guest_fingerprint: nullableText(200),
   captured_at: z.iso.datetime(),
   landing_host: z.string().trim().min(1).max(255),
   landing_path: z.string().trim().startsWith("/").max(1000),
@@ -18,6 +20,14 @@ export const FirstTouchPayloadSchema = z.object({
   timezone: nullableText(100),
   language: nullableText(50),
   screen: nullableText(50),
+  capture_source: z.enum(["server_request", "browser_enrichment"]),
+  referrer_state: z.enum([
+    "external",
+    "internal",
+    "local_test",
+    "direct_or_withheld",
+  ]),
+  sec_fetch_site: nullableText(50),
 });
 
 export type FirstTouchPayload = z.infer<typeof FirstTouchPayloadSchema>;
@@ -31,21 +41,37 @@ const BOT_USER_AGENT =
 export function classifyAcquisitionTraffic(
   userAgent: string | null,
   referrer: string | null = null,
+  landingHost: string | null = null,
 ): AcquisitionTrafficKind {
-  if (isLocalAcquisitionReferrer(referrer)) return "local_test";
+  if (
+    isLocalAcquisitionReferrer(referrer) ||
+    isLocalAcquisitionHost(landingHost)
+  )
+    return "local_test";
   if (!userAgent) return "unknown";
   return BOT_USER_AGENT.test(userAgent) ? "bot" : "browser";
+}
+
+export function isLocalAcquisitionHost(host: string | null): boolean {
+  if (!host) return false;
+  let hostname = host.toLowerCase();
+  try {
+    hostname = new URL(`http://${host}`).hostname.toLowerCase();
+  } catch {
+    hostname = host.toLowerCase().split(":")[0];
+  }
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname === "::1"
+  );
 }
 
 export function isLocalAcquisitionReferrer(referrer: string | null): boolean {
   if (!referrer) return false;
   try {
-    const hostname = new URL(referrer).hostname.toLowerCase();
-    return (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "[::1]"
-    );
+    return isLocalAcquisitionHost(new URL(referrer).host);
   } catch {
     return false;
   }

@@ -2,14 +2,14 @@
  * Centralized Fingerprint Service
  *
  * Handles robust guest identification for all non-authenticated routes.
- * Uses FingerprintJS for reliable, cross-session identification.
+ * Uses the server-issued first-party visitor id for new browsers and preserves
+ * the existing localStorage id for returning browsers.
  *
  * CRITICAL: This service MUST be used for ANY AI interaction from guests.
  */
 
-import FingerprintJS, { type Agent, type BuiltinComponents } from "@fingerprintjs/fingerprintjs";
+import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
 
-let fpPromise: Promise<Agent> | null = null;
 let cachedFingerprint: string | null = null;
 
 // Storage configuration
@@ -23,14 +23,30 @@ interface FingerprintData {
   lastUsed: number;
 }
 
-/**
- * Initialize FingerprintJS
- */
-function initFingerprint() {
-  if (!fpPromise) {
-    fpPromise = FingerprintJS.load();
+function readVisitorCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const prefix = `${ACQUISITION_VISITOR_COOKIE}=`;
+  const raw = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix))
+    ?.slice(prefix.length);
+  return raw && isValidFingerprint(raw) ? raw : null;
+}
+
+function storeFingerprint(fingerprint: string): void {
+  const now = Date.now();
+  const fpData: FingerprintData = {
+    fingerprint,
+    version: STORAGE_VERSION,
+    createdAt: now,
+    lastUsed: now,
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(fpData));
+  } catch {
+    // Privacy-restricted browsers still retain the response cookie.
   }
-  return fpPromise;
 }
 
 /**
@@ -71,53 +87,20 @@ export async function getFingerprint(): Promise<string> {
     }
   }
 
-  // Layer 3: Generate new fingerprint
-  try {
-    const fp = await initFingerprint();
-    const result = await fp.get();
-
-    // Use visitor ID as primary fingerprint
-    const fingerprint = result.visitorId;
-    cachedFingerprint = fingerprint;
-
-    // Store in localStorage with metadata for persistence
-    if (typeof window !== "undefined") {
-      const fpData: FingerprintData = {
-        fingerprint,
-        version: STORAGE_VERSION,
-        createdAt: Date.now(),
-        lastUsed: Date.now(),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(fpData));
-      console.log("✅ Generated and stored new fingerprint in localStorage");
-    }
-
-    return fingerprint;
-  } catch (error) {
-    console.error("❌ Fingerprint generation failed:", error);
-
-    // Fallback: Try to get from localStorage (even if version mismatch)
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const data = JSON.parse(stored);
-          if (data.fingerprint) {
-            cachedFingerprint = data.fingerprint;
-            console.warn("⚠️ Using old version fingerprint as fallback");
-            return data.fingerprint;
-          }
-        }
-      } catch (parseError) {
-        console.error("Failed to parse fallback fingerprint:", parseError);
-      }
-    }
-
-    // Last resort: Generate temporary ID (will be different per session)
-    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    console.warn("⚠️ Using temporary fingerprint:", tempId);
-    return tempId;
+  // Layer 3: the server created this before the first page response.
+  const visitorId = readVisitorCookie();
+  if (visitorId) {
+    cachedFingerprint = visitorId;
+    storeFingerprint(visitorId);
+    return visitorId;
   }
+
+  // Local/test fallback when Proxy did not run. Cryptographic randomness keeps
+  // the id stable and unguessable without fingerprinting browser hardware.
+  const fallback = crypto.randomUUID().replaceAll("-", "");
+  cachedFingerprint = fallback;
+  if (typeof window !== "undefined") storeFingerprint(fallback);
+  return fallback;
 }
 
 /**
@@ -150,6 +133,12 @@ export function getCachedFingerprint(): string | null {
     }
   }
 
+  const visitorId = readVisitorCookie();
+  if (visitorId) {
+    cachedFingerprint = visitorId;
+    return visitorId;
+  }
+
   return null;
 }
 
@@ -164,30 +153,6 @@ export function clearCachedFingerprint(): void {
 }
 
 /**
- * Get detailed visitor information
- * Use for debugging or advanced tracking
- */
-export async function getDetailedFingerprint(): Promise<{
-  visitorId: string;
-  confidence: number;
-  components: BuiltinComponents;
-}> {
-  try {
-    const fp = await initFingerprint();
-    const result = await fp.get();
-
-    return {
-      visitorId: result.visitorId,
-      confidence: result.confidence.score,
-      components: result.components,
-    };
-  } catch (error) {
-    console.error("Failed to get detailed fingerprint:", error);
-    throw error;
-  }
-}
-
-/**
  * Validate that a fingerprint string looks legitimate
  * Helps prevent bypassing via fake fingerprints
  */
@@ -196,7 +161,6 @@ export function isValidFingerprint(fingerprint: string): boolean {
     return false;
   }
 
-  // FingerprintJS visitor IDs are typically alphanumeric, 20+ chars
   if (fingerprint.length < 16) {
     return false;
   }
@@ -206,8 +170,7 @@ export function isValidFingerprint(fingerprint: string): boolean {
     return true; // Allow temps but flag them
   }
 
-  // Should be alphanumeric
-  return /^[a-zA-Z0-9]+$/.test(fingerprint);
+  return /^[a-zA-Z0-9_-]+$/.test(fingerprint);
 }
 
 /**

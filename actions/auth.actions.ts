@@ -4,7 +4,8 @@
 
 import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { promoteGuestToUser } from "@/lib/services/guest-promotion";
 import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
@@ -15,6 +16,22 @@ import {
   readAuthDestination,
   withAuthDestination,
 } from "@/utils/auth/auth-destination";
+import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
+import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
+
+function queueAcquisitionLink(visitorId: string | null, userId: string): void {
+  if (!visitorId || !/^[A-Za-z0-9]{16,200}$/.test(visitorId)) return;
+  after(async () => {
+    try {
+      await linkAcquisitionToUser(visitorId, userId);
+    } catch (error) {
+      console.error(
+        "[user-acquisition] LOUD: signup succeeded but acquisition linking failed",
+        error,
+      );
+    }
+  });
+}
 
 export async function signUpAction(
   formData: FormData,
@@ -24,6 +41,8 @@ export async function signUpAction(
   const confirmPassword = formData.get("confirmPassword")?.toString();
 
   const supabase = await createClient();
+  const visitorId =
+    (await cookies()).get(ACQUISITION_VISITOR_COOKIE)?.value ?? null;
 
   const origin = (await headers()).get("origin");
   const safeRedirectTo = authDestinationOr(formData);
@@ -77,6 +96,7 @@ export async function signUpAction(
     });
 
     if (promotion.promoted) {
+      queueAcquisitionLink(visitorId, promotion.userId);
       // Account is real + email already confirmed. Sign them in on the
       // cookie-bound SSR client (same UUID → all their work is theirs) and
       // skip the email-confirmation gate entirely.
@@ -160,6 +180,8 @@ export async function signUpAction(
       ...(signupAgeBand ? { data: { education_age_band: signupAgeBand } } : {}),
     },
   });
+
+  if (!error && data.user) queueAcquisitionLink(visitorId, data.user.id);
 
   if (error) {
     console.error("SignUpAction - Auth error:", error.code, error.message);

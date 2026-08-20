@@ -48,6 +48,29 @@ function acquisitionUserId(row: GuestRow): string | null {
     : null;
 }
 
+function acquisitionGuestFingerprint(row: GuestRow): string | null {
+  if (!isJsonObject(row.metadata)) return null;
+  return typeof row.metadata.guest_fingerprint === "string"
+    ? row.metadata.guest_fingerprint
+    : null;
+}
+
+function hasAcquisition(row: GuestRow | undefined): row is GuestRow {
+  return Boolean(row && acquisitionValue(row, "captured_at"));
+}
+
+function acquisitionReferrerState(
+  row: GuestRow | undefined,
+): AdminUserAcquisitionRow["referrer_state"] {
+  const value = acquisitionValue(row, "referrer_state");
+  return value === "external" ||
+    value === "internal" ||
+    value === "local_test" ||
+    value === "direct_or_withheld"
+    ? value
+    : null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireSuperAdmin();
@@ -106,23 +129,37 @@ export async function GET(request: NextRequest) {
   }
 
   const guestByUserId = new Map<string, GuestRow>();
+  const guestByFingerprint = new Map<string, GuestRow>();
+  const acquisitionByUserId = new Map<string, GuestRow>();
+  const acquisitionByGuestFingerprint = new Map<string, GuestRow>();
   for (const guest of guests) {
+    guestByFingerprint.set(guest.fingerprint, guest);
     if (guest.auth_user_id) guestByUserId.set(guest.auth_user_id, guest);
     if (guest.converted_to_user_id)
       guestByUserId.set(guest.converted_to_user_id, guest);
     const observedUserId = acquisitionUserId(guest);
-    if (observedUserId) guestByUserId.set(observedUserId, guest);
+    if (observedUserId) acquisitionByUserId.set(observedUserId, guest);
+    const observedFingerprint = acquisitionGuestFingerprint(guest);
+    if (observedFingerprint)
+      acquisitionByGuestFingerprint.set(observedFingerprint, guest);
   }
 
   const includedGuestIds = new Set<string>();
   const rows: AdminUserAcquisitionRow[] = [];
   for (const user of authUsers) {
     const guest = guestByUserId.get(user.id);
+    const acquisitionGuest =
+      (hasAcquisition(guest) ? guest : undefined) ??
+      acquisitionByUserId.get(user.id) ??
+      (guest
+        ? acquisitionByGuestFingerprint.get(guest.fingerprint)
+        : undefined);
     const createdAt = user.created_at;
     const convertedAt = guest?.converted_at ?? null;
     if (from && createdAt < from && (!convertedAt || convertedAt < from))
       continue;
     if (guest) includedGuestIds.add(guest.id);
+    if (acquisitionGuest) includedGuestIds.add(acquisitionGuest.id);
 
     const usage = usageById.get(user.id);
     const isAnonymous = user.is_anonymous === true;
@@ -131,7 +168,7 @@ export async function GET(request: NextRequest) {
       : guest && (guest.converted_at || guest.converted_to_user_id)
         ? "converted"
         : "account";
-    const userAgent = guest?.user_agent ?? null;
+    const userAgent = acquisitionGuest?.user_agent ?? guest?.user_agent ?? null;
     const displayName = displayNameById.get(user.id);
     rows.push({
       row_id: user.id,
@@ -150,20 +187,25 @@ export async function GET(request: NextRequest) {
         usage?.last_activity ?? guest?.last_execution_at ?? null,
       total_requests: usage?.total_requests ?? 0,
       total_cost: usage?.total_cost ?? 0,
-      landing_host: acquisitionValue(guest, "landing_host"),
-      landing_path: acquisitionValue(guest, "landing_path"),
-      referrer: acquisitionValue(guest, "referrer"),
-      utm_source: acquisitionValue(guest, "utm_source"),
-      utm_medium: acquisitionValue(guest, "utm_medium"),
-      utm_campaign: acquisitionValue(guest, "utm_campaign"),
-      utm_content: acquisitionValue(guest, "utm_content"),
-      utm_term: acquisitionValue(guest, "utm_term"),
-      first_touch_captured_at: acquisitionValue(guest, "captured_at"),
-      ip_address: ipString(guest?.ip_address),
+      landing_host: acquisitionValue(acquisitionGuest, "landing_host"),
+      landing_path: acquisitionValue(acquisitionGuest, "landing_path"),
+      referrer: acquisitionValue(acquisitionGuest, "referrer"),
+      referrer_state: acquisitionReferrerState(acquisitionGuest),
+      utm_source: acquisitionValue(acquisitionGuest, "utm_source"),
+      utm_medium: acquisitionValue(acquisitionGuest, "utm_medium"),
+      utm_campaign: acquisitionValue(acquisitionGuest, "utm_campaign"),
+      utm_content: acquisitionValue(acquisitionGuest, "utm_content"),
+      utm_term: acquisitionValue(acquisitionGuest, "utm_term"),
+      first_touch_captured_at: acquisitionValue(
+        acquisitionGuest,
+        "captured_at",
+      ),
+      ip_address: ipString(acquisitionGuest?.ip_address ?? guest?.ip_address),
       user_agent: userAgent,
       traffic_kind: classifyAcquisitionTraffic(
         userAgent,
-        acquisitionValue(guest, "referrer"),
+        acquisitionValue(acquisitionGuest, "referrer"),
+        acquisitionValue(acquisitionGuest, "landing_host"),
       ),
       client_description: describeAcquisitionClient(userAgent),
       last_sign_in_at: user.last_sign_in_at ?? null,
@@ -172,6 +214,17 @@ export async function GET(request: NextRequest) {
 
   for (const guest of guests) {
     if (includedGuestIds.has(guest.id)) continue;
+    const mappedFingerprint = acquisitionGuestFingerprint(guest);
+    if (
+      mappedFingerprint &&
+      mappedFingerprint !== guest.fingerprint &&
+      guestByFingerprint.has(mappedFingerprint)
+    )
+      continue;
+    const acquisitionGuest =
+      (hasAcquisition(guest) ? guest : undefined) ??
+      acquisitionByGuestFingerprint.get(guest.fingerprint);
+    if (acquisitionGuest) includedGuestIds.add(acquisitionGuest.id);
     const createdAt = guest.created_at ?? guest.first_execution_at;
     if (!createdAt || (from && createdAt < from)) continue;
     const userAgent = guest.user_agent;
@@ -188,20 +241,25 @@ export async function GET(request: NextRequest) {
       last_ai_activity: guest.last_execution_at,
       total_requests: 0,
       total_cost: 0,
-      landing_host: acquisitionValue(guest, "landing_host"),
-      landing_path: acquisitionValue(guest, "landing_path"),
-      referrer: acquisitionValue(guest, "referrer"),
-      utm_source: acquisitionValue(guest, "utm_source"),
-      utm_medium: acquisitionValue(guest, "utm_medium"),
-      utm_campaign: acquisitionValue(guest, "utm_campaign"),
-      utm_content: acquisitionValue(guest, "utm_content"),
-      utm_term: acquisitionValue(guest, "utm_term"),
-      first_touch_captured_at: acquisitionValue(guest, "captured_at"),
-      ip_address: ipString(guest.ip_address),
+      landing_host: acquisitionValue(acquisitionGuest, "landing_host"),
+      landing_path: acquisitionValue(acquisitionGuest, "landing_path"),
+      referrer: acquisitionValue(acquisitionGuest, "referrer"),
+      referrer_state: acquisitionReferrerState(acquisitionGuest),
+      utm_source: acquisitionValue(acquisitionGuest, "utm_source"),
+      utm_medium: acquisitionValue(acquisitionGuest, "utm_medium"),
+      utm_campaign: acquisitionValue(acquisitionGuest, "utm_campaign"),
+      utm_content: acquisitionValue(acquisitionGuest, "utm_content"),
+      utm_term: acquisitionValue(acquisitionGuest, "utm_term"),
+      first_touch_captured_at: acquisitionValue(
+        acquisitionGuest,
+        "captured_at",
+      ),
+      ip_address: ipString(acquisitionGuest?.ip_address ?? guest.ip_address),
       user_agent: userAgent,
       traffic_kind: classifyAcquisitionTraffic(
         userAgent,
-        acquisitionValue(guest, "referrer"),
+        acquisitionValue(acquisitionGuest, "referrer"),
+        acquisitionValue(acquisitionGuest, "landing_host"),
       ),
       client_description: describeAcquisitionClient(userAgent),
       last_sign_in_at: null,

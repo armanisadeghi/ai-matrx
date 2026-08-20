@@ -1,6 +1,7 @@
 import {
   classifyAcquisitionTraffic,
   describeAcquisitionClient,
+  isLocalAcquisitionHost,
   safeObservedUrl,
 } from "./user-acquisition";
 
@@ -28,6 +29,14 @@ describe("user acquisition telemetry", () => {
     expect(classifyAcquisitionTraffic(null, "http://127.0.0.1:3000/")).toBe(
       "local_test",
     );
+    expect(
+      classifyAcquisitionTraffic(
+        "Mozilla/5.0 Chrome/149.0.0.0",
+        null,
+        "localhost:3000",
+      ),
+    ).toBe("local_test");
+    expect(isLocalAcquisitionHost("[::1]:3000")).toBe(true);
   });
 
   test("describes the client without exposing the raw agent as the label", () => {

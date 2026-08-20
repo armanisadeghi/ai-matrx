@@ -5,9 +5,17 @@
 // public education/creator origin (learn.aimatrx.com).
 // https://supabase.com/docs/guides/auth/server-side/nextjs
 
-import { NextResponse, type NextRequest } from "next/server";
+import {
+  NextResponse,
+  type NextFetchEvent,
+  type NextRequest,
+} from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
 import { siteConfig } from "@/config/extras/site";
+import {
+  applyAcquisitionCookie,
+  prepareAcquisitionCapture,
+} from "@/lib/product-analytics/server/request-capture";
 
 // ---------------------------------------------------------------------------
 // Edu host gate — learn.aimatrx.com (Arman's decision, 2026-07)
@@ -66,8 +74,10 @@ const MAIN_HOST = (() => {
 //      every profile compiles so login works on every host) redirects to the
 //      main origin. Auth carries across hosts via the domain-wide cookie
 //      (utils/supabase/authCookie.ts).
-const ADMIN_ORIGIN = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.trim() || "https://manage.aimatrx.com";
-const DEMOS_ORIGIN = process.env.NEXT_PUBLIC_DEMOS_ORIGIN?.trim() || "https://demos.aimatrx.com";
+const ADMIN_ORIGIN =
+  process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.trim() || "https://manage.aimatrx.com";
+const DEMOS_ORIGIN =
+  process.env.NEXT_PUBLIC_DEMOS_ORIGIN?.trim() || "https://demos.aimatrx.com";
 const ADMIN_HOST = (() => {
   try {
     return new URL(ADMIN_ORIGIN).host;
@@ -86,6 +96,29 @@ const DEMOS_HOST = (() => {
 const BUILD_PROFILE = process.env.NEXT_PUBLIC_MATRX_PROFILE || "full";
 const BUILD_HAS_ADMIN = ["full", "core", "admin"].includes(BUILD_PROFILE);
 const BUILD_HAS_DEMOS = ["full", "user", "demos"].includes(BUILD_PROFILE);
+
+// These public routes previously bypassed Proxy entirely. They now pass
+// through only for first-touch capture; skip the Supabase session refresh so
+// acquisition coverage adds no auth-network cost to their response path.
+const CAPTURE_ONLY_PREFIXES = [
+  "/forgot-password",
+  "/error",
+  "/reset-password",
+  "/contact",
+  "/about",
+  "/privacy-policy",
+  "/google-settings",
+  "/developers",
+  "/matrx",
+  "/flash-cards",
+  "/dash-test",
+];
+
+function isCaptureOnlyPath(pathname: string): boolean {
+  return CAPTURE_ONLY_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 // Paths every profile compiles — allowed on the satellite hosts so login and
 // error surfaces work in place. (/api, /auth, /_next are outside the matcher;
@@ -126,7 +159,9 @@ function satelliteGate(
   ) {
     return null;
   }
-  return NextResponse.redirect(new URL(pathname + search, `https://${MAIN_HOST}`));
+  return NextResponse.redirect(
+    new URL(pathname + search, `https://${MAIN_HOST}`),
+  );
 }
 
 // Path prefixes that render as-is on the edu host (the school-safe surface).
@@ -162,7 +197,7 @@ function isEduAllowedPath(pathname: string): boolean {
   return EDU_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-export async function proxy(request: NextRequest) {
+async function routeRequest(request: NextRequest) {
   const requestHost = request.headers.get("host");
 
   // Satellite hosts serve ONLY their surface; everything else bounces to the
@@ -185,7 +220,8 @@ export async function proxy(request: NextRequest) {
     const { pathname, search } = request.nextUrl;
     if (
       !BUILD_HAS_ADMIN &&
-      (pathname === "/administration" || pathname.startsWith("/administration/"))
+      (pathname === "/administration" ||
+        pathname.startsWith("/administration/"))
     ) {
       return NextResponse.redirect(new URL(pathname + search, ADMIN_ORIGIN));
     }
@@ -230,7 +266,17 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (isCaptureOnlyPath(request.nextUrl.pathname)) {
+    return NextResponse.next({ request });
+  }
+
   return await updateSession(request);
+}
+
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const capture = prepareAcquisitionCapture(request, event);
+  const response = await routeRequest(request);
+  return applyAcquisitionCookie(response, capture, request);
 }
 
 export const config = {
@@ -245,15 +291,14 @@ export const config = {
      * - auth (auth callback routes)
      * - app_callback / app_redirect (OAuth app linking, handles own auth flow)
      * - flash-cards, matrx, dash-test (authenticated layouts handle own auth)
-     * - Auth-related pages: forgot-password, error, reset-password
-     * - Info pages: contact, about, privacy-policy, google-settings
-     * - Developer pages: developers
+     * - Public/auth/info pages stay matched for zero-blocking first-touch
+     *   capture; routeRequest bypasses session refresh where it is unnecessary.
      *
      * NOTE: public content routes (/p, /demos, /canvas/shared, /canvas/discover,
      * /education, /appointment-reminder) are intentionally kept IN the matcher so
      * that authenticated users still get their session cookies refreshed. They are
      * excluded from the login-redirect check in utils/supabase/middleware.ts.
      */
-    "/((?!api|_next/static|_next/image|public|auth|matrx|flash-cards|dash-test|app_redirect|app_callback|forgot-password|error|reset-password|contact|about|privacy-policy|google-settings|developers|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest).*)",
+    "/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest).*)",
   ],
 };

@@ -185,12 +185,27 @@ export function UserAcquisitionTableClient() {
     () =>
       focused.reduce(
         (result, row) => {
-          result.cost += row.total_cost;
-          result[row.identity_state] += 1;
-          if (row.traffic_kind === "bot") result.bots += 1;
+          if (row.traffic_kind === "local_test") {
+            result.localTests += 1;
+          } else if (row.traffic_kind === "bot") {
+            result.bots += 1;
+          } else {
+            result.people += 1;
+            result.peopleCost += row.total_cost;
+            result[row.identity_state] += 1;
+          }
           return result;
         },
-        { visitor: 0, guest: 0, account: 0, converted: 0, bots: 0, cost: 0 },
+        {
+          visitor: 0,
+          guest: 0,
+          account: 0,
+          converted: 0,
+          people: 0,
+          localTests: 0,
+          bots: 0,
+          peopleCost: 0,
+        },
       ),
     [focused],
   );
@@ -291,7 +306,9 @@ export function UserAcquisitionTableClient() {
               <ExternalLink className="h-3 w-3 shrink-0" />
             </Link>
           ) : (
-            <span className="text-xs text-muted-foreground">Not captured</span>
+            <span className="text-xs text-muted-foreground">
+              Historical — not collected
+            </span>
           ),
       },
       {
@@ -322,7 +339,11 @@ export function UserAcquisitionTableClient() {
             </div>
           ) : (
             <span className="text-xs text-muted-foreground">
-              Direct / unknown
+              {row.referrer_state === "direct_or_withheld"
+                ? "Direct / browser withheld"
+                : row.first_touch_captured_at
+                  ? "No referrer supplied"
+                  : "Historical — not collected"}
             </span>
           ),
       },
@@ -423,10 +444,10 @@ export function UserAcquisitionTableClient() {
   return (
     <div className="flex h-full flex-col gap-3 p-4">
       <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-        Guest status comes from Supabase, not the displayed name. “First
-        observed page” begins with this acquisition collector; older identities
-        correctly show “Not captured.” Costs are stored all-time LLM costs for
-        each identity.
+        Guest status comes from Supabase, not the displayed name. Headline
+        people, account, conversion, and cost totals exclude bots and
+        localhost/agent tests. Historical gaps and direct/browser-withheld
+        referrers are labeled separately instead of being combined as unknown.
       </div>
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -446,14 +467,15 @@ export function UserAcquisitionTableClient() {
           </Button>
         </div>
       ) : null}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-7">
         {[
-          ["Identities", focused.length],
+          ["Likely people", totals.people],
           ["Guests", totals.guest],
           ["Accounts", totals.account],
           ["Converted", totals.converted],
+          ["Local / agent", totals.localTests],
           ["Bots", totals.bots],
-          ["Cohort cost", fmtCost(totals.cost)],
+          ["People LLM cost", fmtCost(totals.peopleCost)],
         ].map(([label, value]) => (
           <div key={label} className="rounded-lg border bg-card p-3">
             <div className="text-[11px] text-muted-foreground">{label}</div>

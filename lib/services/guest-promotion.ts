@@ -44,15 +44,17 @@ export type GuestPromotionResult =
       message?: string;
     };
 
-/** Minimal server-side fingerprint sanity check (mirrors fingerprint-service
- *  without importing the browser-only FingerprintJS module).
+/** Minimal server-side visitor-id sanity check (mirrors fingerprint-service
+ *  without importing browser-only code).
  *
  *  SECURITY: `temp_<timestamp>_<rand>` fallback ids are REJECTED as promotion
  *  tokens — their millisecond timestamp is guessable, which would let an
  *  attacker enumerate a window and hijack a guest's anonymous account. A high-
- *  entropy FingerprintJS visitorId is the only accepted promotion key; a guest
- *  on the temp fallback simply gets a normal fresh sign-up. */
-export function looksLikeFingerprint(fp: string | undefined | null): fp is string {
+ *  entropy server-issued visitor id is the only accepted promotion key; a
+ *  guest on the old temp fallback simply gets a normal fresh sign-up. */
+export function looksLikeFingerprint(
+  fp: string | undefined | null,
+): fp is string {
   if (!fp || typeof fp !== "string") return false;
   if (fp.startsWith("temp_")) return false;
   if (fp.length < 16) return false;
@@ -101,7 +103,11 @@ export async function promoteGuestToUser({
   }
 
   const row = rows?.[0] as
-    | { id: string; auth_user_id: string | null; converted_to_user_id: string | null }
+    | {
+        id: string;
+        auth_user_id: string | null;
+        converted_to_user_id: string | null;
+      }
     | undefined;
 
   if (!row || !row.auth_user_id) {
@@ -116,7 +122,8 @@ export async function promoteGuestToUser({
   const anonId = row.auth_user_id;
 
   // 2. Confirm the mapped user is still anonymous before we touch it.
-  const { data: got, error: getErr } = await admin.auth.admin.getUserById(anonId);
+  const { data: got, error: getErr } =
+    await admin.auth.admin.getUserById(anonId);
   if (getErr || !got?.user) {
     console.error(
       "[guest-promotion] LOUD: mapped auth_user_id not found — stale guest row:",
@@ -130,11 +137,14 @@ export async function promoteGuestToUser({
   }
 
   // 3. Promote in place: add email + password + confirm. UUID is preserved.
-  const { data: upd, error: updErr } = await admin.auth.admin.updateUserById(anonId, {
-    email,
-    password,
-    email_confirm: true,
-  });
+  const { data: upd, error: updErr } = await admin.auth.admin.updateUserById(
+    anonId,
+    {
+      email,
+      password,
+      email_confirm: true,
+    },
+  );
 
   if (updErr) {
     const m = updErr.message.toLowerCase();

@@ -102,6 +102,9 @@ export const AdminUserAcquisitionRowSchema = z.object({
   landing_host: z.string().nullable(),
   landing_path: z.string().nullable(),
   referrer: z.string().nullable(),
+  referrer_state: z
+    .enum(["external", "internal", "local_test", "direct_or_withheld"])
+    .nullable(),
   utm_source: z.string().nullable(),
   utm_medium: z.string().nullable(),
   utm_campaign: z.string().nullable(),

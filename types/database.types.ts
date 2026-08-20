@@ -36673,6 +36673,17 @@ export type Database = {
         Returns: string
       }
       readable_processed_document_ids: { Args: never; Returns: string[] }
+      record_acquisition_first_touch: {
+        Args: {
+          p_acquisition?: Json
+          p_guest_fingerprint?: string
+          p_ip_address?: unknown
+          p_user_agent?: string
+          p_user_id?: string
+          p_visitor_id: string
+        }
+        Returns: string
+      }
       record_guest_execution: {
         Args: {
           p_fingerprint: string

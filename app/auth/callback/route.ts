@@ -6,7 +6,7 @@
 // via next/headers in Route Handlers (cookies().set() is allowed in Route Handlers,
 // unlike Server Components where it throws).
 
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { extractErrorMessage } from "@/utils/errors";
@@ -22,6 +22,8 @@ import {
   GUEST_OAUTH_FP_COOKIE,
   transferGuestDataAfterOAuth,
 } from "@/lib/services/guest-oauth-transfer";
+import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
+import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -88,6 +90,31 @@ export async function GET(request: Request) {
             : ""
         }`,
       );
+
+      if (data.user && data.user.is_anonymous !== true) {
+        const permanentUserId = data.user.id;
+        const acquisitionVisitorId = (await cookies()).get(
+          ACQUISITION_VISITOR_COOKIE,
+        )?.value;
+        if (
+          acquisitionVisitorId &&
+          /^[A-Za-z0-9]{16,200}$/.test(acquisitionVisitorId)
+        ) {
+          after(async () => {
+            try {
+              await linkAcquisitionToUser(
+                acquisitionVisitorId,
+                permanentUserId,
+              );
+            } catch (error) {
+              console.error(
+                `[${timestamp}] Auth callback - LOUD: OAuth succeeded but acquisition linking failed`,
+                error,
+              );
+            }
+          });
+        }
+      }
 
       // Apple-specific: Persist user's name on first sign-in.
       // Apple only sends the user's name on the very first authorization.
