@@ -9983,6 +9983,48 @@
         }
       }
     },
+    "/vault/browser-login/report": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Browser Login Report",
+        "description": "Submit a credential-login problem through the platform feedback system.\n\nThe request has no value-bearing field and rejects unknown keys, so a\ncredential cannot accidentally ride this reporting path.",
+        "operationId": "browser_login_report_vault_browser_login_report_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrowserLoginReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserLoginReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/browser-login/{item_id}/materialize": {
       "post": {
         "tags": [
@@ -10018,7 +10060,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BrowserLoginMaterializeResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BrowserLoginLegacyMaterializeResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BrowserLoginNamedFieldsMaterializeResponse"
+                    }
+                  ],
+                  "title": "Response Browser Login Materialize Vault Browser Login  Item Id  Materialize Post"
                 }
               }
             }
@@ -70536,6 +70586,78 @@
         "title": "BrowserInspectResult",
         "description": "Typed OUT shape for /browser-inspect — one model, never a hand-built dict."
       },
+      "BrowserLoginAvailableField": {
+        "properties": {
+          "field_key": {
+            "type": "string",
+            "title": "Field Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "fillable": {
+            "type": "boolean",
+            "title": "Fillable"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field_key",
+          "label",
+          "fillable"
+        ],
+        "title": "BrowserLoginAvailableField",
+        "description": "Safe field inventory for planning one complete login attempt.\n\nThis carries names and fillability only. It can never carry a value, hint,\nmask, length, or prefix derived from credential plaintext."
+      },
+      "BrowserLoginLegacyMaterializeResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "origin",
+          "password"
+        ],
+        "title": "BrowserLoginLegacyMaterializeResponse",
+        "description": "TRANSIENT credential payload — ``Cache-Control: no-store``. It enters\nthe extension's service-worker memory for one fill and is never persisted,\nlogged, or returned to the model."
+      },
       "BrowserLoginMatch": {
         "properties": {
           "item_id": {
@@ -70554,6 +70676,34 @@
           "host": {
             "type": "string",
             "title": "Host"
+          },
+          "available_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BrowserLoginAvailableField"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Fields"
+          },
+          "non_secret_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NonSecretFieldIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Non Secret Fields"
           }
         },
         "additionalProperties": true,
@@ -70606,6 +70756,11 @@
           "page_url": {
             "type": "string",
             "title": "Page Url"
+          },
+          "include_field_inventory": {
+            "type": "boolean",
+            "title": "Include Field Inventory",
+            "default": false
           }
         },
         "additionalProperties": true,
@@ -70679,6 +70834,20 @@
             "type": "string",
             "title": "Page Url"
           },
+          "field_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Keys"
+          },
           "tool_invocation_id": {
             "anyOf": [
               {
@@ -70709,7 +70878,7 @@
         ],
         "title": "BrowserLoginMaterializeRequest"
       },
-      "BrowserLoginMaterializeResponse": {
+      "BrowserLoginNamedFieldsMaterializeResponse": {
         "properties": {
           "item_id": {
             "type": "string",
@@ -70719,7 +70888,28 @@
             "type": "string",
             "title": "Origin"
           },
-          "username": {
+          "fields": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "origin",
+          "fields"
+        ],
+        "title": "BrowserLoginNamedFieldsMaterializeResponse",
+        "description": "TRANSIENT exact named-field payload for agent-directed login."
+      },
+      "BrowserLoginReportRequest": {
+        "properties": {
+          "organization_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -70728,21 +70918,103 @@
                 "type": "null"
               }
             ],
-            "title": "Username"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
-          "password": {
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "kind": {
             "type": "string",
-            "title": "Password"
+            "enum": [
+              "secret_exposed",
+              "wrong_verdict",
+              "recipe_wrong",
+              "other"
+            ],
+            "title": "Kind"
+          },
+          "where": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Where"
+          },
+          "attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "item_id",
-          "origin",
-          "password"
+          "kind",
+          "where"
         ],
-        "title": "BrowserLoginMaterializeResponse",
-        "description": "TRANSIENT credential payload — ``Cache-Control: no-store``. It enters\nthe extension's service-worker memory for one fill and is never persisted,\nlogged, or returned to the model."
+        "title": "BrowserLoginReportRequest",
+        "description": "Safe problem report from credential login. Credential values have no\nrepresentable field and unknown keys are rejected at validation."
+      },
+      "BrowserLoginReportResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "BrowserLoginReportResponse"
       },
       "BrowserLoginResultRequest": {
         "properties": {

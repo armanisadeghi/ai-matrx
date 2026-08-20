@@ -3919,6 +3919,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/browser-login/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Login Report
+         * @description Submit a credential-login problem through the platform feedback system.
+         *
+         *     The request has no value-bearing field and rejects unknown keys, so a
+         *     credential cannot accidentally ride this reporting path.
+         */
+        post: operations["browser_login_report_vault_browser_login_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/browser-login/{item_id}/materialize": {
         parameters: {
             query?: never;
@@ -26919,6 +26942,39 @@ export interface components {
              */
             retryable?: boolean;
         };
+        /**
+         * BrowserLoginAvailableField
+         * @description Safe field inventory for planning one complete login attempt.
+         *
+         *     This carries names and fillability only. It can never carry a value, hint,
+         *     mask, length, or prefix derived from credential plaintext.
+         */
+        BrowserLoginAvailableField: {
+            /** Field Key */
+            field_key: string;
+            /** Label */
+            label: string;
+            /** Fillable */
+            fillable: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * BrowserLoginLegacyMaterializeResponse
+         * @description TRANSIENT credential payload — ``Cache-Control: no-store``. It enters
+         *     the extension's service-worker memory for one fill and is never persisted,
+         *     logged, or returned to the model.
+         */
+        BrowserLoginLegacyMaterializeResponse: {
+            /** Item Id */
+            item_id: string;
+            /** Origin */
+            origin: string;
+            /** Username */
+            username?: string | null;
+            /** Password */
+            password: string;
+        };
         /** BrowserLoginMatch */
         BrowserLoginMatch: {
             /** Item Id */
@@ -26932,6 +26988,10 @@ export interface components {
             definition_key?: string;
             /** Host */
             host: string;
+            /** Available Fields */
+            available_fields?: components["schemas"]["BrowserLoginAvailableField"][] | null;
+            /** Non Secret Fields */
+            non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
         } & {
             [key: string]: unknown;
         };
@@ -26958,6 +27018,11 @@ export interface components {
             task_id?: string | null;
             /** Page Url */
             page_url: string;
+            /**
+             * Include Field Inventory
+             * @default false
+             */
+            include_field_inventory?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -26987,6 +27052,8 @@ export interface components {
             task_id?: string | null;
             /** Page Url */
             page_url: string;
+            /** Field Keys */
+            field_keys?: string[] | null;
             /** Tool Invocation Id */
             tool_invocation_id?: string | null;
             /** Client Build */
@@ -26995,20 +27062,58 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * BrowserLoginMaterializeResponse
-         * @description TRANSIENT credential payload — ``Cache-Control: no-store``. It enters
-         *     the extension's service-worker memory for one fill and is never persisted,
-         *     logged, or returned to the model.
+         * BrowserLoginNamedFieldsMaterializeResponse
+         * @description TRANSIENT exact named-field payload for agent-directed login.
          */
-        BrowserLoginMaterializeResponse: {
+        BrowserLoginNamedFieldsMaterializeResponse: {
             /** Item Id */
             item_id: string;
             /** Origin */
             origin: string;
-            /** Username */
-            username?: string | null;
-            /** Password */
-            password: string;
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * BrowserLoginReportRequest
+         * @description Safe problem report from credential login. Credential values have no
+         *     representable field and unknown keys are rejected at validation.
+         */
+        BrowserLoginReportRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "secret_exposed" | "wrong_verdict" | "recipe_wrong" | "other";
+            /** Where */
+            where: string;
+            /** Attempt Id */
+            attempt_id?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** BrowserLoginReportResponse */
+        BrowserLoginReportResponse: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
         };
         /**
          * BrowserLoginResultRequest
@@ -71939,6 +72044,39 @@ export interface operations {
             };
         };
     };
+    browser_login_report_vault_browser_login_report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserLoginReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserLoginReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     browser_login_materialize_vault_browser_login__item_id__materialize_post: {
         parameters: {
             query?: never;
@@ -71960,7 +72098,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BrowserLoginMaterializeResponse"];
+                    "application/json": components["schemas"]["BrowserLoginLegacyMaterializeResponse"] | components["schemas"]["BrowserLoginNamedFieldsMaterializeResponse"];
                 };
             };
             /** @description Validation Error */
