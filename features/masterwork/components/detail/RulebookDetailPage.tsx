@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   CheckCircle2,
@@ -77,6 +77,11 @@ import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
+import {
+  fetchDistillationApproaches,
+  type DistillationApproach,
+} from "@/features/masterwork/browse/approaches";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
@@ -582,7 +587,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   );
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
-  const dumpFocus = searchParams.get("dump") === "1";
+  const dumpParam = searchParams.get("dump") === "1";
   // The Approach picker's deep link (`platform.approach.intake_query`): choosing
   // the source / exemplar / file Approach must land ON that lane. Before this
   // param existed (2026-08-19) those three enabled Approaches dead-ended on a
@@ -595,6 +600,24 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   useEffect(() => {
     if (ingestLane) setIngestOpen(true);
   }, [ingestLane]);
+  // THE APPROACH PICKER (2026-08-20). Every lane below is opened by a query
+  // param read ONCE at mount, so the in-page picker cannot reach them by
+  // changing the URL. Each param therefore gets a state twin the picker sets;
+  // the param stays the deep-link entry and the twin is the in-page one, and
+  // `launchApproach` is the ONE place that maps a registry row to a lane.
+  const [approachPickerOpen, setApproachPickerOpen] = useState(false);
+  const [requestedIngestLane, setRequestedIngestLane] = useState<
+    "source" | "exemplar" | "file" | null
+  >(null);
+  const [dumpRequested, setDumpRequested] = useState(false);
+  const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
+    searchParams.get("tab") === "matrx" ? "matrx" : "upload",
+  );
+  /** The dump lane is focused by the deep link OR by the in-page picker. */
+  const dumpFocus = dumpParam || dumpRequested;
+  const router = useRouter();
+
+
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
   const [corpusOpen, setCorpusOpen] = useState(
@@ -606,6 +629,56 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [chatImportOpen, setChatImportOpen] = useState(
     searchParams.get("chatImport") === "1",
   );
+
+  /**
+   * THE ONE MAP from a `platform.approach` row to the lane it opens on this
+   * page. A row's `intake_query` is the same contract the deep links use, so
+   * the picker and a pasted URL can never drift apart; `launch_href` covers an
+   * Approach whose lane is its own page (the Vision Interview, the Oracle tap).
+   *
+   * NO DEAD ENDS: an Approach the picker cannot map still goes somewhere — its
+   * own canonical deep link on this Rulebook — rather than doing nothing.
+   */
+  const launchApproach = useCallback(
+    (approach: DistillationApproach) => {
+      if (approach.launchHref) {
+        router.push(approach.launchHref);
+        return;
+      }
+      const q = approach.intakeQuery;
+      if (q.interview === "1") {
+        setInterviewTarget({ newNonce: Date.now() });
+        setInterviewOpen(true);
+        return;
+      }
+      if (q.ingest === "source" || q.ingest === "exemplar" || q.ingest === "file") {
+        setRequestedIngestLane(q.ingest);
+        setIngestOpen(true);
+        return;
+      }
+      if (q.body_of_work === "1") {
+        setCorpusOpen(true);
+        return;
+      }
+      if (q.chatImport === "1") {
+        setChatImportTab(q.tab === "matrx" ? "matrx" : "upload");
+        setChatImportOpen(true);
+        return;
+      }
+      if (q.dump === "1") {
+        setDumpRequested(true);
+        return;
+      }
+      if (q.conduct === "1") {
+        setConductorOpen(true);
+        return;
+      }
+      const params = new URLSearchParams(q).toString();
+      router.push(`/masterwork/${rulebookId}${params ? `?${params}` : ""}`);
+    },
+    [router, rulebookId],
+  );
+
   // Composer seed for the Scout panel — set when a recording distillation
   // reports gaps and the Expert chooses "Interview me about the gaps", or by
   // an improvement-brain assist chip (?assist=<dedupe_key>) whose launch
@@ -622,13 +695,32 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         setIngestOpen(true);
         return;
       }
+      if (launch.open === "approaches") {
+        // `masterwork.approach_selector` names the next move; a named key goes
+        // straight into that lane, anything else opens the whole picker.
+        if (launch.approachKey) {
+          void fetchDistillationApproaches()
+            .then((rows) => {
+              if (cancelled) return;
+              const hit = rows.find((a) => a.key === launch.approachKey);
+              if (hit && hit.availability !== "coming_soon") launchApproach(hit);
+              else setApproachPickerOpen(true);
+            })
+            .catch(() => {
+              if (!cancelled) setApproachPickerOpen(true);
+            });
+          return;
+        }
+        setApproachPickerOpen(true);
+        return;
+      }
       if (launch.seed) setInterviewSeed(launch.seed);
       setInterviewOpen(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [assistKey]);
+  }, [assistKey, launchApproach]);
   const userId = useAppSelector(selectUserId);
   const openCheckup = useOpenMasterworkCheckupWindow();
   const openAddRule = useOpenAddRuleWindow();
@@ -672,6 +764,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       onWindowClose: () => setBuildOpen(false),
     });
   }, [openBuild, rulebookId, reloadMasterworks]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -1408,9 +1501,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewTarget({ newNonce: Date.now() });
               setInterviewOpen(true);
             }}
-            onAddDocument={() => setIngestOpen(true)}
-            onAddPublishedWork={() => setCorpusOpen(true)}
-            onAddChats={() => setChatImportOpen(true)}
+            onOpenApproaches={() => setApproachPickerOpen(true)}
           />
 
           {/* THE UNDERSTUDY — the system that runs from minute one (vision doc
@@ -1672,7 +1763,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <IngestSourceDialog
             open={ingestOpen}
             onOpenChange={setIngestOpen}
-            initialLane={ingestLane}
+            initialLane={requestedIngestLane ?? ingestLane}
             rulebook={rulebook}
             onIngested={() => {
               void getRulebook(rulebook.id)
@@ -1686,15 +1777,26 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewOpen(true);
             }}
           />
+          <ApproachPickerDialog
+            open={approachPickerOpen}
+            onOpenChange={setApproachPickerOpen}
+            onLaunch={launchApproach}
+          />
           <BodyOfWorkDialog
             open={corpusOpen}
             onOpenChange={setCorpusOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
           />
+          {/* Keyed on the lane so `chat_import` and `matrx_conversations` —
+              two registry rows, ONE dialog — each open on their own tab. A
+              key remount is the idiomatic reset; the dialog reads initialTab
+              once, at mount. */}
           <ChatImportDialog
+            key={`chat-import-${chatImportTab}`}
             open={chatImportOpen}
             onOpenChange={setChatImportOpen}
+            initialTab={chatImportTab}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
             onFollowupSeed={(seed) => {

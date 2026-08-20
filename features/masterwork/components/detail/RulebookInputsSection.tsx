@@ -17,32 +17,26 @@
 // welded onto the rules toolbar at the bottom. Now every one of them lives
 // here, and NOWHERE else on the page:
 //
-//   header  — Your words (the record) · Add ▾ (a document · published work ·
-//             AI chats) · New interview (the primary way in)
+//   header  — Your words (the record) · Add (THE Approach picker — every way
+//             in, read from the platform.approach registry) · New interview
+//             (the primary way in, kept as its own one-click button)
 //   body    — the interview list (ConversationsSection) then the attached
 //             sources + capture + "Turn this into rules"
 //             (RulebookSourcesPanel, variant="bare")
 //
 // This file adds no capability. It is pure consolidation: every control here
 // already existed somewhere else on the page and was deleted from there.
+//
+// 2026-08-20 — the `Add ▾` menu was a HARDCODED three-item list ("A document",
+// "Published work", "AI chats") standing exactly where the Approach picker
+// belongs, naming three of the registry's lanes and hiding the rest. It is
+// deleted; `Add` now opens `ApproachPickerDialog`, which renders every row of
+// `platform.approach`. Per Arman's own rule, adding an affordance obliges you
+// to delete the one it replaces.
 
 import Link from "next/link";
-import {
-  BookOpen,
-  ChevronDown,
-  FileUp,
-  Layers,
-  MessagesSquare,
-  MessageSquarePlus,
-  Plus,
-} from "lucide-react";
+import { Layers, MessageSquarePlus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -64,9 +58,8 @@ export interface RulebookInputsSectionProps {
   onContinueInterview: (conversationId: string) => void;
   /** Start a brand-new interview in the panel. */
   onStartInterview: () => void;
-  onAddDocument: () => void;
-  onAddPublishedWork: () => void;
-  onAddChats: () => void;
+  /** Open THE Approach picker — every registered way to feed this Rulebook. */
+  onOpenApproaches: () => void;
 }
 
 export function RulebookInputsSection({
@@ -77,9 +70,7 @@ export function RulebookInputsSection({
   onIngested,
   onContinueInterview,
   onStartInterview,
-  onAddDocument,
-  onAddPublishedWork,
-  onAddChats,
+  onOpenApproaches,
 }: RulebookInputsSectionProps) {
   return (
     <section
@@ -113,38 +104,23 @@ export function RulebookInputsSection({
               in a bare unlabeled icon beside it). */}
           <YourWordsActions rulebookId={rulebook.id} compact variant="ghost" />
           {canEdit ? (
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline" className="h-7">
-                      <Plus className="h-3.5 w-3.5" />
-                      Add
-                      <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Bring in something you already have — we read it and draft
-                  rules from it
-                </TooltipContent>
-              </Tooltip>
-              {/* Icon + one to three words, every row the same shape. */}
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="gap-2" onSelect={() => onAddDocument()}>
-                  <FileUp className="h-4 w-4" />
-                  A document
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2" onSelect={() => onAddPublishedWork()}>
-                  <BookOpen className="h-4 w-4" />
-                  Published work
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2" onSelect={() => onAddChats()}>
-                  <MessagesSquare className="h-4 w-4" />
-                  AI chats
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={onOpenApproaches}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Every way to add to this Rulebook — documents, published work,
+                AI chats, recordings, and more
+              </TooltipContent>
+            </Tooltip>
           ) : null}
           {canEdit ? (
             <Tooltip>

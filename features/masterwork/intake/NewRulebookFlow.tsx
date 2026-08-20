@@ -42,16 +42,12 @@ import {
   HelpCircle,
   Loader2,
   MessagesSquare,
-  Mic,
   Network,
   Puzzle,
-  Sparkles,
   ThumbsDown,
-  Upload,
   User,
   UserMinus,
   Users,
-  Wand2,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -71,8 +67,10 @@ import {
 import { createDraftRulebook } from "../service";
 import {
   fetchDistillationApproaches,
+  startableApproaches,
   type DistillationApproach,
 } from "../browse/approaches";
+import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 
 const WIZARD_ID = "masterwork-new";
 
@@ -172,50 +170,9 @@ const QUESTIONS: IntakeQuestion[] = [
   },
 ];
 
-// Static class maps so Tailwind sees every class it must emit.
-const ACCENT = {
-  blue: {
-    selected: "border-blue-500/60 bg-blue-500/5 ring-1 ring-blue-500/30",
-    iconSelected: "bg-blue-500 text-white",
-    icon: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    check: "text-blue-500",
-    hover: "hover:border-blue-500/40 hover:bg-blue-500/5",
-  },
-  amber: {
-    selected: "border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30",
-    iconSelected: "bg-amber-500 text-white",
-    icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    check: "text-amber-500",
-    hover: "hover:border-amber-500/40 hover:bg-amber-500/5",
-  },
-  rose: {
-    selected: "border-rose-500/60 bg-rose-500/5 ring-1 ring-rose-500/30",
-    iconSelected: "bg-rose-500 text-white",
-    icon: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    check: "text-rose-500",
-    hover: "hover:border-rose-500/40 hover:bg-rose-500/5",
-  },
-  violet: {
-    selected: "border-violet-500/60 bg-violet-500/5 ring-1 ring-violet-500/30",
-    iconSelected: "bg-violet-500 text-white",
-    icon: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-    check: "text-violet-500",
-    hover: "hover:border-violet-500/40 hover:bg-violet-500/5",
-  },
-} as const;
-
-/** Approach card presentation by registry key. Unknown keys (Approach #5 is a
- *  ROW, not code) get the neutral fallback so a new row always renders. */
-const APPROACH_LOOK: Record<string, { icon: LucideIcon; accent: keyof typeof ACCENT }> = {
-  interview: { icon: Mic, accent: "violet" },
-  source: { icon: FileText, accent: "blue" },
-  exemplar: { icon: Sparkles, accent: "amber" },
-  file: { icon: Upload, accent: "rose" },
-};
-const APPROACH_FALLBACK: { icon: LucideIcon; accent: keyof typeof ACCENT } = {
-  icon: Wand2,
-  accent: "blue",
-};
+// The accent map now lives beside the shared ApproachCard (browse/ApproachCard.tsx)
+// — the question tiles below and the Approach cards have always used one
+// palette, and it may only be declared once.
 
 /**
  * Which Approach the knowledge answer suggests — a soft hint (badge +
@@ -327,73 +284,6 @@ function QuestionSection({
   );
 }
 
-function ApproachCard({
-  approach,
-  selected,
-  suggested,
-  onSelect,
-}: {
-  approach: DistillationApproach;
-  selected: boolean;
-  suggested: boolean;
-  onSelect: () => void;
-}) {
-  const look = APPROACH_LOOK[approach.key] ?? APPROACH_FALLBACK;
-  const accent = ACCENT[look.accent];
-  const Icon = look.icon;
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={cn(
-        "group relative flex h-full w-full flex-col gap-3 rounded-2xl border-2 p-5 text-left transition-all",
-        selected
-          ? cn(accent.selected, "shadow-sm")
-          : cn("border-border bg-card hover:shadow-lg", accent.hover),
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
-            selected ? accent.iconSelected : accent.icon,
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <span className="block text-base font-semibold text-foreground">
-            {approach.label}
-          </span>
-          {suggested && (
-            <span
-              className={cn(
-                "mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-                accent.icon,
-              )}
-            >
-              Suggested for you
-            </span>
-          )}
-        </div>
-        {selected && <Check className={cn("ml-auto h-5 w-5 shrink-0", accent.check)} />}
-      </div>
-      <p className="text-sm leading-relaxed text-muted-foreground">{approach.blurb}</p>
-      <div className="mt-auto space-y-1 text-xs text-muted-foreground">
-        <p>
-          <span className="font-medium text-foreground/80">You bring:</span>{" "}
-          {approach.whatItNeeds}
-        </p>
-        <p>
-          <span className="font-medium text-foreground/80">Time:</span>{" "}
-          {approach.costTimeShape}
-        </p>
-      </div>
-    </button>
-  );
-}
-
 // ── Main flow ────────────────────────────────────────────────────────────────
 
 export function NewRulebookFlow() {
@@ -457,7 +347,7 @@ export function NewRulebookFlow() {
     fetchDistillationApproaches()
       .then((rows) => {
         if (cancelled) return;
-        if (rows.length === 0) {
+        if (startableApproaches(rows).length === 0) {
           setApproachError(
             "No ways to get started are available right now — please try again shortly.",
           );
@@ -479,13 +369,19 @@ export function NewRulebookFlow() {
   }, [approaches]);
 
   const suggested = suggestedApproachKey(answers.knowledge);
+  // The registry read returns the WHOLE catalog now (that is the point — Arman
+  // wants every named Approach on screen). Only the STARTABLE ones may begin a
+  // Rulebook; the rest are shown below as cards that say what they are.
+  const startable = approaches === null ? null : startableApproaches(approaches);
+  const notStartable =
+    approaches === null ? [] : approaches.filter((a) => !a.enabled);
   const effectiveKey =
-    (selectedKey && approaches?.some((a) => a.key === selectedKey)
+    (selectedKey && startable?.some((a) => a.key === selectedKey)
       ? selectedKey
       : null) ??
-    (approaches?.some((a) => a.key === suggested)
+    (startable?.some((a) => a.key === suggested)
       ? suggested
-      : (approaches?.[0]?.key ?? null));
+      : (startable?.[0]?.key ?? null));
 
   const toStep = (next: 1 | 2) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -504,7 +400,7 @@ export function NewRulebookFlow() {
   };
 
   const create = async () => {
-    const approach = approaches?.find((a) => a.key === effectiveKey);
+    const approach = startable?.find((a) => a.key === effectiveKey);
     if (!approach) {
       toast.error("Pick how you'd like to do this first.");
       return;
@@ -673,16 +569,42 @@ export function NewRulebookFlow() {
               ))}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {approaches.map((approach) => (
-                <ApproachCard
-                  key={approach.key}
-                  approach={approach}
-                  selected={approach.key === effectiveKey}
-                  suggested={approach.key === suggested}
-                  onSelect={() => setSelectedKey(approach.key)}
-                />
-              ))}
+            <div className="space-y-8">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(startable ?? []).map((approach) => (
+                  <ApproachCard
+                    key={approach.key}
+                    approach={approach}
+                    selected={approach.key === effectiveKey}
+                    suggested={approach.key === suggested}
+                    onSelect={() => setSelectedKey(approach.key)}
+                  />
+                ))}
+              </div>
+
+              {/* Every other named Approach, so nothing we approved is
+                  invisible. Inert here on purpose: clicking away from this
+                  step would throw the Expert's unsaved answers on the floor. */}
+              {notStartable.length > 0 ? (
+                <div className="space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">
+                      Other ways we&apos;re building
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      These aren&apos;t ways to <em>start</em> a Rulebook — some
+                      are already available from elsewhere, some are on the way.
+                      Once your Rulebook exists you&apos;ll find them all under
+                      &ldquo;Add&rdquo;.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {notStartable.map((approach) => (
+                      <ApproachCard key={approach.key} approach={approach} inert />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 

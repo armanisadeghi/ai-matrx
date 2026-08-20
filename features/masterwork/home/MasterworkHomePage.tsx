@@ -12,7 +12,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
   ArrowUpRight,
   BookOpen,
   ChevronRight,
@@ -32,8 +31,10 @@ import {
 } from "../components/detail/RulebookKpiStrip";
 import {
   fetchDistillationApproaches,
+  startableApproaches,
   type DistillationApproach,
 } from "../browse/approaches";
+import { ApproachCard } from "@/features/masterwork/browse/ApproachCard";
 import {
   fetchMasterworkHome,
   type MasterworkHomeData,
@@ -406,27 +407,19 @@ export function MasterworkHomePage() {
       ) : null}
 
       {/* Start here — the Approach registry */}
-      {approaches !== null && approaches.length > 0 ? (
+      {approaches !== null && startableApproaches(approaches).length > 0 ? (
         <section className="space-y-2">
           <SectionHeading title="Start here" />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {approaches.map((a) => (
-              <Link
+          {/* ONE card component, three consumers (2026-08-20) — this grid used
+              to hand-roll a plainer tile, so the same Approach looked like two
+              different things depending on which page you were on. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {startableApproaches(approaches).map((a) => (
+              <ApproachCard
                 key={a.key}
+                approach={a}
                 href={`/masterwork/new?approach=${encodeURIComponent(a.key)}`}
-                className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/40"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-foreground">{a.label}</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-                <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-                  {a.blurb}
-                </p>
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  {a.costTimeShape}
-                </p>
-              </Link>
+              />
             ))}
           </div>
         </section>
