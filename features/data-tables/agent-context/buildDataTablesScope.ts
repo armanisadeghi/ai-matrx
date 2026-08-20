@@ -26,6 +26,14 @@ export interface DataTableScopeField {
   data_type: string;
   field_order: number;
   is_required: boolean;
+  /**
+   * The column's declared display format id, when it has one. The storage type
+   * alone is not enough for a writer to be correct — see `column_list` in the
+   * manifest.
+   */
+  format?: string;
+  /** Resolved options for a choice column, already narrowed by any binding. */
+  choices?: string[];
 }
 
 /** One row as the viewer holds it. */
@@ -112,6 +120,12 @@ export function buildDataTablesScope(
     type: f.data_type,
     required: f.is_required,
     order: f.field_order,
+    // Both are OMITTED rather than sent empty when absent — the same rule the
+    // rest of this builder follows. An empty `choices` would read as "this
+    // column offers nothing", which is a different claim from "not a choice
+    // column" and from "its pick list has not loaded yet".
+    ...(f.format ? { format: f.format } : {}),
+    ...(f.choices && f.choices.length > 0 ? { choices: f.choices } : {}),
   }));
 
   const tableSchema: Record<string, string> = {};

@@ -49,6 +49,87 @@ function flatten(data: StructuredListForSelection | null): {
 }
 
 /**
+ * Load MANY picklists at once, for a surface that renders several bound inputs
+ * on one screen (a data-table grid whose columns each point at a list).
+ *
+ * Exists because the single-list hook cannot be called in a loop: the number of
+ * lists varies with the data, and a hook per item is a rules-of-hooks
+ * violation. This takes the whole set, shares the same session cache and the
+ * same service call, and returns a lookup.
+ *
+ * `listIds` may contain duplicates and nulls; it is de-duplicated internally,
+ * so callers can map straight off their columns without pre-filtering.
+ */
+export function useStructuredListsForSelection(
+  listIds: readonly (string | null | undefined)[],
+): {
+  /** listId → flattened items and groups. Absent until that list resolves. */
+  byListId: Map<string, { items: PicklistSelectionItem[]; groups: PicklistSelectionGroup[] }>;
+  loading: boolean;
+  /** listIds that could not be read — deleted, or not shared with this user. */
+  unavailable: Set<string>;
+} {
+  const wanted = Array.from(
+    new Set(listIds.filter((id): id is string => !!id)),
+  ).sort();
+  // A stable primitive key so the effect does not re-run on a new array with
+  // the same contents — this hook is called on every grid render.
+  const key = wanted.join(",");
+
+  const [version, setVersion] = useState(0);
+  const [failed, setFailed] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    const missing = wanted.filter((id) => !_cache.has(id));
+    if (missing.length === 0) return undefined;
+    let cancelled = false;
+    Promise.all(
+      missing.map((id) =>
+        getStructuredListForSelection(id)
+          .then((result) => {
+            _cache.set(id, result);
+            return { id, ok: result !== null };
+          })
+          .catch(() => {
+            _cache.set(id, null);
+            return { id, ok: false };
+          }),
+      ),
+    ).then((results) => {
+      if (cancelled) return;
+      const nextFailed = results.filter((r) => !r.ok).map((r) => r.id);
+      if (nextFailed.length > 0) {
+        setFailed((prev) => new Set([...prev, ...nextFailed]));
+      }
+      setVersion((v) => v + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const byListId = new Map<
+    string,
+    { items: PicklistSelectionItem[]; groups: PicklistSelectionGroup[] }
+  >();
+  for (const id of wanted) {
+    const cached = _cache.get(id);
+    if (cached === undefined) continue;
+    byListId.set(id, flatten(cached));
+  }
+  // `version` participates so a resolved fetch re-renders the consumer; the
+  // cache itself is not React state.
+  void version;
+
+  return {
+    byListId,
+    loading: wanted.some((id) => !_cache.has(id)),
+    unavailable: failed,
+  };
+}
+
+/**
  * Lazily load a picklist's selectable items (LABELS ONLY — never the secret description)
  * for rendering a bound variable's input. Caches per listId for the session.
  */

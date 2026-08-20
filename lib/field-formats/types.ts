@@ -53,6 +53,9 @@ export type FieldFormatId =
   | "file_size"
   // boolean-backed
   | "boolean"
+  // choice-backed — options are a UI layer, never a database constraint
+  | "choice"
+  | "multi_choice"
   // temporal
   | "date"
   | "datetime"
@@ -61,6 +64,70 @@ export type FieldFormatId =
   | "json"
   | "array"
   | "tags";
+
+/**
+ * A binding from a choice format to a user structured list (a "pick list").
+ *
+ * THE SAME SHAPE the agent-variable system already uses (aidream's
+ * `PicklistBinding`, written by the FE as `customComponent.structured_list`) —
+ * a column and an agent variable must speak ONE option vocabulary, or the same
+ * list means two things depending on which surface reads it. Never fork this.
+ *
+ * `groupName` is what makes tiering free: a list's items already carry a
+ * `group_name`, so binding to one group of a list yields a narrower set with no
+ * second list to maintain, and the ungrouped binding yields sections for free.
+ */
+export type StructuredListBinding = {
+  /** `workbench.udt_structured_lists.id` the options are hydrated from. */
+  listId: string;
+  /** Optional FIXED group filter within the list. */
+  groupName?: string;
+  /**
+   * DEPENDENT COLUMNS — the group filter comes from another column's cell
+   * instead of being fixed. Holds that column's MACHINE field name.
+   *
+   * Picking "North America" in Continent narrows Country to the list's
+   * "North America" group, because the list's items already carry the group.
+   * Nothing is declared on the controlling column: the dependency is stated
+   * once, here, by the column that is constrained.
+   *
+   * Chains are free and need no graph: each column reads its controller's
+   * CURRENT cell value at render time, so A → B → C works with no traversal,
+   * and a cycle cannot loop (a cell value is data, not a computation).
+   *
+   * Two behaviours this must always keep, both of them the fallback law:
+   *   - the controlling cell empty means ALL groups are offered as sections,
+   *     never an empty dropdown;
+   *   - changing the controller NEVER rewrites or clears the dependent cell.
+   *     A value that no longer fits renders in amber, exactly like any other
+   *     off-list value, and the user decides.
+   *
+   * Ignored when `groupName` is set — a fixed group wins over a derived one.
+   */
+  groupFromField?: string;
+  /** Multi-select. Mirrors the agent-variable flag; `multi_choice` implies it. */
+  multiple?: boolean;
+};
+
+/**
+ * One option offered by a choice format.
+ *
+ * `value` is EXACTLY what the cell stores — the human-readable label, not an
+ * id. That is deliberate: it keeps raw data readable, lets an existing column
+ * adopt a choice format with zero rewriting, and keeps the fallback law
+ * meaningful (a value not in the list is still legible in the cell).
+ */
+export type FieldChoice = {
+  value: string;
+  /** Display text when it should differ from the stored value. */
+  label?: string;
+  /** Section heading — carried over from a structured list item's group_name. */
+  group?: string;
+  /** Chip tint. A name from the shared choice palette, never a raw hex. */
+  color?: string;
+  /** Hover help, carried over from a structured list item's help_text. */
+  help?: string;
+};
 
 /** Per-field options. Every key is optional; every format has sane defaults. */
 export type FieldFormatOptions = {
@@ -86,6 +153,23 @@ export type FieldFormatOptions = {
   suffix?: string;
   /** Text shown before the value. */
   prefix?: string;
+  /**
+   * `choice` / `multi_choice` — the options offered inline. Ignored when
+   * `structuredList` is set; that binding is the source of truth for options.
+   */
+  choices?: FieldChoice[];
+  /**
+   * `choice` / `multi_choice` — hydrate options from a shared pick list instead
+   * of holding a private copy, so "Status" means one thing across every table.
+   */
+  structuredList?: StructuredListBinding;
+  /**
+   * `choice` / `multi_choice` — may a value outside the option list be entered
+   * and kept? Default TRUE, because a format may never take away a working
+   * input, and because a column always adopts a format over data that predates
+   * it. Off-list values are never rejected or blanked — they render in amber.
+   */
+  allowOther?: boolean;
 };
 
 /** What a field declares. Persisted as `metadata.format` on the field row. */
@@ -124,7 +208,9 @@ export type FieldEditorKind =
   | "tel"
   | "color"
   | "rating"
-  | "json";
+  | "json"
+  | "select"
+  | "multiselect";
 
 export type FieldFormatDef = {
   id: FieldFormatId;

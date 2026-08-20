@@ -18,9 +18,10 @@ import { ExternalLink, Mail, Phone, Star } from "lucide-react";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { cn } from "@/utils/cn";
 
+import { choiceColorClass, isChoiceFormat } from "./choices";
 import { formatFieldValue } from "./format";
 import { getFieldFormat } from "./registry";
-import type { FieldFormatConfig } from "./types";
+import type { FieldChoice, FieldFormatConfig } from "./types";
 
 const MISMATCH_CLASS =
   "text-amber-600 dark:text-amber-400 decoration-amber-400/60 underline decoration-dotted underline-offset-2";
@@ -51,8 +52,14 @@ export function FormattedFieldValue({
   }
 
   if (!result.ok) {
+    // A choice column's mismatch is the FEATURE, not a failure: declaring the
+    // options is how a user finds the stray values already in their data. Say
+    // so plainly instead of the generic type-mismatch reason.
+    const reason = isChoiceFormat(format?.id)
+      ? "Not one of this column's options — still saved, and safe to fix or add as an option."
+      : result.reason;
     return (
-      <span className={cn(MISMATCH_CLASS, className)} title={result.reason}>
+      <span className={cn(MISMATCH_CLASS, className)} title={reason}>
         {result.text}
       </span>
     );
@@ -69,6 +76,21 @@ export function FormattedFieldValue({
       {result.text}
     </span>
   );
+}
+
+/**
+ * Match a rendered value back to its declared option so the chip can carry the
+ * option's color and help text. Case-insensitive, mirroring the registry.
+ */
+function matchChoice(
+  choices: FieldChoice[] | undefined,
+  value: string,
+): FieldChoice | undefined {
+  if (!choices || choices.length === 0) return undefined;
+  const exact = choices.find((c) => c.value === value);
+  if (exact) return exact;
+  const lowered = value.toLowerCase();
+  return choices.find((c) => c.value.toLowerCase() === lowered);
 }
 
 function renderRich(
@@ -150,6 +172,36 @@ function renderRich(
               {item}
             </span>
           ))}
+        </span>
+      );
+    }
+    case "choice":
+    case "multi_choice": {
+      const declared = config?.options?.choices;
+      const values =
+        id === "multi_choice"
+          ? Array.isArray(raw)
+            ? raw.map((i) => String(i).trim()).filter(Boolean)
+            : text.split(",").map((s) => s.trim()).filter(Boolean)
+          : [text];
+      if (values.length === 0) return undefined;
+      return (
+        <span className={cn("flex flex-wrap items-center gap-1", className)}>
+          {values.map((item, i) => {
+            const choice = matchChoice(declared, item);
+            return (
+              <span
+                key={`${item}-${i}`}
+                title={choice?.help ?? undefined}
+                className={cn(
+                  "inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs",
+                  choiceColorClass(choice?.color),
+                )}
+              >
+                {choice?.label ?? item}
+              </span>
+            );
+          })}
         </span>
       );
     }

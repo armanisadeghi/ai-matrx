@@ -6,6 +6,7 @@ import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import {
   changeFieldType,
   deleteField,
+  getTableProfile,
   setFieldFormat,
   setValidationMode,
 } from "@/features/data-tables/service";
@@ -15,6 +16,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
   isServiceFailure,
   type FieldDataType,
+  type TableProfile,
   type ValidationMode,
 } from "@/features/data-tables/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -148,6 +150,29 @@ export default function TableConfigModal({
     Record<string, FieldFormatConfig>
   >({});
   const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null);
+
+  /**
+   * The table's real column values, so declaring a choice column's options is a
+   * one-click confirmation of what is already there instead of retyping a list
+   * the user already has. One call for every column; failure is silent because
+   * this only ever ADDS a convenience — the editor works without it.
+   */
+  const [profile, setProfile] = useState<TableProfile | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !tableId) {
+      setProfile(null);
+      return undefined;
+    }
+    let cancelled = false;
+    void getTableProfile({ tableId }).then((result) => {
+      if (cancelled || isServiceFailure(result)) return;
+      setProfile(result.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, tableId]);
 
   // Initialize fields when modal opens
   useEffect(() => {
@@ -717,6 +742,17 @@ export default function TableConfigModal({
                         optionsPresentation="popover"
                         triggerClassName="h-8 w-full"
                         dataType={field.data_type}
+                        suggestions={
+                          profile?.columns.find(
+                            (c) => c.field_name === field.field_name,
+                          )?.top_values
+                        }
+                        siblingFields={fields
+                          .filter((f) => f.field_name !== field.field_name)
+                          .map((f) => ({
+                            field_name: f.field_name,
+                            display_name: f.display_name,
+                          }))}
                         value={
                           formatChanges[field.id] ??
                           resolveFieldFormat(field.data_type, field.metadata)

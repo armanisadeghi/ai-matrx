@@ -35,6 +35,10 @@ import {
   groupedFormatsForBase,
 } from "./registry";
 import type { FieldFormatConfig, FieldFormatOptions } from "./types";
+import {
+  ChoiceOptionsEditor,
+  type ChoiceSuggestion,
+} from "./ChoiceOptionsEditor";
 
 export type FieldFormatPickerProps = {
   /** The column's storage type. */
@@ -55,6 +59,17 @@ export type FieldFormatPickerProps = {
   layout?: "stacked" | "embedded";
   /** Optional caption for the primary format control. */
   label?: string;
+  /**
+   * The values already in this column, most frequent first. Only the choice
+   * formats read it — they use it to offer the column's real values as options
+   * so nobody retypes a list they already have. Safe to omit.
+   */
+  suggestions?: ChoiceSuggestion[];
+  /**
+   * The table's other columns. Lets a choice column be made DEPENDENT on one of
+   * them (its options narrow to the group that column's cell names).
+   */
+  siblingFields?: { field_name: string; display_name: string }[];
   className?: string;
   optionsClassName?: string;
   triggerClassName?: string;
@@ -82,6 +97,8 @@ export function FieldFormatPicker({
   optionsPresentation = "inline",
   layout = "stacked",
   label,
+  suggestions,
+  siblingFields,
   className,
   optionsClassName,
   triggerClassName,
@@ -108,6 +125,17 @@ export function FieldFormatPicker({
 
   const optionControls = (
     <>
+      {optionKeys.includes("choices") && (
+        <div className="w-full min-w-0">
+          <ChoiceOptionsEditor
+            options={options}
+            onChange={(next) => onChange({ id: activeId, options: next })}
+            suggestions={suggestions}
+            siblingFields={siblingFields}
+          />
+        </div>
+      )}
+
       {optionKeys.includes("currency") && (
         <div className="w-28">
           <Label className="text-[11px] text-muted-foreground">Currency</Label>

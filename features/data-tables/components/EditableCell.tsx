@@ -30,6 +30,7 @@ import { parseFieldInput } from "@/lib/field-formats/format";
 import { getFieldFormat } from "@/lib/field-formats/registry";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
+import { ChoiceInput } from "./ChoiceInput";
 import { upsertCell } from "../service";
 import { isServiceFailure, type FieldDataType } from "../types";
 
@@ -45,6 +46,11 @@ type Props = {
    * coerced before it is stored. Omit for a plain storage-type editor.
    */
   format?: FieldFormatConfig | null;
+  /**
+   * The whole row. Only DEPENDENT choice columns read it — one whose options
+   * narrow to the group another column's cell names. Everything else ignores it.
+   */
+  row?: Record<string, unknown> | null;
   value: unknown;
   /** What the parent already renders for the read-only state. */
   display: ReactNode;
@@ -61,6 +67,7 @@ export function EditableCell({
   fieldDisplayName,
   dataType,
   format,
+  row,
   value,
   display,
   editable = true,
@@ -95,14 +102,23 @@ export function EditableCell({
     setEditing(false);
   }, [value]);
 
-  const commitEdit = useCallback(async () => {
+  /**
+   * `explicit` exists for editors that pick a value and finish in the SAME
+   * tick — a dropdown calls onChange then closes, and React has not yet
+   * re-rendered, so reading `draft` from this closure would save the value the
+   * user just replaced. Typed inputs commit on blur a tick later and pass
+   * nothing.
+   */
+  const commitEdit = useCallback(async (explicit?: { value: unknown }) => {
     if (saving) return;
+
+    const source = explicit ? explicit.value : draft;
 
     // A declared format owns the coercion (currency strips "$", tags split on
     // commas); without one this falls back to the storage-type normalizer.
     const normalized = format
-      ? parseFieldInput(draft, format, dataType)
-      : normalizeCellValue(draft, dataType);
+      ? parseFieldInput(source, format, dataType)
+      : normalizeCellValue(source, dataType);
 
     // Skip the write if nothing actually changed.
     if (valuesEqual(normalized, value)) {
@@ -207,6 +223,27 @@ export function EditableCell({
         disabled={saving}
         className="h-8 text-sm"
       />
+    );
+  }
+
+  // A choice column edits through the ONE choice input — same component the row
+  // modals use. It commits on pick (single) or on close (multi) rather than on
+  // blur, because a dropdown's blur fires the moment the user reaches for an
+  // option and would save the old value out from under them.
+  if (editorKind === "select" || editorKind === "multiselect") {
+    return (
+      <div onClick={(e) => e.stopPropagation()}>
+        <ChoiceInput
+          format={format}
+          row={row}
+          value={draft}
+          multiple={editorKind === "multiselect"}
+          autoOpen
+          onChange={(next) => setDraft(next)}
+          onDone={(final) => void commitEdit({ value: final })}
+          className="min-w-[10rem]"
+        />
+      </div>
     );
   }
 

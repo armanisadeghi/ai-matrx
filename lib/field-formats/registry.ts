@@ -6,6 +6,7 @@
  * value does not fit — that is what triggers THE FALLBACK LAW in `format.ts`.
  */
 import type {
+  FieldChoice,
   FieldFormatDef,
   FieldFormatId,
   FieldFormatOptions,
@@ -97,6 +98,24 @@ function formatDuration(totalSeconds: number): string {
       ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
       : `${m}:${String(s).padStart(2, "0")}`;
   return negative ? `-${parts}` : parts;
+}
+
+/**
+ * Find the option a stored value corresponds to.
+ *
+ * Case-insensitive on purpose: a column adopting a choice format almost always
+ * has "Active" and "active" in it already, and calling one of them a mismatch
+ * would be pedantry, not help. Exact match always wins.
+ */
+function findChoice(
+  choices: FieldChoice[] | undefined,
+  value: string,
+): FieldChoice | undefined {
+  if (!choices || choices.length === 0) return undefined;
+  const exact = choices.find((c) => c.value === value);
+  if (exact) return exact;
+  const lowered = value.toLowerCase();
+  return choices.find((c) => c.value.toLowerCase() === lowered);
 }
 
 const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"] as const;
@@ -556,6 +575,94 @@ const DEFS: FieldFormatDef[] = [
     format: (v) => {
       const list = toList(v);
       return list === null ? null : list.map((i) => String(i)).join(", ");
+    },
+    parse: (raw) => {
+      if (raw == null || raw === "") return null;
+      if (Array.isArray(raw)) return raw;
+      return toList(raw) ?? raw;
+    },
+  },
+
+  // ─── Choice ────────────────────────────────────────────────────────────────
+  //
+  // An enum WITHOUT a database enum. The column stays `string` (or `array` for
+  // multi), the database enforces nothing, and stripping the format leaves
+  // every stored value exactly as it was. Options are a UI layer — the same
+  // trick `percent` plays on a number.
+  //
+  // The fallback law is the whole reason this is safe to switch on over live
+  // data: a value not in the option list is NOT an error and is NEVER blanked.
+  // `format()` returns null for it, `<FormattedFieldValue>` renders it in amber
+  // with the reason, and the user can fix it or adopt it. Declaring the options
+  // is therefore how you FIND your stray values, not how you lose them.
+  //
+  // Options resolve through `choices.ts` — inline `options.choices`, or a
+  // structured list via `options.structuredList`. This def only ever sees
+  // whatever the caller resolved into `options.choices`, so it stays pure and
+  // synchronous like every other format.
+  {
+    id: "choice",
+    label: "Choice",
+    description: "One value from a list of options",
+    group: "Choice",
+    base: "string",
+    alsoAccepts: ["number", "integer", "boolean"],
+    editor: "select",
+    rich: true,
+    optionKeys: ["choices", "structuredList", "allowOther"],
+    format: (v, options) => {
+      const text = toText(v);
+      if (text === null) return null;
+      const trimmed = text.trim();
+      if (trimmed === "") return "";
+      const match = findChoice(options.choices, trimmed);
+      // No options resolved yet (a structured list still loading, or a column
+      // whose list is unreachable) — show the raw value rather than accusing
+      // every cell of being off-list.
+      if (!options.choices || options.choices.length === 0) return trimmed;
+      return match ? (match.label ?? match.value) : null;
+    },
+    parse: (raw) => {
+      if (raw == null) return null;
+      const text = toText(raw);
+      if (text === null) return raw;
+      const trimmed = text.trim();
+      return trimmed === "" ? null : trimmed;
+    },
+  },
+  {
+    id: "multi_choice",
+    label: "Multi-choice",
+    description: "Any number of values from a list of options",
+    group: "Choice",
+    base: "array",
+    alsoAccepts: ["string", "json"],
+    editor: "multiselect",
+    rich: true,
+    optionKeys: ["choices", "structuredList", "allowOther"],
+    format: (v, options) => {
+      const list = toList(v);
+      if (list === null) return null;
+      if (list.length === 0) return "";
+      const labels: string[] = [];
+      let anyOffList = false;
+      for (const entry of list) {
+        const text = toText(entry);
+        if (text === null) {
+          anyOffList = true;
+          continue;
+        }
+        const match = findChoice(options.choices, text.trim());
+        if (match) labels.push(match.label ?? match.value);
+        else {
+          labels.push(text.trim());
+          anyOffList = true;
+        }
+      }
+      // Same leniency as `choice`: with no options resolved, nothing is off-list.
+      const haveOptions = !!options.choices && options.choices.length > 0;
+      if (haveOptions && anyOffList) return null;
+      return labels.join(", ");
     },
     parse: (raw) => {
       if (raw == null || raw === "") return null;

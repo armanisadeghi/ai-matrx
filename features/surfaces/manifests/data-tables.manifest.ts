@@ -135,7 +135,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "column_list",
     label: "Columns",
     description:
-      "Array of `{ name, display_name, type, required, order }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. Empty array when no table is open.",
+      "Array of `{ name, display_name, type, required, order, format?, choices? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. Empty array when no table is open.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -359,6 +359,22 @@ export interface DataTableColumnEntry {
   type: string;
   required: boolean;
   order: number;
+  /**
+   * The column's DISPLAY format, when it has one — `percent`, `currency`,
+   * `choice`, … Present because the storage type alone is a lie to whoever has
+   * to write the cell: a `percent` column typed `number` holding `45` means
+   * 45%, and an agent that cannot see the format cannot tell that from 0.45.
+   */
+  format?: string;
+  /**
+   * The values a `choice` / `multi_choice` column offers. A write outside this
+   * list is not rejected — off-list values are legal and render in amber — but
+   * an agent that can SEE the options has no reason to invent a new one.
+   *
+   * Omitted for a column bound to a pick list whose options have not loaded,
+   * so an empty list never reads as "this column has no options".
+   */
+  choices?: string[];
 }
 
 export function createDataTablesScope(values: {

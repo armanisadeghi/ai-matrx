@@ -44,6 +44,11 @@ import { EditableCell } from "@/features/data-tables/components/EditableCell";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
+import {
+  choicesForRow,
+  useFieldChoiceMap,
+  withResolvedChoices,
+} from "@/lib/field-formats/choices";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
 import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
 import {
@@ -84,6 +89,7 @@ import type { TableField } from "@/utils/user-table-utls/table-utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   buildDataTablesScope,
+  type DataTableScopeField,
   type DataTableScopeInput,
 } from "@/features/data-tables/agent-context/buildDataTablesScope";
 import {
@@ -632,6 +638,19 @@ const UserTableViewer = ({
     setSelectedRowIds([]);
     lastSelectedRowIndex.current = null;
   }, [tableId]);
+
+  // --- Choice options -----------------------------------------------------
+  //
+  // Every choice column's options resolve ONCE for the whole grid, not once per
+  // cell: a bound pick list is fetched here (shared session cache) and handed to
+  // each cell, so a 500-row page of a choice column is one resolution, not 500.
+  // A hook per column is impossible anyway — the column count is data.
+  const choiceMap = useFieldChoiceMap(
+    fields.map((field) => ({
+      field_name: field.field_name,
+      format: resolveFieldFormat(field.data_type, field.metadata),
+    })),
+  );
 
   // --- Column filtering -------------------------------------------------
 
@@ -1704,12 +1723,34 @@ const UserTableViewer = ({
     fields,
     visibleRows: displayRows,
   };
+  // What an agent is told about each column. The storage type alone misleads a
+  // writer — a `percent` column typed `number` holding 45 means 45%, not 0.45 —
+  // so the DECLARED FORMAT and, for a choice column, its resolved options ride
+  // along. Options come from the same grid-wide resolution the cells render
+  // from, so the agent can never be offered a set the user cannot see.
+  const surfaceFields: DataTableScopeField[] = fields.map((field) => {
+    const declared = resolveFieldFormat(field.data_type, field.metadata);
+    const isDefault = declared.id === defaultFormatForBase(field.data_type);
+    const resolvedChoices = choiceMap.get(field.field_name)?.choices;
+    return {
+      field_name: field.field_name,
+      display_name: field.display_name,
+      data_type: field.data_type,
+      field_order: field.field_order,
+      is_required: field.is_required,
+      ...(isDefault ? {} : { format: declared.id }),
+      ...(resolvedChoices && resolvedChoices.length > 0
+        ? { choices: resolvedChoices.map((c) => c.value) }
+        : {}),
+    };
+  });
+
   const surfaceScopeSnapshot: DataTableScopeInput = {
     tableId,
     tableName: tableInfo?.table_name,
     tableDescription: tableInfo?.description,
     isReadOnly: surfacePermissionKnown ? isReadOnly : null,
-    fields,
+    fields: surfaceFields,
     visibleRows: displayRows,
     totalCount: effectiveTotalCount,
     searchTerm,
@@ -2113,9 +2154,22 @@ const UserTableViewer = ({
                     // amber mismatch fallback). Columns with no format take the
                     // original path unchanged, so nothing that worked before
                     // can shift.
-                    const fieldFormat = resolveFieldFormat(
+                    const declaredFormat = resolveFieldFormat(
                       field.data_type,
                       field.metadata,
+                    );
+                    // A choice column's options may live in a shared pick list
+                    // (loaded once for the whole grid), and a DEPENDENT column's
+                    // options narrow to the group this row's controlling cell
+                    // names. Both fold back into the format so the pure
+                    // registry renderer needs to know about neither.
+                    const rowChoices = choicesForRow(
+                      choiceMap.get(field.field_name),
+                      row.data,
+                    );
+                    const fieldFormat = withResolvedChoices(
+                      declaredFormat,
+                      rowChoices.choices,
                     );
                     const hasCustomFormat =
                       fieldFormat.id !== defaultFormatForBase(field.data_type);
@@ -2170,6 +2224,7 @@ const UserTableViewer = ({
                               fieldDisplayName={field.display_name}
                               dataType={field.data_type as FieldDataType}
                               format={fieldFormat}
+                              row={row.data}
                               value={rawValue}
                               display={display}
                               editable={!isReadOnly}

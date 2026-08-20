@@ -15,11 +15,22 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+import { ChoiceInput } from "./ChoiceInput";
+
 import { parseFieldInput } from "@/lib/field-formats/format";
 import { getFieldFormat } from "@/lib/field-formats/registry";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
-const OWNED_EDITORS = new Set(["email", "url", "tel", "color", "textarea", "rating"]);
+const OWNED_EDITORS = new Set([
+  "email",
+  "url",
+  "tel",
+  "color",
+  "textarea",
+  "rating",
+  "select",
+  "multiselect",
+]);
 
 /**
  * Does this format supply its own input? Callers branch on this instead of
@@ -97,6 +108,18 @@ export function FormatAwareInput({
           rows={5}
           placeholder={placeholder}
           onChange={(e) => commit(e.target.value)}
+        />
+      );
+
+    case "select":
+    case "multiselect":
+      return (
+        <ChoiceInput
+          id={id}
+          format={format}
+          value={value}
+          multiple={def.editor === "multiselect"}
+          onChange={onChange}
         />
       );
 
