@@ -8,7 +8,32 @@
 //   3. dispatch `gradeResolved` INTO Redux (the grade reaches the UI ONLY this
 //      way — never a same-tick re-read of state set elsewhere; the §5.3 killer
 //      bug is structurally impossible),
-//   4. record the attempt on the study spine (study_record_attempt).
+//   4. record the attempt on the study spine, through the OFFLINE-AWARE writer.
+//
+// OFFLINE — THE SPLIT (IC-8). FastFire is the one mode whose grade is produced
+// by a SERVER agent, so offline the two halves separate and are treated
+// differently ON PURPOSE:
+//   • THE OBSERVATION — "this learner answered card X in session S at time T,
+//     spoken" — is captured locally and QUEUED. It is what the outbox exists
+//     for: the drill's attempt count, session, and FSRS review instant all
+//     survive a dropped connection and replay idempotently on reconnect.
+//   • THE GRADE is DERIVED STATE and is NEVER queued. It cannot be produced
+//     offline (the grader is a server agent), and it cannot be attached
+//     afterwards either: `study_record_attempt` is idempotent BY ID — a
+//     replayed attempt id returns the existing row and deliberately touches
+//     nothing — so a grade arriving later would need `study_override_attempt`,
+//     a different write with different semantics. Queuing a half-grade would
+//     also violate the outbox's founding rule (capture the observation, never
+//     the derived state).
+//   • THE AUDIO CLIP is likewise not retained. `fileHandler.upload` needs the
+//     network, so offline there is no `file_id` to record, and the blob is
+//     dropped when the drill ends. An offline FastFire card therefore lands as
+//     an ungraded, audio-less attempt — the learner's WORK is counted, the
+//     learner's ANSWER CONTENT is not. That is a real, accepted limitation, not
+//     an oversight; making it whole means persisting the blob and re-grading at
+//     flush time, which is its own build (tracked, not silently skipped).
+// A queued attempt is surfaced as `gradeSkipped`, which is honest: no grade was
+// produced. The learner is told once per session via a toast.
 //
 // The grader resolves through the mandate (FC_MANDATES.gradeSpoken) — swap the
 // agent behind it at /agents/mandates (the old localStorage agent-id config is
@@ -23,7 +48,9 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
-import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { toast } from "@/lib/toast";
 import {
   audioExtensionForType,
   normalizeAudioContentType,
@@ -66,6 +93,9 @@ export function gradeCard(args: GradeCardArgs) {
     getState: () => RootState,
   ): Promise<void> => {
     const { cardId, front, back, secondsAllowed, clip, sessionId } = args;
+    // Whose outbox an offline attempt joins. Read once, up front: the thunk is
+    // fire-and-forget and can resolve long after the drill moved on.
+    const userId = selectUserId(getState()) ?? "";
 
     // 1. Upload the per-card clip to a durable file_id (best-effort — a missing
     //    clip is not fatal; we still record the attempt result-less).
@@ -106,9 +136,15 @@ export function gradeCard(args: GradeCardArgs) {
     // the card back (the exact 100%-on-everything bug). This also makes
     // abort-mid-pad safe — an abandoned card whose clip resolved null never
     // launches a grader or records a fabricated grade.
+    //
+    // This is ALSO the offline path: with no network the upload above failed,
+    // so there is no file id and no grade is possible. The branch is identical
+    // by design — "no audio the grader can see" is one situation, whatever
+    // caused it — and the attempt below still reaches the learner's outbox.
     if (!responseAudioFileId) {
       dispatch(gradeSkipped({ cardId, responseAudioFileId, runId: sessionId }));
       await recordAttempt({
+        userId,
         cardId,
         sessionId,
         responseAudioFileId,
@@ -186,6 +222,7 @@ export function gradeCard(args: GradeCardArgs) {
       // 5. Record the attempt on the study spine (score jsonb shape unchanged:
       //    { rubric, missing, feedback }).
       await recordAttempt({
+        userId,
         cardId,
         sessionId,
         responseAudioFileId,
@@ -206,6 +243,7 @@ export function gradeCard(args: GradeCardArgs) {
       // Still record the attempt (result-less) so the response audio + session
       // are not lost just because the grade failed.
       await recordAttempt({
+        userId,
         cardId,
         sessionId,
         responseAudioFileId,
@@ -219,8 +257,12 @@ export function gradeCard(args: GradeCardArgs) {
   };
 }
 
-/** Thin wrapper around the canonical attempt writer. Loud on error. */
+/**
+ * Thin wrapper around the canonical OFFLINE-AWARE attempt writer. Loud on
+ * error, and loud (once per session) when the answer went to the outbox.
+ */
 async function recordAttempt(input: {
+  userId: string;
   cardId: string;
   sessionId: string | null;
   responseAudioFileId: string | null;
@@ -230,7 +272,8 @@ async function recordAttempt(input: {
   transcript: string | null;
   gradedBy: string | null;
 }): Promise<void> {
-  const res = await studyService.recordAttempt({
+  const res = await recordAttemptOfflineAware({
+    userId: input.userId,
     itemType: FC_CARD_ITEM_TYPE,
     itemId: input.cardId,
     method: FAST_FIRE_METHOD,
@@ -247,5 +290,28 @@ async function recordAttempt(input: {
   });
   if (res.error) {
     console.error("[fastfire.gradeCard] recordAttempt failed:", res.error);
+    return;
   }
+  if (res.queued) {
+    noticeOfflineOnce(input.sessionId);
+  }
+}
+
+/**
+ * The session already told "you're offline". A 20-card drill with no connection
+ * queues 20 attempts; the learner needs to hear that ONCE, not twice a second.
+ * Module-level because the grade thunks are fire-and-forget and share no
+ * component instance to hang a ref on — and a single slot rather than a Set,
+ * because a learner runs one drill at a time and an unbounded Set of every
+ * session id the tab ever saw is a leak with no reader.
+ */
+let lastOfflineNoticeSession: string | null = null;
+
+function noticeOfflineOnce(sessionId: string | null): void {
+  const key = sessionId ?? "no-session";
+  if (lastOfflineNoticeSession === key) return;
+  lastOfflineNoticeSession = key;
+  toast.success(
+    "Saved offline — your answers sync when you reconnect. Grading needs a connection, so these stay ungraded.",
+  );
 }

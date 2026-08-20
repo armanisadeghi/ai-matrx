@@ -8,8 +8,10 @@
 // flip + grade flow as `useFlashcardStudy` — but over a dynamic, cross-set queue
 // instead of one set.
 //
-// Grading funnels through the SAME canonical path (`studyService.recordAttempt`
-// → study_attempt + item_mastery), stamped `method='adaptive'` so the provenance
+// Grading funnels through the SAME canonical path — `recordAttemptOfflineAware`
+// over `studyService.recordAttempt` → study_attempt + item_mastery (the wrapper
+// is what keeps an answer alive when the connection dies mid-review, IC-8) —
+// stamped `method='adaptive'` so the provenance
 // is distinguishable from classic/fast_fire review. Returns the identical result
 // shape the shared <StudyDeck/> consumes.
 //
@@ -18,8 +20,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { toast } from "@/lib/toast";
 import { planService } from "@/features/education/study/service/planService";
 import type { CardWithDetails } from "./types";
 import type {
@@ -72,6 +78,9 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     Record<string, ReviewResult | undefined>
   >({});
   const [grading, setGrading] = useState(false);
+  // Whose queue an offline answer joins. Empty only when signed out, and a
+  // signed-out learner cannot open a study session at all.
+  const userId = useAppSelector(selectUserId) ?? "";
   const [session, setSession] = useState<StudySessionRow | null>(null);
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
@@ -217,7 +226,11 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     if (!card) return null;
     setGrading(true);
     try {
-      const res = await studyService.recordAttempt({
+      // Offline-aware: with no connection the OBSERVATION is queued and
+      // replayed idempotently on reconnect (IC-8), instead of the answer being
+      // lost. Online this is exactly `studyService.recordAttempt`.
+      const res = await recordAttemptOfflineAware({
+        userId,
         itemType: FC_CARD_ITEM_TYPE,
         itemId: card.id,
         method: STUDY_MODE,
@@ -226,13 +239,24 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
         ...(extra?.confidence != null ? { confidence: extra.confidence } : {}),
         ...(session ? { sessionId: session.id } : {}),
       });
-      if (res.error || !res.data) {
+      if (res.error) {
         console.error("[useDueReview] recordAttempt:", res.error);
+        toast.error(
+          "Couldn't record your grade — check your connection and try again.",
+        );
         return null;
       }
-      const { mastery } = res.data;
+      if (res.queued) {
+        toast.success("Saved offline — this syncs when you reconnect.");
+      }
+      // `mastery` is null for a queued attempt: the server computes it at flush
+      // time, so the card keeps its prior mastery rather than showing an
+      // invented one. The card still advances — the answer IS captured.
+      const { mastery } = res;
       setResultsByCard((prev) => ({ ...prev, [card.id]: result }));
-      setMasteryByCard((prev) => ({ ...prev, [card.id]: mastery }));
+      if (mastery) {
+        setMasteryByCard((prev) => ({ ...prev, [card.id]: mastery }));
+      }
       goTo(currentIndex + 1);
       return mastery;
     } finally {

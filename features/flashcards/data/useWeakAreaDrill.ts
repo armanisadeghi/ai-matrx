@@ -11,16 +11,22 @@
 // since `last_review`, so a true worst-first order can't be a pure SQL ORDER
 // BY today.
 //
-// Grading funnels through the SAME canonical path (`studyService.recordAttempt`
-// → study_attempt + item_mastery), stamped `method='weak_area'`.
+// Grading funnels through the SAME canonical path — `recordAttemptOfflineAware`
+// over `studyService.recordAttempt` → study_attempt + item_mastery — stamped
+// `method='weak_area'`. The wrapper is what keeps an answer alive when the
+// connection dies mid-drill (IC-8); the bare service would drop it.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { toast } from "@/lib/toast";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
 import type { CardWithDetails } from "./types";
 import type {
@@ -65,6 +71,9 @@ export function useWeakAreaDrill(
     Record<string, ReviewResult | undefined>
   >({});
   const [grading, setGrading] = useState(false);
+  // Whose queue an offline answer joins. Empty only when signed out, and a
+  // signed-out learner cannot open a study session at all.
+  const userId = useAppSelector(selectUserId) ?? "";
   const [session, setSession] = useState<StudySessionRow | null>(null);
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
@@ -186,7 +195,11 @@ export function useWeakAreaDrill(
     if (!card) return null;
     setGrading(true);
     try {
-      const res = await studyService.recordAttempt({
+      // Offline-aware: with no connection the OBSERVATION is queued and
+      // replayed idempotently on reconnect (IC-8), instead of the answer being
+      // lost. Online this is exactly `studyService.recordAttempt`.
+      const res = await recordAttemptOfflineAware({
+        userId,
         itemType: FC_CARD_ITEM_TYPE,
         itemId: card.id,
         method: STUDY_MODE,
@@ -195,13 +208,24 @@ export function useWeakAreaDrill(
         ...(extra?.confidence != null ? { confidence: extra.confidence } : {}),
         ...(session ? { sessionId: session.id } : {}),
       });
-      if (res.error || !res.data) {
+      if (res.error) {
         console.error("[useWeakAreaDrill] recordAttempt:", res.error);
+        toast.error(
+          "Couldn't record your grade — check your connection and try again.",
+        );
         return null;
       }
-      const { mastery } = res.data;
+      if (res.queued) {
+        toast.success("Saved offline — this syncs when you reconnect.");
+      }
+      // `mastery` is null for a queued attempt: the server computes it at flush
+      // time, so the card keeps its prior mastery rather than showing an
+      // invented one. The card still advances — the answer IS captured.
+      const { mastery } = res;
       setResultsByCard((prev) => ({ ...prev, [card.id]: result }));
-      setMasteryByCard((prev) => ({ ...prev, [card.id]: mastery }));
+      if (mastery) {
+        setMasteryByCard((prev) => ({ ...prev, [card.id]: mastery }));
+      }
       goTo(currentIndex + 1);
       return mastery;
     } finally {

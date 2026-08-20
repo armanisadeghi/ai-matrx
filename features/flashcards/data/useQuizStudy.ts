@@ -7,16 +7,22 @@
 // that lane isn't configured, just fewer options for that one question.
 //
 // Every answer funnels through the SAME canonical study spine as every other
-// mode: studyService.recordAttempt({ itemType: 'fc_card', method: 'test', ... }).
+// mode, via the offline-aware wrapper (`recordAttemptOfflineAware`) — online
+// that IS `studyService.recordAttempt({ itemType: 'fc_card', method: 'test' })`,
+// and with no connection the observation is queued and replayed idempotently
+// (IC-8) instead of the learner's answer being dropped.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { toast } from "@/lib/toast";
 import {
   applyStoredQuizItems,
   buildQuizQuestions,
@@ -79,6 +85,9 @@ export function useQuizStudy(
 ): UseQuizStudyResult {
   const { setId, withSession = true } = options;
   const dispatch = useAppDispatch();
+  // Whose queue an offline answer joins. Empty only when signed out, and a
+  // signed-out learner cannot open a study session at all.
+  const userId = useAppSelector(selectUserId) ?? "";
 
   const [set, setSet] = useState<FcSetRow | null>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -221,7 +230,8 @@ export function useQuizStudy(
 
     setGrading(true);
     try {
-      const res = await studyService.recordAttempt({
+      const res = await recordAttemptOfflineAware({
+        userId,
         itemType: FC_CARD_ITEM_TYPE,
         itemId: q.cardId,
         method: QUIZ_MODE,
@@ -230,7 +240,15 @@ export function useQuizStudy(
         ...(session ? { sessionId: session.id } : {}),
       });
       if (res.error) {
+        // Loud recovery: the UI has already flipped the option to
+        // right/wrong, so a silent write failure leaves the learner believing
+        // an answer counted when it did not.
         console.error("[useQuizStudy] recordAttempt:", res.error);
+        toast.error(
+          "Couldn't record that answer — check your connection and try again.",
+        );
+      } else if (res.queued) {
+        toast.success("Saved offline — this syncs when you reconnect.");
       }
     } finally {
       setGrading(false);

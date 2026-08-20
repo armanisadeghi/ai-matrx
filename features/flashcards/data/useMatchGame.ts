@@ -12,13 +12,23 @@
 // study spine as every other mode — mismatches are gameplay, not graded
 // attempts (this is an engagement mode, not an assessment one).
 //
+// The write goes through `recordAttemptOfflineAware`, not the bare service.
+// Match is the mode that loses the MOST to a dropped connection: a pair
+// self-grades exactly once and then leaves the board, so a failed write has no
+// card left to retry against — the answer is simply gone. Offline the
+// observation is queued and replayed idempotently on reconnect (IC-8).
+//
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { toast } from "@/lib/toast";
 import type { FcSetRow, CardWithDetails } from "./types";
 import type { StudySessionRow } from "@/features/education/study/types";
 
@@ -84,7 +94,12 @@ export function useMatchGame(
   const [tiles, setTiles] = useState<MatchTile[]>([]);
   const [loading, setLoading] = useState<boolean>(!!setId);
   const [error, setError] = useState<string | null>(null);
+  // Whose queue an offline answer joins. Empty only when signed out, and a
+  // signed-out learner cannot open a study session at all.
+  const userId = useAppSelector(selectUserId) ?? "";
   const [session, setSession] = useState<StudySessionRow | null>(null);
+  /** One "saved offline" notice per round — see the grade write below. */
+  const offlineNoticeShown = useRef(false);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [matchedCardIds, setMatchedCardIds] = useState<Set<string>>(new Set());
   const [mismatchTileIds, setMismatchTileIds] = useState<
@@ -217,19 +232,27 @@ export function useMatchGame(
       const cardId = tile.cardId;
       setMatchedCardIds((prev) => new Set(prev).add(cardId));
       setSelectedTileId(null);
-      void studyService
-        .recordAttempt({
-          itemType: FC_CARD_ITEM_TYPE,
-          itemId: cardId,
-          method: MATCH_MODE,
-          result: "correct",
-          responseKind: "selected",
-          ...(session ? { sessionId: session.id } : {}),
-        })
-        .then((res) => {
-          if (res.error)
-            console.error("[useMatchGame] recordAttempt:", res.error);
-        });
+      void recordAttemptOfflineAware({
+        userId,
+        itemType: FC_CARD_ITEM_TYPE,
+        itemId: cardId,
+        method: MATCH_MODE,
+        result: "correct",
+        responseKind: "selected",
+        ...(session ? { sessionId: session.id } : {}),
+      }).then((res) => {
+        if (res.error) {
+          console.error("[useMatchGame] recordAttempt:", res.error);
+          toast.error("Couldn't record that match — it wasn't saved.");
+          return;
+        }
+        // One toast per round, not one per pair: an 8-card board offline would
+        // otherwise stack eight identical toasts over the game.
+        if (res.queued && !offlineNoticeShown.current) {
+          offlineNoticeShown.current = true;
+          toast.success("Saved offline — this syncs when you reconnect.");
+        }
+      });
     } else {
       // Mismatch — flash both tiles, then clear.
       setMismatchTileIds([selectedTileId, tileId]);
@@ -301,6 +324,7 @@ export function useMatchGame(
   }, []);
 
   const restart = (): void => {
+    offlineNoticeShown.current = false;
     setRoundKey((k) => k + 1);
   };
 

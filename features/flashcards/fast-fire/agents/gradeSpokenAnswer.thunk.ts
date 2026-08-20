@@ -9,11 +9,20 @@
 //
 // Reuses the decoupled `grading-core` (upload + grader + coerce) so every voice
 // surface inherits the same hardened path.
+//
+// OFFLINE — THE SPLIT (IC-8), identical to `gradeCard.thunk`: the OBSERVATION
+// (this learner answered this item, spoken, at this instant) is queued in the
+// study outbox and replays idempotently on reconnect; the GRADE is derived
+// state produced by a server agent and is NEVER queued — it cannot be computed
+// offline, and `study_record_attempt` is idempotent by id, so it could not be
+// attached to the replayed attempt afterwards either. Grade-only calls (no
+// `itemType`/`itemId`) have no observation to keep and simply return an error.
 
-import type { AppDispatch } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { verdictResult } from "@/features/education/trust/types";
-import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import {
   runSpokenGrader,
@@ -53,9 +62,14 @@ export interface GradeSpokenAnswerResult {
 }
 
 export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
-  return async (dispatch: AppDispatch): Promise<GradeSpokenAnswerResult> => {
+  return async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<GradeSpokenAnswerResult> => {
     try {
       const surface = args.surface ?? "voice-test";
+      // Whose outbox an offline attempt joins.
+      const userId = selectUserId(getState()) ?? "";
 
       // Same upload path as gradeCard.thunk — best-effort; a failed upload must
       // never throw (FastFire skips grading and records result-less instead).
@@ -72,7 +86,10 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
       });
 
       if (!responseAudioFileId) {
-        await maybeRecord(args, responseAudioFileId, null, null);
+        // The upload failed — offline, or a genuine upload error. Either way
+        // the OBSERVATION still counts, so it goes through the offline-aware
+        // writer and lands in the outbox when the cause was the network.
+        await maybeRecord(userId, args, responseAudioFileId, null, null);
         return {
           status: "skipped",
           responseAudioFileId,
@@ -106,6 +123,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
 
       if (!grade) {
         await maybeRecord(
+          userId,
           args,
           responseAudioFileId,
           null,
@@ -118,7 +136,13 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
         };
       }
 
-      await maybeRecord(args, responseAudioFileId, grade, FC_MANDATES.gradeSpoken);
+      await maybeRecord(
+        userId,
+        args,
+        responseAudioFileId,
+        grade,
+        FC_MANDATES.gradeSpoken,
+      );
       return { status: "graded", grade, responseAudioFileId };
     } catch (err) {
       console.error("[gradeSpokenAnswer] unexpected failure:", err);
@@ -134,15 +158,21 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
   };
 }
 
-/** Record the attempt on the shared spine when an item is provided. Loud on error. */
+/**
+ * Record the attempt on the shared spine when an item is provided, through the
+ * OFFLINE-AWARE writer so a dropped connection queues the answer instead of
+ * discarding it. Loud on error.
+ */
 async function maybeRecord(
+  userId: string,
   args: GradeSpokenAnswerArgs,
   responseAudioFileId: string | null,
   grade: SpokenGrade | null,
   gradedBy: string | null,
 ): Promise<void> {
   if (!args.itemType || !args.itemId) return;
-  const res = await studyService.recordAttempt({
+  const res = await recordAttemptOfflineAware({
+    userId,
     itemType: args.itemType,
     itemId: args.itemId,
     method: args.method ?? "voice_test",
