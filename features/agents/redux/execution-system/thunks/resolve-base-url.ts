@@ -21,8 +21,9 @@ export type BackendChannel =
   "global" | "override" | "ec2-dedicated" | "local-runtime";
 
 /**
- * Dedicated aidream server for EC2 (slim) sandbox conversations — close to the
- * LLM providers and in the sandbox host's AZ (e.g. `https://sandbox.matrxserver.com`).
+ * Canonical public aidream service for EC2 (slim) sandbox conversations
+ * (`https://server.app.matrxserver.com`). The ECS service and sandbox fleet
+ * are both in us-east-1; the retired EC2 aidream replica is not a valid target.
  * MUST be HTTPS (the app runs on https; http would be blocked as mixed content).
  * Deliberately a distinct var from `NEXT_PUBLIC_BACKEND_URL_EC2` (the admin
  * "ec2" server toggle, historically the orchestrator host) so the two concepts
@@ -33,9 +34,8 @@ const EC2_SANDBOX_SERVER_URL =
 
 /**
  * If this conversation is bound to an **EC2 (slim)** sandbox, its agent loop
- * should run on the dedicated server that sits in the same AZ as the sandbox
- * host and close to the LLM providers (`NEXT_PUBLIC_BACKEND_URL_EC2`, e.g.
- * `https://sandbox.matrxserver.com`) instead of the far global server. The
+ * runs on the canonical public ECS service selected by
+ * `NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL`. The
  * slim box has no in-box server; the loop runs there and reaches its fs/shell
  * tools into the box via the `sandbox` binding. Hosted (heavy) boxes carry
  * their own server and are handled by the explicit `serverOverrideUrl` path,
@@ -60,7 +60,7 @@ function dedicatedEc2ServerForConversation(
   if (ref?.tier !== "ec2") return null;
   if (!EC2_SANDBOX_SERVER_URL) {
     console.error(
-      `[sandbox-routing] ❌ conversation ${conversationId} is bound to an EC2 (slim) box but NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL is NOT set — the turn will hit the FAR global server instead of the nearby EC2 server. Set NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL (and rebuild — it's inlined at build time).`,
+      `[sandbox-routing] ❌ conversation ${conversationId} is bound to an EC2 (slim) box but NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL is NOT set — the turn will use the ordinary production fallback. Set NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL to the canonical public aidream service (and rebuild — it's inlined at build time).`,
     );
     return null;
   }
