@@ -17,6 +17,11 @@ import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { resolveProvisionalKindRender } from "@/features/content-ir/react/partial-kind-route";
+import {
+  ProvisionalKindBoundary,
+  ProvisionalKindFrame,
+} from "@/features/content-ir/react/ProvisionalKindBoundary";
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import {
   isBlockLoading,
@@ -45,6 +50,13 @@ interface BlockRendererProps {
   /** Generic handler: replaces `original` substring with `replacement` in the full content string. */
   replaceBlockContent: (original: string, replacement: string) => void;
   handleOpenEditor: () => void;
+  /**
+   * Streaming partial kinds ONLY. Set on the recursive render of a
+   * PROVISIONAL block so the loading gates below (which exist to hide a
+   * half-arrived payload) stand down and the real kind component renders the
+   * provisional value. Never set by an ordinary caller.
+   */
+  suppressLoadingGate?: boolean;
 }
 
 /**
@@ -127,6 +139,11 @@ const PendingStructuredBlock: React.FC<{ envelope: CanonicalBlockIR }> = ({
  *     type-keyed dispatch. This is how bare/fenced JSON `flashcard_set` —
  *     which the legacy detectors can only call "code" — becomes real
  *     flashcards, live while streaming.
+ *  1.5 PROVISIONAL KIND (streaming partial kinds) — a block carrying a
+ *     `metadata.__ir_partial` `partial` event for an opted-in kind renders
+ *     that provisional value through the SAME component the final value uses,
+ *     marked "still arriving". Terminal events produce nothing here, so the
+ *     final value replaces the provisional render in one frame.
  *  2. PENDING SKELETON — a still-streaming JSON region with an unresolved
  *     kind shows a neutral skeleton instead of flashing raw text.
  *  3. UNIFIED ARTIFACT RENDERER — standalone materializable blocks render
@@ -150,6 +167,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   isLastReasoningBlock,
   replaceBlockContent,
   handleOpenEditor,
+  suppressLoadingGate = false,
 }) => {
   // Late-arrival repaint, GRANULAR: subscribe to THIS block's envelope kind
   // only — a schema/component that lands after this block rendered (cold
@@ -231,6 +249,45 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     ],
   );
 
+  // Stage 1.5 — STREAMING PARTIAL KINDS: the server announced what this region
+  // is and what has arrived so far (`metadata.__ir_partial`). A provisional
+  // value for an opted-in kind renders through the SAME component the final
+  // value renders in, so the block fills in instead of sitting behind a
+  // skeleton — and the terminal events (`superseded` / `retracted`) produce no
+  // provisional render at all, so the swap to the final value happens in the
+  // same frame with no flicker. Withheld by default per kind; a component that
+  // throws anyway is caught and falls back to this kind's loading skeleton.
+  // Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
+  const provisional = suppressLoadingGate
+    ? null
+    : resolveProvisionalKindRender(rawBlock);
+  if (provisional) {
+    return (
+      <ProvisionalKindBoundary
+        key={index}
+        kind={provisional.kind}
+        fallback={<PendingStructuredBlock envelope={provisional.envelope} />}
+      >
+        <ProvisionalKindFrame>
+          <BlockRenderer
+            requestId={requestId}
+            block={provisional.block}
+            index={index}
+            isStreamActive={isStreamActive}
+            onContentChange={onContentChange}
+            conversationId={conversationId}
+            messageId={messageId}
+            taskId={taskId}
+            isLastReasoningBlock={isLastReasoningBlock}
+            replaceBlockContent={replaceBlockContent}
+            handleOpenEditor={handleOpenEditor}
+            suppressLoadingGate
+          />
+        </ProvisionalKindFrame>
+      </ProvisionalKindBoundary>
+    );
+  }
+
   // Stage 2 — a JSON region still streaming whose kind is unresolved OR whose
   // schema is still cold-fetching renders its loading component (registry-
   // driven, early-key fed), NOT its raw text. The moment the schema lands the
@@ -271,7 +328,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // (Regression guard: forcing `isStreamActive={false}` + a loader for all
       // types is what made tables/flashcards batch — see the doctrine that all
       // render blocks stream live.)
-      const loading = isBlockLoading(block);
+      // `suppressLoadingGate` is the provisional render (Stage 1.5): the
+      // point is to REPLACE this skeleton with the real component fed the
+      // provisional value.
+      const loading = !suppressLoadingGate && isBlockLoading(block);
       const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
       if (loading && Loader) {
         return <Loader key={index} />;

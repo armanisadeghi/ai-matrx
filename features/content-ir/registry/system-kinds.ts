@@ -272,6 +272,11 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: quizMarkdownFromValue,
     artifact: { canvasType: "quiz" },
     persistence: { persistStructured: true },
+    // Streaming partial kinds: a provisional quiz_set routes to the real
+    // MultipleChoiceQuiz and fills in question by question instead of sitting
+    // behind QuizLoading for the whole stream. Paired with `{ provisional:
+    // true }` on quizServerDataFromEnvelope — a test pins the pair.
+    partialReady: true,
     schema: {
       kind: "quiz_set",
       fields: {

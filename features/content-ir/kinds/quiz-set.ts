@@ -140,6 +140,15 @@ export const quizServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 
     return serverData;
   },
+  // PARTIAL-READY (streaming partial kinds): a provisional quiz_set — closed
+  // JSON with however many questions have arrived — routes to the SAME
+  // MultipleChoiceQuiz the final value renders in, and grows a question at a
+  // time. `mapQuestion` already declines a question with no text and no
+  // options, and `build` declines a set with zero renderable questions, so a
+  // value too thin to render keeps the loading skeleton for that frame
+  // instead of rendering an empty quiz. Paired with `partialReady: true` on
+  // the registry definition (system-kinds.ts) — a test pins the two together.
+  { provisional: true },
 );
 
 // ---------------------------------------------------------------------------

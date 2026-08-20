@@ -327,3 +327,43 @@ export function advancePartialKind(
   if (last !== undefined && event.seq <= last) return null;
   return event;
 }
+
+/**
+ * The per-block staleness GATE, as a stateful closure over `advancePartialKind`
+ * — one per stream.
+ *
+ * `upsertRenderBlock` REPLACES the stored block, so a replayed or out-of-order
+ * event landing on a block would regress what the user is looking at (a
+ * filled-in quiz snapping back to two questions, or a terminal being undone by
+ * a late `partial`). The highest accepted event is CARRIED FORWARD rather than
+ * dropped, so a stale arrival is a no-op on screen instead of a flicker back to
+ * the skeleton.
+ *
+ * Returns the metadata to store: the same reference when nothing changed, a
+ * copy with the carried-forward event otherwise.
+ */
+export function makePartialKindStalenessGate(): (
+  blockId: string,
+  metadata: Record<string, unknown> | undefined,
+) => Record<string, unknown> | undefined {
+  const seen: Record<string, number> = {};
+  const lastAccepted: Record<string, unknown> = {};
+
+  return (blockId, metadata) => {
+    if (!isRecord(metadata) || !(IR_PARTIAL_KEY in metadata)) return metadata;
+    // Anything malformed was stripped by `sanitizeInboundPartialKindMetadata`
+    // at the same boundary, so a key still present here reads as valid.
+    const parsed = readPartialKindEvent(metadata);
+    if (parsed === null) return metadata;
+
+    if (advancePartialKind(seen, blockId, parsed) !== null) {
+      seen[blockId] = parsed.seq;
+      lastAccepted[blockId] = metadata[IR_PARTIAL_KEY];
+      return metadata;
+    }
+
+    const carried = lastAccepted[blockId];
+    if (carried === metadata[IR_PARTIAL_KEY]) return metadata;
+    return { ...metadata, [IR_PARTIAL_KEY]: carried };
+  };
+}

@@ -72,6 +72,27 @@ export interface KindDefinition {
   /** Future XML tags / kind aliases resolving to this kind. */
   discriminatorAliases?: string[];
   /**
+   * PARTIAL-READY opt-in — the streaming partial-kinds posture.
+   *
+   * While a structured region streams, the server may announce a PROVISIONAL
+   * instance of this kind on `metadata.__ir_partial` (valid, closed JSON that
+   * may be missing required fields). The default posture is WITHHOLD: a
+   * provisional value is never routed to a component, and the block keeps its
+   * loading skeleton until the region completes — because a component that
+   * throws on an absent field must not be handed one.
+   *
+   * Setting this to `true` declares "this kind's component renders a partial
+   * value without throwing", and the provisional value is routed to the SAME
+   * component that renders the final one, filling in as tokens arrive. A kind
+   * with a `toLegacyServerData` bridge must ALSO pass `{ provisional: true }`
+   * to `makeCompleteEnvelopeBridge` (pinned by a test). A component that
+   * throws anyway is caught, screams, and permanently drops this kind back to
+   * withhold for the session.
+   *
+   * Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
+   */
+  partialReady?: boolean;
+  /**
    * Loading-library slug (`kind_definition.metadata.loading_component`) —
    * which of the ~20 hardcoded loading components renders while this kind's
    * instance streams in / its schema+component fetch is in flight. Null or

@@ -49,6 +49,26 @@ function stripKindRoot(value: Record<string, unknown>): Record<string, unknown> 
 export interface CompleteEnvelopeBridgeOptions {
   /** `__kind` removal depth — "deep" (default) or "root" (see module doc). */
   strip?: "deep" | "root";
+  /**
+   * PARTIAL-READY opt-in: also build from a `status: "streaming"` envelope.
+   *
+   * Step 1 of the recipe above gates on `complete` because, historically,
+   * partial payloads never reached these components — BlockRenderer showed
+   * the type's loading skeleton for the whole stream. The streaming
+   * partial-kinds contract changes that premise for kinds that opt in: the
+   * server closes the JSON, the provisional value is routed to the SAME
+   * component, and it fills in as tokens arrive. Set this ONLY together with
+   * `partialReady: true` on the kind's registry definition — a test pins the
+   * two together (`__tests__/partial-kind-route.test.ts`), because a facet
+   * saying "partial-ready" over a bridge that declines every streaming
+   * envelope is a skeleton that never fills.
+   *
+   * A bridge accepting a provisional value MUST tolerate missing required
+   * fields; returning `undefined` for a value too thin to render is the
+   * correct decline (the loading skeleton stays up for that frame).
+   * Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
+   */
+  provisional?: boolean;
 }
 
 /**
@@ -70,7 +90,12 @@ export function makeCompleteEnvelopeBridge<
 
   return (envelope) => {
     if (envelope.root.kind !== kind) return undefined;
-    if (envelope.root.status !== "complete") return undefined;
+    if (
+      envelope.root.status !== "complete" &&
+      !(options?.provisional && envelope.root.status === "streaming")
+    ) {
+      return undefined;
+    }
 
     if (memo.has(envelope)) return memo.get(envelope);
 

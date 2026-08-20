@@ -193,7 +193,10 @@ import { patchAgentConversationMetadata } from "@/features/agents/redux/conversa
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
 import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
-import { sanitizeInboundPartialKindMetadata } from "@/features/content-ir/core/partial-kind";
+import {
+  makePartialKindStalenessGate,
+  sanitizeInboundPartialKindMetadata,
+} from "@/features/content-ir/core/partial-kind";
 import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
@@ -432,6 +435,14 @@ export async function processStream({
     requestId,
     upsertRenderBlock,
   );
+
+  // ── Streaming partial kinds: the per-block staleness gate ────────────────
+  // `seq` is monotonic PER BLOCK and is the ordering key. Events can be
+  // replayed on reconnect or arrive out of order, and `upsertRenderBlock`
+  // REPLACES the stored block — so a stale event would regress this block's
+  // provisional render. The gate carries the highest accepted event forward.
+  // Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
+  const gatePartialKindStaleness = makePartialKindStalenessGate();
 
   let textBuffer = "";
   let reasoningBuffer = "";
@@ -1544,10 +1555,14 @@ export async function processStream({
             },
           },
         );
+        const gatedMetadata = gatePartialKindStaleness(
+          event.data.blockId,
+          sanitizedMetadata,
+        );
         const eventBlock =
-          sanitizedMetadata === event.data.metadata
+          gatedMetadata === event.data.metadata
             ? event.data
-            : { ...event.data, metadata: sanitizedMetadata };
+            : { ...event.data, metadata: gatedMetadata };
 
         // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
         // canonical UnifiedImageBlock adapter so the rest of the system sees

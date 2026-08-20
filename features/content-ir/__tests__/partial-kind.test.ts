@@ -18,6 +18,7 @@ import { IR_VERSION } from "../core/ir-types";
 import {
   IR_PARTIAL_KEY,
   advancePartialKind,
+  makePartialKindStalenessGate,
   isProvisionalKind,
   isTerminalKindEvent,
   readPartialKindEvent,
@@ -247,5 +248,41 @@ describe("sanitizeInboundPartialKindMetadata — the wire boundary", () => {
       blockId: "blk_0",
     }) as Record<string, unknown>;
     expect(result.__ir).toBe(metadata.__ir);
+  });
+});
+
+describe("makePartialKindStalenessGate — a stale event never regresses a block", () => {
+  const rows = (FIXTURES.clean_finish ?? []).map((row) => ({
+    [IR_PARTIAL_KEY]: row.event,
+  })) as Array<Record<string, unknown>>;
+
+  it("accepts strictly increasing seq by reference", () => {
+    const gate = makePartialKindStalenessGate();
+    for (const metadata of rows) {
+      expect(gate("blk_0", metadata)).toBe(metadata);
+    }
+  });
+
+  it("carries the last accepted event forward when a stale one replays", () => {
+    const gate = makePartialKindStalenessGate();
+    const latest = rows[rows.length - 1]!;
+    gate("blk_0", rows[0]!);
+    gate("blk_0", latest);
+
+    const replay = rows[1]!;
+    const gated = gate("blk_0", replay)!;
+    expect(gated).not.toBe(replay);
+    // The terminal already accepted stands — the replayed partial is a no-op.
+    expect(gated[IR_PARTIAL_KEY]).toBe(latest[IR_PARTIAL_KEY]);
+  });
+
+  it("tracks blocks independently and passes metadata with no partial through", () => {
+    const gate = makePartialKindStalenessGate();
+    gate("blk_0", rows[5]!);
+    expect(gate("blk_1", rows[0]!)).toBe(rows[0]!);
+
+    const plain = { isComplete: false };
+    expect(gate("blk_0", plain)).toBe(plain);
+    expect(gate("blk_0", undefined)).toBeUndefined();
   });
 });
