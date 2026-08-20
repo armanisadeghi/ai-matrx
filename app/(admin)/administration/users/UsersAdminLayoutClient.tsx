@@ -59,6 +59,11 @@ const NAV_ITEMS = [
     icon: Gauge,
   },
   {
+    label: "Limits & Knobs",
+    href: "/administration/users/limits",
+    icon: SlidersHorizontal,
+  },
+  {
     label: "Usage & Cost",
     href: "/administration/users/usage",
     icon: DollarSign,

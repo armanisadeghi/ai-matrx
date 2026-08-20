@@ -1079,6 +1079,17 @@ export const primaryNavItems: ShellNavItem[] = [
         guestHidden: true,
       },
       {
+        label: "Deals",
+        href: "/crm/deals",
+        iconName: "Handshake",
+        description:
+          "Track deals through kanban pipelines — value, stage, owner, and expected close",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
         label: "Outreach Lists",
         href: "/crm/outreach-lists",
         iconName: "Megaphone",

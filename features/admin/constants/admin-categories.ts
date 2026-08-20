@@ -856,6 +856,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Limits & Knobs",
+        description:
+          "Every limit on the platform, editable without a deploy: what each plan includes, and the operational ceilings and defaults that belong to no account.",
+        iconName: "SlidersHorizontal",
+        link: "/administration/users/limits",
+        isNew: true,
+      },
+      {
         title: "Usage & Cost",
         description:
           "Per-user AI spend and token usage — the CX usage analytics surfaced inside user management.",
