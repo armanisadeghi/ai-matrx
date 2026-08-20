@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 407 active entity tokens. A token here is FK-valid for
+// 409 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -129,6 +129,8 @@ export type EntityTypeToken =
   | "crm_affiliation"
   | "crm_blocklist_entry"
   | "crm_contact_candidate"
+  | "crm_deal"
+  | "crm_deal_stage_event"
   | "crm_enrichment_call"
   | "crm_interaction"
   | "crm_merge_candidate"
@@ -479,6 +481,7 @@ export type ReferencePickableEntityToken =
   | "content_ir_kind_instance"
   | "context_item"
   | "conversation"
+  | "crm_deal"
   | "crm_outreach_list"
   | "cx_agent_memory"
   | "data_store"
@@ -579,6 +582,7 @@ export type ComponentEntityToken =
   | "crm_address"
   | "crm_affiliation"
   | "crm_contact_candidate"
+  | "crm_deal_stage_event"
   | "crm_interaction"
   | "crm_merge_candidate"
   | "crm_outreach_list_member"
@@ -824,6 +828,8 @@ export type ScopeableEntityToken =
   | "crm_affiliation"
   | "crm_blocklist_entry"
   | "crm_contact_candidate"
+  | "crm_deal"
+  | "crm_deal_stage_event"
   | "crm_enrichment_call"
   | "crm_interaction"
   | "crm_merge_candidate"
@@ -1143,6 +1149,7 @@ export type ListedEntityToken =
   | "content_ir_kind"
   | "content_ir_kind_instance"
   | "crm_blocklist_entry"
+  | "crm_deal"
   | "crm_outreach_list"
   | "crm_registry_source"
   | "crm_saved_view"
@@ -1266,6 +1273,8 @@ export const ENTITY_TYPE_METADATA = {
   "crm_affiliation": { token: "crm_affiliation", schema: "crm", table: "affiliation", label: "Affiliation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "crm_blocklist_entry": { token: "crm_blocklist_entry", schema: "crm", table: "blocklist_entry", label: "Blocklist Entry", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_contact_candidate": { token: "crm_contact_candidate", schema: "crm", table: "contact_candidate", label: "Contact Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_deal": { token: "crm_deal", schema: "crm", table: "deal", label: "Deal", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
+  "crm_deal_stage_event": { token: "crm_deal_stage_event", schema: "crm", table: "deal_stage_event", label: "Deal Stage Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_enrichment_call": { token: "crm_enrichment_call", schema: "crm", table: "enrichment_call", label: "Enrichment Call", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
   "crm_merge_candidate": { token: "crm_merge_candidate", schema: "crm", table: "merge_candidate", label: "Merge Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1677,6 +1686,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "crm_affiliation",
   "crm_blocklist_entry",
   "crm_contact_candidate",
+  "crm_deal",
+  "crm_deal_stage_event",
   "crm_enrichment_call",
   "crm_interaction",
   "crm_merge_candidate",
