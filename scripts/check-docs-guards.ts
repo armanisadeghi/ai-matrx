@@ -68,6 +68,7 @@ const COMMON_DOCS_ALLOWED_DIRS = new Set([
   "projects",
   "policies",
   "operations",
+  "inbox", // Arman's protected dump lane — seventh branch, ratified 2026-08-20
   "meta",
   "skills",
 ]);
