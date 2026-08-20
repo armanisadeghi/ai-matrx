@@ -23,9 +23,10 @@ or unresolved paths before it creates an approvable interaction.
   may be consumed cross-org; internal templates may not.
 - `/settings/message-templates/new` is the repair door when the single-send surface finds no
   email-ready template.
-- The Smart Agent Input `+` menu opens the canonical `TemplateBrowserModal` filtered to user
-  messages. Selection prepends the template, then one blank line, then the byte-identical
-  existing draft; the standard composer opens its expanded writing view automatically.
+- The Smart Agent Input `+` menu renders its user-message template picker inside the same
+  resource panel used by Tools and Skills. Row selection applies immediately; preview and
+  new-tab doors remain separate controls. Selection prepends the template, then one blank line,
+  then the byte-identical existing draft; the standard composer expands automatically.
 
 ## Reuse-first record
 
@@ -35,12 +36,16 @@ so Phase 4 extended it instead of creating outreach-local authoring. The new run
 in aidream and is intentionally strict; the existing permissive AI variable replacement and
 domain-local formatter were not safe send primitives.
 
-The Smart Agent Input integration searched for existing template browsers, selectors, and draft
-writers. It reused `TemplateBrowserModal`, the execution system's canonical user-input slice, and
-the existing composer expansion path; only the domain-local prepend rule was added.
+The Smart Agent Input integration searched for existing template browsers, selectors, resource
+drill-ins, doors, and draft writers. It reuses the canonical template service, `ProInput`,
+`ResourcePickerSubViewHeader`, `EntityDoorControls`, the canonical user-input slice, and the
+existing composer expansion path. The full `TemplateBrowserModal` stays dedicated to its
+preview-before-use authoring flow.
 
 ## Change log
 
+- **2026-08-20** — Replaced chat's modal detour with an in-panel, mobile-friendly picker whose
+  rows apply immediately and whose preview/open doors remain independent.
 - **2026-08-19** — Reused the canonical browser in chat's Smart Agent Input; template insertion
   preserves existing drafts and automatically expands the composer.
 - **2026-08-15** — Added email-subject authoring and documented this existing feature as the

@@ -40,7 +40,6 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import { useDialogContainer } from "@/components/ui/dialog";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { cn } from "@/lib/utils";
@@ -56,7 +55,7 @@ import {
   type RunControlsTab,
 } from "./RunControlsTabPanel";
 import type { Resource } from "@/features/agents/resources/types";
-import { LazyTemplateBrowserModal } from "@/features/message-templates/components/TemplateSelector";
+import { SmartInputMessageTemplatePicker } from "@/features/message-templates/components/SmartInputMessageTemplatePicker";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -101,7 +100,6 @@ export function RunControlsMenu({
 
   const [open, setOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   const [tab, setTab] = useState<RunControlsTab>(rc.defaultTab);
   const activeTab = rc.resolveTab(tab);
   const inputText = useAppSelector(selectUserInputText(conversationId));
@@ -208,17 +206,12 @@ export function RunControlsMenu({
                     label: "Templates",
                     icon: FileText,
                     content: (
-                      <div className="p-4">
-                        <Button
-                          className="w-full"
-                          onClick={() => {
-                            setOpen(false);
-                            setTemplateBrowserOpen(true);
-                          }}
-                        >
-                          Browse message templates
-                        </Button>
-                      </div>
+                      <SmartInputMessageTemplatePicker
+                        onSelect={(templateText) => {
+                          insertTemplate(templateText);
+                          setOpen(false);
+                        }}
+                      />
                     ),
                   },
                 ]
@@ -233,12 +226,6 @@ export function RunControlsMenu({
               ),
             })),
           ]}
-        />
-        <LazyTemplateBrowserModal
-          isOpen={templateBrowserOpen}
-          onClose={() => setTemplateBrowserOpen(false)}
-          role="user"
-          onSelectTemplate={insertTemplate}
         />
       </>
     );
