@@ -46,7 +46,7 @@ export function TriggerCard({
   onSetActive: (isActive: boolean) => void;
   onDelete: () => void;
   onFireNow: () => void;
-  loadFires: (triggerId: string) => Promise<TriggerFire[]>;
+  loadFires: (triggerId: string) => Promise<TriggerFire[] | null>;
 }) {
   const [open, setOpen] = useState(false);
   const isSchedule = trigger.kind === "cron";
@@ -192,6 +192,7 @@ export function TriggerCard({
           <TriggerFireHistory
             triggerId={trigger.id}
             timezone={trigger.timezone}
+            lastRunId={trigger.lastRunId}
             load={loadFires}
           />
         </div>

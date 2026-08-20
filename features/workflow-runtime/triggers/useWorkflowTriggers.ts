@@ -53,7 +53,12 @@ export interface WorkflowTriggersApi {
   remove: (triggerId: string) => Promise<boolean>;
   /** Fire a webhook/manual trigger from the owner's session. Returns run id. */
   fireNow: (triggerId: string) => Promise<string | null>;
-  listFires: (triggerId: string) => Promise<TriggerFire[]>;
+  /**
+   * The audit log for one trigger. `null` means the read FAILED — never an
+   * empty array, because "it has never run" and "we couldn't check" are
+   * opposite answers and the surface must not print the first for the second.
+   */
+  listFires: (triggerId: string) => Promise<TriggerFire[] | null>;
 }
 
 /** The origin an OUTSIDE system must POST to — never the admin's local toggle. */
@@ -239,7 +244,7 @@ export function useWorkflowTriggers(
   );
 
   const listFires = useCallback(
-    async (triggerId: string): Promise<TriggerFire[]> => {
+    async (triggerId: string): Promise<TriggerFire[] | null> => {
       const config: ApiCallConfig<"/triggers/{trigger_id}/fires", "GET"> = {
         path: "/triggers/{trigger_id}/fires",
         method: "GET",
@@ -247,7 +252,7 @@ export function useWorkflowTriggers(
         queryParams: { limit: 50 },
       };
       const result = await dispatch(callApi(config));
-      if (result.error) return [];
+      if (result.error) return null;
       return parseTriggerFireList(result.data);
     },
     [dispatch],

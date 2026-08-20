@@ -8,6 +8,12 @@
  * at 3am is one click from the thing it produced. A fire that FAILED says why
  * in the server's own words — a silent gap in the list would be the worst
  * possible answer to "did my schedule work?".
+ *
+ * And "we couldn't read the log" is NEVER rendered as "it hasn't run yet".
+ * Those are opposite answers, and printing the reassuring one for the failure
+ * is how a person concludes their schedule is broken when it is not. It is a
+ * real state here, with the last run still offered as a door (the trigger row
+ * itself knows that id, independently of this audit read).
  */
 
 import { useEffect, useState } from "react";
@@ -20,23 +26,53 @@ import { formatInZone } from "./RecurrenceEditor";
 export function TriggerFireHistory({
   triggerId,
   timezone,
+  lastRunId,
   load,
 }: {
   triggerId: string;
   timezone: string;
-  load: (triggerId: string) => Promise<TriggerFire[]>;
+  /** Known from the trigger row itself, so the door survives a failed read. */
+  lastRunId: string | null;
+  load: (triggerId: string) => Promise<TriggerFire[] | null>;
 }) {
   const [fires, setFires] = useState<TriggerFire[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void load(triggerId).then((rows) => {
-      if (!cancelled) setFires(rows);
+      if (cancelled) return;
+      if (rows === null) {
+        setFailed(true);
+        return;
+      }
+      setFires(rows);
     });
     return () => {
       cancelled = true;
     };
   }, [load, triggerId]);
+
+  if (failed) {
+    return (
+      <div className="space-y-1.5">
+        <p className="flex items-start gap-1.5 text-[11px] text-destructive">
+          <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+          We couldn&apos;t read this one&apos;s history just now. That says
+          nothing about whether it ran — try again in a moment.
+        </p>
+        {lastRunId ? (
+          <Link
+            href={`/workflows/runs/${lastRunId}`}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+          >
+            Open the last run
+            <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        ) : null}
+      </div>
+    );
+  }
 
   if (fires === null) {
     return (
