@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -99,8 +99,27 @@ const ColumnHeaderMenu = ({
 
   // Facets load when the menu OPENS, never on mount: a 20-column table would
   // otherwise fire 20 aggregate queries to render a header row nobody clicked.
+  //
+  // The guard is an ATTEMPT KEY, not "do I have facets yet". Guarding on the
+  // result means a FAILED load leaves the preconditions unchanged, the effect
+  // re-runs, and it retries forever — a request storm that exhausts the
+  // browser's socket pool and takes the whole page down with it. Ask once per
+  // (column, search) per open; a retry is the user's explicit choice.
+  const attemptRef = useRef<string | null>(null);
+  const attemptKey = `${tableId}::${fieldName}::${searchTerm ?? ""}`;
+
   useEffect(() => {
-    if (!open || facets || loading) return;
+    if (!open) {
+      // Reopening after the data changed must not show stale counts, and must
+      // be allowed to try again after a failure.
+      attemptRef.current = null;
+      setFacets(null);
+      setFacetError(null);
+      return undefined;
+    }
+    if (attemptRef.current === attemptKey) return undefined;
+    attemptRef.current = attemptKey;
+
     let cancelled = false;
     setLoading(true);
     setFacetError(null);
@@ -110,18 +129,19 @@ const ColumnHeaderMenu = ({
         if (isServiceFailure(result)) setFacetError(result.error);
         else setFacets(result.data);
       })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setFacetError(
+          err instanceof Error ? err.message : "Could not read this column.",
+        );
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [open, facets, loading, tableId, fieldName, searchTerm]);
-
-  // Reopening after the data changed should not show stale counts.
-  useEffect(() => {
-    if (!open) setFacets(null);
-  }, [open, searchTerm]);
+  }, [open, attemptKey, tableId, fieldName, searchTerm]);
 
   const mode: ColumnFilter["mode"] =
     filter?.mode ??
