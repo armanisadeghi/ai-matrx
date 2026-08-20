@@ -20,7 +20,7 @@ question ledger, and the census. This handoff is this repo's slice of that list.
 mechanics, never for vocabulary).
 **Code contract:** `features/workflow-runtime/FEATURE.md` (parts table, invariants, change log).
 **Server half:** `aidream docs/handoffs/workflow-runtime-ui-server.md`.
-**Sister cluster:** `common-docs/projects/matrx-dynamic-agent-graph/STATE.md` — Workflows (the
+**Sister cluster:** `common-docs/projects/workflows/STATE.md` — Workflows (the
 BUILDING side). This cluster is the USING side; Arman drew that line on 2026-08-19.
 
 One line: a generic, author-designed live run experience — you see what you'll get from second

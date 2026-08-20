@@ -1,7 +1,7 @@
 # Output Feedback — "was this AI output good?"
 
 **Status:** Live (2026-08-15). Phase 0.4 of the Dynamic Agent Graph plan
-(`common-docs/projects/matrx-dynamic-agent-graph/05-sequenced-plan.md`).
+(`common-docs/projects/workflows/05-sequenced-plan.md`).
 
 **One destination: `platform.output_feedback`.** Every thumbs button, every
 "this is wrong" affordance, and every corrected-output capture writes there.

@@ -82,7 +82,7 @@ workflow deliberately pushed to a screen that had no place to put it. The
 feed logged a "delivered" line for each, and the payload itself went nowhere.
 
 Recorded as an unfinished-work alarm in
-`common-docs/projects/matrx-dynamic-agent-graph/STATE.md` and
+`common-docs/projects/workflows/STATE.md` and
 `common-docs/projects/universal-live-result-surfaces/AUDIT.md`, and as a known
 gap in aidream's archived workflow handoff. All three predicted the vision
 correctly; none of them was wrong about a single detail.
