@@ -433,7 +433,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Agent connections | `features/agent-connections/FEATURE.md` |
 | AI Work Hub | `features/ai-work/FEATURE.md` |
 | Scopes | `features/scopes/FEATURE.md` |
-| Agent context + Brokers | `features/agent-context/FEATURE.md` (narrowed: broker resolution + context-slot fill; scope CRUD lives in `features/scopes/`) |
+| Agent context | `features/agent-context/FEATURE.md` (narrowed: context-slot fill at invocation time; scope CRUD lives in `features/scopes/`. There is no broker layer — `features/brokers/` was deleted 2026-08-11; see its Removal record) |
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
 | **Content-IR / Shape System** — canonical structured-content platform (`__kind` kinds, streaming JSON→IR envelopes, kind registry + `kind_surface`/`kind_component`/`kind_example`, render routing; workflow node I/O speaks kinds). **Read BEFORE touching stream/DB block parsing, `__kind`, `metadata.__ir`, or any kind asset** | `features/content-ir/FEATURE.md` → `features/content-ir/docs/SHAPE_SYSTEM.md` |
