@@ -34,10 +34,13 @@ export const coppaService = {
 
   /**
    * The age band the user chose at signup (auth metadata `education_age_band`),
-   * if any. This is INTENT captured at signup, not the enforced value — the
-   * enforced value lives on the guarded `age_band` column. The education-entry
-   * prompt reads this to auto-apply the signup choice so a learner who already
-   * answered at signup is never asked again. Returns null if none/invalid.
+   * if any. LEGACY TAIL ONLY: the signup form no longer asks (Arman,
+   * 2026-08-20 — the question moved to the post-sign-in prompt), so nothing
+   * writes this key any more. Accounts created before that change may still
+   * carry it, and `FirstSignInAgeGateMount` applies it silently so we never ask
+   * a question they already answered. Delete once that tail is gone. This is
+   * INTENT, never the enforced value — the enforced value lives on the guarded
+   * `age_band` column. Returns null if none/invalid.
    */
   async signupAgeBand(): Promise<AgeBand | null> {
     try {

@@ -159,25 +159,18 @@ export async function signUpAction(
     );
   }
 
-  // Neutral age-band screen (COPPA §312.3): we ask an age RANGE, never a date
-  // of birth. It is carried as auth metadata with ZERO change to the write/
-  // session path — the education-entry prompt applies it to the guarded
-  // `age_band` on first entry, so an email-confirm account that has no session
-  // yet is never a problem. Only the three allowed bands pass through.
-  const ageBandRaw = formData.get("ageBand")?.toString();
-  const signupAgeBand =
-    ageBandRaw === "under_13" ||
-    ageBandRaw === "13_17" ||
-    ageBandRaw === "adult"
-      ? ageBandRaw
-      : undefined;
+  // NO AGE QUESTION AT SIGNUP (Arman, 2026-08-20): "It's not sign up. It's
+  // after the first time that they sign in. I don't wanna get in the way of
+  // sign up for some bullshit like this." The age band is asked by
+  // `FirstSignInAgeGateMount` once the user is in the app, and written through
+  // the audited `edu_set_age_band` RPC. Nothing age-related belongs on this
+  // path — do not re-add a field, a metadata key, or a "just a default" here.
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: confirmUrl,
-      ...(signupAgeBand ? { data: { education_age_band: signupAgeBand } } : {}),
     },
   });
 

@@ -27,6 +27,7 @@ import AssistsDock from "@/features/assists/components/AssistsDock";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
 import HeaderOrgReminder from "@/features/shell/components/header/header-right-menu/HeaderOrgReminder";
+import { FirstSignInAgeGateMount } from "@/features/education/compliance/FirstSignInAgeGateMount";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
@@ -104,6 +105,11 @@ export default function DeferredSingletonCore() {
       <ErrorInspectorBadge />
       <LiveCaptureIndicator />
       {user?.id && <HeaderOrgReminder />}
+      {/* Render-free. Asks a signed-in account with no declared age band for
+          it ONCE, after they are in the app — never during signup (Arman,
+          2026-08-20). Dismissible; re-asks next session. Guests are handled by
+          EducationAgeGateMount, where their block actually bites. */}
+      {user?.id && <FirstSignInAgeGateMount />}
     </>
   );
 }

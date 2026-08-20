@@ -37,7 +37,10 @@ const ALLOWED_VERDICT_TTL_MS = 60_000;
 import { coppaService } from "./coppaService";
 import type { AgeBand, CoppaGate } from "./types";
 import { AiConsentRequiredDialog } from "./components/AiConsentRequiredDialog";
-import { AgeDeclarationDialog } from "./components/AgeDeclarationDialog";
+import {
+  AgeDeclarationDialog,
+  type AgeDeclarationVariant,
+} from "./components/AgeDeclarationDialog";
 
 export interface UseAiComplianceGateResult {
   /** The last-loaded verdict (reactive). Null while first loading. */
@@ -71,7 +74,20 @@ export interface UseAiComplianceGateResult {
   reload: () => void;
 }
 
-export function useAiComplianceGate(): UseAiComplianceGateResult {
+export interface UseAiComplianceGateOptions {
+  /**
+   * Copy variant for the age prompt. `first_run` is the post-sign-in popup
+   * (nothing is waiting on the answer); the default `gate` is the inline prompt
+   * in front of an AI action the user just started. Presentation only — both
+   * write through the same audited `edu_set_age_band` RPC.
+   */
+  declarationVariant?: AgeDeclarationVariant;
+}
+
+export function useAiComplianceGate(
+  options: UseAiComplianceGateOptions = {},
+): UseAiComplianceGateResult {
+  const declarationVariant = options.declarationVariant ?? "gate";
   const [gate, setGate] = useState<CoppaGate | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -255,6 +271,7 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
           onPick={onPickBand}
           saving={savingBand}
           isGuest={Boolean(gate?.isAnonymous)}
+          variant={declarationVariant}
         />
         <AiConsentRequiredDialog
           open={open}
@@ -269,6 +286,7 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
       savingBand,
       gate?.reason,
       gate?.isAnonymous,
+      declarationVariant,
       onPickBand,
       settleAgePrompt,
     ],
