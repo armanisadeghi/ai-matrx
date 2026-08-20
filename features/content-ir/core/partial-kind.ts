@@ -110,6 +110,59 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function readPath(value: unknown): IrPath | null {
+  if (!Array.isArray(value)) return null;
+  return value.every(
+    (segment) => typeof segment === "string" || typeof segment === "number",
+  )
+    ? value
+    : null;
+}
+
+function readDiscriminator(value: unknown): IrDiscriminator | null {
+  if (!isRecord(value)) return null;
+  if (value.format === "json" && value.key === "__kind") {
+    return { format: "json", key: "__kind" };
+  }
+  if (value.format === "xml" && typeof value.tag === "string") {
+    return { format: "xml", tag: value.tag };
+  }
+  if (value.format === "fence" && typeof value.language === "string") {
+    return { format: "fence", language: value.language };
+  }
+  return null;
+}
+
+function readResidue(value: unknown): IrResidue | null | undefined {
+  if (value === null) return null;
+  if (!isRecord(value)) return undefined;
+  const extra = value.extra;
+  const optionalMissing = value.optionalMissing;
+  const notices = value.notices;
+  if (extra !== null && !isRecord(extra)) return undefined;
+  if (
+    optionalMissing !== null &&
+    (!Array.isArray(optionalMissing) ||
+      !optionalMissing.every((item) => typeof item === "string"))
+  ) {
+    return undefined;
+  }
+  if (
+    notices !== null &&
+    (!Array.isArray(notices) ||
+      !notices.every(
+        (notice) =>
+          isRecord(notice) &&
+          typeof notice.code === "string" &&
+          typeof notice.message === "string" &&
+          (notice.at === undefined || typeof notice.at === "number"),
+      ))
+  ) {
+    return undefined;
+  }
+  return { extra, optionalMissing, notices };
+}
+
 /**
  * Read + validate a partial-channel event off a block's metadata.
  *
@@ -141,17 +194,67 @@ export function readPartialKindEvent(
     if (root.kindState !== "speculative") return null;
     if (typeof root.kind !== "string" || !root.kind) return null;
     if (!isRecord(root.value)) return null;
-    return candidate as unknown as PartialKindEvent;
+    const discriminator = readDiscriminator(root.discriminator);
+    const path = readPath(root.path);
+    const residue = readResidue(root.residue);
+    if (discriminator === null || path === null || residue === undefined) {
+      return null;
+    }
+    return {
+      v: IR_VERSION,
+      engine: candidate.engine,
+      state: "partial",
+      seq: candidate.seq,
+      fingerprint:
+        typeof candidate.fingerprint === "string" ? candidate.fingerprint : "",
+      root: {
+        role: "structured",
+        kind: root.kind,
+        kindState: "speculative",
+        discriminator,
+        path,
+        status: "streaming",
+        value: root.value,
+        residue,
+      },
+    };
   }
 
   if (typeof candidate.kind !== "string" || !candidate.kind) return null;
 
   if (state === "superseded") {
-    return candidate as unknown as SupersededKindEvent;
+    return {
+      v: IR_VERSION,
+      engine: candidate.engine,
+      state: "superseded",
+      seq: candidate.seq,
+      kind: candidate.kind,
+    };
   }
 
   if (typeof candidate.reason !== "string" || !candidate.reason) return null;
-  return candidate as unknown as RetractedKindEvent;
+  if (
+    candidate.becameKind !== null &&
+    typeof candidate.becameKind !== "string"
+  ) {
+    return null;
+  }
+  if (
+    candidate.becameBlockType !== null &&
+    typeof candidate.becameBlockType !== "string"
+  ) {
+    return null;
+  }
+  return {
+    v: IR_VERSION,
+    engine: candidate.engine,
+    state: "retracted",
+    seq: candidate.seq,
+    kind: candidate.kind,
+    reason: candidate.reason,
+    becameKind: candidate.becameKind,
+    becameBlockType: candidate.becameBlockType,
+  };
 }
 
 /**
