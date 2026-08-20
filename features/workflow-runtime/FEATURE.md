@@ -47,6 +47,13 @@ that is the exit-test surface.
 | Failure card | `components/run/RunFailureCard.tsx` + `run-failure-explanation.ts` | Failure as a first-class state: plain-language headline, the failing step by its author's name, the one next action, and the technical cause one tap away. `explainRunFailure` owns the copy (add a pattern there, never a bespoke string here) and carries an optional one-click `action` — the education COPPA gate routes to the page that clears it. |
 | Zero-config board | `components/WorkflowRunBoard.tsx` | Tier 0 presentation: status rows for every node, lanes via `LiveRunDisplay variant="bare"`, settled kind-checked output via `KindInstanceRender`, interrupt answer card, recursive child boards (`adopt={false}` on children — the parent adapter already follows them). |
 | Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every readout; never fork a second copy. Resolution order: a lane **that has carried something** → `LiveRunDisplay`; settled kind → `KindInstanceRender` (with an `unroutableFallback` that reads an agent-run envelope through `agent-run-output.ts` for any OTHER componentless kind — `agent_result` itself now has THE component and no longer reaches it); textTail; settled JSON → the canonical viewer via `MarkdownStream`; error; still working → the honest working state with its live progress line. **An empty lane never wins** — the adapter opens one for every non-fan-out node including nodes that never stream a token, and treating it as truth rendered an empty pane over the output the step had actually produced. |
+| **Triggers — running without a person** | `triggers/` → `app/(core)/workflows/[id]/triggers/page.tsx` | 🚨 **NOT `trigger-points.ts`.** A **trigger** (`workflow.trigger`) is what STARTS a run — a cron schedule or an inbound webhook. A **trigger point** (ruling R2) is a named MOMENT INSIDE a run that UI binds visibility to. Same word, unrelated systems; do not let them touch. |
+| Trigger client | `triggers/useWorkflowTriggers.ts` | THE one path to `/triggers*`, the twin of `useWorkflowRunControls` — every verb a `callApi` config typed against the generated OpenAPI paths. **Never build a scheduler here:** aidream's `CronWatcher` runs inside the deployed workflow worker and is what actually fires. `listFires` returns `null` (not `[]`) on a failed read — "never ran" and "couldn't check" are opposite answers. |
+| Plain-language recurrence | `triggers/recurrence.ts` | PURE `Recurrence` ↔ cron. Our user does not write cron, so the UI authors *every weekday at 9:00 AM* and this derives the expression; `fromCron` reads it back so an edit shows plain language. Anything unrecognised (or hand-typed) round-trips as `advanced`, **verbatim** — a person's own expression is never rewritten. Cron evaluation is NOT reimplemented: `lib/scheduler-client/next-due.ts` (validate + next-N fires, timezone-aware) is the platform primitive every preview uses. Monthly is capped at day 28 so a short month can never silently skip. |
+| Trigger default inputs | `triggers/default-inputs.ts` | 🚨 **FLAT, not per-node, and that is load-bearing.** aidream's `_create_trigger_run` passes `default_inputs` through as the run's BROADCAST inputs and never writes `metadata._settings.node_inputs`; the engine merges broadcast inputs into every source node, so flat keys reach an `io.user_input` node exactly as a hand-started run's values do. Nesting by node id would arrive as one unknown field and park the run. `collidingInputKeys` names the one case flat loses (two user-input nodes sharing a key) so the surface says so instead of guessing. |
+| Trigger input UI | `triggers/components/TriggerDefaultInputs.tsx` + `components/RunFormFieldControl.tsx` | The workflow's OWN run form (`deriveRunForm`) authored as "what should it work with, every time" — the field control is shared with `RunStartForm`, never a second input authoring path. Warns when a REQUIRED field is empty: nobody is present when a schedule fires, so a missing answer is a run that parks, not a prompt. |
+| Webhook secret | `triggers/components/NewTriggerForm.tsx` → `WorkflowTriggersPage` | Write-once by contract: the server stores it encrypted and marks it `exclude=True` on every response, so **no read path can return it**. Minted with browser crypto, sent once, shown once, held only in component state — never Redux, storage, or a URL. A card can therefore only say a secret is set; building a reveal would promise what the platform deliberately cannot do. |
+| Fire history | `triggers/components/TriggerFireHistory.tsx` | `GET /triggers/{id}/fires` — THE DOOR LAW: every fire that produced a run opens it at `/workflows/runs/[runId]`. A failed fire shows the server's own reason; a failed READ says so and keeps the last run as a door, and is never rendered as the reassuring "it hasn't run yet". |
 | Surface config | `surface/config.ts` | The Run Surface document (R1/R6/R7): 24-col `pos`, readout sources (node/group/childRun/progressRail/static/action), pages, visibility; tolerant parse + strict validate. `deriveDefaultSurfaceConfig` builds a real surface from the DEFINITION for a workflow nobody has authored one for (steps that think or declare an `output_kind` become full-width readouts). Additive only — the builder writes the same document. |
 | Progress rail | `components/ProgressRailReadout.tsx` | The generalized podcast rail: per-node rows from selectors + authored SYNTHETIC sub-steps (randomized 2.2–5.5s cadence, last held until the node leaves "running", snap-all-done), 99%-cap progress bar until the run is terminal. Animation state is presentation-local — refresh restarts it by design. |
 | Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table = the canonical `MatrxDataTable` over invocations — item/status/output/duration, every column sorts + filters); childRun renders the child's OWN authored compact surface when one exists (R9 — `getDefaultSurface(childDefId, {profile:"compact"})` → nested `RunSurfaceView adopt={false}`), else a compact status summary with an expandable full board; static markdown via `MarkdownStream` content mode. Node and rail labels use the resolved spec type with a human fallback, never expose graph-local IDs as dead-end UI text. Visible node readouts promote running lane-less invocations via `useViewportLanePromotion` (IntersectionObserver → `ensureLane`, seeded with the tracked tail). |
@@ -109,6 +116,11 @@ that is the exit-test surface.
 
 ## Known limits
 
+- **A trigger cannot be EDITED, only turned off or removed.** The server exposes
+  `PATCH /triggers/{id}` for `is_active` alone — there is no update path for the
+  schedule, the timezone, or the default inputs. Changing any of those today
+  means removing the trigger and making a new one (and for a webhook, minting a
+  new secret). Widening that PATCH is the fix, and it is a server change.
 - **There is no per-workflow run-history surface.** `/workflows/runs/[runId]` opens ONE run, so
   the catalog's Runs column is a plain count rather than a door: pointing "4 runs" at the single
   most recent run would land the user somewhere the number did not promise. The Last run cell
@@ -122,6 +134,26 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-08-20 — **schedules and webhooks got a door: `/workflows/[id]/triggers`.**
+  The entire trigger stack (CRUD, the webhook fire endpoint, the `CronWatcher`
+  inside the deployed workflow worker) had been live and **never once used** —
+  `workflow.trigger` held zero rows because nothing in any client could reach it.
+  Built on what already existed: `deriveRunForm` + the extracted
+  `RunFormFieldControl` for default inputs, `lib/scheduler-client/next-due.ts`
+  for cron validation and next-fire previews, `callApi` typed against the
+  generated OpenAPI paths, `ConfirmDialogHost` for removal. Doors added on the
+  run page header and in `buildWorkflowMenu`.
+  **Proven end to end on production:** a schedule authored in plain language
+  fired on its own at 12:19 AM PDT (trigger `1b8a8032-d963-43f6-8fff-905778394bda`),
+  produced run `2e4943c7-539b-4798-989e-064b5f825a89`, which completed 4/4 steps
+  and renders at its permalink — reached from the card's "Open the last run".
+  **Three real server defects surfaced by being the first consumer, all fixed in
+  aidream in the same session:** `GET /triggers/{id}/fires` 500'd on every call
+  (`filter_items` compiled `limit`/`order_by` as column filters); every webhook
+  trigger was unfireable (`encrypt_value` bytes written to a TEXT column, so the
+  correct secret always 403'd as "legacy/undecryptable"); and `GET /triggers`
+  returned every trigger on the platform to unauthenticated callers.
 
 - 2026-08-19 — **`useWorkflowRunControls` is fully typed against the generated OpenAPI paths.**
   The Phase-1 generic `post(path, …)` helper and its six `as never` casts are gone; each verb now
