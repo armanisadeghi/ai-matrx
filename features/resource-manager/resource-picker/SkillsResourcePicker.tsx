@@ -1,10 +1,7 @@
 "use client";
 
 import { RunSkillPicker } from "@/features/agents/components/inputs/smart-input/RunSkillPicker";
-import {
-  RESOURCE_PICKER_RUN_CONTROL_HEIGHT_CLASS,
-  ResourcePickerSubViewHeader,
-} from "./ResourcePickerSubViewHeader";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface SkillsResourcePickerProps {
   conversationId: string;
@@ -16,11 +13,9 @@ export function SkillsResourcePicker({
   onBack,
 }: SkillsResourcePickerProps) {
   return (
-    <div
-      className={`flex ${RESOURCE_PICKER_RUN_CONTROL_HEIGHT_CLASS} flex-col`}
-    >
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <ResourcePickerSubViewHeader title="Skills" onBack={onBack} />
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <RunSkillPicker conversationId={conversationId} />
       </div>
     </div>

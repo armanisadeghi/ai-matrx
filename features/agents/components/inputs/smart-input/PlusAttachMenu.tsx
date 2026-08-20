@@ -259,7 +259,11 @@ export function PlusAttachMenu({
                 </div>
               </div>
             ) : (
-              <div className="min-h-full">
+              <div className="h-full min-h-0">
+                {/* Resource drill-ins such as Tools and Skills need a definite
+                    height all the way from this flex slot to their internal
+                    list. min-height alone leaves percentage-height children
+                    unbounded, so their overflow regions grow and clip. */}
                 <ResourcePickerMenu
                   conversationId={conversationId}
                   onResourceSelected={handleResourceSelected}
