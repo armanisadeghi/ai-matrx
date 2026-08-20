@@ -230,11 +230,15 @@ From the search pilot (2026-08-20):
    serialize_by_alias=True)` — leading-underscore field names are private in
    pydantic, so the alias is the only way to declare the discriminator. The SDK
    base must own this.
-2. **No registry→TypeScript codegen exists.** matrx-frontend has HAND-WRITTEN
-   per-kind TS files (`features/content-ir/kinds/*.ts`) plus a drift checker
-   (`scripts/shape/check-content-ir-twin.ts`) — exactly the twin-maintenance
-   the plan (§4.3) wants deleted. Stage A cannot "verify TS generation picks
-   the kinds up" until this generator is built.
+2. **Registry→TypeScript codegen: BUILT (Stage B, 2026-08-20).** matrx-frontend
+   `pnpm shape:types <kind…>` / `--all-generated` / `pnpm check:kind-types`
+   (`scripts/shape/generate-kind-types.ts`) reads `emitted_json_schema` from
+   the LIVE registry and emits self-contained
+   `features/content-ir/kinds/generated/<kind>.gen.ts`, drift-checked.
+   Regenerate after any seed re-run (activation bumps
+   `kind_definition.version`, stamped in the file header). Still open for the
+   SDK: matrx-extend distribution, and auto-running generation from the
+   seed/sync flow instead of by hand.
 3. **Registration is a per-family hand-rolled script.** The worked pattern is
    `aidream/scripts/seed_site_intake_kinds.py` (ORM upserts + `check_schema`
    example validation + `schema_fingerprint` + `set_kind_activation` +
@@ -262,6 +266,35 @@ From the search pilot (2026-08-20):
    on every run (`output_kind_ok`), and engram confirmation counts it — a
    collection-schema supersede MUST ride the same change that repoints the
    emitters (the pilot gates it behind `seed_search_kind_family.py --cutover`).
+
+From Stage B (2026-08-20):
+
+9. **No registry→KindSchema codegen — the FE compiled parser floor is
+   hand-mirrored.** Registered rows whose object contract can't be flattened
+   leave `kind_definition.data` NULL (all-or-nothing
+   `fields_from_json_schema`), so the streaming parser has NO warm schema for
+   them; live parsing of these kinds works only through the compiled
+   `KindSchema` mirrors each Stage B hand-writes into
+   `features/content-ir/kinds/<family>.ts` (`json[]` for plain sub-structure
+   arrays, `object/kind` + `array/itemKinds` for nested kinds). The SDK
+   should generate this floor from `emitted_json_schema` too.
+10. **Sweep `kind_component` for your slugs before registering — a stale db
+    override silently wins.** The search collection had a pre-existing ACTIVE
+    `source='db'` component authored 2 days earlier against the OLD shape; db
+    overrides bundled, so it would have replaced the new canonical component
+    with an old-shape renderer. Stage B queries `kind_component` for every
+    family slug first, and deactivates (never deletes) stale overrides with a
+    note. Same class as #7, one table over.
+11. **Stage B's worked registration path (reference implementation:
+    the search family).** Compiled `KindDefinition`s + `legacyBlockType` =
+    kind slug + a uniform `{value, isComplete}` streaming bridge; one
+    canonical component per kind (registered in `BlockComponentRegistry` +
+    the dispatch shape table + `FeSynthesizedBlockType`/`ShapeBlockType`
+    unions + the component-registry pin test); the collection delegates
+    nested instances via a static sibling map with a db-override seam
+    (`SearchKindNested`) — never a per-item `next/dynamic` re-entry; bundled
+    `kind_component` rows land as one idempotent migration; then re-run the
+    family seed script and VERIFY `is_active` by SQL.
 
 ## Active pilots
 
