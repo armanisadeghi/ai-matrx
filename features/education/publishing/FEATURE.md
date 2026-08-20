@@ -80,6 +80,9 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 
 ## Change log
 
+- **2026-08-19** — Made the database-backed sitemap route dynamic so temporary
+  database or network outages cannot fail production builds while enumerating
+  published learn docs; the route retains its hourly response revalidation.
 - **2026-08-18** — Added the grounded exam-content pipeline to the existing study-guide admin:
   explicit processed-source selection, IC-3 retrieval, three focused private deck drafts through
   the canonical converter/mandate, durable chunk-id preservation, per-card source-verification,

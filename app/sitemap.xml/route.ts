@@ -6,6 +6,11 @@ import { MODULE_LANDING_DIRECTORY } from '@/features/auth/components/module-land
 // Revalidate hourly; a learn-doc publish busts the education reads via tag.
 export const revalidate = 3600
 
+// The sitemap includes live database-backed education content. Keep that read
+// out of the production build so a temporary database or network outage cannot
+// fail an otherwise healthy deployment; the route remains hourly cached.
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const baseUrl = siteConfig.url
 
