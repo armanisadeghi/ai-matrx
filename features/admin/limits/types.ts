@@ -66,3 +66,37 @@ export const MICRO_USD_PER_USD = 1_000_000;
 export function isMicroUsd(capability: string): boolean {
   return MICRO_USD_CAPABILITIES.has(capability);
 }
+
+/**
+ * Stored integer → what the admin sees. Blank stays blank.
+ *
+ * 🚨 `null` is UNLIMITED and is NOT the same fact as `0`, which means the plan
+ * does not include the capability at all. Collapsing the two is how a plan
+ * silently loses a capability, so they never share a rendering.
+ */
+export function limitToDisplay(capability: string, stored: number | null): string {
+  if (stored === null || stored === undefined) return "";
+  return isMicroUsd(capability)
+    ? String(stored / MICRO_USD_PER_USD)
+    : String(stored);
+}
+
+/**
+ * What the admin typed → the stored integer.
+ *
+ * Blank means unlimited (`null`). `undefined` means "that is not a number I can
+ * store" — the caller must refuse rather than guess, because every wrong guess
+ * here changes what a customer is allowed to do.
+ */
+export function limitToStored(
+  capability: string,
+  raw: string,
+): number | null | undefined {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return isMicroUsd(capability)
+    ? Math.round(parsed * MICRO_USD_PER_USD)
+    : Math.round(parsed);
+}

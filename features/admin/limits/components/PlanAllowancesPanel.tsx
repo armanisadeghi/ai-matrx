@@ -26,29 +26,10 @@ import {
   setPlanLimit,
 } from "../service";
 import type { Capability, Plan, PlanLimit } from "../types";
-import { MICRO_USD_PER_USD, isMicroUsd } from "../types";
+import { isMicroUsd, limitToDisplay, limitToStored } from "../types";
 
 function cellId(planId: string, capability: string, period: string): string {
   return `${planId}|${capability}|${period}`;
-}
-
-/** Stored integer → what the admin sees. Blank stays blank (unlimited). */
-function toDisplay(capability: string, stored: number | null): string {
-  if (stored === null || stored === undefined) return "";
-  return isMicroUsd(capability)
-    ? String(stored / MICRO_USD_PER_USD)
-    : String(stored);
-}
-
-/** What the admin typed → the stored integer. Blank means unlimited (null). */
-function toStored(capability: string, raw: string): number | null | undefined {
-  const trimmed = raw.trim();
-  if (trimmed === "") return null;
-  const parsed = Number(trimmed);
-  if (Number.isNaN(parsed) || parsed < 0) return undefined;
-  return isMicroUsd(capability)
-    ? Math.round(parsed * MICRO_USD_PER_USD)
-    : Math.round(parsed);
 }
 
 export function PlanAllowancesPanel() {
@@ -76,7 +57,7 @@ export function PlanAllowancesPanel() {
         Object.fromEntries(
           limitRows.map((row) => [
             cellId(row.plan_id, row.capability, row.period),
-            toDisplay(row.capability, row.limit_value),
+            limitToDisplay(row.capability, row.limit_value),
           ]),
         ),
       );
@@ -111,7 +92,7 @@ export function PlanAllowancesPanel() {
   const save = useCallback(
     async (planId: string, capability: string, period: string) => {
       const id = cellId(planId, capability, period);
-      const stored = toStored(capability, drafts[id] ?? "");
+      const stored = limitToStored(capability, drafts[id] ?? "");
       if (stored === undefined) {
         toast.error("Enter a number, or leave it blank for unlimited");
         return;
@@ -186,7 +167,7 @@ export function PlanAllowancesPanel() {
                 const existing = limitIndex.get(id);
                 const dirty =
                   (drafts[id] ?? "") !==
-                  toDisplay(cap.capability, existing?.limit_value ?? null);
+                  limitToDisplay(cap.capability, existing?.limit_value ?? null);
                 return (
                   <div
                     key={id}
