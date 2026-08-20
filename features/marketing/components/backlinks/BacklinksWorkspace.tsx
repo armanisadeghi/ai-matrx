@@ -1192,10 +1192,15 @@ export function BacklinksWorkspace() {
     >
       <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured">
         {/* One slim top row. The view switcher lives in the SITE HEADER. */}
-        <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border px-3 py-1.5 sm:px-4">
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+        <div className="scrollbar-hide flex shrink-0 items-center overflow-x-auto border-b border-border px-2 py-1 sm:flex-wrap sm:overflow-visible sm:px-4 sm:py-1.5">
+          <div className="flex w-max flex-nowrap items-center gap-1.5 sm:ml-auto sm:w-auto sm:flex-wrap">
             <AuthorityRouterDoor sitePath={sitePath} compact />
-            <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-10 shrink-0 gap-1.5 sm:h-8"
+            >
               <Link href={`${sitePath}/reputation`}>
                 <Newspaper className="h-3.5 w-3.5" />
                 Reputation
@@ -1252,7 +1257,7 @@ export function BacklinksWorkspace() {
                 data-surface-value="refresh_profile"
                 size="sm"
                 aria-label="How deep the next refresh should look"
-                className="w-52"
+                className="h-10 w-52 shrink-0 sm:h-8"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1270,7 +1275,7 @@ export function BacklinksWorkspace() {
             </Select>
             <Button
               size="sm"
-              className="gap-1.5"
+              className="h-10 shrink-0 gap-1.5 sm:h-8"
               disabled={refreshing || !detailLimitValid}
               onClick={() => void refresh()}
             >
@@ -1288,7 +1293,7 @@ export function BacklinksWorkspace() {
             >
               <SelectTrigger
                 size="sm"
-                className="w-20"
+                className="h-10 w-20 shrink-0 sm:h-8"
                 aria-label="How many pages to review at a time"
               >
                 <SelectValue />
@@ -1304,7 +1309,7 @@ export function BacklinksWorkspace() {
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5"
+              className="h-10 shrink-0 gap-1.5 sm:h-8"
               disabled={batchAnalyzing || refreshing}
               onClick={() => void analyzeNext(enrichmentBatchSize)}
             >
@@ -1318,7 +1323,7 @@ export function BacklinksWorkspace() {
             <Button
               size="icon"
               variant="outline"
-              className="h-8 w-8"
+              className="h-10 w-10 shrink-0 sm:h-8 sm:w-8"
               aria-label="Automatic link checks"
               aria-pressed={settingsOpen}
               title="Check for new links automatically"

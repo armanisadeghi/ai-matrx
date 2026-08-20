@@ -91,7 +91,7 @@ export function BacklinksAssistStrip({
     <AssistStrip
       surfaceName={BACKLINKS_ASSIST_SURFACE}
       filter={siteFilter}
-      className="shrink-0 border-b border-border px-3 py-1.5 sm:px-4"
+      className="hidden shrink-0 border-b border-border px-3 py-1.5 sm:block sm:px-4"
     />
   );
 }
