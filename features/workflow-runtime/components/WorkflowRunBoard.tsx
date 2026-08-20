@@ -30,6 +30,7 @@ import {
   selectRunStatus,
   selectRunTransportMode,
 } from "../redux/workflow-runs.selectors";
+import { RunEmissions } from "./run/RunEmissions";
 import {
   InterruptCard,
   InvocationBody,
@@ -173,6 +174,11 @@ export function WorkflowRunBoard({
       {nodeOrder.map((nodeId) => (
         <NodeRow key={nodeId} runId={runId} nodeId={nodeId} />
       ))}
+
+      {/* Mid-run `node_emitted` content, through the one emit renderer. The
+          board has no definition to prefetch from and no author's labels — the
+          node id is the honest label at Tier 0. */}
+      <RunEmissions runId={runId} />
 
       {childRunIds.map((childId) => (
         <div key={childId} className="ml-4 border-l border-border pl-3">

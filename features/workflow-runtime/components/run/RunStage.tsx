@@ -16,6 +16,9 @@
  *               (LiveProgressRail + ResearchActivityFeed).
  *   STAGE     — the authored readouts, wide enough to actually read, each one
  *               streaming its content through the canonical pipeline.
+ *   ASIDES    — what the workflow deliberately showed mid-run: every
+ *               `node_emitted` from a "Show on Screen" step, rendered through
+ *               its authored component when it has one (RunEmissions).
  *   DELIVER   — the finished shapes appearing one by one as their real kind
  *               components (MediaOptionsGrid).
  *
@@ -41,6 +44,7 @@ import { InterruptCard } from "../readout-parts";
 import { RunSurfaceView } from "../RunSurfaceView";
 import { RunActivityFeed } from "./RunActivityFeed";
 import { RunDeliverables } from "./RunDeliverables";
+import { RunEmissions } from "./RunEmissions";
 import { RunFailureCard } from "./RunFailureCard";
 import { RunHero } from "./RunHero";
 import { RunJourney } from "./RunJourney";
@@ -219,6 +223,11 @@ export function RunStage({
             config={surface}
             hideRunStatusCards
             hideProgressRails
+          />
+          <RunEmissions
+            runId={runId}
+            stepLabels={stepLabels}
+            definition={definition}
           />
           <RunDeliverables runId={runId} deliverables={ownDeliverables} />
         </div>
