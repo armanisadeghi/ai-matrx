@@ -12,9 +12,13 @@
 import type { LucideIcon } from "lucide-react";
 
 /**
- * Access tier marker. Drives funnel UI (free/trial/premium badges + CTAs)
- * ONLY — it is NOT enforcement. Real entitlement enforcement is owned by the
- * forthcoming entitlements/billing system; see
+ * Access tier marker on a registry entry. 🚨 **NOTHING RENDERS IT AND NOTHING
+ * CHECKS IT.** The free/trial/premium badges were deleted 2026-08-19 because
+ * the product had no paywall behind them (program law D-6: a claim we cannot
+ * support is deleted, not deferred). The field is retained ONLY as input for
+ * the entitlements system when it starts enforcing; until a gate actually
+ * reads a tier, do not surface this value in ANY UI, agent scope, or API
+ * payload. See features/education/FEATURE.md § Invariants & gotchas and
  *   /Users/armanisadeghi/code/common-docs/projects/education-platform/STATE.md
  */
 export type AccessTier = "free" | "trial" | "premium";
@@ -69,7 +73,6 @@ export interface EduStatusCard {
   href?: string;
   bullets?: string[];
   icon?: LucideIcon;
-  accessTier?: AccessTier;
 }
 
 export interface EduStat {

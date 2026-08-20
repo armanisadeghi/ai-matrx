@@ -7,7 +7,6 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { StatusPill } from "./StatusPill";
-import { AccessTierBadge } from "./AccessTierBadge";
 import type {
   EduSection,
   EduFeatureItem,
@@ -177,14 +176,13 @@ function StatusCards({ cards }: { cards: EduStatusCard[] }) {
                 ))}
               </ul>
             ) : null}
-            <div className="mt-4 flex items-center justify-between">
-              {card.accessTier ? <AccessTierBadge tier={card.accessTier} /> : <span />}
-              {card.href ? (
+            {card.href ? (
+              <div className="mt-4 flex items-center justify-end">
                 <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
                   Open <ArrowRight className="h-3.5 w-3.5" />
                 </span>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
         );
         return card.href ? (

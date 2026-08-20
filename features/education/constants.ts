@@ -1,9 +1,9 @@
 // features/education/constants.ts
 //
-// Static configuration for the Education Hub: the discovery axes, the content
-// engine, and access-tier display metadata. Registries (data/*) hold the
-// page-level entries; this file holds the structural skeleton everything maps
-// onto. See VISION-education-hub.md for the WHY.
+// Static configuration for the Education Hub: the discovery axes and the
+// content engine. Registries (data/*) hold the page-level entries; this file
+// holds the structural skeleton everything maps onto. See
+// VISION-education-hub.md for the WHY.
 
 import {
   BookOpen,
@@ -11,13 +11,9 @@ import {
   Target,
   Layers,
   Sparkles,
-  Crown,
-  Gift,
-  Clock,
-  type LucideIcon,
 } from "lucide-react";
 import { siteConfig } from "@/config/extras/site";
-import type { AccessTier, AxisConfig } from "./types";
+import type { AxisConfig } from "./types";
 
 /** Base path for the entire hub. Change here, propagates everywhere. */
 export const EDU_BASE = "/education" as const;
@@ -100,16 +96,6 @@ export const EDU_LEARN_SEGMENT = "learn" as const;
 export function eduHref(...parts: string[]): string {
   return [EDU_BASE, ...parts].join("/");
 }
-
-/** Display metadata for access tiers. Icons are Lucide (no emoji). */
-export const ACCESS_TIER_META: Record<
-  AccessTier,
-  { label: string; icon: LucideIcon; tone: "free" | "trial" | "premium" }
-> = {
-  free: { label: "Free", icon: Gift, tone: "free" },
-  trial: { label: "Free trial", icon: Clock, tone: "trial" },
-  premium: { label: "Pro", icon: Crown, tone: "premium" },
-};
 
 /**
  * The workspace a guest lands in after converting from a content/marketing

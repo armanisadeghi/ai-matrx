@@ -9,7 +9,7 @@ import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/Au
 import { cn } from "@/lib/utils";
 import { EduHero } from "./sections/EduHero";
 import { SectionRenderer } from "./sections/SectionRenderer";
-import { ACCESS_TIER_META, EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_ORIGIN, EDU_WORKSPACE_HREF, EDU_WORKSPACE_LABEL, eduHref } from "../constants";
+import { EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_ORIGIN, EDU_WORKSPACE_HREF, EDU_WORKSPACE_LABEL, eduHref } from "../constants";
 import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";
 import { getPublishedLearnDocTitles } from "../publishing/queries";
@@ -115,14 +115,10 @@ export async function AxisDetail({ axisId, entry }: AxisDetailProps) {
   const hasCta = sections.some((s) => s.kind === "cta");
   const contentTitles = await getPublishedLearnDocTitles();
   const related = buildRelated(entry, contentTitles);
-  const tierLabel = ACCESS_TIER_META[entry.accessTier].label;
   const url = `${EDU_ORIGIN}${eduHref(axisSegment, entry.slug)}`;
   const jsonLd = buildAxisJsonLd(axisId, entry, url);
 
-  const heroChips = [
-    ...(entry.meta ? Object.values(entry.meta) : []),
-    tierLabel,
-  ];
+  const heroChips = entry.meta ? Object.values(entry.meta) : [];
 
   return (
     <MarketingPageShell>

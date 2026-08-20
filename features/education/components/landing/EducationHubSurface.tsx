@@ -55,7 +55,6 @@ function buildTools(): EducationToolSummary[] {
       name: tool.name,
       tagline: tool.tagline,
       status: tool.status,
-      access_tier: tool.accessTier,
       featured: !!tool.featured,
       href: eduHref(tool.slug),
     }));

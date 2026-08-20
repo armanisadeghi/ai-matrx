@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type {
-  AccessTier,
   EduFaqItem,
   EduFeatureItem,
   EduLink,
@@ -57,17 +56,6 @@ function newSection(kind: EduSection["kind"]): EduSection {
         body: "",
         primary: { label: "Start studying", href: "/education" },
       };
-  }
-}
-
-function accessTier(value: string): AccessTier | undefined {
-  switch (value) {
-    case "free":
-    case "trial":
-    case "premium":
-      return value;
-    default:
-      return undefined;
   }
 }
 
@@ -458,34 +446,11 @@ function StatusCardItems({
               rows={3}
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextField
-              label="Link (optional)"
-              value={card.href ?? ""}
-              onChange={(href) => replace(index, { href: href || undefined })}
-            />
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Access tier (optional)
-              </Label>
-              <Select
-                value={card.accessTier ?? "none"}
-                onValueChange={(tier) =>
-                  replace(index, { accessTier: accessTier(tier) })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No tier</SelectItem>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="trial">Trial</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <TextField
+            label="Link (optional)"
+            value={card.href ?? ""}
+            onChange={(href) => replace(index, { href: href || undefined })}
+          />
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">
               Bullets (one per line)

@@ -42,7 +42,6 @@ function buildStudyToolCards(): EduStatusCard[] {
       status: tool.status,
       href: eduHref(tool.slug),
       icon: tool.icon,
-      accessTier: tool.accessTier,
     }));
 }
 

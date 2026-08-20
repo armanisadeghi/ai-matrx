@@ -17,9 +17,10 @@ import type { Capability } from "./registry";
 export type { Capability };
 
 /**
- * Commercial tier the user resolves to. Aligned with the education funnel's
- * display-only `AccessTier` ("free" | "trial" | "premium") but owned here as
- * the authoritative billing tier. Extensible — add a tier here + in the price
+ * Commercial tier the user resolves to. Shares its vocabulary with the
+ * education registry's `AccessTier` ("free" | "trial" | "premium") — which
+ * renders nowhere since the funnel badges were deleted 2026-08-19 — but this
+ * is the authoritative billing tier. Extensible — add a tier here + in the price
  * mapping, never fork a parallel tier enum.
  */
 export type EntitlementTier = "free" | "trial" | "premium";

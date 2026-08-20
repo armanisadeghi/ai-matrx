@@ -151,7 +151,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "study_tools",
     label: "Study tools",
     description:
-      "Every registered study tool as shown in the hub's 'Study tools' section, live-then-featured-first: { slug, name, tagline, status, access_tier, featured, href }. Always populated from the tool registry. This is the routing table for 'which tool should I send the learner to'.",
+      "Every registered study tool as shown in the hub's 'Study tools' section, live-then-featured-first: { slug, name, tagline, status, featured, href }. Always populated from the tool registry. This is the routing table for 'which tool should I send the learner to'.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 2600,
@@ -224,7 +224,6 @@ export interface EducationToolSummary {
   name: string;
   tagline: string;
   status: string;
-  access_tier: string;
   featured: boolean;
   href: string;
 }

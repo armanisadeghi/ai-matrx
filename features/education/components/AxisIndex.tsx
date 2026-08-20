@@ -30,7 +30,6 @@ export function AxisIndex({ axisId, entries, heroTitle, heroAccent }: AxisIndexP
     description: e.tagline,
     status: e.status,
     href: eduHref(axis.segment, e.slug),
-    accessTier: e.accessTier,
     icon: e.icon,
   }));
 

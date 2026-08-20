@@ -7,9 +7,8 @@ import Link from "next/link";
 import { ArrowLeft, Hammer, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusPill } from "./sections/StatusPill";
-import { AccessTierBadge } from "./sections/AccessTierBadge";
 import { EDU_BASE } from "../constants";
-import type { EduStatus, AccessTier } from "../types";
+import type { EduStatus } from "../types";
 
 interface EduComingSoonProps {
   icon?: LucideIcon;
@@ -19,7 +18,6 @@ interface EduComingSoonProps {
   /** e.g. "VISION-education-hub.md §3 — FastFire". Keeps the stub honest. */
   visionRef?: string;
   status?: EduStatus;
-  accessTier?: AccessTier;
   /** For sub-route placeholders: which surface this is + how it's gated
    *  (e.g. "Edit surface — gated to edit permission"). See ROUTING.md. */
   surfaceNote?: string;
@@ -33,7 +31,6 @@ export function EduComingSoon({
   capabilities,
   visionRef,
   status = "coming-soon",
-  accessTier,
   surfaceNote,
   className,
 }: EduComingSoonProps) {
@@ -50,7 +47,6 @@ export function EduComingSoon({
         </div>
         <div className="flex items-center gap-2 mb-3">
           <StatusPill status={status} />
-          {accessTier ? <AccessTierBadge tier={accessTier} /> : null}
         </div>
         <h1 className="text-xl font-semibold text-foreground mb-2">{title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">

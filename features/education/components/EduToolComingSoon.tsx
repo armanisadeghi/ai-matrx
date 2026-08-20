@@ -39,7 +39,6 @@ export function EduToolComingSoon({ slug, surface }: EduToolComingSoonProps) {
       surfaceNote={surface ? GATE_NOTE[surface.gate] : undefined}
       visionRef={tool.visionRef}
       status={tool.status}
-      accessTier={tool.accessTier}
     />
   );
 }
