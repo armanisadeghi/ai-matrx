@@ -22,8 +22,16 @@ the current project either… things got built that one of the documents claims 
 built, and then there are things that are claimed to be finalized, but they're not."*
 
 🚨 **Reporting a duplicate without resolving it is the failure this skill ends.** Find-it-
-own-it: the agent that discovers disagreeing docs runs this pass (or dispatches it as a
-self-contained session) — it never just notes the disagreement and moves on.
+own-it — with a twist Arman ruled 2026-08-20: the agent that spots disagreeing docs
+mid-task should normally **SPIN THIS OFF as a self-contained background session/chip**
+rather than burn its own context on it — *"they know to trigger that skill so that someone
+else goes and does it, doesn't take up their context, but then the end result is they get
+the work the way they should."* Run it inline only when the disagreement blocks your
+current task. What is never acceptable: noting the disagreement and moving on.
+
+**Cadence:** runs DAILY as a scheduled task (approved by Arman 2026-08-20; see
+`common-docs/operations/scheduled-tasks.md` — the claim protocol there is the mandatory
+first step of every scheduled run), plus these on-demand spin-offs.
 
 ## Scope
 
