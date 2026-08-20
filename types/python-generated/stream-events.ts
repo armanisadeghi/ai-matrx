@@ -16,7 +16,6 @@ export const EventType = {
   COMPLETION: "completion",
   ERROR: "error",
   TOOL_EVENT: "tool_event",
-  BROKER: "broker",
   HEARTBEAT: "heartbeat",
   END: "end",
   RENDER_BLOCK: "render_block",
@@ -164,13 +163,6 @@ export interface ToolEventPayload {
   message?: string | null;
   show_spinner?: boolean;
   data?: Record<string, unknown>;
-}
-
-export interface BrokerPayload {
-  broker_id: string;
-  value: unknown;
-  source?: string | null;
-  source_id?: string | null;
 }
 
 export interface HeartbeatPayload {
@@ -2435,7 +2427,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2445,7 +2437,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2497,7 +2489,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -2507,7 +2499,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -2927,18 +2919,6 @@ export interface QuestionnaireBlockData {
   rawContent?: string;
 }
 
-export interface MatrxBrokerBlockData {
-  matrxRecordId?: string | null;
-  id?: string | null;
-  name?: string | null;
-  defaultValue?: string | null;
-  color?: string | null;
-  status?: string | null;
-  defaultComponent?: string | null;
-  dataType?: string | null;
-  rawContent?: string;
-}
-
 // --- Typed Render Block Interfaces (discriminated on `type`) ---
 
 // Each interface narrows RenderBlockPayload.data to its concrete type.
@@ -3051,16 +3031,6 @@ export interface StructuredInfoRenderBlock {
   status: "streaming" | "complete" | "error";
   content?: string | null;
   data?: Record<string, unknown> | null;
-  metadata?: Record<string, unknown>;
-}
-
-export interface MatrxBrokerRenderBlock {
-  blockId: string;
-  blockIndex: number;
-  type: "matrxBroker";
-  status: "streaming" | "complete" | "error";
-  content?: string | null;
-  data?: MatrxBrokerBlockData | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -3316,7 +3286,6 @@ export type TypedRenderBlock =
   | TasksRenderBlock
   | TranscriptRenderBlock
   | StructuredInfoRenderBlock
-  | MatrxBrokerRenderBlock
   | QuestionnaireRenderBlock
   | FlashcardsRenderBlock
   | QuizRenderBlock
@@ -3343,7 +3312,7 @@ export type TypedRenderBlock =
   | ToolRenderBlock;
 
 const TYPED_RENDER_BLOCK_TYPES = new Set<string>([
-  "text", "code", "table", "thinking", "reasoning", "consolidated_reasoning", "image", "video", "tasks", "transcript", "structured_info", "matrxBroker", "questionnaire", "flashcards", "quiz", "presentation", "cooking_recipe", "timeline", "progress_tracker", "comparison_table", "troubleshooting", "resources", "decision_tree", "decision", "research", "diagram", "mermaid", "math_problem", "artifact", "info", "task", "database", "private", "plan", "event", "tool",
+  "text", "code", "table", "thinking", "reasoning", "consolidated_reasoning", "image", "video", "tasks", "transcript", "structured_info", "questionnaire", "flashcards", "quiz", "presentation", "cooking_recipe", "timeline", "progress_tracker", "comparison_table", "troubleshooting", "resources", "decision_tree", "decision", "research", "diagram", "mermaid", "math_problem", "artifact", "info", "task", "database", "private", "plan", "event", "tool",
 ]);
 
 export function isTypedRenderBlock(e: RenderBlockPayload): e is RenderBlockPayload & TypedRenderBlock {
@@ -7245,11 +7214,6 @@ export interface ToolEventEvent {
   data: ToolEventPayload;
 }
 
-export interface BrokerEvent {
-  event: "broker";
-  data: BrokerPayload;
-}
-
 export interface HeartbeatEvent {
   event: "heartbeat";
   data: HeartbeatPayload;
@@ -7328,7 +7292,6 @@ export type TypedStreamEvent =
   | CompletionEvent
   | ErrorEvent
   | ToolEventEvent
-  | BrokerEvent
   | HeartbeatEvent
   | EndEvent
   | RenderBlockEvent
@@ -7419,10 +7382,6 @@ export function isErrorEvent(e: TypedStreamEvent): e is { event: "error"; data: 
 
 export function isToolEventEvent(e: TypedStreamEvent): e is { event: "tool_event"; data: ToolEventPayload } {
   return e.event === "tool_event";
-}
-
-export function isBrokerEvent(e: TypedStreamEvent): e is { event: "broker"; data: BrokerPayload } {
-  return e.event === "broker";
 }
 
 export function isHeartbeatEvent(e: TypedStreamEvent): e is { event: "heartbeat"; data: HeartbeatPayload } {

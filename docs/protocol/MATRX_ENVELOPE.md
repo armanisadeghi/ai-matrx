@@ -212,10 +212,13 @@ never inline. There is no second place to put one.
 
 ## Migration
 
-During the transition, handlers accept **both** the legacy shapes (bare
-`type:"user_table_cell"`, `item_presentation`, the old `__matrx_apply` envelope, the
-delimiter/broker tokens) and the `matrx_version` envelope. New code emits **only** the
-envelope. The back-compat decoder is the one sanctioned home for legacy detection (the
+During the transition, handlers accept **both** the surviving legacy shapes (bare
+`type:"user_table_cell"`, `item_presentation`, the old `__matrx_apply` envelope) and the
+`matrx_version` envelope. New code emits **only** the envelope. The
+`<<<MATRX_START>>>…<<<MATRX_END>>>` delimiter/broker encoding is **DELETED**, not
+back-compatible: both splitters, the `matrxBroker` block type, its parser and model, and
+the `broker` stream event were removed on 2026-08-20 (Arman's ruling). Nothing decodes it;
+the grep guard above is all that remains, and it stays. The back-compat decoder is the one sanctioned home for legacy detection (the
 grep guard whitelists it); it is deleted per-family once migrated. Track open families in
 the consuming `FEATURE.md`s.
 
