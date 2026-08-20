@@ -17,6 +17,41 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D217 — the Supabase MCP project is NOT the database the app and server use (2026-08-20)
+
+🚨 **Every agent that reads state or applies a migration through the Supabase MCP with
+`project_id: "txzxabzwovsujtloxrus"` is working on a different database from the running
+platform.** CLAUDE.md asserts they are the same (`Project: txzxabzwovsujtloxrus … the only DB
+this repo talks to. NEXT_PUBLIC_SUPABASE_URL → db.matrxserver.com`). Measured simultaneously,
+2026-08-20 07:35 UTC:
+
+| | live (`db.matrxserver.com`, what the app + aidream use) | MCP (`txzxabzwovsujtloxrus`) |
+|---|---|---|
+| `workflow.definition` count | 160 | 154 |
+| `workflow.run` newest | 07:23 **today** | 2026-08-19 23:25 (**8h stale**) |
+| `workflow.trigger` | 2 rows (created via the app today) | 0 |
+| `public.app_log` newest | 07:35 | 07:23 |
+
+Writes do not cross **in either direction**: a row INSERTed via the MCP is invisible to the app
+(proved with `agent.review_queue` — inserted, absent from `/administration/users/agent-review`,
+deleted again), and a trigger created through the app never appears in the MCP database. Both
+receive `app_log`, so they are not simply one stale snapshot — they are two live databases whose
+workflow data has diverged.
+
+**Consequence:** "verified against the live DB" is false whenever the verification ran through
+the MCP, and a migration applied that way lands nowhere the platform reads. This defect is
+almost certainly the reason this task's own brief recorded `workflow.trigger` as having 0 rows —
+which was true of the MCP database and told us nothing about the real one.
+
+**Verify anything DB-shaped through `NEXT_PUBLIC_SUPABASE_URL` instead**, e.g.
+`curl "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/<table>?select=…" -H "apikey: $SUPABASE_SECRET_KEY"
+-H "Authorization: Bearer $SUPABASE_SECRET_KEY" -H "Accept-Profile: <schema>"`.
+
+**Not fixed here — Arman's call**, and it is infrastructure, not code: which of the two is
+canonical, whether the MCP should be repointed at the self-hosted instance (or the hosted
+project retired), and what to do about anything already applied to the wrong one. Until it is
+settled, treat every Supabase-MCP-derived fact in every doc and handoff as unverified.
+
 ### D216 — the admin AI-Tasks page reads a shim that never queries Postgres; no 1:1 live replacement exists (2026-08-20)
 
 `features/ai-runs/services/ai-tasks-service.ts` is the last caller of
