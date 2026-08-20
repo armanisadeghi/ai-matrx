@@ -26126,66 +26126,6 @@
         }
       }
     },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -31376,170 +31316,6 @@
                   },
                   "type": "array",
                   "title": "Response Resolve Parties Batch Door Crm Parties Resolve Batch Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/crm/import/connectors": {
-      "get": {
-        "tags": [
-          "CRM"
-        ],
-        "summary": "List Import Connectors",
-        "description": "Every registered contact connector with this user's usable connections.",
-        "operationId": "list_import_connectors_crm_import_connectors_get",
-        "parameters": [
-          {
-            "name": "organization_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Organization Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ImportConnectorView"
-                  },
-                  "title": "Response List Import Connectors Crm Import Connectors Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/crm/import/connectors/{provider_key}/fetch": {
-      "post": {
-        "tags": [
-          "CRM"
-        ],
-        "summary": "Fetch Connector Contacts",
-        "description": "Read the source (bounded, incremental when a cursor exists). Writes nothing.",
-        "operationId": "fetch_connector_contacts_crm_import_connectors__provider_key__fetch_post",
-        "parameters": [
-          {
-            "name": "provider_key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Provider Key"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConnectorFetchRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConnectorFetchResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/crm/import/connectors/{provider_key}/cursor": {
-      "post": {
-        "tags": [
-          "CRM"
-        ],
-        "summary": "Persist Connector Cursor",
-        "description": "Advance the incremental-sync cursor after the importer committed.",
-        "operationId": "persist_connector_cursor_crm_import_connectors__provider_key__cursor_post",
-        "parameters": [
-          {
-            "name": "provider_key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Provider Key"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConnectorCursorRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Persist Connector Cursor Crm Import Connectors  Provider Key  Cursor Post"
                 }
               }
             }
@@ -60483,7 +60259,7 @@
               }
             ],
             "title": "Mandate Key",
-            "description": "Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id, and mutually exclusive with it: a step naming both is refused.",
+            "description": "Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id; when both are set, mandate_key wins and agent_id is treated as the build-time snapshot (drift display only).",
             "ui:widget": "mandate_agent_picker"
           },
           "agent_id": {
@@ -60496,7 +60272,7 @@
               }
             ],
             "title": "Agent Id",
-            "description": "UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key. Mutually exclusive with mandate_key: a step naming both is refused, because a Mandate exists to settle which authority picks the agent.",
+            "description": "UUID of a specific agent (or agent version, when is_version=true). Alone, pins this step to one agent forever — prefer mandate_key. Beside a mandate_key it is only the build-time snapshot of what the mandate resolved to at authoring, so drift is displayable.",
             "ui:widget": "agent_picker"
           },
           "is_version": {
@@ -82663,279 +82439,6 @@
         "title": "ConnectionSummary",
         "description": "Non-secret connection state — what the FE reads after any operation."
       },
-      "ConnectorContactView": {
-        "properties": {
-          "external_id": {
-            "type": "string",
-            "title": "External Id"
-          },
-          "display_name": {
-            "type": "string",
-            "title": "Display Name",
-            "default": ""
-          },
-          "first_name": {
-            "type": "string",
-            "title": "First Name",
-            "default": ""
-          },
-          "last_name": {
-            "type": "string",
-            "title": "Last Name",
-            "default": ""
-          },
-          "job_title": {
-            "type": "string",
-            "title": "Job Title",
-            "default": ""
-          },
-          "company": {
-            "type": "string",
-            "title": "Company",
-            "default": ""
-          },
-          "emails": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Emails"
-          },
-          "phones": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Phones"
-          },
-          "urls": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Urls"
-          },
-          "source_updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "external_id"
-        ],
-        "title": "ConnectorContactView"
-      },
-      "ConnectorCursorRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id"
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "connection_id": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Connection Id"
-          },
-          "sync_token": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Sync Token"
-          },
-          "counts": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
-            "title": "Counts"
-          }
-        },
-        "type": "object",
-        "required": [
-          "connection_id",
-          "sync_token"
-        ],
-        "title": "ConnectorCursorRequest"
-      },
-      "ConnectorFetchRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id"
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "connection_id": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Connection Id"
-          },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "auto",
-              "full"
-            ],
-            "title": "Mode",
-            "default": "auto"
-          },
-          "max_records": {
-            "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
-            "title": "Max Records",
-            "default": 10000
-          }
-        },
-        "type": "object",
-        "required": [
-          "connection_id"
-        ],
-        "title": "ConnectorFetchRequest"
-      },
-      "ConnectorFetchResponse": {
-        "properties": {
-          "provider_key": {
-            "type": "string",
-            "title": "Provider Key"
-          },
-          "platform_slug": {
-            "type": "string",
-            "title": "Platform Slug"
-          },
-          "source_label": {
-            "type": "string",
-            "title": "Source Label"
-          },
-          "account_email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account Email"
-          },
-          "records": {
-            "items": {
-              "$ref": "#/components/schemas/ConnectorContactView"
-            },
-            "type": "array",
-            "title": "Records"
-          },
-          "deleted_external_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Deleted External Ids"
-          },
-          "sync_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sync Token"
-          },
-          "incremental": {
-            "type": "boolean",
-            "title": "Incremental",
-            "default": false
-          },
-          "truncated": {
-            "type": "boolean",
-            "title": "Truncated",
-            "default": false
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Warnings"
-          }
-        },
-        "type": "object",
-        "required": [
-          "provider_key",
-          "platform_slug",
-          "source_label"
-        ],
-        "title": "ConnectorFetchResponse"
-      },
       "ContactCandidateView": {
         "properties": {
           "id": {
@@ -90927,61 +90430,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -105851,114 +105299,6 @@
         ],
         "title": "ImpairmentsResponse",
         "description": "Full impairment-definitions catalog keyed by definition id (UUID).\n\nSourced from the `wc_impairment_definition` table. The dict key equals\neach value's `id`, so the FE can either iterate `Object.values(...)` or\nlook up directly by UUID."
-      },
-      "ImportConnectorConnectionView": {
-        "properties": {
-          "connection_id": {
-            "type": "string",
-            "title": "Connection Id"
-          },
-          "account_email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account Email"
-          },
-          "account_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account Name"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "default": ""
-          },
-          "scope_granted": {
-            "type": "boolean",
-            "title": "Scope Granted",
-            "default": false
-          },
-          "has_sync_cursor": {
-            "type": "boolean",
-            "title": "Has Sync Cursor",
-            "default": false
-          },
-          "last_synced_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Synced At"
-          },
-          "last_sync_counts": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Last Sync Counts"
-          }
-        },
-        "type": "object",
-        "required": [
-          "connection_id"
-        ],
-        "title": "ImportConnectorConnectionView"
-      },
-      "ImportConnectorView": {
-        "properties": {
-          "provider_key": {
-            "type": "string",
-            "title": "Provider Key"
-          },
-          "display_name": {
-            "type": "string",
-            "title": "Display Name"
-          },
-          "provider": {
-            "type": "string",
-            "title": "Provider"
-          },
-          "platform_slug": {
-            "type": "string",
-            "title": "Platform Slug"
-          },
-          "required_scopes": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Required Scopes"
-          },
-          "connections": {
-            "items": {
-              "$ref": "#/components/schemas/ImportConnectorConnectionView"
-            },
-            "type": "array",
-            "title": "Connections"
-          }
-        },
-        "type": "object",
-        "required": [
-          "provider_key",
-          "display_name",
-          "provider",
-          "platform_slug"
-        ],
-        "title": "ImportConnectorView"
       },
       "ImportEntryPlan": {
         "properties": {
@@ -137971,6 +137311,42 @@
       },
       "ResolvedPartyBatchItem": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
           "index": {
             "type": "integer",
             "title": "Index"
@@ -138005,6 +137381,42 @@
       },
       "ResolvedPartyView": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
           "party_id": {
             "type": "string",
             "title": "Party Id"

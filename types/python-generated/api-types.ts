@@ -10429,30 +10429,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -12300,66 +12276,6 @@ export interface paths {
          *     concurrent *writers*, but ordering our own rows is free and removes the race.
          */
         post: operations["resolve_parties_batch_door_crm_parties_resolve_batch_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/import/connectors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Import Connectors
-         * @description Every registered contact connector with this user's usable connections.
-         */
-        get: operations["list_import_connectors_crm_import_connectors_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/import/connectors/{provider_key}/fetch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Fetch Connector Contacts
-         * @description Read the source (bounded, incremental when a cursor exists). Writes nothing.
-         */
-        post: operations["fetch_connector_contacts_crm_import_connectors__provider_key__fetch_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/import/connectors/{provider_key}/cursor": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Persist Connector Cursor
-         * @description Advance the incremental-sync cursor after the importer committed.
-         */
-        post: operations["persist_connector_cursor_crm_import_connectors__provider_key__cursor_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22709,12 +22625,12 @@ export interface components {
         AgentStartStrictInput: {
             /**
              * Mandate Key
-             * @description Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id, and mutually exclusive with it: a step naming both is refused.
+             * @description Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id; when both are set, mandate_key wins and agent_id is treated as the build-time snapshot (drift display only).
              */
             mandate_key?: string | null;
             /**
              * Agent Id
-             * @description UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key. Mutually exclusive with mandate_key: a step naming both is refused, because a Mandate exists to settle which authority picks the agent.
+             * @description UUID of a specific agent (or agent version, when is_version=true). Alone, pins this step to one agent forever — prefer mandate_key. Beside a mandate_key it is only the build-time snapshot of what the mandate resolved to at authoring, so drift is displayable.
              */
             agent_id?: string | null;
             /**
@@ -31353,124 +31269,6 @@ export interface components {
             /** Last Error */
             last_error: string | null;
         };
-        /** ConnectorContactView */
-        ConnectorContactView: {
-            /** External Id */
-            external_id: string;
-            /**
-             * Display Name
-             * @default
-             */
-            display_name?: string;
-            /**
-             * First Name
-             * @default
-             */
-            first_name?: string;
-            /**
-             * Last Name
-             * @default
-             */
-            last_name?: string;
-            /**
-             * Job Title
-             * @default
-             */
-            job_title?: string;
-            /**
-             * Company
-             * @default
-             */
-            company?: string;
-            /** Emails */
-            emails?: string[];
-            /** Phones */
-            phones?: string[];
-            /** Urls */
-            urls?: string[];
-            /** Source Updated At */
-            source_updated_at?: string | null;
-        };
-        /** ConnectorCursorRequest */
-        ConnectorCursorRequest: {
-            /** Organization Id */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Connection Id */
-            connection_id: string;
-            /** Sync Token */
-            sync_token: string;
-            /** Counts */
-            counts?: {
-                [key: string]: number;
-            };
-        };
-        /** ConnectorFetchRequest */
-        ConnectorFetchRequest: {
-            /** Organization Id */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Connection Id */
-            connection_id: string;
-            /**
-             * Mode
-             * @default auto
-             * @enum {string}
-             */
-            mode?: "auto" | "full";
-            /**
-             * Max Records
-             * @default 10000
-             */
-            max_records?: number;
-        };
-        /** ConnectorFetchResponse */
-        ConnectorFetchResponse: {
-            /** Provider Key */
-            provider_key: string;
-            /** Platform Slug */
-            platform_slug: string;
-            /** Source Label */
-            source_label: string;
-            /** Account Email */
-            account_email?: string | null;
-            /** Records */
-            records?: components["schemas"]["ConnectorContactView"][];
-            /** Deleted External Ids */
-            deleted_external_ids?: string[];
-            /** Sync Token */
-            sync_token?: string | null;
-            /**
-             * Incremental
-             * @default false
-             */
-            incremental?: boolean;
-            /**
-             * Truncated
-             * @default false
-             */
-            truncated?: boolean;
-            /** Warnings */
-            warnings?: string[];
-        };
         /**
          * ContactCandidateView
          * @description A persisted candidate as a surface sees it. Every field is a door or a why.
@@ -34545,33 +34343,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -40355,51 +40126,6 @@ export interface components {
             impairments: {
                 [key: string]: components["schemas"]["WcImpairmentDefinitionRead"];
             };
-        };
-        /** ImportConnectorConnectionView */
-        ImportConnectorConnectionView: {
-            /** Connection Id */
-            connection_id: string;
-            /** Account Email */
-            account_email?: string | null;
-            /** Account Name */
-            account_name?: string | null;
-            /**
-             * Status
-             * @default
-             */
-            status?: string;
-            /**
-             * Scope Granted
-             * @default false
-             */
-            scope_granted?: boolean;
-            /**
-             * Has Sync Cursor
-             * @default false
-             */
-            has_sync_cursor?: boolean;
-            /** Last Synced At */
-            last_synced_at?: string | null;
-            /** Last Sync Counts */
-            last_sync_counts?: {
-                [key: string]: unknown;
-            };
-        };
-        /** ImportConnectorView */
-        ImportConnectorView: {
-            /** Provider Key */
-            provider_key: string;
-            /** Display Name */
-            display_name: string;
-            /** Provider */
-            provider: string;
-            /** Platform Slug */
-            platform_slug: string;
-            /** Required Scopes */
-            required_scopes?: string[];
-            /** Connections */
-            connections?: components["schemas"]["ImportConnectorConnectionView"][];
         };
         /**
          * ImportEntryPlan
@@ -52907,6 +52633,21 @@ export interface components {
         };
         /** ResolvedPartyBatchItem */
         ResolvedPartyBatchItem: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Index */
             index: number;
             resolved?: components["schemas"]["ResolvedPartyView"] | null;
@@ -52915,6 +52656,21 @@ export interface components {
         };
         /** ResolvedPartyView */
         ResolvedPartyView: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Party Id */
             party_id: string;
             /** Display Name */
@@ -82832,41 +82588,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -86263,109 +85984,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResolvedPartyBatchItem"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_import_connectors_crm_import_connectors_get: {
-        parameters: {
-            query?: {
-                organization_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImportConnectorView"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    fetch_connector_contacts_crm_import_connectors__provider_key__fetch_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                provider_key: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConnectorFetchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectorFetchResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    persist_connector_cursor_crm_import_connectors__provider_key__cursor_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                provider_key: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConnectorCursorRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
                 };
             };
             /** @description Validation Error */
