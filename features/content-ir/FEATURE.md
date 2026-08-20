@@ -155,6 +155,35 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-20 — **The 7 `json_root_key` surfaces are LIVE, and ONE place decides
+  them.** `content_ir.kind_surface` has always declared `quiz_title→quiz_set`,
+  `presentation→presentation_deck`, `decision_tree`, `comparison→comparison_set`,
+  `diagram→diagram_spec`, `math_problem`, `item_presentation` — and nothing in
+  the frontend consulted them, so a fenced `{"quiz_title": …}` produced an
+  envelope with `kind:""`, `kindState:"raw"` and the misleading notice *Object is
+  missing "__kind"* while the SERVER named the kind. Arman's ruling: match the
+  server, and do it in ONE place. New `surfaceRegistry.getSurfaceForJsonRootKey`
+  (exported as a function) is consulted from **`core/kind-parser.ts`** —
+  `noteRootSurfaceKind` records the candidate at the root object's FIRST key,
+  `completeTypedObject` adopts it at root finalize. The core is deliberately the
+  seam: BOTH hosts (`normalizeJsonRegion` one-shot and `openParseSession`
+  streaming) build through `createKindStreamParser`, so neither passes an option
+  and neither can drift — the streaming host also cannot know the root key up
+  front, so wiring this into `normalizeJsonRegion`'s `expectedRootKind` would
+  have CREATED the divergence it was meant to remove. Precedence: real `__kind` >
+  explicit `expectedRootKind` > surface. It never claims a kind it cannot
+  validate — a non-conforming payload still degrades to raw, now with
+  `Kind "quiz_set" is missing required field "title".` **The frontend does NOT
+  port the server's `adapt_block_data` legacy field mapping** (that would be a
+  second copy of the one mapping the platform is centralizing), so these payloads
+  still render through their legacy block route; what changed is that the
+  envelope and its notice now NAME the registered kind. Pinned by
+  `__tests__/stream-splitter-parity.test.ts` (legacy quiz / presentation /
+  item_presentation fixtures asserted identical across both hosts at randomized
+  chunk boundaries). Fixed in passing: a stale assertion in
+  `kind-route-legacy-patterns.test.ts` still expected edge `type:"default"` after
+  `parseDiagramJSON` began normalizing it to `"bezier"`.
+
 - 2026-08-19 — **THE GRANULARITY RULE applied to `task_brief`.** The 2026-08-18
   fix correctly cleared THE USER-INPUT LAW but fused STRUCTURED content into
   `task_brief` alongside the instruction: `composeKindSampleFillIntent` inlined
