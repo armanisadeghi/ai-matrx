@@ -36,8 +36,9 @@ Full detail, with file paths and evidence, in **STATE.md §4.1**. In priority or
 3. **Collections render half — 4 gaps:** filtering (`gte:now`, so past events never drop off);
    `settings.default_order` ignored by the aidream service and the admin API; `MatrxData.render()`;
    the `cms_page` tool description does not teach the binding syntax.
-4. **Hardening/parity tail — 10 items, unowned since 2026-07-23.** The live one:
-   `my-matrx/pages/api/create-page.js` has zero handler-level auth (STATE.md ledger Q2). Also
+4. **Hardening/parity tail — 10 items, unowned since 2026-07-23.** The auth item (STATE.md ledger
+   Q2) is ✅ **DONE 2026-08-19** — `my-matrx/lib/apiAuth.js` gates all six service-role routes at the
+   handler and derives `user_id` from the identity. Still open:
    `dry_run` bypassing the policy gate, version-history UI pages-only (cheap — the API already
    supports 6 entity types), and zero tests on `cms_assets`/`cms_verify`.
 5. **CMS build-out tail** — bulk item import, field-schema evolution, route tests, retention
