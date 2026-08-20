@@ -42,12 +42,14 @@ module — do not make it seven.
 | `FormattedFieldValue.tsx` | The ONE read-only renderer (links, swatch, chips, stars, amber mismatch) |
 | `FieldFormatPicker.tsx` | The ONE picker — format select + only the options that format reads; stacked by default, `layout="embedded"` exposes the option rail to a responsive parent |
 | `context-value-types.ts` | Bridge from the scopes `ContextValueType` vocabulary |
+| `choices.ts` | THE choice resolver — inline options, pick-list hydration, per-row narrowing (`choicesForRow`), the chip palette |
+| `ChoiceOptionsEditor.tsx` | THE options editor — seeds from real values, binds a pick list, declares a dependent column |
 
 ## The formats
 
 Text: `text` `long_text` `markdown` `email` `url` `phone` `color`
 Numbers: `number` `decimal` `currency` `percent` `duration` `integer` `rating` `file_size`
-Choice: `boolean`
+Choice: `boolean` `choice` `multi_choice`
 Dates: `date` `datetime` `relative_time`
 Structured: `json` `array` `tags`
 
@@ -77,6 +79,66 @@ Persisted at `workbench.udt_dataset_fields.metadata.format = {id, options}`.
 *storage* vocabulary (it decides which `value_*` column is written); the format
 only decides display.
 
+## Choice — an enum with no database enum
+
+`choice` (on a `string`) and `multi_choice` (on an `array`) give a column an
+option list **without touching the database**. Same trick `percent` plays on a
+number: the storage type is unchanged, nothing is enforced server-side, and
+stripping the format leaves every value exactly as it was.
+
+**THE MISMATCH IS THE FEATURE.** An off-list value is never rejected and never
+blanked — `format()` returns null, the fallback law renders it amber with
+"still saved, and safe to fix or add as an option". Declaring options over live
+data is how a user FINDS their stray values, not how they lose them. This is
+what makes the format safe to switch on over a populated column.
+
+**Nobody types a list they already have.** `ChoiceOptionsEditor` takes
+`suggestions` (from `udt_column_facets`, ordered by row count) and offers the
+column's real values for one-click acceptance.
+
+### Two option sources
+
+| `options.choices` | Inline. Private to this column. |
+| `options.structuredList` | A shared pick list (`workbench.udt_structured_lists`), so "Status" means one thing across every table. |
+
+The binding shape is **not ours to invent**: `{ listId, groupName, multiple }`
+is aidream's `PicklistBinding`, already written by the agent-variable system as
+`customComponent.structured_list`. A column and an agent variable must speak ONE
+option vocabulary. Loading is not reimplemented either — it goes through
+`features/user-lists`' cached, group-ordered, label-only hook (an item's secret
+`description` never reaches the client).
+
+### Tiering, free
+
+A pick list's items already carry `group_name`, so a bound column gets tiers
+with nothing extra stored: the cell holds the item, the item knows its group.
+The dropdown renders sections; `groupName` narrows to a single tier with no
+second list to maintain.
+
+### Dependent columns
+
+`groupFromField` makes the group come from **another column's cell** instead of
+a constant — pick a Continent, and Country narrows to that continent's group.
+
+- Declared **only on the constrained column**. The controlling column needs no
+  configuration and does not know it is one.
+- **Chains are free and cycles cannot loop.** Each link reads its controller's
+  current value at render time (`choicesForRow`, a pure filter over
+  already-loaded options), so A → B → C needs no graph and no extra fetch.
+- **An empty controller offers every group** — never an empty dropdown.
+- **Changing a controller never rewrites the dependent cell.** A value that no
+  longer fits goes amber and the user decides. Auto-clearing would be silent
+  data loss.
+- A row FORM passes its LIVE draft as `row`, so the narrowing follows the user's
+  typing rather than the saved row.
+
+### What agents see
+
+`column_list` carries `format` and, for a choice column, its resolved
+`choices`. Without this an agent reads storage type only and cannot tell a
+`percent` column's `45` from `0.45`. Both keys are OMITTED rather than sent
+empty — an empty `choices` would read as "this column offers nothing".
+
 ## Adding a format
 
 1. Add one `FieldFormatDef` to `DEFS` in `registry.ts`. `format()` returns
@@ -94,6 +156,13 @@ unknown format id degrades to the plain storage type by design.
 
 ## Change log
 
+- **2026-08-19** — Added `choice` / `multi_choice`: option lists as a pure UI
+  layer, hydrated inline or from a shared pick list (which supplies grouping,
+  and therefore tiers, for free). Added dependent columns (`groupFromField`),
+  where a column's options narrow to the group another column's cell names.
+  Reused aidream's `PicklistBinding` shape and `features/user-lists`' loading
+  hook rather than forking either. `column_list` now tells agents a column's
+  format and options.
 - **2026-08-16** — Added the opt-in embedded layout contract so Table Settings
   keeps the primary format selector aligned while its conditional controls take
   a full responsive rail; the default stacked contract remains unchanged.

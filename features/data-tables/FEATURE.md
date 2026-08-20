@@ -7,6 +7,43 @@
 
 ---
 
+## Column shape — THE COLUMN KNOWS ITSELF
+
+**Never count distinct values in the browser.** `udt_column_facets` (one column)
+and `udt_table_profile` (every column, one round trip) answer "what is actually
+in this column" in the database, over every row. The viewer used to pull up to
+5,000 rows down to filter client-side and, past that cap, answered confidently
+over a partial set.
+
+Three consumers, one answer path: the value-picker column filter, the option
+list pre-filled when a `choice` format is declared, and the column profile
+panel. Typed wrappers are `getColumnFacets` / `getTableProfile` in `service.ts`.
+
+Both RPCs are **SECURITY INVOKER** — `udt_dataset_rows` RLS is already the right
+gate, and a DEFINER read would be a second, weaker authority over the same rows.
+Refusals are meaningful: a field name that is not a column RAISES (never an
+empty list, which reads as "the column is empty"), and an unreachable dataset
+raises P0002 for AccessGate.
+
+The `looks_*` fields on a profile are **counts, not verdicts** — 19 of 20 values
+being URLs is a different situation from 20 of 20, and only the caller knows
+which one is worth acting on.
+
+## Choice columns
+
+A column can offer an option list without any database enum — see
+[`lib/field-formats/FEATURE.md`](../../lib/field-formats/FEATURE.md) § Choice.
+The parts that live here: `ChoiceInput` (THE input for a choice column, used by
+both row modals and the inline cell editor), and the grid's grid-wide option
+resolution in `UserTableViewer` (`useFieldChoiceMap` — one resolution per
+column, never one per cell, and a hook per column is impossible because the
+column count is data).
+
+**Dependent columns** narrow to the group named by another column's cell. The
+grid passes the saved row; a row FORM passes its LIVE draft, so narrowing
+follows the user's typing. A controller change never rewrites the dependent
+cell — an off-list value goes amber and the user decides.
+
 ## Active pending list (single source of truth)
 
 > ✅ done · ⏳ pending · 🚧 in progress · 🛑 blocked on user decision
