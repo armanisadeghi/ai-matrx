@@ -81,10 +81,26 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
   from the "must have a canonical normalizer" precondition; it does not suppress
   normalization. A request with `capability=BACKLINKS` and an intersection endpoint still
   routes to `normalize_link_gap_payload`, which is how both live gap paths work.
+- 🚨 **FIXED 2026-08-19 — the op declared only `RAW_PROVIDER`, so it could never collect.**
+  Both callers (`domain_link_gap.py`, `page_link_gap.py`) send `capability=BACKLINKS`, and
+  *two independent gates* rejected that before any HTTP call: `DataForSeoAdapter`
+  (`"backlinks.intersections cannot collect backlinks"`) and `SeoCollectionService`
+  (`"dataforseo does not approve operation 'backlinks.intersections' for backlinks"`). Live
+  evidence: `seo.link_gap_domain` / `seo.link_gap_match` were 0 rows after the whole path
+  shipped. **The fix is to declare `SeoCapability.BACKLINKS` on the op** (`_op` appends
+  `RAW_PROVIDER` automatically) **while KEEPING `raw_only=True`** — the two facts are
+  orthogonal and the note above is exactly why clearing the flag is the wrong fix. Guarded
+  by `packages/matrx-seo/tests/test_link_gap_adapter.py`, which drives the real adapter and
+  the real collection service against the captured payload; the fake-service tests in
+  `test_domain_link_gap.py` / `test_page_link_gap.py` cannot catch this class.
 - ⚠️ **Default ordering returns junk.** The live probe's top 5 gap domains were
   `livelycity.com`, `usindex.app`, `intently.co`, `z1biz.com`, `getpracticehelp.com` —
-  spam/link-farm shaped. A production run needs `order_by` on rank and `backlinks_filters`
-  on spam score. Do not ship the raw default order.
+  spam/link-farm shaped. A production run needs `order_by` on rank and a spam-score filter.
+  **Done** — `link_gap_request.py::rank_order_by` / `spam_score_filter`, applied by both
+  callers. Note the spam clause goes in `filters`, not `backlinks_filters`: the intersection
+  result rows carry the referring domain's own `rank` / `backlinks_spam_score`, addressed by
+  numbered target prefix (`["1.backlinks_spam_score","<=",30]`), whereas `backlinks_filters`
+  narrows the individual backlinks. Pinned by `TestTheRequestShapingThatNeverShipsDefaults`.
 
 ---
 
@@ -93,6 +109,14 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
 **Everything below the line is SHIPPED and on `main`.** T1, T2, T3, T5, T6 are done; T4 is
 superseded by T7. Two things are left: **T7** (design agreed, now with real evidence) and
 **T8** (waiting on Arman, not on code).
+
+🚨 **A live run still collects nothing, and after 2026-08-19 that is no longer a code bug.**
+Measured live that day: `seo.competitor` holds **84 `proposed` + 1 `unclassified` and ZERO
+`confirmed`** rows. `competitor_is_link_gap_eligible` requires `classification_status ==
+'confirmed'`, so every site correctly refuses with `NoEligibleCompetitors` — that is law 1
+of the competitor doctrine working, not a defect. **The gate is a human confirmation**, and
+until someone confirms at least one competitor, `seo.link_gap_domain` stays empty no matter
+what the collector does. An agent must not confirm competitors to make a run happen.
 
 ### T2 — Link-gap collection, persistence, ranking, CRM fold ✅ DONE 2026-08-15
 Shipped by the outreach WP2 package (`common-docs/projects/outreach-system/`).
