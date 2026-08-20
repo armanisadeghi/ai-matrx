@@ -87503,6 +87503,15 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Effective Cost"
           },
+          "unpriced_runs": {
+            "type": "integer",
+            "title": "Unpriced Runs"
+          },
+          "billable_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Billable Cost"
+          },
           "run_count": {
             "type": "integer",
             "title": "Run Count"
@@ -87513,6 +87522,8 @@
         "required": [
           "date",
           "effective_cost",
+          "unpriced_runs",
+          "billable_cost",
           "run_count"
         ],
         "title": "DailySpendPoint"
@@ -130996,6 +131007,15 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Effective Cost"
           },
+          "unpriced_runs": {
+            "type": "integer",
+            "title": "Unpriced Runs"
+          },
+          "billable_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Billable Cost"
+          },
           "run_count": {
             "type": "integer",
             "title": "Run Count"
@@ -131018,6 +131038,8 @@
           "reported_cost",
           "estimated_cost",
           "effective_cost",
+          "unpriced_runs",
+          "billable_cost",
           "run_count",
           "ceiling_usd",
           "pct_used"
@@ -143989,6 +144011,11 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Global Provider Monthly Ceiling Usd"
           },
+          "unpriced_run_assumed_cost_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unpriced Run Assumed Cost Usd"
+          },
           "recent_budget_rejections": {
             "items": {
               "$ref": "#/components/schemas/BudgetRejectionRow"
@@ -144007,6 +144034,7 @@
           "daily_series",
           "org_provider_monthly_ceiling_usd",
           "global_provider_monthly_ceiling_usd",
+          "unpriced_run_assumed_cost_usd",
           "recent_budget_rejections"
         ],
         "title": "SeoSpendSummaryResponse"

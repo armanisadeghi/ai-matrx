@@ -33291,6 +33291,10 @@ export interface components {
             date: string;
             /** Effective Cost */
             effective_cost: string;
+            /** Unpriced Runs */
+            unpriced_runs: number;
+            /** Billable Cost */
+            billable_cost: string;
             /** Run Count */
             run_count: number;
         };
@@ -50212,6 +50216,10 @@ export interface components {
             estimated_cost: string;
             /** Effective Cost */
             effective_cost: string;
+            /** Unpriced Runs */
+            unpriced_runs: number;
+            /** Billable Cost */
+            billable_cost: string;
             /** Run Count */
             run_count: number;
             /** Ceiling Usd */
@@ -55342,6 +55350,8 @@ export interface components {
             org_provider_monthly_ceiling_usd: string;
             /** Global Provider Monthly Ceiling Usd */
             global_provider_monthly_ceiling_usd: string;
+            /** Unpriced Run Assumed Cost Usd */
+            unpriced_run_assumed_cost_usd: string;
             /** Recent Budget Rejections */
             recent_budget_rejections: components["schemas"]["BudgetRejectionRow"][];
         };
