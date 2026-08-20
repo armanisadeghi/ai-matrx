@@ -31475,11 +31475,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Persist Connector Cursor Crm Import Connectors  Provider Key  Cursor Post"
+                  "$ref": "#/components/schemas/ConnectorCursorResponse"
                 }
               }
             }
@@ -82735,6 +82731,19 @@
         ],
         "title": "ConnectorCursorRequest"
       },
+      "ConnectorCursorResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "ConnectorCursorResponse"
+      },
       "ConnectorFetchRequest": {
         "properties": {
           "organization_id": {
@@ -105803,7 +105812,9 @@
             "title": "Last Synced At"
           },
           "last_sync_counts": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Last Sync Counts"
           }
@@ -137638,7 +137649,9 @@
             "title": "External Ids"
           },
           "attributes": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Attributes"
           },

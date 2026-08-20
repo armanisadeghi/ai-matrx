@@ -31390,6 +31390,11 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** ConnectorCursorResponse */
+        ConnectorCursorResponse: {
+            /** Ok */
+            ok: boolean;
+        };
         /** ConnectorFetchRequest */
         ConnectorFetchRequest: {
             /** Organization Id */
@@ -40336,7 +40341,7 @@ export interface components {
             last_synced_at?: string | null;
             /** Last Sync Counts */
             last_sync_counts?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** ImportConnectorView */
@@ -52780,7 +52785,7 @@ export interface components {
             external_ids?: components["schemas"]["ResolvePartyExternalRef"][];
             /** Attributes */
             attributes?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Allow Name Match
@@ -86287,9 +86292,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["ConnectorCursorResponse"];
                 };
             };
             /** @description Validation Error */
