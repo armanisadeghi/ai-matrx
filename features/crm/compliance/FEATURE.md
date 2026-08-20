@@ -1,6 +1,39 @@
 # FEATURE.md — `crm/compliance`
 
-**Status:** `compliance floor LIVE · unsubscribe LIVE · circuit breaker LIVE · attorney ratification PENDING` · **Tier:** `1` · **Last updated:** `2026-08-15`
+**Status:** `compliance floor LIVE · unsubscribe LIVE · circuit breaker LIVE · NO ATTORNEY — internal agent review 2026-08-20, did NOT pass` · **Tier:** `1` · **Last updated:** `2026-08-20`
+
+> ## 🚨 There is no attorney, and there is no ratification. Read this before you trust the gate.
+>
+> **2026-08-20.** Arman ruled that counsel is not affordable right now, and that the work we would
+> have handed to an attorney becomes an internal agent review instead: read the actual laws and
+> the actual code, loop on the feedback, then let fresh agents with no prior context attack the
+> result. That review ran. **It is diligence, not legal advice, and it clears nothing.**
+>
+> **It did not pass.** The outreach lane below is genuinely well built — the authority refuses
+> loudly, has no override, and pauses campaigns with their identity. But it governs **one lane and
+> one channel while the platform sends on many**:
+>
+> - The authority is **email-shaped**, so every SMS and voice path bypasses it *by necessity*.
+>   Called against a live phone medium it refuses with "no working mail exchanger".
+> - The authority **reads columns the gated customer can write**. `authenticated` holds UPDATE on
+>   every column of `crm.contact_medium`, `crm.sending_identity`, `crm.outreach_list` and
+>   `crm.sending_policy`, and the only guard trigger covers `created_by`/`organization_id`/
+>   `deleted_at`. **A circuit-breaker trip is undone by one `supabase-js` call from the browser**,
+>   without ever touching `crm_resume_sending_identity`. **Until that lands, this floor is
+>   advisory against a determined customer, not enforced.**
+> - An **opt-out is medium-scoped**, and `public.outreach_unsubscribe` writes the suppression store
+>   by hand rather than through the authority — so the most-used unsubscribe path already
+>   disagrees with it about what an opt-out means. See the correction under
+>   "The unsubscribe machinery" below.
+>
+> **Every one of the 35 `crm.jurisdiction_policy` rows is still `ratified_by = 'agent-research'`**,
+> `resolved.jurisdiction_ratified` is still `false` everywhere, and the 28 blocking `unknown` rows
+> stay blocking. **No agent may ratify a row or sign the AUP.** No surface may imply legal
+> clearance.
+>
+> Findings, residual risk, and what the procedure cannot do:
+> [`common-docs/systems/outreach-compliance/REVIEW_FINDINGS_2026-08-20.md`](/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/REVIEW_FINDINGS_2026-08-20.md).
+> **Re-review with counsel: 2026-11-18.**
 
 🚨 **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/`
 — read it before touching anything here, in ANY repo. It carries the verified sources and dates,
@@ -120,8 +153,18 @@ Required by every regime and previously absent in every form.
   mutating GET fires on every link scanner, the exact accident RFC 8058 exists to prevent.
   Shows a **masked** address, so a leaked token cannot become a disclosed email address.
 - **The write** — `public.outreach_unsubscribe()` sets `unsubscribed_at` + `suppressed_at` on
-  `crm.contact_medium`, the ONE suppression authority. It stops **every channel and every
-  campaign**, not just the list the link came from, and is never time-limited.
+  `crm.contact_medium`, the ONE suppression authority. It is never time-limited.
+
+  🚨 **This paragraph used to claim the write stops "every channel and every campaign". That was
+  false, and the 2026-08-20 review proved it twice over.** (1) `outreach_unsubscribe` writes the
+  store *by hand* instead of calling `crm.honor_consent_decision`, and the two already disagree:
+  it sets neither `consent_basis = 'none'` nor `crm.party_contact_point.opt_out_at`. Three
+  consumers read `opt_out_at` as THE opted-out fact — `reachability.ts`, the Chasebox, and
+  `buildCrmRecordContextData.ts`, **which is what the AI agent is told** — so a one-click
+  unsubscriber is blocked at the gate and reads as *reachable* everywhere else. (2) Even the
+  authority is **medium-scoped**: it never touches the party's other addresses and never writes
+  `crm.party.do_not_contact`, which `check_send_eligibility` reads and nothing writes. Repair is
+  chipped; until it lands, do not repeat the "every channel" claim anywhere.
 
 The browser preview contract lives in `buildComplianceEnvelope()` in
 [`message-compliance.ts`](./message-compliance.ts). The authoritative envelope is built again
