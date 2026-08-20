@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
 
         let resp: Response
         try {
-            resp = await fetch(`${target.url}/templates`, {
+            const orchestratorUrl = new URL(`${target.url}/templates`)
+            orchestratorUrl.searchParams.set('user_id', user.id)
+            resp = await fetch(orchestratorUrl, {
                 method: 'GET',
                 headers: orchestratorJsonHeaders(target),
             })
