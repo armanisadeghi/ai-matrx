@@ -163,6 +163,18 @@ each with the URL where he can test it and what to look for.
 
 Bring the ledger to Arman in **batches of 3–4 questions** and keep going until it is empty.
 
+🚨 **A QUESTION HE CANNOT ANSWER FROM WHAT YOU GAVE HIM IS A DEFECT IN YOUR QUESTION.**
+(Arman, 2026-08-20: *"how the hell am I ever going to be able to answer this? ... There's nothing
+that guides me on this."*) A question about a flow, a surface, or a path is **unanswerable as
+prose** — you owe him the **exact URL to open**, the **exact place in the UI to look**, or a
+**mermaid diagram of what actually happens**, and then the question asked against that. Check your
+recommendation too: a recommendation that brushes the problem under the rug (he rejected "give the
+agent a web search tool" as papering over a broken path with guessing) makes the question worse
+than not asking. **And read what the question tells YOU first** — if a surface can reach a state
+where an agent has nothing to work from, the PATH is broken; that is the finding, and your question
+was a symptom of it. "I need to see this in a UI first" is a legitimate answer: record it as a
+deferral WITH the URL he needs, never as an open question.
+
 Every question is fully self-contained — he must be able to answer cold:
 
 - **Short background** — 2–3 plain sentences of fact. No doc-internal numbering, no shorthand.
