@@ -68,7 +68,6 @@ import {
 import {
   applyColumnFilters as applyFilters,
   hasAnyActiveFilter,
-  isActiveFilter,
   type ColumnFilter,
   type ColumnFilterMap,
 } from "@/features/data-tables/column-filters";
@@ -732,8 +731,10 @@ const UserTableViewer = ({
     next: ColumnFilter | undefined,
   ) => {
     const nextFilters = { ...columnFilters };
-    if (next && isActiveFilter(next)) nextFilters[fieldName] = next;
-    else if (next) nextFilters[fieldName] = next; // keep the chosen MODE while empty
+    // An EMPTY filter is still stored, so the column remembers which control
+    // the user chose while they are mid-edit. `isActiveFilter` decides what
+    // actually narrows rows; only `undefined` clears the column entirely.
+    if (next) nextFilters[fieldName] = next;
     else delete nextFilters[fieldName];
     setColumnFilters(nextFilters);
     setCurrentPage(1);
