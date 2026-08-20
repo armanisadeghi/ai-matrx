@@ -69,6 +69,7 @@ import type {
 import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
+import type { Finding } from "@/features/hindsight/types";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -316,9 +317,11 @@ const BrowserFrameWindow = lazyOverlay(
 );
 const CloudBrowserWindow = lazyOverlay(
   () =>
-    import("@/features/cloud-browser/components/CloudBrowserWindow").then((m) => ({
-      default: m.CloudBrowserWindow,
-    })),
+    import("@/features/cloud-browser/components/CloudBrowserWindow").then(
+      (m) => ({
+        default: m.CloudBrowserWindow,
+      }),
+    ),
   { ssr: false },
 );
 const BrowserWorkbenchWindow = lazyOverlay(
@@ -939,6 +942,11 @@ const TaskEditorWindow = lazyOverlay(
 const ExtractionCellEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/page-extraction/ExtractionCellEditorWindow"),
+  { ssr: false },
+);
+const HindsightFindingWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/hindsight/HindsightFindingWindow"),
   { ssr: false },
 );
 const ToolCallWindowPanel = lazyOverlay(
@@ -1810,6 +1818,9 @@ export default function OverlayController() {
     extractionCellEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "extractionCellEditorWindow"),
     ),
+    hindsightFindingWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "hindsightFindingWindow"),
+    ),
     fullScreenEditor: useAppSelector((s) =>
       selectOpenInstances(s, "fullScreenEditor"),
     ),
@@ -2163,8 +2174,12 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "agentConvertSystemWindow" }))
             }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
-            mandateId={typeof data?.mandateId === "string" ? data.mandateId : null}
-            mandateKey={typeof data?.mandateKey === "string" ? data.mandateKey : null}
+            mandateId={
+              typeof data?.mandateId === "string" ? data.mandateId : null
+            }
+            mandateKey={
+              typeof data?.mandateKey === "string" ? data.mandateKey : null
+            }
             mandateLabel={
               typeof data?.mandateLabel === "string" ? data.mandateLabel : null
             }
@@ -2262,9 +2277,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.googleConnectWindow;
         const data = dataById.googleConnectWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <GoogleConnectWindow
@@ -5209,6 +5222,30 @@ export default function OverlayController() {
             agentId={typeof data.agentId === "string" ? data.agentId : null}
             agentName={
               typeof data.agentName === "string" ? data.agentName : null
+            }
+          />
+        );
+      })}
+
+      {/* hindsightFindingWindow — multi-instance, one window per finding */}
+      {instancesById.hindsightFindingWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const finding = data?.finding as Finding | null | undefined;
+        if (!finding || typeof finding.id !== "string") return null;
+        return (
+          <HindsightFindingWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            finding={finding}
+            agentId={typeof data?.agentId === "string" ? data.agentId : null}
+            audience={data?.audience === "admin" ? "admin" : "product"}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "hindsightFindingWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
             }
           />
         );

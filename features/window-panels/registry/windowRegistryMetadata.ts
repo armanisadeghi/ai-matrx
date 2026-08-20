@@ -254,6 +254,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Hindsight finding ───────────────────────────────────────────────────
+  {
+    slug: "hindsight-finding-window",
+    overlayId: "hindsightFindingWindow",
+    kind: "window",
+    label: "Hindsight Finding",
+    defaultData: {
+      finding: null,
+      agentId: null,
+      audience: "product",
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+  },
+
   // ── Quick Task Create ─────────────────────────────────────────────────────
   {
     slug: "task-quick-create-window",

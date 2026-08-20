@@ -12,6 +12,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Maximize2,
   MessageSquare,
   Undo2,
   X,
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import { useOpenHindsightFindingWindow } from "@/features/overlays/openers/hindsightFindingWindow";
 
 import { applyFinding, rejectFinding } from "../api";
 import {
@@ -44,6 +46,9 @@ export function FindingCard({
   agentId,
   onChanged,
   onGuide,
+  initialExpanded = false,
+  showWindowDoor = true,
+  variant = "card",
 }: {
   finding: Finding;
   /** The subject agent, when known — doors the revert confirm to the version diff. */
@@ -55,9 +60,13 @@ export function FindingCard({
    * DiscussPanel. The admin console omits it and keeps the inline panel.
    */
   onGuide?: (finding: Finding) => void;
+  initialExpanded?: boolean;
+  showWindowDoor?: boolean;
+  variant?: "card" | "bare";
 }) {
   const audience = useDoorAudience();
-  const [expanded, setExpanded] = useState(false);
+  const openFindingWindow = useOpenHindsightFindingWindow();
+  const [expanded, setExpanded] = useState(initialExpanded);
   const [discussing, setDiscussing] = useState(false);
 
   const apply = useMutation({
@@ -88,7 +97,14 @@ export function FindingCard({
   const busy = apply.isPending || reject.isPending;
 
   return (
-    <Card className="@container p-3" data-testid="hindsight-finding">
+    <Card
+      className={cn(
+        "@container p-3",
+        variant === "bare" &&
+          "rounded-none border-0 bg-transparent p-4 shadow-none",
+      )}
+      data-testid="hindsight-finding"
+    >
       <div className="flex flex-col gap-2 @md:flex-row @md:items-start @md:justify-between">
         <button
           type="button"
@@ -184,6 +200,18 @@ export function FindingCard({
               position: "first",
             }}
           />
+          {showWindowDoor && (
+            <Button
+              size="sm"
+              variant="outline"
+              title="Open the full finding in a window"
+              aria-label="Open the full finding in a window"
+              onClick={() => openFindingWindow({ finding, agentId, audience })}
+              data-testid="hindsight-open-window"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -239,7 +267,14 @@ export function FindingCard({
       {expanded && (
         <div className="mt-3 space-y-3 border-t border-border pt-3 text-sm">
           {finding.reasoning && (
-            <p className="text-muted-foreground">{finding.reasoning}</p>
+            <p
+              className={cn(
+                "text-muted-foreground",
+                variant === "card" && "line-clamp-4",
+              )}
+            >
+              {finding.reasoning}
+            </p>
           )}
           {(finding.evidence ?? []).length > 0 && (
             <div>
@@ -247,7 +282,10 @@ export function FindingCard({
                 Evidence from the real transcripts
               </div>
               <ul className="mt-1 list-inside list-disc space-y-1 text-xs text-muted-foreground">
-                {(finding.evidence ?? []).map((item, i) => (
+                {(variant === "card"
+                  ? (finding.evidence ?? []).slice(0, 3)
+                  : (finding.evidence ?? [])
+                ).map((item, i) => (
                   <li key={i}>
                     {splitEvidenceIds(evidenceLine(item)).map((part, j) =>
                       part.id ? (
@@ -266,6 +304,11 @@ export function FindingCard({
                   </li>
                 ))}
               </ul>
+              {variant === "card" && (finding.evidence?.length ?? 0) > 3 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  +{(finding.evidence?.length ?? 0) - 3} more in the full view
+                </p>
+              )}
             </div>
           )}
           {body && (
@@ -276,9 +319,29 @@ export function FindingCard({
                   ? ` — section <${finding.proposal.section_key}>`
                   : ""}
               </div>
-              <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-2 text-xs">
+              <pre
+                className={cn(
+                  "mt-1 whitespace-pre-wrap rounded-md bg-muted p-2 text-xs",
+                  variant === "card"
+                    ? "max-h-28 overflow-hidden"
+                    : "overflow-visible",
+                )}
+              >
                 {body}
               </pre>
+              {variant === "card" && showWindowDoor && (
+                <Button
+                  size="sm"
+                  variant="link"
+                  className="mt-1 h-6 px-0 text-xs"
+                  onClick={() =>
+                    openFindingWindow({ finding, agentId, audience })
+                  }
+                >
+                  <Maximize2 className="h-3 w-3" />
+                  Read the full finding
+                </Button>
+              )}
             </div>
           )}
           <RegressionCasesFromFinding finding={finding} />

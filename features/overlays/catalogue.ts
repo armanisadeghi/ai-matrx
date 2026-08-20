@@ -455,6 +455,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  hindsightFindingWindow: {
+    label: "Hindsight Finding",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   hierarchyCreationWindow: {
     label: "Hierarchy Creation Window",
     instanceMode: "singleton",
