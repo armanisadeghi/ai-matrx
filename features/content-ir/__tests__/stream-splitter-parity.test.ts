@@ -70,6 +70,54 @@ const UNKNOWN_KIND = JSON.stringify(
   2,
 );
 
+/**
+ * LEGACY JSON PAYLOADS — no `__kind`, recognised through the `json_root_key`
+ * surface registry (content_ir.kind_surface). These are the shapes the SERVER
+ * maps onto their registered kind in `adapt_block_data`; the frontend does not
+ * adapt, so they still degrade to raw — but the parser now NAMES the kind the
+ * surface registry names, so the notice states the real contract gap instead
+ * of the misleading `Object is missing "__kind"`. Both hosts must produce the
+ * identical envelope, which is the whole point: one place decides it.
+ */
+const LEGACY_QUIZ = JSON.stringify(
+  {
+    quiz_title: "State Capitals",
+    questions: [
+      {
+        type: "multiple_choice",
+        question: "Capital of Texas?",
+        options: ["Austin", "Dallas"],
+        correctAnswer: 0,
+      },
+    ],
+  },
+  null,
+  2,
+);
+
+const LEGACY_PRESENTATION = JSON.stringify(
+  {
+    presentation: {
+      title: "Q3 Review",
+      slides: [{ title: "Intro", content: ["Hello"] }],
+    },
+  },
+  null,
+  2,
+);
+
+const LEGACY_ITEM_PRESENTATION = JSON.stringify(
+  {
+    item_presentation: {
+      type: "product",
+      name: "Widget",
+      about: "A widget.",
+    },
+  },
+  null,
+  2,
+);
+
 const FIXTURES: Array<[string, string, number]> = [
   [
     "fenced flashcards between prose",
@@ -87,6 +135,27 @@ const FIXTURES: Array<[string, string, number]> = [
     `First:\n\`\`\`json\n${FLASHCARDS}\n\`\`\`\nSecond:\n${UNKNOWN_KIND}\nEnd.\n`,
     1,
   ],
+  [
+    "legacy quiz JSON (json_root_key surface) is IDENTICAL on both paths",
+    `\`\`\`json\n${LEGACY_QUIZ}\n\`\`\`\n`,
+    1,
+  ],
+  [
+    "legacy presentation JSON (json_root_key surface) is IDENTICAL on both paths",
+    `\`\`\`json\n${LEGACY_PRESENTATION}\n\`\`\`\n`,
+    1,
+  ],
+  [
+    "legacy item_presentation JSON (json_root_key surface) is IDENTICAL on both paths",
+    `Here:\n${LEGACY_ITEM_PRESENTATION}\nDone.\n`,
+    1,
+  ],
+];
+
+const LEGACY_SURFACE_CASES: Array<[string, string, string]> = [
+  ["quiz", LEGACY_QUIZ, "quiz_set"],
+  ["presentation", LEGACY_PRESENTATION, "presentation_deck"],
+  ["item_presentation", LEGACY_ITEM_PRESENTATION, "item_presentation"],
 ];
 
 describe("stream ↔ splitter envelope parity", () => {
@@ -109,6 +178,35 @@ describe("stream ↔ splitter envelope parity", () => {
     });
     expect(fromSplitter[0]).toEqual(oneShot);
   });
+
+  /**
+   * THE JSON-ROOT-KEY SURFACE, proven from ONE place: the lookup lives in
+   * core/kind-parser.ts, so neither host passes an option for it and both
+   * inherit it by construction. Every legacy payload must (a) name its
+   * registered kind in the notice and (b) never say `missing "__kind"`.
+   */
+  it.each(LEGACY_SURFACE_CASES)(
+    "legacy %s names its registered kind on BOTH hosts",
+    (_label, payload, expectedKind) => {
+      const oneShot = normalizeJsonRegion(payload, {
+        schemas: kindRegistry.snapshotSchemas(),
+      });
+      const notices = JSON.stringify(oneShot.root);
+
+      expect(notices).toContain(expectedKind);
+      expect(notices).not.toContain('missing "__kind"');
+
+      // The live streaming host, chunked at randomized boundaries, agrees.
+      for (let seed = 11; seed < 15; seed++) {
+        const fromStream = accumulatorEnvelopes(
+          `\`\`\`json\n${payload}\n\`\`\`\n`,
+          seed,
+        );
+        expect(fromStream).toHaveLength(1);
+        expect(fromStream[0]?.root).toEqual(oneShot.root);
+      }
+    },
+  );
 
   it("splitter re-splits return the SAME envelope object (memoized idempotence)", () => {
     const source = `\`\`\`json\n${FLASHCARDS}\n\`\`\`\n`;

@@ -359,7 +359,6 @@ export type ProtocolBlockType =
   | "consolidated_reasoning"
   | "decision"
   | "artifact"
-  | "matrxBroker"
   | "info"
   | "task"
   | "database"
@@ -821,15 +820,6 @@ const PROTOCOL_BLOCK_DISPATCH = {
       />
     );
   },
-
-  matrxBroker: ({ index }) => (
-    <p
-      key={index}
-      className="my-1 text-sm text-yellow-600 dark:text-yellow-400"
-    >
-      This block type is deprecated.
-    </p>
-  ),
 
   info: renderControlTagMarkdown,
   task: renderControlTagMarkdown,

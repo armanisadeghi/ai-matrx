@@ -22,7 +22,6 @@
  *   error              → error (verbatim ErrorPayload) + status change
  *   heartbeat          → dropped (no storage)
  *   end                → status change only
- *   broker             → dataPayloads (frozen — no new usage)
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -78,7 +77,6 @@ const TEXT_RUN_PRESERVING_KINDS: ReadonlySet<TimelineEntry["kind"]> = new Set([
   "record_reserved",
   "record_update",
   "resource_changed",
-  "broker",
   "structured_output",
   "unknown",
 ] satisfies TimelineEntry["kind"][]);

@@ -85,7 +85,6 @@ export interface SplitterBlock {
  */
 export type ContentBlock = SplitterBlock;
 
-const MATRX_PATTERN = /<<<MATRX_START>>>(.*?)<<<MATRX_END>>>/gs;
 
 /**
  * Code-fence languages that promote to a first-class block type (the fence
@@ -552,7 +551,7 @@ function extractAttributeXmlBlock(
   let i = startIndex;
   let foundClosingTag = false;
 
-  const firstLine = removeMatrxPattern(lines[i]).trim();
+  const firstLine = normalizeLine(lines[i]).trim();
   consumedLines.push(lines[i]);
   const afterOpening = firstLine.slice(firstLine.indexOf(">") + 1);
 
@@ -573,7 +572,7 @@ function extractAttributeXmlBlock(
     i++;
 
     while (i < lines.length) {
-      const current = removeMatrxPattern(lines[i]).trim();
+      const current = normalizeLine(lines[i]).trim();
       const closingIdx = current.indexOf(closingTag);
       if (closingIdx !== -1) {
         const before = current.slice(0, closingIdx).trim();
@@ -730,7 +729,7 @@ function extractUnrecognizedXmlBlock(
   startIndex: number,
   lines: string[],
 ): ExtractionResult | null {
-  const firstLine = removeMatrxPattern(lines[startIndex]);
+  const firstLine = normalizeLine(lines[startIndex]);
   const firstTrimmed = firstLine.trimStart();
   const openingMatch = firstTrimmed.match(
     /^<([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/,
@@ -750,7 +749,7 @@ function extractUnrecognizedXmlBlock(
   let sawRoot = false;
 
   for (let lineIndex = startIndex; lineIndex < lines.length; lineIndex++) {
-    const currentLine = removeMatrxPattern(lines[lineIndex]);
+    const currentLine = normalizeLine(lines[lineIndex]);
     STRICT_XML_TAG_PATTERN.lastIndex =
       lineIndex === startIndex ? rootStart : 0;
 
@@ -779,7 +778,7 @@ function extractUnrecognizedXmlBlock(
               firstLine.slice(rootStart),
               ...lines
                 .slice(startIndex + 1, lineIndex)
-                .map(removeMatrxPattern),
+                .map(normalizeLine),
               currentLine.slice(0, rootEnd),
             ];
       const remainder = currentLine.slice(rootEnd).trim();
@@ -855,7 +854,7 @@ function extractXmlBlock(
 
   // First line may have content after the opening tag: <reasoning>test or <reasoning>test</reasoning>
   const firstLine = lines[i];
-  const processedFirst = removeMatrxPattern(firstLine).trim();
+  const processedFirst = normalizeLine(firstLine).trim();
   if (processedFirst.startsWith(matchedTag)) {
     const afterTag = processedFirst.slice(matchedTag.length);
     const closingIdx = afterTag.indexOf(closingTag);
@@ -888,7 +887,7 @@ function extractXmlBlock(
   }
 
   while (i < lines.length) {
-    const currentTrimmed = removeMatrxPattern(lines[i]).trim();
+    const currentTrimmed = normalizeLine(lines[i]).trim();
 
     if (currentTrimmed === closingTag) {
       foundClosingTag = true;
@@ -1345,12 +1344,12 @@ function extractCodeBlock(
 }
 
 function detectTableRow(line: string): boolean {
-  const trimmed = removeMatrxPattern(line).trim();
+  const trimmed = normalizeLine(line).trim();
   return trimmed.startsWith("|") && trimmed.includes("|", 1);
 }
 
 function isTableSeparator(line: string): boolean {
-  const trimmed = removeMatrxPattern(line).trim();
+  const trimmed = normalizeLine(line).trim();
   return /^\|[:\s|\-]+\|?$/.test(trimmed);
 }
 
@@ -1463,7 +1462,7 @@ function analyzeTableCompletion(
 
   for (let i = 0; i < dataLines.length; i++) {
     const line = dataLines[i];
-    const trimmedLine = removeMatrxPattern(line).trim();
+    const trimmedLine = normalizeLine(line).trim();
 
     if (trimmedLine.startsWith("|") && trimmedLine.includes("|", 1)) {
       // If table has ended (hit non-table line), all rows are complete
@@ -1773,7 +1772,7 @@ function isMarkdownHeadingLine(line: string): boolean {
 function findTreeBlockStart(lines: string[], firstTreeIndex: number): number {
   let start = firstTreeIndex;
   for (let j = firstTreeIndex - 1; j >= 0; j--) {
-    const trimmed = removeMatrxPattern(lines[j]).trim();
+    const trimmed = normalizeLine(lines[j]).trim();
     if (!trimmed) break;
     if (isTreeLine(trimmed)) break;
     if (isMarkdownHeadingLine(trimmed)) break;
@@ -1790,7 +1789,7 @@ function stripAccumulatedLinesFromText(
 ): string {
   let result = text;
   for (let j = fromIndex; j < toIndex; j++) {
-    const processed = removeMatrxPattern(rawLines[j]);
+    const processed = normalizeLine(rawLines[j]);
     if (result.endsWith(processed + "\n")) {
       result = result.slice(0, -(processed.length + 1));
     } else if (result.endsWith(processed)) {
@@ -1800,24 +1799,14 @@ function stripAccumulatedLinesFromText(
   return result;
 }
 
-function removeMatrxPattern(text: string): string {
-  return text.replace(MATRX_PATTERN, "").trim() === ""
-    ? ""
-    : text.replace(MATRX_PATTERN, "");
-}
-
-function detectMatrxPattern(
-  text: string,
-  startIndex: number,
-): { hasPattern: boolean; match?: RegExpExecArray } {
-  MATRX_PATTERN.lastIndex = startIndex;
-  const match = MATRX_PATTERN.exec(text);
-
-  if (match && match.index < startIndex + text.length) {
-    return { hasPattern: true, match };
-  }
-
-  return { hasPattern: false };
+/**
+ * Normalize a raw line: whitespace-only lines collapse to the empty string.
+ *
+ * Must stay byte-for-byte equivalent to the Python `normalize_line` in
+ * `block_detector.py` — the parity gate diffs the two splitters.
+ */
+function normalizeLine(text: string): string {
+  return text.trim() === "" ? "" : text;
 }
 
 // ============================================================================
@@ -1838,39 +1827,8 @@ export const splitContentIntoBlocksV2 = (
 
   while (i < lines.length) {
     const line = lines[i];
-    const processedLine = removeMatrxPattern(line);
+    const processedLine = normalizeLine(line);
     const trimmedLine = processedLine.trim();
-
-    // 🟠SKIP: line trimmed to empty after MATRX pattern removal — skipping it entirely
-    if (trimmedLine === "" && processedLine !== "") {
-      i++;
-      continue;
-    }
-
-    // 1. Check for MATRX pattern
-    // const matrxCheck = detectMatrxPattern(line, 0);
-    // if (matrxCheck.hasPattern && matrxCheck.match) {
-    //   if (currentText.trim()) {
-    //     blocks.push({ type: "text", content: currentText.trimEnd() });
-    //     currentText = "";
-    //   }
-
-    //   try {
-    //     const metadata = getMetadataFromText(matrxCheck.match[0]);
-    //     if (metadata.length > 0) {
-    //       blocks.push({
-    //         type: "matrxBroker",
-    //         content: matrxCheck.match[0],
-    //         metadata: metadata[0],
-    //       });
-    //     }
-    //   } catch (error) {
-    //     currentText += line;
-    //   }
-
-    //   i++;
-    //   continue;
-    // }
 
     // 1b. Check for custom divider variants before they get absorbed as text.
     //  *** (or * * * etc.) = accent divider, #=== or # === = heavy divider.
@@ -2284,7 +2242,7 @@ export const splitContentIntoBlocksV2 = (
 
       // Collect subsequent lines until braces balance (multi-line JSON)
       while (j < lines.length && openCount > closeCount) {
-        const nextLine = removeMatrxPattern(lines[j]);
+        const nextLine = normalizeLine(lines[j]);
         jsonLines.push(nextLine);
         openCount += (nextLine.match(/\{/g) || []).length;
         closeCount += (nextLine.match(/\}/g) || []).length;
@@ -2417,7 +2375,7 @@ export const splitContentIntoBlocksV2 = (
       // Look ahead to see if this is part of a multi-line tree
       let treeEnd = i + 1;
       while (treeEnd < lines.length) {
-        const nextTrimmed = removeMatrxPattern(lines[treeEnd]).trim();
+        const nextTrimmed = normalizeLine(lines[treeEnd]).trim();
         if (!nextTrimmed) {
           treeEnd++;
           continue;
@@ -2431,7 +2389,7 @@ export const splitContentIntoBlocksV2 = (
       // Need at least 3 tree-like lines to constitute a tree block
       const treeLinesCount = lines
         .slice(i, treeEnd)
-        .filter((l) => isTreeLine(removeMatrxPattern(l).trim())).length;
+        .filter((l) => isTreeLine(normalizeLine(l).trim())).length;
       if (treeLinesCount >= 3) {
         const treeStart = findTreeBlockStart(lines, i);
         if (treeStart < i) {
@@ -2448,7 +2406,7 @@ export const splitContentIntoBlocksV2 = (
         }
         const treeContent = lines
           .slice(treeStart, treeEnd)
-          .map((l) => removeMatrxPattern(l))
+          .map((l) => normalizeLine(l))
           .join("\n");
         blocks.push({ type: "tree", content: treeContent.trim() });
         i = treeEnd;

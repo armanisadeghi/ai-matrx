@@ -234,7 +234,6 @@ const EVENT_COLORS: Record<string, string> = {
   completion: "bg-green-500/20 text-green-400 border-green-500/30",
   error: "bg-red-500/20 text-red-400 border-red-500/30",
   tool_event: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  broker: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   heartbeat: "bg-gray-500/20 text-gray-400 border-gray-500/30",
   end: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   render_block: "bg-pink-500/20 text-pink-400 border-pink-500/30",
@@ -256,7 +255,6 @@ const EVENT_ICONS: Record<string, React.ReactNode> = {
   completion: <BarChart3 className="h-2.5 w-2.5" />,
   error: <AlertTriangle className="h-2.5 w-2.5" />,
   tool_event: <Wrench className="h-2.5 w-2.5" />,
-  broker: <Radio className="h-2.5 w-2.5" />,
   heartbeat: <Heart className="h-2.5 w-2.5" />,
   end: <Square className="h-2.5 w-2.5" />,
   render_block: <Layers className="h-2.5 w-2.5" />,
@@ -437,7 +435,6 @@ function getTimelineColor(kind: TimelineEntry["kind"]): string {
     completion: EVENT_COLORS.completion,
     error: EVENT_COLORS.error,
     end: EVENT_COLORS.end,
-    broker: EVENT_COLORS.broker,
     heartbeat: EVENT_COLORS.heartbeat,
     record_reserved: EVENT_COLORS.record_reserved,
     record_update: EVENT_COLORS.record_update,
@@ -464,7 +461,6 @@ function getTimelineIcon(kind: TimelineEntry["kind"]): React.ReactNode {
     completion: EVENT_ICONS.completion,
     error: EVENT_ICONS.error,
     end: EVENT_ICONS.end,
-    broker: EVENT_ICONS.broker,
     heartbeat: EVENT_ICONS.heartbeat,
     record_reserved: EVENT_ICONS.record_reserved,
     record_update: EVENT_ICONS.record_update,
@@ -556,8 +552,6 @@ function timelineSummary(
     }
     case "end":
       return entry.data.reason ?? "stream ended";
-    case "broker":
-      return `broker: ${entry.data.broker_id}`;
     case "heartbeat":
       return entry.data.timestamp != null
         ? `heartbeat @ ${entry.data.timestamp}`
@@ -892,7 +886,6 @@ const ALL_TIMELINE_KINDS: TimelineEntry["kind"][] = [
   "completion",
   "error",
   "end",
-  "broker",
   "heartbeat",
   "record_reserved",
   "record_update",

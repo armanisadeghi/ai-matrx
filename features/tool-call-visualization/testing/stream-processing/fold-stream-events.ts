@@ -16,7 +16,6 @@ import type {
   ResourceChangedPayload,
   HeartbeatPayload,
   EndPayload,
-  BrokerPayload,
   RenderBlockEvent,
   ContextAnalysisPayload,
   StructuredOutputPayload,
@@ -38,7 +37,6 @@ import {
   isResourceChangedEvent,
   isHeartbeatEvent,
   isEndEvent,
-  isBrokerEvent,
   isContextAnalysisEvent,
   isStructuredOutputEvent,
 } from "@/types/python-generated/stream-events";
@@ -109,7 +107,6 @@ export interface BackendStreamFoldState {
   resourceChanges: ResourceChangedPayload[];
   heartbeats: HeartbeatPayload[];
   ends: EndPayload[];
-  brokers: BrokerPayload[];
   contextAnalyses: ContextAnalysisPayload[];
   structuredOutputs: StructuredOutputPayload[];
   unknownWireEvents: UnknownWireEvent[];
@@ -132,7 +129,6 @@ export interface BackendStreamFoldState {
     resourceChanged: number;
     heartbeat: number;
     end: number;
-    broker: number;
     contextAnalysis: number;
     structuredOutput: number;
     unknown: number;
@@ -163,7 +159,6 @@ function emptyCounts(): BackendStreamFoldState["counts"] {
     resourceChanged: 0,
     heartbeat: 0,
     end: 0,
-    broker: 0,
     contextAnalysis: 0,
     structuredOutput: 0,
     unknown: 0,
@@ -191,7 +186,6 @@ function emptyFoldState(): BackendStreamFoldState {
     resourceChanges: [],
     heartbeats: [],
     ends: [],
-    brokers: [],
     contextAnalyses: [],
     structuredOutputs: [],
     unknownWireEvents: [],
@@ -322,10 +316,6 @@ export function foldBackendStreamEvents(
       state.counts.end++;
       state.ends.push(event.data);
       pushArrival(state, wire, "end", event.data, tt);
-    } else if (isBrokerEvent(event)) {
-      state.counts.broker++;
-      state.brokers.push(event.data);
-      pushArrival(state, wire, "broker", event.data, tt);
     } else if (isContextAnalysisEvent(event)) {
       state.counts.contextAnalysis++;
       state.contextAnalyses.push(event.data);

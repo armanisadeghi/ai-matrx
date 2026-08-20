@@ -79,8 +79,6 @@ export function StreamDebugOverlay() {
         return "text-yellow-400";
       case EventType.INFO:
         return "text-sky-400";
-      case EventType.BROKER:
-        return "text-cyan-400";
       default:
         return "text-orange-400";
     }

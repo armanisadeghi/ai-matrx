@@ -283,9 +283,6 @@ export const StreamAwareChatMarkdown: React.FC<
         case "data":
           console.log("[STREAM] data:", JSON.stringify(event.data, null, 2));
           break;
-        case "broker":
-          console.log("[STREAM] broker:", JSON.stringify(event.data, null, 2));
-          break;
         case "end":
           console.log("[STREAM] end:", JSON.stringify(event.data, null, 2));
           break;

@@ -769,16 +769,6 @@ export class StreamBlockAccumulator {
       return;
     }
 
-    // ── MATRX broker ──────────────────────────────────────────────────
-    if (hasCandidate(flags, Candidate.MATRX)) {
-      this.closeCurrentBlock(dispatch);
-      this.openBlock("matrxBroker", dispatch);
-      this.appendToCurrentBlock(rawLine);
-      this.closeCurrentBlock(dispatch);
-      this.openBlock("text", dispatch);
-      return;
-    }
-
     // ── Divider ───────────────────────────────────────────────────────
     if (hasCandidate(flags, Candidate.DIVIDER)) {
       this.closeCurrentBlock(dispatch);

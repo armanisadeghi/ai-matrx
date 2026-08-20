@@ -30,7 +30,6 @@ export const Candidate = {
   TABLE: 1 << 3, // | col | col |
   IMAGE: 1 << 4, // ![alt](url) or [Image URL: ...]
   VIDEO: 1 << 5, // [Video URL: ...]
-  MATRX: 1 << 6, // <<<MATRX_START>>>...<<<MATRX_END>>>
   DIVIDER: 1 << 7, // *** or # ===
   TREE: 1 << 8, // Box-drawing / ASCII tree characters
   BARE_JSON: 1 << 9, // { "key": ... } JSON object without code fences
@@ -143,30 +142,12 @@ const TREE_CHARS = new Set([
  * like "Hello <decision prompt="...">". The scan is still cheap because
  * we only look at individual characters — no regex, no string splitting.
  *
- * @param line     The raw line (before MATRX removal or trimming)
- * @param trimmed  The line after MATRX removal + trim (caller already has this)
+ * @param line     The raw line (before trimming)
+ * @param trimmed  The normalized+trimmed line (caller already has this)
  * @returns        Bitmask of Candidate flags
  */
 export function classifyLine(line: string, trimmed: string): CandidateFlags {
   let flags: CandidateFlags = Candidate.NONE;
-
-  // ── MATRX: check for `<<<` anywhere in the raw line ──────────────────
-  // The full pattern is <<<MATRX_START>>>...<<<MATRX_END>>>
-  // `<<<` is an extremely rare 3-char sequence, so this is nearly free.
-  if (line.length >= 3) {
-    const ltIdx = line.indexOf("<");
-    if (
-      ltIdx !== -1 &&
-      ltIdx + 2 < line.length &&
-      line[ltIdx + 1] === "<" &&
-      line[ltIdx + 2] === "<"
-    ) {
-      // Layer 1: verify it's actually "<<<M" (MATRX_START begins with M)
-      if (ltIdx + 3 < line.length && line[ltIdx + 3] === "M") {
-        flags |= Candidate.MATRX;
-      }
-    }
-  }
 
   // ── Scan trimmed line character-by-character ──────────────────────────
   // We track what we've found so we can bail early once all possible

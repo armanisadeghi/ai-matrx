@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { Editor as TuiEditorReactComp } from "@toast-ui/react-editor";
-import type { PluginFn, WidgetRule } from "@toast-ui/editor";
+import type { PluginFn } from "@toast-ui/editor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import EditorLoading from "../../text-block/editorLoading";
 import { toast } from "@/lib/toast";
@@ -41,161 +41,6 @@ interface TuiEditorContentRef {
     getRootElement: () => HTMLElement | null;
 }
 
-// Toast UI Editor's recommended pattern for widgets
-// Pattern: [@uuid](display-name)
-const MATRX_WIDGET_PATTERN = /\[(@[a-f0-9-]+)\]\(([^)]+)\)/;
-
-// Simple widget rules using Toast UI's official pattern
-const createMatrxWidgetRules = () => {
-    return [
-        {
-            rule: MATRX_WIDGET_PATTERN,
-            toDOM(text: string) {
-                try {
-                    const match = text.match(MATRX_WIDGET_PATTERN);
-                    if (!match) {
-                        return document.createTextNode(text);
-                    }
-                    
-                    const uuid = match[1]?.substring(1); // Remove @ prefix
-                    const displayName = match[2];
-                    
-                    if (!uuid || !displayName) {
-                        return document.createTextNode(text);
-                    }
-                    
-                    // Create professional blue pill
-                    const pill = document.createElement('span');
-                    pill.className = 'matrx-pill';
-                    pill.textContent = displayName;
-                    pill.title = `MATRX: ${displayName} (ID: ${uuid})`;
-                    
-                    // Store data as attributes safely
-                    try {
-                        pill.setAttribute('data-matrx-id', uuid);
-                        pill.setAttribute('data-matrx-name', displayName);
-                        pill.setAttribute('data-matrx-original', text);
-                    } catch (attrError) {
-                        console.warn('Failed to set attributes:', attrError);
-                    }
-                    
-                    // Professional blue pill styling - no !important overrides
-                    try {
-                        pill.style.cssText = `
-                            background: #3b82f6;
-                            color: white;
-                            padding: 2px 8px;
-                            border-radius: 12px;
-                            font-size: 16px;
-                            font-weight: 500;
-                            display: inline-block;
-                            margin: 0 2px;
-                            cursor: pointer;
-                            user-select: none;
-                            vertical-align: middle;
-                            white-space: nowrap;
-                            max-width: 200px;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            border: 1px solid rgba(59, 130, 246, 0.3);
-                            transition: background-color 0.2s ease;
-                            line-height: 1.2;
-                        `;
-                    } catch (styleError) {
-                        console.warn('Failed to apply styles:', styleError);
-                    }
-                    
-                    // Add event handlers with error protection
-                    try {
-                        // Simple hover effect
-                        pill.addEventListener('mouseenter', function() {
-                            try {
-                                this.style.backgroundColor = '#2563eb';
-                            } catch (e) {
-                                console.warn('Hover effect failed:', e);
-                            }
-                        });
-                        
-                        pill.addEventListener('mouseleave', function() {
-                            try {
-                                this.style.backgroundColor = '#3b82f6';
-                            } catch (e) {
-                                console.warn('Hover effect failed:', e);
-                            }
-                        });
-                        
-                        // Click handler
-                        pill.addEventListener('click', function(e) {
-                            try {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                
-                                const customEvent = new CustomEvent('matrxWidgetClick', {
-                                    detail: { id: uuid, name: displayName },
-                                    bubbles: true
-                                });
-                                this.dispatchEvent(customEvent);
-                            } catch (clickError) {
-                                console.warn('Click handler failed:', clickError);
-                            }
-                        });
-                    } catch (eventError) {
-                        console.warn('Failed to add event listeners:', eventError);
-                    }
-                    
-                    return pill;
-                    
-                } catch (error) {
-                    console.error('Error in MATRX widget toDOM:', error);
-                    // Always return a safe fallback
-                    try {
-                        const fallback = document.createElement('span');
-                        fallback.textContent = text;
-                        return fallback;
-                    } catch (fallbackError) {
-                        console.error('Even fallback failed:', fallbackError);
-                        return document.createTextNode(text);
-                    }
-                }
-            }
-        }
-    ];
-};
-
-
-// Helper function to convert your existing MATRX patterns to Toast UI format
-const convertToToastUIPattern = (content: string): string => {
-    const MATRX_PATTERN = /<<<MATRX_START>>>(.*?)<<<MATRX_END>>>/gs;
-    const MATRX_ID_PATTERN = /<ID>(.*?)<ID_END>/;
-    const MATRX_NAME_PATTERN = /<NAME>(.*?)<NAME_END>/;
-    
-    return content.replace(MATRX_PATTERN, (match, innerContent) => {
-        try {
-            
-            const idMatch = innerContent.match(MATRX_ID_PATTERN);
-            const nameMatch = innerContent.match(MATRX_NAME_PATTERN);
-            
-            if (idMatch && nameMatch) {
-                const id = idMatch[1];
-                const name = nameMatch[1];
-                return `[@${id}](${name})`;
-            }
-        } catch (error) {
-            console.error('Error converting pattern:', error);
-        }
-        return match; // Return original if conversion fails
-    });
-};
-
-// Helper function to convert Toast UI pattern back to your original format
-const convertFromToastUIPattern = (content: string): string => {
-    return content.replace(MATRX_WIDGET_PATTERN, (match, uuid, name) => {
-        const cleanUuid = uuid.substring(1); // Remove @ prefix
-        return `<<<MATRX_START>>><ID>${cleanUuid}<ID_END><NAME>${name}<NAME_END><<<MATRX_END>>>`;
-    });
-};
-
-
 const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentProps>(({
     content,
     onChange,
@@ -207,18 +52,10 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     const mode = useThemeMode();
     const [colorSyntaxPlugin, setColorSyntaxPlugin] = useState<PluginFn | null>(null);
     const [isClient, setIsClient] = useState(false);
-    const [widgetRules, setWidgetRules] = useState<WidgetRule[]>([]);
-    const [convertedContent, setConvertedContent] = useState<string>("");
     const [isThemeReady, setIsThemeReady] = useState(false);
     const hasAppliedInitialTheme = useRef(false);
     const endKeyCleanupRef = useRef<(() => void) | null>(null);
  
-    // Convert incoming content from your format to Toast UI format
-    useEffect(() => {
-        const converted = convertToToastUIPattern(content);
-        setConvertedContent(converted);
-    }, [content]);
-    
     // Reset theme application flag when editor key changes (remounts)
     useEffect(() => {
         hasAppliedInitialTheme.current = false;
@@ -267,45 +104,29 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
             });
     }, []);
  
-    // Initialize widget rules after client is ready
+    // Update the editor content when it changes
     useEffect(() => {
-        if (isClient) {
-            try {
-                const rules = createMatrxWidgetRules();
-                setWidgetRules(rules);
-            } catch (error) {
-                console.error('Error initializing widget rules:', error);
-                setWidgetRules([]);
-            }
-        }
-    }, [isClient]);
- 
-    // Update the editor content when converted content changes
-    useEffect(() => {
-        if (isActive && editorRef.current && isClient && convertedContent) {
+        if (isActive && editorRef.current && isClient && content) {
             try {
                 const instance = editorRef.current.getInstance();
                 if (instance) {
                     const currentMarkdownInTui = instance.getMarkdown();
-                    if (currentMarkdownInTui !== convertedContent) {
-                        instance.setMarkdown(convertedContent, false);
+                    if (currentMarkdownInTui !== content) {
+                        instance.setMarkdown(content, false);
                     }
                 }
             } catch (e) {
                 console.error("Error updating TUI editor with converted content:", e);
             }
         }
-    }, [convertedContent, isActive, isClient]);
+    }, [content, isActive, isClient]);
  
     const handleTuiChange = useCallback(() => {
         if (editorRef.current && isActive && onChange) {
             try {
                 const instance = editorRef.current.getInstance();
                 if (instance) {
-                    const currentMarkdown = instance.getMarkdown();
-                    // Convert back to your original format before sending to parent
-                    const originalFormat = convertFromToastUIPattern(currentMarkdown);
-                    onChange(originalFormat);
+                    onChange(instance.getMarkdown());
                 }
             } catch (e) {
                 console.error("Error getting markdown from TUI change:", e);
@@ -315,7 +136,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
  
     // Sync content when becoming active
     useEffect(() => {
-        if (isActive && editorRef.current && isClient && convertedContent) {
+        if (isActive && editorRef.current && isClient && content) {
             // Ensure editor is visible when switching back to this tab
             setIsThemeReady(true);
             
@@ -325,8 +146,8 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
                         const instance = editorRef.current.getInstance();
                         if (instance) {
                             const currentMarkdownInTui = instance.getMarkdown();
-                            if (currentMarkdownInTui !== convertedContent) {
-                                instance.setMarkdown(convertedContent, false);
+                            if (currentMarkdownInTui !== content) {
+                                instance.setMarkdown(content, false);
                             }
                         }
                         
@@ -339,7 +160,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
                 }
             });
         }
-    }, [isActive, convertedContent, isClient, applyTheme]);
+    }, [isActive, content, isClient, applyTheme]);
  
     const handleImageUpload = async (blob: File | Blob, callback: (url: string, altText?: string) => void) => {
         console.warn("Image upload not implemented.");
@@ -352,20 +173,19 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
         editorPlugins.push(colorSyntaxPlugin);
     }
  
-    // Get current markdown content and convert back to original format
+    // Get current markdown content
     const getCurrentMarkdown = useCallback(() => {
         if (editorRef.current) {
             try {
                 const instance = editorRef.current.getInstance();
-                const currentMarkdown = instance ? instance.getMarkdown() : convertedContent;
-                return convertFromToastUIPattern(currentMarkdown);
+                return instance ? instance.getMarkdown() : content;
             } catch (e) {
                 console.error("Error getting current markdown:", e);
                 return content;
             }
         }
         return content;
-    }, [content, convertedContent]);
+    }, [content]);
  
     // Ref callback to apply theme immediately on mount
     // MUST be defined before any conditional returns (Rules of Hooks)
@@ -440,7 +260,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     }));
  
     // Don't render editor until client is ready and content is converted
-    if (!isClient || !convertedContent) {
+    if (!isClient || !content) {
         return <EditorLoading />;
     }
 
@@ -456,13 +276,12 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
             <TuiEditor
                 ref={handleEditorRef}
                 key={`tui-editor-${mode}-${isActive}-${editMode}`}
-                initialValue={convertedContent}
+                initialValue={content}
                 initialEditType={editMode}
                 previewStyle={editMode === "markdown" ? "vertical" : "tab"}
                 height="100%"
                 usageStatistics={false}
                 plugins={editorPlugins}
-                widgetRules={widgetRules}
                 hooks={{
                     addImageBlobHook: handleImageUpload,
                 }}
@@ -477,20 +296,3 @@ TuiEditorContent.displayName = "TuiEditorContent";
 
 export default TuiEditorContent;
 export type { TuiEditorContentProps, TuiEditorContentRef };
-
-// Helper function to add event listener for MATRX widget clicks
-export const addMatrxWidgetListener = (callback: (data: { id: string, name: string }) => void) => {
-    const handleMatrxClick = (event: Event) => {
-        const detail = (event as CustomEvent<{ id: string; name: string }>).detail;
-        if (detail) {
-            callback(detail);
-        }
-    };
-
-    window.addEventListener('matrxWidgetClick', handleMatrxClick);
-
-    return () => {
-        window.removeEventListener('matrxWidgetClick', handleMatrxClick);
-    };
-};
-

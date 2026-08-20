@@ -259,7 +259,9 @@ describe("diagram_spec → diagram (parsed DiagramData)", () => {
       id: "edge_a_to_b_0",
       source: "a",
       target: "b",
-      type: "default",
+      // parseDiagramJSON normalizes an absent/"default" edge type to the
+      // ReactFlow "bezier" curve — the synthesized default.
+      type: "bezier",
       strokeWidth: 2,
     });
   });

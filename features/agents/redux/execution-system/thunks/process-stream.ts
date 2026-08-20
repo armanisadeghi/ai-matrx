@@ -34,7 +34,6 @@ import {
   isEndEvent,
   isRenderBlockEvent,
   isHeartbeatEvent,
-  isBrokerEvent,
   isRecordReservedEvent,
   isRecordUpdateEvent,
   isResourceChangedEvent,
@@ -2261,25 +2260,6 @@ export async function processStream({
         // thing left is the transport close. No-op if completion already
         // armed the window.
         armPostTerminalGrace("end event");
-      } else if (isBrokerEvent(event)) {
-        otherEvents++;
-        dispatch(
-          appendDataPayload({
-            requestId,
-            data: { type: "broker", broker: event.data } as UntypedDataPayload,
-          }),
-        );
-        dispatch(
-          appendTimeline({
-            requestId,
-            entry: {
-              kind: "broker",
-              seq: 0,
-              timestamp: now,
-              data: event.data,
-            },
-          }),
-        );
       } else if (isHeartbeatEvent(event)) {
         otherEvents++;
         dispatch(

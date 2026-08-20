@@ -33,7 +33,6 @@ import {
   isToolEventEvent,
   isWarningEvent,
   isInfoEvent,
-  isBrokerEvent,
   isHeartbeatEvent,
   isEndEvent,
   isRenderBlockEvent,
@@ -211,7 +210,6 @@ export interface StreamCallbacks {
   onRecordUpdate?: (data: RecordUpdatePayload) => void;
   onHeartbeat?: (data: HeartbeatPayload) => void;
   onEnd?: (data: EndPayload) => void;
-  onBroker?: (data: unknown) => void;
 }
 
 /**
@@ -276,8 +274,6 @@ export async function consumeStream(
       callbacks.onHeartbeat?.(event.data);
     } else if (isEndEvent(event)) {
       callbacks.onEnd?.(event.data);
-    } else if (isBrokerEvent(event)) {
-      callbacks.onBroker?.(event.data);
     }
   }
 

@@ -29,7 +29,6 @@ import type {
   ToolEventPayload,
   ErrorPayload,
   EndPayload,
-  BrokerPayload,
   HeartbeatPayload,
   RecordReservedPayload,
   RecordUpdatePayload,
@@ -546,7 +545,6 @@ export type TimelineEntry =
   | TimelineDataEvent
   | TimelineError
   | TimelineEnd
-  | TimelineBroker
   | TimelineHeartbeat
   | TimelineRecordReserved
   | TimelineRecordUpdate
@@ -678,11 +676,6 @@ export interface TimelineEnd extends TimelineBase {
   data: EndPayload;
 }
 
-export interface TimelineBroker extends TimelineBase {
-  kind: "broker";
-  data: BrokerPayload;
-}
-
 export interface TimelineHeartbeat extends TimelineBase {
   kind: "heartbeat";
   data: HeartbeatPayload;
@@ -752,7 +745,6 @@ type _TimelinePayloadGuards = {
   >;
   error: _AssertEqual<TimelineError["data"], ErrorPayload>;
   end: _AssertEqual<TimelineEnd["data"], EndPayload>;
-  broker: _AssertEqual<TimelineBroker["data"], BrokerPayload>;
   heartbeat: _AssertEqual<TimelineHeartbeat["data"], HeartbeatPayload>;
   record_reserved: _AssertEqual<
     TimelineRecordReserved["data"],
@@ -795,7 +787,6 @@ const _ENFORCE_TIMELINE_PAYLOAD_GUARDS: _TimelinePayloadDriftGuard = {
   data: true,
   error: true,
   end: true,
-  broker: true,
   heartbeat: true,
   record_reserved: true,
   record_update: true,
