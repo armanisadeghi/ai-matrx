@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { Code2 } from "lucide-react";
 import { StructuredDataValidatorTool } from "@/features/marketing/seo/public-tools/StructuredDataValidatorTool";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPublicToolJsonLd } from "@/features/marketing/seo/public-tools/tool-jsonld";
+import { siteConfig } from "@/config/extras/site";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${siteConfig.url}/seo/structured-data` },
   title: "Structured Data Validator — SEO Tools",
   description:
     "Parse JSON-LD and microdata on any page and validate against Google's rich-result requirements.",
@@ -11,6 +15,14 @@ export const metadata: Metadata = {
 export default function StructuredDataValidatorPage() {
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <JsonLd
+        data={buildPublicToolJsonLd({
+          href: "/seo/structured-data",
+          name: "Structured Data Validator",
+          description:
+            "Parse JSON-LD and microdata on any page and validate against Google's rich-result requirements.",
+        })}
+      />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">

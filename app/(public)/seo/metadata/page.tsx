@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { MetadataAnalyzer } from "@/features/marketing/seo/serp/MetadataAnalyzer";
 import { GoogleLogo } from "./_components/GoogleLogo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPublicToolJsonLd } from "@/features/marketing/seo/public-tools/tool-jsonld";
+import { siteConfig } from "@/config/extras/site";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${siteConfig.url}/seo/metadata` },
   title: "Meta Width Calculator — SEO Tools",
   description:
     "Calculate pixel widths and character counts for Google Search meta titles and descriptions with a live SERP preview. Updated for 2024.",
@@ -11,6 +15,14 @@ export const metadata: Metadata = {
 export default function MetaCalculatorPage() {
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <JsonLd
+        data={buildPublicToolJsonLd({
+          href: "/seo/metadata",
+          name: "Meta Width Calculator",
+          description:
+            "Calculate pixel widths and character counts for Google Search meta titles and descriptions with a live SERP preview.",
+        })}
+      />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <GoogleLogo size={26} />

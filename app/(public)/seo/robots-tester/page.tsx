@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowRight, ShieldAlert } from "lucide-react";
 
 import { RobotsTesterTool } from "@/features/marketing/seo/public-tools/RobotsTesterTool";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPublicToolJsonLd } from "@/features/marketing/seo/public-tools/tool-jsonld";
 
 const canonicalUrl = "https://www.aimatrx.com/seo/robots-tester";
 
@@ -23,6 +25,14 @@ export const metadata: Metadata = {
 export default function RobotsTesterPage() {
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <JsonLd
+        data={buildPublicToolJsonLd({
+          href: "/seo/robots-tester",
+          name: "Free Robots.txt Tester",
+          description:
+            "Test whether Googlebot or another crawler can access any page. See the exact robots.txt rule, source line, sitemap links, and syntax warnings.",
+        })}
+      />
       <main className="mx-auto max-w-5xl px-4 py-10 pb-16 sm:px-6 sm:py-14">
         <section className="mx-auto mb-8 max-w-4xl">
           <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">

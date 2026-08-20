@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { Share2 } from "lucide-react";
 import { SocialCardAnalyzer } from "@/features/marketing/seo/social/SocialCardAnalyzer";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPublicToolJsonLd } from "@/features/marketing/seo/public-tools/tool-jsonld";
+import { siteConfig } from "@/config/extras/site";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${siteConfig.url}/seo/social-preview` },
   title: "Social Card Preview — SEO Tools",
   description:
     "Preview exactly how your link renders when shared on X, Facebook, and LinkedIn — with instant checks on your Open Graph and Twitter card tags.",
@@ -11,6 +15,14 @@ export const metadata: Metadata = {
 export default function SocialCardPreviewPage() {
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <JsonLd
+        data={buildPublicToolJsonLd({
+          href: "/seo/social-preview",
+          name: "Social Card Preview",
+          description:
+            "Preview exactly how your link renders when shared on X, Facebook, and LinkedIn — with instant checks on your Open Graph and Twitter card tags.",
+        })}
+      />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">

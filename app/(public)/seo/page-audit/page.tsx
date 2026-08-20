@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 import { PageAuditTool } from "@/features/marketing/seo/public-tools/PageAuditTool";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPublicToolJsonLd } from "@/features/marketing/seo/public-tools/tool-jsonld";
+import { siteConfig } from "@/config/extras/site";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${siteConfig.url}/seo/page-audit` },
   title: "Page SEO Audit — SEO Tools",
   description:
     "Scrape any URL and get an instant on-page audit — title, description, headings, canonical, robots directives, and more.",
@@ -11,6 +15,14 @@ export const metadata: Metadata = {
 export default function PageAuditPage() {
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <JsonLd
+        data={buildPublicToolJsonLd({
+          href: "/seo/page-audit",
+          name: "Page SEO Audit",
+          description:
+            "Scrape any URL and get an instant on-page audit — title, description, headings, canonical, robots directives, and more.",
+        })}
+      />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">

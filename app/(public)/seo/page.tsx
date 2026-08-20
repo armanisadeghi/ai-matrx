@@ -34,10 +34,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   MARKETING_PUBLIC_TOOL_CATEGORIES,
+  MARKETING_PUBLIC_TOOLS,
   type MarketingNavEntry,
 } from "@/features/marketing/lib/marketing-nav";
+import { siteConfig } from "@/config/extras/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${siteConfig.url}/seo` },
   title: { absolute: "SEO Tools — AI Matrx" },
   description:
     "A complete suite of AI-powered and scraping-based SEO tools. Analyze meta tags, audit content, research keywords, check backlinks, and more.",
@@ -219,8 +223,24 @@ export default function SeoLandingPage() {
     0,
   );
 
+  // An ItemList of the LIVE tools only, derived from the same registry the
+  // page renders and the sitemap ships — a reserved route can never appear.
+  const toolListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "AI Matrx free SEO tools",
+    numberOfItems: MARKETING_PUBLIC_TOOLS.length,
+    itemListElement: MARKETING_PUBLIC_TOOLS.map((tool, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: tool.label,
+      url: `${siteConfig.url}${tool.href}`,
+    })),
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <JsonLd data={toolListJsonLd} />
       <div className="relative overflow-hidden border-b border-border">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.35] dark:opacity-[0.2] [background-image:linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] [background-size:40px_40px]"

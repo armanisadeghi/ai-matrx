@@ -2,6 +2,7 @@ import { siteConfig } from '@/config/extras/site'
 import { EDU_ORIGIN } from '@/features/education/constants'
 import { getEducationSitemapPaths } from '@/features/education/publishing/sitemap'
 import { MODULE_LANDING_DIRECTORY } from '@/features/auth/components/module-landing/landings/directory'
+import { MARKETING_PUBLIC_TOOLS } from '@/features/marketing/lib/marketing-nav'
 
 // Revalidate hourly; a learn-doc publish busts the education reads via tag.
 export const revalidate = 3600
@@ -54,9 +55,25 @@ export async function GET() {
     priority: '0.8',
   }))
 
+  // Public SEO tool suite — the free anonymous utilities on /seo/*. Derived
+  // from MARKETING_PUBLIC_TOOLS, the same declaration that drives /seo and
+  // /marketing/tools, so a tool is crawlable the moment it ships and a
+  // reserved ("coming-soon") route can never leak into the sitemap. These are
+  // the flagship utility-tool growth surfaces — see
+  // common-docs/systems/ai-matrx-internal-seo/VISION.md.
+  const seoToolUrls = MARKETING_PUBLIC_TOOLS.filter((tool) =>
+    tool.href.startsWith('/seo/')
+  ).map((tool) => ({
+    loc: `${baseUrl}${tool.href}`,
+    changefreq: 'monthly',
+    priority: '0.8',
+  }))
+
   const urls = [
     ...staticUrls,
     { loc: `${baseUrl}/features`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${baseUrl}/seo`, changefreq: 'weekly', priority: '0.8' },
+    ...seoToolUrls,
     ...moduleLandingUrls,
     ...educationUrls,
   ]
