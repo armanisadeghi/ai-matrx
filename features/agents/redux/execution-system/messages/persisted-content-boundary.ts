@@ -21,6 +21,12 @@ function optionalRecord(value: unknown): Record<string, unknown> | undefined {
   return isRecord(value) ? value : undefined;
 }
 
+function persistedPartShape(value: unknown): string {
+  if (!isRecord(value)) return `valueType=${typeof value}`;
+  const discriminator = typeof value.type === "string" ? value.type : "missing";
+  return `type=${discriminator}; keys=[${Object.keys(value).sort().join(",")}]`;
+}
+
 /**
  * Runtime-validates the historical interactive-block shape written before
  * cx_message.content became the generated MessagePart union. This is the one
@@ -104,8 +110,17 @@ export function parsePersistedMessageContent(
       };
     }
 
-    const [part] = parseMessageContent([value]);
-    return { kind: "message_part", part, sourceIndex };
+    try {
+      const [part] = parseMessageContent([value]);
+      if (!part)
+        throw new TypeError("generated parser returned no message part");
+      return { kind: "message_part", part, sourceIndex };
+    } catch (cause) {
+      throw new TypeError(
+        `Invalid chat.message.content[${sourceIndex}]: ${persistedPartShape(value)}; part does not match the generated MessagePart contract`,
+        { cause },
+      );
+    }
   });
 }
 

@@ -14,7 +14,10 @@ describe("persisted message content boundary", () => {
         quizState: {
           title: "Stored quiz",
           originalQuestions: [
-            { question: "Which contract is authoritative?", answer: "Generated" },
+            {
+              question: "Which contract is authoritative?",
+              answer: "Generated",
+            },
           ],
         },
       },
@@ -72,5 +75,21 @@ describe("persisted message content boundary", () => {
         },
       ]),
     ).toThrow();
+  });
+
+  it("reports the actual source index and safe shape for malformed content", () => {
+    expect(() =>
+      parsePersistedMessageContent([
+        { type: "text", text: "Valid first part" },
+        {
+          type: "media",
+          kind: "image",
+          file_id: "file-1",
+          width: undefined,
+        },
+      ]),
+    ).toThrow(
+      "Invalid chat.message.content[1]: type=media; keys=[file_id,kind,type,width]; part does not match the generated MessagePart contract",
+    );
   });
 });

@@ -38,6 +38,22 @@ explicit lock is security-significant. Specifically:
 - `optional_context` — emitted only when `true`.
 - `template` — emitted only when present (`"full" | "compact" | "minimal"`).
 
+### Optimistic message projection
+
+The request union and persisted `MessagePart` union overlap, but they are not
+interchangeable JavaScript objects. Before a submitted request part enters the
+optimistic message slice, `userInputPartToMessagePart` applies JSON semantics
+(including omitting `undefined` object properties) and validates the result
+with the generated `MessagePart` parser. This keeps the transient bubble
+identical to what the network and database can preserve. A projection that is
+not JSON-safe or violates the generated union fails at this boundary with the
+request part's type/kind; malformed state is never admitted to Redux.
+
+Inline media bytes remain a presentation-only exception during that projection:
+they become a local `data:` URL until the server returns the durable `file_id`.
+File-backed media keeps `file_id` as its identity; this boundary never mints or
+persists a signed URL.
+
 ### Reference normalization (`toResourceIdList`)
 
 All `*_ids` fields are **lean id lists** (`string[]`). The FE stores the full

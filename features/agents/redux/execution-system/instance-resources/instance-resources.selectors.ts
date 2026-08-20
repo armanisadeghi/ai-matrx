@@ -14,6 +14,7 @@ import type { RootState } from "@/lib/redux/store";
 import type { ManagedResource } from "@/features/agents/types/instance.types";
 import {
   isMessagePart,
+  parseMessageContent,
   type MessagePart,
   type PreFetchedUrl,
 } from "@/types/python-generated/stream-events";
@@ -203,15 +204,61 @@ export function messagePartToUserInputPart(part: MessagePart): UserInputPart {
   return part.type === "media" ? messageMediaPartToUserInputPart(part) : part;
 }
 
+function requestPartLabel(part: UserInputPart): string {
+  return part.type === "media" ? `${part.type}:${part.kind}` : part.type;
+}
+
+/**
+ * Match the JSON wire/storage semantics before optimistic data reaches Redux,
+ * then enforce the same generated contract used when that data is reloaded.
+ * Optional request fields commonly exist as JavaScript `undefined`; JSON omits
+ * them, while the generated parser correctly rejects a present undefined key.
+ */
+function validateOptimisticMessagePart(
+  requestPart: UserInputPart,
+  candidate: unknown,
+): MessagePart {
+  const label = requestPartLabel(requestPart);
+  let jsonCandidate: unknown;
+
+  try {
+    const serialized = JSON.stringify(candidate);
+    if (serialized === undefined) {
+      throw new TypeError("projection produced no JSON value");
+    }
+    jsonCandidate = JSON.parse(serialized);
+  } catch (cause) {
+    throw new TypeError(
+      `Cannot render optimistic ${label} request part: projection is not JSON-serializable`,
+      { cause },
+    );
+  }
+
+  try {
+    const [messagePart] = parseMessageContent([jsonCandidate]);
+    if (!messagePart) {
+      throw new TypeError("generated parser returned no message part");
+    }
+    return messagePart;
+  } catch (cause) {
+    throw new TypeError(
+      `Cannot render optimistic ${label} request part: projection violates the generated MessagePart contract`,
+      { cause },
+    );
+  }
+}
+
 /**
  * Project a request-side part into the durable shape used by the optimistic
  * message bubble. Inline media bytes are represented by a local data URL until
  * the server replaces them with the stored file/url reference.
  */
 export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
-  if (part.type !== "media") return part;
+  if (part.type !== "media") {
+    return validateOptimisticMessagePart(part, part);
+  }
   if (part.kind === "youtube") {
-    return {
+    return validateOptimisticMessagePart(part, {
       metadata: part.metadata,
       type: "media",
       kind: "youtube",
@@ -219,7 +266,7 @@ export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
       external_url: part.external_url,
       origin: part.origin,
       mime_type: part.mime_type,
-    };
+    });
   }
   const base64Data =
     "base64_data" in part && typeof part.base64_data === "string"
@@ -243,39 +290,39 @@ export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
   };
   switch (part.kind) {
     case "image":
-      return {
+      return validateOptimisticMessagePart(part, {
         ...common,
         type: "media",
         kind: "image",
         width: part.width,
         height: part.height,
-      };
+      });
     case "audio":
-      return {
+      return validateOptimisticMessagePart(part, {
         ...common,
         type: "media",
         kind: "audio",
         duration_ms: part.duration_ms,
         transcription_result: part.transcription_result,
-      };
+      });
     case "video":
-      return {
+      return validateOptimisticMessagePart(part, {
         ...common,
         type: "media",
         kind: "video",
         width: part.width,
         height: part.height,
         duration_ms: part.duration_ms,
-      };
+      });
     case "document":
-      return {
+      return validateOptimisticMessagePart(part, {
         ...common,
         type: "media",
         kind: "document",
         width: part.width,
         height: part.height,
         page_count: part.page_count,
-      };
+      });
   }
 }
 

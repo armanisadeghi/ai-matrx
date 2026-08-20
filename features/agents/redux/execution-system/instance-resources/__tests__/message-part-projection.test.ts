@@ -89,7 +89,43 @@ describe("request/message attachment projection", () => {
       kind: "image",
       url: "data:image/png;base64,YWJj",
     });
+    expect(isMessagePart(optimistic)).toBe(true);
   });
+
+  it("projects a file-id image with omitted optional fields into valid JSON state", () => {
+    const optimistic = userInputPartToMessagePart({
+      type: "media",
+      kind: "image",
+      file_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
+    });
+
+    expect(optimistic).toEqual({
+      type: "media",
+      kind: "image",
+      file_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
+    });
+    expect(isMessagePart(optimistic)).toBe(true);
+  });
+
+  it.each([
+    { type: "media", kind: "audio", file_id: "audio-file" },
+    { type: "media", kind: "video", file_id: "video-file" },
+    { type: "media", kind: "document", file_id: "document-file" },
+    { type: "media", kind: "youtube", url: "https://youtu.be/example" },
+    {
+      type: "text",
+      text: "Nested optional metadata",
+      metadata: { title: "kept", omitted: undefined },
+    },
+  ] satisfies UserInputPart[])(
+    "produces JSON-equivalent generated state for $type:$kind",
+    (requestPart) => {
+      const optimistic = userInputPartToMessagePart(requestPart);
+
+      expect(optimistic).toEqual(JSON.parse(JSON.stringify(optimistic)));
+      expect(isMessagePart(optimistic)).toBe(true);
+    },
+  );
 
   it("projects persisted media through a complete discriminated request member", () => {
     expect(

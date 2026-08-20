@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-18`
+**Last updated:** `2026-08-20`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -353,6 +353,15 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-20` — **Optimistic message parts now obey the generated persisted
+  contract before entering Redux.** Request parts are projected through JSON
+  semantics (including omission of JavaScript `undefined` object properties)
+  and then parsed as generated `MessagePart` values at the shared
+  request→message choke point.
+  This prevents attachment-only transient state from crashing message renders
+  before and after server id promotion. Strict persisted-content failures now
+  report the real array index plus safe discriminator/key diagnostics instead
+  of re-wrapping every entry as misleading `content[0]`.
 - `2026-08-18` — **`auto_context_disabled` is a synced behavior field.** The
   live `agx_sync_linked_agents_reviewed` UPDATE already copied it; `AGENT_SYNC_FIELDS`
   now lists it so Pull/Push comparison cannot call two agents identical while
