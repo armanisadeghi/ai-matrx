@@ -40,6 +40,9 @@ export function MessageBubble({
 
   // Get sender display name
   const senderName =
+    (typeof message.metadata?.actor_label === "string"
+      ? message.metadata.actor_label
+      : null) ||
     sender?.display_name ||
     sender?.email?.split("@")[0] ||
     "Unknown";

@@ -70,6 +70,7 @@ import {
   REVIEW_WORKSTREAMS,
   type ReviewTriage,
 } from "@/features/admin/agent-review/triage";
+import type { ReviewStatus } from "@/features/admin/agent-review/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_AGENT_REVIEW_SURFACE_NAME = "matrx-admin/agent-review";
@@ -276,7 +277,7 @@ export interface AdminAgentReviewSampleEntry {
   id: string;
   title: string;
   url: string;
-  status: "pending" | "changes_requested" | "approved" | "archived";
+  status: ReviewStatus;
   source: string;
   instructions: string;
   feedback: string | null;

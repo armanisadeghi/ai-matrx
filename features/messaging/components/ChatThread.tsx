@@ -234,11 +234,16 @@ export function ChatThread({
                 {/* Messages for this date */}
                 <div className="space-y-2">
                   {group.messages.map((message, index) => {
-                    const isOwn = message.sender_id === userId;
+                    const effectiveActor = message.metadata?.actor_kind;
+                    const isOwn =
+                      effectiveActor === "human" ||
+                      (!effectiveActor && message.sender_id === userId);
                     const prevMessage = group.messages[index - 1];
                     const showAvatar =
                       !isOwn &&
-                      (!prevMessage || prevMessage.sender_id !== message.sender_id);
+                      (!prevMessage ||
+                        prevMessage.sender_id !== message.sender_id ||
+                        prevMessage.metadata?.actor_kind !== effectiveActor);
 
                     return (
                       <MessageBubble

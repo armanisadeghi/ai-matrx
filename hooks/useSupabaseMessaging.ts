@@ -679,6 +679,7 @@ export function useConversations(
                   edited_at: null,
                   client_message_id: null,
                   action_data: null,
+                  metadata: {},
                 }
               : null,
             unread_count: conv.unread_count,
