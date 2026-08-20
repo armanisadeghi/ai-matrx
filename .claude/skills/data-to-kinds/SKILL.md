@@ -223,7 +223,45 @@ boundary. From there, three projections:
 
 ## SDK wishlist (Stage A agents append friction here; the SDK build consumes it)
 
-- (empty — first run pending)
+From the search pilot (2026-08-20):
+
+1. **No `@kind` decorator / `KindModel` base exists.** Every model hand-carries
+   `Field(alias="__kind")` + `ConfigDict(populate_by_name=True,
+   serialize_by_alias=True)` — leading-underscore field names are private in
+   pydantic, so the alias is the only way to declare the discriminator. The SDK
+   base must own this.
+2. **No registry→TypeScript codegen exists.** matrx-frontend has HAND-WRITTEN
+   per-kind TS files (`features/content-ir/kinds/*.ts`) plus a drift checker
+   (`scripts/shape/check-content-ir-twin.ts`) — exactly the twin-maintenance
+   the plan (§4.3) wants deleted. Stage A cannot "verify TS generation picks
+   the kinds up" until this generator is built.
+3. **Registration is a per-family hand-rolled script.** The worked pattern is
+   `aidream/scripts/seed_site_intake_kinds.py` (ORM upserts + `check_schema`
+   example validation + `schema_fingerprint` + `set_kind_activation` +
+   `invalidate_kind_catalog_cache`); the pilot copied it into
+   `seed_search_kind_family.py` and added `kind_edge` upserts. The SDK's
+   idempotent sync should own all of it.
+4. **The activation dual gate orders the stages.** `set_kind_activation`
+   REFUSES a kind with no active role='output' `kind_component` — so Stage A
+   necessarily ends with kinds seeded INACTIVE, and Stage B's component work
+   completes activation (re-run the family seed script after components ship).
+   This is correct behavior; the skill's Stage A step 6 must not promise
+   activation.
+5. **`_touch_row` bumps `kind_definition.version` on every update** — re-read
+   the version after writing the definition before pinning `kind_example.
+   kind_version`, or examples validate against a stale versioned ref.
+6. **`kind_example.source` is CHECK-constrained** to
+   `authored|captured|migrated|synthetic` — use `captured` for examples
+   translated from real provider payloads.
+7. **A live consumer can already hold your slug.** `faq_item` existed
+   (inactive, nested under `seo_package.faq`) — the merge law resolved it
+   (source/position went optional so both consumers fit one kind), but the SDK
+   sync must diff-and-report on slug collision, never blind-update.
+8. **Changing an ACTIVE kind's schema changes live node verification.** Any
+   node declaring `output_kind=<slug>` is verified against the registry schema
+   on every run (`output_kind_ok`), and engram confirmation counts it — a
+   collection-schema supersede MUST ride the same change that repoints the
+   emitters (the pilot gates it behind `seed_search_kind_family.py --cutover`).
 
 ## Active pilots
 
