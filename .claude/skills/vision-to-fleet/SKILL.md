@@ -10,7 +10,7 @@ description: >-
   for a fleet of agents", "create the vision and plan for X", "do what we did for education for
   X", or hands over rough ideas for a big feature area and wants them turned into an executable
   multi-agent plan. Also use it when picking up ANY intermediate artifact of this pipeline (a
-  VISION doc, a COMPETITIVE_INSIGHTS doc, a roadmap, an education-projects-style briefs folder)
+  VISION doc, a COMPETITIVE_INSIGHTS doc, a roadmap, a work-packages briefs folder)
   and being asked to carry it forward. NOT for single features inside a live system
   (build-sub-feature) or auditing one existing feature (feature-deep-dive) — this is for
   system-scale work that ends in many parallel agents.
@@ -19,9 +19,10 @@ description: >-
 # Vision → Fleet: the discovery-to-execution pipeline
 
 The paved road from "Arman has some ideas about X" to "N agents are building X in parallel from
-briefs they can execute blind." First run: the Education Hub (2026-06/07) — study
-`docs/proposals/education-projects/` as the worked example; every template referenced below has
-a live instance there.
+briefs they can execute blind." First run: the Education Hub (2026-06/07) — its converged
+record, including what went wrong the second time around, is
+`common-docs/projects/education-platform/STATE.md`; every template referenced below names a live
+worked example in `references/templates.md`.
 
 **The one-sentence job:** produce documents so good that a capable agent, handed one brief and
 the repo, ships the right thing without ever talking to you — and keep every document truthful
