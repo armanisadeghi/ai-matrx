@@ -106,6 +106,41 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-20 — **THE GENDER CHAIN: a host is never voiced against their own
+  gender.** Reported symptom: an episode where one host addressed the other as
+  "Sarah" while that voice was audibly male. The gender was KNOWN and then
+  thrown away — when the user doesn't pin a cast, the pipeline SUGGESTS one
+  (`_speaker_names_json` → `_default_cast`, which pairs every name with a
+  gender), sends only the NAMES to the script agent, and discards the genders;
+  the audio stage then re-derived the cast from the dialogue labels with no
+  gender at all, so every speaker normalized to `neutral` and drew from the
+  MIXED voice pool. Measured against the real Google catalog: **152/200
+  episodes voiced Sarah/Owen against their gender** — a coin flip per host on
+  every run that didn't pin a cast (API callers, education/flashcards audio,
+  any run whose cast preview failed). Studio-form runs were unaffected (the
+  preview supplies genders), which is why every persisted row looks correct and
+  this stayed invisible. Fix, in `podcast_generator.py`: gender now resolves
+  through a deterministic chain — `request.speakers` → the agent's
+  `<speaker_settings>` → a name table (`_GENDER_BY_NAME`) — *before* any voice
+  is drawn, so a resumed run in a new worker re-derives the identical cast; an
+  unresolved name still falls through to neutral but now says so loudly.
+  `_verify_cast_genders` is the last line before the paid TTS call: it repairs
+  any remaining mismatch deterministically and screams (it should never fire),
+  while a voice the USER pinned is honored, noted, never overwritten. The
+  script agent is now told each host's **gender**, not just their name, so the
+  written dialogue stops saying "he" about a host we voice as female. 21/21
+  checks incl. the reported scenario, determinism, guard repair, and
+  explicit-pin preservation.
+- 2026-08-20 — **Podcasts is fully on the Mandate system, and now has a door to
+  it.** Verified: zero hardcoded agent UUIDs in either half; every agent class
+  in `podcast_generator.py` carries a `mandate_key` and runs through
+  `run_mandated`; every FE-run agent resolves via `resolveMandate`. 36 live
+  mandates across `podcast.*` + `podcast_client.*`. The Studio now links to
+  **`/agents/mandates?feature=podcast`** ("Podcast agents") — before this the
+  surface named none of that and there was no way in from the feature.
+  Rebinding, forking the system agent into your own, and settings-only
+  overrides are all handled by the platform surface; see
+  `common-docs/systems/mandates/FEATURE.md`.
 - 2026-08-18 — **THE USER-INPUT LAW fix: source resolvers no longer double-ship scraped/URL content as `user_input`.** `useSourceResolvers.ts` (`resolveWebsite`, `resolveYouTube`) sent the same value via both `userInput` and `variables` (`scraped_content` / `youtube_url`) — pure duplication, since both target mandates (`podcast_client.web_content_extractor`, `podcast_client.youtube_research`) already declare and consume those variables via `{{...}}` placeholders (verified live). Removed the redundant `userInput` fields; the variables carry the content exclusively.
 
 - 2026-08-18 — **The blog and show-notes agents write MARKDOWN; the JSON middleman is gone (Arman's call).** Both answered with a structured envelope (`{title, intro, sections[], resources[]}` / `{key_takeaways[], topics[], links[], people[]}`) that `articleMarkdown.ts` flattened into markdown the instant it landed — and markdown is what `pc_articles.content_markdown` stores, so **nothing in the product ever read that structure**. The cost was the entire live view: the floating window renders markdown as it streams, but an un-kinded JSON blob has nothing to show until it is parsed at the end, so the user watched an EMPTY window for the whole run and then got raw JSON (FOUND_DEFECTS D170). Per the Class E rule — a kind is earned only when the output is consumed STRUCTURALLY — the structure was not earning anything, so it was removed rather than promoted to a kind. Both agents rewritten through `agent_author` (`podcast_blog_writer`, `podcast_show_notes_generator`) with the same anti-fabrication, resources-integrity and timestamp-estimation rules intact; the blog's `output_schema` cleared and both mandates' `output_kind` set to `text`. The blog's first line is a single `# ` H1 that **owns the title and the public slug** (`headingTitle()` reads it off the markdown itself, so the title can never drift from the body the reader sees); show notes start at `## Key takeaways` and never emit an H1. `articleMarkdown.ts` is DELETED. **Platform half:** `runHeadlessAgentJson` gained `expect: "json" | "text"` — a prose agent's product is its answer text, and asking the JSON primitive for it failed a run that answered perfectly. Live-verified end to end: show notes and a blog post generated on real episodes, each rendered as formatted markdown in the floating window (headings, bold timestamps, bullets — no JSON), saved with the H1-derived title and slug. **Known unrelated defect seen while testing:** regenerating an article row created by ANOTHER user fails RLS and surfaces as a bare "Generation failed." toast — the agent ran and its output is lost. That is Access-Gate work, not article work.
