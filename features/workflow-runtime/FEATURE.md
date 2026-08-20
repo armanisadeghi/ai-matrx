@@ -1,7 +1,10 @@
 # Workflow Runtime — the surface where workflows RUN
 
-**Status:** Phase 1 (the plumbing) — live. Phases 2+ (Run Surfaces, the builder, AI modes) tracked
-in the cross-repo plan.
+**Status:** Phases 1–5 SHIPPED and production-proven — plumbing, Run Surfaces, the run stage, the
+designer, actions/HITL. 263 runs in the last 14 days across 92 definitions. Remaining work is
+doors that were never built, not plumbing (cluster state:
+`common-docs/projects/workflow-runtime/STATE.md`; this repo's slice:
+`docs/handoffs/workflow-runtime-ui.md`). AI-authored surfaces (PLAN R6 step 3+) are still ahead.
 **Cross-repo system-of-record:** `common-docs/systems/workflow-runtime-ui/PLAN.md` — the rulings
 (R1–R12), the scale target (20–100 nodes, nested runs), and the phase plan live THERE; this doc is
 the code contract for what exists in this repo. Read the plan before extending this feature.

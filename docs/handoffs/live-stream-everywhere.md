@@ -100,11 +100,18 @@ client-launched run. The gap is 100% client consumption posture:
 
 ## Remaining work
 
-**The offender worklist lives in
-[`live-run-streaming-sweep.md`](./live-run-streaming-sweep.md)** — a verified,
-ranked inventory (file + line + route + class A–E + fix + effort, 2026-08-11
-sweep against THE FLOATING LAW). Take work from there; this doc stays the
-vision + primitives + recipe.
+**THE SWEEP IS FINISHED.** `live-run-streaming-sweep.md` — the ranked offender
+inventory (file + line + route + class A–E, 2026-08-11) — carried every section
+§1–§8 to DONE, closed D170 both halves, and its last item (`useResearchStream`
+onto `adoptForeignStream`) landed. Its own stated deletion condition was met, so
+it was deleted on 2026-08-20 per the doc-convergence sweep; git holds the
+history. The durable findings it produced live where they are enforced: the
+`__kind`-FIRST law in `features/content-ir/FEATURE.md`, the per-surface fixes in
+each feature's own change log.
+
+**This doc is now the whole thing** — the vision, the primitives, and the recipe.
+Cluster state: [`common-docs/projects/workflow-runtime/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/workflow-runtime/STATE.md)
+§4.8 (the primitives backlog — the standing job).
 
 One item that sweep does not own, because it is server-side:
 

@@ -1,88 +1,102 @@
-# Workflow Runtime UI — where workflows RUN, and where their run pages are designed
+---
+status: active
+updated: 2026-08-20
+repos: [matrx-frontend, aidream]
+vision: [/Users/armanisadeghi/code/common-docs/projects/workflow-runtime/STATE.md]
+---
 
-**status:** open — core product SHIPPED and production-proven; tails + two in-flight chips below
-**THE MASTER DOC for this feature.** The server half (`aidream docs/handoffs/workflow-runtime-ui-server.md`)
-and the kinds campaigns (`aidream docs/handoffs/workflow-node-kinds-gap.md`,
-`podcast-media-shapes.md`) are satellites of this one — grooming any of them updates this list.
-**vision (cross-repo, read first):** `common-docs/systems/workflow-runtime-ui/PLAN.md` (R1–R12
-settled; §1 requirements, §4.2 scale doctrine, the podcast acceptance bar — never let it rot).
-**code contract:** `features/workflow-runtime/FEATURE.md` (parts table, invariants, change log).
+# Workflow Runtime — the surface where a normal person runs a workflow
+
+**status:** open — the core product is SHIPPED and production-proven (263 runs in the last 14
+days); the gaps below are doors that were never built, not plumbing that was never finished.
+
+**🚨 CLUSTER STATE — READ FIRST:**
+[`common-docs/projects/workflow-runtime/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/workflow-runtime/STATE.md)
+— Arman's merged vision (including the 2026-08-19 charter: workflows replace ~70% of the UI, so
+**work on the primitives**), the verified state of every part, the full ordered pending list, the
+question ledger, and the census. This handoff is this repo's slice of that list.
+
+**Vision:** `common-docs/systems/workflow-runtime-ui/PLAN.md` (R1–R12 settled — read it for
+mechanics, never for vocabulary).
+**Code contract:** `features/workflow-runtime/FEATURE.md` (parts table, invariants, change log).
+**Server half:** `aidream docs/handoffs/workflow-runtime-ui-server.md`.
+**Sister cluster:** `common-docs/projects/matrx-dynamic-agent-graph/STATE.md` — Workflows (the
+BUILDING side). This cluster is the USING side; Arman drew that line on 2026-08-19.
 
 One line: a generic, author-designed live run experience — you see what you'll get from second
 zero, watch every step work with real signal, and the deliverables land as real components.
 
-## The whole feature, part by part (global map — keep this section true)
+## THE UPSTREAM RULING (Arman, 2026-08-18) — the kinds MODEL is broken
 
-| Part | Where | State |
-|---|---|---|
-| List | `/workflows/all` (canonical entity-list shell; `/workflows` reserved for marketing → redirects) | LIVE |
-| Run stage | `/workflows/[id]` — run form → RunHero ("You'll get"), RunJourney (THE PLAN), activity feed, deliverables, failure card | LIVE, prod-proven end-to-end (Study Pack, $0.30/1:58) |
-| Run page designer | `/workflows/[id]/design` — build left, real preview right (real run or wound sample run); named widths, no coordinates | LIVE |
-| Run history | `/workflows/runs/[runId]` — deep link + list door | LIVE |
-| Feature internals | `features/workflow-runtime/` — adapter (replay+SSE+poller), tree slice (keeps node_stream deltas), 12-lane budget, trigger points | LIVE |
-| Server events | matrx-graph vocabulary + `workflow_events.py` node emitters; generated TS types (one artifact, both apps) | LIVE (see server handoff for the 2 open items) |
-| Kinds/rendering | Every Study Pack kind ACTIVE with a web component (incl. `agent_result`, `ingested_sources`, `study_notes`); media 4 live; `KindInstanceRender variant="bare"` per the wrapper law | LIVE — but see THE UPSTREAM RULING below |
-| Studio (Vite) | edits DEFINITIONS — adjacent app, not this feature; shares the generated event types | n/a |
-
-## 🚨 THE UPSTREAM RULING (Arman, 2026-08-18) — the kinds MODEL is broken
-
-`common-docs/systems/content-ir-system/WORKFLOW_KINDS_AUDIT.md` — auto-minted contract kinds
-(986 vs 267 real), workflow payloads carrying no `__kind`, undeclarable scalar kinds, no
-`markdown` kind, agent output losing its kind at the boundary. **The runtime UI's rendering
-rests on that model.** Nothing here re-executes the old per-node burn-down; when the audit's
-decisions land, this feature consumes them. The in-flight universal-renderer chip
-(`task_fb0b4ed6`) is the FE half of the same problem.
-
-## In flight (separate sessions — do not duplicate)
-
-- `task_e9503c14` — agent steps stream their TOKENS onto `node_stream` (server; today only
-  markers/progress flow mid-step for agent nodes).
-- `task_fb0b4ed6` — universal Shape renderer (partial commits landed: `b64407336`,
-  `a8fb617bd`).
+`common-docs/systems/content-ir-system/WORKFLOW_KINDS_AUDIT.md`. **The runtime's rendering rests
+on that model.** Nothing here re-executes the old per-node burn-down; when the audit's decisions
+land, this feature consumes them.
 
 ## Open (this repo, ordered)
 
-1. **Research-lite parity proof** — the last unproven surface complexity class (tabs/pages +
+1. **Triggers have no door** 🚨 **#1, Arman 2026-08-19.** Schedules and webhooks are fully built
+   and deployed on the server (7 endpoints + a `CronWatcher` in the running worker) and have
+   **never been used once** — `workflow.trigger` and `workflow.trigger_fire` are both empty, and
+   this repo has no trigger UI at all. **Chipped 2026-08-19** with the full inventory; see STATE
+   §4.1. (Do not confuse `workflow.trigger` — what STARTS a run — with `trigger-points.ts`, a
+   named moment INSIDE a run.)
+2. **A person cannot stop their own run.** `pause` / `resumePaused` / `cancel` are wired and
+   server-proven, but `WorkflowRunBoard` — the only surface rendering those buttons — is mounted
+   ONLY for nested child runs (`ReadoutView.tsx:430`).
+3. **There is no runs list.** `app/(core)/workflows/runs/` holds only `[runId]`, for 379 real
+   runs. Build it against the server's `GET /runs/stream` run-announce channel (live, zero
+   consumers) — **not** Supabase Realtime: `workflow.run` is not in the publication.
+4. **151 of 154 workflows have no designed run page** — everything but Study Pack, Podcast and one
+   Default falls back to `deriveDefaultSurfaceConfig`. Decide whether the derived default is good
+   enough by looking at real runs (STATE §4.4, Q7).
+5. **The failure experience is unset** — 133 of 379 runs ended errored or failed. Read the last 50
+   before adding copy to `explainRunFailure` (STATE §4.6, Q5).
+6. **`executeNode` per-node `inputs` collection UI** (Phase 4 tail) — the verb is wired, the
+   input-gathering UI is not.
+7. **Study-pack composite component** — the `study_pack_set` kind exists live and active; the
+   deliverable page still composes `flashcard_set` + `quiz_set` by hand.
+8. **Research-lite parity proof** — the last unproven surface complexity class (tabs/pages +
    DB-backed tables; PLAN Phase 6's second half).
-2. **`/workflows` marketing page** — route reserved + redirect live; the page itself unbuilt
-   (chipped: see Dispatched).
-3. **Pause / Stop have no door on the run stage.** `useWorkflowRunControls.pause` /
-   `resumePaused` / `cancel` are wired and server-proven, but `WorkflowRunBoard` — the only
-   surface that renders those buttons — is mounted ONLY for nested child runs
-   (`ReadoutView`). A person watching their own run at `/workflows/[id]` cannot stop it.
-4. **Realtime backstop** — consume `hooks/useRunListRealtime.ts` on the first runs-LIST
-   surface (verify `workflow.run` is in the `supabase_realtime` publication first).
-5. **executeNode per-node `inputs` collection UI** (Phase 4 tail).
-6. **Study-pack composite component** — deliverable page composes `flashcard_set` +
-   `quiz_set`; a true `study_pack_set` composite remains open.
+
+## In flight (separate sessions — do not duplicate)
+
+- `task_e9503c14` — agent steps stream their TOKENS onto `node_stream` (server).
+- `task_fb0b4ed6` — universal Shape renderer (partial commits: `b64407336`, `a8fb617bd`).
+- `task_c739e725` — the trigger door (item 1).
 
 ## Server-owned (see `aidream docs/handoffs/workflow-runtime-ui-server.md`)
 
-Per-invocation stream identity on `node_stream` (fan-out sibling lanes — deliberate lockstep
-change) · `result_ref` NodeSpec declaration (AWAITS ARMAN's ruling).
+Per-invocation stream identity on `node_stream` (**the FE half is already built and tested** —
+`invocationKeyOf`, `stream-meta.test.ts`, `invocation-key.test.ts`; only the emitter is missing
+the fields) · `result_ref` NodeSpec declaration (AWAITS ARMAN).
 
 ## Decisions Arman owes
 
-① `result_ref` ("big output lives at link_kind/link_id — fetch, don't stream") — recommended
-yes, added the way `output_kind` was. ② Lexicon: run-page things are **Readouts** in code; the
-UI now speaks plain language — keep the split or reunite. ③ The WORKFLOW_KINDS_AUDIT decisions
-(his doc, his call).
+Tracked in the cluster ledger — STATE §5, Q1–Q7. In this repo's words: ① `result_ref` ②
+`ai.transcribe` naming ③ Readouts vs the UI's plain language ④ "the builder" naming two systems
+⑤ what a failed run should say ⑥ who else can run a workflow you built ⑦ is the derived default
+run page good enough.
+
+## Corrected 2026-08-20 (doc convergence — do not re-open)
+
+- ~~"`/workflows` marketing page unbuilt"~~ — **built.** `WorkflowsLanding.tsx` (165 lines) is
+  wired at `app/(core)/workflows/page.tsx` with the guest / signed-in split.
+- ~~"Consume `useRunListRealtime` on the first runs-LIST surface"~~ — **wrong path.** The hook is
+  already consumed (`features/podcasts/studio/runs/useStudioRuns.ts`), its precondition fails
+  (`workflow.run` is not in `supabase_realtime`), and the server shipped the canonical channel.
+  Superseded by item 3.
 
 ## Recently shipped (compressed; details in FEATURE.md change log)
 
 2026-08-19: `useWorkflowRunControls` typed per-verb against the generated OpenAPI paths (the 6
 `as never` casts gone) — and the casts were hiding a live defect: a free-text Pause & Ask answer
-was sent as a bare string where `ResumeRunRequest.resume_value` is an object, so it now travels
-as `{ answer }`.
+was sent as a bare string where `ResumeRunRequest.resume_value` is an object.
 
 2026-08-16/17: Phases 1–5 (adapter, slice, lanes, surfaces, drag builder, actions/HITL, Study
 Pack + Podcast pinned proofs). 2026-08-18/19: run stage rebuilt (promise-first hero, full plan,
-real activity feed, deliverables, humane failure card; slice keeps `node_stream` deltas — the
-spinner-forever root cause); designer rebuilt (no coordinates, real/sample preview); permanent
-routes + canonical list; Study Pack run form (`materials` node) + projection lane onto real
-kinds; org fix (body scope accepted + X-Organization-Id header — org-less runs made every
-agent step refuse); full kind coverage incl. `agent_result`/`ingested_sources`/`study_notes`;
-generated TS event types both apps; autogen→web; server stream fixes (tool lifecycle + human
-message on frames, structured warnings, parseable marker summaries, heartbeat no longer erases
-the live panel); wrapper-law `variant="bare"`; USER-INPUT LAW fixes in content-ir; COPPA
-signup age screen; Study Pack surface fixture re-pinned.
+real activity feed, mid-run emissions, deliverables, humane failure card); designer rebuilt (no
+coordinates, real/sample preview); permanent routes + canonical list; Study Pack run form +
+projection lane onto real kinds; org fix (body scope + `X-Organization-Id`); full kind coverage
+incl. `agent_result` / `ingested_sources` / `study_notes`; generated TS event types both apps;
+autogen→web; server stream fixes; wrapper-law `variant="bare"`; USER-INPUT LAW fixes in
+content-ir; COPPA signup age screen.
