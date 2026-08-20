@@ -12,7 +12,8 @@ import {
   usePageWebAnalytics,
 } from "@/features/marketing/data/hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import type { MarketingPage } from "@/features/marketing/types";
 import { webAnalyticsTotals } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -36,7 +37,7 @@ import {
 import {
   GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
   assertGoogleAnalyticsCampaignActive,
-  isGoogleAnalyticsCampaignActive,
+  canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
@@ -54,6 +55,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   // Shared query cache — the PageWorkspace surface scope (ga4_metrics) reads
   // the exact same rows this card renders.
   const analytics = usePageWebAnalytics(site.id, page.id);
@@ -70,7 +72,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   const integrations = parseSiteIntegrations(site.integrations);
   const ga4Binding = integrations.googleAnalytics4;
   const ga4Enabled = ga4Binding.enabled;
-  const campaignActive = isGoogleAnalyticsCampaignActive();
+  const campaignActive = canUseGoogleAnalytics(isSuperAdmin);
   const bindingDiagnosis = (() => {
     if (
       !ga4Binding.enabled ||
@@ -101,8 +103,10 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
     setSyncing(true);
     setSyncFailure(null);
     try {
-      assertGoogleAnalyticsCampaignActive();
-      await syncSiteAnalytics(dispatch, site.id, site.organization_id);
+      assertGoogleAnalyticsCampaignActive(isSuperAdmin);
+      await syncSiteAnalytics(dispatch, site.id, site.organization_id, {
+        isSuperAdmin,
+      });
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
       });

@@ -36,7 +36,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { describeBackendFailure } from "@/lib/api/errors";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -54,7 +55,7 @@ import type { MarketingSite } from "@/features/marketing/types";
 import {
   GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
   assertGoogleAnalyticsCampaignActive,
-  isGoogleAnalyticsCampaignActive,
+  canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
 
 export function CollectionStatusPanel({
@@ -66,12 +67,13 @@ export function CollectionStatusPanel({
 }) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const [running, setRunning] = useState<string | null>(null);
 
   const status = useCollectionStatus(site, sitePath);
 
   const rows = useMemo(() => status.data ?? [], [status.data]);
-  const analyticsCampaignActive = isGoogleAnalyticsCampaignActive();
+  const analyticsCampaignActive = canUseGoogleAnalytics(isSuperAdmin);
   const attention = rows.filter(
     (row) => row.health === "failing" || row.health === "not_connected",
   );
@@ -82,8 +84,10 @@ export function CollectionStatusPanel({
       if (row.key === "gsc") {
         await syncGscSearchPerformance(dispatch, site.id, site.organization_id);
       } else if (row.key === "ga4") {
-        assertGoogleAnalyticsCampaignActive();
-        await syncSiteAnalytics(dispatch, site.id, site.organization_id);
+        assertGoogleAnalyticsCampaignActive(isSuperAdmin);
+        await syncSiteAnalytics(dispatch, site.id, site.organization_id, {
+          isSuperAdmin,
+        });
       } else {
         return;
       }

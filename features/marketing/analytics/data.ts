@@ -95,12 +95,12 @@ export async function syncSiteAnalytics(
   dispatch: AppDispatch,
   siteId: string,
   organizationId: string,
-  options: { windowDays?: number } = {},
+  options: { windowDays?: number; isSuperAdmin?: boolean } = {},
   callbacks: AnalyticsSyncCallbacks = {},
 ): Promise<AnalyticsSyncResult> {
   // Frontend safety layer. aidream independently refuses the same request so
   // a stale client or direct API call cannot bypass the campaign pause.
-  assertGoogleAnalyticsCampaignActive();
+  assertGoogleAnalyticsCampaignActive(options.isSuperAdmin === true);
   let runId: string | null = null;
   let streamError: Error | null = null;
   const response = await dispatch(

@@ -2,15 +2,17 @@ import {
   GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
   GOOGLE_ANALYTICS_CAMPAIGN_PHASE,
   assertGoogleAnalyticsCampaignActive,
-  isGoogleAnalyticsCampaignActive,
+  canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
 
 describe("Google Analytics OAuth campaign gate", () => {
-  it("stays closed while the Workspace verification is open", () => {
-    expect(GOOGLE_ANALYTICS_CAMPAIGN_PHASE).toBe("workspace_review");
-    expect(isGoogleAnalyticsCampaignActive()).toBe(false);
-    expect(() => assertGoogleAnalyticsCampaignActive()).toThrow(
+  it("allows internal testers while keeping normal users closed", () => {
+    expect(GOOGLE_ANALYTICS_CAMPAIGN_PHASE).toBe("internal_test");
+    expect(canUseGoogleAnalytics(true)).toBe(true);
+    expect(canUseGoogleAnalytics(false)).toBe(false);
+    expect(() => assertGoogleAnalyticsCampaignActive(false)).toThrow(
       GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
     );
+    expect(() => assertGoogleAnalyticsCampaignActive(true)).not.toThrow();
   });
 });

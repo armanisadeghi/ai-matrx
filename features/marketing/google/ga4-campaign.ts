@@ -7,21 +7,23 @@
  * the Workspace verification is stable.
  */
 
-export type GoogleAnalyticsCampaignPhase =
-  "workspace_review" | "analytics_verification" | "approved";
+export type GoogleAnalyticsCampaignPhase = "internal_test" | "approved";
 
 export const GOOGLE_ANALYTICS_CAMPAIGN_PHASE: GoogleAnalyticsCampaignPhase =
-  "workspace_review";
+  "internal_test";
 
 export const GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON =
-  "Google Analytics activation is paused while the separate Google Workspace verification remains open. No Analytics authorization or data collection will run.";
+  "Google is still reviewing AI Matrx's Analytics permission. Until it is approved, connecting and refreshing Google Analytics is limited to internal test accounts.";
 
-export function isGoogleAnalyticsCampaignActive(): boolean {
-  return GOOGLE_ANALYTICS_CAMPAIGN_PHASE !== "workspace_review";
+/** May THIS user authorize or manually refresh the unapproved GA4 scope? */
+export function canUseGoogleAnalytics(isSuperAdmin: boolean): boolean {
+  return GOOGLE_ANALYTICS_CAMPAIGN_PHASE === "approved" || isSuperAdmin;
 }
 
-export function assertGoogleAnalyticsCampaignActive(): void {
-  if (!isGoogleAnalyticsCampaignActive()) {
+export function assertGoogleAnalyticsCampaignActive(
+  isSuperAdmin: boolean,
+): void {
+  if (!canUseGoogleAnalytics(isSuperAdmin)) {
     throw new Error(GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON);
   }
 }

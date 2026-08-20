@@ -100,7 +100,7 @@ import { GOOGLE_ANALYTICS_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 import {
   GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
   assertGoogleAnalyticsCampaignActive,
-  isGoogleAnalyticsCampaignActive,
+  canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
@@ -110,6 +110,7 @@ import {
   GOOGLE_SEARCH_CONSOLE_PROVIDER,
 } from "@/features/marketing/lib/provider-names";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { isJsonObject } from "@/types/json";
 import {
   listUrlChangeEvidence,
@@ -226,6 +227,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
   const apiBaseUrl = useAppSelector(selectResolvedBaseUrl);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const google = useGoogleAPI();
@@ -506,7 +508,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     if (!propertyRef) return;
     setRecoveringGa4(true);
     try {
-      assertGoogleAnalyticsCampaignActive();
+      assertGoogleAnalyticsCampaignActive(isSuperAdmin);
       let connectionId = ga4BindingDiagnosis?.recoverableConnectionId ?? null;
       if (!connectionId) {
         if (!ga4DisclosureAccepted) {
@@ -585,7 +587,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const authorizeGoogleAnalytics = async (owner: "organization" | "user") => {
     setAuthorizingGa4Owner(owner);
     try {
-      assertGoogleAnalyticsCampaignActive();
+      assertGoogleAnalyticsCampaignActive(isSuperAdmin);
       if (!ga4DisclosureAccepted) {
         throw new Error(
           "Confirm the read-only Google Analytics disclosure before continuing.",
@@ -947,6 +949,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
                     />
                   ) : key === "googleAnalytics4" ? (
                     <Ga4CampaignPanel
+                      isSuperAdmin={isSuperAdmin}
                       diagnosis={ga4BindingDiagnosis}
                       hasAnalyticsAccess={(
                         googleInventory.data?.connections ?? []
@@ -1094,6 +1097,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
 }
 
 function Ga4CampaignPanel({
+  isSuperAdmin,
   diagnosis,
   hasAnalyticsAccess,
   recovering,
@@ -1103,6 +1107,7 @@ function Ga4CampaignPanel({
   onRecover,
   onAuthorize,
 }: {
+  isSuperAdmin: boolean;
   diagnosis: GoogleResourceBindingDiagnosis | null;
   hasAnalyticsAccess: boolean;
   recovering: boolean;
@@ -1112,7 +1117,7 @@ function Ga4CampaignPanel({
   onRecover: () => void;
   onAuthorize: (owner: "organization" | "user") => void;
 }) {
-  const campaignActive = isGoogleAnalyticsCampaignActive();
+  const campaignActive = canUseGoogleAnalytics(isSuperAdmin);
   const canRebind = Boolean(diagnosis?.recoverableConnectionId);
   const needsAuthorization = Boolean(diagnosis?.blocking && !canRebind);
 

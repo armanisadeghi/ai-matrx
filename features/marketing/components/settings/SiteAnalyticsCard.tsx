@@ -20,7 +20,8 @@ import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { extractErrorMessage } from "@/utils/errors";
 import { BackendFailureDetails } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -42,7 +43,7 @@ import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import {
   GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
   assertGoogleAnalyticsCampaignActive,
-  isGoogleAnalyticsCampaignActive,
+  canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
@@ -66,7 +67,8 @@ function SiteAnalyticsCardContent({ site }: { site: MarketingSite }) {
   const organizationId = site.organization_id;
   const ga4Binding = parseSiteIntegrations(site.integrations).googleAnalytics4;
   const ga4Enabled = ga4Binding.enabled;
-  const campaignActive = isGoogleAnalyticsCampaignActive();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const campaignActive = canUseGoogleAnalytics(isSuperAdmin);
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const googleInventory = useGoogleConnectionInventory();
@@ -120,8 +122,10 @@ function SiteAnalyticsCardContent({ site }: { site: MarketingSite }) {
     setSyncing(true);
     setSyncFailure(null);
     try {
-      assertGoogleAnalyticsCampaignActive();
-      await syncSiteAnalytics(dispatch, siteId, organizationId);
+      assertGoogleAnalyticsCampaignActive(isSuperAdmin);
+      await syncSiteAnalytics(dispatch, siteId, organizationId, {
+        isSuperAdmin,
+      });
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(siteId),
       });
