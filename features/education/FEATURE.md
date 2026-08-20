@@ -1,15 +1,13 @@
 # Education Hub — FEATURE.md
 
-**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-08-17
+**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-08-19
 
 > 🚨 **START AT THE CROSS-REPO PROJECT, NOT HERE:**
-> **`/Users/armanisadeghi/code/common-docs/projects/education-platform/README.md`**
+> **`/Users/armanisadeghi/code/common-docs/projects/education-platform/STATE.md`**
 > The education product spans this repo + aidream + the shared database. That project holds the
-> canonical vision (Arman's), the measured **`GAP_ANALYSIS.md` (2026-08-17)** which supersedes
-> every prior status claim, the execution plan to launch, twelve parallel work packages, and the
-> live boards agents write to while they work. **`docs/proposals/education-projects/STATUS.md`
-> and `docs/handoffs/education-hub-remaining.md` declared this system complete on 2026-07-14 and
-> are archived there — do not cite them as current state.**
+> canonical vision (Arman's) and **`STATE.md`** — the one converged, code-verified record of what
+> is built, what is pending, and every open question. It supersedes every prior status claim,
+> including the 2026-08-17 gap analysis and work packages, which had gone stale within 48 hours.
 
 > 🔴 **THE SOURCE OF TRUTH IS THE VISION DOC, NOT THIS FILE.**
 > `common-docs/projects/education-platform/VISION.md` (the repo copies are now pointers) defines WHAT the Education Hub is and does. This FEATURE.md documents only HOW it is built. **If anything here — or in the code — drifts from the vision, the vision wins, and you must report the drift to the user immediately. Do not silently "fix" the vision to match the code.** When the user approves a change that expands or improves the vision, update the vision doc first, then this file.
@@ -58,7 +56,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 - **`SectionRenderer` is the only home for page-body markup.** New block type → extend the `EduSection` union + add one branch. Never inline bespoke JSX in a registry entry.
 - **Registry icons must resolve at lucide-react RUNTIME, not just type-level.** Lucide dropped its brand icons (e.g. `Youtube`) — a type-valid-but-runtime-missing icon compiles, passes `tsc`, then **500s every education route** through the shared `registry.ts`. Validate new icons at runtime (`node -e "console.log('Video' in require('lucide-react'))"`), never `tsc` alone.
 - **`quick-` prefix = stock/preview content in a non-permanent slot.** `subjects/quick-math` (static route) holds the relocated stock algebra lessons and coexists with the dynamic `subjects/[slug]` (static wins). `subjects/math` **is** a marketing subject entry like every subject; the full interactive math *experience* is a future tool build linked from it — the headroom the `quick-` split reserves. (Open question for the user: should `/subjects/math` instead be reserved as the interactive experience itself? Flagged at demo.)
-- **Funnel markers are display-only.** `AccessTierBadge` (free/trial/premium) signals; it does **not** enforce. Enforcement is the forked system — see [`docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md`](../../docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md).
+- **Funnel markers are display-only.** `AccessTierBadge` (free/trial/premium) signals; it does **not** enforce. Enforcement is the forked system — see [`common-docs/projects/education-platform/STATE.md`](../../../common-docs/projects/education-platform/STATE.md) §4.1 E.
 - **Taxonomy is evidence-backed** (Khan/IXL/Quizlet/Course Hero, June 2026): subject-first; Levels is a three-band model (per-grade K–5 → bands → professional); Exam Prep is its own flat cross-cutting axis. Don't restructure without re-checking the research + the user.
 - **Relocation wired:** old `(public)/education/*` deleted; `nav-data.ts` + `features/math` back-links repoint to `quick-math`; `Target` added to `shellIconMap.ts`.
 - **A learner declining microphone permission is expected input, not a crash.** Voice-test surfaces show the browser-settings repair path inline and must not send `NotAllowedError` / `PermissionDeniedError` through `console.error`; unexpected mic failures stay loud.
