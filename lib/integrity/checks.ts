@@ -614,6 +614,79 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       limit 50
     `,
   },
+  {
+    id: "education-purge-blocked-rows",
+    kind: "sql",
+    title: "Education study rows the 30-day hard purge cannot delete",
+    category: "Education",
+    severity: "error",
+    description:
+      "A study-spine PARENT (`education.study_session`, `fc_set`, `study_goal`) " +
+      "whose 30-day reversible-delete window closed but which the hard purge " +
+      "(`education.edu_purge_expired_study_data`) still cannot remove, because a " +
+      "surviving referrer trips its `NOT EXISTS` guard. Some blocking is correct " +
+      "and transient — another learner still studying a shared deck. What is NOT " +
+      "correct is a row that stays blocked: the purge is the executable half of " +
+      "the \"we permanently delete it\" promise (COPPA / school-safe), so a row " +
+      "stuck here is a deletion promise the platform is quietly not keeping, and " +
+      "the hourly job reports it only as a number inside `scheduler.sch_run." +
+      "result_summary` that nobody reads. `blocked_days` is how long the row has " +
+      "been past its purge deadline; the aidream sweep raises an assist chip once " +
+      "that crosses its grace window.",
+    remediation:
+      "Read `blocking_referrers` — that is WHY the row survives. A live referrer " +
+      "owned by the SAME user (e.g. `study_attempt` rows with `deleted_at is null` " +
+      "under a soft-deleted session) is a soft-delete cascade gap in whatever path " +
+      "deleted the parent: the child should have been soft-deleted with it, and " +
+      "the fix is in that writer, not here. A referrer owned by a DIFFERENT user " +
+      "is the legitimate shared-deck case and the row is correctly retained — but " +
+      "it should then be re-owned or anonymized rather than left as a permanent " +
+      "purge failure. Handler: aidream/services/education_data_rights/.",
+    sql: `
+      with cutoff as (select now() - interval '30 days' as ts)
+      select blocked.*, count(*) over() as _total
+      from (
+        select 'study_session' as spine_table,
+               s.id,
+               s.created_by as owner_id,
+               s.deleted_at,
+               extract(day from now() - (s.deleted_at + interval '30 days'))::int as blocked_days,
+               (select count(*) from education.study_attempt a where a.session_id = s.id)
+                 + (select count(*) from education.assessment_result r where r.session_id = s.id)
+                 as blocking_referrers
+        from education.study_session s, cutoff
+        where s.deleted_at < cutoff.ts
+          and (exists (select 1 from education.study_attempt a where a.session_id = s.id)
+               or exists (select 1 from education.assessment_result r where r.session_id = s.id))
+
+        union all
+
+        select 'fc_set',
+               fs.id,
+               fs.created_by,
+               fs.deleted_at,
+               extract(day from now() - (fs.deleted_at + interval '30 days'))::int,
+               (select count(*) from education.study_session s where s.source_set_id = fs.id)
+        from education.fc_set fs, cutoff
+        where fs.deleted_at < cutoff.ts
+          and exists (select 1 from education.study_session s where s.source_set_id = fs.id)
+
+        union all
+
+        select 'study_goal',
+               g.id,
+               g.created_by,
+               g.deleted_at,
+               extract(day from now() - (g.deleted_at + interval '30 days'))::int,
+               (select count(*) from education.study_plan p where p.goal_id = g.id)
+        from education.study_goal g, cutoff
+        where g.deleted_at < cutoff.ts
+          and exists (select 1 from education.study_plan p where p.goal_id = g.id)
+      ) blocked
+      order by blocked_days desc
+      limit ${SAMPLE_LIMIT}
+    `,
+  },
   // ── Repo gates (on-demand; see repoGate above) ─────────────────────────────
   repoGate({
     id: "gate-migrations",
