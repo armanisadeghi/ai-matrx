@@ -117,6 +117,10 @@ answer them (the page/action/question rule).
 ## Standing rules (all stages)
 
 - **Every keep/drop/merge/require decision is Arman's.** Propose; never decide.
+- **Content IR alignment binds you.** `common-docs/systems/content-ir-system/UNIFICATION.md`:
+  this is ONE system — XML/markdown/fence arrival surfaces stay first-class, frozen block-type
+  values never change, and kinds-as-JSON is the internal form, never a forced wire format.
+  Check `NOMENCLATURE.md` and the lexicon before any name; check the registry before any mint.
 - **Provenance survives merging.** A shared kind keeps source identity (e.g. a
   `source` field or provider-specific companion kinds) — merge shapes, never
   origins.
