@@ -1,5 +1,11 @@
 # MarkdownStream Processing Pipeline — Parser Audit for Python Migration
 
+> **HISTORICAL — `matrxBroker` no longer exists (deleted 2026-08-20, Arman's ruling).**
+> The `<<<MATRX_START>>>…<<<MATRX_END>>>` encoding, the `matrxBroker` block type, its
+> parser/model/renderer, and the `broker` stream event were all removed from every repo.
+> Every mention of them below describes the system as it WAS; do not build against it.
+> Current protocol: `docs/protocol/MATRX_ENVELOPE.md`.
+
 > **Goal:** Move all markdown/block processing from client-side (UI) to Python backend. Stream **processed blocks** in final format so the UI does zero parsing—only detects block keys and renders.
 
 ---

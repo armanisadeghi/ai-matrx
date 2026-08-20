@@ -1,5 +1,11 @@
 # Markdown / content edit paths — analysis from `AgentAssistantMessage`
 
+> **HISTORICAL — `matrxBroker` no longer exists (deleted 2026-08-20, Arman's ruling).**
+> The `<<<MATRX_START>>>…<<<MATRX_END>>>` encoding, the `matrxBroker` block type, its
+> parser/model/renderer, and the `broker` stream event were all removed from every repo.
+> Every mention of them below describes the system as it WAS; do not build against it.
+> Current protocol: `docs/protocol/MATRX_ENVELOPE.md`.
+
 > **Status (2026-05-17):** Two gaps closed in this round.
 >
 > 1. **`onContentChange` propagation** — Inline edits now route through

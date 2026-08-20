@@ -1,5 +1,11 @@
 # Agent Conversation System — Architecture State of Play
 
+> **HISTORICAL — `matrxBroker` no longer exists (deleted 2026-08-20, Arman's ruling).**
+> The `<<<MATRX_START>>>…<<<MATRX_END>>>` encoding, the `matrxBroker` block type, its
+> parser/model/renderer, and the `broker` stream event were all removed from every repo.
+> Every mention of them below describes the system as it WAS; do not build against it.
+> Current protocol: `docs/protocol/MATRX_ENVELOPE.md`.
+
 > **Purpose**: A comprehensive map of the current conversation data architecture — where data lives, how it flows, what's broken, and what we need to do next. Written for engineers (or AI agents) who need full context before touching any of this code.
 
 ---

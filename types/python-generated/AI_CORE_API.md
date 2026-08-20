@@ -85,7 +85,6 @@ All three main endpoints return **NDJSON** (`application/x-ndjson`) — one JSON
 | `content_block` | `ContentBlockPayload` | Structured block streaming (text, code, table, diagram). See `content-blocks.ts` |
 | `record_reserved` | `RecordReservedPayload` | Database row pre-created with `pending` status — `db_project`, `table`, `record_id`, `parent_refs` |
 | `record_update` | `RecordUpdatePayload` | Previously reserved record changed status to `active`, `completed`, or `failed` |
-| `broker` | `BrokerPayload` | Direct UI state update (frozen — no new usage) |
 | `heartbeat` | `HeartbeatPayload` | Keep-alive ping on long runs |
 | `end` | `EndPayload` | Stream is done — always the last line |
 

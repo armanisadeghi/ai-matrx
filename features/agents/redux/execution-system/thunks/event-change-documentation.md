@@ -31,7 +31,6 @@ All events arrive as JSONL lines using the envelope `{"event": "<type>", "data":
 | **Completion** | `completion` | An identifiable operation finished | `CompletionPayload` |
 | **Error** | `error` | Fatal error — the stream is about to end | `ErrorPayload` |
 | **Tool Event** | `tool_event` | Tool lifecycle update (sub-typed) | `ToolEventPayload` |
-| **Broker** | `broker` | Direct UI state update (frozen — no new usage) | `BrokerPayload` |
 | **Heartbeat** | `heartbeat` | Keep-alive ping | `HeartbeatPayload` |
 | **End** | `end` | Transport-level stream termination | `EndPayload` |
 | **Content Block** | `content_block` | Structured block streaming (text, timeline, quiz, code) | `ContentBlockPayload` |
@@ -371,7 +370,7 @@ Check if types are up to date (CI-friendly):
 - `PersistenceResult` — `records_written`, `duration_ms`
 
 **Type guards (one per event type):**
-`isChunkEvent()`, `isReasoningChunkEvent()`, `isPhaseEvent()`, `isWarningEvent()`, `isInfoEvent()`, `isTypedDataEvent()`, `isInitEvent()`, `isCompletionEvent()`, `isErrorEvent()`, `isToolEventEvent()`, `isBrokerEvent()`, `isHeartbeatEvent()`, `isEndEvent()`, `isContentBlockEvent()`, `isRecordReservedEvent()`, `isRecordUpdateEvent()`
+`isChunkEvent()`, `isReasoningChunkEvent()`, `isPhaseEvent()`, `isWarningEvent()`, `isInfoEvent()`, `isTypedDataEvent()`, `isInitEvent()`, `isCompletionEvent()`, `isErrorEvent()`, `isToolEventEvent()`, `isHeartbeatEvent()`, `isEndEvent()`, `isContentBlockEvent()`, `isRecordReservedEvent()`, `isRecordUpdateEvent()`
 
 ---
 

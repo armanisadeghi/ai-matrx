@@ -46,7 +46,6 @@ Sorted alphabetically by `block.type`.
 | `image_output` | 2 | Same pattern as `audio_output` (`TypedDataPayload`). |
 | `info` | 2 | `renderBasicMarkdown(content)`; `TextBlockData` is `{}`. |
 | `math_problem` | 2 | `serverData` **or** `safeJsonParse` expecting `math_problem` wrapper in `content`. |
-| `matrxBroker` | 2 | `MatrxBrokerBlock` uses `content` + pattern metadata / `encodeMatrxMetadata`; not `MatrxBrokerBlockData`-only. |
 | `plan` | 2 | Basic markdown; `TextBlockData` is `{}`. |
 | `podcast_complete` | 2 | `serverData` mapping. |
 | `podcast_stage` | 2 | `serverData` mapping. |

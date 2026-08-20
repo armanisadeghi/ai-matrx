@@ -95,10 +95,9 @@ Complete flow of markdown and block processing from stream input to rendered out
 | Step | Description | File |
 |------|-------------|------|
 | **Primary block splitter** | Detects and extracts all block types from raw markdown | `components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts` |
-| MATRX pattern utilities | `getMetadataFromText`, `MATRX_PATTERN` for broker blocks | `features/rich-text-editor/utils/patternUtils.ts` |
 
 **Block types detected by splitter:**
-- `matrxBroker` · `code` · `thinking` · `reasoning` · `questionnaire` · `flashcards` · `cooking_recipe` · `timeline` · `progress_tracker` · `troubleshooting` · `resources` · `research` · `quiz` · `presentation` · `decision_tree` · `comparison_table` · `diagram` · `math_problem` · `transcript` · `tasks` · `structured_info` · `table` · `image` · `video` · `audio` · `matrx_file` · `text`
+- `code` · `thinking` · `reasoning` · `questionnaire` · `flashcards` · `cooking_recipe` · `timeline` · `progress_tracker` · `troubleshooting` · `resources` · `research` · `quiz` · `presentation` · `decision_tree` · `comparison_table` · `diagram` · `math_problem` · `transcript` · `tasks` · `structured_info` · `table` · `image` · `video` · `audio` · `matrx_file` · `text`
 
 > **`matrx_file`** — a plain markdown link (or bare URL) to one of OUR OWN files (signed S3 `matrx-user-files`, public `cdn.matrxserver.com`, or a `/share/<token>` byte endpoint). Detected by `detectMatrxFileMarkdown` **after** image/video/audio so any of our media with a dedicated home wins first; recognition lives in the single, extendable `lib/media/our-file-sources.ts` (`recognizeOurFileUrl`). The renderer keeps the original line on `content`, re-derives the URL + surrounding text, discovers the real file type (sniffed from the URL or by hydrating the cld_files row), and renders the universal inline previewer — re-minting signed URLs via the file handler. On any failure it degrades to the plain link. Mirrored in the prefilter (`Candidate.MATRX_FILE`) and the stream accumulator. No DB round-trip change — `reconstructBlockMarkdown` default re-emits `content`.
 
@@ -161,7 +160,6 @@ Complete flow of markdown and block processing from stream input to rendered out
 | `transcript` | TranscriptBlock | `components/mardown-display/blocks/transcripts/TranscriptBlock.tsx` |
 | `tasks` | TasksBlock → TaskChecklist | `components/mardown-display/blocks/tasks/TasksBlock.tsx` · `components/mardown-display/blocks/tasks/TaskChecklist.tsx` |
 | `structured_info` | StructuredPlanBlock | `components/mardown-display/blocks/plan/StructuredPlanBlock.tsx` |
-| `matrxBroker` | MatrxBrokerBlock | `components/mardown-display/blocks/brokers/MatrxBrokerBlock.tsx` |
 | `flashcards` | FlashcardsBlock | `components/mardown-display/blocks/flashcards/FlashcardsBlock.tsx` |
 | `quiz` | MultipleChoiceQuiz | `components/mardown-display/blocks/quiz/MultipleChoiceQuiz.tsx` |
 | `presentation` | Slideshow | `components/mardown-display/blocks/presentations/Slideshow.tsx` |
@@ -193,7 +191,6 @@ Complete flow of markdown and block processing from stream input to rendered out
 | File | Role |
 |------|------|
 | `components/MarkdownStream.tsx` | Entry point |
-| `components/mardown-display/blocks/brokers/MatrxBrokerBlock.tsx` | matrxBroker render |
 | `components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx` | comparison_table render |
 | `components/mardown-display/blocks/comparison/parseComparisonJSON.ts` | comparison_table parser |
 | `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx` | cooking_recipe render |
