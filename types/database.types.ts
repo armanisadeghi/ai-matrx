@@ -15437,13 +15437,22 @@ export type Database = {
         Args: { p_list_id: string }
         Returns: Json
       }
-      honor_reply_opt_out: {
+      honor_consent_decision: {
         Args: {
-          p_detected_phrase: string
-          p_identity_id: string
-          p_in_reply_to_provider_message_id: string
+          p_channel?: string
+          p_decision: string
+          p_detail?: Json
+          p_detected_phrase?: string
+          p_identity_id?: string
+          p_in_reply_to_provider_message_id?: string
+          p_medium_id?: string
+          p_organization_id?: string
+          p_reason?: string
           p_received_at?: string
-          p_reply_provider_message_id: string
+          p_reply_provider_message_id?: string
+          p_value_key?: string
+          p_value_raw?: string
+          p_via: string
         }
         Returns: Json
       }
@@ -41858,7 +41867,7 @@ export type Database = {
       }
       cx_message_edit: {
         Args: { p_message_id: string; p_new_content: Json }
-        Returns: Database["graveyard"]["Tables"]["message"]["Row"]
+        Returns: Database["chat"]["Tables"]["message"]["Row"]
         SetofOptions: {
           from: "*"
           to: "message"
@@ -41868,7 +41877,7 @@ export type Database = {
       }
       cx_message_set_content: {
         Args: { p_message_id: string; p_new_content: Json }
-        Returns: Database["graveyard"]["Tables"]["message"]["Row"]
+        Returns: Database["chat"]["Tables"]["message"]["Row"]
         SetofOptions: {
           from: "*"
           to: "message"
@@ -45287,7 +45296,7 @@ export type Database = {
       }
       tool_resolve_bundle: {
         Args: { p_bundle_name: string }
-        Returns: Database["agent"]["Tables"]["definition"]["Row"][]
+        Returns: Database["tool"]["Tables"]["definition"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "definition"
@@ -64364,6 +64373,10 @@ export type Database = {
         }
         Returns: number
       }
+      crawl_cadence_min_gap_minutes: {
+        Args: { p_cadence: Json }
+        Returns: number
+      }
       create_site: {
         Args: {
           p_brand_id?: string
@@ -64411,6 +64424,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cron_day_of_month_gap: { Args: { p_vals: number[] }; Returns: number }
+      cron_day_of_week_gap: { Args: { p_vals: number[] }; Returns: number }
+      cron_expand_field: {
+        Args: { p_field: string; p_hi: number; p_lo: number }
+        Returns: number[]
+      }
+      cron_min_step: { Args: { p_vals: number[] }; Returns: number }
       is_machine_resource_url: { Args: { page_url: string }; Returns: boolean }
       is_resource_content_type: {
         Args: { content_type_last: string }

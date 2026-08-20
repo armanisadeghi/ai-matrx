@@ -50,9 +50,11 @@ to point a grant at). Columns: `guardian_user_id`, `student_user_id`,
 `consent_method` (`card|signed_form|vendor_id`), `verified_at`, `verification_ref`
 (`migrations/edu_guardian_verifiable_consent.sql`). `unique(guardian_user_id,
 student_user_id)`; RLS: each party SELECTs only their own rows; **all writes go through
-the RPCs** (no write policies). The row IS the auditable consent record (who = guardian,
+the RPCs** (no write policies). The row carries CURRENT consent state (who = guardian,
 method, when = `verified_at`, ref = `verification_ref`; revoke = `status=revoked` +
-`revoked_at`).
+`revoked_at`) — but it is **mutable and last-write-wins, so it is not the audit trail**.
+The append-only trail is `education.data_rights_event`: `guardian_confirm_verification`
+writes one `action='guardian_consent_verified'` row per verification (see below).
 
 **RPCs (public schema, all SECURITY DEFINER):**
 - Consent — `guardian_grant(email, relationship?)`, `guardian_request_student(email, relationship?)`,
@@ -62,7 +64,9 @@ method, when = `verified_at`, ref = `verification_ref`; revoke = `status=revoked
 - Verify — `guardian_confirm_verification(link_id, method, ref)` — **service_role ONLY**
   (revoked from anon+authenticated). The one server-side verified-write path; called by
   the Stripe webhook (card) and secret-token admin routes (signed form). A child can never
-  reach it.
+  reach it. **Self-audits** (see "Audit trail" below) — it writes one
+  `education.data_rights_event` row on every successful verification, in the same
+  transaction as the `guardian_link` update.
 - Listing — `guardian_list_links()` (every link the caller is in, with computed `role` +
   counterpart identity + `verified_at` + `consent_method` + `student_age_band` so the
   guardian UI knows which under-13 children still need verification), `guardian_can_view(student_id)`.
@@ -106,6 +110,38 @@ verification method → completes it → a SERVICE path stamps `verified_at` →
 **A child can NEVER self-verify.** `guardian_confirm_verification` is `service_role`-only; the
 only callers are the signature-verified Stripe webhook and secret-token admin routes — never
 the browser. The parent's post-Checkout redirect is cosmetic; the webhook is the source of truth.
+
+### Audit trail — `education.data_rights_event`
+
+`guardian_confirm_verification` writes one **append-only** row per verification
+(`migrations/edu_guardian_confirm_verification_audits_itself.sql`), the same self-audit
+pattern every other education data-rights and age RPC already uses (`export`, `delete`,
+`restore`, `age_band_change`, `age_band_change_blocked`, `purge`):
+
+| field | value |
+|---|---|
+| `user_id` | the **student** — the subject of the consent, and the RLS key that lets them see their own data-rights history (same subject choice as `age_band_change`) |
+| `action` | `guardian_consent_verified` |
+| `detail` | `link_id`, `guardian_user_id`, `student_user_id`, `method`, `verification_ref`, `verified_at`, `actor`, `actor_db_role`, `via`, `prior_verified_at`, `prior_method`, `re_verification` |
+
+- **`actor` is `auth.uid()`, and is NULL on the normal path — that NULL is the point.** The
+  RPC is `service_role`-only and its callers (the Stripe webhook, secret-token admin routes)
+  carry no end-user JWT, so a null actor is positive evidence that no user session performed
+  the write. `actor_db_role` (`current_user`) records the DB role that did.
+- **`verification_ref`** is what ties the row to the outside world: the Stripe PaymentIntent
+  for `card`, the uploaded form's file id for `signed_form`, the vendor reference for `vendor_id`.
+- **Re-verification is a real event, not a no-op.** `prior_verified_at` / `prior_method` /
+  `re_verification` make the history readable from the ledger even though `guardian_link`
+  only ever shows the latest state.
+- **A rejected call writes nothing.** An invalid `p_method` (`22023`) or a non-active link
+  (`P0002`) raises before the insert, and the whole call rolls back.
+- **This is NOT a separate immutable consent ledger.** Whether COPPA requires one — with full
+  revoked/re-verified history and write-once storage — is a counsel question already on the
+  record (`COPPA_CONSENT_RUNBOOK.md` §1) and is deliberately not decided here. `data_rights_event`
+  has no UPDATE/DELETE policy and only SECURITY DEFINER RPCs write it, but it is a normal table.
+- **Known remaining gap:** `guardian_unlink` clears `verified_at`/`consent_method`/`verification_ref`
+  on revoke and writes **no** ledger row, so a withdrawal of consent leaves no trail. Tracked
+  separately; it is the mirror half of this fix, not part of it.
 
 **Coordination (aidream server enforcement):** aidream's `enforce_education_coppa` reads
 `edu_coppa_gate`, whose `ai_allowed` now requires a VERIFIED link for under-13 — so a verified
@@ -172,6 +208,10 @@ the browser. The parent's post-Checkout redirect is cosmetic; the webhook is the
   Verification is confirmed server-side (Stripe webhook / secret-token admin route) from a
   successful real transaction — never a client claim, never the parent's redirect. Never add
   an authenticated/anon grant on that RPC.
+- **Every verification is audited.** `guardian_confirm_verification` writes its
+  `education.data_rights_event` row in the SAME transaction as the `guardian_link` update —
+  never a best-effort insert, never a caller responsibility, never after the fact. If you add
+  another path that sets `verified_at`, it audits too or it does not ship.
 - **Verification resets on re-consent.** A revoked→re-granted link is a NEW consent and must
   re-earn verification — `guardian_grant` clears `verified_at`/`consent_method`/`verification_ref`
   unless the link was already active. Never carry an old verification across a revoke.
@@ -182,6 +222,20 @@ the browser. The parent's post-Checkout redirect is cosmetic; the webhook is the
 
 ## Change log
 
+- `2026-08-20` — **`guardian_confirm_verification` now audits itself.** Every other education
+  data-rights and age RPC wrote to `education.data_rights_event`; the single most consequential
+  COPPA action — the one that unblocks ALL AI for an under-13 — wrote nothing, leaving the
+  mutable `guardian_link` row as the only record that consent was ever given. It now writes one
+  `action='guardian_consent_verified'` row (link, guardian, student, method, `verification_ref`,
+  actor, DB role, prior verification state) in the same transaction, reusing the existing ledger
+  rather than standing up a parallel table. `migrations/edu_guardian_confirm_verification_audits_itself.sql`
+  — **applied live, ledgered in `public._schema_migrations`, types regenerated.** Verified on the
+  live DB against the real active guardian link inside a rolled-back transaction (so no real
+  family's link was actually verified): first verification writes the row with the student as
+  `user_id`; re-verification records `prior_verified_at`/`prior_method`/`re_verification:true`;
+  an invalid method (`22023`) and an unknown link (`P0002`) both raise and write nothing.
+  Closes STATE.md §4.2 item 30. Does **not** decide the counsel question about a separate
+  immutable consent ledger (`COPPA_CONSENT_RUNBOOK.md` §1).
 - `2026-07-15` — **Verifiable parental consent (COPPA §312.5)** built on the guardian system.
   Added verification columns to `guardian_link` (`consent_method`/`verified_at`/`verification_ref`)
   + `guardian_confirm_verification` (service-only) + verification signals on `guardian_list_links`
