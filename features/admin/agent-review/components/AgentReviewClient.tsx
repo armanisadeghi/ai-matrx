@@ -41,6 +41,7 @@ import {
 } from "@/features/admin/agent-review/service";
 import { AgentReviewWriteTargets } from "@/features/admin/agent-review/components/AgentReviewWriteTargets";
 import {
+  deriveReviewArea,
   REVIEW_LANES,
   REVIEW_LANE_LABELS,
   REVIEW_TOOLS,
@@ -58,6 +59,9 @@ import {
   type ReviewQueueUpdate,
   type ReviewStatus,
 } from "@/features/admin/agent-review/types";
+
+/** Rows whose url carries no usable path still need a home in the picker. */
+const UNPLACED_AREA = "Unplaced";
 
 type LaneFilter = "all" | "unclassified" | ReviewLane;
 type ToolFilter = "all" | ReviewTool;
@@ -436,6 +440,7 @@ export default function AgentReviewClient() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [laneFilter, setLaneFilter] = useState<LaneFilter>("all");
   const [toolFilter, setToolFilter] = useState<ToolFilter>("all");
+  const [areaFilter, setAreaFilter] = useState("all");
   /**
    * Unsaved feedback-editor text by row id. Lives here rather than in each
    * card so the surface can publish it (`feedback_drafts`) and the
@@ -504,6 +509,17 @@ export default function AgentReviewClient() {
 
   const allRows = rows ?? [];
   const sources = Array.from(new Set(allRows.map((row) => row.source))).sort();
+  // Area options come from the rows THEMSELVES, with counts — never a
+  // hardcoded product map that would silently omit a new feature the day its
+  // first row lands, and never an option that would filter to nothing.
+  const areaCounts = new Map<string, number>();
+  for (const row of allRows) {
+    const area = deriveReviewArea(row.url) ?? UNPLACED_AREA;
+    areaCounts.set(area, (areaCounts.get(area) ?? 0) + 1);
+  }
+  const areaOptions = Array.from(areaCounts.entries()).sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+  );
   const repairRows = allRows.filter(
     (row) => row.status === "changes_requested",
   );
@@ -546,6 +562,12 @@ export default function AgentReviewClient() {
     }
     if (toolFilter !== "all" && !triage?.required_tools.includes(toolFilter))
       return false;
+    if (
+      areaFilter !== "all" &&
+      (deriveReviewArea(row.url) ?? UNPLACED_AREA) !== areaFilter
+    ) {
+      return false;
+    }
     if (!normalizedSearch) return true;
     return [row.title, row.url, row.instructions, row.feedback, row.source]
       .filter((value): value is string => Boolean(value))
@@ -670,7 +692,7 @@ export default function AgentReviewClient() {
             ))}
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-[minmax(14rem,1fr)_12rem_12rem_12rem]">
+          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-[minmax(12rem,1fr)_13rem_11rem_11rem_11rem]">
             <SearchInput
               value={search}
               onValueChange={setSearch}
@@ -678,6 +700,19 @@ export default function AgentReviewClient() {
               aria-label="Search repair board"
               className="col-span-2 md:col-span-1"
             />
+            <Select value={areaFilter} onValueChange={setAreaFilter}>
+              <SelectTrigger aria-label="Filter by area" className="h-9">
+                <SelectValue placeholder="All areas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All areas</SelectItem>
+                {areaOptions.map(([area, count]) => (
+                  <SelectItem key={area} value={area}>
+                    {area} ({count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger aria-label="Filter by source" className="h-9">
                 <SelectValue placeholder="All repositories" />

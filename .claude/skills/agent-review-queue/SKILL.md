@@ -154,4 +154,11 @@ The verifier records their stable label in `verification.verified_by`. Prefer a 
 - **No deployment status, ever** — see "Everything is LIVE" above.
 - Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `pending` instead.
 - Never infer ownership from `source`; it is only the repository identifier.
+- 🚨 **`url` is the CLASSIFICATION KEY, not just a link.** The board's **Area**
+  filter is derived from it (`deriveReviewArea` — `/marketing/content-plan/…` →
+  "Marketing › Content Plan"), because a `feature` field in agent-authored
+  metadata does not survive contact with reality: only 19 of 390 live rows ever
+  carried one. So write the REAL deep route the reviewer should open — never a
+  bare `/`, never a placeholder, never the repo root. A row whose url has no
+  usable path lands in "Unplaced" and is the hardest kind to triage.
 - UI lives at `features/admin/agent-review/` (see its `FEATURE.md`). The table is deliberately minimal — do NOT add columns, RPCs, or satellite tables to it. Extend the versioned `metadata.triage` contract.

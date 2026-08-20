@@ -35,3 +35,14 @@ The one place agents register anything they built that Arman must go see/test, w
 - 2026-08-08 — "Everything is LIVE" doctrine: rows may never carry deployment/PR status (auto-merge ships all agent code within ~30 min); skill + invariant updated, legacy contaminated rows queued for cleanup.
 - 2026-08-08 — Evolved into the Agent Repair Board: versioned metadata triage, lane/tool filters, compact expandable rows, assignment/claim/verification contract, and agent-facing coordinator queries. No schema expansion; reused `metadata` JSONB and direct Supabase path.
 - 2026-07-21 — Created: table + RLS, admin page, nav registration, `agent-review-queue` skill, CLAUDE.md pointer.
+
+## Change log
+
+- 2026-08-19 — **Area filter (derived from `url`).** A 392-row board had no
+  product dimension: `source` is the repo, `lane` is the kind of work,
+  `required_tools` is the equipment — none says WHICH FEATURE. Arman could not
+  find his Content Plan rows. Fixed with `deriveReviewArea` (triage.ts, 9
+  tests): container-first path segments, options built from the rows present
+  with counts, ids never mistaken for feature names. Derived, never stored —
+  `metadata.feature` existed on only 19 of 390 rows, while `url` is on 100%.
+  Live: All areas → Marketing › Content Plan (22) narrows 392 → 22.
