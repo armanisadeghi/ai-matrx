@@ -234,9 +234,16 @@ export const launchAgentExecution = createAsyncThunk<
   // scope and would fabricate one. An explicit caller scope always wins, and a
   // scope-only launch (scope without name) is left exactly as the caller
   // built it.
-  let surfaceName = runtime?.surfaceName;
+  //
+  // `runtime.surfaceName: null` is the EXPLICIT OPT-OUT: this launch IS the
+  // surface's own primary conversation (the live /chat route), so adopting
+  // the page's mounted provider would feed the conversation its OWN
+  // transcript/identity back to itself as "surface context" — a
+  // self-referential loop. Skip adoption entirely and stamp nothing.
+  const surfaceOptOut = runtime?.surfaceName === null;
+  let surfaceName = runtime?.surfaceName ?? undefined;
   let adoptedScope: ApplicationScope | undefined;
-  if (runtime?.applicationScope === undefined) {
+  if (runtime?.applicationScope === undefined && !surfaceOptOut) {
     // A caller that NAMES a surface and supplies no scope used to launch with
     // nothing but the empty baseline floor — the surface's own values (a
     // Rulebook's rules, a document's text) never reached the agent even though

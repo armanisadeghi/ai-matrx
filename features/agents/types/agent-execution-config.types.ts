@@ -182,10 +182,19 @@ export interface AgentExecutionRuntime {
    * The `ui_surface.name` of the surface that initiated the launch. Used by
    * the launch thunk to look up an agent↔surface binding edges binding row and
    * apply its `value_mappings` JSONB via `resolveValueMappings` before
-   * delegating to the legacy scope-mapping pass. Optional — when absent,
-   * the launcher behaves exactly as before (legacy auto-name-match only).
+   * delegating to the legacy scope-mapping pass. Three states:
+   *
+   *   - a string: launch AS an agent acting ON that surface;
+   *   - `undefined`: no opinion — the launch thunk may auto-adopt the deepest
+   *     mounted `<SurfaceRuntimeProvider>` (name + live scope);
+   *   - `null`: EXPLICIT OPT-OUT. This launch IS the surface's own primary
+   *     conversation, so adopting the page's surface would hand the run its
+   *     own conversation as "surface context" — a self-referential loop.
+   *     No adoption happens, and no `surfaceName` is stamped onto the
+   *     conversation (so per-turn `refreshSurfaceScope` stays off too).
+   *     The live `/chat` route is the canonical user of this state.
    */
-  surfaceName?: string;
+  surfaceName?: string | null;
 }
 
 /**
