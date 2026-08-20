@@ -34,12 +34,15 @@ land, this feature consumes them.
 
 ## Open (this repo, ordered)
 
-1. **Triggers have no door** 🚨 **#1, Arman 2026-08-19.** Schedules and webhooks are fully built
-   and deployed on the server (7 endpoints + a `CronWatcher` in the running worker) and have
-   **never been used once** — `workflow.trigger` and `workflow.trigger_fire` are both empty, and
-   this repo has no trigger UI at all. **Chipped 2026-08-19** with the full inventory; see STATE
-   §4.1. (Do not confuse `workflow.trigger` — what STARTS a run — with `trigger-points.ts`, a
-   named moment INSIDE a run.)
+1. **Triggers: the door is BUILT (2026-08-20) — only EDITING remains.**
+   `/workflows/[id]/triggers` ships plain-language schedules, webhooks with a one-time secret,
+   default inputs on the workflow's own run form, and fire history; a cron trigger fired itself in
+   production and produced a real run. Remaining: a trigger cannot be edited — `PATCH
+   /triggers/{id}` accepts `is_active` alone, so changing a schedule, timezone, or default inputs
+   means delete-and-recreate. **Widening that PATCH is a SERVER change** (aidream
+   `api/routers/workflow_triggers.py`), then the FE grows an edit form beside the create form.
+   (Do not confuse `workflow.trigger` — what STARTS a run — with `trigger-points.ts`, a named
+   moment INSIDE a run.)
 2. **A person cannot stop their own run.** `pause` / `resumePaused` / `cancel` are wired and
    server-proven, but `WorkflowRunBoard` — the only surface rendering those buttons — is mounted
    ONLY for nested child runs (`ReadoutView.tsx:430`).
@@ -62,7 +65,6 @@ land, this feature consumes them.
 
 - `task_e9503c14` — agent steps stream their TOKENS onto `node_stream` (server).
 - `task_fb0b4ed6` — universal Shape renderer (partial commits: `b64407336`, `a8fb617bd`).
-- `task_c739e725` — the trigger door (item 1).
 
 ## Server-owned (see `aidream docs/handoffs/workflow-runtime-ui-server.md`)
 
