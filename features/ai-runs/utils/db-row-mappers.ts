@@ -1,7 +1,7 @@
 import type { Database, Json } from "@/types/database.types";
 import type { AiTask, TaskStatus } from "@/features/ai-runs/types/aiRunTypes";
 
-type AiTaskRow = Database["graveyard"]["Tables"]["ai_tasks"]["Row"];
+type AiTaskRow = Database["agent"]["Tables"]["ai_tasks"]["Row"];
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

@@ -16,6 +16,11 @@
  */
 import type React from "react";
 
+import {
+  INVALIDATION_KEYS,
+  registerInvalidationCallback,
+} from "@/lib/invalidation/invalidation-registry";
+
 import { compileEmitRenderer } from "./compileEmitRenderer";
 import { fetchEmitRendererRow } from "./fetchEmitRendererRow";
 import type { EmitRendererProps } from "./types";
@@ -123,9 +128,72 @@ export function prefetchEmitRenderer(componentRef: string): void {
   void loadEmitRenderer(componentRef);
 }
 
-/** Drop a ref from every cache (e.g. after an admin edits its code). */
+// ─── Invalidation + repaint (D115 — the sibling gap, closed) ─────────────────
+//
+// An emit renderer is a `tool_ui` row exactly like a tool renderer; the only
+// difference is its `surface_name`. So when an agent edits a `tool_ui` row,
+// `toolStateEffects` fires the SAME name it always fired
+// (`INVALIDATION_KEYS.dbToolRenderers`, detail `{ toolName? }`) and BOTH
+// caches drop it — no new key, no new producer, no import edge into this
+// cluster (the D115 inversion: this module registers itself at chunk init,
+// and this chunk is loaded wherever an emission can render).
+//
+// A `tool_name` is unique per row, so a name that belongs to a tool surface
+// simply isn't in this cache and the drop is a no-op; the reverse holds for
+// the tool cache. The `component_id`-only edits (`toolcomp_update_code`)
+// invalidate ALL here too, for the same reason they do there.
+
+let globalBump = 0;
+const perRefBump = new Map<string, number>();
+const versionListeners = new Set<() => void>();
+
+/** Monotonic version for a ref's renderer — bumps on every invalidation. */
+export function getEmitRendererVersion(componentRef: string): number {
+  return globalBump + (perRefBump.get(componentRef) ?? 0);
+}
+
+/** Subscribe to version bumps (any ref). Returns the unsubscribe. */
+export function subscribeEmitRendererVersions(listener: () => void): () => void {
+  versionListeners.add(listener);
+  return () => {
+    versionListeners.delete(listener);
+  };
+}
+
+function notifyVersionListeners(): void {
+  for (const listener of versionListeners) listener();
+}
+
+/** Drop a ref from every cache (e.g. after an agent/admin edits its code) and
+ *  bump its version so mounted emissions re-resolve immediately. */
 export function invalidateEmitRenderer(componentRef: string): void {
   positive.delete(componentRef);
   negative.delete(componentRef);
   inflight.delete(componentRef);
+  perRefBump.set(componentRef, (perRefBump.get(componentRef) ?? 0) + 1);
+  notifyVersionListeners();
 }
+
+/**
+ * Drop EVERY cached emit renderer and bump every version. The fallback for
+ * edits whose target row can't be named (a `component_id`-only result).
+ */
+export function invalidateAllEmitRenderers(): void {
+  positive.clear();
+  negative.clear();
+  inflight.clear();
+  globalBump += 1;
+  notifyVersionListeners();
+}
+
+registerInvalidationCallback(INVALIDATION_KEYS.dbToolRenderers, (detail) => {
+  const componentRef =
+    detail !== null &&
+    typeof detail === "object" &&
+    "toolName" in detail &&
+    typeof (detail as { toolName?: unknown }).toolName === "string"
+      ? (detail as { toolName: string }).toolName
+      : null;
+  if (componentRef) invalidateEmitRenderer(componentRef);
+  else invalidateAllEmitRenderers();
+});

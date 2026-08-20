@@ -25,16 +25,16 @@
  * DbEmitRenderer.tsx) so `@babel/standalone` never enters the main bundle — it
  * arrives only when a node actually has a custom renderer.
  */
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { EmitRendererErrorBoundary } from "./EmitRendererErrorBoundary";
 import {
   getCachedEmitRenderer,
-  isKnownNoEmitRenderer,
   loadEmitRenderer,
 } from "./emitRendererCache";
 import { GenericEmitRenderer } from "./GenericEmitRenderer";
 import type { EmitRendererProps } from "./types";
+import { useEmitRendererVersion } from "./useEmitRendererVersion";
 
 export interface DbEmitRendererImplProps extends EmitRendererProps {
   /** A `tool_ui.tool_name` to render with, or null = the generic renderer. */
@@ -45,6 +45,8 @@ export const DbEmitRendererImpl: React.FC<DbEmitRendererImplProps> = ({
   componentRef,
   ...emitProps
 }) => {
+  const version = useEmitRendererVersion(componentRef);
+
   // Seed from the positive cache so a warmed/prefetched renderer paints on the
   // first render with no flash. `null` means "not resolved yet this mount" (or
   // there's no ref to resolve at all).
@@ -52,34 +54,28 @@ export const DbEmitRendererImpl: React.FC<DbEmitRendererImplProps> = ({
     useState<React.ComponentType<EmitRendererProps> | null>(() =>
       componentRef ? getCachedEmitRenderer(componentRef) : null,
     );
-  // Once we've resolved (component OR confirmed-negative OR no ref), stop.
-  const [resolved, setResolved] = useState<boolean>(() => {
-    if (!componentRef) return true;
-    return (
-      getCachedEmitRenderer(componentRef) !== null ||
-      isKnownNoEmitRenderer(componentRef)
-    );
-  });
-  const fetchedRef = useRef(false);
-
-  // Fire the fetch exactly once per mount when a ref is set and nothing is
-  // cached yet. The shared in-flight promise in the cache dedups across sibling
-  // emissions; the `cancelled` guard avoids a state update after unmount.
+  // Resolve once per (componentRef, version) — the D115 shape, mirroring
+  // `DbToolRendererImpl`. `loadEmitRenderer` answers from the positive/negative
+  // cache immediately when warm (one microtask), and shares one deduped
+  // fetch+compile across sibling emissions when cold. A version bump re-enters
+  // with the cache cleared; the previous compile keeps rendering until the
+  // fresh one lands, so an edited renderer repaints with no blank flash.
   useEffect(() => {
-    if (!componentRef || component || resolved || fetchedRef.current) return undefined;
-    fetchedRef.current = true;
+    if (!componentRef) {
+      setComponent(null);
+      return undefined;
+    }
 
     let cancelled = false;
     void loadEmitRenderer(componentRef).then((compiled) => {
       if (cancelled) return;
-      if (compiled) setComponent(() => compiled);
-      setResolved(true);
+      setComponent(() => compiled);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [componentRef, component, resolved]);
+  }, [componentRef, version]);
 
   if (component) {
     const Compiled = component;

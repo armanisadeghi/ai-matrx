@@ -8,7 +8,7 @@
 
 import React from "react";
 import { Workflow } from "lucide-react";
-import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
@@ -31,11 +31,14 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await fromDeprecatedTable(
-        "workflow",
-        "features/organizations/peek/kinds/WorkflowPeek.tsx",
-      )
+      // `workflow.definition` is the live model; the old `public.workflow`
+      // this peek used to read is in `graveyard` and returned nothing, so the
+      // dialog always said "Workflow not found."
+      const { data } = await supabase
+        .schema("workflow")
+        .from("definition")
         .select("name, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

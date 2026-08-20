@@ -80,6 +80,14 @@ export interface WorkflowRunEmission {
   componentRef: string | null;
   title: string | null;
   ts: string;
+  /** The durable event seq — THE stable identity of this emission across
+   * refolds and refreshes (a ring index is not: the cap drops from the head).
+   * Null only for a seq-less frame, which `node_emitted` never is today. */
+  seq: number | null;
+  /** True when this emission was folded from durable REPLAY rather than
+   * arriving live. Renderers use it to skip entrance animation on a refresh —
+   * a finished run must not re-perform itself. */
+  persisted: boolean;
 }
 
 /**
@@ -506,6 +514,10 @@ function applyEvent(
   /** False when this event has already been appended to a ring (see
    * `appendedThroughSeq`) — SET-shaped state still refolds, appends don't. */
   append: boolean,
+  /** The durable seq of this event (null for a seq-less ephemeral frame). */
+  seq: number | null,
+  /** True when this fold is a history refold, not a live arrival. */
+  replay: boolean,
 ): void {
   switch (event.event) {
     case "run_started":
@@ -723,6 +735,8 @@ function applyEvent(
           typeof event.component_ref === "string" ? event.component_ref : null,
         title: typeof event.title === "string" ? event.title : null,
         ts: event.ts,
+        seq,
+        persisted: replay,
       });
       if (run.emissions.length > EMISSIONS_MAX) {
         run.emissions.splice(0, run.emissions.length - EMISSIONS_MAX);
@@ -911,7 +925,7 @@ const workflowRunsSlice = createSlice({
       if (seq !== null && seq > run.appendedThroughSeq) {
         run.appendedThroughSeq = seq;
       }
-      applyEvent(state, run, event, append);
+      applyEvent(state, run, event, append, seq, replay);
     },
 
     /** Tracked-tier stream bookkeeping (phase/tool/warning markers + chunk

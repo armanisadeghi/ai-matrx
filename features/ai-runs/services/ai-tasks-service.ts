@@ -1,4 +1,4 @@
-import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { mapAiTaskRow } from "@/features/ai-runs/utils/db-row-mappers";
 import type {
@@ -8,11 +8,14 @@ import type {
   CompleteAiTaskInput,
 } from "../types/aiRunTypes";
 
-const aiTasksTable = (method: string) =>
-  fromDeprecatedTable(
-    "ai_tasks",
-    `features/ai-runs/services/ai-tasks-service.ts:${method}`,
-  );
+/**
+ * `agent.ai_tasks` is the live table. This service used to go through
+ * `fromDeprecatedTable("ai_tasks", ...)`, a shim that never queried Postgres —
+ * it resolved `{data: null, error: DEPRECATED_TABLE}`, so the admin AI-Tasks
+ * page (`/administration/ai/ai-tasks`) could only ever render empty. The old
+ * `public.ai_tasks` now lives in `graveyard`.
+ */
+const aiTasksTable = () => supabase.schema("agent").from("ai_tasks");
 
 /**
  * AI Tasks Service - Client-side CRUD operations for ai_tasks table
@@ -29,7 +32,7 @@ export const aiTasksService = {
   async create(input: CreateAiTaskInput): Promise<AiTask> {
     const userId = requireUserId();
 
-    const { data, error } = await aiTasksTable("create")
+    const { data, error } = await aiTasksTable()
       .insert({
         user_id: userId,
         run_id: input.run_id,
@@ -51,7 +54,7 @@ export const aiTasksService = {
    * Get a task by database ID
    */
   async get(id: string): Promise<AiTask | null> {
-    const { data, error } = await aiTasksTable("get")
+    const { data, error } = await aiTasksTable()
       .select("*")
       .eq("id", id)
       .single();
@@ -68,7 +71,7 @@ export const aiTasksService = {
    * Get a task by socket.io task_id (most common lookup)
    */
   async getByTaskId(taskId: string): Promise<AiTask | null> {
-    const { data, error } = await aiTasksTable("getByTaskId")
+    const { data, error } = await aiTasksTable()
       .select("*")
       .eq("task_id", taskId)
       .single();
@@ -85,7 +88,7 @@ export const aiTasksService = {
    * List all tasks for a run
    */
   async listForRun(runId: string): Promise<AiTask[]> {
-    const { data, error } = await aiTasksTable("listForRun")
+    const { data, error } = await aiTasksTable()
       .select("*")
       .eq("run_id", runId)
       .order("created_at", { ascending: true });
@@ -112,7 +115,7 @@ export const aiTasksService = {
     const orderBy = filters?.order_by || "created_at";
     const orderDirection = filters?.order_direction || "desc";
 
-    let query = aiTasksTable("list")
+    let query = aiTasksTable()
       .select("*", { count: "exact" })
       .eq("user_id", userId);
 
@@ -143,7 +146,7 @@ export const aiTasksService = {
    * Update a task (used during streaming)
    */
   async update(taskId: string, input: UpdateAiTaskInput): Promise<AiTask> {
-    const { data, error } = await aiTasksTable("update")
+    const { data, error } = await aiTasksTable()
       .update(input)
       .eq("task_id", taskId)
       .select()
@@ -157,7 +160,7 @@ export const aiTasksService = {
    * Update a task by database ID
    */
   async updateById(id: string, input: UpdateAiTaskInput): Promise<AiTask> {
-    const { data, error } = await aiTasksTable("updateById")
+    const { data, error } = await aiTasksTable()
       .update(input)
       .eq("id", id)
       .select()
@@ -185,7 +188,7 @@ export const aiTasksService = {
       status: "completed",
     };
 
-    const { data, error } = await aiTasksTable("complete")
+    const { data, error } = await aiTasksTable()
       .update(updateData)
       .eq("task_id", taskId)
       .select()
@@ -199,7 +202,7 @@ export const aiTasksService = {
    * Mark a task as failed
    */
   async fail(taskId: string, errorData?: Record<string, any>): Promise<AiTask> {
-    const { data, error } = await aiTasksTable("fail")
+    const { data, error } = await aiTasksTable()
       .update({
         status: "failed",
         response_errors: errorData,
@@ -217,7 +220,7 @@ export const aiTasksService = {
    * Cancel a task
    */
   async cancel(taskId: string): Promise<AiTask> {
-    const { data, error } = await aiTasksTable("cancel")
+    const { data, error } = await aiTasksTable()
       .update({
         status: "cancelled",
         response_complete: true,
@@ -248,7 +251,7 @@ export const aiTasksService = {
       ...additionalData,
     };
 
-    const { data, error } = await aiTasksTable("updateStreaming")
+    const { data, error } = await aiTasksTable()
       .update(updateData)
       .eq("task_id", taskId)
       .select()
@@ -262,7 +265,7 @@ export const aiTasksService = {
    * Delete a task (cascade will handle if run is deleted)
    */
   async delete(taskId: string): Promise<void> {
-    const { error } = await aiTasksTable("delete")
+    const { error } = await aiTasksTable()
       .delete()
       .eq("task_id", taskId);
 
@@ -273,7 +276,7 @@ export const aiTasksService = {
    * Get the latest task for a run
    */
   async getLatestForRun(runId: string): Promise<AiTask | null> {
-    const { data, error } = await aiTasksTable("getLatestForRun")
+    const { data, error } = await aiTasksTable()
       .select("*")
       .eq("run_id", runId)
       .order("created_at", { ascending: false })
