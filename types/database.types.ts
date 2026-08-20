@@ -1114,14 +1114,14 @@ export type Database = {
       review_queue: {
         Row: {
           created_at: string
-          domain_id: string | null
+          domain_id: string
           feature_id: string | null
           feedback: string | null
           feedback_at: string | null
           id: string
           instructions: string
           metadata: Json
-          repo_slug: string | null
+          repo_slug: string
           source: string
           status: string
           title: string
@@ -1130,14 +1130,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          domain_id?: string | null
+          domain_id: string
           feature_id?: string | null
           feedback?: string | null
           feedback_at?: string | null
           id?: string
           instructions: string
           metadata?: Json
-          repo_slug?: string | null
+          repo_slug: string
           source?: string
           status?: string
           title: string
@@ -1146,14 +1146,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          domain_id?: string | null
+          domain_id?: string
           feature_id?: string | null
           feedback?: string | null
           feedback_at?: string | null
           id?: string
           instructions?: string
           metadata?: Json
-          repo_slug?: string | null
+          repo_slug?: string
           source?: string
           status?: string
           title?: string
