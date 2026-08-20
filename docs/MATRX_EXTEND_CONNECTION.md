@@ -30,7 +30,7 @@ bottom.
   `chrome.runtime.onMessageExternal` (same machine) and Supabase
   Broadcast (cross machine). A single `FRONTEND_RPC` envelope rides on
   both.
-- Auth is the same Supabase project (`txzxabzwovsujtloxrus`) on both
+- Auth is the same Supabase project (`brsgrqvjdzwihsvnfqkf`, `us-east-1`) on both
   sides — JWTs are reusable, no new identity surface to design.
 - The window-panels deep-link (`?panels=<typeKey>:<instanceId>`) is the
   intended public entry point when the extension wants to drive the
@@ -192,7 +192,7 @@ consumer should import directly from `@/lib/types/bridge-envelope`.
 ## Auth model
 
 Both sides authenticate against the same Supabase project
-(`txzxabzwovsujtloxrus`). JWTs are reusable across the boundary.
+(`brsgrqvjdzwihsvnfqkf`, `us-east-1`). JWTs are reusable across the boundary.
 
 **Three auth modes, in priority order:**
 
