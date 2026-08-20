@@ -66,7 +66,24 @@ export default function AgentReviewQueueTable() {
   }
 
   useEffect(() => {
-    void refresh();
+    let active = true;
+    Promise.all([loadReviewQueue(), loadReviewRegistry()])
+      .then(([queue, nextRegistry]) => {
+        if (!active) return;
+        setRows(queue);
+        setRegistry(nextRegistry);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          toast.error(error instanceof Error ? error.message : "Review queue failed to load");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const columns = useMemo<MatrxColumnDef<ReviewQueueRow>[]>(

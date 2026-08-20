@@ -391,9 +391,9 @@ Rules + stages: [`lib/coming-soon/FEATURE.md`](./lib/coming-soon/FEATURE.md).
 - **Table** → `MatrxDataTable` in **controlled** mode when paging server-side. **Every column sorts AND filters — no exceptions**, and finite value sets get real options with counts. A filter the server can't serve must not render at all; a control that silently filters one page is worse than none.
 - **Full-row click** opens the record (pointer cursor); interactive cells stop propagation. Fields the user can see and easily change (name, description, category, tags) edit **inline**.
 
-## Agent Review Queue — anything you build that Arman must see
+## Agent Review — agents first, Arman last
 
-Built a demo page, new route, or reviewable UI surface Arman didn't watch you make? **Register it in `agent.review_queue` before ending the turn** — a "please test /demos/foo" buried in a chat message will never be seen. He reviews at `/administration/users/agent-review`; his feedback comes back through the same table, and you archive the row once handled. **Invoke the `agent-review-queue` skill** for the exact INSERT/feedback/status contract.
+Built reviewable UI Arman did not watch you make? **Invoke `agent-review-queue` and submit it to `agent.review_queue`.** Submission starts independent agent review; only verified `ready_for_human` work reaches `/administration/users/agent-review`. Every round stays in the row's linked Messages thread—never overwrite `instructions`/`feedback` or send unfinished work directly to Arman.
 
 ## Handoffs
 

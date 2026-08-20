@@ -1,48 +1,61 @@
-# Agent Review Queue
+# Agent Review
 
-**Status:** Live. **Route:** `/administration/users/agent-review` (super-admin via `app/(admin)/layout.tsx`). **Table:** `agent.review_queue` (single table — deliberately minimal, no RPCs, no satellites).
+**Status:** Live. **List:** `/administration/users/agent-review`. **Item:** `/administration/users/agent-review/[id]`. **Tables:** `agent.review_queue` + the canonical `communication.dm_*` conversation tables.
 
-The one place agents register anything they built that Arman must go see/test, where his feedback flows back, and where repair work is routed by capability. The agent-side contract (insert, claim, verification, and status SQL) lives in **`.claude/skills/agent-review-queue/SKILL.md`** — that skill is the source of truth for agent behavior; this doc covers the surface.
+Agent Review is an agent-first quality pipeline. Agents submit, independently review, repair, and verify work before Arman sees it. Every item owns one durable Messages conversation so instructions, findings, replies, repairs, and later rounds never overwrite one another.
 
-## Parts
+The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this document owns the product surface.
 
-| Part              | Path                                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| Page (thin)       | `app/(admin)/administration/users/agent-review/page.tsx`                                                   |
-| Client            | `features/admin/agent-review/components/AgentReviewClient.tsx`                                             |
-| Direct DB service | `features/admin/agent-review/service.ts`                                                                   |
-| Types             | `features/admin/agent-review/types.ts` (generated row/update types)                                        |
-| Triage contract   | `features/admin/agent-review/triage.ts` (Zod schema, labels, legacy suggestion)                            |
-| Migration         | `migrations/agent_review_queue.sql` (applied + ledgered)                                                   |
-| Nav               | registered in `admin-categories.ts` ("Feedback" category) + `admin-navigation.ts` (Users → Communications) |
+## Flow
 
-## Invariants
+`submitted → agent_review → agent_changes_requested ↔ agent_review → ready_for_human → human_changes_requested ↔ agent_review → approved → archived`
 
-- **Data path is direct supabase-js** (`.schema("agent").from("review_queue")`), super-admin RLS (`public.is_super_admin()`). No API routes, no server actions, no Python.
-- **`url` stores an app path** (`/demos/foo`) so links work on localhost and prod; absolute URLs only for external targets.
-- **Status flow:** `pending` (agent) → `changes_requested` | `approved` (Arman, with `feedback`) → agent claims/repairs/verifies → `pending` again or `archived` (agent). Human approval remains explicit; assignment state does not replace review status.
-- **Routing is multi-label.** `metadata.triage.lane` gives one primary owner lane; `required_tools` declares every capability the row needs. Filters operate on both. A task may require frontend code + database + authenticated browser + deployment.
-- **Metadata is runtime-validated.** Missing and invalid triage are shown loudly and can receive a deterministic suggested classification. Never cast JSONB into a local mirror type.
-- **Claims are coordination, not authorization.** Agents atomically claim ready rows with `FOR UPDATE SKIP LOCKED`, record a stable owner label, and hand off to a separate verifier for high-risk work. RLS remains the authorization layer.
-- **"Copy for AI"** uses the shared `components/agent-copy` primitive, `kind: "agent-review-item"`, embedding the full row, feedback, and triage metadata.
-- **Rows describe the LIVE app — deployment/PR status never appears in `title`/`instructions`.** All agent code auto-merges to `main` and deploys within ~30 minutes, so "not deployed yet" is false by review time. Contract in the skill's "Everything is LIVE" section.
-- **Do not grow the table.** New needs go in `metadata` jsonb or don't belong here — the existing feedback system (`users.user_feedback`) is the heavyweight tracker; this stays a 4-status queue.
+- **Only `ready_for_human` is Arman's normal inbox.** Submission is not a request for him to test unfinished work.
+- **Every transition has a message.** `instructions` and `feedback` remain legacy summaries; the DM thread is the conversation and audit trail.
+- **Rerun preserves history.** “Run agent review again” returns to `submitted` in the same thread.
+- **Desktop leads.** The list is semi-tabular and the item workspace shows a left-to-right stage rail; mobile scrolls without changing the desktop information architecture.
 
-## Change Log
+## Surfaces
 
-- 2026-08-14 — Feedback editors now use the canonical `ProTextarea`, including built-in voice recording and shared text actions. Each review row's destination is now an always-visible, labeled **Open page** button instead of an easy-to-miss icon-only control.
-- 2026-08-11 — Surface made agent-writable (2 `ask` targets). `review_feedback_draft` (draft) stages prose into a row's feedback textarea — the buffer was lifted out of `ReviewItemCard` into `AgentReviewClient` (`feedbackDrafts` by row id) so the surface can publish it as the `feedback_drafts` read value and the agent writes the admin's own editor, not a parallel one. `review_triage_classification` (entity) patches only `lane`/`priority`/`workstreams`/`required_tools` inside `metadata.triage`, through the same `metadataWithReviewTriage` + `updateReviewQueueRow` pair the "Apply suggested triage" button uses, so the versioned envelope is patched and `assignment`/`verification` are preserved verbatim. Handlers in `components/AgentReviewWriteTargets.tsx`; both address ONE row by `row_id` and refuse loudly when none is named (this page has no selected row). **STATUS transitions are deliberately not declared at all** — this is a queue of work agents produced, so approve/request-changes/archive/restore stay Arman's button presses; `id`/`created_at`/`source`/`url` and the `show_archived` filter are excluded too. `refresh()` now resolves with the rows it read: super-admin RLS filters a forbidden UPDATE to zero rows *without* erroring, so the entity handler re-reads and throws rather than reporting a save that never happened.
-- 2026-08-08 — "Everything is LIVE" doctrine: rows may never carry deployment/PR status (auto-merge ships all agent code within ~30 min); skill + invariant updated, legacy contaminated rows queued for cleanup.
-- 2026-08-08 — Evolved into the Agent Repair Board: versioned metadata triage, lane/tool filters, compact expandable rows, assignment/claim/verification contract, and agent-facing coordinator queries. No schema expansion; reused `metadata` JSONB and direct Supabase path.
-- 2026-07-21 — Created: table + RLS, admin page, nav registration, `agent-review-queue` skill, CLAUDE.md pointer.
+| Part | Path |
+|---|---|
+| List route | `app/(admin)/administration/users/agent-review/page.tsx` |
+| Item route | `app/(admin)/administration/users/agent-review/[id]/page.tsx` |
+| URL-driven table | `components/AgentReviewQueueTable.tsx` |
+| Routed workspace | `components/AgentReviewWorkspace.tsx` |
+| Direct services | `service.ts` |
+| Registry classification | `registry.ts` |
+| Status/types | `types.ts` |
+| Triage contract | `triage.ts` |
+
+## Data contract
+
+- `agent.review_queue.conversation_id` uniquely links one `communication.dm_conversations` row.
+- The insert trigger creates the group conversation, adds Arman as its participant, and seeds the submission message atomically.
+- Conversation metadata carries `kind='agent_review'`, the review id, routed review URL, repository, domain, and feature.
+- DM message `sender_id` remains the authenticated audit principal. `metadata.actor_kind` + `actor_label` identify the effective human or agent actor; messaging bubbles render that effective identity.
+- Domain, feature, and repository are required registry identities (`platform.taxonomy_node`, `platform.repo`), never URL-derived labels.
+- The list uses `MatrxDataTable` URL state: search, every column filter, sort, page, and selected record survive refresh and Back/Forward.
+
+## UI contract
+
+- The list's first column is **Open**; the target-page door is also explicit.
+- Data is labeled by columns. Status, classification, and repository never appear as unexplained chips whose absence hides missing data.
+- Opening an item changes the route. The detail page owns the stage rail, target-page door, full conversation, and human actions.
+- The same conversation appears in `/messages/[conversationId]`; Agent Review embeds the canonical messaging thread rather than cloning chat state.
+- Blank domain/feature values render **Not assigned** instead of disappearing.
+
+## Security and integration
+
+- The admin layout and `agent.review_queue` super-admin RLS gate the review surface.
+- Messaging keeps its participant access and real-time/unread machinery; Agent Review adds no parallel permissions or message store.
+- The data path is direct `supabase-js`; no Next.js database proxy.
+- The recurring Codex reviewer is separate operational machinery and remains disabled until Arman explicitly approves its name and interval.
 
 ## Change log
 
-- 2026-08-19 — **Area filter (derived from `url`).** A 392-row board had no
-  product dimension: `source` is the repo, `lane` is the kind of work,
-  `required_tools` is the equipment — none says WHICH FEATURE. Arman could not
-  find his Content Plan rows. Fixed with `deriveReviewArea` (triage.ts, 9
-  tests): container-first path segments, options built from the rows present
-  with counts, ids never mistaken for feature names. Derived, never stored —
-  `metadata.feature` existed on only 19 of 390 rows, while `url` is on 100%.
-  Live: All areas → Marketing › Content Plan (22) narrows 392 → 22.
+- 2026-08-20 — Rebuilt Agent Review as an agent-first workflow; migrated every active row from human-first `pending` to `submitted`; linked all 456 rows to durable DM conversations; added atomic thread creation, routed item workspaces, visible stage rails, semi-tabular URL-state list, effective agent actors in Messages, and preserved multi-round feedback.
+- 2026-08-20 — Added registry-backed domain, feature, and repository classification with complete counts.
+- 2026-08-14 — Feedback editors adopted `ProTextarea`; target page became an explicit button.
+- 2026-08-08 — Added repair routing, assignment, and verification metadata.
+- 2026-07-21 — Created the original human-first queue.

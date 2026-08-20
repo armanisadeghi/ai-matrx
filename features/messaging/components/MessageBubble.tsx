@@ -22,6 +22,23 @@ interface MessageBubbleProps {
   showSenderName?: boolean;
 }
 
+function StatusIcon({ status }: { status: MessageStatus }) {
+  switch (status) {
+    case "sending":
+      return <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />;
+    case "sent":
+      return <Check className="h-3 w-3 text-zinc-400" />;
+    case "delivered":
+      return <CheckCheck className="h-3 w-3 text-zinc-400" />;
+    case "read":
+      return <CheckCheck className="h-3 w-3 text-blue-500" />;
+    case "failed":
+      return <AlertCircle className="h-3 w-3 text-red-500" />;
+    default:
+      return null;
+  }
+}
+
 export function MessageBubble({
   message,
   isOwn,
@@ -63,24 +80,6 @@ export function MessageBubble({
       return format(new Date(dateString), "h:mm a");
     } catch {
       return "";
-    }
-  };
-
-  // Status icon component
-  const StatusIcon = ({ status }: { status: MessageStatus }) => {
-    switch (status) {
-      case "sending":
-        return <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />;
-      case "sent":
-        return <Check className="h-3 w-3 text-zinc-400" />;
-      case "delivered":
-        return <CheckCheck className="h-3 w-3 text-zinc-400" />;
-      case "read":
-        return <CheckCheck className="h-3 w-3 text-blue-500" />;
-      case "failed":
-        return <AlertCircle className="h-3 w-3 text-red-500" />;
-      default:
-        return null;
     }
   };
 

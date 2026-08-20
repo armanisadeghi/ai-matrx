@@ -67,7 +67,22 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
   }
 
   useEffect(() => {
-    void refresh();
+    let active = true;
+    Promise.all([loadReviewQueueItem(reviewId), loadReviewRegistry()])
+      .then(([item, nextRegistry]) => {
+        if (!active) return;
+        setRow(item);
+        setRegistry(nextRegistry);
+        setError(item ? null : "Review item not found");
+      })
+      .catch((loadError: unknown) => {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : "Review item failed to load");
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [reviewId]);
 
   const currentStage = useMemo(
