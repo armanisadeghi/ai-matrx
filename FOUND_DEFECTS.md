@@ -17,6 +17,158 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D218 — the `/crm` record-class facet is INERT: the 1,449 discovered parties have no door (2026-08-20)
+
+`features/crm/components/CrmListPage.tsx:141-145` reduces the facet's value with
+`values.find(v => RECORD_CLASS_FILTERS.includes(v))` — **the first match wins**. The shared
+popover it reads is a multi-select that APPENDS
+(`components/official/matrx-data-table/ColumnHeaderCell.tsx:428-437`), so clicking
+"Found by the platform" while "My contacts" is selected produces `["contacts","discovered"]`
+and `find` returns `"contacts"` — unchanged. De-selecting "My contacts" first does not help:
+an empty set clears the filter, and `CrmListPage.tsx:178-180` re-derives it from
+`DEFAULT_RECORD_CLASS_FILTER` (`features/crm/types.ts:225`) = `contacts`, so the option
+re-selects itself immediately.
+
+**Repro (production, 2026-08-20):** `/crm` → RECORD column filter icon → click "Found by the
+platform". The checkmark stays on "My contacts" and the row count does not move (28 → 28).
+Reproduced with a real click, with a keyboard select, and by dispatching
+`pointerdown/mousedown/pointerup/mouseup/click` directly on the option element — so this is the
+handler, not hit-testing.
+
+**Why it matters:** `features/crm/FEATURE.md` states the contacts-only default is load-bearing
+*because* "the Record column facet … is always rendered … Hidden is never unreachable". It is
+unreachable. That facet is the only door to the 1,449 `record_class='discovered'` parties
+(`projects/crm/STATE.md` §4.2 P14 confirms no dedicated surface exists). THE DOOR LAW fails here.
+
+Fix: `out.record_class` should take the LAST value, or the facet should be rendered as a
+single-select. Re-prove in the browser by switching to "Found by the platform" and seeing the
+discovered rows.
+
+### D219 — merge blanks the winner's job title/employer, and unmerge does not restore `is_primary` — the round trip is lossy (2026-08-20)
+
+`migrations/crm_11_deals_pipelines.sql:380, 388, 393` — merge sets `is_primary = false` on every
+moved `party_contact_point`, `address` and `affiliation`. The unmerge at `:462-467` moves
+`party_id` back and **never restores the flag**; the `moved` ledger stores ids only, not the
+prior value.
+
+**Proved live** on two `Sarah Mitchell` records in org `7cd12da2…` (both purged afterwards):
+
+| | before merge | after merge | after Undo |
+|---|---|---|---|
+| winner `job_title` | Director of Partnerships | **NULL** | **NULL** |
+| loser `job_title` | Director of Partnerships | Director of Partnerships | **NULL** |
+| loser `primary_employer_party_id` | set | — | **NULL** |
+| affiliation `is_primary` | **true** | false | **false** |
+
+The mechanism: the affiliation → party mirror trigger recomputes `job_title` /
+`primary_employer_party_id` from the *primary* affiliation, and after the merge there is none.
+The UI promises the opposite in two places — the duplicates page ("every merge can be undone
+exactly") and the undo dialog ("everything the merge moved goes back to it exactly").
+
+**Worse case not exercised:** when contact points move, an undone merge returns the loser with
+**no primary email or phone** — precisely what `crm.check_send_eligibility` and the dialer read.
+
+Fix: record the prior `is_primary` in `crm.party_merge.moved` and restore it on unmerge; and do
+not clear the winner's own scalar fields as a side effect of a merge.
+
+### D220 — contact import silently discards every field on a row it MATCHED (2026-08-20)
+
+`features/crm/import/engine.ts:802` — `const rows = plan.rows.filter(p => p.status === "create")`.
+Rows the dry run labels **Exists** never reach the commit loop, so the employer/affiliation, job
+title and any extra email or phone they carry are thrown away. The commit loop below it (`:950-966`)
+*does* write affiliations for matched rows — it simply never sees them.
+
+**Repro (production):** a 20-row paste import into org `7cd12da2…` containing
+`Sarah,Mitchell,sarah.mitchell@northwindanalytics.com,,Northwind Analytics,Director of Partnerships`.
+The preview matched her to the existing Sarah Mitchell and displayed her Company as "Northwind
+Analytics". After commit the existing Sarah still had **zero** `crm.affiliation` rows, while the
+separately-created duplicate Sarah got one. Nothing told the user the column was dropped.
+
+This is the flow the resolver's NULL-only enrichment exists for. Expected: a matched row enriches
+the existing record.
+
+### D221 — pasted-text imports land with NO provenance (2026-08-20)
+
+`features/crm/components/import/ImportWizard.tsx:446` calls
+`loadParsedData(parseDelimitedText(pastedText), null)` — `null` for the file name — so
+`fileName` is null, `commitImport`'s `sourceDetail` is `undefined` (`:205`), and every row lands
+with `source_detail = NULL`. Verified live: all 21 rows of a paste import had `source='import'`,
+`source_detail=NULL`, against `projects/crm/STATE.md` §4.1 P1's claim that "the import wizard
+stamps the uploaded file name as `source_detail`". One-literal fix (`"pasted text"`).
+
+### D222 — enrolling into an outreach list from `/crm` never records where the list came from (2026-08-20)
+
+`features/crm/components/outreach-lists/AddToOutreachListDialog.tsx` `submit()` calls
+`addMembersByPartyIds` and stops. It never calls `recordEnrollmentSource`
+(`features/crm/outreach-lists/service.ts:407`), which the list-page dialog
+(`AddMembersDialog.tsx:182`) does call.
+
+**Verified live:** enrolling from an ACTIVE saved view via `/crm` → "Add to outreach list" left
+`crm.outreach_list.definition = {}` on both the create-new and pick-existing branches, so the
+"Filled from &lt;view&gt;" door at `OutreachListDetailPage.tsx:672` could not render. Running the
+same enrollment from the list page's "Add members" → Smart view stamped it correctly and the door
+appeared. So the capability works; the `/crm` entry point skips it.
+
+### D223 — outreach enrollment never binds a contact point, so every enrolled member is reported "blocked" (2026-08-20)
+
+`crm.outreach_list_member.contact_point_id` is NULL for **11 of the 13 members live**. Nothing in
+`addMembersByPartyIds` / `AddMembersDialog` binds one, even when the party has exactly one usable
+address. Chasebox → "Blocked members" then reports each of them with
+*"This member has no contact point attached, so eligibility always fails with
+`recipient_not_in_list`. Fix: Open the record and attach the email address to use, then re-enroll."*
+
+**Verified live** with Ingrid Halvorsen, who had BOTH an email and a phone and was still listed as
+blocked. The dialer does not need the binding (it resolves the primary phone at claim time), so
+the defect only shows on the send/Chasebox path — as pure noise that hides real blockers.
+
+Fix: bind the best contact point at enrollment (the send lane's channel, primary first), or make
+the blocked-members query fall back to the party's media before declaring a block.
+
+### D224 — flagging do-not-contact writes no audit entry; only LIFTING it does (2026-08-20)
+
+Verified live on `/crm/[partyId]`: toggling **Do not contact** ON set
+`crm.party.do_not_contact = true` and wrote nothing else — no `crm.interaction`, no timeline entry.
+Toggling it OFF wrote a `note` interaction *"Do-not-contact lifted / This record can be contacted
+again."* The consequential half of the pair is the unaudited one. `projects/crm/STATE.md` §3 claims
+the reversible-suppression pair "leaves an audit trail on both sides" — it leaves one on one side.
+
+### D225 — the floating "N assists" overlay covers the record page's activity **Log** button and swallows the click (2026-08-20)
+
+On `/crm/[partyId]` at a 1280×720 viewport with the DEALS card rendered, the Log button sits at
+CSS `(1210-1252, 645-673)` and `document.elementFromPoint(1231, 659)` returns
+`div.fixed.z-40.flex.flex-col.items-end.gap-1.5.pb-safe` — the assists container. A real click
+does **nothing**: no error, no toast, the typed subject and body just sit there. Dispatching the
+click on the button element directly logs the interaction immediately, proving the button is fine
+and the overlay is the cause.
+
+Cost: a user logs a call, presses Log, and loses the note with no feedback. The overlay needs
+`pointer-events: none` on its container (with `auto` on the pill itself), or the record page needs
+bottom padding that clears it.
+
+### D226 — the CRM Trash has no bulk restore or bulk purge (2026-08-20)
+
+`/crm` bulk-deletes any number of records in one action (verified with 23). The Trash view then
+renders **no checkbox column at all** — each record must be purged through its own `⋮` → "Delete
+permanently" → confirm, three interactions per row. Emptying a trash you filled with one click
+takes 69. The Trash scope chips also go stale (showed "Mine 1" above an empty list after a
+restore).
+
+### D227 — the New deal "With (person or company)" picker returns nothing for any query (2026-08-20)
+
+`/crm/deals` → **New deal** → type into "With (person or company)". Verified live with `Zephyr`
+(an existing `record_class='contact'` organization in the active org) and `Marcus` (an existing
+contact person) — no dropdown, no results, no empty-state message. The employment picker on
+`/crm/[partyId]` finds both with the same strings, so the data and the record-class predicate are
+fine. Deals therefore cannot be attached to a party at creation time, and the deal record then
+reads "Nobody attached yet" with no way to fix it from the dialog.
+
+### D228 — the record page's provenance link is relative and dead-ends (2026-08-20)
+
+`/crm/[partyId]` → "WHY THIS IS IN YOUR CRM" renders the source-detail token as
+`<a href="crm_create_form">`, a RELATIVE href that resolves to `/crm/crm_create_form` and lands on
+"We couldn't find this item". Either make it a real door (the import run, the form, the connector)
+or render it as plain text — a link that cannot go anywhere is worse than no link.
+
 ### D217 — the Supabase MCP project is NOT the database the app and server use (2026-08-20)
 
 🚨 **Every agent that reads state or applies a migration through the Supabase MCP with
@@ -624,6 +776,18 @@ This cannot meet the documented signature-block acceptance yet: frontend
 affiliation/employer handling. Finish the governed path by carrying an employer hint, resolving
 or creating the company through the party resolver, and writing `crm.affiliation`; keep the raw
 `database` tool blocked. Re-run the same production proof and require the Employer card/door.
+
+**RE-CONFIRMED IN PRODUCTION 2026-08-20** (independent test pass, `admin@admin.com`, org
+Castellano & Reyes). Selecting a 5-line signature in `/notes` → overflow → **Save as contact**:
+the review dialog shows Full name, Email, Phone and **Title / role**, and has **no Company field
+at all** — "Halloway Biomedical" is visibly dropped before the user can even confirm it. What
+landed: `crm.party` "Priya N. Ravensworth", `record_class='contact'`, `source='agent'`,
+`source_detail='Saved from /notes'`, email + phone contact points (both `is_primary=false`),
+`headline = 'Director of Clinical Ops at Halloway Biomedical'`. What did NOT land: no
+`Halloway Biomedical` organization party, no `crm.affiliation`, `primary_employer_party_id` NULL —
+**and `job_title` is NULL too**, even though the dialog collected "Director of Clinical Ops" in
+its own Title/role field. So the fix is two columns wide, not one: carry the employer *and* land
+the title the dialog already asks for.
 
 ### D158 remainder — persisted DataRef and legacy dynamic-table contracts still use bare names (2026-08-13)
 
