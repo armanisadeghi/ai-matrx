@@ -2171,6 +2171,15 @@
   max-height: min(40rem, 90dvh);
 }
 
+/* Radix/Vaul modal layers temporarily put `pointer-events: none` on <body>.
+   Sonner portals beside those layers, so its very high z-index can paint a
+   toast above a drawer while the toast still inherits body's disabled hit
+   testing. Restore hit testing on the visible toast card only; enabling it on
+   the toaster would make the whole fixed corner intercept the modal below. */
+[data-sonner-toast][data-visible="true"] {
+  pointer-events: auto;
+}
+
 /* ────────────────────────────────────────────────────────────────────────
    .matrx-mobile-sheet — ONE mobile density for any desktop panel hosted in a
    bottom sheet (TabbedBottomSheet sets it; see that file's header).

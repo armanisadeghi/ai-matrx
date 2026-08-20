@@ -24,9 +24,11 @@ Status: **live**. Owns the app-level error boundary UI and the deploy-skew syste
 - The boot script is dependency-free inline JS — it must never import a chunk.
 - `/api/version` is `force-dynamic`, `no-store`, and returns `deploymentId: null` off-Vercel → watcher polling disabled locally (the `matrx:stale-chunk` listener still works).
 - Toast copy is the Supabase pattern: one sentence, **Refresh** + **Not now**, `duration: Infinity`, deduped by toast id.
+- **Visible Sonner toast cards restore `pointer-events: auto`.** Modal drawers disable body hit-testing; without this override, a toast paints above the sheet while taps pass through it.
 
 ## Change Log
 
+- 2026-08-20 — Restored hit-testing on visible Sonner toast cards so **Refresh** and **Not now** remain tappable above modal mobile drawers.
 - 2026-08-15 — Root boot scripts use tracked `next/script` `beforeInteractive` entries instead of raw React `<script>` children, preserving pre-hydration recovery without triggering React 19.2 hydration recovery.
 - 2026-07-29 — Users reported "This page is out of date" on /welcome: stale /login tabs soft-navigated after sign-in and 404'd on the new build's chunks. Added `HardRedirectForm` — auth success now lands via full-document navigation; deleted dead `sign-up/Basic.tsx` + `AlternativeSignUp.tsx`.
 - 2026-07-10 — Killed all post-boot auto-reloads (boot script, `ErrorBoundaryView`, `global-error`); added `NewVersionWatcher` + `/api/version` consent toast; boot script now disarms after boot via `__MATRX_APP_BOOTED__`.
