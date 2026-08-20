@@ -32,8 +32,15 @@ export default function LegacySiteRedirect({
 
   useEffect(() => {
     if (!brandId) return;
-    const suffix = rest?.length ? `/${rest.join("/")}` : "";
     const query = searchParams.toString();
+    // Site-level cost was retired with the dead web.batch projection. Old
+    // bookmarks still owe the user a door, so send that one legacy URL to the
+    // live workspace-wide provider-spend surface instead of a brand-first 404.
+    if (rest?.length === 1 && rest[0] === "cost") {
+      router.replace(`${marketingRoutes.cost()}${query ? `?${query}` : ""}`);
+      return;
+    }
+    const suffix = rest?.length ? `/${rest.join("/")}` : "";
     router.replace(
       `${marketingRoutes.site(brandId, siteId)}${suffix}${query ? `?${query}` : ""}`,
     );
