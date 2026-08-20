@@ -57554,12 +57554,59 @@
       }
     },
     "/{stream_slug}/{path}": {
+      "get": {
+        "tags": [
+          "cloud-browser-stream"
+        ],
+        "summary": "Proxy Stream Http",
+        "operationId": "proxy_stream_http__stream_slug___path__get__get__stream_slug_path",
+        "parameters": [
+          {
+            "name": "stream_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stream Slug"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "head": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__head__head__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__get__head__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
@@ -57606,54 +57653,7 @@
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__head__post__stream_slug_path",
-        "parameters": [
-          {
-            "name": "stream_slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Stream Slug"
-            }
-          },
-          {
-            "name": "path",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "cloud-browser-stream"
-        ],
-        "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__head__get__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__get__post__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
