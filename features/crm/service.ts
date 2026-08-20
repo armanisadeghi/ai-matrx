@@ -1552,6 +1552,8 @@ export async function logInteraction(args: {
   body?: string;
   durationSeconds?: number | null;
   occurredAt?: string;
+  /** Binds the activity to a deal's timeline (crm.interaction.deal_id). */
+  dealId?: string | null;
 }): Promise<void> {
   // No `.select()` — see addContactPoint: component INSERT…RETURNING 42501s
   // under the id-list std_select policy. Callers refetch the timeline.
@@ -1568,6 +1570,7 @@ export async function logInteraction(args: {
       body: args.body?.trim() || null,
       duration_seconds: args.durationSeconds ?? null,
       occurred_at: args.occurredAt ?? new Date().toISOString(),
+      deal_id: args.dealId ?? null,
     });
   if (error) throw pgError(error);
 }

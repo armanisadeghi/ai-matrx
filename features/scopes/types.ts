@@ -93,7 +93,8 @@ export type EntityType =
   | "app" //                   an `app.definition` row (packaged agent experience)
   | "agent_surface_binding" // an agent⇄surface binding row
   | "page_extraction_job" //   an extraction dataset (one `page_extraction_jobs` row)
-  | "party"; //                a CRM person/company (crm.party) — notes on the record page ride platform.comments
+  | "party" //                 a CRM person/company (crm.party) — notes on the record page ride platform.comments
+  | "crm_deal"; //             a CRM deal (crm.deal) — notes on the deal record ride platform.comments
 
 // ─── Favorite kinds (presentation vocabulary, folded onto EntityType) ──
 //
@@ -151,6 +152,7 @@ export const ASSOCIATION_TARGET_TYPES = [
   "web_screenshot", //       a page capture — per-image attachments on the page workspace
   "party", //                a CRM person/company (crm.party) — the record page attaches tasks/files/notes onto it; roles come from party→category edges
   "crm_outreach_list", //    a CRM outreach list (a worked send/dial queue) — parties and resources attach into it
+  "crm_deal", //             a CRM deal (crm.deal) — people on it (role 'deal_contact'), tasks/files attach onto it
   "rulebook", //             a Masterwork Rulebook — its Scout interviews attach here (conversation→rulebook, role 'interview')
 ] as const satisfies readonly EntityTypeToken[];
 
@@ -295,6 +297,13 @@ export interface PlatformCategory {
   color: string | null;
   icon: string | null;
   position: number | null;
+  /**
+   * The row's jsonb metadata — category rows CARRY semantics now: a
+   * `deal_pipeline` stage stores `{outcome: "won"|"lost", probability: 0..100}`
+   * here (see migrations/crm_11_deals_pipelines.sql). Null when empty or when
+   * hydrated from an older cache entry.
+   */
+  metadata: Record<string, unknown> | null;
 }
 
 /** Cache entry for one `dimension` — mirrors `AssociationsEntry`. */

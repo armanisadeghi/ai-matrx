@@ -110,6 +110,7 @@ export function createCategory(args: {
       isSystem: false,
       color: args.color ?? null,
       icon: args.icon ?? null,
+      metadata: null,
       position: null,
     };
     dispatch(

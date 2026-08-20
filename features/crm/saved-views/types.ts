@@ -48,6 +48,15 @@ export const SAVED_VIEW_VISIBILITIES = ["personal", "internal"] as const;
 export type SavedViewVisibility = (typeof SAVED_VIEW_VISIBILITIES)[number];
 
 /**
+ * Which LIST a view belongs to (`crm.saved_view.list_key`). One table serves
+ * every CRM list — a deals view must never surface on the party bar and vice
+ * versa, so every read filters on this and every create stamps it. Open set on
+ * purpose; each list brings its own definition shape + parser.
+ */
+export const SAVED_VIEW_LIST_KEYS = ["parties", "deals"] as const;
+export type SavedViewListKey = (typeof SAVED_VIEW_LIST_KEYS)[number];
+
+/**
  * The persisted query. `version` is the shape version — bump it when the
  * definition gains or loses a field, and teach `parseSavedViewDefinition` how
  * to read the older shapes (same discipline as `ListViewPrefs.version`).
@@ -80,9 +89,11 @@ export interface SavedViewDefinition {
   direction: PartySortDirection;
 }
 
-/** A view row with its definition already validated — the only shape the UI sees. */
-export interface SavedView extends SavedViewRow {
-  definition: SavedViewDefinition;
+/** A view row with its definition already validated — the only shape the UI sees.
+ *  Generic over the definition: the party list uses `SavedViewDefinition`, the
+ *  deals list brings its own (`features/crm/deals/views.ts`). */
+export interface SavedView<TDef = SavedViewDefinition> extends SavedViewRow {
+  definition: TDef;
 }
 
 const DEFAULT_DEFINITION: SavedViewDefinition = {

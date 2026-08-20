@@ -50,6 +50,7 @@ import {
   Frame,
   GitBranch,
   Globe,
+  Handshake,
   Layers,
   Layers3,
   LayoutTemplate,
@@ -433,6 +434,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Contact,
     labelPlural: "People & Companies",
     hrefFor: (id) => `/crm/${id}`,
+  },
+  crm_deal: {
+    Icon: Handshake,
+    labelPlural: "Deals",
+    hrefFor: (id) => `/crm/deals/${id}`,
   },
   crm_outreach_list: {
     Icon: Megaphone,

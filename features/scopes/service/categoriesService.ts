@@ -50,6 +50,10 @@ function toCategory(row: CatListRow): PlatformCategory {
     color: row.color ?? null,
     icon: row.icon ?? null,
     position: row.position ?? null,
+    metadata:
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : null,
   };
 }
 

@@ -64,6 +64,8 @@ interface Props {
   orgId: string;
   interactions: InteractionRow[];
   onChanged: () => Promise<void>;
+  /** When set, logged activity binds to this deal's timeline (deal record page). */
+  dealId?: string | null;
 }
 
 export function InteractionTimeline({
@@ -71,6 +73,7 @@ export function InteractionTimeline({
   orgId,
   interactions,
   onChanged,
+  dealId,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
@@ -96,6 +99,7 @@ export function InteractionTimeline({
         durationSeconds: minutes.trim()
           ? Math.round(Number(minutes) * 60) || null
           : null,
+        dealId: dealId ?? null,
       });
       setSubject("");
       setBody("");

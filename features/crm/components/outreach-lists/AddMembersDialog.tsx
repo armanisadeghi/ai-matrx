@@ -33,7 +33,11 @@ import {
   recordEnrollmentSource,
 } from "../../outreach-lists/service";
 import type { SavedView } from "../../saved-views/types";
-import { describeDefinition, queryFromDefinition } from "../../saved-views/types";
+import {
+  describeDefinition,
+  parseSavedViewDefinition,
+  queryFromDefinition,
+} from "../../saved-views/types";
 import { fetchSavedViews } from "../../saved-views/service";
 
 type SourceScope = "org" | "mine" | "view";
@@ -100,7 +104,10 @@ export function AddMembersDialog({
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchSavedViews(ctx);
+        const rows = await fetchSavedViews(ctx, {
+          listKey: "parties",
+          parse: parseSavedViewDefinition,
+        });
         if (!cancelled) setViews(rows);
       } catch (e) {
         if (!cancelled) {

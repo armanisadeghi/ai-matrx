@@ -17,6 +17,7 @@ function category(
     color: null,
     icon: null,
     position: null,
+    metadata: null,
   };
 }
 

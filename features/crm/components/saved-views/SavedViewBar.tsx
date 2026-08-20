@@ -31,13 +31,9 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { cn } from "@/lib/utils";
-import type { CrmQueryContext, PartyListQuery, PartySortDirection } from "../../types";
-import type { SavedView, SavedViewDefinition } from "../../saved-views/types";
-import {
-  definitionFromQuery,
-  definitionsMatch,
-  describeDefinition,
-} from "../../saved-views/types";
+import type { CrmQueryContext } from "../../types";
+import type { SavedView } from "../../saved-views/types";
+import type { SavedViewCodec } from "../../saved-views/service";
 import {
   createSavedView,
   deleteSavedView,
@@ -46,18 +42,32 @@ import {
   updateSavedView,
 } from "../../saved-views/service";
 
-export interface SavedViewBarProps {
+/**
+ * Generic over the definition shape: each CRM list (parties, deals) supplies
+ * its codec (list key + parser), the CURRENT list state as a definition, and
+ * the compare/describe functions. The bar itself never knows what a definition
+ * means — that stays in each list's `saved-views`/`views` module.
+ */
+export interface SavedViewBarProps<TDef> {
   ctx: CrmQueryContext | null;
-  query: PartyListQuery;
-  sort: { sort: string; direction: PartySortDirection };
+  codec: SavedViewCodec<TDef>;
+  /**
+   * What the list shows RIGHT NOW as a definition — or null when the surface
+   * cannot be described by a view (e.g. the trash). Null disables save/update.
+   */
+  current: TDef | null;
+  /** Tooltip for the disabled Save button when `current` is null. */
+  currentUnavailableReason?: string;
+  matches: (a: TDef, b: TDef) => boolean;
+  describe: (definition: TDef) => string;
   /** Org a NEW view is stamped into (the scope's org, else the active org). */
   orgId: string | null;
   activeViewId: string | null;
   onActiveViewIdChange: (id: string | null) => void;
   /** Applies a view: the caller lands it through setQuery + setPrefs. */
-  onApply: (definition: SavedViewDefinition) => void;
+  onApply: (definition: TDef) => void;
   /**
-   * A view id from the URL (`/crm?view=…`) — opened once, as soon as the views
+   * A view id from the URL (`?view=…`) — opened once, as soon as the views
    * load. This is what makes a view a real destination: an outreach list can
    * link back to the query that filled it.
    */
@@ -65,21 +75,24 @@ export interface SavedViewBarProps {
   className?: string;
 }
 
-export function SavedViewBar({
+export function SavedViewBar<TDef>({
   ctx,
-  query,
-  sort,
+  codec,
+  current,
+  currentUnavailableReason,
+  matches,
+  describe,
   orgId,
   activeViewId,
   onActiveViewIdChange,
   onApply,
   autoOpenViewId,
   className,
-}: SavedViewBarProps) {
-  const [views, setViews] = useState<SavedView[]>([]);
+}: SavedViewBarProps<TDef>) {
+  const [views, setViews] = useState<SavedView<TDef>[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveOpen, setSaveOpen] = useState(false);
-  const [renaming, setRenaming] = useState<SavedView | null>(null);
+  const [renaming, setRenaming] = useState<SavedView<TDef> | null>(null);
   const [renameBusy, setRenameBusy] = useState(false);
 
   useEffect(() => {
@@ -87,7 +100,7 @@ export function SavedViewBar({
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchSavedViews(ctx);
+        const rows = await fetchSavedViews(ctx, codec);
         if (!cancelled) setViews(rows);
       } catch (e) {
         if (!cancelled) {
@@ -123,13 +136,12 @@ export function SavedViewBar({
   }, [autoOpenViewId, views, openedFromUrl]);
 
   const active = views.find((v) => v.id === activeViewId) ?? null;
-  const current = definitionFromQuery(query, sort);
-  // Trash is a different surface, not a queue — a view can neither describe it
-  // nor be "modified" by it.
-  const inTrash = query.view === "trash";
-  const dirty = !!active && !inTrash && !definitionsMatch(active.definition, current);
+  // `current === null` means the surface cannot be described by a view right
+  // now (the party list's trash, for instance) — nothing to save or compare.
+  const dirty =
+    !!active && current !== null && !matches(active.definition, current);
 
-  const apply = (view: SavedView) => {
+  const apply = (view: SavedView<TDef>) => {
     onActiveViewIdChange(view.id);
     onApply(view.definition);
     void touchSavedView(view.id);
@@ -142,22 +154,26 @@ export function SavedViewBar({
 
   const saveNew = async (name: string, shared: boolean) => {
     if (!orgId) throw new Error("No organization to save this view into");
+    if (current === null) throw new Error("This surface cannot be saved as a view");
     const created = await createSavedView({
       name,
       definition: current,
       orgId,
       visibility: shared ? "internal" : "personal",
+      codec,
     });
     setViews((prev) => [created, ...prev]);
     onActiveViewIdChange(created.id);
     toast.success(`"${created.name}" saved`);
   };
 
-  const updateDefinition = async (view: SavedView) => {
+  const updateDefinition = async (view: SavedView<TDef>) => {
+    if (current === null) return;
     try {
       await updateSavedView(view.id, { definition: current });
+      const next = current;
       setViews((prev) =>
-        prev.map((v) => (v.id === view.id ? { ...v, definition: current } : v)),
+        prev.map((v) => (v.id === view.id ? { ...v, definition: next } : v)),
       );
       toast.success(`"${view.name}" now matches what you are looking at`);
     } catch (e) {
@@ -165,7 +181,7 @@ export function SavedViewBar({
     }
   };
 
-  const rename = async (view: SavedView, name: string) => {
+  const rename = async (view: SavedView<TDef>, name: string) => {
     await updateSavedView(view.id, { name });
     setViews((prev) =>
       prev.map((v) => (v.id === view.id ? { ...v, name: name.trim() } : v)),
@@ -173,7 +189,7 @@ export function SavedViewBar({
     toast.success(`Renamed to "${name.trim()}"`);
   };
 
-  const menuFor = (view: SavedView): (() => ItemMenuConfig) => () => ({
+  const menuFor = (view: SavedView<TDef>): (() => ItemMenuConfig) => () => ({
     sections: [
       {
         id: "use",
@@ -294,7 +310,7 @@ export function SavedViewBar({
               <button
                 type="button"
                 onClick={() => apply(view)}
-                title={describeDefinition(view.definition)}
+                title={describe(view.definition)}
                 className="inline-flex h-11 items-center gap-1 px-2 font-medium lg:h-7"
               >
                 {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -341,10 +357,11 @@ export function SavedViewBar({
         size="sm"
         variant="ghost"
         className="h-11 gap-1 px-2 text-xs lg:h-7"
-        disabled={!orgId || inTrash}
+        disabled={!orgId || current === null}
         title={
-          inTrash
-            ? "Smart views describe live records, not the trash"
+          current === null
+            ? (currentUnavailableReason ??
+              "This surface cannot be saved as a view")
             : orgId
               ? "Save what you are looking at as a reusable view"
               : "No organization to save into"
@@ -358,7 +375,7 @@ export function SavedViewBar({
       <SaveViewDialog
         open={saveOpen}
         onOpenChange={setSaveOpen}
-        summary={describeDefinition(current)}
+        summary={current === null ? "" : describe(current)}
         onSave={saveNew}
       />
 

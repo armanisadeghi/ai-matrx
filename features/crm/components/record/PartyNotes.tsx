@@ -17,11 +17,18 @@ import { formatRelativeTime } from "@/utils/datetime";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 
 interface Props {
+  /** The record the notes hang on (a party by default; a deal via entityType). */
   partyId: string;
   orgId: string;
+  /**
+   * Which commentable CRM entity this record is. Notes stay platform.comments
+   * either way; generalized rather than forked when the deal record page
+   * needed the same card (2026-08-20).
+   */
+  entityType?: "party" | "crm_deal";
 }
 
-export function PartyNotes({ partyId, orgId }: Props) {
+export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   // A failed load is NOT an empty list. Rendering "No notes yet" over a failure
   // tells the user this record has no notes when it may have many — and it hid
@@ -34,7 +41,7 @@ export function PartyNotes({ partyId, orgId }: Props) {
 
   const load = useCallback(async () => {
     const gen = ++generationRef.current;
-    const result = await commentsService.listForEntity("party", partyId);
+    const result = await commentsService.listForEntity(entityType, partyId);
     if (generationRef.current !== gen) return;
     if (result.ok) {
       setComments(result.data.comments);
@@ -43,7 +50,7 @@ export function PartyNotes({ partyId, orgId }: Props) {
       console.error("[crm] notes load failed:", result.error);
       setLoadError(result.error.message);
     }
-  }, [partyId]);
+  }, [partyId, entityType]);
 
   useEffect(() => {
     // Timer = async boundary, so no setState runs synchronously in the effect.
@@ -58,7 +65,7 @@ export function PartyNotes({ partyId, orgId }: Props) {
     if (!body) return;
     setSaving(true);
     const result = await commentsService.add({
-      entityType: "party",
+      entityType,
       entityId: partyId,
       body,
       orgId,

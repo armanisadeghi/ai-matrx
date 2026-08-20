@@ -17,6 +17,12 @@
 import type { PartyKind } from "@/features/crm/types";
 
 export const CRM_HREF = "/crm";
+export const CRM_DEALS_HREF = "/crm/deals";
+
+/** One deal's record page. */
+export function crmDealHref(dealId: string): string {
+  return `${CRM_DEALS_HREF}/${dealId}`;
+}
 
 /** The query keys `CrmListPage` reads on the route mount. */
 export const CRM_CREATE_PARAM = "create";

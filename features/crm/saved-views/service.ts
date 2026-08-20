@@ -14,12 +14,23 @@ import { supabase } from "@/utils/supabase/client";
 import type { CrmQueryContext } from "../types";
 import type {
   SavedView,
-  SavedViewDefinition,
+  SavedViewListKey,
   SavedViewRow,
   SavedViewUpdate,
   SavedViewVisibility,
 } from "./types";
-import { parseSavedViewDefinition } from "./types";
+
+/**
+ * Every list brings its own definition shape; the service is generic over it.
+ * `listKey` scopes reads and stamps creates (`crm.saved_view.list_key`) so a
+ * deals view never appears on the party bar; `parse` is that list's defensive
+ * jsonb validator (party: `parseSavedViewDefinition`; deals:
+ * `parseDealViewDefinition`).
+ */
+export interface SavedViewCodec<TDef> {
+  listKey: SavedViewListKey;
+  parse: (raw: unknown) => TDef;
+}
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -35,8 +46,8 @@ function crm() {
 }
 
 /** Row → the UI shape, with the jsonb definition validated (never trusted raw). */
-function hydrate(row: SavedViewRow): SavedView {
-  return { ...row, definition: parseSavedViewDefinition(row.definition) };
+function hydrate<TDef>(row: SavedViewRow, codec: SavedViewCodec<TDef>): SavedView<TDef> {
+  return { ...row, definition: codec.parse(row.definition) };
 }
 
 /**
@@ -44,12 +55,14 @@ function hydrate(row: SavedViewRow): SavedView {
  * organizations (declared scope — see the file header). Most-recently-used
  * first, so the bar orders itself around how the floor actually works.
  */
-export async function fetchSavedViews(
+export async function fetchSavedViews<TDef>(
   ctx: CrmQueryContext,
-): Promise<SavedView[]> {
+  codec: SavedViewCodec<TDef>,
+): Promise<SavedView<TDef>[]> {
   let q = crm()
     .from("saved_view")
     .select("*")
+    .eq("list_key", codec.listKey)
     .is("deleted_at", null)
     .order("last_used_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -62,28 +75,33 @@ export async function fetchSavedViews(
     : q.eq("created_by", ctx.userId);
   const { data, error } = await q;
   if (error) throw pgError(error);
-  return (data ?? []).map(hydrate);
+  return (data ?? []).map((row) => hydrate(row, codec));
 }
 
 /** One view by id — the enrollment path's read (a queue must know its query). */
-export async function fetchSavedView(id: string): Promise<SavedView> {
+export async function fetchSavedView<TDef>(
+  id: string,
+  codec: SavedViewCodec<TDef>,
+): Promise<SavedView<TDef>> {
   const { data, error } = await crm()
     .from("saved_view")
     .select("*")
     .eq("id", id)
+    .eq("list_key", codec.listKey)
     .is("deleted_at", null)
     .single();
   if (error) throw pgError(error);
-  return hydrate(data);
+  return hydrate(data, codec);
 }
 
-export async function createSavedView(input: {
+export async function createSavedView<TDef>(input: {
   name: string;
   description?: string;
-  definition: SavedViewDefinition;
+  definition: TDef;
   orgId: string;
   visibility: SavedViewVisibility;
-}): Promise<SavedView> {
+  codec: SavedViewCodec<TDef>;
+}): Promise<SavedView<TDef>> {
   const name = input.name.trim();
   if (!name) throw new Error("Name the view so the team can find it again");
   const { data, error } = await crm()
@@ -91,7 +109,9 @@ export async function createSavedView(input: {
     .insert({
       name,
       description: input.description?.trim() || null,
-      definition: input.definition,
+      // Serialized as-is: every codec's TDef is a plain JSON object.
+      definition: input.definition as SavedViewRow["definition"],
+      list_key: input.codec.listKey,
       organization_id: input.orgId,
       visibility: input.visibility,
       last_used_at: new Date().toISOString(),
@@ -104,16 +124,16 @@ export async function createSavedView(input: {
     }
     throw pgError(error);
   }
-  return hydrate(data);
+  return hydrate(data, input.codec);
 }
 
 /** Rename / re-describe / re-share / re-define — whatever the caller passes. */
-export async function updateSavedView(
+export async function updateSavedView<TDef>(
   id: string,
   patch: {
     name?: string;
     description?: string | null;
-    definition?: SavedViewDefinition;
+    definition?: TDef;
     visibility?: SavedViewVisibility;
   },
 ): Promise<void> {
@@ -126,7 +146,8 @@ export async function updateSavedView(
   if (patch.description !== undefined) {
     next.description = patch.description?.trim() || null;
   }
-  if (patch.definition !== undefined) next.definition = patch.definition;
+  if (patch.definition !== undefined)
+    next.definition = patch.definition as SavedViewRow["definition"];
   if (patch.visibility !== undefined) next.visibility = patch.visibility;
   if (Object.keys(next).length === 0) return;
 

@@ -26,6 +26,22 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/crm/deals",
+      label: "Deals",
+      description:
+        "Deals + kanban pipelines: a dense server-paginated list with saved smart views (?view=<id> opens one) and a drag-to-stage board. Stages are deal_pipeline categories; the DB derives status/closed_at from the stage and records won deals as platform.outcome_event rows.",
+      filePath: "app/(core)/crm/deals/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/crm/deals/[dealId]",
+      label: "Deal record",
+      description:
+        "One deal's record: click-to-move stage flow, value/probability/owner facts, the party door, the deal-bound activity timeline (crm.interaction.deal_id), stage history (crm.deal_stage_event), notes, tasks, and files.",
+      filePath: "app/(core)/crm/deals/[dealId]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/crm/import",
       label: "Contact import",
       description:

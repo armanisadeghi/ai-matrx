@@ -44,6 +44,7 @@ import {
   storedJournalistActivity,
 } from "./JournalistIntelligenceCard";
 import { PartyProvenanceCard } from "./PartyProvenanceCard";
+import { PartyDealsCard } from "../deals/PartyDealsCard";
 
 interface Props {
   partyId: string;
@@ -244,6 +245,9 @@ export function PartyRecordPage({ partyId }: Props) {
                     storedActivity={storedJournalistActivity(party)}
                   />
                 )}
+                {/* Deals with this person/company — the door goes both ways
+                    (a deal names its party; the party names its deals). */}
+                <PartyDealsCard party={party} />
                 <InteractionTimeline
                   partyId={party.id}
                   orgId={party.organization_id}

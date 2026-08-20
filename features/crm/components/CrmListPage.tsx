@@ -59,7 +59,13 @@ import {
 } from "../service";
 import { SavedViewBar } from "./saved-views/SavedViewBar";
 import type { SavedViewDefinition } from "../saved-views/types";
-import { queryFromDefinition } from "../saved-views/types";
+import {
+  definitionFromQuery,
+  definitionsMatch,
+  describeDefinition,
+  parseSavedViewDefinition,
+  queryFromDefinition,
+} from "../saved-views/types";
 import { CrmAssistStrip } from "./dedup/CrmAssistStrip";
 import type {
   DateBucket,
@@ -981,8 +987,20 @@ export function CrmListPage({
           {!inTrash && (
             <SavedViewBar
               ctx={list.ctx}
-              query={list.query}
-              sort={{ sort: prefs.sort, direction: prefs.direction }}
+              codec={{ listKey: "parties", parse: parseSavedViewDefinition }}
+              current={
+                // Trash is a different surface, not a queue — a view can
+                // neither describe it nor be "modified" by it.
+                inTrash
+                  ? null
+                  : definitionFromQuery(list.query, {
+                      sort: prefs.sort,
+                      direction: prefs.direction,
+                    })
+              }
+              currentUnavailableReason="Smart views describe live records, not the trash"
+              matches={definitionsMatch}
+              describe={describeDefinition}
               orgId={savedViewOrgId}
               activeViewId={activeViewId}
               onActiveViewIdChange={setActiveViewId}
