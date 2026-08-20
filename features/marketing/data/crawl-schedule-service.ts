@@ -17,6 +17,12 @@
  * a browser cannot clear a live `claim_token` mid-lease and hand the same due
  * occurrence to a second worker. Double-run stays structurally impossible.
  *
+ * THE FREQUENCY FLOOR is enforced by the `web_crawl_schedule_cadence_floor`
+ * trigger, not by this file. That is deliberate: this write is client-direct, so
+ * a check that lived only here would bind the UI and nothing else — not an
+ * agent, not an admin with SQL. `assertCrawlCadenceAllowed` below runs first
+ * purely so the user hears a sentence instead of a Postgres error code.
+ *
  * `next_run_at` is the one shared column, and this file only ever writes NULL
  * to it: that is the documented "recompute me" signal the dispatcher's
  * `seed_missing_next_run_at` sweep picks up on its next tick. The client never
@@ -24,6 +30,7 @@
  * second implementation of it here would drift.
  */
 import type { CrawlCadence } from "@/features/marketing/crawler/crawl-cadence";
+import { assertCrawlCadenceAllowed } from "@/features/marketing/crawler/crawl-cadence";
 import type { CrawlSchedule } from "@/features/marketing/types";
 import { assertData } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
@@ -89,6 +96,14 @@ export type SaveCrawlScheduleResult =
 export async function saveSiteCrawlSchedule(
   input: SaveCrawlScheduleInput,
 ): Promise<SaveCrawlScheduleResult> {
+  // The frequency floor, said in words a person can act on, BEFORE the write.
+  // The `web_crawl_schedule_cadence_floor` trigger is what actually refuses the
+  // row — it is on this path and on an agent's and on a human's psql prompt
+  // alike — but a raw Postgres `check_violation` is not something a
+  // non-technical user can do anything with. This throws first so they hear the
+  // reason instead of the error code. It is NOT the enforcement; removing it
+  // makes the message worse, never the guard weaker.
+  assertCrawlCadenceAllowed(input.cadence);
   const db = await authenticatedWebDb(supabase);
   const intent = {
     enabled: input.enabled,
