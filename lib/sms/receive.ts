@@ -882,6 +882,76 @@ export async function processInboundSms(
  * `sms_consent` survives as a preference/verification record; it is no longer a
  * suppression gate.
  */
+/**
+ * Honor a STOP/START that arrived on a number we could not bind to a person.
+ *
+ * 🚨 A legal opt-out does not depend on us having met the sender. Until
+ * 2026-08-20 the inbound webhook returned early whenever
+ * `resolveSmsInboundContext` came back unresolved -- and the most common
+ * unresolved reason, `verified_user_binding_not_found`, is simply "this number
+ * has no enrolled preference row". So any number that was not already enrolled
+ * could text STOP and it reached the authority NEVER. 47 C.F.R. 64.1200(a)(10)
+ * makes "stop/quit/end/revoke/opt out/cancel/unsubscribe" a per-se reasonable
+ * revocation that must be honored; one we structurally never record is one we
+ * never honor.
+ *
+ * We still know which organization was texted -- it owns the destination number
+ * -- which is all `crm.honor_consent_decision` needs for its
+ * (organization, channel, value_key) path. That path CREATES the medium rather
+ * than dropping a STOP from a number we have not met.
+ */
+export async function honorUnresolvedSmsPolicyKeyword(
+  payload: InboundSmsPayload,
+  policyKeyword: Exclude<SmsPolicyKeyword, null>,
+  providerEventKey: string,
+): Promise<boolean> {
+  if (policyKeyword === "help") return false;
+  const supabase = createAdminClient();
+  const input = inboundContextInput(payload);
+
+  const { data: destinations, error: destinationError } = await supabase
+    .schema("communication")
+    .from("sms_phone_numbers")
+    .select("organization_id, program_key")
+    .eq("provider", input.provider)
+    .eq("provider_account_id", input.providerAccountId)
+    .eq("phone_number", input.destination)
+    .is("deleted_at", null)
+    .limit(2);
+  if (destinationError) {
+    throw new Error(
+      `Failed to resolve SMS destination for an opt-out: ${destinationError.message}`,
+    );
+  }
+  // Not our number, or we cannot say whose it is. Either way there is no
+  // organization to record the decision against.
+  if (destinations?.length !== 1) return false;
+  const destination = destinations[0];
+
+  const { error } = await supabase.schema("crm").rpc("honor_consent_decision", {
+    p_decision: policyKeyword,
+    p_via: "sms_keyword",
+    p_reason: "sms_keyword_unresolved_context",
+    p_organization_id: destination.organization_id,
+    p_channel: "phone",
+    p_value_key: normalizeSmsEndpoint(input.source),
+    p_value_raw: input.source,
+    p_received_at: new Date().toISOString(),
+    p_detail: {
+      provider: input.provider,
+      provider_event_key: providerEventKey,
+      program_key: destination.program_key,
+      source: "sms_keyword_unresolved_context",
+    },
+  });
+  if (error) {
+    throw new Error(
+      `Failed to honor an SMS ${policyKeyword} from an unbound number: ${error.message}`,
+    );
+  }
+  return true;
+}
+
 export async function isPhoneNumberOptedOut(
   phoneNumber: string,
   organizationId?: string,

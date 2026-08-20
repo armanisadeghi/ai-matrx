@@ -12,6 +12,7 @@ import { validateTwilioWebhook } from "@/lib/communications/providers/twilio/web
 import {
   claimInboundSmsReceipt,
   classifySmsPolicyKeyword,
+  honorUnresolvedSmsPolicyKeyword,
   completeInboundSmsReceipt,
   isPhoneNumberOptedOut,
   parseInboundSmsPayload,
@@ -49,18 +50,32 @@ export async function POST(request: Request) {
     }
 
     const context = await resolveSmsInboundContext(payload);
+    const policyKeyword = classifySmsPolicyKeyword(payload);
+
     if (context.status !== "resolved") {
+      // 🚨 An opt-out is honored even when we cannot bind the sender to a
+      // person. Resolution failing means we do not know WHO texted us; it
+      // never means we may ignore a STOP. Classifying the keyword before this
+      // branch is the whole point -- it used to happen after, so a STOP from
+      // any un-enrolled number reached the authority never.
+      const honored = policyKeyword
+        ? await honorUnresolvedSmsPolicyKeyword(
+            payload,
+            policyKeyword,
+            receipt.providerEventKey,
+          )
+        : false;
       await completeInboundSmsReceipt(
         receipt.receiptId,
         null,
-        `${context.status}:${context.reason}`,
+        honored
+          ? `${context.status}:${context.reason}:honored_${policyKeyword}`
+          : `${context.status}:${context.reason}`,
       );
       return new NextResponse(twiml.toString(), {
         headers: { "Content-Type": "text/xml" },
       });
     }
-
-    const policyKeyword = classifySmsPolicyKeyword(payload);
 
     // START/STOP/HELP must be stored before opt-out enforcement so the existing
     // consent trigger and canonical CRM adapter can reconcile the user's choice.

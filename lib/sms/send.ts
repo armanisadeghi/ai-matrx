@@ -76,10 +76,8 @@ export async function sendAndLogSms(options: SendSmsOptions & {
     body: formatSmsBody(sendOptions.body),
   };
 
-  // Send via Twilio
-  const result = await sendSms(brandedSendOptions);
-
   // Resolve org from the parent conversation (the message belongs to its org).
+  // This happens BEFORE the send, because the suppression check below needs it.
   const { data: parentConversation } = await supabase
     .schema('communication').from('sms_conversations')
     .select('organization_id')
@@ -90,6 +88,42 @@ export async function sendAndLogSms(options: SendSmsOptions & {
     sentByUserId,
     parentConversation?.organization_id,
   );
+
+  // 🚨 THE SUPPRESSION CHECK LIVES HERE, in the one Twilio chokepoint, because
+  // a check a caller can skip will eventually be skipped. Every outbound SMS in
+  // the app funnels through this function, and until 2026-08-20 none of them
+  // read suppression at all — a number that texted STOP yesterday could be
+  // texted again today, which under 47 C.F.R. 64.1200(a)(10) is an unhonored
+  // revocation and, because we held the opt-out in our own database, the
+  // textbook willfulness fact ($1,500/message trebled rather than $500).
+  //
+  // This reads crm.contact_medium, THE ONE SUPPRESSION AUTHORITY that
+  // crm.honor_consent_decision() writes, so an opt-out on ANY channel stops
+  // this send. It is deliberately a refusal, never a silent drop.
+  if (await isPhoneNumberOptedOut(brandedSendOptions.to, organizationId)) {
+    const error = `Refused: ${brandedSendOptions.to} has opted out of messages from this organization.`;
+    console.error(error);
+    await supabase.schema('communication').from('sms_messages').insert({
+      organization_id: organizationId,
+      conversation_id: conversationId,
+      twilio_sid: null,
+      direction: 'outbound',
+      from_number: brandedSendOptions.from || '',
+      to_number: brandedSendOptions.to,
+      body: brandedSendOptions.body,
+      status: 'failed',
+      error_code: 'suppressed',
+      error_message: error,
+      num_media: 0,
+      media_urls: null,
+      sent_by_user_id: sentByUserId ?? null,
+      sent_by_type: sentByType,
+    });
+    return { success: false, error, errorCode: 'suppressed' };
+  }
+
+  // Send via Twilio
+  const result = await sendSms(brandedSendOptions);
 
   // Log to database regardless of success/failure
   const { error: dbError } = await supabase.schema('communication').from('sms_messages').insert({
