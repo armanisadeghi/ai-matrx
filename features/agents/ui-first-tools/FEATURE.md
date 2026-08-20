@@ -77,7 +77,8 @@ This feature exists because:
   - **Desktop:** cards stack inline directly above the chat input. **Never
     disables the input** — the user can answer cards, type, and submit either or
     both independently.
-  - **Mobile:** cards live in a bottom **Drawer** (`MobileAsksDrawer`) that
+  - **Mobile:** cards live in the canonical fixed-height **BottomSheet**
+    (`MobileAsksDrawer`) that
     auto-opens the moment the agent raises an interaction (re-opens for any
     genuinely new ask callId). Closing it (swipe / tap-out / Minimize) is
     **non-destructive** — asks stay pending; a compact "N questions from the
@@ -358,6 +359,12 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-20` — **SMS authorization is actionable on iPhone.** The mobile ask
+  host now uses the canonical fixed `92dvh` `BottomSheet`, whose body owns the
+  one vertical scroll, instead of an adaptive raw drawer that could leave card
+  actions below the viewport. SMS authorization actions live in the pinned
+  card footer, use full-width 44px mobile targets, keep JSON to horizontal
+  overflow on mobile, and use a 16px OTP input so Safari does not zoom.
 - `2026-08-15` — **Failed `user` calls can no longer strand a phantom prompt.**
   Reproduced from conversation `f659f218…`: `action:"notify"` failed the
   canonical `type` schema, its error result landed, and the immediate resume

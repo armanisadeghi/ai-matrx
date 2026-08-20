@@ -17,6 +17,31 @@ describe("route metadata", () => {
     expect(metadata.openGraph).toMatchObject({
       title: "Build | Agents | AI Matrx",
     });
+    expect(metadata.openGraph).toMatchObject({
+      images: [
+        expect.objectContaining({
+          url: expect.stringContaining("/social-card?"),
+        }),
+      ],
+    });
+  });
+
+  it("creates a purpose-specific, private-safe social card", () => {
+    const metadata = createRouteMetadata("/chat", {
+      title: "Approval needed",
+      description: "A secure action is waiting.",
+      socialCard: {
+        eyebrow: "Text assistant",
+        intent: "Action waiting",
+        seed: "non-sensitive-seed",
+      },
+    });
+
+    const images = metadata.openGraph && "images" in metadata.openGraph
+      ? metadata.openGraph.images
+      : undefined;
+    expect(JSON.stringify(images)).toContain("Action+waiting");
+    expect(JSON.stringify(images)).not.toContain("tool_arguments");
   });
 
   it("creates a stable fallback favicon for an unregistered route", () => {

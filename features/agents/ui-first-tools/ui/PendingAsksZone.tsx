@@ -23,9 +23,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, MessagesSquare } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { cn } from "@/lib/utils";
-import { useScrollFade } from "@/components/ui/scroll-fade";
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@/components/official/bottom-sheet/BottomSheet";
 import {
   groupPendingAsks,
   selectActivePendingAsksForConversation,
@@ -105,9 +107,6 @@ function MobileAsksDrawer({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
-  // Soft fade at the drawer's scroll edges — the whole question+answers scroll
-  // as one here, so the fade cues "there's more above/below".
-  const { ref: fadeRef, style: fadeStyle } = useScrollFade<HTMLDivElement>();
   // Track which asks we've already surfaced so re-opening only happens for a
   // genuinely new interaction — not every time the pending list re-renders.
   const seenRef = useRef<Set<string>>(new Set());
@@ -173,34 +172,34 @@ function MobileAsksDrawer({
         </div>
       )}
 
-      <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
-        <DrawerContent className="max-h-[92dvh] overflow-hidden">
-          <div className="flex shrink-0 items-center gap-2 px-4 pb-1.5 pt-1">
-            <DrawerTitle className="truncate text-sm font-medium text-foreground">
-              {label}
-            </DrawerTitle>
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={label}
+        size="full"
+        contentClassName="bg-card"
+      >
+        <BottomSheetHeader
+          title={label}
+          trailing={
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Minimize — keep questions for later"
             >
-              <ChevronDown className="size-4" />
-              Minimize
+              <ChevronDown className="size-5" />
             </button>
-          </div>
+          }
+        />
+        <BottomSheetBody className="px-3 pt-1">
           <div
-            ref={fadeRef}
-            style={fadeStyle}
-            className={cn(
-              "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-3 pt-1",
-              "pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",
-            )}
+            className="flex min-h-full flex-col gap-2 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
           >
             {children}
           </div>
-        </DrawerContent>
-      </Drawer>
+        </BottomSheetBody>
+      </BottomSheet>
     </>
   );
 }

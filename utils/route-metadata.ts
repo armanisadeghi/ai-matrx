@@ -16,6 +16,31 @@
 import { Metadata } from "next";
 import { generateFaviconMetadata } from "./favicon-utils";
 import { siteConfig } from "@/config/extras/site";
+import {
+  buildSocialCardUrl,
+  type SocialCardOptions,
+} from "@/features/social-cards/social-card";
+
+type RouteSocialCardOptions = Omit<SocialCardOptions, "title" | "description">;
+
+function socialCardImage(
+  title: string,
+  description: string,
+  options: RouteSocialCardOptions | undefined,
+  fallbackSeed: string,
+): string {
+  return new URL(
+    buildSocialCardUrl({
+      title,
+      description,
+      eyebrow: options?.eyebrow,
+      intent: options?.intent,
+      seed: options?.seed ?? fallbackSeed,
+      theme: options?.theme,
+    }),
+    siteConfig.url,
+  ).toString();
+}
 
 /**
  * Creates metadata for a static route layout.
@@ -67,6 +92,8 @@ export function createRouteMetadata(
     /** Self-referential canonical path, e.g. "/education/subjects". Resolves
      *  against `metadataBase` (set in app/config/metadata.ts). */
     canonicalPath?: string;
+    /** Optional treatment for the shared social-card renderer. */
+    socialCard?: RouteSocialCardOptions;
     additionalMetadata?: Partial<Metadata>;
   } = {},
 ): Metadata {
@@ -77,6 +104,7 @@ export function createRouteMetadata(
     letter,
     keywords,
     canonicalPath,
+    socialCard,
     additionalMetadata,
   } = options;
 
@@ -88,6 +116,13 @@ export function createRouteMetadata(
   const socialTitle = composedTitle
     ? `${composedTitle} | AI Matrx`
     : "AI Matrx";
+  const socialDescription = description || siteConfig.description;
+  const socialImage = socialCardImage(
+    composedTitle || "AI Matrx",
+    socialDescription,
+    socialCard,
+    pathname,
+  );
 
   const baseMetadata: Partial<Metadata> = {};
 
@@ -110,12 +145,12 @@ export function createRouteMetadata(
   if (!additionalMetadata?.openGraph && (composedTitle || description)) {
     baseMetadata.openGraph = {
       title: socialTitle,
-      description: description || siteConfig.description,
+      description: socialDescription,
       type: "website",
       siteName: "AI Matrx",
       images: [
         {
-          url: siteConfig.ogImage,
+          url: socialImage,
           width: 1200,
           height: 630,
           alt: composedTitle || "AI Matrx",
@@ -128,8 +163,8 @@ export function createRouteMetadata(
     baseMetadata.twitter = {
       card: "summary_large_image",
       title: socialTitle,
-      description: description || siteConfig.description,
-      images: [siteConfig.ogImage],
+      description: socialDescription,
+      images: [socialImage],
     };
   }
 
@@ -179,6 +214,8 @@ export function createDynamicRouteMetadata(
     /** Favicon badge text (1–2 chars). Required for demo/tests/admin routes. */
     letter?: string;
     ogImage?: string;
+    /** Optional treatment for the shared social-card renderer. */
+    socialCard?: RouteSocialCardOptions;
     /** SEO keywords for this route. */
     keywords?: string[];
     /** Self-referential canonical path; resolves against `metadataBase`. */
@@ -199,6 +236,7 @@ export function createDynamicRouteMetadata(
     description,
     letter,
     ogImage,
+    socialCard,
     keywords,
     canonicalPath,
     metadataBase,
@@ -206,7 +244,8 @@ export function createDynamicRouteMetadata(
 
   const composedTitle = titlePrefix ? `${titlePrefix} | ${title}` : title;
   const desc = description || siteConfig.description;
-  const image = ogImage || siteConfig.ogImage;
+  const image =
+    ogImage || socialCardImage(composedTitle, desc, socialCard, canonicalPath || pathname);
   const socialTitle = `${composedTitle} | AI Matrx`;
 
   return generateFaviconMetadata(

@@ -123,6 +123,34 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
     );
   }
 
+  const actions = otpSent ? (
+    <Button
+      className="min-h-11 w-full sm:w-auto"
+      onClick={verifyAndApprove}
+      disabled={working || !otp.trim()}
+    >
+      Verify and approve
+    </Button>
+  ) : (
+    <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <Button
+        className="min-h-11 w-full sm:w-auto"
+        variant="outline"
+        onClick={decline}
+        disabled={working}
+      >
+        Decline
+      </Button>
+      <Button
+        className="min-h-11 w-full sm:w-auto"
+        onClick={approve}
+        disabled={working}
+      >
+        Approve exact action
+      </Button>
+    </div>
+  );
+
   return (
     <AgentCardShell
       tone="warning"
@@ -131,6 +159,7 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
       title="Confirm action"
       subtitle={exactAuthorization.side_effect_class.replaceAll("_", " ")}
       pending={working}
+      footer={actions}
       aria-label={`Confirm ${ask.toolName}`}
     >
       <div className="space-y-3 text-sm">
@@ -138,7 +167,7 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
           Your text assistant requested <strong>{ask.toolName}</strong>. Approval
           applies only to these exact arguments and expires after 15 minutes.
         </p>
-        <pre className="max-h-40 overflow-auto rounded-md bg-muted p-2 text-xs whitespace-pre-wrap">
+        <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs whitespace-pre-wrap sm:max-h-40 sm:overflow-auto">
           {JSON.stringify(
             redactSmsActionArguments(ask.smsActionArguments ?? {}),
             null,
@@ -154,21 +183,10 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
               inputMode="numeric"
               autoComplete="one-time-code"
               placeholder="Verification code"
+              className="min-h-11 text-base"
             />
-            <Button onClick={verifyAndApprove} disabled={working || !otp.trim()}>
-              Verify and approve
-            </Button>
           </div>
-        ) : (
-          <div className="flex gap-2">
-            <Button onClick={approve} disabled={working}>
-              Approve exact action
-            </Button>
-            <Button variant="outline" onClick={decline} disabled={working}>
-              Decline
-            </Button>
-          </div>
-        )}
+        ) : null}
         {error ? <p className="text-destructive">{error}</p> : null}
       </div>
     </AgentCardShell>

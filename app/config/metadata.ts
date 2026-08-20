@@ -1,6 +1,14 @@
 // File Location: app/config/metadata.ts
 import { Metadata } from "next"
 import { siteConfig } from "@/config/extras/site"
+import { buildSocialCardUrl } from "@/features/social-cards/social-card"
+
+const defaultSocialCard = buildSocialCardUrl({
+    title: "Expertise, made reliable",
+    description: "Turn what you know into reliable, reusable, and accountable AI-powered work.",
+    eyebrow: "AI Matrx",
+    seed: "ai-matrx-home",
+})
 
 export const metadata: Metadata = {
     // Resolves relative OG images + canonical URLs (alternates.canonical) against
@@ -50,7 +58,7 @@ export const metadata: Metadata = {
         siteName: "AI Matrx",
         images: [
             {
-                url: siteConfig.ogImage,
+                url: defaultSocialCard,
                 width: 1200,
                 height: 630,
                 alt: "AI Matrx",
@@ -61,7 +69,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         title: "AI Matrx",
         description: "A revolutionary no-code AI platform that empowers businesses to build sophisticated AI applications without writing a single line of code.",
-        images: [siteConfig.ogImage],
+        images: [defaultSocialCard],
         creator: "@your_twitter_handle",
     },
     icons: {
