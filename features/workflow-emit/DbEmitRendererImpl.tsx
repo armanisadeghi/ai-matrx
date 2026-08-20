@@ -77,11 +77,11 @@ export const DbEmitRendererImpl: React.FC<DbEmitRendererImplProps> = ({
     };
   }, [componentRef, version]);
 
-  if (component) {
+  if (component && componentRef) {
     const Compiled = component;
     return (
       <EmitRendererErrorBoundary
-        componentRef={componentRef ?? ""}
+        componentRef={componentRef}
         fallback={<GenericEmitRenderer {...emitProps} />}
       >
         <Compiled {...emitProps} />

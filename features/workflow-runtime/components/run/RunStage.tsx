@@ -66,9 +66,8 @@ function collectSyntheticSteps(
   for (const readout of config.readouts) {
     if (readout.source.kind !== "progressRail") continue;
     const source = readout.source as ProgressRailSource;
-    for (const [nodeId, labels] of Object.entries(
-      source.syntheticSteps ?? {},
-    )) {
+    if (!source.syntheticSteps) continue;
+    for (const [nodeId, labels] of Object.entries(source.syntheticSteps)) {
       if (!merged[nodeId]) merged[nodeId] = labels;
     }
   }
