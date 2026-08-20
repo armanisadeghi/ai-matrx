@@ -170,6 +170,30 @@ answer them (the page/action/question rule).
   duplicating them; merged kinds keep provenance (a `source`/provider field),
   never duplicate records per provider.
 
+## THE MERGE + TRANSLATION LAW (Arman, 2026-08-20 — platform-level, unbreakable)
+
+- **Provider-named kinds are BANNED.** `brave_search_results` next to
+  `google_search_results` next to `bing_search_results` is the death of the kind
+  system — 100 kinds is the same as no kinds. Things of the same kind, type, or
+  purpose get ONE merged kind; the provider is a `source` field, never a slug.
+  Adding a provider means writing one adapter, never minting a kind.
+- **Every provider gets a TRANSLATION ADAPTER, modeled on the AI request
+  system.** Exactly as any provider's model config translates into any other
+  provider's call (configuration equivalence), each raw payload translates INTO
+  the shared kind: value vocabularies map ("US" ↔ "United States"), equivalent
+  concepts land in one field however each provider spells them, and a field one
+  provider lacks is DERIVED when an honest derivation exists (rank from array
+  order, `published_at` parsed from a date string, an approximation when the
+  source is relative). Use code to unify — the fewer optional fields, the more
+  every downstream can count on, the more valuable the data.
+- **The pipeline is never lossy by accident.** An adapter declares every raw key
+  in exactly one of two sets: MAPPED (raw path → kind field) or DROPPED (named
+  key + reason, approved by Arman, visible in code). Any key in neither set is
+  UNKNOWN and must scream loudly (log + ops record) — that is how a provider
+  adding a field gets noticed instead of silently discarded. This is the
+  configuration-equivalence lesson (`on_unmapped='drop'` silently discarded
+  1,139 combinations) applied at every data boundary.
+
 ## SDK wishlist (Stage A agents append friction here; the SDK build consumes it)
 
 - (empty — first run pending)
