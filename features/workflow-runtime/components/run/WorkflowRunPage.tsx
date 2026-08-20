@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PenLine, Play, RotateCcw } from "lucide-react";
+import { CalendarClock, PenLine, Play, RotateCcw } from "lucide-react";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -179,6 +179,13 @@ export function WorkflowRunPage({
               icon={<RotateCcw />}
               ariaLabel="Run it again"
               onClick={runAgain}
+            />
+          ) : null}
+          {definitionId ? (
+            <TapTargetButton
+              icon={<CalendarClock />}
+              ariaLabel="Run it without me"
+              href={`/workflows/${definitionId}/triggers`}
             />
           ) : null}
           {definitionId ? (

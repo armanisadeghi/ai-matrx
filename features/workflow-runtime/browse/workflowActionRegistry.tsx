@@ -13,6 +13,7 @@
 import {
   Archive,
   ArchiveRestore,
+  CalendarClock,
   ClipboardCopy,
   Copy,
   ExternalLink,
@@ -89,6 +90,16 @@ export function buildWorkflowMenu(ctx: WorkflowMenuContext): ItemMenuConfig {
                 },
               ]
             : []),
+          // Running without a person present is a capability of every
+          // workflow, so it is a door on every row — not a setting buried
+          // inside one.
+          {
+            kind: "link" as const,
+            id: "triggers",
+            label: "Run it without me",
+            icon: CalendarClock,
+            href: `/workflows/${workflow.id}/triggers`,
+          },
           {
             kind: "link",
             id: "open-new-tab",
