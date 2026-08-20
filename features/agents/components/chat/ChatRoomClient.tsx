@@ -191,6 +191,14 @@ export function ChatRoomClient({
     sourceFeature: SOURCE_FEATURE,
     ready: !isInitializing && isFreshRoute,
     config: { responseDensity: "compact" },
+    // `surfaceName: null` — EXPLICIT surface opt-out. This launch IS the chat
+    // conversation itself; without this, the launch thunk auto-adopts the
+    // `matrx-user/chat` provider registered below and hands the run its OWN
+    // transcript/conversation-id back as "surface context" (a self-referential
+    // loop), then stamps the surface so every later turn re-injects it via
+    // refreshSurfaceScope. The provider stays mounted for its real consumers:
+    // context-menu launches, the header Agents panel, and write targets.
+    runtime: { surfaceName: null },
     isEphemeral: isIncognito,
     preferFresh: isFreshRoute,
     freshSessionKey: isFreshRoute ? freshSessionKey : 0,
