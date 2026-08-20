@@ -57601,12 +57601,12 @@
           }
         }
       },
-      "head": {
+      "post": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__get__head__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__get__post__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
@@ -57648,12 +57648,12 @@
           }
         }
       },
-      "post": {
+      "head": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__get__post__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__get__head__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
