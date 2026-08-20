@@ -51,6 +51,15 @@ export type FormatAwareInputProps = {
   value: unknown;
   placeholder?: string;
   onChange: (next: unknown) => void;
+  /**
+   * The row being edited. Only DEPENDENT choice columns read it — one whose
+   * options narrow to the group another column's cell names.
+   *
+   * A row FORM should pass its LIVE draft, not the saved row: changing the
+   * controlling field must re-narrow this one immediately, or the user picks a
+   * continent and the country list stays stale until they save and reopen.
+   */
+  row?: Record<string, unknown> | null;
 };
 
 export function FormatAwareInput({
@@ -60,6 +69,7 @@ export function FormatAwareInput({
   value,
   placeholder,
   onChange,
+  row,
 }: FormatAwareInputProps) {
   const def = format ? getFieldFormat(format.id) : null;
   if (!def) return null;
@@ -117,6 +127,7 @@ export function FormatAwareInput({
         <ChoiceInput
           id={id}
           format={format}
+          row={row}
           value={value}
           multiple={def.editor === "multiselect"}
           onChange={onChange}

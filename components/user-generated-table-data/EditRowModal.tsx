@@ -169,6 +169,10 @@ export default function EditRowModal({
           value={value}
           placeholder={`Enter ${field.display_name.toLowerCase()}`}
           onChange={(next) => handleValueChange(field.field_name, next)}
+          // The LIVE draft, not the saved row: a dependent column must
+          // re-narrow the moment its controlling field changes in this form,
+          // not after a save-and-reopen.
+          row={rowData}
         />
       );
     }
