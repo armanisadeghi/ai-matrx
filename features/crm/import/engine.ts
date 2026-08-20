@@ -767,10 +767,17 @@ export async function commitImport(
   const companiesCreated: PartyRef[] = [];
   const employerCache = new Map<string, PartyRef>();
 
+  // Company names key the cache trimmed+lowercased EVERYWHERE — the seed below,
+  // the resolve list, and the per-row lookup. A stray space in one of the three
+  // silently re-resolves the company on every row.
+  const companyKey = (name: string) => name.trim().toLowerCase();
+  /** Company name → why it could not be resolved. Fails its rows loudly. */
+  const companyFailures = new Map<string, string>();
+
   // Employers the preview already matched to a live party — no resolve needed.
   for (const p of rows) {
     if (p.existingEmployer && p.companyName) {
-      employerCache.set(p.companyName.toLowerCase(), p.existingEmployer);
+      employerCache.set(companyKey(p.companyName), p.existingEmployer);
     }
   }
 
@@ -783,27 +790,40 @@ export async function commitImport(
       rows
         .map((p) => p.companyName?.trim())
         .filter((name): name is string => Boolean(name))
-        .filter((name) => !employerCache.has(name.toLowerCase())),
+        .filter((name) => !employerCache.has(companyKey(name))),
     ),
   ];
   for (const namesChunk of chunk(unresolvedCompanies, RESOLVE_BATCH_SIZE)) {
-    const results = await resolvePartiesBatch(
-      namesChunk.map((name) => ({
-        kind: "organization" as const,
-        displayName: name,
-        orgId: plan.orgId,
-        source: "import",
-        sourceDetail,
-      })),
-    );
+    const companyInputs = namesChunk.map((name) => ({
+      kind: "organization" as const,
+      displayName: name,
+      orgId: plan.orgId,
+      source: "import",
+      sourceDetail,
+    }));
+    let results: Awaited<ReturnType<typeof resolvePartiesBatch>>;
+    try {
+      results = await resolvePartiesBatch(companyInputs);
+    } catch (e) {
+      // The whole company chunk failed — record it against every name so the
+      // rows that need them fail with the reason instead of quietly importing
+      // people whose employer column vanished.
+      const message = e instanceof Error ? e.message : String(e);
+      for (const name of namesChunk) companyFailures.set(companyKey(name), message);
+      continue;
+    }
     for (const item of results) {
-      // A company that fails to resolve is not fatal: the person still imports,
-      // just without the employer link, and the row says so.
-      if (!item.resolved) continue;
-      employerCache.set(
-        namesChunk[item.index].toLowerCase(),
-        resolvedPartyRef(item.resolved),
-      );
+      const name = namesChunk[item.index];
+      if (!item.resolved) {
+        companyFailures.set(
+          companyKey(name),
+          item.error ?? "the company could not be resolved",
+        );
+        continue;
+      }
+      employerCache.set(companyKey(name), resolvedPartyRef(item.resolved));
+      // Only genuinely new companies are "created" — reporting a matched one
+      // here would tell the user we made a company that already existed.
       if (item.resolved.created) {
         companiesCreated.push(resolvedPartyRef(item.resolved));
       }
@@ -874,8 +894,15 @@ export async function commitImport(
           phones: p.phones,
         });
 
+        // A company that could not be resolved fails its rows, exactly as it did
+        // when the employer was resolved inline — importing the person with the
+        // employer column silently dropped is the one outcome nobody wants.
+        if (p.companyName) {
+          const why = companyFailures.get(companyKey(p.companyName));
+          if (why) throw new Error(`Employer "${p.companyName}" — ${why}`);
+        }
         const employer = p.companyName
-          ? employerCache.get(p.companyName.trim().toLowerCase())
+          ? employerCache.get(companyKey(p.companyName))
           : undefined;
         if (employer) {
           await addAffiliation({
