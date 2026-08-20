@@ -12,6 +12,8 @@ interface MobileSheetNavLinkProps {
   isChild?: boolean;
   /** Separately-hosted app on its own origin — open in a new tab. */
   external?: boolean;
+  /** Internal destination that should preserve the current workspace tab. */
+  openInNewTab?: boolean;
 }
 
 export default function MobileSheetNavLink({
@@ -20,12 +22,13 @@ export default function MobileSheetNavLink({
   label,
   isChild = false,
   external = false,
+  openInNewTab = false,
 }: MobileSheetNavLinkProps) {
   const className = isChild
     ? "shell-mobile-nav-item shell-mobile-nav-child"
     : "shell-mobile-nav-item";
 
-  if (external) {
+  if (external || openInNewTab) {
     return (
       <a
         href={href}

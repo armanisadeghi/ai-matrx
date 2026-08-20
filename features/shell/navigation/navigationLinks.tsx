@@ -48,6 +48,7 @@ function shellItemToNavigationLink(item: ShellNavItem): NavigationLink {
     favicon: faviconForHref(item.href),
     adminSurfaces: item.adminSurfaces,
     external: item.external,
+    openInNewTab: item.openInNewTab,
   };
 }
 
@@ -107,6 +108,8 @@ export interface NavigationLink {
   adminSurfaces?: AdminNavSurface[];
   /** Separately-hosted app on its own origin — open in a new tab. */
   external?: boolean;
+  /** Internal destination that opens beside the current workspace. */
+  openInNewTab?: boolean;
 }
 
 // Flat (legacy / transitional) sidebars can't nest — they take a flat

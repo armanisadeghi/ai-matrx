@@ -13,9 +13,7 @@ import {
 } from "@/features/admin/constants/admin-navigation";
 import { cn } from "@/lib/utils";
 import { matchesSearch } from "@/utils/search-scoring";
-
-const AUTO_REFRESH_MS = 60 * 60 * 1_000;
-const FOCUSED_CONTROL_RETRY_MS = 5 * 60 * 1_000;
+import { useVisibilityAwarePageRefresh } from "@/features/launchpad/hooks/useVisibilityAwarePageRefresh";
 
 const getLaunchpadColumnCount = (viewportWidth: number) => {
   if (viewportWidth >= 2_500) return 7;
@@ -74,6 +72,8 @@ export default function AdminLaunchpad() {
   const [columnCount, setColumnCount] = useState(1);
   const normalizedQuery = searchQuery.trim();
 
+  useVisibilityAwarePageRefresh();
+
   useEffect(() => {
     const updateColumnCount = () => {
       setColumnCount(getLaunchpadColumnCount(window.innerWidth));
@@ -82,49 +82,6 @@ export default function AdminLaunchpad() {
     updateColumnCount();
     window.addEventListener("resize", updateColumnCount);
     return () => window.removeEventListener("resize", updateColumnCount);
-  }, []);
-
-  useEffect(() => {
-    let refreshDue = false;
-    let retryTimer: number | undefined;
-
-    const refreshWhenSafe = () => {
-      if (document.visibilityState !== "visible") {
-        refreshDue = true;
-        return;
-      }
-      refreshDue = false;
-
-      const activeElement = document.activeElement;
-      const isEditing =
-        activeElement instanceof HTMLInputElement ||
-        activeElement instanceof HTMLTextAreaElement ||
-        activeElement instanceof HTMLSelectElement;
-
-      if (isEditing) {
-        retryTimer = window.setTimeout(
-          refreshWhenSafe,
-          FOCUSED_CONTROL_RETRY_MS,
-        );
-        return;
-      }
-
-      window.location.reload();
-    };
-
-    const refreshTimer = window.setTimeout(refreshWhenSafe, AUTO_REFRESH_MS);
-    const handleVisibilityChange = () => {
-      if (refreshDue && document.visibilityState === "visible") {
-        refreshWhenSafe();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      window.clearTimeout(refreshTimer);
-      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, []);
 
   const visibleDomains = launchpadDomains.flatMap((domain) => {

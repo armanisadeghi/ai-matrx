@@ -149,6 +149,8 @@ export async function updateSession(
     pathname.startsWith("/api/admin") || // Admin API routes
     pathname === "/dashboard" || // Personalized hub; crashes on guest stub user
     pathname.startsWith("/dashboard/") ||
+    pathname === "/launchpad" || // Personalized favorites + signed-in destinations
+    pathname.startsWith("/launchpad/") ||
     pathname === "/scraper" || // Lives in (transitional); no public landing yet
     pathname.startsWith("/scraper/");
 

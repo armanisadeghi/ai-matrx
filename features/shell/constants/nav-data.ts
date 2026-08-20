@@ -29,6 +29,7 @@ import type { ShellIconName } from "@/features/shell/shellIconMap";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
 import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
+import { USER_LAUNCHPAD_PATH } from "@/features/launchpad/constants";
 
 export type { ShellNavPanelActionId };
 export { NAV_WINDOW_PANEL_ICON };
@@ -307,6 +308,8 @@ export interface ShellNavItem {
    * with an external-link icon instead of an in-app `<Link>` transition.
    */
   external?: boolean;
+  /** Open an internal destination beside the current workspace. */
+  openInNewTab?: boolean;
 }
 
 // Primary navigation items — canonical app URLs shared by (core), (dev), and (transitional).
@@ -328,6 +331,19 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: true,
     description: "Your central hub for all activities and insights",
     color: "sky",
+  },
+  {
+    label: "Launchpad",
+    href: USER_LAUNCHPAD_PATH,
+    iconName: "Rocket",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description:
+      "Keep one starting point open while every destination launches beside it",
+    color: "green",
+    guestHidden: true,
+    openInNewTab: true,
   },
   {
     label: "AI Work",

@@ -240,6 +240,7 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 | Copy one complete agent request draft to another run               | `copyInstanceRequestDraft`                                                    | `features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk.ts` |
 | Prove a scroll area is not clipped (unbounded-height chain)        | `useClippedContentGuard`                                                      | `lib/layout/useClippedContentGuard.ts`                                               |
 | Put a view control in the URL with refresh + Back/Forward fidelity | `useUrlState` + typed codecs                                                  | `lib/url-state/useUrlState.ts`                                                       |
+| Keep an always-open page current without reloading a hidden tab or interrupting typing | `useVisibilityAwarePageRefresh`                                      | `features/launchpad/hooks/useVisibilityAwarePageRefresh.ts`                         |
 | Give a local `MatrxDataTable` isolated shareable URL state         | `MatrxDataTable urlState={{ id }}`                                            | `components/official/matrx-data-table/MatrxDataTable.tsx`                            |
 | Control a remote `MatrxDataTable` from isolated URL query state    | `useTableUrlState({ tableId })`                                               | `lib/data-table/useTableUrlState.ts`                                                 |
 

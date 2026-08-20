@@ -19,6 +19,7 @@ export interface FaviconRouteEntry {
 }
 
 export const faviconRouteData: FaviconRouteEntry[] = [
+  { href: "/launchpad", favicon: { color: "#4d7c0f", letter: "UL" } },
   { href: "/dashboard", favicon: { color: "#0ea5e9", letter: "H" } },
   { href: "/work", favicon: { color: "#7c3aed", letter: "AW" } },
   { href: "/agents", favicon: { color: "#f43f5e", letter: "AG" } },
@@ -62,10 +63,16 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/surfaces", favicon: { color: "#075985", letter: "SF" } },
   { href: "/vault", favicon: { color: "#065f46", letter: "VA" } },
   { href: "/vision-interview", favicon: { color: "#9d174d", letter: "VI" } },
-  { href: "/knowledge/data-stores", favicon: { color: "#b45309", letter: "Ds" } },
+  {
+    href: "/knowledge/data-stores",
+    favicon: { color: "#b45309", letter: "Ds" },
+  },
   { href: "/knowledge/search", favicon: { color: "#ca8a04", letter: "Rq" } },
   { href: "/knowledge/library", favicon: { color: "#a16207", letter: "Rl" } },
-  { href: "/knowledge/repositories", favicon: { color: "#854d0e", letter: "Rp" } },
+  {
+    href: "/knowledge/repositories",
+    favicon: { color: "#854d0e", letter: "Rp" },
+  },
   { href: "/knowledge", favicon: { color: "#92400e", letter: "K" } },
   // Compatibility route retained until the structural Knowledge cutover.
   { href: "/rag", favicon: { color: "#92400e", letter: "K" } },

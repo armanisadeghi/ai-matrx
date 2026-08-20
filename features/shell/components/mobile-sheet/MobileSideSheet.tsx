@@ -71,6 +71,7 @@ export default function MobileSideSheet({
                     iconName={item.iconName}
                     label={item.label}
                     external={item.external}
+                    openInNewTab={item.openInNewTab}
                   />
                 );
               }

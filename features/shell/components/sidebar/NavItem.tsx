@@ -16,7 +16,7 @@ interface NavItemProps {
 }
 
 export default function NavItem({ item }: NavItemProps) {
-  if (item.external) {
+  if (item.external || item.openInNewTab) {
     return (
       <a
         href={item.href}

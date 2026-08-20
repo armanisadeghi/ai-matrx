@@ -36,7 +36,8 @@ product feature that does not already have one.
 - `app/(admin)/administration/page.tsx` — Administration dashboard.
 - `app/(admin)/administration/AdminDashboardClient.tsx` — direct destination directory, destination search, and filesystem route search.
 - `app/(admin)/administration/launchpad/page.tsx` — always-open Admin Launchpad route.
-- `features/admin/components/AdminLaunchpad.tsx` — dense registry renderer, search, new-tab launch contract, and visibility-aware hourly refresh.
+- `features/admin/components/AdminLaunchpad.tsx` — dense registry renderer, search, and new-tab launch contract.
+- `features/launchpad/hooks/useVisibilityAwarePageRefresh.ts` — shared visibility-aware hourly refresh used by the Admin and user Launchpads.
 - `features/admin/components/AdminDomainDirectory.tsx` — compact domain renderer shared by the dashboard and every static domain landing page.
 - `app/(admin)/administration/_nav/AdminNavTreeMenu.tsx` — compact header tree over the same hierarchy.
 - `app/(admin)/administration/utilities/all-routes/page.tsx` — filesystem route directory grouped by its declared registry location.

@@ -8,7 +8,11 @@ import { cn } from "@/lib/utils";
 import { usePinned } from "@/components/favorites/usePinned";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
-export function PinnedSection() {
+export function PinnedSection({
+  openInNewTab = false,
+}: {
+  openInNewTab?: boolean;
+}) {
   const { favorites: pinnedFavorites, unpin } = usePinned();
   // Favorites live in the client Redux store (synced/persisted after boot), so
   // the server always renders the empty state. Render empty until mounted so
@@ -36,7 +40,10 @@ export function PinnedSection() {
           <Star size={18} className="shrink-0 text-muted-foreground/70" />
           <span>
             Click the{" "}
-            <Star size={12} className="inline -mt-0.5 fill-amber-500 text-amber-500" />{" "}
+            <Star
+              size={12}
+              className="inline -mt-0.5 fill-amber-500 text-amber-500"
+            />{" "}
             on any card below to pin it here — and to your sidebar Favorites.
           </span>
         </div>
@@ -77,7 +84,13 @@ export function PinnedSection() {
                     {inner}
                   </a>
                 ) : (
-                  <Link href={f.href} className="flex min-w-0 flex-1 items-center gap-3">
+                  <Link
+                    href={f.href}
+                    target={openInNewTab ? "_blank" : undefined}
+                    rel={openInNewTab ? "noopener noreferrer" : undefined}
+                    prefetch={openInNewTab ? false : undefined}
+                    className="flex min-w-0 flex-1 items-center gap-3"
+                  >
                     {inner}
                   </Link>
                 )}
