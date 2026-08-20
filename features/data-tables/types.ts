@@ -6,6 +6,7 @@
  * tables/columns elsewhere — extend this file.
  */
 import type { Database } from "@/types/database.types";
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 type T = Database["workbench"]["Tables"];
 type E = Database["public"]["Enums"];
@@ -218,3 +219,70 @@ export type ServiceResult<T> = ServiceOk<T> | ServiceErr;
 export function isServiceFailure<T>(r: ServiceResult<T>): r is ServiceErr {
   return r.success === false;
 }
+
+// ─── Column shape (udt_column_facets / udt_table_profile) ────────────────────
+//
+// THE COLUMN KNOWS ITSELF. One shape, two granularities: `ColumnFacets` answers
+// "what is in THIS column" and `TableProfile` answers it for every column at
+// once. The value picker, the choice-format option seeding, and the column
+// profile panel are all consumers of this one answer — none of them may count
+// distinct values in the browser again.
+
+/** One distinct value of a column and how many rows carry it. */
+export type ColumnFacetValue = {
+  value: string;
+  count: number;
+};
+
+export type ColumnFacets = {
+  table_id: string;
+  field_name: string;
+  /** Rows considered (after the active global search, if any). */
+  total_rows: number;
+  /** Rows whose cell is non-empty. */
+  filled: number;
+  /** Rows whose cell is null or whitespace-only — a real filter target. */
+  blank: number;
+  /** Total distinct non-empty values across EVERY row, not just `values`. */
+  distinct_count: number;
+  /** Longest value; a caller refuses a picker on a column of long prose. */
+  max_length: number;
+  /** Distinct values too long (>300 chars) to offer as options. */
+  unlistable: number;
+  limit: number;
+  /** True when `values` does not carry every listable distinct value. */
+  truncated: boolean;
+  /** Top values by frequency, descending. */
+  values: ColumnFacetValue[];
+};
+
+/**
+ * Per-column evidence from `udt_table_profile`.
+ *
+ * The `looks_*` fields are COUNTS, never verdicts — "19 of 20 values are URLs"
+ * is a different situation from "20 of 20", and only the caller knows which one
+ * is worth acting on.
+ */
+export type ProfiledColumn = {
+  field_name: string;
+  display_name: string;
+  data_type: FieldDataType;
+  is_required: boolean;
+  /** The column's declared display format, or null when it has none. */
+  format: FieldFormatConfig | null;
+  filled: number;
+  blank: number;
+  distinct_count: number;
+  max_length: number;
+  looks_numeric: number;
+  looks_url: number;
+  looks_email: number;
+  looks_bool: number;
+  top_values: ColumnFacetValue[];
+};
+
+export type TableProfile = {
+  table_id: string;
+  total_rows: number;
+  columns: ProfiledColumn[];
+};

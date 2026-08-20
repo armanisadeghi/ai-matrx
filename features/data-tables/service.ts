@@ -32,10 +32,12 @@ import type {
   BulkWriteResponse,
   ChangeFieldTypeResponse,
   ChangeFieldTypeStrategy,
+  ColumnFacets,
   DatasetRow,
   FieldDataType,
   ServiceResult,
   TableMetadata,
+  TableProfile,
   ValidationMode,
 } from "./types";
 
@@ -595,4 +597,112 @@ export async function setValidationMode(
         data.validation_mode === "strict" ? "strict" : "permissive",
     },
   };
+}
+
+// ─── udt_column_facets / udt_table_profile ───────────────────────────────────
+//
+// THE COLUMN KNOWS ITSELF — read `features/data-tables/FEATURE.md` § Column
+// shape before adding another "count the distinct values" path.
+//
+// These replace counting in the browser. The viewer used to pull up to 5,000
+// rows down to filter client-side, and past that cap it answered confidently
+// over a partial set. Distinct values, counts and fill rates are computed in
+// the database over EVERY row, or the call fails — there is no partial answer.
+
+export type GetColumnFacetsArgs = {
+  tableId: string;
+  /** MACHINE field name. A display name is refused by the RPC, not guessed. */
+  fieldName: string;
+  /** Max distinct values returned (server clamps to 1..500). Default 50. */
+  limit?: number;
+  /** Active global search, so facets describe the rows the user can see. */
+  searchTerm?: string | null;
+};
+
+/**
+ * Distinct values + counts for one column.
+ *
+ * Refusals are meaningful and must not be flattened: a field name that is not a
+ * column raises (never an empty list, which reads as "the column is empty"),
+ * and an unreachable dataset raises P0002 — the genuinely ambiguous
+ * deleted/denied/missing case that belongs to AccessGate, not to an error toast.
+ */
+export async function getColumnFacets(
+  args: GetColumnFacetsArgs,
+): Promise<ServiceResult<ColumnFacets>> {
+  const { data, error } = await supabase.rpc("udt_column_facets", {
+    p_table_id: args.tableId,
+    p_field_name: args.fieldName,
+    p_limit: args.limit ?? 50,
+    p_search_term: args.searchTerm ?? undefined,
+  });
+
+  if (error) {
+    // Same P0002 contract as `getTableMetadata`: an unreachable dataset is an
+    // ACCESS answer for AccessGate to resolve, never a "column not found".
+    if (error.code === "P0002") {
+      return {
+        success: false,
+        error: recordUnavailable({
+          entity: "dataset",
+          reason: "unknown",
+          recordId: args.tableId,
+          token: "dataset",
+          relation: "workbench.udt_datasets",
+        }).message,
+      };
+    }
+    return { success: false, error: error.message };
+  }
+  if (!isRecord(data) || data.success !== true) {
+    return {
+      success: false,
+      error: "udt_column_facets returned an unexpected envelope",
+    };
+  }
+  return { success: true, data: data as unknown as ColumnFacets };
+}
+
+export type GetTableProfileArgs = {
+  tableId: string;
+  /** Top values kept per column (server clamps to 1..100). Default 12. */
+  previewValues?: number;
+};
+
+/**
+ * The shape of every column in one call — fill rate, distinct count, type
+ * evidence, top values. One round trip, never one request per column.
+ */
+export async function getTableProfile(
+  args: GetTableProfileArgs,
+): Promise<ServiceResult<TableProfile>> {
+  const { data, error } = await supabase.rpc("udt_table_profile", {
+    p_table_id: args.tableId,
+    p_preview_values: args.previewValues ?? 12,
+  });
+
+  if (error) {
+    // Same P0002 contract as `getTableMetadata`: an unreachable dataset is an
+    // ACCESS answer for AccessGate to resolve, never a "column not found".
+    if (error.code === "P0002") {
+      return {
+        success: false,
+        error: recordUnavailable({
+          entity: "dataset",
+          reason: "unknown",
+          recordId: args.tableId,
+          token: "dataset",
+          relation: "workbench.udt_datasets",
+        }).message,
+      };
+    }
+    return { success: false, error: error.message };
+  }
+  if (!isRecord(data) || data.success !== true) {
+    return {
+      success: false,
+      error: "udt_table_profile returned an unexpected envelope",
+    };
+  }
+  return { success: true, data: data as unknown as TableProfile };
 }

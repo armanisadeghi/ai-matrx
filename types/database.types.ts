@@ -45447,6 +45447,15 @@ export type Database = {
         }
         Returns: Json
       }
+      udt_column_facets: {
+        Args: {
+          p_field_name: string
+          p_limit?: number
+          p_search_term?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
       udt_dataset_row_versions_trim: { Args: never; Returns: Json }
       udt_delete_field: {
         Args: { p_field_id: string; p_table_id: string }
@@ -45454,6 +45463,10 @@ export type Database = {
       }
       udt_set_field_format: {
         Args: { p_field_id: string; p_format?: Json; p_table_id: string }
+        Returns: Json
+      }
+      udt_table_profile: {
+        Args: { p_preview_values?: number; p_table_id: string }
         Returns: Json
       }
       udt_upsert_cell: {
