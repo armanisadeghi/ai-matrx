@@ -46,6 +46,10 @@ export const selectUser = createSelector(
 
 export const selectUserId = (state: RootState): string | null =>
   state.userAuth.id;
+export const selectUserCreatedAt = (state: RootState): string | null =>
+  state.userAuth.createdAt;
+export const selectIsAnonymous = (state: RootState): boolean =>
+  state.userAuth.isAnonymous;
 export const selectUserEmail = (state: RootState): string | null =>
   state.userAuth.email;
 export const selectUserPhone = (state: RootState): string | null =>

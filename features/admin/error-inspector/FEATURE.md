@@ -145,8 +145,9 @@ The in-memory store is per-session. `lib/diagnostics/persistCapturedErrors.ts`
 (`installErrorPersistence`, mounted in `DeferredSingletons`) persists **selected**
 captures to the canonical universal error sink **`public.system_error`** (the same
 queryable store + admin dashboard the server writes), so client + server errors
-live in one place. Conservative — **NOT** the in-memory firehose: **red-tier only**,
-deduped (once per entry/session), throttled, and **production only**. Authenticated
+live in one place. Conservative — **NOT** the in-memory firehose: **red-tier for
+established accounts; every tier for guests and accounts in their first seven
+days**, deduped (once per entry/session), throttled, and **production only**. Authenticated
 captures use `public.log_client_error`; known guest captures use
 `POST /api/diagnostics/client-error`, which verifies the fingerprint against
 `guest_executions` and writes the same sink with guest attribution.
@@ -167,8 +168,14 @@ distinguishes client rows. The ad-hoc API-route writers (audio error logger,
 tool-ui-incident) can adopt this RPC over time.
 
 **Unknown public noise never persists.** The guest endpoint refuses fingerprints
-that do not exist in `guest_executions`; the existing red-only, dedupe, and
-per-flush cap remain the volume boundary.
+that do not exist in `guest_executions`; dedupe and the per-flush cap remain the
+volume boundary.
+
+**New-user eligibility is derived, never stored.** Supabase Auth already returns
+`created_at` and `is_anonymous` in the user object fetched at shell boot.
+`mapUserData` carries them into volatile `userAuth`; persistence performs one
+local timestamp comparison. A database boolean would become stale after day
+seven and require more infrastructure than the check it replaces.
 
 ## Tiers + downgrade rules (`lib/diagnostics/errorTierRules.ts`)
 
@@ -298,6 +305,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-19 — **Guests and first-seven-day accounts retain every diagnostic tier.** Existing Supabase Auth `created_at` and `is_anonymous` fields now flow into Redux, making eligibility a zero-query local check; established accounts remain red-only.
 - 2026-08-19 — **Guest red errors survive the browser session.** Known guest fingerprints now persist through the internal diagnostics endpoint into `public.system_error`, retaining the same red-only, production, dedupe, and throttle boundaries as authenticated capture.
 - 2026-08-18 — **Guarded Hindsight transcript delimiters stay local.** Raw model/tool transcript tokens can legitimately form malformed Markdown pairs; the renderer guard still neutralizes and records them locally, while only this route is yellow so ordinary answer delimiter defects remain red.
 - 2026-08-18 — **Supabase browser transport loss stays local across every route.** The structured adapter tags only classifier-proven status-0 network failures as `TypeError`; the tier rule keeps them visible for retry UX without filing client wifi/sleep/deployment handoffs as server repair work. HTTP and database responses stay red.

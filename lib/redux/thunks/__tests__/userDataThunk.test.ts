@@ -99,7 +99,18 @@ describe("setUserData thunk", () => {
 
   it("preserves earlier auth state across subsequent profile-only dispatch", () => {
     const store = makeStore();
-    store.dispatch(setUserData({ id: "u1", isAdmin: true }));
+    store.dispatch(
+      setUserData({
+        id: "u1",
+        createdAt: "2026-08-18T00:00:00.000Z",
+        isAnonymous: true,
+        isAdmin: true,
+      }),
+    );
+    expect(store.getState().userAuth.createdAt).toBe(
+      "2026-08-18T00:00:00.000Z",
+    );
+    expect(store.getState().userAuth.isAnonymous).toBe(true);
     const authBefore = store.getState().userAuth;
     store.dispatch(
       setUserData({

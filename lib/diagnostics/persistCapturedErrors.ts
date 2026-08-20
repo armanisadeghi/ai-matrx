@@ -8,7 +8,8 @@
  * (React → Supabase directly). See migrations/log_client_error.sql.
  *
  * Conservative by design — NOT the in-memory firehose:
- *   - RED tier only (clear errors; orange/yellow stay client-only).
+ *   - RED tier for established accounts; every tier for guests and accounts
+ *     during their first seven days.
  *   - Deduped: each distinct captured entry is persisted at most once per session.
  *   - Throttled: debounced flush, capped per flush.
  *   - Production only: dev/local errors never pollute the prod dashboard.
@@ -37,6 +38,7 @@ const FLUSH_DELAY_MS = 1500;
 // and stay local; a resolver that cannot answer still becomes a durable alarm.
 const RECORD_UNAVAILABLE_SETTLE_MS = 10_000;
 const MAX_PER_FLUSH = 20;
+export const EARLY_USER_OBSERVATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 let installed = false;
 let flushScheduled = false;
@@ -63,6 +65,27 @@ function provisionalRecordUnavailableDelayMs(
   return Math.max(0, entry.firstAt + RECORD_UNAVAILABLE_SETTLE_MS - now);
 }
 
+export function shouldPersistCapturedTier({
+  tier,
+  isGuest,
+  createdAt,
+  now,
+}: {
+  tier: CapturedError["tier"];
+  isGuest: boolean;
+  createdAt: string | null;
+  now: number;
+}): boolean {
+  if (tier === "red" || isGuest) return true;
+  if (!createdAt) return false;
+  const createdAtMs = Date.parse(createdAt);
+  return (
+    Number.isFinite(createdAtMs) &&
+    createdAtMs <= now &&
+    now - createdAtMs < EARLY_USER_OBSERVATION_MS
+  );
+}
+
 /** Coerce arbitrary captured data to a JSON-safe value (no casts, no throws). */
 function toJson(v: unknown): Json {
   try {
@@ -77,13 +100,21 @@ async function flush(): Promise<void> {
   if (process.env.NODE_ENV !== "production") return;
 
   let isAuthenticated = false;
+  let isGuest = false;
+  let createdAt: string | null = null;
   try {
-    const [{ getStore }, { selectIsAuthenticated }] = await Promise.all([
+    const [
+      { getStore },
+      { selectIsAnonymous, selectIsAuthenticated, selectUserCreatedAt },
+    ] = await Promise.all([
       import("@/lib/redux/store-singleton"),
       import("@/lib/redux/selectors/userSelectors"),
     ]);
     const store = getStore();
-    isAuthenticated = Boolean(store && selectIsAuthenticated(store.getState()));
+    const state = store?.getState();
+    isAuthenticated = Boolean(state && selectIsAuthenticated(state));
+    isGuest = Boolean(state && selectIsAnonymous(state));
+    createdAt = state ? selectUserCreatedAt(state) : null;
   } catch {
     isAuthenticated = false;
   }
@@ -93,7 +124,12 @@ async function flush(): Promise<void> {
   const pending: CapturedError[] = [];
   for (const entry of getSnapshot()) {
     if (
-      entry.tier !== "red" ||
+      !shouldPersistCapturedTier({
+        tier: entry.tier,
+        isGuest: !isAuthenticated || isGuest,
+        createdAt,
+        now,
+      }) ||
       persistedIds.has(entry.id) ||
       // Never persist our own write failure — the capture proxy records a
       // failed log_client_error rpc with this relation; persisting it loops.
@@ -129,7 +165,12 @@ async function flush(): Promise<void> {
     const e = getSnapshot().find((entry) => entry.id === candidate.id);
     if (
       !e ||
-      e.tier !== "red" ||
+      !shouldPersistCapturedTier({
+        tier: e.tier,
+        isGuest: !isAuthenticated || isGuest,
+        createdAt,
+        now: Date.now(),
+      }) ||
       persistedIds.has(e.id) ||
       provisionalRecordUnavailableDelayMs(e, Date.now()) > 0
     ) {

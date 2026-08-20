@@ -6,6 +6,8 @@ jest.mock("@/lib/redux/store-singleton", () => ({
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectIsAuthenticated: () => true,
+  selectIsAnonymous: () => false,
+  selectUserCreatedAt: () => "2020-01-01T00:00:00.000Z",
 }));
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { rpc },
@@ -16,6 +18,10 @@ import {
   captureError,
 } from "@/lib/diagnostics/errorCaptureStore";
 import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
+import {
+  EARLY_USER_OBSERVATION_MS,
+  shouldPersistCapturedTier,
+} from "@/lib/diagnostics/persistCapturedErrors";
 import {
   recordUnavailable,
   resolveRecordUnavailableCapture,
@@ -90,5 +96,53 @@ describe("captured error persistence settlement", () => {
         p_message: "Zero-row read for brand brand-2 (unknown)",
       }),
     );
+  });
+});
+
+describe("early-user persistence policy", () => {
+  const now = Date.parse("2026-08-19T12:00:00.000Z");
+
+  it("persists every tier for guests", () => {
+    expect(
+      shouldPersistCapturedTier({
+        tier: "yellow",
+        isGuest: true,
+        createdAt: null,
+        now,
+      }),
+    ).toBe(true);
+  });
+
+  it("persists every tier during the first seven days", () => {
+    expect(
+      shouldPersistCapturedTier({
+        tier: "orange",
+        isGuest: false,
+        createdAt: new Date(now - EARLY_USER_OBSERVATION_MS + 1).toISOString(),
+        now,
+      }),
+    ).toBe(true);
+  });
+
+  it("returns established accounts to red-only persistence", () => {
+    const established = new Date(
+      now - EARLY_USER_OBSERVATION_MS,
+    ).toISOString();
+    expect(
+      shouldPersistCapturedTier({
+        tier: "yellow",
+        isGuest: false,
+        createdAt: established,
+        now,
+      }),
+    ).toBe(false);
+    expect(
+      shouldPersistCapturedTier({
+        tier: "red",
+        isGuest: false,
+        createdAt: established,
+        now,
+      }),
+    ).toBe(true);
   });
 });

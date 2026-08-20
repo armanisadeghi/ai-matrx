@@ -6,7 +6,7 @@
 // (deleted in same PR per Constitution N2 — no coexistence).
 //
 // Field allocation rationale (decisions.md D1):
-// - id, email, phone, emailConfirmedAt, lastSignInAt — auth-domain identity
+// - id, createdAt, isAnonymous, email, phone, emailConfirmedAt, lastSignInAt — auth-domain identity
 // - appMetadata, identities — Supabase OAuth provider context
 // - isAdmin — authz, derived from auth context
 // - accessToken, tokenExpiresAt — auth secret + lifecycle, MUST NOT persist
@@ -21,6 +21,10 @@ import type { AdminLevel } from "@/utils/supabase/userSessionData";
 
 export interface UserAuthState {
   id: string | null;
+  /** Supabase Auth creation time, already present on every fetched user. */
+  createdAt: string | null;
+  /** Supabase Auth authority; never infer guest state from a UUID or email. */
+  isAnonymous: boolean;
   email: string | null;
   phone: string | null;
   emailConfirmedAt: string | null;
@@ -39,6 +43,8 @@ export interface UserAuthState {
 
 const initialState: UserAuthState = {
   id: null,
+  createdAt: null,
+  isAnonymous: false,
   email: null,
   phone: null,
   emailConfirmedAt: null,

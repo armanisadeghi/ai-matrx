@@ -31,6 +31,8 @@ export interface IdentityData {
 
 export interface UserData {
   id: string | null;
+  createdAt: string | null;
+  isAnonymous: boolean;
   email: string | null;
   phone: string | null;
   emailConfirmedAt: string | null;
@@ -62,6 +64,8 @@ export function mapUserData(
   const userId = user?.id || null;
   return {
     id: userId,
+    createdAt: user?.created_at || null,
+    isAnonymous: user?.is_anonymous === true,
     email: user?.email || null,
     phone: user?.phone || null,
     emailConfirmedAt: user?.email_confirmed_at || null,

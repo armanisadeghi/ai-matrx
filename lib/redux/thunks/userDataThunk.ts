@@ -29,6 +29,8 @@ type LegacyUserPayload = Partial<UserData> & Partial<UserProfileState>;
 function pickAuthFields(source: LegacyUserPayload): Partial<UserAuthState> {
   const out: Partial<UserAuthState> = {};
   if (source.id !== undefined) out.id = source.id;
+  if (source.createdAt !== undefined) out.createdAt = source.createdAt;
+  if (source.isAnonymous !== undefined) out.isAnonymous = source.isAnonymous;
   if (source.email !== undefined) out.email = source.email;
   if (source.phone !== undefined) out.phone = source.phone;
   if (source.emailConfirmedAt !== undefined) {

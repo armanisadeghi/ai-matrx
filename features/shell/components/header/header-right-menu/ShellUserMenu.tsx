@@ -13,6 +13,8 @@ function useShellUserData(): UserData | null {
 
   return {
     id: user.id,
+    createdAt: user.createdAt,
+    isAnonymous: user.isAnonymous,
     email: user.email,
     phone: user.phone,
     emailConfirmedAt: user.emailConfirmedAt,
