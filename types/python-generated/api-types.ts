@@ -18993,59 +18993,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{stream_slug}/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Claim Stream */
-        post: operations["claim_stream__stream_slug__claim_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/{stream_slug}/renew": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Renew Stream */
-        post: operations["renew_stream__stream_slug__renew_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/{stream_slug}/{path}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Proxy Stream Http */
-        get: operations["proxy_stream_http__stream_slug___path__head__get__stream_slug_path"];
-        put?: never;
-        /** Proxy Stream Http */
-        post: operations["proxy_stream_http__stream_slug___path__head__post__stream_slug_path"];
-        delete?: never;
-        options?: never;
-        /** Proxy Stream Http */
-        head: operations["proxy_stream_http__stream_slug___path__head__head__stream_slug_path"];
-        patch?: never;
-        trace?: never;
-    };
     "/media-heal/drain": {
         parameters: {
             query?: never;
@@ -21539,6 +21486,59 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{stream_slug}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Stream */
+        post: operations["claim_stream__stream_slug__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{stream_slug}/renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renew Stream */
+        post: operations["renew_stream__stream_slug__renew_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{stream_slug}/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proxy Stream Http */
+        get: operations["proxy_stream_http__stream_slug___path__head__get__stream_slug_path"];
+        put?: never;
+        /** Proxy Stream Http */
+        post: operations["proxy_stream_http__stream_slug___path__head__post__stream_slug_path"];
+        delete?: never;
+        options?: never;
+        /** Proxy Stream Http */
+        head: operations["proxy_stream_http__stream_slug___path__head__head__stream_slug_path"];
         patch?: never;
         trace?: never;
     };
@@ -97575,166 +97575,6 @@ export interface operations {
             };
         };
     };
-    claim_stream__stream_slug__claim_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                origin?: string | null;
-            };
-            path: {
-                stream_slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClaimRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    renew_stream__stream_slug__renew_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__head__get__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__head__post__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__head__head__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     drain_media_heal_queue_media_heal_drain_post: {
         parameters: {
             query?: never;
@@ -102284,6 +102124,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_stream__stream_slug__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string | null;
+            };
+            path: {
+                stream_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    renew_stream__stream_slug__renew_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_stream_http__stream_slug___path__head__get__stream_slug_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_stream_http__stream_slug___path__head__post__stream_slug_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_stream_http__stream_slug___path__head__head__stream_slug_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
