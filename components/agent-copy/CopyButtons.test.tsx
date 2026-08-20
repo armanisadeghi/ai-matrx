@@ -155,6 +155,9 @@ describe("CopyButtons AI variants", () => {
     });
 
     expect(container.querySelector("[data-copy-action-group]")).not.toBeNull();
+    expect(
+      container.querySelector("[data-copy-action-group]")?.className,
+    ).toContain("lg:h-7");
     const buttons = [
       ...container.querySelectorAll("[data-copy-action-group] button"),
     ];

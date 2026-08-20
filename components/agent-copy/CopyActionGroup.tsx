@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 export type CopyActionSize = "xs" | "icon" | "sm";
 
 const GROUP_SIZE: Record<CopyActionSize, string> = {
-  xs: "h-11 lg:h-6",
-  icon: "h-11 lg:h-8",
+  xs: "h-11 lg:h-5",
+  icon: "h-11 lg:h-7",
   sm: "h-11 lg:h-8",
 };
 

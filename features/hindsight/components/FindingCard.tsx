@@ -92,28 +92,45 @@ export function FindingCard({
       <div className="flex flex-col gap-2 @md:flex-row @md:items-start @md:justify-between">
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-start gap-2 text-left"
+          className="relative min-w-0 flex-1 pr-6 text-left"
           onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
         >
           {expanded ? (
-            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronDown className="absolute right-0 top-0.5 h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronRight className="absolute right-0 top-0.5 h-4 w-4 text-muted-foreground" />
           )}
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge className={cn("border-0", LEVER_COLOR[finding.lever])}>
+            <div className="text-[13px] font-medium leading-5 text-foreground">
+              {finding.title}
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+              <Badge
+                className={cn(
+                  "border-0 px-1 py-0 text-[11px] leading-4",
+                  LEVER_COLOR[finding.lever],
+                )}
+              >
                 {LEVER_LABEL[finding.lever]}
               </Badge>
               {finding.machine_applicable ? (
-                <Badge variant="outline">one-click</Badge>
+                <Badge
+                  variant="outline"
+                  className="px-1 py-0 text-[11px] leading-4"
+                >
+                  one-click
+                </Badge>
               ) : (
-                <Badge variant="outline" className="text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="px-1 py-0 text-[11px] leading-4 text-muted-foreground"
+                >
                   needs a human
                 </Badge>
               )}
               {finding.confidence != null && (
-                <span className="text-xs tabular-nums text-muted-foreground">
+                <span className="tabular-nums">
                   {Math.round(finding.confidence * 100)}% confident
                 </span>
               )}
@@ -121,7 +138,7 @@ export function FindingCard({
                 <Badge
                   key={verdict}
                   className={cn(
-                    "border-0",
+                    "border-0 px-1 py-0 text-[11px] leading-4",
                     VERDICT_COLOR[verdict as keyof typeof VERDICT_COLOR] ??
                       "bg-muted text-muted-foreground",
                   )}
@@ -130,23 +147,30 @@ export function FindingCard({
                 </Badge>
               ))}
               {finding.status === "reverted" ? (
-                <Badge className="border-0 bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                <Badge className="border-0 bg-amber-500/15 px-1 py-0 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
                   <Undo2 className="mr-1 h-3 w-3" />
                   reverted
                 </Badge>
               ) : (
-                <Badge variant="secondary">{finding.status}</Badge>
+                <Badge
+                  variant="secondary"
+                  className="px-1 py-0 text-[11px] leading-4"
+                >
+                  {finding.status}
+                </Badge>
               )}
               {finding.applied_version_number != null && (
-                <Badge variant="outline">
+                <Badge
+                  variant="outline"
+                  className="px-1 py-0 text-[11px] leading-4"
+                >
                   → v{finding.applied_version_number}
                 </Badge>
               )}
             </div>
-            <div className="mt-1 text-sm font-medium">{finding.title}</div>
           </div>
         </button>
-        <div className="flex w-full shrink-0 flex-wrap items-start justify-end gap-1.5 @md:w-auto">
+        <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1.5 @md:w-auto">
           <CopyButtons
             size="icon"
             label={`Hindsight finding “${finding.title}”`}
