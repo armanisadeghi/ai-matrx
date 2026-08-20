@@ -80,7 +80,10 @@ export function MandateOverridesPage() {
   // mandates ("Choose the agents behind Podcasts") instead of dropping them at
   // the top of a 39-domain list.
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(() => searchParams.get("feature") ?? "");
+  const initialFeature = searchParams.get("feature");
+  const [query, setQuery] = useState(() =>
+    initialFeature === null ? "" : initialFeature,
+  );
 
   // Every setState lives in an async callback — never synchronously in the
   // effect (react-hooks/set-state-in-effect).
@@ -212,8 +215,15 @@ export function MandateOverridesPage() {
       (v) =>
         v.domain.toLowerCase().includes(q) ||
         v.mandate.mandate_key.toLowerCase().includes(q) ||
-        (v.mandate.label ?? "").toLowerCase().includes(q) ||
-        (v.mandate.description ?? "").toLowerCase().includes(q),
+        (typeof v.mandate.label === "string" ? v.mandate.label : "")
+          .toLowerCase()
+          .includes(q) ||
+        (typeof v.mandate.description === "string"
+          ? v.mandate.description
+          : ""
+        )
+          .toLowerCase()
+          .includes(q),
     );
   }, [views, query]);
 
