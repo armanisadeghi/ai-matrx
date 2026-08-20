@@ -43470,6 +43470,178 @@
         }
       }
     },
+    "/workflows/{definition_id}/kind-availability": {
+      "get": {
+        "tags": [
+          "Workflow Kinds"
+        ],
+        "summary": "Get Kind Availability",
+        "description": "Every kind available anywhere in this workflow, nested kinds included.",
+        "operationId": "get_kind_availability_workflows__definition_id__kind_availability_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to what this node could consume: its own output is excluded, and so is anything produced after it runs. Omit for the workflow-wide view.",
+              "title": "Node Id"
+            },
+            "description": "Narrow to what this node could consume: its own output is excluded, and so is anything produced after it runs. Omit for the workflow-wide view."
+          },
+          {
+            "name": "respect_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "With node_id: hide values produced after that node runs. Turn it off to see everything the workflow offers regardless of order — availability is workflow-wide by ruling, and step order is only a courtesy filter.",
+              "default": true,
+              "title": "Respect Order"
+            },
+            "description": "With node_id: hide values produced after that node runs. Turn it off to see everything the workflow offers regardless of order — availability is workflow-wide by ruling, and step order is only a courtesy filter."
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          },
+          {
+            "name": "version_number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version Number"
+            }
+          },
+          {
+            "name": "if-none-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-None-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindAvailabilityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/kind-reference": {
+      "get": {
+        "tags": [
+          "Workflow Kinds"
+        ],
+        "summary": "Get Run Kind Reference",
+        "description": "Resolve one accessor against this run — no extraction node required.\n\nA reference that resolves to nothing is a 200 with ``notes`` explaining\nwhy, never a 404: \"the step hasn't run yet\", \"3 of 5 results had no\nrating\" and \"there is no such step\" are three different answers, and\ncollapsing them into one status code is how an author ends up debugging\nthe wrong node.",
+        "operationId": "get_run_kind_reference_runs__run_id__kind_reference_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "description": "The accessor a picker selection carried, e.g. 'search.web[].rating'. '[]' steps into a list, so the answer is always a list of values.",
+              "title": "Reference"
+            },
+            "description": "The accessor a picker selection carried, e.g. 'search.web[].rating'. '[]' steps into a list, so the answer is always a list of values."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceResolution"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/templates": {
       "get": {
         "tags": [
@@ -112635,6 +112807,70 @@
         ],
         "title": "KeywordVolumeRejectedPhrase"
       },
+      "KindAvailabilityResponse": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/KindPickerEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "unresolved_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved Kinds"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "unused_count": {
+            "type": "integer",
+            "title": "Unused Count",
+            "default": 0
+          },
+          "used_count": {
+            "type": "integer",
+            "title": "Used Count",
+            "default": 0
+          },
+          "nested_count": {
+            "type": "integer",
+            "title": "Nested Count",
+            "default": 0
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "definition_id"
+        ],
+        "title": "KindAvailabilityResponse",
+        "description": "The picker payload for one workflow (optionally one node's view)."
+      },
       "KindCatalogResponse": {
         "properties": {
           "kinds": {
@@ -112924,6 +113160,76 @@
         ],
         "title": "KindExampleDescriptor",
         "description": "One kind_example row — a validated sample value for the kind.\n\nServed ONLY on the by-slug endpoint (``load_kind``); the full-catalog\nresponse stays lean (Content-IR spec §6 P3 — \"extend /workflow/kinds/\n{slug} to include examples\"). Canonical-first, so ``examples[0]`` is the\nright prefill for authoring surfaces (test-node dialog)."
+      },
+      "KindPickerEntry": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "source_node_id": {
+            "type": "string",
+            "title": "Source Node Id"
+          },
+          "source_node_label": {
+            "type": "string",
+            "title": "Source Node Label",
+            "default": ""
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "default": ""
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "default": 0
+          },
+          "is_nested": {
+            "type": "boolean",
+            "title": "Is Nested",
+            "default": false
+          },
+          "is_collection": {
+            "type": "boolean",
+            "title": "Is Collection",
+            "default": false
+          },
+          "used": {
+            "type": "boolean",
+            "title": "Used",
+            "default": false
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "reference",
+          "source_node_id"
+        ],
+        "title": "KindPickerEntry",
+        "description": "One row in the picker — everything the UI needs, nothing it must derive."
       },
       "KindSurfaceDescriptor": {
         "properties": {
@@ -136357,6 +136663,54 @@
           "source"
         ],
         "title": "RedirectRead"
+      },
+      "ReferenceResolution": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "source_node_id": {
+            "type": "string",
+            "title": "Source Node Id",
+            "default": ""
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array",
+            "title": "Values"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "source_missing": {
+            "type": "boolean",
+            "title": "Source Missing",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "reference"
+        ],
+        "title": "ReferenceResolution",
+        "description": "What one accessor resolved to against one run."
       },
       "RefreshNodeTypesResponse": {
         "properties": {

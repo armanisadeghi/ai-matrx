@@ -16694,6 +16694,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/kind-availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kind Availability
+         * @description Every kind available anywhere in this workflow, nested kinds included.
+         */
+        get: operations["get_kind_availability_workflows__definition_id__kind_availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/kind-reference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Run Kind Reference
+         * @description Resolve one accessor against this run — no extraction node required.
+         *
+         *     A reference that resolves to nothing is a 200 with ``notes`` explaining
+         *     why, never a 404: "the step hasn't run yet", "3 of 5 results had no
+         *     rating" and "there is no such step" are three different answers, and
+         *     collapsing them into one status code is how an author ends up debugging
+         *     the wrong node.
+         */
+        get: operations["get_run_kind_reference_runs__run_id__kind_reference_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates": {
         parameters: {
             query?: never;
@@ -43083,6 +43129,45 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * KindAvailabilityResponse
+         * @description The picker payload for one workflow (optionally one node's view).
+         */
+        KindAvailabilityResponse: {
+            /** Definition Id */
+            definition_id: string;
+            /** Node Id */
+            node_id?: string | null;
+            /** Entries */
+            entries?: components["schemas"]["KindPickerEntry"][];
+            /** Unresolved Kinds */
+            unresolved_kinds?: string[];
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Unused Count
+             * @default 0
+             */
+            unused_count?: number;
+            /**
+             * Used Count
+             * @default 0
+             */
+            used_count?: number;
+            /**
+             * Nested Count
+             * @default 0
+             */
+            nested_count?: number;
+            /**
+             * Etag
+             * @default
+             */
+            etag?: string;
+        };
         /** KindCatalogResponse */
         KindCatalogResponse: {
             /** Kinds */
@@ -43207,6 +43292,55 @@ export interface components {
             is_canonical: boolean;
             /** Validation Status */
             validation_status: string;
+        };
+        /**
+         * KindPickerEntry
+         * @description One row in the picker — everything the UI needs, nothing it must derive.
+         */
+        KindPickerEntry: {
+            /** Kind */
+            kind: string;
+            /** Reference */
+            reference: string;
+            /** Source Node Id */
+            source_node_id: string;
+            /**
+             * Source Node Label
+             * @default
+             */
+            source_node_label?: string;
+            /**
+             * Path
+             * @default
+             */
+            path?: string;
+            /**
+             * Depth
+             * @default 0
+             */
+            depth?: number;
+            /**
+             * Is Nested
+             * @default false
+             */
+            is_nested?: boolean;
+            /**
+             * Is Collection
+             * @default false
+             */
+            is_collection?: boolean;
+            /**
+             * Used
+             * @default false
+             */
+            used?: boolean;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /** Step */
+            step?: number | null;
         };
         /**
          * KindSurfaceDescriptor
@@ -52225,6 +52359,35 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /**
+         * ReferenceResolution
+         * @description What one accessor resolved to against one run.
+         */
+        ReferenceResolution: {
+            /** Run Id */
+            run_id: string;
+            /** Reference */
+            reference: string;
+            /**
+             * Source Node Id
+             * @default
+             */
+            source_node_id?: string;
+            /** Values */
+            values?: components["schemas"]["JsonValue"][];
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Notes */
+            notes?: string[];
+            /**
+             * Source Missing
+             * @default false
+             */
+            source_missing?: boolean;
         };
         /** RefreshNodeTypesResponse */
         RefreshNodeTypesResponse: {
@@ -95258,6 +95421,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExtractResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kind_availability_workflows__definition_id__kind_availability_get: {
+        parameters: {
+            query?: {
+                /** @description Narrow to what this node could consume: its own output is excluded, and so is anything produced after it runs. Omit for the workflow-wide view. */
+                node_id?: string | null;
+                /** @description With node_id: hide values produced after that node runs. Turn it off to see everything the workflow offers regardless of order — availability is workflow-wide by ruling, and step order is only a courtesy filter. */
+                respect_order?: boolean;
+                is_version?: boolean;
+                version_number?: number | null;
+            };
+            header?: {
+                "if-none-match"?: string | null;
+            };
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindAvailabilityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_kind_reference_runs__run_id__kind_reference_get: {
+        parameters: {
+            query: {
+                /** @description The accessor a picker selection carried, e.g. 'search.web[].rating'. '[]' steps into a list, so the answer is always a list of values. */
+                reference: string;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceResolution"];
                 };
             };
             /** @description Validation Error */
