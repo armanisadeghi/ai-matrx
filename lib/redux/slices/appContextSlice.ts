@@ -261,10 +261,15 @@ const appContextSlice = createSlice({
       const loaded = action.payload.state as
         | Partial<AppContextState>
         | undefined;
-      // Mark resolved even on an empty payload — the engine ran, so the "no
-      // org" cues may stop suppressing themselves (selectShouldPromptForOrganization).
-      state.orgBootstrapResolved = true;
       if (!loaded) return;
+      // A hollow local cache is not an authoritative "no organization"
+      // answer. Cold boot reconciles insufficient cache records remotely, so
+      // keep the reminder suppressed until that resolver returns. A cached
+      // active org is immediately sufficient; an authoritative remote result
+      // carries orgBootstrapResolved even when it intentionally resolves to
+      // no explicit org (multiple memberships and no default).
+      state.orgBootstrapResolved =
+        loaded.orgBootstrapResolved === true || loaded.organization_id != null;
       if (loaded.personal_organization_id !== undefined) {
         state.personal_organization_id = loaded.personal_organization_id;
       }
@@ -415,7 +420,9 @@ export const selectAppContext = (state: StateWithAppContext): AppContextState =>
 //
 // `partialize` deliberately persists ONLY the org identity fields. Working
 // context (scope/project/task/conversation) and the transient
-// `orgBootstrapResolved` flag are NOT persisted — REHYDRATE sets the flag true.
+// `orgBootstrapResolved` flag is not persisted by normal Redux writes. Remote
+// reconciliation includes it in its result so a genuine "no active org"
+// answer can be distinguished from a hollow local cache record.
 //
 // NOTE: there is no `remote.write` — the durable cross-device "which org" truth
 // is the default-org PREFERENCE (owned by userPreferences), not a column here.
@@ -454,18 +461,28 @@ export const appContextPolicy = definePolicy<AppContextState>({
       organization_id: str(r.organization_id),
       organization_name: str(r.organization_name),
       personal_organization_id: str(r.personal_organization_id),
+      orgBootstrapResolved: r.orgBootstrapResolved === true,
     };
   },
   staleAfter: 5 * 60_000, // reconcile against default-pref / membership after 5 min idle
   remote: {
     fetch: async ({ identity, signal }) => {
       if (identity.type !== "auth") return null; // guests have no server org
+      // Cold reconciliation is useful but not render-critical. Let the page
+      // load and paint before spending network/CPU on memberships and the
+      // default-org preference. Stale/manual refreshes pass through instantly
+      // once the session's one-time idle gate has completed.
+      const { whenPageIdle } = await import("@/utils/idle-scheduler");
+      if (!(await whenPageIdle(signal))) return null;
       const { resolveActiveOrgContext } = await import(
         "@/lib/organizations/resolveActiveOrgContext"
       );
       const resolved = await resolveActiveOrgContext(identity.userId);
       if (signal.aborted || !resolved) return null;
-      return resolved as Partial<AppContextState>;
+      return {
+        ...resolved,
+        orgBootstrapResolved: true,
+      } satisfies Partial<AppContextState>;
     },
     // A cached appContext record with NO org in it is not an answer — it is
     // the absence of one, and `ensureOrgId` screams (and pays a personal-org

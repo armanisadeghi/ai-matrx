@@ -1,6 +1,8 @@
 "use client";
 
-// HeaderOrgReminder — the soft-enforcement NUDGE. When the active-org bootstrap
+// HeaderOrgReminder — the soft-enforcement NUDGE. Mounted from the existing
+// deferred-singleton core so neither this UI nor its picker dependencies enter
+// the initial page-load graph. When the active-org bootstrap
 // resolves with no org selected (and the user has a real choice to make), a
 // small card drops down just under the header, near the avatar, reminding the
 // user to choose an organization. It hovers over the page, auto-dismisses after

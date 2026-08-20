@@ -33,3 +33,5 @@ export {
     useIdleTask,
     useIdleReady,
 } from './hooks';
+
+export { whenPageIdle } from './idle-scheduler';

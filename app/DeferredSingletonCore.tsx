@@ -26,6 +26,7 @@ import KgNewSuggestionNotifier from "@/features/kg-suggestions/components/KgNewS
 import AssistsDock from "@/features/assists/components/AssistsDock";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
+import HeaderOrgReminder from "@/features/shell/components/header/header-right-menu/HeaderOrgReminder";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
@@ -102,6 +103,7 @@ export default function DeferredSingletonCore() {
       <AdminFeatureProvider />
       <ErrorInspectorBadge />
       <LiveCaptureIndicator />
+      {user?.id && <HeaderOrgReminder />}
     </>
   );
 }

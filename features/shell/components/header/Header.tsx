@@ -1,6 +1,5 @@
 import HamburgerButton from "./header-left-menu/HamburgerButton";
 import UserMenuTrigger from "./header-right-menu/UserMenuTrigger";
-import HeaderOrgReminder from "./header-right-menu/HeaderOrgReminder";
 import UserMenuPanel from "./header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "./header-right-menu/GuestUserMenuTrigger";
 import GuestUserMenuPanel from "./header-right-menu/GuestUserMenuPanel";
@@ -22,7 +21,6 @@ export default function Header({ userData, isAuthenticated }: HeaderProps) {
 
       <div className="shell-header-right">
         <div className="shell-header-right-inject" id="shell-header-right" />
-        {isAuthenticated && <HeaderOrgReminder />}
         {isAuthenticated && <SurfaceAgentsHeaderButton />}
         <CanvasShellHeaderToggle />
         <div className="shell-user-menu-wrapper">

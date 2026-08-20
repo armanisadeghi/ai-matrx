@@ -124,6 +124,34 @@ export function onFlushComplete(listener: () => void): UnregisterFn {
 }
 
 /**
+ * Resolve after the initial page-load idle flush, or earlier when aborted.
+ * Non-React startup services use this instead of recreating the scheduler's
+ * load → paint → browser-idle detection chain.
+ *
+ * @returns false when the caller aborted before idle; true otherwise.
+ */
+export function whenPageIdle(signal?: AbortSignal): Promise<boolean> {
+    if (signal?.aborted) return Promise.resolve(false);
+
+    return new Promise((resolve) => {
+        let settled = false;
+        let unsubscribe: UnregisterFn = () => {};
+
+        const finish = (ready: boolean) => {
+            if (settled) return;
+            settled = true;
+            unsubscribe();
+            signal?.removeEventListener('abort', onAbort);
+            resolve(ready);
+        };
+        const onAbort = () => finish(false);
+
+        unsubscribe = onFlushComplete(() => finish(true));
+        signal?.addEventListener('abort', onAbort, { once: true });
+    });
+}
+
+/**
  * Get current state — useful for debugging or conditional logic.
  */
 export function getSchedulerState(): {
