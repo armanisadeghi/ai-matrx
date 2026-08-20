@@ -44,6 +44,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
@@ -1243,6 +1244,24 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   nonsense. The one thing the Expert is here to reach is
                   BUILD — 28 approved rules and he had never got past them. */}
               <div className="flex shrink-0 items-center gap-1.5">
+                {/* CANONICAL SHARING, NEVER A BESPOKE ONE (Arman, 2026-08-20):
+                    a Rulebook is a registered shareable resource
+                    (`platform.shareable_resource_registry` token `rulebook`,
+                    RLS via `iam.has_access`) and had no share surface at all —
+                    a violation of the platform-wide sharing rule, not a
+                    missing feature. This is THE component every other entity
+                    uses; it resolves ownership itself, so no `isOwner` is
+                    passed. Contribution modes (co-creator · contribute-only
+                    link · co-contributor) are a separate design —
+                    common-docs/systems/masterwork/rulebook-sharing.md. */}
+                <ShareButton
+                  resourceType="rulebook"
+                  resourceId={rulebook.id}
+                  resourceName={rulebook.name}
+                  size="sm"
+                  variant="outline"
+                  showStatus={false}
+                />
                 {/* THE ONE CANONICAL MASTERWORK SYSTEM (Arman, 2026-08-18):
                     "the only thing that ever makes a Masterwork is our one
                     single canonical Masterwork system. And all we do is we go

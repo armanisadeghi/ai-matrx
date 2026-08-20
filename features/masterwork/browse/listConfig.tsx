@@ -11,7 +11,7 @@ import {
 import { useRulebookRowActions } from "./useRulebookRowActions";
 import type { RulebookListRow } from "../types";
 
-const RULEBOOK_SCOPES: ListScopeKind[] = ["mine", "orgs", "public"];
+const RULEBOOK_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared", "public"];
 
 export const rulebookListConfig: EntityListConfig<RulebookListRow> = {
   surfaceKey: "masterwork-browse",

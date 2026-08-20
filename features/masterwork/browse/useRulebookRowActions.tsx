@@ -2,9 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Link2, Trash2, Workflow } from "lucide-react";
+import { Eye, Link2, Share2, Trash2, Workflow } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ShareModal } from "@/features/sharing/components/ShareModal";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   EntityListController,
@@ -18,6 +19,7 @@ export function useRulebookRowActions(
 ): EntityRowActionsResult<RulebookListRow> {
   const router = useRouter();
   const [deleting, setDeleting] = useState<RulebookListRow | null>(null);
+  const [sharing, setSharing] = useState<RulebookListRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const confirmDelete = useCallback(async () => {
@@ -63,6 +65,15 @@ export function useRulebookRowActions(
           id: "copy",
           items: [
             {
+              // CANONICAL SHARING (Arman, 2026-08-20): the same ShareModal
+              // every other entity opens — `rulebook` is a registered
+              // shareable resource. Never a bespoke Masterwork share model.
+              id: "share",
+              label: "Share",
+              icon: Share2,
+              onSelect: () => setSharing(row),
+            },
+            {
               id: "copy-link",
               label: "Copy link",
               icon: Link2,
@@ -100,6 +111,16 @@ export function useRulebookRowActions(
   return {
     actions: { menuFor, onOpenRow },
     modals: (
+      <>
+      {sharing ? (
+        <ShareModal
+          isOpen={sharing !== null}
+          onClose={() => setSharing(null)}
+          resourceType="rulebook"
+          resourceId={sharing.id}
+          resourceName={sharing.name}
+        />
+      ) : null}
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => {
@@ -116,6 +137,7 @@ export function useRulebookRowActions(
         busy={busy}
         onConfirm={() => void confirmDelete()}
       />
+      </>
     ),
   };
 }

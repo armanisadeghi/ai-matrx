@@ -9,6 +9,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { getUserOrganizations } from "@/features/organizations/service";
+import { getSharedWithMe } from "@/utils/permissions/service";
 import type {
   RulebookListRow,
   RulebookSource,
@@ -20,7 +21,14 @@ import type {
  * platform.rulebook (no per-feature RPC yet; the Rulebook population is
  * small). THE VIEW LAW: every scope is an explicit predicate, never bare RLS.
  * Scopes served: mine · orgs (blended via the user's membership list, or
- * narrowed to one org) · public.
+ * narrowed to one org) · shared · public.
+ *
+ * `shared` = an explicit `iam.permissions` grant handed to me by name.
+ * `applyListScope` deliberately throws on it (there is no generic
+ * shared-with-me predicate yet — lib/list-scope Brief 3A), and its own error
+ * tells each feature to use its own fetcher. This is that fetcher, and it
+ * reads the CANONICAL grants table through the canonical sharing service —
+ * not a Masterwork-specific access model.
  */
 
 const SELECT_COLUMNS =
@@ -43,6 +51,16 @@ const DATE_BUCKET_MS: Record<string, number> = {
   "90d": 90 * 86_400_000,
   "1y": 365 * 86_400_000,
 };
+
+/** Rulebook ids granted directly to me, cached per session alongside orgs. */
+let sharedIdsCache: string[] | null = null;
+
+async function mySharedRulebookIds(): Promise<string[]> {
+  if (sharedIdsCache) return sharedIdsCache;
+  const grants = await getSharedWithMe("rulebook");
+  sharedIdsCache = [...new Set(grants.map((g) => g.resourceId))];
+  return sharedIdsCache;
+}
 
 /** My non-personal org ids, cached per session (memberships rarely change mid-list). */
 let orgIdsCache: { ids: string[]; names: Map<string, string> } | null = null;
@@ -101,8 +119,13 @@ function applyScope<Q extends RulebookFilterable>(
   scope: EntityListQuery["scope"],
   userId: string,
   blendedOrgIds: string[],
+  sharedIds: string[],
 ): Q | null {
   if (scope.kind === "public") return q.eq("visibility", "public");
+  if (scope.kind === "shared") {
+    if (sharedIds.length === 0) return null;
+    return q.in("id", sharedIds);
+  }
   if (scope.kind === "orgs" && scope.organizationId === null) {
     if (blendedOrgIds.length === 0) return null;
     return q.in("organization_id", blendedOrgIds);
@@ -163,8 +186,11 @@ export async function fetchRulebookPage(
   sort: EntityListSort,
 ): Promise<EntityListPage<RulebookListRow>> {
   const userId = requireUserId();
-  const { ids: blendedOrgIds } = await myOrgs();
-  let q = applyScope(basePage(), query.scope, userId, blendedOrgIds);
+  const [{ ids: blendedOrgIds }, sharedIds] = await Promise.all([
+    myOrgs(),
+    mySharedRulebookIds(),
+  ]);
+  let q = applyScope(basePage(), query.scope, userId, blendedOrgIds, sharedIds);
   if (q === null) return { rows: [], total: 0 };
   q = applyFilters(q, query);
 
@@ -190,25 +216,30 @@ export async function fetchRulebookCounts(
     narrow: {},
   };
 
-  const { ids, names } = await myOrgs();
+  const [{ ids, names }, sharedIds] = await Promise.all([
+    myOrgs(),
+    mySharedRulebookIds(),
+  ]);
 
   const countFor = async (
     scope: EntityListQuery["scope"],
   ): Promise<number> => {
-    let q = applyScope(baseCount(), scope, userId, ids);
+    let q = applyScope(baseCount(), scope, userId, ids, sharedIds);
     if (q === null) return 0;
     q = applyFilters(q, query);
     const { count, error } = await q;
     if (error) throw new Error(`${error.message} (${error.code})`);
     return count ?? 0;
   };
-  const [mine, orgsBlended, pub] = await Promise.all([
+  const [mine, orgsBlended, shared, pub] = await Promise.all([
     countFor({ kind: "mine" }),
     countFor({ kind: "orgs", organizationId: null }),
+    countFor({ kind: "shared" }),
     countFor({ kind: "public" }),
   ]);
   counts.byKind.mine = mine;
   counts.byKind.orgs = orgsBlended;
+  counts.byKind.shared = shared;
   counts.byKind.public = pub;
 
   if (ids.length > 1) {
