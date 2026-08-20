@@ -155,6 +155,21 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-20 — **Search kind family shipped + registry→TS codegen BUILT (Search
+  Kinds Pilot, Stage B).** 13 compiled kinds (`web_search_results` collection +
+  8 items + 4 primitives; `faq_item` extended in-place as the merged kind) in
+  `kinds/search-results.ts` with uniform `{value, isComplete}` streaming
+  bridges; one canonical component per kind in
+  `components/mardown-display/blocks/search-kinds/` (converged on the tool-viz
+  `parseSearch.ts` utilities — never re-implemented); nested instances delegate
+  through `SearchKindNested` (db-override seam, static canonical fast path).
+  All 12 item/primitive kinds ACTIVE via the aidream family seed (dual gate);
+  a stale old-shape `source='db'` collection component was deactivated so the
+  canonical one wins. **`pnpm shape:types` / `pnpm check:kind-types`
+  (`scripts/shape/generate-kind-types.ts`) is the new registry→TS generator**
+  (SDK wishlist #2): emitted_json_schema → self-contained
+  `kinds/generated/*.gen.ts`, drift-checked against the live registry. Live
+  demo: `/demos/search-kinds` (real aidream `POST /api/search-kinds/search`).
 - 2026-08-20 — **The 7 `json_root_key` surfaces are LIVE, and ONE place decides
   them.** `content_ir.kind_surface` has always declared `quiz_title→quiz_set`,
   `presentation→presentation_deck`, `decision_tree`, `comparison→comparison_set`,
