@@ -20051,75 +20051,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_one_entry: {
-        Args: {
-          p_create_function?: string
-          p_payload: Json
-          p_table_name: string
-        }
-        Returns: Json
-      }
-      execute_complex_save: {
-        Args: { operations: Json; options?: Json }
-        Returns: Json
-      }
-      fetch_all_fk_ifk_with_list: {
-        Args: { p_id: string; p_table_name: string }
-        Returns: Json
-      }
-      fetch_custom_rels: {
-        Args: { p_id: string; p_table_list: string[]; p_table_name: string }
-        Returns: Json
-      }
-      fetch_filtered_with_fk_ifk:
-        | { Args: { p_filters: Json; p_table_name: string }; Returns: Json }
-        | {
-            Args: {
-              p_filters: Json
-              p_include_fk?: boolean
-              p_include_ifk?: boolean
-              p_table_name: string
-            }
-            Returns: Json
-          }
-      fetch_paginated_with_all_ids: {
-        Args: {
-          p_conversion_function?: string
-          p_include_all_ids?: boolean
-          p_page: number
-          p_page_size: number
-          p_table_name: string
-        }
-        Returns: Json
-      }
-      fetch_paginated_with_ids_names: {
-        Args: {
-          p_conversion_function?: string
-          p_include_all_ids?: boolean
-          p_page: number
-          p_page_size: number
-          p_table_name: string
-        }
-        Returns: Json
-      }
-      get_table_info: {
-        Args: { table_name: string }
-        Returns: {
-          column_name: string
-          data_type: string
-          foreign_column: string
-          foreign_table: string
-          is_nullable: string
-        }[]
-      }
-      update_by_id: {
-        Args: {
-          p_payload: Json
-          p_table_name: string
-          p_update_function?: string
-        }
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
