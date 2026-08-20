@@ -23,7 +23,7 @@
 --      now: the change is ALLOWED, AUDITED, and — specifically for
 --      under_13 -> adult — flagged loudly (`RAISE WARNING` + `review_signal:true`
 --      on the audit row) as a review signal. See FOUND_DEFECTS.md D57 and
---      docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md for
+--      /Users/armanisadeghi/code/common-docs/projects/education-platform/COPPA_CONSENT_RUNBOOK.md for
 --      the open legal decision.
 --
 -- Idempotent: CREATE OR REPLACE / DROP ... IF EXISTS + CREATE / constraint

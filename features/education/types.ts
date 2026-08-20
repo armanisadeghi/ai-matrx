@@ -15,7 +15,7 @@ import type { LucideIcon } from "lucide-react";
  * Access tier marker. Drives funnel UI (free/trial/premium badges + CTAs)
  * ONLY — it is NOT enforcement. Real entitlement enforcement is owned by the
  * forthcoming entitlements/billing system; see
- *   docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md
+ *   /Users/armanisadeghi/code/common-docs/projects/education-platform/STATE.md
  */
 export type AccessTier = "free" | "trial" | "premium";
 

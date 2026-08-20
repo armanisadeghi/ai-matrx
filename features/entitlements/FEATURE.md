@@ -6,7 +6,7 @@
 > and the aidream half. This file is the frontend contract only.
 
 > **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
-> **Spec:** [`docs/proposals/education-projects/P8-entitlements-billing.md`](../../docs/proposals/education-projects/P8-entitlements-billing.md).
+> **Spec:** [`common-docs/projects/education-platform/STATE.md`](../../../common-docs/projects/education-platform/STATE.md).
 > **The education contract is live and permissive — but limits are VISIBLE and now DECREMENT.** Every
 > `education.*` capability ships `enforced: false`, so nothing there is capped until Arman approves
 > the free-tier matrix AND the backend limit + server re-check both exist. Plan dimensions enforce

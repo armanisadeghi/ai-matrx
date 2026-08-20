@@ -10,7 +10,7 @@
 > declaration is now **mandatory** for a signed-in account and the
 > `under_13 → adult` self-transition is **hard-blocked**. Project context:
 > `common-docs/projects/education-platform/` (WP9).
-**Why:** [`docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) §Compliance + [`docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md`](../../../docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md). Keeps the Education Hub installable on school devices (never banned by Apple/Google education review or district IT).
+**Why:** [`STATE.md` §2.4](../../../../common-docs/projects/education-platform/STATE.md) §Compliance + [`docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md`](../../../docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md). Keeps the Education Hub installable on school devices (never banned by Apple/Google education review or district IT).
 
 ---
 
@@ -176,7 +176,7 @@ no entry point to gate there.
   to require a harder verifiable-age step, plus which guardian verifiable method(s) to
   require + the gov-ID vendor + legal sign-off — see `../family/FEATURE.md` §Verifiable
   parental consent + the runbook
-  `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
+  `/Users/armanisadeghi/code/common-docs/projects/education-platform/COPPA_CONSENT_RUNBOOK.md`.
 
 ## How a learner is identified — up front, never via an error
 

@@ -76,7 +76,7 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 - **Grounded guide drafting:** consume the requested `education.learn_doc_draft` mandate once WP2
   declares its strict `EduSection[]` output. It will receive the same IC-3 passage serialization,
   validate into the visual editor, and remain a draft until the admin publishes it.
-- Phase B (exam hub, consumes P1) and Phase C (community library, consumes P7) — see `docs/proposals/education-projects/P6-content-publishing.md`.
+- Phase B (exam hub, consumes P1) and Phase C (community library, consumes P7) — see `common-docs/projects/education-platform/STATE.md`.
 
 ## Change log
 

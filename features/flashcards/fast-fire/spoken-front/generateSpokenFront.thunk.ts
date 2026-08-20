@@ -6,7 +6,7 @@
 // fc_detail(kind='spoken_front') so playback in the drill is instant.
 //
 // Delivery mechanism (resolved — spec archived at common-docs/projects/
-// education-platform/archive/2026-07-01-fastfire-spoken-fronts-spec.md): the
+// education-platform/STATE.md §2.7 — the spoken-front variation rules): the
 // TTS agent streams its audio back as an `audio_output` render block whose data
 // is a UnifiedMediaBlock carrying a durable `fileId` once complete (matrx origin).
 // We launch with autoRun:true (the launch thunk runs to completion), then read

@@ -1,6 +1,6 @@
 # Creator Profiles & Public Landing Pages (`features/education/creators`)
 
-**Status:** live · **Tier:** 2 (Education Hub — growth) · **Spec:** [`CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) · **Last updated:** 2026-08-13
+**Status:** live · **Tier:** 2 (Education Hub — growth) · **Spec:** [`STATE.md` §2.4 — the creator north star](../../../../common-docs/projects/education-platform/STATE.md) · **Last updated:** 2026-08-13
 
 > The platform's single biggest growth lever: teachers and successful YouTubers claim a public handle and build an SEO-first page at **`/c/[handle]`** featuring their YouTube videos + free Matrx tools (flashcards, guides) + classes with enroll CTAs. **The creators bring the business.** Free content is instantly usable logged-out (drives signups); paid classes show an enroll/price CTA.
 

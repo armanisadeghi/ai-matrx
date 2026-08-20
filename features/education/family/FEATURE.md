@@ -101,7 +101,7 @@ verification method → completes it → a SERVICE path stamps `verified_at` →
   upload + admin-review UI is the remaining build (runbook).
 - **(c) Government ID / KBA — stub.** A vendor (e.g. Persona, Stripe Identity, Veratad,
   PRIVO) verifies identity. Dialog option present + disabled; **vendor is Arman's decision**
-  (runbook `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`).
+  (runbook `/Users/armanisadeghi/code/common-docs/projects/education-platform/COPPA_CONSENT_RUNBOOK.md`).
 
 **A child can NEVER self-verify.** `guardian_confirm_verification` is `service_role`-only; the
 only callers are the signature-verified Stripe webhook and secret-token admin routes — never
@@ -193,7 +193,7 @@ the browser. The parent's post-Checkout redirect is cosmetic; the webhook is the
   child sees "waiting for a parent to verify". **Live-verified** (Supabase MCP + real Stripe TEST
   webhook, signed): block → card-verify (PI authorized → voided, $0 settled) → allow → revoke →
   block; route returns a real `cs_test_` session. Arman runbook:
-  `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
+  `/Users/armanisadeghi/code/common-docs/projects/education-platform/COPPA_CONSENT_RUNBOOK.md`.
 - `2026-07-15` — **D52 fix (school-safe hardening).** Closed the email-enumeration oracle in
   `guardian_grant` / `guardian_request_student` (identical neutral jsonb response regardless of
   email existence) + added a per-requester consent-request rate limit (8/min via

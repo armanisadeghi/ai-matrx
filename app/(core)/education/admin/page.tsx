@@ -12,7 +12,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
   name: "Education Hub",
   slug: "education",
   description:
-    "The AI study platform. Two layers under /education: a server-rendered marketing/discovery layer (five axes + a pure-SEO content engine) and an interactive app-tool layer (coming-soon placeholders today). Source of truth for WHAT we build is VISION-education-hub.md.",
+    "The AI study platform. Two layers under /education: a server-rendered marketing/discovery layer (five axes + a pure-SEO content engine) and an interactive app-tool layer (all 16 tools live). Source of truth for WHAT we build is common-docs/projects/education-platform/VISION.md; the converged state is that project's STATE.md.",
   docs: [
     {
       label: "VISION (source of truth)",
@@ -20,8 +20,8 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     },
     { label: "Education FEATURE.md", href: "/features/education/FEATURE.md" },
     {
-      label: "Entitlements & Billing requirements (forked)",
-      href: "/docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md",
+      label: "Converged state (what is built, what is pending)",
+      href: "/common-docs/projects/education-platform/STATE.md",
     },
   ],
   routeScanPath: "app/(core)/education",
@@ -423,7 +423,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/classes",
       label: "My Classes (W2 Per-Class Hub — list)",
       description:
-        "W2-class-hub.md. List-first home for a student's classes. Scopes-native: a class is a SCOPE under a per-user 'Class' scope type (slug='class') in the personal org — created on demand via the canonical create_scope_type/create_scope RPCs. No new tables. Create/edit a class (name, teacher, term, period, exam dates in scope.settings).",
+        "List-first home for a student's classes. Scopes-native: a class is a SCOPE under a per-user 'Class' scope type (slug='class') in the personal org — created on demand via the canonical create_scope_type/create_scope RPCs. No new tables. Create/edit a class (name, teacher, term, period, exam dates in scope.settings).",
       filePath: "app/(core)/education/classes/page.tsx",
       status: "Live",
       notes: [
@@ -448,7 +448,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/creator",
       label: "Creator page (manage) — Convergence C",
       description:
-        "CONVERGENCE_C_CREATORS.md. The authed creator dashboard: claim a unique public handle, edit identity (name/tagline/bio/links), and pick which YouTube videos + public free tools + classes to feature; publish toggle. Signed-in only (noindex); every creator_* RPC is gated on auth.uid() owning the row. The PUBLIC page is /c/[handle].",
+        "The authed creator dashboard (see STATE.md §2.4 — the creator north star): claim a unique public handle, edit identity (name/tagline/bio/links), and pick which YouTube videos + public free tools + classes to feature; publish toggle. Signed-in only (noindex); every creator_* RPC is gated on auth.uid() owning the row. The PUBLIC page is /c/[handle].",
       filePath: "app/(core)/education/creator/page.tsx",
       status: "Live",
       notes: [
