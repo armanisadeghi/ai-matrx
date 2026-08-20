@@ -9,10 +9,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import {
+  AppWindow,
   Check,
   ChevronDown,
   ChevronRight,
-  Maximize2,
   MessageSquare,
   Undo2,
   X,
@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import MarkdownStream from "@/components/MarkdownStream";
 import { cn } from "@/lib/utils";
 import { useOpenHindsightFindingWindow } from "@/features/overlays/openers/hindsightFindingWindow";
 
@@ -46,8 +47,10 @@ export function FindingCard({
   agentId,
   onChanged,
   onGuide,
+  windowFindings,
   initialExpanded = false,
   showWindowDoor = true,
+  showActions = true,
   variant = "card",
 }: {
   finding: Finding;
@@ -60,8 +63,10 @@ export function FindingCard({
    * DiscussPanel. The admin console omits it and keeps the inline panel.
    */
   onGuide?: (finding: Finding) => void;
+  windowFindings?: Finding[];
   initialExpanded?: boolean;
   showWindowDoor?: boolean;
+  showActions?: boolean;
   variant?: "card" | "bare";
 }) {
   const audience = useDoorAudience();
@@ -69,32 +74,8 @@ export function FindingCard({
   const [expanded, setExpanded] = useState(initialExpanded);
   const [discussing, setDiscussing] = useState(false);
 
-  const apply = useMutation({
-    mutationFn: () => applyFinding(finding.id),
-    onSuccess: (res) => {
-      toast.success(
-        res.applied_version_number != null
-          ? `Applied — the agent is now v${res.applied_version_number}`
-          : "Accepted — this lever needs a human to carry it out",
-      );
-      onChanged();
-    },
-    onError: (err: Error) => toast.error(`Apply failed: ${err.message}`),
-  });
-
-  const reject = useMutation({
-    mutationFn: () => rejectFinding(finding.id),
-    onSuccess: () => {
-      toast.success("Rejected — it won't be re-proposed for a while");
-      onChanged();
-    },
-    onError: (err: Error) => toast.error(`Reject failed: ${err.message}`),
-  });
-
   const verdicts = finding.proposal?.replay_verdicts ?? {};
-  const decided = hindsightFindingIsDecided(finding);
   const body = findingProposalBody(finding);
-  const busy = apply.isPending || reject.isPending;
 
   return (
     <Card
@@ -117,11 +98,21 @@ export function FindingCard({
           ) : (
             <ChevronRight className="absolute right-0 top-0.5 h-4 w-4 text-muted-foreground" />
           )}
-          <div className="min-w-0">
-            <div className="text-[13px] font-medium leading-5 text-foreground">
+          <div
+            className={cn(
+              "min-w-0",
+              variant === "bare" && "flex items-center gap-2 overflow-hidden",
+            )}
+          >
+            <div className="shrink-0 text-[13px] font-medium leading-5 text-foreground">
               {finding.title}
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+            <div
+              className={cn(
+                "flex items-center gap-1 text-[11px] text-muted-foreground",
+                variant === "card" ? "mt-1.5 flex-wrap" : "min-w-0 flex-nowrap",
+              )}
+            >
               <Badge
                 className={cn(
                   "border-0 px-1 py-0 text-[11px] leading-4",
@@ -186,37 +177,12 @@ export function FindingCard({
             </div>
           </div>
         </button>
-        <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1.5 @md:w-auto">
-          <CopyButtons
-            size="icon"
-            label={`Hindsight finding “${finding.title}”`}
-            human={() => hindsightFindingHuman(finding)}
-            json={() => finding}
-            agent={() => hindsightFindingAgentPayload(finding, expanded)}
-            agentVariant={{
-              id: "finding-with-context",
-              label: "Finding with context",
-              hint: "What this Hindsight card shows, with its page and record identity",
-              position: "first",
-            }}
-          />
-          {showWindowDoor && (
-            <Button
-              size="sm"
-              variant="outline"
-              title="Open the full finding in a window"
-              aria-label="Open the full finding in a window"
-              onClick={() => openFindingWindow({ finding, agentId, audience })}
-              data-testid="hindsight-open-window"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            title="Tell the reviewer what it missed"
-            onClick={() => {
+        {showActions && (
+          <FindingActions
+            finding={finding}
+            agentId={agentId}
+            onChanged={onChanged}
+            onGuide={() => {
               if (onGuide) {
                 onGuide(finding);
                 return;
@@ -224,57 +190,21 @@ export function FindingCard({
               setDiscussing((v) => !v);
               setExpanded(true);
             }}
-            data-testid="hindsight-guide"
-          >
-            <MessageSquare className="mr-1 h-3.5 w-3.5" />
-            Guide
-          </Button>
-          <RevertButton
-            finding={finding}
-            agentId={agentId}
-            onChanged={onChanged}
+            expanded={expanded}
+            showWindowDoor={showWindowDoor}
+            windowFindings={windowFindings}
           />
-          {!decided && (
-            <>
-              <Button
-                size="sm"
-                disabled={busy}
-                onClick={() => apply.mutate()}
-                data-testid="hindsight-apply"
-              >
-                <Check className="mr-1 h-3.5 w-3.5" />
-                {apply.isPending
-                  ? "Applying…"
-                  : finding.machine_applicable
-                    ? "Apply"
-                    : "Accept"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => reject.mutate()}
-                title="Reject this finding"
-                data-testid="hindsight-reject"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
-        </div>
+        )}
       </div>
 
       {expanded && (
         <div className="mt-3 space-y-3 border-t border-border pt-3 text-sm">
           {finding.reasoning && (
-            <p
-              className={cn(
-                "text-muted-foreground",
-                variant === "card" && "line-clamp-4",
-              )}
+            <div
+              className={cn(variant === "card" && "max-h-24 overflow-hidden")}
             >
-              {finding.reasoning}
-            </p>
+              <MarkdownStream content={finding.reasoning} hideCopyButton />
+            </div>
           )}
           {(finding.evidence ?? []).length > 0 && (
             <div>
@@ -319,26 +249,31 @@ export function FindingCard({
                   ? ` — section <${finding.proposal.section_key}>`
                   : ""}
               </div>
-              <pre
+              <div
                 className={cn(
-                  "mt-1 whitespace-pre-wrap rounded-md bg-muted p-2 text-xs",
+                  "mt-1",
                   variant === "card"
                     ? "max-h-28 overflow-hidden"
                     : "overflow-visible",
                 )}
               >
-                {body}
-              </pre>
+                <MarkdownStream content={body} hideCopyButton />
+              </div>
               {variant === "card" && showWindowDoor && (
                 <Button
                   size="sm"
                   variant="link"
                   className="mt-1 h-6 px-0 text-xs"
                   onClick={() =>
-                    openFindingWindow({ finding, agentId, audience })
+                    openFindingWindow({
+                      finding,
+                      findings: windowFindings ?? [finding],
+                      agentId,
+                      audience,
+                    })
                   }
                 >
-                  <Maximize2 className="h-3 w-3" />
+                  <AppWindow className="h-3 w-3" />
                   Read the full finding
                 </Button>
               )}
@@ -364,5 +299,123 @@ export function FindingCard({
         </div>
       )}
     </Card>
+  );
+}
+
+export function FindingActions({
+  finding,
+  agentId,
+  onChanged,
+  onGuide,
+  expanded = true,
+  showWindowDoor = false,
+  windowFindings,
+}: {
+  finding: Finding;
+  agentId?: string;
+  onChanged: () => void;
+  onGuide: () => void;
+  expanded?: boolean;
+  showWindowDoor?: boolean;
+  windowFindings?: Finding[];
+}) {
+  const audience = useDoorAudience();
+  const openFindingWindow = useOpenHindsightFindingWindow();
+  const apply = useMutation({
+    mutationFn: () => applyFinding(finding.id),
+    onSuccess: (res) => {
+      toast.success(
+        res.applied_version_number != null
+          ? `Applied — the agent is now v${res.applied_version_number}`
+          : "Accepted — this lever needs a human to carry it out",
+      );
+      onChanged();
+    },
+    onError: (err: Error) => toast.error(`Apply failed: ${err.message}`),
+  });
+  const reject = useMutation({
+    mutationFn: () => rejectFinding(finding.id),
+    onSuccess: () => {
+      toast.success("Rejected — it won't be re-proposed for a while");
+      onChanged();
+    },
+    onError: (err: Error) => toast.error(`Reject failed: ${err.message}`),
+  });
+  const decided = hindsightFindingIsDecided(finding);
+  const busy = apply.isPending || reject.isPending;
+
+  return (
+    <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1.5 @md:w-auto">
+      <CopyButtons
+        size="icon"
+        label={`Hindsight finding “${finding.title}”`}
+        human={() => hindsightFindingHuman(finding)}
+        json={() => finding}
+        agent={() => hindsightFindingAgentPayload(finding, expanded)}
+        agentVariant={{
+          id: "finding-with-context",
+          label: "Finding with context",
+          hint: "What this Hindsight card shows, with its page and record identity",
+          position: "first",
+        }}
+      />
+      {showWindowDoor && (
+        <Button
+          size="sm"
+          variant="outline"
+          title="Open the full finding in a window"
+          aria-label="Open the full finding in a window"
+          onClick={() =>
+            openFindingWindow({
+              finding,
+              findings: windowFindings ?? [finding],
+              agentId,
+              audience,
+            })
+          }
+          data-testid="hindsight-open-window"
+        >
+          <AppWindow className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        title="Tell the reviewer what it missed"
+        onClick={onGuide}
+        data-testid="hindsight-guide"
+      >
+        <MessageSquare className="mr-1 h-3.5 w-3.5" />
+        Guide
+      </Button>
+      <RevertButton finding={finding} agentId={agentId} onChanged={onChanged} />
+      {!decided && (
+        <>
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => apply.mutate()}
+            data-testid="hindsight-apply"
+          >
+            <Check className="mr-1 h-3.5 w-3.5" />
+            {apply.isPending
+              ? "Applying…"
+              : finding.machine_applicable
+                ? "Apply"
+                : "Accept"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => reject.mutate()}
+            title="Reject this finding"
+            data-testid="hindsight-reject"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      )}
+    </div>
   );
 }

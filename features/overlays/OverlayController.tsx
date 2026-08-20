@@ -5232,11 +5232,15 @@ export default function OverlayController() {
         const data = inst.data as Record<string, unknown> | null | undefined;
         const finding = data?.finding as Finding | null | undefined;
         if (!finding || typeof finding.id !== "string") return null;
+        const findings = Array.isArray(data?.findings)
+          ? (data.findings as Finding[])
+          : [finding];
         return (
           <HindsightFindingWindow
-            key={inst.instanceId}
+            key={`${inst.instanceId}:${finding.id}`}
             instanceId={inst.instanceId}
             finding={finding}
+            findings={findings}
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
             audience={data?.audience === "admin" ? "admin" : "product"}
             onClose={() =>
