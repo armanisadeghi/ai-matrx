@@ -80,6 +80,34 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 
 ## Invariants / gotchas
 
+- **🚨 RULE 3 — THIS CLIENT NEVER CREATES A PARTY. `resolveParty` IS THE ONLY CREATE PATH.**
+  `features/crm/service.ts` exports `resolveParty` / `resolvePartiesBatch`, which POST to
+  aidream `/crm/parties/resolve` and `/crm/parties/resolve-batch`. Those doors run the
+  governed resolver (`aidream/services/crm/party_resolver.py`) inside `acting_as_user`, so
+  Postgres RLS allows exactly what the browser could have written itself — the logic moves
+  to the server, the authority does not.
+  - **A `supabase.schema("crm").from("party").insert()` is FORBIDDEN and has no exception.**
+    The browser cannot canonicalize a name, match on email/phone/domain/platform id, or
+    follow merge lineage, so a raw insert does the one thing the dedup system exists to
+    undo: it mints a second row for someone we already have.
+  - This is the doctrine's "client goes to aidream for real WORK" case, not a database
+    proxy. Reads, updates and every component table still go direct to Supabase. Only the
+    find-or-create decision — the one that can manufacture a duplicate identity — is remote.
+  - **`source` is required, never defaulted.** `'manual'` (create form), `'import'` (wizard,
+    with the file name as `source_detail`), `'content_plan'` (curator). The stamp is the
+    audit trail: a default would recreate the blind spot that hid this bug.
+  - **Emails and phones ride the SAME call.** The old path created the party and attached
+    the address afterwards, so the strongest identity key the user supplied could never
+    participate in its own match — every re-import of the same person made a new row.
+  - The resolver never sets a primary contact point (RULE 2 owns that flip). A create flow
+    that wants one calls `ensurePrimaryContactPoints` right after resolving; it promotes the
+    first email/phone **only when that channel has no primary yet**, so a re-import can
+    never silently repoint an existing contact's primary address.
+  - **A matched party is not a failure and must be said out loud.** `ResolvedParty.created`
+    is false on a match; the create form says "already existed — opened instead of
+    duplicated" and the import wizard reports matched rows separately from new ones.
+    Reporting a match as a create tells the user we imported N contacts that already existed.
+
 - **EVERY SIGNED-UP USER HAS ONE AI Matrx-tenant party.** `crm.ensure_user_party`
   is the narrow identity-provisioning primitive behind the `auth.users` trigger
   `on_auth_user_created_crm_party`: it creates or claims exactly one active person
@@ -329,17 +357,30 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
 (`engine.ts` — parse/guess/plan/commit; `types.ts`); UI in
 `components/import/ImportWizard.tsx`; bulk dedup lookups live in `service.ts`
 (`findExistingMediumOwners`, `findPartiesByNames`, `findPartiesByDomains`,
-`findOrCreateCompanyByName`). Rules paid for once:
+`findOrCreateCompanyByName`). The commit path creates nothing itself — it calls
+`resolveParty` per row (RULE 3). Rules paid for once:
 
 - **Nothing writes before the preview is confirmed.** The dry run resolves, per
   row: `create` / `exists` (with a door to the owning record) /
   `duplicate_in_file` (first claim wins) / `invalid` (no name).
-- **Dedup identity:** people dedupe on normalized email/phone values already
-  owned by a live party in the org (names are too weak to skip a person on —
-  a person row with no valid email/phone re-imports; that is the resolver's
-  Wave 1 job, not the import wizard's). Companies dedupe on exact domain, then
-  case-insensitive exact name.
-- **Employer cells** find-or-create the company once per distinct name and add
+- **Dedup identity (preview):** the dry run previews people against normalized
+  email/phone values already owned by a live party in the org, and companies
+  against exact domain then case-insensitive exact name. This is a PREVIEW
+  heuristic for the plan screen only — the commit no longer trusts it.
+- **🚨 The commit dedupes through the resolver, not through the preview.** Every
+  row — person and employer alike — goes through `resolveParty` /
+  `findOrCreateCompanyByName`, so a row the preview called `create` still lands on
+  an existing party when the resolver finds one. That is why the wizard reports
+  "N imported, M already existed and were updated instead of duplicated".
+  The employer path used to hand-roll its own matching and had three blind spots,
+  each of which forked a company we already had:
+  * no `name_key` canonicalization — "Acme  Inc" vs "Acme Inc" read as different;
+  * `record_class = 'contact'` only — the **1,396** `discovered` organizations
+    (SEO prospects, YouTube channels, media outlets) were invisible, so importing
+    a company the platform had already found duplicated it;
+  * `canonical_id IS NULL` only — a merged-away company matched nothing and came
+    straight back as a new row.
+- **Employer cells** resolve the company once per distinct name and add
   a current+primary `crm.affiliation` (the mirror trigger fills the list's
   Employer column).
 - **Every native format becomes the SAME tabular mapping shape.** There is no
@@ -365,11 +406,12 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
   policy on component tables cannot see a row being inserted, so
   `INSERT…RETURNING` 42501s. Insert bare, re-read in the next statement.
 - **Known limits:** the commit is client-driven — a page close/reload mid-run
-  leaves the current row partial (party without its later points/affiliation);
-  re-running converges to "exists" via email/phone dedup but does NOT backfill
-  the missing pieces (no enrich-existing mode yet — that is the Wave 1 party
-  resolver's territory). Rows with no valid email/phone dedupe by nothing and
-  re-import as new people. Excel uses the first non-empty worksheet and asks the
+  leaves the current row partial (party without its later affiliation). Re-running
+  now converges properly: the resolver matches the existing party and enriches it
+  (filling NULL fields, linking new contact points) rather than duplicating it.
+  Rows with no valid email/phone still dedupe on nothing and re-import as new
+  people — `allow_name_match` stays off for persons on purpose, because two
+  different people share a name far too often for it to be an identity key. Excel uses the first non-empty worksheet and asks the
   user to import other sheets separately; the durable paged/resumable import-job
   spine is Wave 1 in the cross-repo program.
 
@@ -682,6 +724,20 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-19 — **The party-resolver bypass is closed; this client no longer
+  creates parties.** `createParty` (a raw `crm.party` insert) and the hand-rolled
+  `findOrCreateCompanyByName` matcher are deleted. All three callers — the create
+  form, the CSV/Excel/vCard import commit, and the content-plan curator — now go
+  through `resolveParty` onto the new aidream doors `/crm/parties/resolve` and
+  `/crm/parties/resolve-batch`, which run the governed resolver under
+  `acting_as_user`. Emails/phones travel with the party so they can participate in
+  the match; `source` is stamped on every create; matched parties are reported as
+  matches instead of creates. Verified live against `txzxabzwovsujtloxrus`:
+  a create lands with `source`/`source_detail`/`name_key` stamped, and importing
+  "Gumloop" matches the existing `record_class='discovered'` organization that the
+  old matcher could not see (it returned zero and would have duplicated). RULE 3
+  in Invariants. `job_title` was added to the server resolver's `PartyInput`, which
+  every producer gets.
 - 2026-08-18 — **Expected unresolved-variable draft refusals stay out of the
   repair queue.** The exact single-draft 409 is isolated at the diagnostics
   boundary for both the legacy `conflict` and canonical `unresolved_variables`

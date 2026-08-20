@@ -13,6 +13,13 @@
  * dedup system exists to clean up. If the slot cannot resolve, the affordance
  * does not render — never a hardcoded agent id, never a raw insert.
  *
+ * That last sentence was aspirational until 2026-08-19: `service.ts` shipped a
+ * `createParty` doing exactly the forbidden insert, and three surfaces used it.
+ * The client now has ONE non-agent create path — `resolveParty` in `service.ts`,
+ * onto aidream `/crm/parties/resolve`, which runs the SAME resolver this Mandate
+ * reaches through `resolve_contact`. Two doors, one resolver, zero raw inserts.
+ * See RULE 3 in `features/crm/FEATURE.md`.
+ *
  * Declared server-side in aidream `services/mandates/client_mandates.py`.
  */
 export const CRM_SAVE_CONTACT_AGENT_MANDATE = "crm.save_contact";

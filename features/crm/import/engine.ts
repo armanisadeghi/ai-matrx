@@ -21,11 +21,11 @@ import {
   addAffiliation,
   ensurePrimaryContactPoints,
   findExistingMediumOwners,
-  findOrCreateCompanyByName,
   findPartiesByDomains,
   findPartiesByNames,
   normalizeMediumValue,
-  resolveParty,
+  resolvePartiesBatch,
+  resolvedPartyRef,
 } from "../service";
 import type {
   ImportField,
@@ -742,6 +742,19 @@ export async function planImport(args: {
  * Employers are resolved once per distinct name. Per-row failures are
  * captured and the run continues — one bad row never sinks the file.
  */
+/**
+ * Rows per resolve round trip. Matches the server's `max_length=200` cap on
+ * `/crm/parties/resolve-batch`, kept below it so a chunk can never be rejected
+ * wholesale for being one row too long.
+ */
+const RESOLVE_BATCH_SIZE = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
 export async function commitImport(
   plan: ImportPlan,
   onProgress?: (done: number, total: number) => void,
@@ -754,97 +767,150 @@ export async function commitImport(
   const companiesCreated: PartyRef[] = [];
   const employerCache = new Map<string, PartyRef>();
 
-  // Resolve every distinct employer up front so row order can't create the
-  // same company twice.
+  // Employers the preview already matched to a live party — no resolve needed.
   for (const p of rows) {
     if (p.existingEmployer && p.companyName) {
       employerCache.set(p.companyName.toLowerCase(), p.existingEmployer);
     }
   }
 
-  let done = 0;
-  for (const p of rows) {
-    // Captured as soon as the party lands so a later step's failure can still
-    // hand the user a door to the half-populated record instead of hiding it.
-    let createdPartyId: string | undefined;
-    try {
-      let employer: PartyRef | undefined;
-      if (p.companyName) {
-        const key = p.companyName.toLowerCase();
-        employer = employerCache.get(key);
-        if (!employer) {
-          employer = await findOrCreateCompanyByName({
-            orgId: plan.orgId,
-            name: p.companyName,
-            source: "import",
-            sourceDetail,
-          });
-          employerCache.set(key, employer);
-          companiesCreated.push(employer);
-        }
-      }
-
-      // Every email and phone on the row goes IN to the resolve call. This is
-      // the whole fix: the old path created the party first and attached the
-      // addresses afterwards, so re-importing the same person could never
-      // match on their email and made a second record every time.
-      const resolved = await resolveParty({
-        kind: plan.kind,
-        displayName: p.displayName,
+  // Every remaining distinct employer resolves BEFORE any person row, in one
+  // batch. Doing it up front is what stops row order from forking the same
+  // company, and the resolver is what stops it from forking a company the
+  // platform already discovered.
+  const unresolvedCompanies = [
+    ...new Set(
+      rows
+        .map((p) => p.companyName?.trim())
+        .filter((name): name is string => Boolean(name))
+        .filter((name) => !employerCache.has(name.toLowerCase())),
+    ),
+  ];
+  for (const namesChunk of chunk(unresolvedCompanies, RESOLVE_BATCH_SIZE)) {
+    const results = await resolvePartiesBatch(
+      namesChunk.map((name) => ({
+        kind: "organization" as const,
+        displayName: name,
         orgId: plan.orgId,
         source: "import",
         sourceDetail,
-        firstName: p.firstName,
-        lastName: p.lastName,
-        jobTitle: p.jobTitle,
-        headline: p.headline,
-        legalName: p.legalName,
-        primaryDomain:
-          plan.kind === "organization" ? p.primaryDomain : undefined,
-        emails: p.emails,
-        phones: p.phones,
-      });
-      createdPartyId = resolved.partyId;
+      })),
+    );
+    for (const item of results) {
+      // A company that fails to resolve is not fatal: the person still imports,
+      // just without the employer link, and the row says so.
+      if (!item.resolved) continue;
+      employerCache.set(
+        namesChunk[item.index].toLowerCase(),
+        resolvedPartyRef(item.resolved),
+      );
+      if (item.resolved.created) {
+        companiesCreated.push(resolvedPartyRef(item.resolved));
+      }
+    }
+  }
 
-      await ensurePrimaryContactPoints({
-        partyId: resolved.partyId,
-        emails: p.emails,
-        phones: p.phones,
-      });
-
-      if (employer) {
-        await addAffiliation({
-          partyId: resolved.partyId,
-          employerPartyId: employer.id,
+  let done = 0;
+  for (const rowsChunk of chunk(rows, RESOLVE_BATCH_SIZE)) {
+    // ONE round trip per chunk instead of one per row. The server resolves them
+    // in order, so two rows naming the same new company cannot race.
+    //
+    // Every email and phone goes IN to the resolve call. This is the heart of
+    // the fix: the old path created the party first and attached the addresses
+    // afterwards, so re-importing the same person could never match on their
+    // own email and made a second record every time.
+    let batch: Awaited<ReturnType<typeof resolvePartiesBatch>>;
+    try {
+      batch = await resolvePartiesBatch(
+        rowsChunk.map((p) => ({
+          kind: plan.kind,
+          displayName: p.displayName,
           orgId: plan.orgId,
-          title: p.jobTitle,
-          isCurrent: true,
-          isPrimary: true,
+          source: "import",
+          sourceDetail,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          jobTitle: p.jobTitle,
+          headline: p.headline,
+          legalName: p.legalName,
+          primaryDomain:
+            plan.kind === "organization" ? p.primaryDomain : undefined,
+          emails: p.emails,
+          phones: p.phones,
+        })),
+      );
+    } catch (e) {
+      // The whole chunk failed (network, auth, server). Every row in it is a
+      // failure — never silently short a chunk from the report.
+      const message = e instanceof Error ? e.message : String(e);
+      for (const p of rowsChunk) {
+        failed.push({
+          rowNumber: p.rowNumber,
+          displayName: p.displayName,
+          ok: false,
+          error: message,
+        });
+        done += 1;
+        onProgress?.(done, rows.length);
+      }
+      continue;
+    }
+
+    const byIndex = new Map(batch.map((item) => [item.index, item]));
+    for (const [i, p] of rowsChunk.entries()) {
+      const item = byIndex.get(i);
+      // Captured as soon as the party lands so a later step's failure can still
+      // hand the user a door to the half-populated record instead of hiding it.
+      let resolvedPartyId: string | undefined;
+      try {
+        if (!item?.resolved) {
+          throw new Error(item?.error ?? "The server returned no result for this row");
+        }
+        resolvedPartyId = item.resolved.partyId;
+
+        await ensurePrimaryContactPoints({
+          partyId: resolvedPartyId,
+          emails: p.emails,
+          phones: p.phones,
+        });
+
+        const employer = p.companyName
+          ? employerCache.get(p.companyName.trim().toLowerCase())
+          : undefined;
+        if (employer) {
+          await addAffiliation({
+            partyId: resolvedPartyId,
+            employerPartyId: employer.id,
+            orgId: plan.orgId,
+            title: p.jobTitle,
+            isCurrent: true,
+            isPrimary: true,
+          });
+        }
+
+        created.push({
+          rowNumber: p.rowNumber,
+          displayName: p.displayName,
+          ok: true,
+          partyId: resolvedPartyId,
+          matchedExisting: !item.resolved.created,
+        });
+      } catch (e) {
+        failed.push({
+          rowNumber: p.rowNumber,
+          displayName: p.displayName,
+          ok: false,
+          partyId: resolvedPartyId,
+          error:
+            (e instanceof Error ? e.message : String(e)) +
+            (resolvedPartyId
+              ? " — the record was saved but is missing later pieces; open it to finish by hand"
+              : ""),
         });
       }
-
-      created.push({
-        rowNumber: p.rowNumber,
-        displayName: p.displayName,
-        ok: true,
-        partyId: resolved.partyId,
-        matchedExisting: !resolved.created,
-      });
-    } catch (e) {
-      failed.push({
-        rowNumber: p.rowNumber,
-        displayName: p.displayName,
-        ok: false,
-        partyId: createdPartyId,
-        error:
-          (e instanceof Error ? e.message : String(e)) +
-          (createdPartyId
-            ? " — the record was created but is missing later pieces; open it to finish by hand"
-            : ""),
-      });
+      done += 1;
+      onProgress?.(done, rows.length);
     }
-    done += 1;
-    onProgress?.(done, rows.length);
   }
 
   return { created, failed, companiesCreated };

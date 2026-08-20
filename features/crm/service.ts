@@ -381,15 +381,18 @@ function resolveRequestBody(input: ResolvePartyInput) {
   };
 }
 
+// The three tail fields carry server-side defaults, so the generated contract
+// types them optional even though a response always includes them. Defaulting
+// here keeps `ResolvedParty` total for every consumer.
 function toResolvedParty(row: {
   party_id: string;
   display_name: string;
   party_kind: string;
   created: boolean;
   matched_by: string;
-  canonical_followed: boolean;
-  contact_points_added: number;
-  fields_filled: string[];
+  canonical_followed?: boolean;
+  contact_points_added?: number;
+  fields_filled?: string[];
 }): ResolvedParty {
   return {
     partyId: row.party_id,
@@ -397,9 +400,9 @@ function toResolvedParty(row: {
     partyKind: row.party_kind,
     created: row.created,
     matchedBy: row.matched_by,
-    canonicalFollowed: row.canonical_followed,
-    contactPointsAdded: row.contact_points_added,
-    fieldsFilled: row.fields_filled,
+    canonicalFollowed: row.canonical_followed ?? false,
+    contactPointsAdded: row.contact_points_added ?? 0,
+    fieldsFilled: row.fields_filled ?? [],
   };
 }
 
@@ -1320,41 +1323,6 @@ export async function findPartiesByDomains(args: {
     }
   }
   return out;
-}
-
-/**
- * Find-or-create a company by name (import commit path for employer cells).
- *
- * This used to hand-roll its own matching — a case-insensitive exact compare on
- * `display_name`, restricted to `record_class = 'contact'` and `canonical_id IS
- * NULL`. Three separate ways to miss a company we already had, each of which
- * created a duplicate instead:
- *
- *   * "Acme  Inc" vs "Acme Inc" — no `name_key` canonicalization, so any
- *     difference in spacing, casing or punctuation read as a different company.
- *   * The 1,396 organizations carrying `record_class = 'discovered'` (SEO
- *     prospects, YouTube channels, media outlets) were invisible to the filter,
- *     so importing a company the platform had already discovered forked it.
- *   * A merge LOSER is excluded by `canonical_id IS NULL`, so a company that had
- *     been merged away matched nothing and came straight back as a new row.
- *
- * The resolver has none of those blind spots: it canonicalizes, sees every
- * record class, and follows merge lineage to the winner.
- */
-export async function findOrCreateCompanyByName(args: {
-  orgId: string;
-  name: string;
-  source: string;
-  sourceDetail?: string;
-}): Promise<PartyRef> {
-  const resolved = await resolveParty({
-    kind: "organization",
-    displayName: args.name,
-    orgId: args.orgId,
-    source: args.source,
-    sourceDetail: args.sourceDetail,
-  });
-  return resolvedPartyRef(resolved);
 }
 
 // ── Dedup + merge (crm_03_dedup.sql) ────────────────────────────────────────
