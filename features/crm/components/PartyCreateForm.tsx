@@ -17,7 +17,11 @@ import {
   crmCreatePartyManifest,
 } from "@/features/surfaces/manifests/crm-create-party.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
-import { addContactPoint, createParty, normalizeMediumValue } from "../service";
+import {
+  ensurePrimaryContactPoints,
+  normalizeMediumValue,
+  resolveParty,
+} from "../service";
 import { PARTY_KINDS, type PartyKind } from "../types";
 
 const LABELS = surfaceValueLabels(crmCreatePartyManifest);
@@ -118,48 +122,53 @@ export function PartyCreateForm({
 
     setSaving(true);
     try {
-      const party = await createParty({
+      // The email and phone travel WITH the party, not after it: they are the
+      // strongest identity keys this form collects, and the resolver can only
+      // dedupe on what it is given at match time.
+      const emails = email.trim() ? [email] : [];
+      const phones = phone.trim() ? [phone] : [];
+      const resolved = await resolveParty({
         kind,
         displayName,
         orgId,
+        source: "manual",
+        sourceDetail: "crm_create_form",
         firstName: kind === "person" ? firstName : undefined,
         lastName: kind === "person" ? lastName : undefined,
         jobTitle: kind === "person" ? jobTitle : undefined,
         primaryDomain: kind === "organization" ? domain : undefined,
+        emails,
+        phones,
       });
 
-      const contactErrors: string[] = [];
-      for (const entry of [
-        { channel: "email" as const, value: email },
-        { channel: "phone" as const, value: phone },
-      ]) {
-        if (!entry.value.trim()) continue;
-        try {
-          await addContactPoint({
-            partyId: party.id,
-            orgId,
-            channel: entry.channel,
-            value: entry.value,
-            makePrimary: true,
-          });
-        } catch (error) {
-          contactErrors.push(
-            error instanceof Error ? error.message : String(error),
-          );
-        }
-      }
-
-      for (const message of contactErrors) {
-        // The record exists; a failed contact method is the moment you most
-        // want to open it and fix that by hand.
-        toast.error(`Record created, but a contact method failed: ${message}`, {
-          action: toastDoor("party", party.id),
+      try {
+        await ensurePrimaryContactPoints({
+          partyId: resolved.partyId,
+          emails,
+          phones,
         });
+      } catch (error) {
+        // The record exists; a failed primary flip is the moment you most want
+        // to open it and fix that by hand.
+        toast.error(
+          `Record saved, but setting the primary contact method failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { action: toastDoor("party", resolved.partyId) },
+        );
       }
-      toast.success(`${displayName} created`, {
-        action: toastDoor("party", party.id),
-      });
-      onCreated(party.id);
+
+      // Telling the user we CREATED a record we actually matched would be a
+      // lie, and it is the exact moment they need to know the person was
+      // already here — otherwise they file a duplicate-looking bug instead of
+      // opening the record they just enriched.
+      toast.success(
+        resolved.created
+          ? `${displayName} created`
+          : `${resolved.displayName} already existed — opened instead of duplicated`,
+        { action: toastDoor("party", resolved.partyId) },
+      );
+      onCreated(resolved.partyId);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create record",

@@ -120,6 +120,12 @@ export interface RowResult {
   displayName: string;
   ok: boolean;
   partyId?: string;
+  /**
+   * The resolver matched a party we already had instead of creating one. The
+   * row succeeded — reporting it as "created" would tell the user we imported
+   * N new contacts when some of them were already in the CRM.
+   */
+  matchedExisting?: boolean;
   error?: string;
 }
 

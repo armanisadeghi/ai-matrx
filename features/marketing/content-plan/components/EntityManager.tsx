@@ -84,7 +84,7 @@ import {
 } from "../data/hooks";
 import { createPlanEntity } from "../data/service";
 import { planEntitySummary } from "../format";
-import { createParty, searchPartiesByName } from "@/features/crm/service";
+import { resolveParty, searchPartiesByName } from "@/features/crm/service";
 import type { PartyRef, PartyRow } from "@/features/crm/types";
 import { PartyCreateForm } from "@/features/crm/components/PartyCreateForm";
 import {
@@ -384,13 +384,19 @@ export function EntityManager({
     const attributes =
       Object.keys(research).length > 0 ? { research } : undefined;
     if (item.entityType === "person" || item.entityType === "org") {
-      const party = await createParty({
+      // Across the content-plan → CRM seam, identity is still the CRM's to
+      // decide. A curator proposing "Acme Corp" must land on the Acme the org
+      // already has — including one the platform discovered itself — not a
+      // fresh row that shows up later as a duplicate someone has to merge.
+      const resolved = await resolveParty({
         kind: item.entityType === "org" ? "organization" : "person",
         displayName: item.label,
         orgId: organizationId,
+        source: "content_plan",
+        sourceDetail: siteId,
         ...(attributes ? { attributes } : {}),
       });
-      await linkParty.mutateAsync(party.id);
+      await linkParty.mutateAsync(resolved.partyId);
     } else {
       await createPlanEntity({
         site_id: siteId,

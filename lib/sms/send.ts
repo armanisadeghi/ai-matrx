@@ -11,6 +11,7 @@ import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { SendSmsOptions, SendSmsResult } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 import { formatSmsBody } from '@/features/sms/compliance';
+import { isPhoneNumberOptedOut } from './receive';
 
 /**
  * Send an SMS message via Twilio Messaging Service.
@@ -145,6 +146,24 @@ export async function sendNotificationSms(options: {
 
   if (!prefs || !prefs.sms_enabled || !prefs.phone_number) {
     return { success: false, error: 'SMS notifications not enabled for this user' };
+  }
+
+  // Suppression is the veto, and it outranks every category — including
+  // `system`. It is read from `crm.contact_medium` (THE ONE SUPPRESSION STORE),
+  // so a STOP texted to any of our numbers, an email unsubscribe, and a spoken
+  // do-not-call all stop this send. Consent, checked below, is the separate
+  // question of whether they ever said yes.
+  if (await isPhoneNumberOptedOut(prefs.phone_number, organizationId)) {
+    await supabase.schema('communication').from('sms_notifications').insert({
+      organization_id: organizationId,
+      user_id: userId,
+      notification_type: notificationType,
+      category,
+      reference_type: referenceType,
+      reference_id: referenceId,
+      status: 'blocked_opt_out',
+    });
+    return { success: false, error: 'This number is suppressed — they asked us to stop.' };
   }
 
   // Check consent

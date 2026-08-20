@@ -195,18 +195,31 @@ export function ImportWizard() {
     if (!plan) return;
     setProgress({ done: 0, total: plan.counts.create });
     try {
-      const res = await commitImport(plan, (done, total) =>
-        setProgress({ done, total }),
+      const res = await commitImport(
+        plan,
+        (done, total) => setProgress({ done, total }),
+        // Provenance: which file each of these contacts came from, stamped on
+        // the row as `source_detail`.
+        fileName ?? undefined,
       );
       setResult(res);
       setStep("done");
+      // The resolver matches contacts we already had rather than duplicating
+      // them, so "imported N" is only the new ones. Saying so is the whole
+      // point — a silent match reads as a lost row.
+      const matched = res.created.filter((r) => r.matchedExisting).length;
+      const fresh = res.created.length - matched;
+      const matchedNote =
+        matched > 0
+          ? `, ${matched} already existed and ${matched === 1 ? "was" : "were"} updated instead of duplicated`
+          : "";
       if (res.failed.length === 0) {
         toast.success(
-          `Imported ${res.created.length} record${res.created.length === 1 ? "" : "s"}`,
+          `Imported ${fresh} record${fresh === 1 ? "" : "s"}${matchedNote}`,
         );
       } else {
         toast.error(
-          `Imported ${res.created.length}, ${res.failed.length} failed — details below`,
+          `Imported ${fresh}${matchedNote}, ${res.failed.length} failed — details below`,
         );
       }
     } catch (e) {

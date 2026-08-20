@@ -14,6 +14,7 @@
 //      indexes cannot be DEFERRABLE).
 
 import { supabase } from "@/utils/supabase/client";
+import { apiPost } from "@/lib/api/typed-client";
 import { isUuid } from "@/features/scopes/service/associationGuards";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -296,38 +297,152 @@ export async function fetchPartyScopeCounts(
 
 // ── Party CRUD ──────────────────────────────────────────────────────────────
 
-export interface CreatePartyInput {
+/**
+ * RULE 3 (features/crm/FEATURE.md): a party is NEVER created by this client.
+ *
+ * `resolveParty` is the only create path. It calls the governed resolver on the
+ * server, which canonicalizes the name, matches on the real natural keys
+ * (email / phone / company domain / platform id), follows merge lineage, and
+ * enriches an existing record instead of duplicating it.
+ *
+ * A `supabase.schema("crm").from("party").insert()` is FORBIDDEN here and has
+ * no exception. It cannot do any of the above, so it does the one thing the
+ * whole dedup system exists to undo: it manufactures a second row for someone
+ * we already know. The 8 live parties carrying a NULL `source` are what that
+ * looked like in production.
+ *
+ * `source` is required, not defaulted: the stamp is the audit trail, and a
+ * default would re-create the same blind spot under a different name.
+ */
+export interface ResolvePartyInput {
   kind: PartyKind;
   displayName: string;
   orgId: string;
+  /** Producer stamp — 'manual', 'import', 'content_plan', … Never omitted. */
+  source: string;
+  /** Free-form provenance, e.g. the import file name. */
+  sourceDetail?: string;
   firstName?: string;
   lastName?: string;
   jobTitle?: string;
   primaryDomain?: string;
   headline?: string;
+  legalName?: string;
+  /**
+   * Sent WITH the party, never attached afterwards. The old path created the
+   * row first and added the email second, so the strongest key the user gave
+   * us could never participate in its own match.
+   */
+  emails?: string[];
+  phones?: string[];
   /** Flexible per-record data (crm.party.attributes jsonb), e.g. research provenance. */
   attributes?: Record<string, unknown>;
+  /**
+   * Match a PERSON on name alone. Off by default and it should stay off: two
+   * different people share a name far too often for it to be an identity key.
+   * Organizations always match on name — that is the resolver's own rule.
+   */
+  allowNameMatch?: boolean;
 }
 
-export async function createParty(input: CreatePartyInput): Promise<PartyRow> {
-  const { data, error } = await supabase
-    .schema("crm")
-    .from("party")
-    .insert({
-      party_kind: input.kind,
-      display_name: input.displayName.trim(),
-      organization_id: input.orgId,
-      first_name: input.firstName?.trim() || null,
-      last_name: input.lastName?.trim() || null,
-      job_title: input.jobTitle?.trim() || null,
-      primary_domain: input.primaryDomain?.trim() || null,
-      headline: input.headline?.trim() || null,
-      ...(input.attributes ? { attributes: input.attributes } : {}),
-    })
-    .select("*")
-    .single();
-  if (error) throw pgError(error);
-  return data;
+export interface ResolvedParty {
+  partyId: string;
+  displayName: string;
+  partyKind: string;
+  /** False = we matched an existing record. The caller should say so. */
+  created: boolean;
+  /** 'created' | 'email' | 'phone' | 'domain' | 'name' | 'external_id:<slug>' */
+  matchedBy: string;
+  canonicalFollowed: boolean;
+  contactPointsAdded: number;
+  fieldsFilled: string[];
+}
+
+const RESOLVE_PARTY = "/crm/parties/resolve";
+const RESOLVE_PARTY_BATCH = "/crm/parties/resolve-batch";
+
+function resolveRequestBody(input: ResolvePartyInput) {
+  return {
+    kind: input.kind,
+    display_name: input.displayName.trim(),
+    organization_id: input.orgId,
+    source: input.source,
+    source_detail: input.sourceDetail?.trim() || null,
+    first_name: input.firstName?.trim() || null,
+    last_name: input.lastName?.trim() || null,
+    job_title: input.jobTitle?.trim() || null,
+    primary_domain: input.primaryDomain?.trim() || null,
+    headline: input.headline?.trim() || null,
+    legal_name: input.legalName?.trim() || null,
+    emails: (input.emails ?? []).map((v) => v.trim()).filter(Boolean),
+    phones: (input.phones ?? []).map((v) => v.trim()).filter(Boolean),
+    attributes: input.attributes ?? {},
+    allow_name_match: input.allowNameMatch ?? false,
+  };
+}
+
+function toResolvedParty(row: {
+  party_id: string;
+  display_name: string;
+  party_kind: string;
+  created: boolean;
+  matched_by: string;
+  canonical_followed: boolean;
+  contact_points_added: number;
+  fields_filled: string[];
+}): ResolvedParty {
+  return {
+    partyId: row.party_id,
+    displayName: row.display_name,
+    partyKind: row.party_kind,
+    created: row.created,
+    matchedBy: row.matched_by,
+    canonicalFollowed: row.canonical_followed,
+    contactPointsAdded: row.contact_points_added,
+    fieldsFilled: row.fields_filled,
+  };
+}
+
+/** Find-or-create ONE party through the governed resolver. */
+export async function resolveParty(
+  input: ResolvePartyInput,
+): Promise<ResolvedParty> {
+  const { data } = await apiPost(RESOLVE_PARTY, resolveRequestBody(input));
+  return toResolvedParty(data);
+}
+
+export interface ResolvePartyBatchItem {
+  index: number;
+  resolved?: ResolvedParty;
+  /** Set when THIS row failed — the rest of the batch still landed. */
+  error?: string;
+}
+
+/**
+ * Resolve many parties in ONE round trip. The server runs them in order, so two
+ * rows naming the same company cannot race each other into two organizations.
+ */
+export async function resolvePartiesBatch(
+  inputs: ResolvePartyInput[],
+): Promise<ResolvePartyBatchItem[]> {
+  if (inputs.length === 0) return [];
+  const { data } = await apiPost(RESOLVE_PARTY_BATCH, {
+    parties: inputs.map(resolveRequestBody),
+  });
+  return data.map((row) => ({
+    index: row.index,
+    resolved: row.resolved ? toResolvedParty(row.resolved) : undefined,
+    error: row.error ?? undefined,
+  }));
+}
+
+/** Hydrate a resolver result into the `PartyRef` shape the CRM UI passes around. */
+export function resolvedPartyRef(resolved: ResolvedParty): PartyRef {
+  return {
+    id: resolved.partyId,
+    display_name: resolved.displayName,
+    party_kind: resolved.partyKind as PartyKind,
+  };
 }
 
 /**
@@ -882,6 +997,51 @@ export async function addContactPoint(args: {
   }
 }
 
+/**
+ * Promote the first email and the first phone the caller supplied to primary,
+ * but ONLY when the party has no primary on that channel yet.
+ *
+ * The resolver creates contact points and deliberately never marks one primary
+ * (RULE 2 — that flip is the RPC's job, and picking a primary is a judgement
+ * about which address a human actually uses). So a create flow that wants the
+ * behaviour the old `addContactPoint({ makePrimary: true })` had asks for it
+ * here, right after resolving.
+ *
+ * The "only when absent" guard is what makes this safe on a MATCHED party: a
+ * re-import must never silently repoint an existing contact's primary email at
+ * whatever address happened to be in the newest spreadsheet row.
+ */
+export async function ensurePrimaryContactPoints(args: {
+  partyId: string;
+  emails?: string[];
+  phones?: string[];
+}): Promise<void> {
+  const wanted: ContactChannel[] = [];
+  if (args.emails?.some((v) => v.trim())) wanted.push("email");
+  if (args.phones?.some((v) => v.trim())) wanted.push("phone");
+  if (wanted.length === 0) return;
+
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("party_contact_point")
+    .select("id,is_primary,medium:contact_medium!inner(channel)")
+    .eq("party_id", args.partyId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (error) throw pgError(error);
+
+  for (const channel of wanted) {
+    const onChannel = (data ?? []).filter(
+      (row) =>
+        (row.medium as unknown as { channel: string } | null)?.channel ===
+        channel,
+    );
+    if (onChannel.length === 0) continue;
+    if (onChannel.some((row) => row.is_primary)) continue;
+    await setPrimaryContactPoint(onChannel[0].id);
+  }
+}
+
 /** RULE 2: primaries flip ONLY through the RPC (direct updates 23505). */
 export async function setPrimaryContactPoint(id: string): Promise<void> {
   const { error } = await supabase.rpc("crm_set_primary_contact_point", {
@@ -1164,30 +1324,37 @@ export async function findPartiesByDomains(args: {
 
 /**
  * Find-or-create a company by name (import commit path for employer cells).
- * Lookup is case-insensitive exact; creation writes the name as given.
+ *
+ * This used to hand-roll its own matching — a case-insensitive exact compare on
+ * `display_name`, restricted to `record_class = 'contact'` and `canonical_id IS
+ * NULL`. Three separate ways to miss a company we already had, each of which
+ * created a duplicate instead:
+ *
+ *   * "Acme  Inc" vs "Acme Inc" — no `name_key` canonicalization, so any
+ *     difference in spacing, casing or punctuation read as a different company.
+ *   * The 1,396 organizations carrying `record_class = 'discovered'` (SEO
+ *     prospects, YouTube channels, media outlets) were invisible to the filter,
+ *     so importing a company the platform had already discovered forked it.
+ *   * A merge LOSER is excluded by `canonical_id IS NULL`, so a company that had
+ *     been merged away matched nothing and came straight back as a new row.
+ *
+ * The resolver has none of those blind spots: it canonicalizes, sees every
+ * record class, and follows merge lineage to the winner.
  */
 export async function findOrCreateCompanyByName(args: {
   orgId: string;
   name: string;
+  source: string;
+  sourceDetail?: string;
 }): Promise<PartyRef> {
-  const name = args.name.trim();
-  const found = await findPartiesByNames({
-    orgId: args.orgId,
+  const resolved = await resolveParty({
     kind: "organization",
-    names: [name],
-  });
-  const existing = found.get(name.toLowerCase());
-  if (existing) return existing;
-  const created = await createParty({
-    kind: "organization",
-    displayName: name,
+    displayName: args.name,
     orgId: args.orgId,
+    source: args.source,
+    sourceDetail: args.sourceDetail,
   });
-  return {
-    id: created.id,
-    display_name: created.display_name,
-    party_kind: created.party_kind,
-  };
+  return resolvedPartyRef(resolved);
 }
 
 // ── Dedup + merge (crm_03_dedup.sql) ────────────────────────────────────────

@@ -19,14 +19,13 @@ import Papa from "papaparse";
 import type { PartyKind, PartyRef } from "../types";
 import {
   addAffiliation,
-  addContactPoint,
-  createParty,
+  ensurePrimaryContactPoints,
   findExistingMediumOwners,
   findOrCreateCompanyByName,
   findPartiesByDomains,
   findPartiesByNames,
   normalizeMediumValue,
-  updateParty,
+  resolveParty,
 } from "../service";
 import type {
   ImportField,
@@ -746,6 +745,8 @@ export async function planImport(args: {
 export async function commitImport(
   plan: ImportPlan,
   onProgress?: (done: number, total: number) => void,
+  /** The uploaded file name — stamped on every row as `source_detail`. */
+  sourceDetail?: string,
 ): Promise<ImportResult> {
   const rows = plan.rows.filter((p) => p.status === "create");
   const created: RowResult[] = [];
@@ -775,52 +776,45 @@ export async function commitImport(
           employer = await findOrCreateCompanyByName({
             orgId: plan.orgId,
             name: p.companyName,
+            source: "import",
+            sourceDetail,
           });
           employerCache.set(key, employer);
           companiesCreated.push(employer);
         }
       }
 
-      const party = await createParty({
+      // Every email and phone on the row goes IN to the resolve call. This is
+      // the whole fix: the old path created the party first and attached the
+      // addresses afterwards, so re-importing the same person could never
+      // match on their email and made a second record every time.
+      const resolved = await resolveParty({
         kind: plan.kind,
         displayName: p.displayName,
         orgId: plan.orgId,
+        source: "import",
+        sourceDetail,
         firstName: p.firstName,
         lastName: p.lastName,
         jobTitle: p.jobTitle,
         headline: p.headline,
+        legalName: p.legalName,
         primaryDomain:
           plan.kind === "organization" ? p.primaryDomain : undefined,
+        emails: p.emails,
+        phones: p.phones,
       });
-      createdPartyId = party.id;
-      if (p.legalName) {
-        // legal_name is not in CreatePartyInput's narrow shape; a follow-up
-        // update keeps createParty's surface small.
-        await updateParty(party.id, { legal_name: p.legalName });
-      }
+      createdPartyId = resolved.partyId;
 
-      for (const [i, email] of p.emails.entries()) {
-        await addContactPoint({
-          partyId: party.id,
-          orgId: plan.orgId,
-          channel: "email",
-          value: email,
-          makePrimary: i === 0,
-        });
-      }
-      for (const [i, phone] of p.phones.entries()) {
-        await addContactPoint({
-          partyId: party.id,
-          orgId: plan.orgId,
-          channel: "phone",
-          value: phone,
-          makePrimary: i === 0,
-        });
-      }
+      await ensurePrimaryContactPoints({
+        partyId: resolved.partyId,
+        emails: p.emails,
+        phones: p.phones,
+      });
 
       if (employer) {
         await addAffiliation({
-          partyId: party.id,
+          partyId: resolved.partyId,
           employerPartyId: employer.id,
           orgId: plan.orgId,
           title: p.jobTitle,
@@ -833,7 +827,8 @@ export async function commitImport(
         rowNumber: p.rowNumber,
         displayName: p.displayName,
         ok: true,
-        partyId: party.id,
+        partyId: resolved.partyId,
+        matchedExisting: !resolved.created,
       });
     } catch (e) {
       failed.push({

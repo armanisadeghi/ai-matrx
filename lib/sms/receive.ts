@@ -660,67 +660,47 @@ export function classifySmsPolicyKeyword(
   return null;
 }
 
+/**
+ * Hand an SMS STOP/START to THE ONE SUPPRESSION AUTHORITY.
+ *
+ * A legal opt-out must be one decision with one decider (Arman, 2026-08-14):
+ * `crm.contact_medium` is the store and `crm.honor_consent_decision` is the only
+ * thing that writes it. This used to hand-write `contact_medium` and
+ * `party_contact_point` here, which made SMS a second authority — so a STOP and
+ * an email unsubscribe could disagree about the same person.
+ *
+ * The medium id is passed when we resolved one, and the raw number otherwise:
+ * the authority creates the medium rather than drop the STOP, because "we have
+ * not met this number before" is not a lawful reason to keep texting it.
+ */
 async function reconcileCanonicalSmsConsent(
   context: ResolvedSmsInboundContext,
   policyKeyword: Exclude<SmsPolicyKeyword, null>,
   providerEventKey: string,
 ): Promise<void> {
-  if (policyKeyword === "help" || !context.contactMediumId) return;
+  if (policyKeyword === "help") return;
   const supabase = createAdminClient();
-  const now = new Date().toISOString();
-  const evidence = {
-    provider: context.provider,
-    provider_event_key: providerEventKey,
-    program_key: context.programKey,
-    source: "sms_keyword",
-  };
-  const mediumUpdate =
-    policyKeyword === "opt_in"
-      ? {
-          consent_basis: "express",
-          consent_recorded_at: now,
-          consent_source: "sms_keyword",
-          consent_evidence: evidence,
-          consent_evidence_at: now,
-          unsubscribed_at: null,
-          suppressed_at: null,
-          suppression_reason: null,
-        }
-      : {
-          consent_basis: "none",
-          consent_source: "sms_keyword",
-          consent_evidence: evidence,
-          consent_evidence_at: now,
-          unsubscribed_at: now,
-          suppressed_at: now,
-          suppression_reason: "sms_keyword",
-        };
-  const { error: mediumError } = await supabase
-    .schema("crm")
-    .from("contact_medium")
-    .update(mediumUpdate)
-    .eq("id", context.contactMediumId)
-    .eq("organization_id", context.organizationId);
-  if (mediumError) {
+  const { error } = await supabase.schema("crm").rpc("honor_consent_decision", {
+    p_decision: policyKeyword,
+    p_via: "sms_keyword",
+    p_reason: "sms_keyword",
+    p_medium_id: context.contactMediumId,
+    p_organization_id: context.organizationId,
+    p_channel: "phone",
+    p_value_key: normalizeSmsEndpoint(context.source),
+    p_value_raw: context.source,
+    p_received_at: new Date().toISOString(),
+    p_detail: {
+      provider: context.provider,
+      provider_event_key: providerEventKey,
+      program_key: context.programKey,
+      source: "sms_keyword",
+    },
+  });
+  if (error) {
     throw new Error(
-      `Failed to reconcile canonical SMS consent: ${mediumError.message}`,
+      `Failed to honor the SMS ${policyKeyword} decision: ${error.message}`,
     );
-  }
-  if (context.contactPointId) {
-    const { error: pointError } = await supabase
-      .schema("crm")
-      .from("party_contact_point")
-      .update({
-        opt_out_at: policyKeyword === "opt_out" ? now : null,
-        opt_out_source: policyKeyword === "opt_out" ? "sms_keyword" : null,
-      })
-      .eq("id", context.contactPointId)
-      .eq("organization_id", context.organizationId);
-    if (pointError) {
-      throw new Error(
-        `Failed to reconcile CRM SMS contact point: ${pointError.message}`,
-      );
-    }
   }
 }
 
@@ -889,7 +869,16 @@ export async function processInboundSms(
 }
 
 /**
- * Check if a phone number is opted out.
+ * Is this number suppressed? Read from `crm.contact_medium` — the ONE
+ * suppression store — so a STOP, an email unsubscribe and a spoken do-not-call
+ * are the same fact to every channel.
+ *
+ * This used to read `communication.sms_consent.status = 'opted_out'`, which made
+ * SMS enforce a store nothing else could see, and which the (now deleted)
+ * `sms_handle_opt_out_keywords` trigger only ever wrote when a row was already
+ * `opted_in` — so a STOP from an unenrolled number was enforced nowhere at all.
+ * `sms_consent` survives as a preference/verification record; it is no longer a
+ * suppression gate.
  */
 export async function isPhoneNumberOptedOut(
   phoneNumber: string,
@@ -898,19 +887,21 @@ export async function isPhoneNumberOptedOut(
   const supabase = createAdminClient();
 
   let query = supabase
-    .schema("communication")
-    .from("sms_consent")
-    .select("status")
-    .eq("phone_number", normalizeSmsEndpoint(phoneNumber))
-    .eq("status", "opted_out")
+    .schema("crm")
+    .from("contact_medium")
+    .select("unsubscribed_at, suppressed_at")
+    .eq("channel", "phone")
+    .eq("value_key", normalizeSmsEndpoint(phoneNumber))
+    .is("deleted_at", null)
+    .or("unsubscribed_at.not.is.null,suppressed_at.not.is.null")
     .limit(1);
   if (organizationId) {
     query = query.eq("organization_id", organizationId);
   }
   const { data, error } = await query;
   if (error) {
-    throw new Error(`Failed to read SMS consent: ${error.message}`);
+    throw new Error(`Failed to read phone suppression: ${error.message}`);
   }
 
-  return (data && data.length > 0) || false;
+  return (data?.length ?? 0) > 0;
 }
