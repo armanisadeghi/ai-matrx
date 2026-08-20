@@ -180,12 +180,19 @@ no entry point to gate there.
 
 ## How a learner is identified — up front, never via an error
 
-Three layers, in the order they fire:
+Four layers, in the order they fire:
 
-1. **`EducationAgeGateMount`** (education layout) — the moment a learner enters the education
-   area, an **undeclared** account — signed-in OR guest — is asked for its age band **once, up
-   front**, with `AgeDeclarationDialog` (guests also get a sign-in link). This is "identify before
-   submit". It never blocks browsing.
+0. **`FirstSignInAgeGateMount`** (platform-wide, since 2026-08-20) — mounted in
+   `app/DeferredSingletonCore.tsx` beside `AnnouncementProvider`, the existing
+   after-you-are-signed-in popup tree. A **signed-in** account with no declared band
+   (`age_undeclared`) is asked once, wherever it happens to be in the app. This is the
+   canonical collection point for accounts; layers 1–2 are the education-specific backstops.
+   **Never at signup** — see the ruling below.
+1. **`EducationAgeGateMount`** (education layout) — the same up-front ask, for **GUESTS only**
+   (`guest_age_undeclared`), with a sign-in link. Guests are the case actually *blocked* on
+   education AI, and education is where that block bites. It deliberately does NOT handle
+   `age_undeclared`: layer 0 owns that everywhere, and handling it here too would open two
+   dialogs on `/education`. It never blocks browsing.
 2. **`useAiComplianceGate.ensureAllowed()`** (per AI action) — the last line before a generation.
    A still-undeclared learner (or guest) is prompted here too and the action resumes on answer; a
    declared under-13 without a verified guardian gets the consent dialog.
@@ -196,10 +203,24 @@ For a SIGNED-IN account, undeclared is **allowed** at the generation boundary (i
 because declaration is enforced by layers 1–2, not by failing an established account's request —
 see the incident note in the change log. For a **GUEST**, undeclared is **blocked** at the
 boundary (`guest_age_undeclared`): a guest is brand-new and ephemeral, so asking up front breaks
-no one, and it closes the sign-out-to-guest hole. Signup itself does not collect age (OAuth /
-guest-conversion paths would bypass a form field, and a global age screen would mis-scope a
-study-age question onto every platform signup); the education-entry prompt is the universal,
-correctly-scoped collection point.
+no one, and it closes the sign-out-to-guest hole. **Signup itself does not collect age**, and must not — ruled by Arman,
+2026-08-20: *"It's not sign up. It's after the first time that they sign in. I don't wanna get
+in the way of sign up for some bullshit like this."* (A required age select had drifted onto the
+signup form despite this doc already saying otherwise; it and its auth-metadata write were
+removed the same day. `coppaService.signupAgeBand()` survives only to honour the tail of accounts
+created while the field existed.) OAuth and guest-conversion paths would bypass a form field
+anyway. The post-sign-in popup is the universal, correctly-scoped collection point.
+
+**Shape of the ask.** `AgeDeclarationDialog` asks the load-bearing question first — "I'm 18 or
+older" / "I'm under 18" — and only shows the 13-17 vs under-13 split to someone who says under 18.
+Almost everyone answers in **one tap** and never reads a band list. The stored values are
+unchanged; this is presentation, and both callers share the one dialog (`variant` picks the copy).
+
+**Dismissal.** Closing the popup writes nothing and blocks nothing; it is not asked again for the
+rest of that tab session (`sessionStorage: matrx.age_band_prompt.asked.v1`) and is asked again on
+the next one. There is deliberately no "don't ask again" — a COPPA declaration is not a preference
+to opt out of — and the band is never a dead end: the per-action gate offers the same prompt inside
+education AI, and `/education/family` can set it.
 
 ## Known limits — read before claiming a surface is school-safe
 
@@ -235,6 +256,28 @@ correctly-scoped collection point.
   nothing permanently purges yet.
 
 ## Change log
+
+- `2026-08-20` — **The age question moved to a post-sign-in popup, platform-wide, and
+  left signup entirely (Arman's ruling).** *"It's not sign up. It's after the first time
+  that they sign in. I don't wanna get in the way of sign up for some bullshit like this...
+  the main thing is if they're over eighteen or not."* New `FirstSignInAgeGateMount` is
+  mounted in `app/DeferredSingletonCore.tsx` (the existing post-sign-in popup tree, loaded
+  post-mount/post-idle) and owns `age_undeclared` everywhere; `EducationAgeGateMount`
+  narrowed to `guest_age_undeclared` so the two can never double-prompt.
+  `AgeDeclarationDialog` became two-step (18-or-older first, the minor split second) so the
+  common case is one tap. The required age `<select>` on the signup form and its
+  `education_age_band` auth-metadata write were **deleted**. Dismissal is per tab session,
+  never permanent.
+  **Motivation, stated correctly:** this is a nudge, not an unblock. Verified against
+  `prosrc` the same day — `edu_coppa_gate_for` **ALLOWS** an undeclared *signed-in* account
+  by design (its own comment: *"Undeclared SIGNED-IN -> ALLOW (nudge only; do not re-break
+  established accounts)"*). Any doc or work order claiming a NULL band kills AI runs for
+  signed-in accounts is **wrong**; only an undeclared *guest* and a *known* under-13 without
+  a verified guardian are refused.
+  **Data note:** a claimed 2026-08-20 backfill of all 304 accounts to `adult` **did not
+  happen** — the live DB still shows 302 profiles with `age_band IS NULL` and zero
+  `via: admin_backfill` audit rows. Those accounts will therefore see this popup once, which
+  is the correct outcome for an undeclared account.
 
 - `2026-08-19` — **Guest (anonymous) sessions gated for education (D-4b).** Closed
   the "sign out and keep using AI as a guest" hole: `edu_coppa_gate_for` now refuses
