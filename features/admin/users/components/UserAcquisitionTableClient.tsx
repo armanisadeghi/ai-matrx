@@ -104,7 +104,16 @@ export function UserAcquisitionTableClient() {
         { cache: "no-store" },
       );
       const body: unknown = await response.json();
-      if (!response.ok) throw new Error("Failed to load this user journey");
+      if (!response.ok) {
+        const message =
+          typeof body === "object" &&
+          body !== null &&
+          "error" in body &&
+          typeof body.error === "string"
+            ? body.error
+            : "Failed to load this user journey";
+        throw new Error(message);
+      }
       if (typeof body !== "object" || body === null || !("journey" in body)) {
         throw new Error("Journey response was incomplete");
       }
