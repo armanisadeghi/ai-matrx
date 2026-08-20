@@ -1,7 +1,15 @@
 ---
 name: agent-review-queue
-description: Register anything you built that Arman must go see/test in the UI, read feedback, and route repair work by primary lane, required tools, ownership, and verification state. Use at the END of any task that produced something reviewable, at the START of a task to check prior feedback, and when coordinating or claiming review repairs. One table (agent.review_queue), written via the Supabase MCP; the human side is /administration/users/agent-review. Cross-repo — aidream/matrx-extend agents use the same table with their own source value.
+type: Skill
+title: agent-review-queue — get your work seen, get feedback back
+description: Register anything you built that Arman must go see/test in the UI, read feedback, and route repair work by primary lane, required tools, ownership, and verification state. Use at the END of any task that produced something reviewable, at the START of a task to check prior feedback, and when coordinating or claiming review repairs. Every row is classified from the registry tables (platform.taxonomy_node + platform.repo) — domain_id and repo_slug are REQUIRED and free-text classification is banned. One table (agent.review_queue), written via the Supabase MCP; the human side is /administration/users/agent-review. Cross-repo — aidream/matrx-extend agents use the same table with their own source value.
 ---
+
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/agent-review-queue/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
 
 # Agent Review Queue — get your work seen, get feedback back
 
@@ -16,6 +24,86 @@ description: Register anything you built that Arman must go see/test in the UI, 
 - A row that leads with deploy caveats is a defect — it burns his review on a false premise.
 - `metadata.origin.branch`/`commit` stay — that's provenance, not a status claim.
 
+## 🚨 EVERY ROW IS CLASSIFIED FROM THE REGISTRY — this is the whole point
+
+**Arman, 2026-08-20, on the 392-row backlog he could not filter:**
+
+> "I have no way of filtering this for anything… whoever built this used weird
+> terminology where they used repositories, lanes and tools. But guess what? For
+> repositories, it's basically a text field where the agent can enter whatever name
+> they want… repo names are gonna need to come directly from my GitHub so that they
+> can't invent stuff."
+
+Agents free-texted classification into `metadata` under 15+ invented keys (`triage`,
+`origin`, `feature`, `repos`, `wave`, `area`, `program`, …). Nothing could be filtered,
+because no two agents used the same word. **That is over.** Classification is now three
+real columns with foreign keys:
+
+| Column | Source of truth | Required |
+|---|---|---|
+| `repo_slug` | `platform.repo.slug` — synced from Arman's GitHub, never typed | **YES** |
+| `domain_id` | `platform.taxonomy_node` where `level='domain'` | **YES** |
+| `feature_id` | `platform.taxonomy_node` where `level='feature'` | when you honestly know it |
+
+`domain_id` and `repo_slug` are **NOT NULL in the database**. An insert missing either
+one FAILS — deliberately, because a skill instruction alone is exactly the loose thing
+agents route around. `feature_id` is nullable on purpose: **domain-only is an honest
+answer**, and it beats a wrong guess.
+
+### Look them up first — one query, do not guess a slug
+
+```sql
+-- domains and their features (globally unique slugs)
+select d.slug as domain, d.id as domain_id, f.slug as feature, f.id as feature_id
+from platform.taxonomy_node d
+left join platform.taxonomy_node f on f.parent_id = d.id and f.level = 'feature'
+where d.level = 'domain'
+order by d.slug, f.slug;
+
+-- the approved repo list (GitHub-verified; never invent a name)
+select slug, github_full_name from platform.repo where is_active order by slug;
+```
+
+Insert by slug so a copied uuid can never go stale:
+
+```sql
+insert into agent.review_queue (title, url, instructions, source, repo_slug, domain_id, feature_id, metadata)
+select
+  'Short human title of the thing',
+  '/marketing/content-plan',
+  'What to click, what to look for, and what feedback you need.',
+  'ai-matrx',
+  'matrx-frontend',                                                    -- platform.repo.slug
+  (select id from platform.taxonomy_node where slug = 'marketing'      and level = 'domain'),
+  (select id from platform.taxonomy_node where slug = 'content-planning' and level = 'feature'),
+  '{}'::jsonb;
+```
+
+### When nothing fits — the easy path, so you never improvise
+
+Per [`policies/feature-registry.md`](/policies/feature-registry.md) § THE REGISTRY IS DATA:
+
+- **You MAY insert a `feature` (or `subfeature`) node** with `status='proposed'` under the
+  closest honest parent, then keep working with it. One insert, no ceremony:
+
+  ```sql
+  insert into platform.taxonomy_node (slug, name, level, parent_id, status, anchors)
+  select 'my-thing', 'My Thing', 'feature', id, 'proposed',
+         jsonb_build_object('routes', jsonb_build_array('(core)/my-thing'))
+  from platform.taxonomy_node where slug = '<closest-domain>' and level = 'domain';
+  ```
+
+- **You MAY NEVER** insert, rename, or re-status a `domain`, and never flip anything to
+  `canonical` — those are Arman's, batched to him by the docs-steward.
+- **You MAY NEVER add a repo slug you did not verify on GitHub.** `platform.repo` is synced
+  from `gh repo list` (manual/steward work — there is no scheduled sync). A repo genuinely
+  missing from the table is a sync gap to report, not a row to invent.
+- If not even a proposed feature fits, set the closest domain, leave `feature_id` null, and
+  say why in `metadata.notes`.
+
+**Never stuff your thing into a wrong node because proposing felt slow** — that is the
+behaviour this system exists to end.
+
 ## When to add an item (end of task)
 
 Add a row when you produced **anything reviewable in the UI that Arman didn't explicitly walk through with you live**: a demo page, a new route, a reworked surface, an admin panel, a feature needing validation/approval. Skip it only when the work has no UI surface, or Arman already reviewed it in this conversation.
@@ -23,11 +111,15 @@ Add a row when you produced **anything reviewable in the UI that Arman didn't ex
 One row per reviewable thing. Registering is one INSERT via the Supabase MCP (project `brsgrqvjdzwihsvnfqkf`). Include the versioned triage envelope so a repair coordinator can route the item later without rereading prose. `required_tools` is intentionally multi-label; do not force a database + browser repair into one false either/or bucket.
 
 ```sql
-insert into agent.review_queue (title, url, instructions, source, metadata) values (
+insert into agent.review_queue (title, url, instructions, source, repo_slug, domain_id, feature_id, metadata)
+select
   'Short human title of the thing',
   '/demos/my-new-thing',            -- app PATH, not absolute URL (works on localhost + prod); absolute only for external targets
   'What to click, what to look for, and what feedback you need. 2-6 sentences. Be specific — he tests exactly what you say.',
-  'ai-matrx',                       -- your repo: ai-matrx | aidream | matrx-extend | matrx-local
+  'ai-matrx',                       -- your agent/session label; classification lives in the columns below
+  'matrx-frontend',                 -- REQUIRED — platform.repo.slug, GitHub-verified
+  (select id from platform.taxonomy_node where slug = '<domain-slug>' and level = 'domain'),   -- REQUIRED
+  (select id from platform.taxonomy_node where slug = '<feature-slug>' and level = 'feature'), -- null is allowed
   jsonb_build_object(
     'origin', jsonb_build_object(
       'agent_label', '<your stable agent/task label>',
@@ -47,8 +139,7 @@ insert into agent.review_queue (title, url, instructions, source, metadata) valu
         'notes', 'Re-run the instructions against the deployed target.'
       )
     )
-  )
-);
+  );
 ```
 
 Allowed values are defined and runtime-validated in `features/admin/agent-review/triage.ts`:
@@ -84,7 +175,7 @@ order by feedback_at desc;
 
 ## Repair coordination — claim by lane and tool
 
-Use the original agent when `metadata.origin.thread_id` or another stable identity exists and the repair is context-heavy. Use a coordinator with specialist agents when origin identity is absent, the backlog is large, or tasks require distinct tool access. `source` names a repository, **not an agent**, so it is not enough to route work back to the original author.
+Use the original agent when `metadata.origin.thread_id` or another stable identity exists and the repair is context-heavy. Use a coordinator with specialist agents when origin identity is absent, the backlog is large, or tasks require distinct tool access. **`repo_slug` is the repository** (registry-backed); `source` is free text and identifies neither a repo nor an agent, so neither one is enough to route work back to the original author.
 
 The current legacy backlog should be coordinator-owned because old rows did not record agent identity. A good coordinator delegates by capability, while preserving one end-to-end owner per row:
 
@@ -154,11 +245,10 @@ The verifier records their stable label in `verification.verified_by`. Prefer a 
 - **No deployment status, ever** — see "Everything is LIVE" above.
 - Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `pending` instead.
 - Never infer ownership from `source`; it is only the repository identifier.
-- 🚨 **`url` is the CLASSIFICATION KEY, not just a link.** The board's **Area**
-  filter is derived from it (`deriveReviewArea` — `/marketing/content-plan/…` →
-  "Marketing › Content Plan"), because a `feature` field in agent-authored
-  metadata does not survive contact with reality: only 19 of 390 live rows ever
-  carried one. So write the REAL deep route the reviewer should open — never a
-  bare `/`, never a placeholder, never the repo root. A row whose url has no
-  usable path lands in "Unplaced" and is the hardest kind to triage.
-- UI lives at `features/admin/agent-review/` (see its `FEATURE.md`). The table is deliberately minimal — do NOT add columns, RPCs, or satellite tables to it. Extend the versioned `metadata.triage` contract.
+- 🚨 **`url` is the DESTINATION — write the real deep route** the reviewer should
+  open, never a bare `/`, never a placeholder, never the repo root. It is no
+  longer the classifier (`domain_id`/`feature_id` are, and the url-guessing
+  `deriveReviewArea` was deleted 2026-08-20), but a row he cannot open is still
+  a row he cannot review.
+- Filter your own backlog the way Arman does: `where domain_id = (select id from platform.taxonomy_node where slug='<domain>' and level='domain')`.
+- UI lives at `matrx-frontend` `features/admin/agent-review/` (see its `FEATURE.md`). The table is deliberately minimal — do NOT add columns, RPCs, or satellite tables to it. Extend the versioned `metadata.triage` contract.
