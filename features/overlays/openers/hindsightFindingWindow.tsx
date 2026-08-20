@@ -19,6 +19,7 @@ const OVERLAY_ID = "hindsightFindingWindow" as const;
 
 export interface OpenHindsightFindingWindowOptions {
   finding: Finding;
+  findings: Finding[];
   agentId?: string | null;
   audience: DoorAudience;
 }
@@ -27,8 +28,8 @@ export interface HindsightFindingWindowHandle {
   close: () => void;
 }
 
-function instanceIdFor(findingId: string): string {
-  return `hindsight-finding|${findingId}`;
+function instanceIdFor(enrollmentId: string): string {
+  return `hindsight-findings|${enrollmentId}`;
 }
 
 export function useOpenHindsightFindingWindow() {
@@ -37,9 +38,21 @@ export function useOpenHindsightFindingWindow() {
 
   return useCallback(
     (opts: OpenHindsightFindingWindowOptions): HindsightFindingWindowHandle => {
-      const instanceId = instanceIdFor(opts.finding.id);
+      const instanceId = instanceIdFor(opts.finding.enrollment_id);
       const open = selectOpenInstances(store.getState(), OVERLAY_ID);
       if (open.some((instance) => instance.instanceId === instanceId)) {
+        dispatch(
+          openOverlay({
+            overlayId: OVERLAY_ID,
+            instanceId,
+            data: {
+              finding: opts.finding,
+              findings: opts.findings,
+              agentId: opts.agentId ?? null,
+              audience: opts.audience,
+            },
+          }),
+        );
         dispatch(restoreWindow(instanceId));
         dispatch(focusWindow(instanceId));
         return {
@@ -54,6 +67,7 @@ export function useOpenHindsightFindingWindow() {
           instanceId,
           data: {
             finding: opts.finding,
+            findings: opts.findings,
             agentId: opts.agentId ?? null,
             audience: opts.audience,
           },
@@ -77,7 +91,7 @@ export function HindsightFindingWindowController(
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.finding, props.agentId, props.audience]);
+  }, [open, props.finding, props.findings, props.agentId, props.audience]);
 
   return null;
 }

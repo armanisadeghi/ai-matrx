@@ -262,6 +262,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Hindsight Finding",
     defaultData: {
       finding: null,
+      findings: [],
       agentId: null,
       audience: "product",
     },
