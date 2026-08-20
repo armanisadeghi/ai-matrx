@@ -217,6 +217,7 @@ function TopTenCard({
   siteDomain,
   showIntersections = false,
   ourPagesPath = null,
+  domainNames = false,
 }: {
   title: string;
   anchor: string;
@@ -227,6 +228,8 @@ function TopTenCard({
   location: string;
   siteDomain: string;
   showIntersections?: boolean;
+  /** Referring-domain and competitor names open the live domain. */
+  domainNames?: boolean;
   /**
    * Set for the "Top pages" card only: these rows are OUR pages, so the name
    * opens the page inside AI Matrx (`{sitePath}/pages` searched by URL —
@@ -303,9 +306,9 @@ function TopTenCard({
                       </a>
                     ) : null}
                   </>
-                ) : row.url ? (
+                ) : row.url || domainNames ? (
                   <a
-                    href={row.url}
+                    href={row.url ?? `https://${label}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex min-w-0 items-center gap-1 truncate text-foreground hover:text-primary hover:underline"
@@ -1525,6 +1528,10 @@ export function BacklinksWorkspace() {
                     location={pageLocation}
                     siteDomain={site.domain}
                     showIntersections={group.id === "competitors"}
+                    domainNames={
+                      group.id === "referring_domains" ||
+                      group.id === "competitors"
+                    }
                     ourPagesPath={
                       group.id === "target_pages" ? sitePath : null
                     }
