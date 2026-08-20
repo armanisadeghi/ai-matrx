@@ -37,6 +37,14 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +53,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -73,6 +82,7 @@ export default function AssistsDock() {
   const pending = useAppSelector(selectPendingAssists);
   const loaded = useAppSelector(selectAssistsLoaded);
   const [openRequested, setOpen] = useState(false);
+  const isMobile = useIsMobile();
   const { quiet, quietUntil, goQuiet, resume, dockPosition, setDockPosition } =
     useAssistsPrefs();
   // Derived, not an effect: a quiet dock must never sit open over the page it
@@ -81,7 +91,7 @@ export default function AssistsDock() {
   const { offset, dragging, onPointerDown, suppressClickRef } = useDockDrag(
     dockPosition,
     setDockPosition,
-    true,
+    !isMobile,
   );
 
   useEffect(() => {
@@ -110,34 +120,67 @@ export default function AssistsDock() {
   // resting place off the iOS home indicator.
   const style = { right: `${offset.right}px`, bottom: `${offset.bottom}px` };
 
+  // The mobile launcher follows the established inbox/chat-launcher pattern:
+  // one 44pt edge button, never a content-width floating pill. The shell's
+  // VisualViewportSync writes the keyboard inset; translating by that amount
+  // moves this ambient control out of the visible viewport while the user is
+  // typing instead of parking it above the keyboard and over the composer.
+  const mobileLauncherStyle = {
+    bottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
+    transform: "translateY(var(--keyboard-inset-height, 0px))",
+  };
+
   if (quiet) {
     const remaining = formatQuietRemaining(quietUntil);
     return (
-      <div className="fixed z-40 pb-safe" style={style}>
-        <button
-          type="button"
-          onPointerDown={onPointerDown}
-          onClick={() => {
-            if (suppressClickRef.current) return;
-            resume();
-            toast.success("Assists are back on");
-          }}
-          title={
-            remaining
-              ? `Assists are quiet (${remaining}) — click to turn them back on`
-              : "Assists are quiet — click to turn them back on"
-          }
-          className="flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2 py-1 text-[11px] text-muted-foreground opacity-50 shadow-sm transition-opacity hover:opacity-100 focus-visible:opacity-100"
+      <>
+        <div
+          className="fixed right-3 z-40 md:hidden"
+          style={mobileLauncherStyle}
         >
-          <BellOff className="h-3 w-3" />
-          <span className="sr-only">
-            Assists are quiet. Turn them back on.
-          </span>
-          <span aria-hidden="true" className="hidden sm:inline">
-            {remaining ?? "quiet"}
-          </span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => {
+              resume();
+              toast.success("Assists are back on");
+            }}
+            title={
+              remaining
+                ? `Assists are quiet (${remaining}) — tap to turn them back on`
+                : "Assists are quiet — tap to turn them back on"
+            }
+            aria-label="Assists are quiet. Turn them back on."
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-card/90 text-muted-foreground opacity-50 shadow-sm backdrop-blur-glass transition-[opacity,transform] hover:opacity-100 focus-visible:opacity-100"
+          >
+            <BellOff className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="fixed z-40 hidden pb-safe md:block" style={style}>
+          <button
+            type="button"
+            onPointerDown={onPointerDown}
+            onClick={() => {
+              if (suppressClickRef.current) return;
+              resume();
+              toast.success("Assists are back on");
+            }}
+            title={
+              remaining
+                ? `Assists are quiet (${remaining}) — click to turn them back on`
+                : "Assists are quiet — click to turn them back on"
+            }
+            className="flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2 py-1 text-[11px] text-muted-foreground opacity-50 shadow-sm transition-opacity hover:opacity-100 focus-visible:opacity-100"
+          >
+            <BellOff className="h-3 w-3" />
+            <span className="sr-only">
+              Assists are quiet. Turn them back on.
+            </span>
+            <span aria-hidden="true" className="hidden sm:inline">
+              {remaining ?? "quiet"}
+            </span>
+          </button>
+        </div>
+      </>
     );
   }
 
@@ -145,10 +188,90 @@ export default function AssistsDock() {
   const visible = strong.slice(0, MAX_VISIBLE);
   const overflow = strong.length - visible.length + weak.length;
 
+  if (isMobile) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={`Open ${pending.length} assist${pending.length === 1 ? "" : "s"}`}
+          className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden"
+          style={mobileLauncherStyle}
+        >
+          <Lightbulb className="h-5 w-5 text-primary" />
+          <span className="absolute -left-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background">
+            {pending.length > 99 ? "99+" : pending.length}
+          </span>
+        </button>
+
+        <Drawer open={open} onOpenChange={setOpen}>
+          <DrawerContent className="h-[85dvh] max-h-[85dvh] overflow-hidden">
+            <DrawerHeader className="flex shrink-0 flex-row items-center gap-2 border-b border-border px-3 py-2 text-left">
+              <DrawerClose asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-11 w-11 shrink-0 rounded-full"
+                  aria-label="Close assists"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </DrawerClose>
+              <div className="min-w-0 flex-1">
+                <DrawerTitle className="text-base">
+                  {pending.length} assist{pending.length === 1 ? "" : "s"}
+                </DrawerTitle>
+                <p className="text-xs text-muted-foreground">
+                  Suggestions waiting for you
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-11 shrink-0 px-3 text-xs text-muted-foreground"
+                onClick={() =>
+                  quietFor(
+                    DEFAULT_QUIET_KEY,
+                    QUIET_WINDOWS.find(
+                      (window) => window.key === DEFAULT_QUIET_KEY,
+                    )?.label ?? "the rest of today",
+                  )
+                }
+              >
+                <BellOff className="mr-1.5 h-4 w-4" />
+                Quiet today
+              </Button>
+            </DrawerHeader>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 pb-safe">
+              <div className="space-y-2">
+                {visible.map((assist) => (
+                  <AssistChip
+                    key={assist.id}
+                    assist={assist}
+                    className="min-h-11 w-full py-0 pl-3 text-sm [&>button:first-of-type]:min-h-11 [&>button:last-of-type]:h-11 [&>button:last-of-type]:w-11 [&>button:last-of-type]:shrink-0"
+                  />
+                ))}
+              </div>
+              <Link
+                href={ASSISTS_MANAGER_HREF}
+                onClick={() => setOpen(false)}
+                className="mt-3 flex min-h-11 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-accent"
+              >
+                {overflow > 0 ? `See ${overflow} more` : "Open all assists"}
+              </Link>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </>
+    );
+  }
+
   return (
     <div
       className={cn(
-        "fixed z-40 flex flex-col items-end gap-1.5 pb-safe",
+        "fixed z-40 hidden flex-col items-end gap-1.5 pb-safe md:flex",
         dragging && "select-none",
       )}
       style={style}

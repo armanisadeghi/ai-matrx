@@ -30,12 +30,14 @@ export const DOCK_MIN_VISIBLE = { width: 120, height: 32 } as const;
 export const DEFAULT_DOCK_OFFSET: DockOffset = { right: 12, bottom: 56 };
 
 /**
- * Mobile parks the dock ABOVE the bottom band where composers and action bars
- * live: at the desktop offset the launcher covered a composer's input
- * (2026-08-16). Drag is desktop-only, so this default is the whole mobile
- * story and has to be right on its own.
+ * Legacy mobile fallback used during the pre-mount responsive handoff. The
+ * mounted mobile dock now uses a compact edge launcher + Drawer and does not
+ * consume a draggable offset at all.
  */
-export const DEFAULT_DOCK_OFFSET_MOBILE: DockOffset = { right: 12, bottom: 128 };
+export const DEFAULT_DOCK_OFFSET_MOBILE: DockOffset = {
+  right: 12,
+  bottom: 128,
+};
 
 /** Tailwind's `sm` breakpoint — the same line the old responsive class used. */
 const MOBILE_MAX_WIDTH = 640;
@@ -86,5 +88,8 @@ export function offsetFromDrag(
 export const DRAG_THRESHOLD_PX = 4;
 
 export function isDrag(deltaX: number, deltaY: number): boolean {
-  return Math.abs(deltaX) >= DRAG_THRESHOLD_PX || Math.abs(deltaY) >= DRAG_THRESHOLD_PX;
+  return (
+    Math.abs(deltaX) >= DRAG_THRESHOLD_PX ||
+    Math.abs(deltaY) >= DRAG_THRESHOLD_PX
+  );
 }
