@@ -21,6 +21,7 @@ import {
   BookOpen,
   UploadCloud,
   Settings2,
+  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
@@ -139,6 +140,17 @@ export function StudioDashboard() {
             >
               <UploadCloud className="h-4 w-4" />
               Upload episode
+            </Button>
+            {/* THE DOOR to the intelligence behind podcasts. Every stage of a
+                podcast — research, scripting, voices, cover art, show notes —
+                is a Mandate whose agent the user may replace with their own
+                (common-docs/systems/mandates/FEATURE.md). Until this link, the
+                surface named none of that and there was no way in from here. */}
+            <Button asChild variant="outline" className="gap-2">
+              <Link href="/agents/mandates?feature=podcast">
+                <BrainCircuit className="h-4 w-4" />
+                Podcast agents
+              </Link>
             </Button>
             <Button asChild size="lg" className="gap-2 shadow-md">
               <Link href="/podcast/studio/create">

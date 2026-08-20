@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowDownUp,
   ChevronDown,
@@ -35,10 +36,16 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { splitMandateKey } from "@/features/agents/mandates/mandate-key";
 import {
   fetchMandateOverridesData,
+  parseMandateContract,
   type MandateBindingRow,
   type MandateDefinitionRow,
   type MandateOverridesData,
 } from "../overrides";
+import {
+  useBindingHealth,
+  type BindingVerdict,
+  type BoundAgentRef,
+} from "../useBindingHealth";
 import { MandateOverridePanel } from "./MandateOverridePanel";
 import { OverriddenCountBadge } from "./OverriddenCountBadge";
 import { MandateResolutionRibbon } from "./MandateResolutionRibbon";
@@ -69,6 +76,11 @@ export function MandateOverridesPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openMandateId, setOpenMandateId] = useState<string | null>(null);
+  // Seeded from ?feature= so a feature can link its users straight to its own
+  // mandates ("Choose the agents behind Podcasts") instead of dropping them at
+  // the top of a 39-domain list.
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("feature") ?? "");
 
   // Every setState lives in an async callback — never synchronously in the
   // effect (react-hooks/set-state-in-effect).
@@ -169,15 +181,51 @@ export function MandateOverridesPage() {
     });
   }, [data, organizations, userId]);
 
+  // Verify every agent-swapping binding against the mandate's CURRENT contract
+  // — the check the server runs on each resolution and this page used to skip,
+  // so a binding the server had started dropping still rendered as "Yours".
+  const boundRefs = useMemo<BoundAgentRef[]>(() => {
+    const out: BoundAgentRef[] = [];
+    for (const view of views) {
+      if (view.provenance === "system" || !view.resolvedAgentId) continue;
+      out.push({
+        mandateId: view.mandate.id,
+        agentId: view.resolvedAgentId,
+        contract: parseMandateContract(view.mandate.contract),
+        layer: view.provenance,
+      });
+    }
+    return out;
+  }, [views]);
+  const bindingHealth = useBindingHealth(boundRefs);
+  const brokenCount = useMemo(
+    () => Object.values(bindingHealth).filter((v) => !v.passing).length,
+    [bindingHealth],
+  );
+
+  // Feature filter — 39 domains is a scroll, so a feature can hand its users a
+  // deep link straight to its own mandates (/agents/mandates?feature=podcast).
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return views;
+    return views.filter(
+      (v) =>
+        v.domain.toLowerCase().includes(q) ||
+        v.mandate.mandate_key.toLowerCase().includes(q) ||
+        (v.mandate.label ?? "").toLowerCase().includes(q) ||
+        (v.mandate.description ?? "").toLowerCase().includes(q),
+    );
+  }, [views, query]);
+
   const domains = useMemo(() => {
     const grouped = new Map<string, MandateView[]>();
-    for (const view of views) {
+    for (const view of filtered) {
       const list = grouped.get(view.domain) ?? [];
       list.push(view);
       grouped.set(view.domain, list);
     }
     return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [views]);
+  }, [filtered]);
 
   if (loading || (!data && !loadError)) {
     return (
@@ -225,9 +273,40 @@ export function MandateOverridesPage() {
         {/* The canonical, truthful precedence chain (highest first). */}
         <MandateResolutionRibbon className="mb-4" />
 
+        {/* A binding the server has started dropping is the one thing on this
+            page the reader cannot afford to miss — it means a customization
+            they made is no longer running. */}
+        {brokenCount > 0 ? (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
+            <p className="text-sm font-medium text-destructive">
+              {brokenCount === 1
+                ? "1 of your agents is no longer running its job"
+                : `${brokenCount} of your agents are no longer running their jobs`}
+            </p>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+              The job changed and now needs something your agent doesn&apos;t
+              provide, so the built-in agent is running instead. Open the ones
+              marked below to see what&apos;s missing and update your agent.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mb-4">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by feature or job — e.g. podcast"
+            aria-label="Filter mandates"
+            className="h-9 w-full rounded-md border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:text-sm"
+          />
+        </div>
+
         {domains.length === 0 ? (
           <p className="rounded-lg border border-border/60 bg-card px-4 py-6 text-center text-sm text-muted-foreground">
-            No mandates are live yet.
+            {query.trim()
+              ? `Nothing matches "${query.trim()}".`
+              : "No mandates are live yet."}
           </p>
         ) : null}
 
@@ -252,6 +331,7 @@ export function MandateOverridesPage() {
                     )
                   }
                   onChanged={() => load()}
+                  verdict={bindingHealth[view.mandate.id]}
                 />
               ))}
             </div>
@@ -296,6 +376,7 @@ function MandateCard({
   open,
   onToggle,
   onChanged,
+  verdict,
 }: {
   view: MandateView;
   data: MandateOverridesData;
@@ -305,9 +386,20 @@ function MandateCard({
   open: boolean;
   onToggle: () => void;
   onChanged: () => void;
+  /** Undefined when nothing is bound here (the system agent runs). */
+  verdict?: BindingVerdict;
 }) {
   const { mandate } = view;
   const disabled = !mandate.is_enabled;
+  // A binding that fails the contract is DROPPED by resolve_mandate, so the
+  // default agent is what actually runs. Render that, not the binding — a row
+  // reading "runs <your agent>" when the server refuses to run it is the exact
+  // false assurance this check exists to remove.
+  const dropped = Boolean(verdict && !verdict.passing);
+  const runningAgentId = dropped ? view.defaultAgentId : view.resolvedAgentId;
+  const runningAgentName = dropped
+    ? view.defaultAgentName
+    : view.resolvedAgentName;
   const mandateBindings = data.bindings.filter(
     (b) => b.mandate_id === mandate.id,
   );
@@ -345,6 +437,22 @@ function MandateCard({
               {mandate.label}
             </h3>
             <ProvenancePill view={view} />
+            {verdict && !verdict.passing ? (
+              <Badge
+                variant="outline"
+                className="gap-1 border-destructive/40 bg-destructive/10 text-[10.5px] font-medium text-destructive"
+              >
+                Not running — built-in agent used
+              </Badge>
+            ) : null}
+            {verdict?.unreadable ? (
+              <Badge
+                variant="outline"
+                className="gap-1 border-amber-500/30 bg-amber-500/10 text-[10.5px] font-medium text-amber-700 dark:text-amber-400"
+              >
+                Agent unreadable
+              </Badge>
+            ) : null}
             {view.settingsOnly ? (
               <Badge
                 variant="outline"
@@ -367,25 +475,38 @@ function MandateCard({
               {mandate.description}
             </p>
           ) : null}
+          {dropped && verdict ? (
+            <p className="mt-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-[12px] leading-relaxed text-destructive">
+              This job now needs{" "}
+              <span className="font-medium">{verdict.missing.join(", ")}</span>,
+              which{" "}
+              {verdict.layer === "org"
+                ? "your organization's agent"
+                : "your agent"}{" "}
+              doesn&apos;t provide — so the built-in agent is running instead.
+              Add {verdict.missing.length === 1 ? "it" : "them"} to your agent
+              and it takes over again automatically.
+            </p>
+          ) : null}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
             <code className="font-mono">{mandate.mandate_key}</code>
             <span className="inline-flex min-w-0 items-center gap-1">
               <ArrowDownUp className="h-2.5 w-2.5 shrink-0" />
               runs{" "}
-              {view.resolvedAgentId ? (
+              {runningAgentId ? (
                 <EntityRef
                   token="agent"
-                  id={view.resolvedAgentId}
-                  name={view.resolvedAgentName}
+                  id={runningAgentId}
+                  name={runningAgentName}
                   showIcon={false}
                   className="font-medium text-foreground/80"
                 />
               ) : (
                 <span className="font-medium text-foreground/80">
-                  {view.resolvedAgentName}
+                  {runningAgentName}
                 </span>
               )}
-              {view.provenance !== "system" ? (
+              {view.provenance !== "system" && !dropped ? (
                 <span className="inline-flex min-w-0 items-center gap-1 text-muted-foreground/60">
                   (default:{" "}
                   {view.defaultAgentId ? (
