@@ -1,71 +1,67 @@
 ---
 status: active
-updated: 2026-08-19
+updated: 2026-08-20
 repos: [matrx-frontend, aidream, my-matrx]
-vision: [common-docs/systems/cms-system/FEATURE.md § The Page Hub doctrine — Arman's words, verbatim]
+scope: feature
+feature: CMS
+vision:
+  - /Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md
+  - /Users/armanisadeghi/code/common-docs/systems/cms-system/FEATURE.md
 ---
 
-# CMS — the feature's master handoff (Page Hub + closeout map)
+# CMS — the feature's master handoff
 
-**THE GLOBAL VIEW LIVES IN ONE PLACE:
-`common-docs/systems/cms-system/FEATURE.md` § THE CMS FEATURE MAP** — every CMS part, its
-code-verified status, and whether the parts talk. Read it FIRST; update it in the same change as
-any CMS work. This doc is the work order for what remains.
+**What this is:** the site/page store, the page editor, the agent write layer, publishing, and the
+public renderer that turns a planned page into a live URL.
+**Scope:** Feature
+**Feature:** CMS
+**Vision:** [Content Engine STATE §2.7](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md) — Arman's Page Hub doctrine, verbatim.
 
-## What is DONE (code-verified on origin/main + live DB, 2026-08-18 — one line each)
+🚨 **READ THE CLUSTER DOC FIRST:
+[`common-docs/projects/content-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md)** — it holds
+Arman's merged vision, the verified state of the whole plan→build→publish→measure pipeline, the
+question ledger, and this feature's pending list in context. This file is the CMS slice only.
 
-- **Page Hub**: 7 URL-synced editor tabs; Plan tab mounts the full canonical NodePanel; Measure
-  mounts PageWorkspace wholesale; doors both directions. Production-verified.
-- **SEO plan, one store** (invariant 9): `web.page.desired_values.keyword_plan` + `meta_*_desired`;
-  ONE `SeoPlanEditor` in all three homes; legacy plan-node writer annihilated; typed-keyword
-  commit-on-blur fix (the dead-Save trap) proven end-to-end into the live row.
-- **Keyword→pipeline integrity** (aidream): `assign_primary_keyword` is the one writer (heals on
-  re-apply, lights the `p1_keywords` step); bulk brief paths soft-gate loudly; briefs are
-  post-checked for keyword coverage. Tested.
-- **Bulk SEO-plan generation**: cheap/thorough/advanced tiers, exact cost before the button,
-  crash-safe batches; live-proven on wf4-step-queue-proof (6/6 pages gained roles, secondaries,
-  links, meta).
-- **Publish → measurement join** (aidream): publish adopts the planned `web.page` row (never a
-  duplicate across URL derivations) and writes `client_pages.web_page_id`. Regression-tested.
-- **Page-hub UI polish tail** (2026-08-19): ONE shared `StepEmptyState` (a bordered component
-  naming the PREREQUISITE with its door or run action) across every step tab and the publish
-  half; Build/Publish split by `NodeRealityCard variant` — no fork; every chip and run arrow
-  carries a real Tooltip on one exported chip geometry, un-run dot legible in dark. Browser-
-  verified, all 8 tabs, light and dark.
-- **Plan workspace UX**: four chrome rows → ONE toolbar (status-truthful Edit/Live); the pipeline
-  rail IS the NodePanel's tab strip (Page | SEO plan | Research | Family | Write | Review |
-  Build | Publish), smart default tab, "Write with AI" beside the manual editor; durable
-  `web_site_id` CMS-link authority; ContextMenuV3 mobile `<tr>` fix; sparkle-icon ban recorded.
+The code-verified CMS part map is `common-docs/systems/cms-system/FEATURE.md` § THE CMS FEATURE
+MAP. Update it in the same change as any CMS work.
 
-## REMAINING (the work order)
+## Remaining work
 
-1. **Button-duplication fix pass — WAITS ON ARMAN.** The audit report is in the review queue
-   ("Content-plan button duplication audit"): per-control keep/merge/delete verdicts + the
-   copy-cluster collapse (plain copy icon + ONE copy-for-AI dropdown) + the misleading skill
-   lines to amend. Arman rules, then a session executes.
-2. **Best-in-class layer on the one store.** SERP-intent targets, entity/heading coverage vs
-   plan, tracking against plan (verdicts, not timestamps). Benchmark: Ahrefs briefs /
-   Clearscope / SurferSEO plan-vs-page scoring, wired to our own crawl + GSC data.
-3. **Collections render-half re-audit (chipped 2026-08-18).** my-matrx gained
-   `lib/render/collectionBindings.js` ("collection SSR and site discovery") AFTER the buildout
-   handoff last updated — re-audit `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md`
-   against the code, groom it, and surface its six Arman decisions that still stand.
-4. **Hardening/parity tail — unowned since 07-23** (`aidream/docs/handoffs/cms-hardening-and-parity.md`).
-   Re-verified 2026-08-18: my-matrx `pages/api/create-page.js` still has ZERO handler-level auth
-   (proxy matcher is the only lock). Pre-launch security triage is Arman's call; the feature-gap
-   items there (version-history UI pages-only, zero tests on cms_assets/cms_verify) are ordinary
-   work.
-5. **Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids` — 0
-   rows carry data yet); components→page usage join (doesn't exist); Research tab (blocked on
-   website-factory p2 artifacts); plan.node retired-column drop (after production verification).
+Full detail, with file paths and evidence, in **STATE.md §4.1**. In priority order:
+
+1. **Button-duplication fix pass — WAITS ON ARMAN.** Verdicts sit in the review queue
+   (`4fc1c874`). STATE.md ledger Q3.
+2. **Best-in-class layer on the one SEO store** — SERP-intent targets, entity/heading coverage vs
+   plan, plan-vs-page verdicts. Nothing today joins a plan to a rendered page.
+3. **Collections render half — 4 gaps:** filtering (`gte:now`, so past events never drop off);
+   `settings.default_order` ignored by the aidream service and the admin API; `MatrxData.render()`;
+   the `cms_page` tool description does not teach the binding syntax.
+4. **Hardening/parity tail — 10 items, unowned since 2026-07-23.** The live one:
+   `my-matrx/pages/api/create-page.js` has zero handler-level auth (STATE.md ledger Q2). Also
+   `dry_run` bypassing the policy gate, version-history UI pages-only (cheap — the API already
+   supports 6 entity types), and zero tests on `cms_assets`/`cms_verify`.
+5. **CMS build-out tail** — bulk item import, field-schema evolution, route tests, retention
+   heartbeat, concept-variant selector, theme/brand wiring, component starter library, per-site
+   analytics, plan-lint server half, plan-vs-reality map badges.
+6. **Lower priority:** `client_pages.research_topic_ids` reverse filter; components→page usage join.
+7. 🚨 **`plan.node.primary_keyword_id` — DO NOT DROP.** Called "retired" in older docs;
+   **611 of 771 live nodes still carry data in it.**
 
 ## Resources
 
 - Editor: `features/cms/components/PageEditor.tsx` · route `app/(core)/cms/[siteId]/pages/[pageId]`
-- FE CMS contract: `features/cms/FEATURE.md` · plan workspace: `features/marketing/content-plan/`
-  (NodePanel/NodeStepRail); SEO plan: `features/marketing/seo/plan/` (`plan-model.ts` is the one
-  normalizer); server: aidream `services/content_plan/` (`page_seo_plan.py`, `artifacts.py`)
-- Pipeline spine (sibling feature): `docs/handoffs/website-factory-vision.md`
+- FE contract: `features/cms/FEATURE.md` · server: `aidream/services/cms/` (+ `CONTRACT.md`)
+- SEO plan: `features/marketing/seo/plan/` (`plan-model.ts` is the one normalizer);
+  server `aidream/services/content_plan/page_seo_plan.py`
+- Renderer: **my-matrx** `lib/render/clientSiteRenderer.js` (attach the repo before touching render claims)
+- Admin agent surface: `app/(admin)/administration/knowledge/cms-agents/`
+- Sibling: [website-factory-vision.md](./website-factory-vision.md) (the pipeline that fills pages)
 - Test site: wf4-step-queue-proof `/marketing/content-plan/17de2e51-eb28-4f5f-8efa-6cc42d44723e`;
-  login `admin@admin.com` / `Password1234#`; NEVER write to `iopbm` / `prp-injection-md` (real
+  login `admin@admin.com` / `Password1234#`; **NEVER write to `iopbm` / `prp-injection-md`** (real
   clients — use dev-website / cosmeticinjectables)
+
+## Done
+
+- Page Hub, SEO plan one-store, keyword→pipeline integrity, bulk SEO-plan generation,
+  publish→measurement join, page-hub UI polish, plan workspace UX — all code-verified.
+  One line each with code pointers in **STATE.md §3**; detail in `features/cms/FEATURE.md`.

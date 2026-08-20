@@ -1,158 +1,103 @@
 ---
 status: active
-updated: 2026-08-15
+updated: 2026-08-20
 repos: [matrx-frontend, aidream]
+scope: program
+feature: Growth Loop
 vision:
-  [
-    /Users/armanisadeghi/code/common-docs/systems/growth-loop/VISION.md,
-    /Users/armanisadeghi/code/common-docs/systems/growth-loop/FEATURE.md,
-  ]
+  - /Users/armanisadeghi/code/common-docs/systems/growth-loop/VISION.md
+  - /Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md
 ---
 
-# Growth Loop — finish the run, then make it healthy
+# Growth Loop — unstall the loop, then reach write-back
 
-**Sister program: Website Factory** (`docs/handoffs/website-factory-vision.md`). Factory is
-idea → a website. This loop is that site, then measure → improve. Staff or groom one, read
-the other.
+**What this is:** the twelve-stage outer loop that takes a live site and measures it, analyzes it,
+suggests improvements, and writes those improvements back into the CMS — research → plan → brief →
+realize → fill → publish → serve → crawl → measure → analyze → suggest → **write-back**.
+**Scope:** Program (spans Research, SEO, CMS, Content Planning)
+**Feature:** Growth Loop
+**Vision:** [`common-docs/systems/growth-loop/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/growth-loop/VISION.md) — Arman's words, 2026-08-09. **"Click one thing and have the whole thing done" is the acceptance test.**
 
-The twelve-stage loop RUNS and the machine is healthy — the supervisor does **334 runs / 0
-failures** per 3h, having produced 396 stage runs, 1,196 events, 337 scored stages and 377
-recorded decisions across 6 loops.
+**Sister program: Website Factory** ([website-factory-vision.md](./website-factory-vision.md)).
+Factory is idea → a website; this loop is that site, then measure → improve.
 
-🚨 **But every loop is STALLED — 4 blocked, 1 paused, 1 cancelled, zero active, and no loop has
-ever completed cycle 1.** The supervisor is fine; the loops are stuck on four causes, three of
-which are chipped and one of which only Arman can clear. **Write-back has never been reached.**
+🚨 **READ THE CLUSTER DOC:
+[`common-docs/projects/content-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md)** — the merged
+cluster vision, verified state, and the single question ledger.
 
-## Vision — Arman's words
+## The situation, verified live 2026-08-20
 
-> "We have a really incredibly powerful system that starts with research… and then that can be
-> turned into template pages that then actually become published pages within our CMS. And then
-> the CMS can get crawled by our crawler… It then provides suggestions and improvements that can
-> be documented and tracked — and then adding layers where you can trigger updates to the CMS
-> from the findings."
+The machine is healthy; **the loop is frozen.** 6 loops — **4 blocked, 1 paused, 1 cancelled, 0
+active** — and the newest `loop_event` and `loop_stage_run` update are both **2026-08-17 09:41**.
+Nothing has moved in three days. 11 of 12 stages have real rows (441 stage runs, 1,337 events);
+**`writeback` has 0 rows and has never been reached.**
 
-> "In an ideal world, we should have something that could go end to end from beginning to end
-> **just with a human, or just with an AI**."
+## Remaining work
 
-> **"Click one thing and have the whole thing done" is the acceptance test for the loop.**
+Full detail and evidence in **STATE.md §4.4**. In priority order:
 
-Settled by Arman, 2026-08-13 — **never re-ask these** (full list in the system FEATURE.md
-§ "Decisions already made"):
-
-- **Autonomy is a SETTING, never a capability limit.** *"We need the system to allow anything, but
-  only when a user absolutely opts in for it… DO not hide the settings though."*
-- **Every stage is scored; a score NEVER blocks.**
-- **An assist is addressed to ONE person.** *"For suggestions, for now I'd rather just keep them
-  for each individual because that's less complicated."* Org-addressed assists are not a gap.
-- **`loop-map.ts` stays hand-authored**; the Codex auditor corrects drift.
+0. 🚨 **ARMAN — ONE CLICK, NOT A CODE TASK. Enable the Google Analytics Data API on Google Cloud
+   project `34576215171`**
+   (https://console.developers.google.com/apis/api/analyticsdata.googleapis.com/overview?project=34576215171).
+   Live error blocking the "Data Destruction, Inc." loop at *measure*:
+   `GA4 Data API PERMISSION_DENIED`. Nothing in either repo can fix this; it also keeps
+   `G-MEASURE-SCHEDULE` open.
+1. **Unstall the loops — three causes.**
+   - `measure` spins then blocks: `aidream/services/seo/pagespeed_health.py` ALREADY classifies
+     `NO_FCP` and `FAILED_DOCUMENT_REQUEST` as terminal and quarantines them — **the measure stage
+     simply does not consult it.**
+   - A dispatch vanished: "Cosmetic Injectables" sat open on `research` for 2,094 minutes;
+     the supervisor raised `StagePointerDeadline` — *"nothing was ever doing this stage's work."*
+   - GA4 — item 0.
+2. **Confirm the supervisor's real cadence.** It is running **18 runs / 3h** against a documented
+   30s-per-loop tick (older docs claim 334/3h). Consistent with every loop being blocked, but
+   verify rather than assume — and read this before answering STATE.md ledger Q4, whose load
+   premise it changes.
+3. **Reach write-back.** The one stage with no evidence at all.
+4. **`G-SUGGEST-FORK`** — producer-level (whole-check) suppression is the last wide blocker. Twelve
+   capabilities still uncovered, so **retire nothing** (absorb-then-collapse).
+5. **`G-STALENESS`** — `in-progress` in `loop-map.ts` and missing from every campaign doc's pending
+   list. Surface it.
+6. **Autonomy settings** — extend `growth.loop_run.pipe_policy`, never a parallel settings table.
+   Publish/write-back opt-in must be a visible UX bar, never a hardcoded refusal.
+7. **Stale gap TITLES** — statuses are right; several titles read as false
+   (`G-ORCHESTRATOR — "No end-to-end run object"` while five loops exist).
+8. **1,270 unwired artifacts** (`pnpm check:unwired`). Triage worst-first; fix the scanner for a
+   mis-detected CATEGORY rather than allowlisting rows. **Deletion recommendations are forbidden**
+   (unfinished-work alarm).
+9. **Missing primitive** — a general event bus for arbitrary row changes (today: fixed-channel
+   `pg_notify` listeners only).
 
 ## Resources
 
 - **Status truth:** `features/growth-loop/map/loop-map.ts` — the ONLY place gap statuses live.
-  Rendered at `/administration/knowledge/growth-loop`.
-- **Customer view:** `/how-it-works` (live) ← `features/growth-loop/public/`.
-- **Run surface:** `/marketing/brands/[brandId]/sites/[siteId]/growth-loop` ←
-  `features/growth-loop/run/`.
-- **Backend:** `aidream/services/growth_loop/` — `orchestrator.py` (run object), `supervisor.py`
-  (advancement), `stages.py` (`track_loop_stage`), `pipes.py` (`default_policy`), `quality.py`
-  (scoring), `agent_slots.py`. Router `api/routers/growth_loop.py` → `/api/growth-loop/*`.
-- **DB:** `growth.loop_run` / `loop_stage_run` / `loop_event` / `stage_ref_kind` / `v_loop_state`
-  (Supabase `txzxabzwovsujtloxrus`). **Read the table comments before writing** — they carry the
-  law: a stage attempt stores a POINTER `(ref_kind, ref_id)` and no stage state; a new stage store
-  is ONE row in `stage_ref_kind`, never a new column.
-- **Method:** THE REACHABILITY LADDER — exists → reachable → deployed → exercised → produced.
-  In `/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md` and the auditor
-  brief. **If you cannot name the caller, it is not done.**
-- **Auditor:** `/Users/armanisadeghi/code/common-docs/systems/growth-loop/CODEX_OPERATOR.md`.
+  Hand-authored by Arman's ruling; the Codex auditor corrects drift. Rendered at
+  `/administration/knowledge/growth-loop`.
+- **Customer view:** `/how-it-works` ← `features/growth-loop/public/`.
+- **Run surface:** `/marketing/brands/[brandId]/sites/[siteId]/growth-loop` ← `features/growth-loop/run/`.
+- **Backend:** `aidream/services/growth_loop/` — `orchestrator.py`, `supervisor.py`, `stages.py`,
+  `pipes.py`, `quality.py`. Router `api/routers/growth_loop.py`.
+- **DB:** `growth.loop_run` / `loop_stage_run` / `loop_event` / `stage_ref_kind` / `v_loop_state`.
+  **Read the table comments before writing** — a stage attempt stores a POINTER `(ref_kind, ref_id)`
+  and no stage state; a new stage store is ONE row in `stage_ref_kind`, never a new column.
+- **Method:** THE REACHABILITY LADDER — exists → reachable → deployed → exercised → produced
+  (`common-docs/policies/unfinished-work-alarm.md`). **If you cannot name the caller, it is not done.**
+- **Auditor:** `common-docs/systems/growth-loop/CODEX_OPERATOR.md`.
 - Test login: `admin@admin.com` / `Password1234#`. Dev server: `pnpm preview:start` (port 3001).
-
-## Remaining work
-
-0. 🚨 **ARMAN — ONE CLICK, NOT A CODE TASK. Enable the Google Analytics Data API on Google Cloud
-   project `34576215171`** (https://console.developers.google.com/apis/api/analyticsdata.googleapis.com/overview?project=34576215171).
-   Live error blocking the "Data Destruction, Inc." loop at *measure*:
-   `GA4 Data API PERMISSION_DENIED: Google Analytics Data API has not been used in project
-   34576215171 before or it is disabled.` Nothing in either repo can fix this. It also keeps
-   `G-MEASURE-SCHEDULE` open.
-1. **Every loop is stalled — the four causes, verified 2026-08-15.** The supervisor is healthy;
-   these are what it is blocked ON:
-   - **`measure` spins then blocks** — "All Green Recycling" has 289 completed measure attempts
-     (max attempt 304) across only 3 distinct stages, and is blocked on `PSI HTTP 400: NO_FCP`.
-     "PBW Law" blocked on `FAILED_DOCUMENT_REQUEST`. `aidream/services/seo/pagespeed_health.py`
-     ALREADY classifies both as terminal and quarantines them — the loop's measure stage simply
-     does not consult it. **Chipped.**
-   - **A dispatch vanished** — "Cosmetic Injectables" sat open on `research` for 2,094 minutes;
-     the supervisor raised `StagePointerDeadline`: *"nothing was ever doing this stage's work.
-     Whatever was dispatched to carry it never recorded itself."* **Chipped.**
-   - **GA4** — item 0 above, Arman's click.
-   - The supervisor's own concurrency fault (1,913 failures on one loop) is **FIXED** — 0 failures
-     in the last 3h.
-2. **Scheduled tasks — mostly closed 2026-08-14; ONE external blocker left.** The cumulative
-   `failed` totals that made these look broken never decrease, which is what made three repaired
-   tasks read as still failing. Verified against `scheduler.sch_run`, not against totals:
-   - **Human Baseline Schedule / Daily Standup Summary — FIXED.** The `agent_id` repair worked;
-     all failures stopped 08-14 00:31 and every run since has succeeded. The duplicate was NOT
-     created by a repair that inserted instead of updating — both rows were created by hand
-     36 seconds apart on 08-09, five days before any repair, and the repair correctly updated
-     both. The newer duplicate (`da07e6c6`) is now soft-deleted + disabled.
-   - **Backlink enrichment — per-item surfacing already landed.** Errors now name the site,
-     the backlink, the source URL, and the stage. It completes ~20 enrichments per run; the
-     remaining failures are genuine per-item scraper 422s on unreachable directory URLs.
-   - 🚨 **GA4 dispatcher — BLOCKED ON ARMAN, not on code.** The `ResourceBindingError` binding
-     was fixed on 08-13; the sync now reaches Google and is refused there: *"Google Analytics
-     Data API has not been used in project 34576215171 before or it is disabled."* **Enable the
-     Analytics Data API on Google Cloud project 34576215171** — nothing in this repo can fix it.
-   - **The silence itself is fixed.** THE SCHEDULER REPEAT GUARD (aidream 0.2.75,
-     `packages/matrx-scheduler/matrx_scheduler/repeat_guard.py` +
-     `aidream/services/scheduling/failure_escalation.py`) escalates at `finalize_run` on three
-     ceilings — 3 same-signature failures, 3 failures with no success ANYWHERE, or 8 mixed
-     failures for a task that used to work — and raises one deduped `platform.assists` chip on
-     the schedule owner. It stops the silence, not the schedule: **whether a repeatedly-failing
-     schedule should auto-disable is Arman's call and was deliberately not taken.**
-3. **1,270 unwired artifacts** found by the new `pnpm check:unwired`. Triage worst-first; expect
-   false positives (sample code, demos, debug panels) — fix the scanner for a mis-detected
-   CATEGORY rather than allowlisting rows one at a time. **Deletion recommendations are forbidden**
-   (unfinished-work alarm).
-4. **Autonomy settings** — extend `growth.loop_run.pipe_policy`, never a parallel settings table.
-   Invoke the `settings-system` skill. Publish/write-back opt-in must be unmistakable in the UI as
-   a UX bar, not a hardcoded refusal.
-5. **`G-SUGGEST-FORK`** — producer-level (whole-check) suppression is the last wide blocker;
-   team-addressing is settled as out of scope. Twelve capabilities still uncovered, so **retire
-   nothing** (absorb-then-collapse). `features/assists/FEATURE.md` § capability inventory.
-6. **`G-MEASURE-SCHEDULE`** — closes when GA4 genuinely syncs (PageSpeed already does).
-7. **Write-back is the one stage never reached** — 11 of 12 have real `loop_stage_run` rows.
-8. **Stale gap TITLES.** Statuses are right; several titles were written when the gap opened and
-   now read as false (`G-ORCHESTRATOR — "No end-to-end run object"` while five loops run).
 
 ## Done
 
-- The run object, its router, and the human + code pipes — `aidream/services/growth_loop/`,
-  `features/growth-loop/run/`.
-- Supervisor advances stages unattended and is HEALTHY — 334 runs / 0 failures per 3h; 396 stage
-  runs across 11 stages, 337 scored, 377 supervisor decisions. Its asyncpg concurrency fault
-  (1,913 failures on one loop) is fixed.
-- Scheduled-task silence is fixed — THE SCHEDULER REPEAT GUARD (aidream 0.2.75) escalates on three
-  ceilings and raises one deduped assist on the schedule owner.
-- Publish→crawl, templates, research triggers, plan-status, CMS identity, findings→assists
-  (pg_cron sweep), finding→fix, pipe primitive's AI leg, human→AI escalation sweeper, sitemap /
-  robots / collections, crawl schedule + dual-world collapse, plan-drift UI.
-- `growth` exposed to PostgREST **safely** — `security_invoker` on `v_loop_state`, parent-follows
-  RLS on stages; a cross-tenant read found on 2026-08-13 is closed (stranger sees 0, owner sees
-  their own).
-- `pnpm check:unwired` + `/administration/reporting/unwired` — the detector for the failure class
-  that caused this whole campaign.
-- Auditor brief rewritten around the reachability ladder (its old `G-ORCHESTRATOR` check would
-  have certified the campaign's worst failure as closed).
+- The run object, router and three pipes; the supervisor advancing stages unattended (8,921
+  scheduler runs, 417 decisions) with its asyncpg concurrency fault fixed; `growth` safely exposed
+  to PostgREST; the scheduler repeat guard; publish→crawl, templates, research triggers, CMS
+  identity, findings→assists, finding→fix, human→AI escalation, sitemap/robots/collections,
+  plan-drift UI; `pnpm check:unwired`. One line each with pointers in **STATE.md §3**.
 
 ## Decisions needed
 
-**One is blocking and it is not a code decision: enable the GA4 Data API (item 0).** Two more worth
-Arman's eye when convenient:
+Item 0 is Arman's and it is blocking. Every other open question in this cluster — including the
+findings ceiling and the supervisor cadence — is in the one ledger: **STATE.md §5**.
 
-- **Situation:** The supervisor ticks every 30 seconds per loop. With five loops that is already
-  2,150 runs in a day; at a hundred client sites it is a large continuous load.
-  **Decide:** leave the 30s tick, or move to event-driven advancement (advance when a stage store
-  changes) with a slow sweep as backstop?
-- **Situation:** `web.finding` has 5,506 rows; the assists sweep deliberately surfaces at most
-  three groups per site to avoid a wall of chips. Most findings therefore never reach anyone.
-  **Decide:** is three-per-site the right ceiling, or should volume scale with site size?
+**Settled by Arman, never re-ask** (full list in `growth-loop/FEATURE.md` and STATE.md §2.13):
+autonomy is a SETTING not a capability limit · every stage is scored and a score NEVER blocks · an
+assist is addressed to ONE person · `loop-map.ts` stays hand-authored.

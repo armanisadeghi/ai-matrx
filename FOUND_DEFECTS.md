@@ -956,9 +956,13 @@ The 4-day platform freeze is fixed and re-verified live 2026-08-15 (28 partition
 
 **Open — the gap that made this four days instead of one:** nothing notices a table that has stopped accepting writes. 121 tables took zero writes for four days; the only signals were `request_crash` rows and user toasts, and a user found it. The runway guard covers this specific cause, not the next unrelated one — detection is still missing. Design gate first: a naive per-table threshold cries wolf on low-traffic tables, and a watchdog nobody trusts is worse than none. **Decides: Arman** (ops scope).
 
-### D121 — website-factory audit: 12 content-plan/CMS defects on a dispatch board (2026-07-30)
+### D121 — RESOLVED 2026-08-19: website-factory dispatch board closed (opened 2026-07-30)
 
-Board: [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision gaps in `website-factory-vision.md`. Close when the board is empty. **Arman assigns; WF-1/2/3 are HIGH.**
+11 of the 12 WF items shipped and the board (`docs/handoffs/website-factory-bug-dispatch.md`) was
+deleted; the sole survivor WF-10 (site→vertical binding) shipped 2026-08-19 as the real FK
+`web.site.plan_profile_id`. Remaining factory work is in
+[docs/handoffs/website-factory-vision.md](docs/handoffs/website-factory-vision.md) and
+`/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md` §4.3.
 
 ### D119 — RESOLVED 2026-08-14: the EDIT/FULL boundary is now enforced on columns, not just statements
 
