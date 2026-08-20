@@ -21,12 +21,80 @@
  * with IndexedDB unavailable (private mode, quota) degrades to "no offline
  * capture" — loudly, via `isOutboxAvailable()`, never by silently dropping a
  * learner's answers on the floor.
+ *
+ * ── THE PENDING-GRADE EXTENSION (v2, 2026-08-20) ─────────────────────────────
+ * One family of attempt cannot be completed offline at all: the SPOKEN modes
+ * (FastFire, voice test), whose grade is produced by a server agent from an
+ * audio clip that itself needs the network to upload. Those attempts are queued
+ * as an observation PLUS the raw clip and the grader's inputs (`pendingGrade`),
+ * and are HELD BACK from the ledger until the flush can upload + grade them —
+ * see `replay.ts`. The clip lives in its own `clips` table rather than on the
+ * attempt row so that listing the queue stays cheap: audio is orders of
+ * magnitude larger than an attempt row, and `listPendingAttempts` would
+ * otherwise pull every megabyte of it into memory on every flush and every
+ * queue-depth poll.
+ *
+ * This does NOT weaken the founding rule. A `pendingGrade` row still stores only
+ * what the learner DID — what they said (the clip) and what they were asked
+ * (front/back/seconds) — never a grade. The grade is still derived at flush,
+ * by the server, exactly as it would have been online.
  */
 
 import Dexie, { type Table } from "dexie";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 export const STUDY_OFFLINE_DB = "matrx-study-offline";
-export const STUDY_OFFLINE_SCHEMA_VERSION = 1;
+export const STUDY_OFFLINE_SCHEMA_VERSION = 2;
+
+/**
+ * Everything the flush needs to reproduce, at reconnect, the grader run that
+ * could not happen offline. It is the grader's INPUTS and nothing else: the
+ * prompt the learner answered, how long they had, and which MANDATE grades it
+ * (a mandate key, never an agent id — the DB decides the agent, and it may be a
+ * different one by the time this replays, which is correct).
+ */
+export interface PendingGradeSpec {
+  mandateKey: string;
+  front: string;
+  back: string;
+  secondsAllowed: number;
+  /** Cloud folder the clip belongs in once it can be uploaded. */
+  folderPath: string;
+  /** Free-form provenance stamped on the uploaded file (origin, session, card). */
+  uploadMetadata: Record<string, unknown>;
+  /** Names the uploaded clip exactly as the online path would. */
+  cardId: string | null;
+  /** Optional extra grading rubric (voice-test surfaces pass one). */
+  rubric: string | null;
+  /** Which surface captured it — telemetry + the grader's `surfaceKey`. */
+  surface: string;
+  /** Keeps replayed grader runs out of the learner's normal chats. */
+  sourceFeature: SourceFeature;
+  /** Canonical `ui_surface.name` of the lane, so surface bindings resolve. */
+  surfaceName: string | null;
+}
+
+/**
+ * A learner's recorded answer, held until the flush can upload and grade it.
+ *
+ * Stored as raw BYTES plus its mime type, not as a `Blob`. IndexedDB's
+ * structured clone handles `ArrayBuffer` identically everywhere; `Blob` does
+ * not — Safari shipped years of IndexedDB builds that stored a Blob and handed
+ * back an empty object, and `fake-indexeddb` does the same today, so the bug
+ * would have been invisible in tests and silent in the field (a learner's
+ * recording reading back as zero bytes and being written off as "gone"). The
+ * Blob is reconstructed at upload time from these two fields, which is exactly
+ * the information it carried.
+ */
+export interface OutboxClip {
+  /** Same id as the attempt it belongs to — one clip per attempt, or none. */
+  attemptId: string;
+  userId: string;
+  data: ArrayBuffer;
+  mimeType: string;
+  /** `data.byteLength`, denormalized so the budget scan never touches payloads. */
+  bytes: number;
+}
 
 /**
  * One captured attempt. Mirrors IC-8 §1 exactly — note the ABSENCE of
@@ -73,6 +141,28 @@ export interface OutboxAttempt {
   /** Failed flush attempts, for surfacing a stuck queue rather than hiding it. */
   failedAttempts: number;
   lastError: string | null;
+  /**
+   * Set when this attempt is INCOMPLETE and must be graded before it may be
+   * recorded (the spoken modes). Null on every attempt the learner's own device
+   * could finish — which is six of the seven study modes.
+   *
+   * The hold-back is deliberate and the alternative was rejected on the
+   * evidence: `study_record_attempt` is idempotent BY ID and touches nothing on
+   * replay, so a grade arriving later cannot be attached through it, and the
+   * only other write — `study_override_attempt` — stamps `is_manually_edited`
+   * and `edited_by`, which would brand an AI grade as the LEARNER'S manual
+   * correction (the flag exists for contest integrity), and cannot carry
+   * `response_audio_file_id`, `response_transcript` or `graded_by` at all.
+   * Recording once, complete, is the only honest shape.
+   */
+  pendingGrade?: PendingGradeSpec | null;
+  /**
+   * How many times the flush tried and failed to GRADE this attempt (distinct
+   * from `failedAttempts`, which counts ledger-write failures). At the cap the
+   * attempt is recorded ungraded rather than held forever — a held answer that
+   * never lands is worse than an ungraded one that does.
+   */
+  gradeFailures?: number;
 }
 
 /** A deck cached for offline study (IC-8 §4). */
@@ -95,9 +185,18 @@ export interface OfflineDeck {
 class StudyOfflineDb extends Dexie {
   attempts!: Table<OutboxAttempt, number>;
   decks!: Table<OfflineDeck, [string, string]>;
+  clips!: Table<OutboxClip, string>;
 
   constructor() {
     super(STUDY_OFFLINE_DB);
+    // v1 is declared verbatim so a browser holding a v1 database upgrades
+    // rather than being torn down. Dexie applies versions in order and an
+    // upgrade that only ADDS a store keeps every existing row: a learner who
+    // queued answers before this shipped must not lose them to a schema bump.
+    this.version(1).stores({
+      attempts: "++seq, &attemptId, userId, capturedAt",
+      decks: "[userId+setId], setId, userId, cachedAt",
+    });
     this.version(STUDY_OFFLINE_SCHEMA_VERSION).stores({
       // ++seq = autoincrement primary key (replay order).
       // &attemptId = unique, so a double-capture cannot queue twice.
@@ -110,6 +209,10 @@ class StudyOfflineDb extends Dexie {
       // cards AND A's item_mastery snapshot, and B's download silently
       // overwrote A's row. A cache key that omits the owner is a data leak.
       decks: "[userId+setId], setId, userId, cachedAt",
+      // The learner's own recording, held until it can be uploaded and graded.
+      // Keyed by attemptId (one clip per attempt), indexed by userId so the
+      // per-learner budget and cleanup never scan another learner's audio.
+      clips: "attemptId, userId",
     });
   }
 }
@@ -149,6 +252,8 @@ export async function enqueueAttempt(
   if (!database) return false;
   try {
     await database.attempts.add({
+      pendingGrade: null,
+      gradeFailures: 0,
       ...attempt,
       failedAttempts: 0,
       lastError: null,
@@ -213,6 +318,202 @@ export async function markAttemptFailed(
     });
   } catch {
     /* non-fatal */
+  }
+}
+
+// ─── Held recordings (the pending-grade clips) ────────────────────────────
+
+/**
+ * THE STORAGE BUDGET — an agent decision under blind approval (2026-08-20),
+ * review by 2026-10-20 once real device data exists.
+ *
+ * These are NOT product entitlements and deliberately not admin knobs: nothing
+ * here consumes a resource we pay for. The bytes live on the LEARNER'S disk in
+ * their own browser, and the only thing a number here can do is decide whether
+ * we keep their recording or tell them we could not. Routing that through a
+ * server-fetched setting would make offline capture depend on the network,
+ * which is the one thing it must not do.
+ *
+ * Basis: a FastFire clip is uncompressed WAV from the capture core — roughly
+ * 32 KB per second at 16 kHz mono 16-bit, so a 20-second card is ~640 KB and
+ * even a 2-minute long-form answer is under 4 MB. PER_CLIP is set far above
+ * that so a legitimate answer is never refused for being long, and TOTAL holds
+ * several hundred typical clips — many multiples of any single offline
+ * sitting — while staying a small fraction of the multi-gigabyte IndexedDB
+ * quota browsers grant on a normal device.
+ */
+export const OFFLINE_CLIP_MAX_BYTES = 25 * 1024 * 1024;
+export const OFFLINE_CLIP_TOTAL_BUDGET_BYTES = 250 * 1024 * 1024;
+
+/** Why a recording could not be held. Never "it just didn't happen". */
+export type ClipRejection = "unavailable" | "too-large" | "budget-full" | "write-failed";
+
+export interface StoreClipResult {
+  stored: boolean;
+  reason: ClipRejection | null;
+}
+
+/**
+ * Read a recording's raw bytes.
+ *
+ * `Blob.arrayBuffer()` is the obvious call and is what runs on every current
+ * browser — but it only reached Safari in 14, and a learner on an older iOS
+ * device is exactly the person most likely to be studying with no signal. The
+ * `FileReader` fallback is the API that has always existed, so this never
+ * throws away a recording over a missing method. (It is also the path jsdom
+ * takes, so the tests exercise it rather than a branch production skips.)
+ */
+export async function readClipBytes(clip: Blob): Promise<ArrayBuffer | null> {
+  try {
+    if (typeof clip.arrayBuffer === "function") return await clip.arrayBuffer();
+  } catch {
+    /* fall through to FileReader */
+  }
+  if (typeof FileReader === "undefined") return null;
+  return new Promise<ArrayBuffer | null>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      resolve(
+        reader.result instanceof ArrayBuffer ? reader.result : null,
+      );
+    reader.onerror = () => resolve(null);
+    try {
+      reader.readAsArrayBuffer(clip);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/** Bytes of held audio for one learner. */
+export async function heldClipBytes(userId: string): Promise<number> {
+  const database = getDb();
+  if (!database) return 0;
+  try {
+    let total = 0;
+    await database.clips
+      .where("userId")
+      .equals(userId)
+      .each((row) => {
+        total += row.bytes;
+      });
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Hold one recording against its attempt.
+ *
+ * REFUSES rather than EVICTS when the budget is full. Every clip already held
+ * belongs to an answer we have already told the learner is saved; dropping one
+ * to make room for a newer one would destroy an answer they were promised —
+ * silently, and with no way to know which. Refusing the new one is visible at
+ * the moment it happens, and the caller MUST say so (that is why this returns a
+ * reason rather than a bare boolean).
+ *
+ * Orphans — clips whose attempt has already flushed or been dead-lettered —
+ * are the only thing ever reclaimed, by `pruneOrphanClips`.
+ */
+export async function storeClip(clip: OutboxClip): Promise<StoreClipResult> {
+  const database = getDb();
+  if (!database) return { stored: false, reason: "unavailable" };
+  if (clip.bytes > OFFLINE_CLIP_MAX_BYTES) {
+    return { stored: false, reason: "too-large" };
+  }
+  try {
+    const held = await heldClipBytes(clip.userId);
+    if (held + clip.bytes > OFFLINE_CLIP_TOTAL_BUDGET_BYTES) {
+      return { stored: false, reason: "budget-full" };
+    }
+    await database.clips.put(clip);
+    return { stored: true, reason: null };
+  } catch {
+    // A QuotaExceededError from the browser itself lands here. It is a refusal
+    // like any other and gets the same loud treatment — the learner is told
+    // their recording was not kept, never left to assume it was.
+    return { stored: false, reason: "write-failed" };
+  }
+}
+
+export async function getClip(attemptId: string): Promise<OutboxClip | null> {
+  const database = getDb();
+  if (!database) return null;
+  try {
+    return (await database.clips.get(attemptId)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Drop a held recording once its attempt has reached the ledger (or died). */
+export async function removeClip(attemptId: string): Promise<void> {
+  const database = getDb();
+  if (!database) return;
+  try {
+    await database.clips.delete(attemptId);
+  } catch {
+    /* a clip we cannot prune is retried next flush; never throw */
+  }
+}
+
+/**
+ * Reclaim clips whose attempt is no longer queued. A crash between "record the
+ * attempt" and "remove the clip" would otherwise leak the learner's budget
+ * forever, and the leak is invisible: the queue reads empty while the disk
+ * stays full. Cheap enough to run at the end of every flush.
+ */
+export async function pruneOrphanClips(userId: string): Promise<number> {
+  const database = getDb();
+  if (!database) return 0;
+  try {
+    const live = new Set(
+      (await database.attempts.where("userId").equals(userId).toArray()).map(
+        (a) => a.attemptId,
+      ),
+    );
+    const orphans: string[] = [];
+    await database.clips
+      .where("userId")
+      .equals(userId)
+      .each((row) => {
+        if (!live.has(row.attemptId)) orphans.push(row.attemptId);
+      });
+    if (orphans.length > 0) await database.clips.bulkDelete(orphans);
+    return orphans.length;
+  } catch {
+    return 0;
+  }
+}
+
+/** Record a failed GRADE so a held attempt cannot be held forever. */
+export async function markGradeFailed(seq: number): Promise<number> {
+  const database = getDb();
+  if (!database) return 0;
+  try {
+    const row = await database.attempts.get(seq);
+    if (!row) return 0;
+    const next = (row.gradeFailures ?? 0) + 1;
+    await database.attempts.update(seq, { gradeFailures: next });
+    return next;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Give up on grading this attempt and let it flush as the bare observation.
+ * Clearing `pendingGrade` is what releases the hold-back — after this the row
+ * is an ordinary queued attempt and replays like any other.
+ */
+export async function clearPendingGrade(seq: number): Promise<void> {
+  const database = getDb();
+  if (!database) return;
+  try {
+    await database.attempts.update(seq, { pendingGrade: null });
+  } catch {
+    /* non-fatal — the retry cap is re-checked on the next flush */
   }
 }
 

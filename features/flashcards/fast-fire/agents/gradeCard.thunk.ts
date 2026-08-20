@@ -17,23 +17,32 @@
 //     spoken" — is captured locally and QUEUED. It is what the outbox exists
 //     for: the drill's attempt count, session, and FSRS review instant all
 //     survive a dropped connection and replay idempotently on reconnect.
-//   • THE GRADE is DERIVED STATE and is NEVER queued. It cannot be produced
-//     offline (the grader is a server agent), and it cannot be attached
-//     afterwards either: `study_record_attempt` is idempotent BY ID — a
-//     replayed attempt id returns the existing row and deliberately touches
-//     nothing — so a grade arriving later would need `study_override_attempt`,
-//     a different write with different semantics. Queuing a half-grade would
-//     also violate the outbox's founding rule (capture the observation, never
-//     the derived state).
-//   • THE AUDIO CLIP is likewise not retained. `fileHandler.upload` needs the
-//     network, so offline there is no `file_id` to record, and the blob is
-//     dropped when the drill ends. An offline FastFire card therefore lands as
-//     an ungraded, audio-less attempt — the learner's WORK is counted, the
-//     learner's ANSWER CONTENT is not. That is a real, accepted limitation, not
-//     an oversight; making it whole means persisting the blob and re-grading at
-//     flush time, which is its own build (tracked, not silently skipped).
-// A queued attempt is surfaced as `gradeSkipped`, which is honest: no grade was
-// produced. The learner is told once per session via a toast.
+//   • THE GRADE is DERIVED STATE and is still NEVER captured offline. It cannot
+//     be produced here (the grader is a server agent) and this thunk never
+//     invents one: a queued attempt carries `result: null`, always.
+//   • THE AUDIO CLIP IS NOW RETAINED (2026-08-20). The clip is held in the
+//     outbox alongside the observation, and the attempt is HELD BACK from the
+//     ledger until the flush can upload it and grade it — see
+//     `education/study/offline/replay.ts`. Previously the blob died with the
+//     drill and the card landed ungraded AND audio-less: the learner's WORK was
+//     counted, their ANSWER CONTENT was gone forever.
+//
+// WHY HOLD BACK rather than record now and attach the grade later. There is no
+// second write that could attach it. `study_record_attempt` is idempotent BY
+// ID — a replayed attempt id returns the existing row and deliberately touches
+// nothing — and the only other path, `study_override_attempt`, stamps
+// `is_manually_edited`/`edited_by`, which would brand an AI grade as the
+// LEARNER'S own manual correction (the flag that exists for contest integrity),
+// and cannot carry `response_audio_file_id`, `response_transcript` or
+// `graded_by` at all. Recording ONCE, complete, is the only honest shape. The
+// hold-back is bounded: after MAX_GRADE_RETRIES the flush records the bare
+// observation rather than holding a learner's work hostage to a broken grader.
+//
+// This does NOT weaken the outbox's founding rule. What is stored offline is
+// still only what the learner DID — what they said, and what they were asked.
+// The grade is derived by the server at flush, exactly as it would have been.
+// A held attempt is surfaced as `gradeSkipped`, which stays honest: no grade
+// was produced DURING THE DRILL. The learner is told once per session.
 //
 // The grader resolves through the mandate (FC_MANDATES.gradeSpoken) — swap the
 // agent behind it at /agents/mandates (the old localStorage agent-id config is
@@ -48,7 +57,11 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
-import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import {
+  recordAttemptOfflineAware,
+  type PendingGradeRequest,
+} from "@/features/education/study/offline/recordAttemptOffline";
+import type { ClipRejection } from "@/features/education/study/offline/outbox";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import {
@@ -138,22 +151,50 @@ export function gradeCard(args: GradeCardArgs) {
     // launches a grader or records a fabricated grade.
     //
     // This is ALSO the offline path: with no network the upload above failed,
-    // so there is no file id and no grade is possible. The branch is identical
-    // by design — "no audio the grader can see" is one situation, whatever
-    // caused it — and the attempt below still reaches the learner's outbox.
+    // so there is no file id and no grade is possible RIGHT NOW. The two cases
+    // diverge on ONE fact — whether the learner actually recorded something:
+    //   • a clip exists but could not be uploaded → the answer is INCOMPLETE.
+    //     It is held (clip + grader inputs) and graded at flush.
+    //   • no clip at all (abort mid-pad, a dead mic) → there is nothing to
+    //     hold and nothing to grade, ever. Record it result-less and move on.
+    // Either way this thunk records no grade, which is the invariant.
     if (!responseAudioFileId) {
       dispatch(gradeSkipped({ cardId, responseAudioFileId, runId: sessionId }));
-      await recordAttempt({
-        userId,
-        cardId,
-        sessionId,
-        responseAudioFileId,
-        result: null,
-        scoreValue: null,
-        score: null,
-        transcript: null,
-        gradedBy: null,
-      });
+      await recordAttempt(
+        {
+          userId,
+          cardId,
+          sessionId,
+          responseAudioFileId,
+          result: null,
+          scoreValue: null,
+          score: null,
+          transcript: null,
+          gradedBy: null,
+        },
+        clip && clip.size > 0
+          ? {
+              clip,
+              spec: {
+                mandateKey: FC_MANDATES.gradeSpoken,
+                front,
+                back,
+                secondsAllowed,
+                folderPath: CloudFolders.SYSTEM_FASTFIRE_RESPONSES,
+                uploadMetadata: {
+                  origin: "fastfire",
+                  session_id: sessionId ?? null,
+                  card_id: cardId,
+                },
+                cardId,
+                rubric: null,
+                surface: "fastfire",
+                sourceFeature: "education-fastfire",
+                surfaceName: "matrx-user/education-fastfire",
+              },
+            }
+          : null,
+      );
       return;
     }
 
@@ -261,40 +302,64 @@ export function gradeCard(args: GradeCardArgs) {
  * Thin wrapper around the canonical OFFLINE-AWARE attempt writer. Loud on
  * error, and loud (once per session) when the answer went to the outbox.
  */
-async function recordAttempt(input: {
-  userId: string;
-  cardId: string;
-  sessionId: string | null;
-  responseAudioFileId: string | null;
-  result: GradeResult | null;
-  scoreValue: number | null;
-  score: Record<string, unknown> | null;
-  transcript: string | null;
-  gradedBy: string | null;
-}): Promise<void> {
-  const res = await recordAttemptOfflineAware({
-    userId: input.userId,
-    itemType: FC_CARD_ITEM_TYPE,
-    itemId: input.cardId,
-    method: FAST_FIRE_METHOD,
-    responseKind: "spoken",
-    ...(input.sessionId ? { sessionId: input.sessionId } : {}),
-    ...(input.result ? { result: input.result } : {}),
-    ...(input.scoreValue !== null ? { scoreValue: input.scoreValue } : {}),
-    ...(input.score ? { score: input.score } : {}),
-    ...(input.responseAudioFileId
-      ? { responseAudioFileId: input.responseAudioFileId }
-      : {}),
-    ...(input.transcript ? { responseTranscript: input.transcript } : {}),
-    ...(input.gradedBy ? { gradedBy: input.gradedBy } : {}),
-  });
+async function recordAttempt(
+  input: {
+    userId: string;
+    cardId: string;
+    sessionId: string | null;
+    responseAudioFileId: string | null;
+    result: GradeResult | null;
+    scoreValue: number | null;
+    score: Record<string, unknown> | null;
+    transcript: string | null;
+    gradedBy: string | null;
+  },
+  pending?: PendingGradeRequest | null,
+): Promise<void> {
+  const res = await recordAttemptOfflineAware(
+    {
+      userId: input.userId,
+      itemType: FC_CARD_ITEM_TYPE,
+      itemId: input.cardId,
+      method: FAST_FIRE_METHOD,
+      responseKind: "spoken",
+      ...(input.sessionId ? { sessionId: input.sessionId } : {}),
+      ...(input.result ? { result: input.result } : {}),
+      ...(input.scoreValue !== null ? { scoreValue: input.scoreValue } : {}),
+      ...(input.score ? { score: input.score } : {}),
+      ...(input.responseAudioFileId
+        ? { responseAudioFileId: input.responseAudioFileId }
+        : {}),
+      ...(input.transcript ? { responseTranscript: input.transcript } : {}),
+      ...(input.gradedBy ? { gradedBy: input.gradedBy } : {}),
+    },
+    pending ?? null,
+  );
   if (res.error) {
     console.error("[fastfire.gradeCard] recordAttempt failed:", res.error);
     return;
   }
-  if (res.queued) {
-    noticeOfflineOnce(input.sessionId);
+  // A recording we were offered and could not keep is its OWN message, said
+  // every time it happens rather than latched: it is rare, it is specific, and
+  // folding it into the once-per-session "saved offline" toast would tell the
+  // learner their answer is safe while half of it was just discarded.
+  if (res.clipRejection) {
+    noticeClipRejected(res.clipRejection);
   }
+  if (res.queued) {
+    noticeOfflineOnce(input.sessionId, res.heldForGrade);
+  }
+}
+
+/** Say exactly what was lost and why. Never a generic "something went wrong". */
+function noticeClipRejected(reason: ClipRejection): void {
+  toast.warning(
+    reason === "too-large"
+      ? "That recording was too long to keep offline — the answer was saved, but it will stay ungraded."
+      : reason === "budget-full"
+        ? "Your offline recordings have filled the space this device allows. This answer was saved, but its recording was not — reconnect to sync and free it up."
+        : "This device can't store recordings offline. The answer was saved, but it will stay ungraded.",
+  );
 }
 
 /**
@@ -307,11 +372,18 @@ async function recordAttempt(input: {
  */
 let lastOfflineNoticeSession: string | null = null;
 
-function noticeOfflineOnce(sessionId: string | null): void {
+function noticeOfflineOnce(sessionId: string | null, held: boolean): void {
   const key = sessionId ?? "no-session";
   if (lastOfflineNoticeSession === key) return;
   lastOfflineNoticeSession = key;
   toast.success(
-    "Saved offline — your answers sync when you reconnect. Grading needs a connection, so these stay ungraded.",
+    held
+      ? // TRUE ONLY SINCE THE CLIP IS HELD. Before that this sentence read
+        // "Grading needs a connection, so these stay ungraded" — accurate then,
+        // a lie now. A toast that under-promises is not harmless: a learner told
+        // their answers are ungraded has no reason to come back and look.
+        "Saved offline — your recordings are kept, and they're graded as soon as you reconnect."
+      : // No recording was kept for this one, so it genuinely cannot be graded.
+        "Saved offline — your answers sync when you reconnect. Without a recording these stay ungraded.",
   );
 }

@@ -33,6 +33,11 @@
  *   • The RPC fails for a NON-network reason (auth, validation, RLS) → that is
  *     a real error and is returned as one. Queuing a request the server
  *     actively refused would retry it forever and hide a genuine bug.
+ *   • A caller passing a `PendingGradeRequest` (the SPOKEN modes, whose grade
+ *     comes from a server agent and whose clip could not upload) gets the
+ *     HOLD-BACK: the clip and the grader's inputs are stored and the attempt is
+ *     queued INCOMPLETE, never written to the ledger now. The flush uploads,
+ *     grades, and records it ONCE, complete. See `replay.ts`.
  *
  * The attempt id is generated HERE, before the call, so the same id is used
  * whether the write lands now or is replayed later — that is what makes the
@@ -41,7 +46,15 @@
 
 import { studyService } from "../service/studyService";
 import type { ItemMasteryRow, RecordAttemptInput } from "../types";
-import { enqueueAttempt, isOutboxAvailable } from "./outbox";
+import {
+  enqueueAttempt,
+  isOutboxAvailable,
+  readClipBytes,
+  removeClip,
+  storeClip,
+  type ClipRejection,
+  type PendingGradeSpec,
+} from "./outbox";
 
 export interface OfflineAwareAttemptResult {
   attemptId: string;
@@ -49,8 +62,31 @@ export interface OfflineAwareAttemptResult {
   mastery: ItemMasteryRow | null;
   /** True when this answer is in the outbox awaiting reconnect. */
   queued: boolean;
+  /**
+   * True when the attempt is queued AND deliberately HELD BACK from the ledger
+   * until the flush can upload its recording and grade it. The learner's answer
+   * content survives in this case; `queued && !heldForGrade` means the
+   * observation survived but the recording did not.
+   */
+  heldForGrade: boolean;
+  /**
+   * Why the recording could not be held, when one was offered and refused.
+   * The caller MUST surface this — a learner whose recording we dropped is
+   * being told "saved" about half of what they did.
+   */
+  clipRejection: ClipRejection | null;
   /** Set only when the answer could NOT be recorded or queued at all. */
   error: string | null;
+}
+
+/**
+ * The pending-grade half of the call: the learner's raw recording plus the
+ * grader inputs needed to reproduce, at reconnect, the run that could not
+ * happen now. Supplying both is what asks for the HOLD-BACK.
+ */
+export interface PendingGradeRequest {
+  spec: PendingGradeSpec;
+  clip: Blob;
 }
 
 /**
@@ -84,10 +120,68 @@ export function isNetworkFailure(error: unknown): boolean {
 
 export async function recordAttemptOfflineAware(
   input: RecordAttemptInput & { userId: string },
+  pending?: PendingGradeRequest | null,
 ): Promise<OfflineAwareAttemptResult> {
   const { userId, ...attempt } = input;
   const attemptId = attempt.attemptId ?? crypto.randomUUID();
   const capturedAt = attempt.reviewedAt ?? new Date().toISOString();
+
+  // ── THE HOLD-BACK ────────────────────────────────────────────────────────
+  // A caller offering a clip is telling us the answer is INCOMPLETE: the
+  // recording never uploaded, so no grade exists and none can be attached
+  // later. `study_record_attempt` is idempotent BY ID and touches nothing on
+  // replay, and the only other write — `study_override_attempt` — stamps
+  // `is_manually_edited`/`edited_by` (branding an AI grade as the learner's own
+  // manual correction, the flag contest integrity depends on) and cannot carry
+  // `response_audio_file_id`, `response_transcript` or `graded_by` at all. So
+  // the row is written ONCE, complete, after the flush grades it.
+  //
+  // This runs BEFORE the online branch on purpose. `navigator.onLine` can be
+  // true on a connection healthy enough for the RPC and not for a multi-megabyte
+  // upload; letting the ledger row land in that window is exactly how the
+  // recording gets orphaned with no way back.
+  let clipRejection: ClipRejection | null = null;
+  if (pending && pending.clip.size > 0) {
+    if (isOutboxAvailable()) {
+      const data = await readClipBytes(pending.clip);
+      const stored = data
+        ? await storeClip({
+            attemptId,
+            userId,
+            data,
+            mimeType: pending.clip.type || "audio/wav",
+            bytes: data.byteLength,
+          })
+        : ({ stored: false, reason: "write-failed" } as const);
+      if (stored.stored) {
+        const queuedHeld = await enqueueAttempt(
+          toOutboxRow(userId, attemptId, capturedAt, attempt, pending.spec),
+        );
+        if (queuedHeld) {
+          return {
+            attemptId,
+            mastery: null,
+            queued: true,
+            heldForGrade: true,
+            clipRejection: null,
+            error: null,
+          };
+        }
+        // The clip landed but the attempt it belongs to did not — that clip is
+        // now an orphan by construction, so drop it here rather than leaving it
+        // to `pruneOrphanClips` to find later.
+        await removeClip(attemptId);
+        clipRejection = "write-failed";
+      } else {
+        clipRejection = stored.reason;
+      }
+    } else {
+      clipRejection = "unavailable";
+    }
+    // Fall through: the recording could not be held, but the OBSERVATION still
+    // counts and takes the ordinary path below. Never worse than before this
+    // capability existed — and the caller is told, via `clipRejection`.
+  }
 
   const offlineNow =
     typeof navigator !== "undefined" && navigator.onLine === false;
@@ -101,6 +195,8 @@ export async function recordAttemptOfflineAware(
         attemptId: result.data.attemptId,
         mastery: result.data.mastery,
         queued: false,
+        heldForGrade: false,
+        clipRejection,
         error: null,
       };
     }
@@ -110,6 +206,8 @@ export async function recordAttemptOfflineAware(
         attemptId,
         mastery: null,
         queued: false,
+        heldForGrade: false,
+        clipRejection,
         error: String(result.error),
       };
     }
@@ -120,12 +218,51 @@ export async function recordAttemptOfflineAware(
       attemptId,
       mastery: null,
       queued: false,
+      heldForGrade: false,
+      clipRejection,
       error:
         "This answer could not be saved — offline storage is unavailable in this browser.",
     };
   }
 
-  const queued = await enqueueAttempt({
+  const queued = await enqueueAttempt(
+    toOutboxRow(userId, attemptId, capturedAt, attempt, null),
+  );
+
+  if (!queued) {
+    return {
+      attemptId,
+      mastery: null,
+      queued: false,
+      heldForGrade: false,
+      clipRejection,
+      error: "This answer could not be saved offline.",
+    };
+  }
+
+  return {
+    attemptId,
+    mastery: null,
+    queued: true,
+    heldForGrade: false,
+    clipRejection,
+    error: null,
+  };
+}
+
+/**
+ * The ONE place an outbox row is built from a `RecordAttemptInput`. Both queue
+ * paths (held-for-grade and ordinary) go through it, because the lossy-wrapper
+ * bug was exactly a field carried on one path and forgotten on the other.
+ */
+function toOutboxRow(
+  userId: string,
+  attemptId: string,
+  capturedAt: string,
+  attempt: Omit<RecordAttemptInput, never>,
+  pendingGrade: PendingGradeSpec | null,
+) {
+  return {
     attemptId,
     userId,
     itemType: attempt.itemType,
@@ -143,16 +280,7 @@ export async function recordAttemptOfflineAware(
     gradedBy: attempt.gradedBy ?? null,
     latencyMs: attempt.latencyMs ?? null,
     capturedAt,
-  });
-
-  if (!queued) {
-    return {
-      attemptId,
-      mastery: null,
-      queued: false,
-      error: "This answer could not be saved offline.",
-    };
-  }
-
-  return { attemptId, mastery: null, queued: true, error: null };
+    pendingGrade,
+    gradeFailures: 0,
+  };
 }
