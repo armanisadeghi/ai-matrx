@@ -60,6 +60,32 @@ function routeDirectories(family: RouteFamily): string[] {
 
 const findings: Finding[] = [];
 
+const routesByLetter = new Map<string, string[]>();
+const seenRegisteredRoutes = new Set<string>();
+for (const entry of faviconRouteData) {
+  if (seenRegisteredRoutes.has(entry.href)) {
+    findings.push({
+      route: entry.href,
+      file: "constants/favicon-route-data.ts",
+      reason: "route has more than one favicon registry entry",
+    });
+  }
+  seenRegisteredRoutes.add(entry.href);
+
+  const letter = entry.favicon?.letter?.toUpperCase();
+  if (!letter || entry.href === "/rag" || entry.href.startsWith("/legacy/")) continue;
+  routesByLetter.set(letter, [...(routesByLetter.get(letter) ?? []), entry.href]);
+}
+
+for (const [letter, routes] of routesByLetter) {
+  if (routes.length < 2) continue;
+  findings.push({
+    route: routes.join(", "),
+    file: "constants/favicon-route-data.ts",
+    reason: `favicon letter ${letter} is assigned to multiple routes`,
+  });
+}
+
 for (const family of families) {
   for (const segment of routeDirectories(family)) {
     const directory = `${family.directory}/${segment}`;
@@ -103,6 +129,22 @@ for (const family of families) {
         file: boundary,
         reason: "route is missing from constants/favicon-route-data.ts",
       });
+    } else {
+      const registeredLetter = faviconRouteData
+        .find((entry) => entry.href === route)
+        ?.favicon?.letter?.toUpperCase();
+      const explicitLetter = source.match(/\bletter\s*:\s*["']([^"']+)["']/)?.[1];
+      if (
+        registeredLetter &&
+        explicitLetter &&
+        explicitLetter.toUpperCase() !== registeredLetter
+      ) {
+        findings.push({
+          route,
+          file: boundary,
+          reason: `root metadata overrides registry letter ${registeredLetter} with ${explicitLetter}`,
+        });
+      }
     }
   }
 }

@@ -5,7 +5,7 @@ import { ScraperHubHeader } from "@/features/scraper/components/ScraperHubHeader
 export const metadata = createRouteMetadata("/scraper", {
   title: "Webscraper",
   description: "Extract and process data from web sources",
-  letter: "H",
+  letter: "SC",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

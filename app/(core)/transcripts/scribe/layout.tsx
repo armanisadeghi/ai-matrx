@@ -13,7 +13,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   title: "Transcripts",
   description:
     "Voice-first capture, live transcription, and an assistant workspace for working documents.",
-  letter: "M",
+  letter: "TS",
 });
 
 /**

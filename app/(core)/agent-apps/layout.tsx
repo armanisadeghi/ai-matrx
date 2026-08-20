@@ -4,7 +4,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/agent-apps", {
   title: "Agent Apps",
   description: "Create and manage your AI-powered agent applications",
-  letter: "AP",
+  letter: "AA",
 });
 
 export default function AgentAppsLayout({ children }: { children: ReactNode }) {

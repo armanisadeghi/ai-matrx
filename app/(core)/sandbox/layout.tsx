@@ -6,7 +6,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 export const metadata = createRouteMetadata("/sandbox", {
   title: "Sandboxes",
   description: "Manage ephemeral sandbox environments for your projects",
-  letter: "Z",
+  letter: "SB",
 });
 
 /**

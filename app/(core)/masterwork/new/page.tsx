@@ -18,7 +18,7 @@ export const metadata = createRouteMetadata("/masterwork", {
   titlePrefix: "New Rulebook",
   title: "Masterwork",
   description: "Start a new Rulebook — a guided intake, then your Approach.",
-  letter: "Mw",
+  letter: "M",
 });
 
 export default async function NewRulebookRoute() {

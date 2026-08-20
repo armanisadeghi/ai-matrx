@@ -13,7 +13,7 @@ import MessagesLayoutClient from "./MessagesLayoutClient";
 export const metadata = createRouteMetadata("/messages", {
   title: "Messages",
   description: "Direct messages and conversations",
-  letter: "V",
+  letter: "MS",
 });
 
 export default async function MessagesLayout({

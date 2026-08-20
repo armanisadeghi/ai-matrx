@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   titlePrefix: "Unsorted",
   title: "Scribe",
   description: "Review and triage unsorted Scribe capture segments.",
-  letter: "M",
+  letter: "TU",
 });
 
 export default function ScribeUnsortedLayout({

@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/voice", {
   title: "Voice",
   description:
     "Browse, preview, and tune production TTS voices for chat, assistants, transcripts, and podcasts.",
-  letter: "Vc",
+  letter: "V",
   additionalMetadata: {
     keywords: [
       "text to speech",

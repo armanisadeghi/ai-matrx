@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/crm", {
   title: "CRM",
   description:
     "Manage people and companies, including contact details, affiliations, activity, notes, and files.",
-  letter: "C",
+  letter: "CR",
 });
 
 export default function CrmLayout({ children }: { children: ReactNode }) {

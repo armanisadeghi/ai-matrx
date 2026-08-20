@@ -6,7 +6,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/schedules", {
   title: "Schedules",
   description: "Create and manage scheduled agent and automation tasks.",
-  letter: "Sh",
+  letter: "SD",
 });
 
 export default async function SchedulesLayout({

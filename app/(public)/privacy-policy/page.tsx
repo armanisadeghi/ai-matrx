@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/privacy-policy", {
   title: "Privacy Policy",
   description:
     "How AI Matrx collects, uses, and protects your information across the web app and the Matrx Extend Chrome extension.",
-  letter: "P",
+  letter: "PP",
   canonicalPath: "/privacy-policy",
 });
 

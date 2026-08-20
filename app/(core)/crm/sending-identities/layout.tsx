@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/crm/sending-identities", {
   title: "CRM",
   description:
     "Connect the mailboxes your outreach is sent from, prove you own their domains, and watch their delivery health.",
-  letter: "S",
+  letter: "SI",
 });
 
 export default function SendingIdentitiesLayout({

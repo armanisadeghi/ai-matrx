@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/knowledge", {
   title: "Knowledge",
   description:
     "Knowledge hub — data stores, document library, semantic search, and repositories.",
-  letter: "Kn",
+  letter: "K",
 });
 
 export default function RagLayout({ children }: { children: React.ReactNode }) {

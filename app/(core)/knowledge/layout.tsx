@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/knowledge", {
   title: "Knowledge System",
   description:
     "Source to knowledge to answer — the Matrx seven-phase knowledge pipeline.",
-  letter: "Kn",
+  letter: "K",
 });
 
 export default function KnowledgeLayout({
