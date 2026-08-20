@@ -5,7 +5,7 @@ description: Relocate a live table to a different Postgres schema during the 202
 
 # Move a table to a new schema
 
-Relocate `public.<table>` → `<new>.<table>` with references intact. Postgres moves most things for you; the misses are predictable. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `txzxabzwovsujtloxrus`.
+Relocate `public.<table>` → `<new>.<table>` with references intact. Postgres moves most things for you; the misses are predictable. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`.
 
 ## What `ALTER TABLE … SET SCHEMA` carries automatically
 The table's columns, PK, indexes, CHECK/UNIQUE/FK constraints (its own **and** inbound FK constraints — cross-schema FKs keep working), **RLS policies, triggers, and owned sequences** all follow. You do **not** re-create these.

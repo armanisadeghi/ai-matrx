@@ -9,7 +9,7 @@
 | Thing | Value |
 |---|---|
 | Supabase project name | **Matrx Main** |
-| `project_id` (every MCP call) | **`txzxabzwovsujtloxrus`** (us-west-1, Postgres 17) — the ONLY DB this stack talks to |
+| `project_id` (every MCP call) | **`brsgrqvjdzwihsvnfqkf`** (us-east-1, Postgres 17) — the ONLY DB this stack talks to |
 | System org ("Matrx System") | **`39c38960-d30c-4840-b0c1-c9960de95582`** — the org you assign to ownerless / system rows |
 | Apply DDL | Supabase MCP `apply_migration` (idempotent SQL) — NOT psql, NOT the app (no DDL path) |
 | Run read SQL | Supabase MCP `execute_sql` |
@@ -238,7 +238,7 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 
 ## 8. Cross-repo apply order (the finalize SOP — same for every change type)
 
-1. **DB** — apply idempotent DDL via Supabase MCP `apply_migration` (project `txzxabzwovsujtloxrus`). **Verify live** with `execute_sql` (column/policy/trigger exists). Write `migrations/<name>.sql`, sha256 it, insert `public._schema_migrations` (`source='matrx-frontend'`).
+1. **DB** — apply idempotent DDL via Supabase MCP `apply_migration` (project `brsgrqvjdzwihsvnfqkf`). **Verify live** with `execute_sql` (column/policy/trigger exists). Write `migrations/<name>.sql`, sha256 it, insert `public._schema_migrations` (`source='matrx-frontend'`).
 2. **Frontend (ai-matrx)** — `pnpm db-types` (add the schema to the `--schema` list first if it's new & FE-read). Update every usage (`.from()/.schema()`, types, RPC names). `pnpm sync-types` at the end (DB + Python API types + tsc) → fix all TS errors.
 3. **Python (aidream)** — `python db/generate.py` (regenerates `db/models*.py` + managers). New schema → add to `db/matrx_orm.yaml` `additional_schemas` + a generate block. Table consumed by a sub-package (matrx-ai/graph/rag/…) → wire it in `aidream/package_integration.py` (`configure_packages()`). Drift check `python db/detect_applied.py`. Update usages. Start `python run.py`, confirm a clean boot (`Local Link: http://localhost:8000`, no ERROR/CRITICAL).
 4. **matrx-extend / matrx-local** — update references if any, but **never let them block production**.

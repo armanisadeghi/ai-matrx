@@ -1,6 +1,6 @@
 ---
 name: db-change
-description: Entry point and shared SOP for the 2026 Matrx DB transition — any structural change to the live Supabase database (Matrx Main) during downtime. Use whenever the task is to move a table to the graveyard, move a table to another schema, canonicalize a table/feature onto the platform standard, drop or merge tables, or change DB logic. Triggers on graveyard-table, move-table-to-schema, canonicalize-feature, retire/drop/merge-table, bring an entity onto the platform base entity, or any DDL on project txzxabzwovsujtloxrus. Holds the zero-data-loss law, the cross-repo apply order (Supabase MCP → pnpm db-types/sync-types → aidream db/generate.py → both repos commit), the constants, and routes to the specific change skills. Read this and TOOLKIT.md first; the per-change skills assume it.
+description: Entry point and shared SOP for the 2026 Matrx DB transition — any structural change to the live Supabase database (Matrx Main) during downtime. Use whenever the task is to move a table to the graveyard, move a table to another schema, canonicalize a table/feature onto the platform standard, drop or merge tables, or change DB logic. Triggers on graveyard-table, move-table-to-schema, canonicalize-feature, retire/drop/merge-table, bring an entity onto the platform base entity, or any DDL on project brsgrqvjdzwihsvnfqkf. Holds the zero-data-loss law, the cross-repo apply order (Supabase MCP → pnpm db-types/sync-types → aidream db/generate.py → both repos commit), the constants, and routes to the specific change skills. Read this and TOOLKIT.md first; the per-change skills assume it.
 ---
 
 # DB Change — the transition SOP (read first)
@@ -67,7 +67,7 @@ A dropped/renamed table or field breaks silently in the places the compiler can'
 
 ---
 
-Structural changes to **Matrx Main** (`txzxabzwovsujtloxrus`) during scheduled downtime. Apply DDL directly via the Supabase MCP — migration files are a convenience for the ledger, **not** a canonical system (a file changes nothing until applied + verified live). Execute end-to-end without stalling; over-chunking prolongs the outage.
+Structural changes to **Matrx Main** (`brsgrqvjdzwihsvnfqkf`) during scheduled downtime. Apply DDL directly via the Supabase MCP — migration files are a convenience for the ledger, **not** a canonical system (a file changes nothing until applied + verified live). Execute end-to-end without stalling; over-chunking prolongs the outage.
 
 **Before any change, read [`TOOLKIT.md`](./TOOLKIT.md)** (verified live signatures, registry shapes, constants, gotchas) and [`docs/db_rebuild/SCHEMA_MAP.md`](../../../docs/db_rebuild/SCHEMA_MAP.md) (what each schema is FOR — where a table belongs). TOOLKIT is the source of truth; the design doc `docs/db_rebuild/db-core-standards-and-automation.md` is aspirational and has drifted in places.
 
@@ -102,7 +102,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 | Sharing cascade / containment rules / new association edge shape ("share X and its contents come along") | **TOOLKIT.md §3** (`association_types` + `reachability`) + [`docs/db_changes/REACHABILITY-ROLLOUT.md`](../../../docs/db_changes/REACHABILITY-ROLLOUT.md); manage rules via `/administration/relationships`, never raw SQL |
 
 ## Constants (full table in TOOLKIT.md §0)
-- Project: **Matrx Main** · `project_id` **`txzxabzwovsujtloxrus`**.
+- Project: **Matrx Main** · `project_id` **`brsgrqvjdzwihsvnfqkf`**.
 - System org ("Matrx System"): **`39c38960-d30c-4840-b0c1-c9960de95582`** (ownerless-row fallback).
 - **Exposed-schema trap:** `pnpm db-types` only pulls `public, context, files, workflow, workspace, app, skill, tool, agent, chat, ai, graveyard`. A FE-read table in any other schema needs its schema added to the `db-types` `--schema` list + PostgREST exposure, or the FE gets no types and 404s.
 

@@ -5,7 +5,7 @@ description: Analyze raw AI Matrx server logs to discover new module names, log 
 
 # Server Log Analyzer
 
-Analyzes raw logs from Coolify-managed AI Matrx services and keeps the parsing system in sync.
+Analyzes raw logs from the AWS CloudWatch production services and the residual Coolify stream/scraper services, and keeps the parsing system in sync. `CoolifyLogViewer.tsx` is a legacy component name, not a statement that the primary server still runs on Coolify.
 
 ## Two files to update
 

@@ -5,7 +5,7 @@ description: Retire a live table during the 2026 Matrx DB transition by moving i
 
 # Graveyard a table
 
-Goal: get the table **offline and reversible** (`SET SCHEMA graveyard`, never `DROP`), then erase every reference. **Getting it offline is priority #1; reference cleanup follows and must not block the move.** Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `txzxabzwovsujtloxrus`.
+Goal: get the table **offline and reversible** (`SET SCHEMA graveyard`, never `DROP`), then erase every reference. **Getting it offline is priority #1; reference cleanup follows and must not block the move.** Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`.
 
 ## Step 1 — Discover every reference (this is the real work)
 Run all of these (`execute_sql`) and grep both repos. Record the hit list.

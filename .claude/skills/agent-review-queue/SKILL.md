@@ -20,7 +20,7 @@ description: Register anything you built that Arman must go see/test in the UI, 
 
 Add a row when you produced **anything reviewable in the UI that Arman didn't explicitly walk through with you live**: a demo page, a new route, a reworked surface, an admin panel, a feature needing validation/approval. Skip it only when the work has no UI surface, or Arman already reviewed it in this conversation.
 
-One row per reviewable thing. Registering is one INSERT via the Supabase MCP (project `txzxabzwovsujtloxrus`). Include the versioned triage envelope so a repair coordinator can route the item later without rereading prose. `required_tools` is intentionally multi-label; do not force a database + browser repair into one false either/or bucket.
+One row per reviewable thing. Registering is one INSERT via the Supabase MCP (project `brsgrqvjdzwihsvnfqkf`). Include the versioned triage envelope so a repair coordinator can route the item later without rereading prose. `required_tools` is intentionally multi-label; do not force a database + browser repair into one false either/or bucket.
 
 ```sql
 insert into agent.review_queue (title, url, instructions, source, metadata) values (

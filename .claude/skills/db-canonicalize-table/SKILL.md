@@ -5,7 +5,7 @@ description: Bring a table (and its feature) into full conformance with the Matr
 
 # Canonicalize a table
 
-Make `<schema>.<table>` (token `<token>`) fully conform to the platform standard. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) (live signatures, gotchas) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `txzxabzwovsujtloxrus`. Order matters — do the steps in sequence.
+Make `<schema>.<table>` (token `<token>`) fully conform to the platform standard. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) (live signatures, gotchas) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`. Order matters — do the steps in sequence.
 
 ## 🛑 Before you write one line — obey db-change's PRIME DIRECTIVE (§top of `../db-change/SKILL.md`)
 

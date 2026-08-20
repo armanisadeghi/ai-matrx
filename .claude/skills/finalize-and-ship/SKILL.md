@@ -46,7 +46,7 @@ Regenerates Supabase DB types + Python API types, then type-checks. Must print *
 
 ### 2. Migrations — `pnpm check:migrations`
 
-Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: apply via the Supabase MCP `apply_migration` (always available, `project_id: "txzxabzwovsujtloxrus"`), then record the ledger row so the check goes green. Full procedure: **CLAUDE.md → "Database migrations"** (idempotency, SHA-256 ledger write, verify-live).
+Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: apply via the Supabase MCP `apply_migration` (always available, `project_id: "brsgrqvjdzwihsvnfqkf"`), then record the ledger row so the check goes green. Full procedure: **CLAUDE.md → "Database migrations"** (idempotency, SHA-256 ledger write, verify-live).
 
 ### 3. Touch-based checks — only the rows your change hit
 

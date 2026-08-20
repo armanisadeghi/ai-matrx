@@ -81,7 +81,7 @@ candidate, not a member.
 ## Phase 2 — Verification: the doc set is presumed to be lying
 
 Fan out parallel Explore subagents against reality — live code on `origin/main` in every cluster
-repo, and the live DB via the Supabase MCP (project `txzxabzwovsujtloxrus`) for table/RPC/row
+repo, and the live DB via the Supabase MCP (project `brsgrqvjdzwihsvnfqkf`) for table/RPC/row
 claims. Rules of evidence:
 
 - **A code comment is not evidence. A doc's own "verified ✓" is not evidence.** Verify artifacts
