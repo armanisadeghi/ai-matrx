@@ -9,6 +9,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -925,57 +927,89 @@ export function RanksWorkspace() {
             rowActions={(item) => {
               const state = checking[item.target_id];
               return (
-                <div className="flex justify-end gap-1">
-                  <CopyButtons
-                    size="icon"
-                    label={item.keyword}
-                    human={() => humanRankPortfolioItem(item)}
-                    json={() => item}
-                    agent={() => ({
-                      kind: "rank-portfolio-item",
-                      location: pageLocation,
-                      description: `One tracked rank target for ${site.domain}.`,
-                      data: item,
-                      summary: humanRankPortfolioItem(item),
-                      attributes: {
-                        keyword: item.keyword,
-                        is_active: item.is_active,
-                      },
-                    })}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 gap-1 px-2 text-xs"
-                    disabled={state?.status === "running"}
-                    onClick={() => void run(item.target_id)}
-                    title={state?.stage}
-                  >
-                    {state?.status === "running" ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
-                    Check now
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                    aria-label={`Remove ${item.keyword}`}
-                    onClick={async () => {
-                      try {
-                        await removeTarget(item.target_id);
-                        toast.success(`Removed "${item.keyword}"`);
-                      } catch (err) {
-                        toast.error("Could not remove rank target", {
-                          description: extractErrorMessage(err),
-                        });
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                <div className="flex max-w-72 flex-col items-end gap-1">
+                  <div className="flex justify-end gap-1">
+                    <CopyButtons
+                      size="icon"
+                      label={item.keyword}
+                      human={() => humanRankPortfolioItem(item)}
+                      json={() => item}
+                      agent={() => ({
+                        kind: "rank-portfolio-item",
+                        location: pageLocation,
+                        description: `One tracked rank target for ${site.domain}.`,
+                        data: item,
+                        summary: humanRankPortfolioItem(item),
+                        attributes: {
+                          keyword: item.keyword,
+                          is_active: item.is_active,
+                        },
+                      })}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 px-2 text-xs"
+                      disabled={state?.status === "running"}
+                      onClick={() => void run(item.target_id)}
+                      title={state?.error ?? state?.stage}
+                    >
+                      {state?.status === "running" ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : state?.status === "done" ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      ) : state?.status === "error" ? (
+                        <AlertTriangle className="h-3 w-3 text-destructive" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
+                      {state?.status === "running"
+                        ? "Checking…"
+                        : state?.status === "error"
+                          ? "Retry"
+                          : "Check now"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                      aria-label={`Remove ${item.keyword}`}
+                      onClick={async () => {
+                        try {
+                          await removeTarget(item.target_id);
+                          toast.success(`Removed "${item.keyword}"`);
+                        } catch (err) {
+                          toast.error("Could not remove rank target", {
+                            description: extractErrorMessage(err),
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {state?.status === "running" ? (
+                    <p
+                      className="text-right text-[11px] text-muted-foreground"
+                      role="status"
+                    >
+                      {state.stage ?? "Checking live rank…"}
+                    </p>
+                  ) : state?.status === "error" ? (
+                    <p
+                      className="text-right text-[11px] text-destructive"
+                      role="alert"
+                    >
+                      {state.error ?? "The rank check failed. Try again."}
+                    </p>
+                  ) : state?.status === "done" ? (
+                    <p
+                      className="text-right text-[11px] text-emerald-700 dark:text-emerald-400"
+                      role="status"
+                    >
+                      Check complete
+                    </p>
+                  ) : null}
                 </div>
               );
             }}
