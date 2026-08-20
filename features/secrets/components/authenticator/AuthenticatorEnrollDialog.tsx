@@ -25,7 +25,7 @@
  * enrollment request body.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -155,15 +155,16 @@ export function AuthenticatorEnrollDialog({
   /** A failure from the QR reader (no code in the image, camera blocked). The
    *  parse failure below is derived, never stored. */
   const [decodeError, setDecodeError] = useState<string | null>(null);
-  const [itemId, setItemId] = useState<string>(NEW_LOGIN);
-  const [newName, setNewName] = useState("");
+  /** null until the person picks / types — see the derived defaults below. */
+  const [chosenItemId, setChosenItemId] = useState<string | null>(null);
+  const [typedName, setTypedName] = useState<string | null>(null);
 
   const reset = () => {
     setStep("secret");
     setRawInput("");
     setDecodeError(null);
-    setItemId(NEW_LOGIN);
-    setNewName("");
+    setChosenItemId(null);
+    setTypedName(null);
   };
 
   const close = (next: boolean) => {
@@ -190,29 +191,28 @@ export function AuthenticatorEnrollDialog({
   }, [rawInput]);
 
   /**
-   * When a NEW code arrives, prefill the login name from it and preselect an
-   * existing login whose name or URL matches the issuer — nobody should retype
-   * "GitHub" when the QR already said it. Keyed on the code itself via a ref,
-   * so a later render (or the vault list refreshing) can never walk over a
-   * choice the person made deliberately.
+   * Prefill is DERIVED, never stored: the name box and the login picker show
+   * what the code implies until the person types or picks something else, and
+   * their choice then wins for good. Deriving it (rather than writing state
+   * from an effect) is what keeps a later vault refresh from walking over a
+   * deliberate choice.
    */
-  const autoTargetedFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (!parsed || autoTargetedFor.current === parsed.raw) return;
-    autoTargetedFor.current = parsed.raw;
-
-    const suggestion = parsed.issuer || parsed.account;
-    if (suggestion) setNewName((current) => current || suggestion);
-
-    const needle = parsed.issuer?.toLowerCase();
-    if (!needle) return;
+  const suggestedName = parsed
+    ? (parsed.issuer ?? parsed.account ?? "")
+    : "";
+  const suggestedItemId = useMemo(() => {
+    const needle = parsed?.issuer?.toLowerCase();
+    if (!needle) return null;
     const match = enrollable.find(
       (it) =>
         it.displayName.toLowerCase().includes(needle) ||
         it.loginUrls.some((u) => u.toLowerCase().includes(needle)),
     );
-    if (match) setItemId(match.id);
+    return match?.id ?? null;
   }, [parsed, enrollable]);
+
+  const itemId = chosenItemId ?? suggestedItemId ?? NEW_LOGIN;
+  const newName = typedName ?? suggestedName;
 
   const target: EnrollTarget = useMemo(
     () =>
@@ -315,7 +315,7 @@ export function AuthenticatorEnrollDialog({
 
               <div className="space-y-1.5">
                 <Label htmlFor="auth-item">Save it on</Label>
-                <Select value={itemId} onValueChange={setItemId}>
+                <Select value={itemId} onValueChange={setChosenItemId}>
                   <SelectTrigger id="auth-item">
                     <SelectValue />
                   </SelectTrigger>
@@ -350,7 +350,7 @@ export function AuthenticatorEnrollDialog({
                   <Input
                     id="auth-new-name"
                     value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
+                    onChange={(e) => setTypedName(e.target.value)}
                     placeholder="GitHub"
                     autoComplete="off"
                   />
