@@ -207,3 +207,103 @@ export function defaultFilterMode(args: {
   if (numeric) return "range";
   return "text";
 }
+
+// ─── Facets from rows already in memory ──────────────────────────────────────
+//
+// LOCAL DATA FIRST — never ask the server a question the browser can already
+// answer. Most user tables are small enough that every row is already on screen
+// (or already cached for filtering), and in that case "what values are in this
+// column" is a loop over an array, not a round trip. Computing it locally is
+// instant, works offline, cannot fail, and shows no spinner at all.
+//
+// The server RPC (`udt_column_facets`) is the fallback for the ONLY case the
+// browser genuinely cannot answer: a table with more rows than we hold. Then a
+// count derived from a partial set would be a confident wrong answer, and
+// asking the database is the honest move.
+//
+// Same shape either way, so nothing downstream knows or cares which path ran.
+
+import type { ColumnFacets, ColumnFacetValue } from "./types";
+
+/** Longest value we will offer as a pickable option. Mirrors the RPC's cap. */
+const MAX_LISTABLE_LENGTH = 300;
+
+/**
+ * Compute a column's facets from rows already in memory.
+ *
+ * `rows` MUST be every row the facets are meant to describe — the caller
+ * decides that (see `localFacetsAreComplete`). Handing it one page would
+ * produce counts that look authoritative and are not.
+ */
+export function computeColumnFacets(args: {
+  tableId: string;
+  fieldName: string;
+  rows: readonly { data?: Record<string, unknown> | null }[];
+  limit?: number;
+}): ColumnFacets {
+  const { tableId, fieldName, rows } = args;
+  const limit = Math.min(Math.max(args.limit ?? 200, 1), 500);
+
+  const counts = new Map<string, number>();
+  let blank = 0;
+  let maxLength = 0;
+  const longValues = new Set<string>();
+
+  for (const row of rows) {
+    const raw = row?.data?.[fieldName];
+    const text =
+      raw === null || raw === undefined
+        ? ""
+        : typeof raw === "object"
+          ? JSON.stringify(raw)
+          : String(raw);
+    const trimmed = text.trim();
+
+    if (trimmed === "") {
+      blank += 1;
+      continue;
+    }
+    if (trimmed.length > maxLength) maxLength = trimmed.length;
+    if (trimmed.length > MAX_LISTABLE_LENGTH) {
+      longValues.add(trimmed);
+      continue;
+    }
+    counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
+  }
+
+  const values: ColumnFacetValue[] = [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+    .slice(0, limit);
+
+  const distinctListable = counts.size;
+
+  return {
+    table_id: tableId,
+    field_name: fieldName,
+    total_rows: rows.length,
+    filled: rows.length - blank,
+    blank,
+    distinct_count: distinctListable + longValues.size,
+    max_length: maxLength,
+    unlistable: longValues.size,
+    limit,
+    truncated: distinctListable > limit,
+    values,
+  };
+}
+
+/**
+ * May facets be computed from these rows, or must the server be asked?
+ *
+ * The ONLY safe condition is holding every row the facets describe. `total` is
+ * the table's row count AFTER the active search, which is exactly what the
+ * loaded rows also reflect — so comparing lengths is a true completeness test
+ * rather than a guess.
+ */
+export function localFacetsAreComplete(
+  loadedRowCount: number,
+  total: number,
+): boolean {
+  return total >= 0 && loadedRowCount >= total;
+}

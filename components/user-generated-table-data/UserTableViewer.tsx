@@ -2101,6 +2101,13 @@ const UserTableViewer = ({
                         sortDirection={sortDirection}
                         filter={columnFilter}
                         searchTerm={searchTerm}
+                        // Rows the browser already holds. The full cache when
+                        // filtering has loaded it, otherwise the current page —
+                        // which IS the whole table for the many tables that fit
+                        // on one page. The menu asks the server only when these
+                        // do not cover `totalCount`.
+                        localRows={fullDatasetCache ?? data}
+                        totalCount={totalCount}
                         onSortAsc={() => handleSort(field.field_name, "asc")}
                         onSortDesc={() => handleSort(field.field_name, "desc")}
                         onClearSort={clearSort}

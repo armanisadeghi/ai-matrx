@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,11 @@ import { cn } from "@/lib/utils";
 
 import { getColumnFacets } from "@/features/data-tables/service";
 import {
+  computeColumnFacets,
   defaultFilterMode,
   emptyFilter,
   isActiveFilter,
+  localFacetsAreComplete,
   type ColumnFilter,
 } from "@/features/data-tables/column-filters";
 import { isServiceFailure, type ColumnFacets } from "@/features/data-tables/types";
@@ -37,6 +39,13 @@ interface ColumnHeaderMenuProps {
   filter: ColumnFilter | undefined;
   /** The table's active global search, so facet counts describe visible rows. */
   searchTerm?: string;
+  /**
+   * Rows the browser ALREADY holds. When these cover the whole table the value
+   * list is computed from them and no request is made at all.
+   */
+  localRows: readonly { data?: Record<string, unknown> | null }[];
+  /** Total rows after the active search — how we know whether `localRows` is all of them. */
+  totalCount: number;
   onSortAsc: () => void;
   onSortDesc: () => void;
   onClearSort: () => void;
@@ -83,6 +92,8 @@ const ColumnHeaderMenu = ({
   sortDirection,
   filter,
   searchTerm,
+  localRows,
+  totalCount,
   onSortAsc,
   onSortDesc,
   onClearSort,
@@ -97,65 +108,92 @@ const ColumnHeaderMenu = ({
   const [loading, setLoading] = useState(false);
   const [valueQuery, setValueQuery] = useState("");
 
-  // Facets load when the menu OPENS, never on mount: a 20-column table would
-  // otherwise fire 20 aggregate queries to render a header row nobody clicked.
-  //
-  // The guard is an ATTEMPT KEY, not "do I have facets yet". Guarding on the
-  // result means a FAILED load leaves the preconditions unchanged, the effect
-  // re-runs, and it retries forever — a request storm that exhausts the
-  // browser's socket pool and takes the whole page down with it. Ask once per
-  // (column, search) per open; a retry is the user's explicit choice.
   const attemptRef = useRef<string | null>(null);
   const attemptKey = `${tableId}::${fieldName}::${searchTerm ?? ""}`;
 
+  // LOCAL DATA FIRST. Most tables are small enough that every row is already in
+  // memory, and then "what values are in this column" is a loop over an array —
+  // instant, offline-safe, no spinner, no request. Asking the server for an
+  // answer the browser already has is pure waste.
+  //
+  // The RPC runs ONLY when we genuinely do not hold every row, because counts
+  // derived from a partial set would look authoritative and be wrong.
+  const haveAllRows = localFacetsAreComplete(localRows.length, totalCount);
+
+  const localFacets = useMemo(
+    () =>
+      haveAllRows
+        ? computeColumnFacets({ tableId, fieldName, rows: localRows, limit: 200 })
+        : null,
+    [haveAllRows, tableId, fieldName, localRows],
+  );
+
+  // Fetched facets only ever fill the gap the local path cannot.
   useEffect(() => {
-    if (!open) {
-      // Reopening after the data changed must not show stale counts, and must
-      // be allowed to try again after a failure.
-      attemptRef.current = null;
-      setFacets(null);
-      setFacetError(null);
-      return undefined;
-    }
+    if (!open || haveAllRows) return undefined;
     if (attemptRef.current === attemptKey) return undefined;
     attemptRef.current = attemptKey;
 
-    let cancelled = false;
+    let settled = false;
     setLoading(true);
     setFacetError(null);
     void getColumnFacets({ tableId, fieldName, limit: 200, searchTerm })
       .then((result) => {
-        if (cancelled) return;
+        settled = true;
         if (isServiceFailure(result)) setFacetError(result.error);
         else setFacets(result.data);
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        settled = true;
         setFacetError(
           err instanceof Error ? err.message : "Could not read this column.",
         );
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       });
+
+    // THE CLEANUP MAY NOT CANCEL THE STATE UPDATE. An earlier version set a
+    // `cancelled` flag here; when the effect merely RE-RAN (a dep re-fires, a
+    // double-invoked mount), the in-flight callbacks were suppressed while the
+    // attempt guard stopped a new fetch from starting — so `loading` stayed
+    // true and the menu span forever. Clearing the attempt instead lets the
+    // re-run legitimately try again, and a stale write is harmless because the
+    // request is keyed to this exact column and search.
     return () => {
-      cancelled = true;
+      if (!settled && attemptRef.current === attemptKey) {
+        attemptRef.current = null;
+      }
     };
-  }, [open, attemptKey, tableId, fieldName, searchTerm]);
+  }, [open, haveAllRows, attemptKey, tableId, fieldName, searchTerm]);
+
+  // Closing resets so reopening after an edit never shows stale counts, and a
+  // failed attempt is allowed to be retried.
+  useEffect(() => {
+    if (open) return;
+    attemptRef.current = null;
+    setFacets(null);
+    setFacetError(null);
+    setLoading(false);
+    setValueQuery("");
+  }, [open]);
+
+  /** What the control actually renders from — local when we have it. */
+  const effectiveFacets = localFacets ?? facets;
 
   const mode: ColumnFilter["mode"] =
     filter?.mode ??
-    (facets
+    (effectiveFacets
       ? defaultFilterMode({
           dataType,
-          distinctCount: facets.distinct_count,
-          maxLength: facets.max_length,
+          distinctCount: effectiveFacets.distinct_count,
+          maxLength: effectiveFacets.max_length,
         })
       : "text");
 
   const setMode = (next: ColumnFilter["mode"]) => onFilterChange(emptyFilter(next));
 
-  const values = facets?.values ?? [];
+  const values = effectiveFacets?.values ?? [];
   const shownValues = valueQuery.trim()
     ? values.filter((v) =>
         v.value.toLowerCase().includes(valueQuery.trim().toLowerCase()),
@@ -205,9 +243,9 @@ const ColumnHeaderMenu = ({
           <p className="truncate text-sm font-semibold text-foreground" title={displayName}>
             {displayName}
           </p>
-          {facets && (
+          {effectiveFacets && (
             <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-              {facets.distinct_count} distinct
+              {effectiveFacets.distinct_count} distinct
             </span>
           )}
         </div>
@@ -262,7 +300,7 @@ const ColumnHeaderMenu = ({
             )}
           </div>
 
-          {loading && !facets && (
+          {loading && !effectiveFacets && (
             <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Reading this column&rsquo;s values…
@@ -276,12 +314,12 @@ const ColumnHeaderMenu = ({
             </p>
           )}
 
-          {mode === "values" && facets && (
+          {mode === "values" && effectiveFacets && (
             <div className="flex flex-col gap-1.5">
-              {facets.truncated && (
+              {effectiveFacets.truncated && (
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Showing the {values.length} most common of{" "}
-                  {facets.distinct_count}. Use text matching for the rest.
+                  {effectiveFacets.distinct_count}. Use text matching for the rest.
                 </p>
               )}
 
@@ -324,7 +362,7 @@ const ColumnHeaderMenu = ({
 
               {/* Empty is a first-class option: "which rows did nobody fill in"
                   is one of the most common questions asked of a table. */}
-              {facets.blank > 0 && (
+              {effectiveFacets.blank > 0 && (
                 <label className="flex cursor-pointer items-center gap-2 rounded border-t border-border px-1 pt-1.5 text-sm hover:bg-accent">
                   <Checkbox
                     checked={includeBlank}
@@ -340,7 +378,7 @@ const ColumnHeaderMenu = ({
                   />
                   <span className="flex-1 italic text-muted-foreground">(empty)</span>
                   <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                    {facets.blank}
+                    {effectiveFacets.blank}
                   </span>
                 </label>
               )}
@@ -423,9 +461,9 @@ const ColumnHeaderMenu = ({
           )}
 
           {/* Free text is never taken away — the picker is an addition. */}
-          {facets && (
+          {effectiveFacets && (
             <div className="mt-1.5 flex flex-wrap gap-x-3 text-[11px]">
-              {mode !== "values" && facets.distinct_count > 0 && (
+              {mode !== "values" && effectiveFacets.distinct_count > 0 && (
                 <button
                   type="button"
                   className="text-muted-foreground hover:text-foreground"
