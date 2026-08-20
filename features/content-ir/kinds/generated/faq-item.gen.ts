@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "faq_item" (schema version 3), emitted by pydantic in
+ * row "faq_item" (schema version 5), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types faq_item

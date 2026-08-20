@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "rating" (schema version 2), emitted by pydantic in
+ * row "rating" (schema version 4), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types rating

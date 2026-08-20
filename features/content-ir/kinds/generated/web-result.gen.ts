@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "web_result" (schema version 3), emitted by pydantic in
+ * row "web_result" (schema version 5), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types web_result
