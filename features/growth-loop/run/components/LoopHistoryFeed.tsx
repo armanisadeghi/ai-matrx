@@ -93,6 +93,21 @@ function qualityFromEvent(event: LoopEventView): QualityJudgment | null {
   };
 }
 
+/**
+ * A skip is only honest if it says WHY.
+ *
+ * `orchestrator.skip_stage` puts the human-readable reason on the event
+ * payload; rendering the bare "Skipped" chip without it is how a deliberate,
+ * explained skip (GA4 is not approved yet — see aidream
+ * `services/growth_loop/ga4_approval.py`) decays into a silent gap nobody
+ * remembers to close.
+ */
+function skipReasonFromEvent(event: LoopEventView): string | null {
+  if (event.event_type !== "stage_skipped") return null;
+  const reason = event.payload.reason;
+  return typeof reason === "string" && reason.trim() ? reason : null;
+}
+
 function terminalMeasurementFromEvent(
   event: LoopEventView,
 ): TerminalMeasurement | null {
@@ -255,6 +270,7 @@ export function LoopHistoryFeed({
         const stage = stageTitle(event.stage);
         const quality = qualityFromEvent(event);
         const terminalMeasurement = terminalMeasurementFromEvent(event);
+        const skipReason = skipReasonFromEvent(event);
         const door = quality ? outputDoor(event, subject) : null;
         return (
           <li
@@ -298,6 +314,11 @@ export function LoopHistoryFeed({
                   </p>
                 ) : null}
               </div>
+            ) : null}
+            {skipReason ? (
+              <p className="ml-[5.4rem] mt-1 rounded-md border border-border/70 bg-muted/35 px-2.5 py-2 text-xs leading-5 text-muted-foreground">
+                {skipReason}
+              </p>
             ) : null}
             {terminalMeasurement ? (
               <TerminalMeasurementCard measurement={terminalMeasurement} />
