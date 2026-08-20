@@ -387,6 +387,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   fc_set: {
     Icon: Layers,
     labelPlural: "Flashcards",
+    hrefFor: (id) => `/education/flashcards/${id}`,
   },
   // A quiz SESSION (education.quiz_sessions) is a taking, not the quiz — the
   // `/education/quizzes/[id]` route keys on the ASSESSMENT id (see below).

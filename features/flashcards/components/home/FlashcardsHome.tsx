@@ -49,10 +49,7 @@ import { fcService } from "../../data/fcService";
 import { EDGE_ROLE } from "../../data/types";
 import type { CardWithDetails, FcSetRow } from "../../data/types";
 import { toast } from "@/lib/toast";
-import {
-  buildLibraryJson,
-  downloadTextFile,
-} from "../../utils/exportDeck";
+import { buildLibraryJson, downloadTextFile } from "../../utils/exportDeck";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
@@ -175,7 +172,7 @@ function SetRow({
     <div
       onClick={() => onOpen(set.id)}
       className={cn(
-        "group flex min-h-[44px] items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 cursor-pointer",
+        "group flex min-h-[72px] items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 cursor-pointer sm:min-h-[44px] sm:rounded-lg sm:py-2",
         busy && "pointer-events-none opacity-60",
       )}
       aria-label={`Open flashcard set ${set.name}`}
@@ -223,7 +220,7 @@ function SetRow({
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8"
+          className="h-11 w-11 sm:h-8 sm:w-8"
           title="Study"
           aria-label={`Study ${set.name}`}
           onClick={(e) => {
@@ -236,7 +233,7 @@ function SetRow({
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8"
+          className="h-11 w-11 sm:h-8 sm:w-8"
           title="Fast Fire"
           aria-label={`Fast Fire ${set.name}`}
           onClick={(e) => {
@@ -343,7 +340,6 @@ export function FlashcardsHome() {
   // (assoc_for_sources) rather than N per-row lookups.
   useEffect(() => {
     if (!sets || sets.length === 0) {
-      setFoldersBySet({});
       return;
     }
     let cancelled = false;
@@ -505,166 +501,172 @@ export function FlashcardsHome() {
         })
       }
     >
-    <div className="h-full w-full overflow-y-auto bg-textured">
-      {/* Route chrome: back + identity + every secondary action. The six
+      <div className="h-full w-full overflow-y-auto bg-textured">
+        {/* Route chrome: back + identity + every secondary action. The six
           secondary actions used to be a seven-button row in the body; below
           `lg` that row could not wrap and ran off the right edge with the
           labels overlapping (375px). They now live in the header, where
           HeaderActions renders them inline on `lg+` and behind ONE `…`
           bottom sheet on mobile. Only the primary "New" stays in the body. */}
-      <EducationToolHeader
-        title="Flashcards"
-        sheetTitle="Flashcard actions"
-        actions={headerActions}
-      />
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6 pt-[var(--shell-header-h)]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {streak && streak.current_streak > 0 && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
-                title={`Longest streak: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
-              >
-                <Flame className="h-3.5 w-3.5" />
-                {streak.current_streak} day
-                {streak.current_streak === 1 ? "" : "s"}
-              </span>
-            )}
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              onClick={newSet}
-              disabled={isPending && navigatingId === NEW_SET_NAV_ID}
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              New
-            </Button>
-          </div>
-        </div>
-
-        {/* Search + filters */}
-        <div className="mt-4 flex flex-col gap-2.5">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search sets by name, topic, or description"
-              className="pl-9"
-              aria-label="Search flashcard sets"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            {VISIBILITY_FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setVisibility(f.id)}
-                className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                  visibility === f.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent",
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-
-            {folders.length > 0 ? (
-              <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                <FolderTree className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                {folders.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => toggleFolder(f.id)}
-                    className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                      folderIds.has(f.id)
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-muted text-muted-foreground hover:bg-accent",
-                    )}
-                  >
-                    {f.name}
-                  </button>
-                ))}
-                {folderIds.size > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setFolderIds(new Set())}
-                    className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-                    aria-label="Clear folder filter"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="mt-4">
-          {loading || sets === null ? (
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-lg" />
-              ))}
+        <EducationToolHeader
+          title="Flashcards"
+          sheetTitle="Flashcard actions"
+          actions={headerActions}
+        />
+        <div className="mx-auto max-w-4xl px-3 pb-safe pt-[var(--shell-header-h)] sm:px-6 sm:pb-6">
+          <div className="flex items-center gap-2 pt-2 sm:pt-4">
+            <div className="flex shrink-0 items-center gap-3">
+              {streak && streak.current_streak > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+                  title={`Longest streak: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
+                >
+                  <Flame className="h-3.5 w-3.5" />
+                  {streak.current_streak} day
+                  {streak.current_streak === 1 ? "" : "s"}
+                </span>
+              )}
             </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
-              <AlertCircle className="h-6 w-6 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">
-                Couldn&apos;t load your flashcard sets
-              </p>
-              <p className="max-w-md text-xs text-muted-foreground">{error}</p>
-            </div>
-          ) : sets.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <BookOpen className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground">
-                No flashcard sets yet
-              </p>
-              <p className="max-w-sm text-xs text-muted-foreground">
-                Generate a set from any topic in chat, or use New to create one.
-                It will show up here, ready to study.
-              </p>
-              <Button onClick={newSet} className="mt-2">
+            <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-initial">
+              <Button
+                onClick={newSet}
+                disabled={isPending && navigatingId === NEW_SET_NAV_ID}
+                className="h-11 w-full sm:h-9 sm:w-auto"
+              >
                 <Plus className="mr-1.5 h-4 w-4" />
-                New
+                Create deck
               </Button>
             </div>
-          ) : visible.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
-              <Search className="h-5 w-5 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">
-                No sets match your filters
-              </p>
-              <p className="max-w-sm text-xs text-muted-foreground">
-                Try a different search or switch the visibility filter.
-              </p>
+          </div>
+
+          {/* Search + filters */}
+          <div className="mt-4 flex flex-col gap-2.5">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search sets by name, topic, or description"
+                className="h-11 pl-9 text-base sm:h-9 sm:text-sm"
+                style={{ fontSize: "16px" }}
+                aria-label="Search flashcard sets"
+              />
             </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {visible.map((set) => (
-                <SetRow
-                  key={set.id}
-                  set={set}
-                  onOpen={open}
-                  onStudy={study}
-                  onFastFire={fastFire}
-                  busy={isPending && navigatingId === set.id}
-                />
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {VISIBILITY_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setVisibility(f.id)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    "min-h-10 sm:min-h-0",
+                    visibility === f.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {f.label}
+                </button>
               ))}
+
+              {folders.length > 0 ? (
+                <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                  <FolderTree className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  {folders.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => toggleFolder(f.id)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                        "min-h-10 sm:min-h-0",
+                        folderIds.has(f.id)
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-muted text-muted-foreground hover:bg-accent",
+                      )}
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                  {folderIds.size > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setFolderIds(new Set())}
+                      className="inline-flex min-h-10 min-w-10 items-center justify-center gap-0.5 rounded-full px-1.5 py-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:min-w-0"
+                      aria-label="Clear folder filter"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
-          )}
+          </div>
+
+          {/* Body */}
+          <div className="mt-4">
+            {loading || sets === null ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
+                <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                <p className="text-sm font-medium text-foreground">
+                  Couldn&apos;t load your flashcard sets
+                </p>
+                <p className="max-w-md text-xs text-muted-foreground">
+                  {error}
+                </p>
+              </div>
+            ) : sets.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <BookOpen className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  No flashcard sets yet
+                </p>
+                <p className="max-w-sm text-xs text-muted-foreground">
+                  Generate a set from any topic in chat, or use New to create
+                  one. It will show up here, ready to study.
+                </p>
+                <Button onClick={newSet} className="mt-2">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  New
+                </Button>
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
+                <Search className="h-5 w-5 text-muted-foreground" />
+                <p className="text-sm font-medium text-foreground">
+                  No sets match your filters
+                </p>
+                <p className="max-w-sm text-xs text-muted-foreground">
+                  Try a different search or switch the visibility filter.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {visible.map((set) => (
+                  <SetRow
+                    key={set.id}
+                    set={set}
+                    onOpen={open}
+                    onStudy={study}
+                    onFastFire={fastFire}
+                    busy={isPending && navigatingId === set.id}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

@@ -12,7 +12,6 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Play,
   Layers,
   AlertCircle,
@@ -39,6 +38,7 @@ import {
   Printer,
   Images,
   Loader2,
+  Ellipsis,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
@@ -90,7 +90,10 @@ import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
 import { IllustrateSetWindow } from "./IllustrateSetWindow";
-import { useIllustrateSetRun, type IllustrateCardState } from "./illustrateSetRun";
+import {
+  useIllustrateSetRun,
+  type IllustrateCardState,
+} from "./illustrateSetRun";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
@@ -99,6 +102,14 @@ import { ConvertContentDialog } from "@/features/education/convert/ConvertConten
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import { ClassPicker } from "@/features/education/classes/components/ClassPicker";
 import { OfflineDeckButton } from "./OfflineDeckButton";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -161,6 +172,7 @@ function CardPeek({
   selectable = false,
   selected = false,
   onToggleSelected,
+  onOpen,
 }: {
   card: CardWithDetails;
   index: number;
@@ -169,6 +181,8 @@ function CardPeek({
   selectable?: boolean;
   selected?: boolean;
   onToggleSelected?: () => void;
+  /** Opens the canonical flashcard window when the tile is not in selection mode. */
+  onOpen?: () => void;
 }) {
   const hasHelper = card.details.some((d) => d.kind === "helper");
   const hasExample = card.details.some((d) => d.kind === "example");
@@ -179,21 +193,43 @@ function CardPeek({
   // One faces bridge for every flip kind (basic/cloze/formula) — the peek shows
   // exactly what study will show.
   const faces = kind === CARD_KIND.matching ? null : studyFaces(card);
+  const interactive = selectable || !!onOpen;
+  const activate = () => {
+    if (selectable) onToggleSelected?.();
+    else onOpen?.();
+  };
 
   return (
     <div
       className={cn(
         "flex flex-col rounded-lg border bg-card p-3",
-        selectable && "cursor-pointer transition-colors",
+        interactive &&
+          "cursor-pointer transition-colors hover:border-primary/50",
         selected
           ? "border-primary ring-1 ring-primary"
           : selectable
             ? "border-border hover:border-primary/50"
             : "border-border",
       )}
-      onClick={selectable ? onToggleSelected : undefined}
-      role={selectable ? "button" : undefined}
+      onClick={interactive ? activate : undefined}
+      onKeyDown={
+        interactive
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                activate();
+              }
+            }
+          : undefined
+      }
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
       aria-pressed={selectable ? selected : undefined}
+      aria-label={
+        selectable
+          ? `Select card ${index + 1} to merge`
+          : `Open card ${index + 1}`
+      }
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
@@ -315,6 +351,8 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [isPending, startTransition] = useTransition();
   const [enhanceOpen, setEnhanceOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [studyModesOpen, setStudyModesOpen] = useState(false);
+  const [deckToolsOpen, setDeckToolsOpen] = useState(false);
   // WP3 gap 5 — card merge selection.
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -390,8 +428,12 @@ export function SetDetailView({ setId }: { setId: string }) {
   // billing.usage_ledger itself, so this surface REFRESHES the meter instead of
   // calling commit() — a client commit here would double-count the batch.
   const illustrate = useEntitlementGuard("education.card_image_source");
-  const { run: illustrateRun, start: startIllustrate, setReview, reset: resetIllustrate } =
-    useIllustrateSetRun();
+  const {
+    run: illustrateRun,
+    start: startIllustrate,
+    setReview,
+    reset: resetIllustrate,
+  } = useIllustrateSetRun();
   const [illustrateOpen, setIllustrateOpen] = useState(false);
   const openCardWindow = useOpenFlashcardItemWindow();
 
@@ -419,8 +461,7 @@ export function SetDetailView({ setId }: { setId: string }) {
     verdict: "accepted" | "rejected",
   ) => {
     const face = (card.result?.face === "back" ? "back" : "front") as
-      | "front"
-      | "back";
+      "front" | "back";
     const res = await fcService.reviewCardImage(card.cardId, face, verdict, {
       surface: "set_illustrate_review",
     });
@@ -501,20 +542,22 @@ export function SetDetailView({ setId }: { setId: string }) {
     });
   };
 
-  return (
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-        {/* Back */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4 h-8 px-2 text-xs text-muted-foreground"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back
-        </Button>
+  const openCard = (card: CardWithDetails) => {
+    const faces = studyFaces(card);
+    const images = getCardImages(card);
+    openCardWindow({
+      front: faces ? faces.front : card.front,
+      back: faces ? faces.back : card.back,
+      title: data?.set.name ?? "Flashcard",
+      frontImage: images.front ?? null,
+      backImage: images.back ?? null,
+    });
+  };
 
+  return (
+    <div className="h-full w-full overflow-y-auto bg-textured">
+      <EducationToolHeader title={data?.set.name ?? "Flashcard set"} />
+      <div className="mx-auto max-w-6xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
         {loading ? (
           <>
             <Skeleton className="h-10 w-64 rounded-lg" />
@@ -545,13 +588,13 @@ export function SetDetailView({ setId }: { setId: string }) {
         ) : (
           <>
             {/* Header */}
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
+            <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-3">
+              <div className="flex min-w-0 items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Layers className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                  <h1 className="text-[clamp(1.25rem,5.5vw,1.75rem)] font-semibold leading-tight tracking-tight text-foreground">
                     {data.set.name}
                   </h1>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -576,7 +619,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                     ) : null}
                   </div>
                   {data.set.description ? (
-                    <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                       {data.set.description}
                     </p>
                   ) : null}
@@ -625,7 +668,7 @@ export function SetDetailView({ setId }: { setId: string }) {
               {/* Action row — the hub: every path you can take with this set.
                   Study / Fast Fire are live; Edit graduates the view→edit split
                   (ROUTING.md); Enhance is the agentic-expansion placeholder. */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="hidden flex-wrap items-center gap-2 md:flex">
                 <Button
                   onClick={() =>
                     navigate("study", `${EDU_BASE}/${setId}/study`)
@@ -819,6 +862,66 @@ export function SetDetailView({ setId }: { setId: string }) {
               </div>
             </div>
 
+            {/* Mobile is a study launchpad, not a desktop action matrix squeezed
+                into one column. The two fastest paths stay visible; every
+                secondary capability remains reachable in a stable bottom sheet. */}
+            <div className="mt-4 space-y-2 md:hidden">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="lg"
+                  className="h-12"
+                  onClick={() =>
+                    navigate("study", `${EDU_BASE}/${setId}/study`)
+                  }
+                  disabled={isPending || data.cards.length === 0}
+                >
+                  <Play className="mr-2 h-5 w-5" />
+                  Study
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="h-12"
+                  onClick={() =>
+                    navigate("fastfire", `/education/fastfire?set=${setId}`)
+                  }
+                  disabled={isPending || data.cards.length === 0}
+                >
+                  <Zap className="mr-2 h-5 w-5" />
+                  Fast Fire
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => setStudyModesOpen(true)}
+                  disabled={data.cards.length === 0}
+                >
+                  <GraduationCap className="mr-2 h-4 w-4" />
+                  Study modes
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => setDeckToolsOpen(true)}
+                >
+                  <Ellipsis className="mr-2 h-4 w-4" />
+                  Deck tools
+                </Button>
+              </div>
+              {viewOnly && (
+                <DuplicateToEditButton
+                  resourceType="fc_set"
+                  resourceId={setId}
+                  returnPath={`${EDU_BASE}/${setId}`}
+                  label="Make an editable copy"
+                  size="default"
+                  variant="default"
+                />
+              )}
+            </div>
+
             {/* Reverse lineage — study artifacts made from this deck. */}
             <div className="mt-3">
               <GeneratedFromChips
@@ -831,7 +934,7 @@ export function SetDetailView({ setId }: { setId: string }) {
             {/* Deck mastery — Brainscape's retention hook: where you stand
                 across the whole deck, in the shared mastery vocabulary. */}
             {data.cards.length > 0 && (
-              <div className="mt-4 rounded-xl border border-border bg-card p-3">
+              <div className="mt-4 rounded-xl border border-border bg-card p-3 sm:p-4">
                 <DeckMasteryBar
                   masteries={data.cards.map((c) => masteryByCard[c.id])}
                 />
@@ -890,7 +993,8 @@ export function SetDetailView({ setId }: { setId: string }) {
                             disabled={selectedIds.size < 2}
                           >
                             <Merge className="mr-1.5 h-3.5 w-3.5" />
-                            Merge {selectedIds.size >= 2 ? selectedIds.size : ""}
+                            Merge{" "}
+                            {selectedIds.size >= 2 ? selectedIds.size : ""}
                           </Button>
                           <Button
                             size="sm"
@@ -940,6 +1044,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                             return nextIds;
                           })
                         }
+                        onOpen={() => openCard(card)}
                       />
                     ))}
                   </div>
@@ -977,6 +1082,186 @@ export function SetDetailView({ setId }: { setId: string }) {
               />
             )}
             <illustrate.Paywall />
+
+            <Drawer open={studyModesOpen} onOpenChange={setStudyModesOpen}>
+              <DrawerContent className="max-h-[85dvh]">
+                <DrawerHeader>
+                  <DrawerTitle>Choose how to study</DrawerTitle>
+                  <DrawerDescription>
+                    Pick the practice style that fits this session.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="grid gap-2 overflow-y-auto px-4 pb-safe">
+                  {OTHER_STUDY_MODES.map((mode) => (
+                    <Button
+                      key={mode.key}
+                      variant="ghost"
+                      className="h-auto min-h-14 justify-start px-3 py-2 text-left"
+                      onClick={() =>
+                        navigate(mode.key, `${EDU_BASE}/${setId}/${mode.path}`)
+                      }
+                    >
+                      <mode.icon className="mr-3 h-5 w-5 shrink-0 text-primary" />
+                      <span className="min-w-0">
+                        <span className="block font-medium">{mode.label}</span>
+                        <span className="block whitespace-normal text-xs font-normal text-muted-foreground">
+                          {mode.description}
+                        </span>
+                      </span>
+                    </Button>
+                  ))}
+                  {VOICE_STUDY_MODES.map((mode) => (
+                    <Button
+                      key={mode.key}
+                      variant="ghost"
+                      className="h-auto min-h-14 justify-start px-3 py-2 text-left"
+                      onClick={() => navigate(mode.key, mode.href(setId))}
+                    >
+                      <mode.icon className="mr-3 h-5 w-5 shrink-0 text-primary" />
+                      <span className="min-w-0">
+                        <span className="block font-medium">{mode.label}</span>
+                        <span className="block whitespace-normal text-xs font-normal text-muted-foreground">
+                          {mode.description}
+                        </span>
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            <Drawer open={deckToolsOpen} onOpenChange={setDeckToolsOpen}>
+              <DrawerContent className="h-[92dvh]">
+                <DrawerHeader>
+                  <DrawerTitle>Deck tools</DrawerTitle>
+                  <DrawerDescription>
+                    Organize, improve, save, and share this deck.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 pb-safe">
+                  <section className="space-y-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Manage
+                    </h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          className="h-11 justify-start"
+                          onClick={() =>
+                            navigate("edit", `${EDU_BASE}/${setId}/edit`)
+                          }
+                        >
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        className="h-11 justify-start"
+                        onClick={() =>
+                          navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
+                        }
+                      >
+                        <History className="mr-2 h-4 w-4" /> History
+                      </Button>
+                      <OfflineDeckButton
+                        setId={setId}
+                        disabled={data.cards.length === 0}
+                        className="h-11 justify-start"
+                      />
+                      <Button
+                        variant="outline"
+                        className="h-11 justify-start"
+                        onClick={() => {
+                          setDeckToolsOpen(false);
+                          handlePrint();
+                        }}
+                        disabled={data.cards.length === 0}
+                      >
+                        <Printer className="mr-2 h-4 w-4" /> Print
+                      </Button>
+                    </div>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Export
+                    </h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["csv", "anki", "md", "json"] as const).map(
+                        (format) => (
+                          <Button
+                            key={format}
+                            variant="outline"
+                            className="h-11 justify-start"
+                            onClick={() => exportDeck(format)}
+                            disabled={data.cards.length === 0}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            {DECK_EXPORT_FILE[format].label}
+                          </Button>
+                        ),
+                      )}
+                    </div>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Improve and reuse
+                    </h2>
+                    <div className="grid gap-2">
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          className="h-11 justify-start"
+                          onClick={() => {
+                            setDeckToolsOpen(false);
+                            setEnhanceOpen(true);
+                          }}
+                          disabled={data.cards.length === 0}
+                        >
+                          <Expand className="mr-2 h-4 w-4" /> Enhance cards
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          className="h-11 justify-start"
+                          disabled={
+                            data.cards.length === 0 ||
+                            illustrate.isChecking ||
+                            illustrateRun.phase === "starting" ||
+                            illustrateRun.phase === "running"
+                          }
+                          onClick={() => {
+                            setDeckToolsOpen(false);
+                            void illustrate.guard(runIllustrate);
+                          }}
+                        >
+                          <Images className="mr-2 h-4 w-4" /> Illustrate this
+                          set
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <EntitlementMeter capability="education.card_image_source" />
+                      )}
+                      <Button
+                        variant="outline"
+                        className="h-11 justify-start"
+                        onClick={() => {
+                          setDeckToolsOpen(false);
+                          setConvertOpen(true);
+                        }}
+                        disabled={data.cards.length === 0}
+                      >
+                        <Boxes className="mr-2 h-4 w-4" /> Convert to another
+                        study aid
+                      </Button>
+                    </div>
+                  </section>
+                </div>
+              </DrawerContent>
+            </Drawer>
 
             <EnhanceSetDialog
               open={enhanceOpen}
