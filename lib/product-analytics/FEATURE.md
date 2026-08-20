@@ -23,6 +23,10 @@ acquisition history. Collection predating this feature is unknown and stays
 unknown—admin UI labels the field **First observed page**, never invents a
 historical landing page.
 
+Localhost and loopback referrers are classified as `local_test`. The admin
+acquisition surface labels them **Local / agent test** so development and agent
+traffic is not mistaken for acquired-user behavior.
+
 `InternalGoogleAnalytics` is mounted by the `(core)` server layout only for a
 signed-in `super_admin`. It does not load for guests, ordinary customers, or a
 direct Education request, and it refuses to send Education page views after a
@@ -40,6 +44,8 @@ Keywords, and Settings page titles.
 
 ## Change log
 
+- 2026-08-19 — Classified localhost and loopback referrers as local/agent test
+  traffic in acquisition reporting.
 - 2026-08-19 — Added durable first-touch acquisition capture over the canonical
   guest registry, with sanitized URLs and conversion continuity.
 - 2026-08-15 — Added super-admin-only page-view collection for AI Matrx's own

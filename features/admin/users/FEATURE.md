@@ -67,7 +67,11 @@ request; health/liveness exclusions are deliberate), `runtime.global_request`
 + `runtime.global_execution` (runtime-admitted work, nested status, meters, and
 cost), `public.system_error` (AI Dream 5xx plus persisted frontend captures),
 and attributed `public.app_log` warnings/errors. It states an engagement verdict,
-feature usage, failures, runtime work/cost, and the request-ID chronology.
+feature usage, failures, runtime work/cost, and the request-ID chronology. The
+Journey door opens the canonical non-blocking `SidePanelSurface`; secondary
+telemetry failures appear as source warnings without hiding successfully loaded
+history. Localhost and loopback referrers are visibly classified as local/agent
+testing, not ordinary acquired traffic.
 
 ### Deferred observability
 
@@ -142,7 +146,8 @@ cost. The owned ledgers above remain the canonical everyday view.
 ## Change log
 
 - `2026-08-19` — Reused the already-fetched Supabase Auth creation timestamp and anonymous flag in Redux so guests and first-seven-day accounts retain all frontend diagnostic tiers without a database boolean, expiry job, or additional query.
-- `2026-08-19` — Added the per-identity Journey sheet: feature usage, owned AI Dream HTTP requests, runtime request/execution and cost, frontend/server errors, server warning/error context, a dropoff verdict, and a chronological forensic trail. External Vercel/Supabase log ingestion is explicitly deferred.
+- `2026-08-19` — Replaced the blocking Journey sheet with the canonical non-blocking Matrx side panel, stopped row-click propagation, preserved partial journey history when secondary telemetry is unavailable, and marked localhost/loopback referrers as local/agent testing.
+- `2026-08-19` — Added the per-identity Journey panel: feature usage, owned AI Dream HTTP requests, runtime request/execution and cost, frontend/server errors, server warning/error context, a dropoff verdict, and a chronological forensic trail. External Vercel/Supabase log ingestion is explicitly deferred.
 - `2026-08-19` — Added User Acquisition: real guest/account/conversion state, bot/browser classification, created/first/last activity, first-touch page/referrer/UTM context, IP/client details, and canonical all-time stored LLM cost. Reused `guest_executions`, `auth.users`, `AdminUserRef`, and `admin_user_usage_rollup`; no new table.
 - `2026-08-13` — The Accounts roster is now agent-READABLE: `AccountsTableClient` mounts a `SurfaceRuntimeProvider` for `matrx-admin/users` and emits 20 surface values through the new builder `features/admin/users/lib/admin-users-scope.ts`. Two behavioural notes for anyone editing this file. **(1) `MatrxDataTable` is now in `controlled-local` mode** — search, column filters, sort and page live in `queryState` here, not inside the table (the table still does the filtering). That is what lets the page report how many accounts match the admin's live query; `visible_user_count` is computed by calling the table's own `filterAndSortRows`, so it cannot drift from what the table renders. Keep it that way rather than counting rows by hand. **(2) `getScope` must stay SYNCHRONOUS** — the Surface Context window polls it every 400ms while open, so a fetching emitter would hammer `/api/admin/users` behind an idle debug panel; every emitted value is a derivation over state this component has already rendered. Privacy posture is deliberate and documented in the manifest header: roster-wide values are counts only, `roster_sample` is capped at 10 and carries **no email addresses**, and only the account focused via `?user=` ships admin-relevant fields. **No agent write targets, by design** — admin level, magic links, password resets, email/DM sending and the onboarding toggle are all permissions / credentials / outbound communication and stay human; the ruling is argued in full in `admin-users.manifest.ts`.
 - `2026-08-09` — No Dead Ends sweep: a named user is now reachable. Accounts and `…/users/admins` both honour `?user=<id>`, and `AdminUserRef` makes the name itself a link (Door #1) with "Account" and "Admin level" joining its menu. Closes FOUND_DEFECTS D138's most-hit symptom; a canonical `/users/<id>` route and a `user` registry token remain open.
