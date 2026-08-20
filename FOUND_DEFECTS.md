@@ -17,6 +17,38 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D216 — the admin AI-Tasks page reads a shim that never queries Postgres; no 1:1 live replacement exists (2026-08-20)
+
+`features/ai-runs/services/ai-tasks-service.ts` is the last caller of
+`fromDeprecatedTable` (`utils/supabase/deprecated-tables.ts`). That shim does not query
+Postgres at all — it resolves `{data: null, error: DEPRECATED_TABLE}` and `console.error`s —
+so **every one of its 13 methods is dead**, and `/administration/ai/ai-tasks`
+(`app/(admin)/administration/ai/ai-tasks/page.tsx` → `useAiTasks` → this service) can only ever
+render an empty table. Same silent failure mode as the org Workflows tile fixed in the same
+session: empty list reads as "no data", loud only in the browser console.
+
+Not fixed here because there is **no obvious replacement** — verified live against
+`db.matrxserver.com`, not just from generated types:
+
+- `agent.ai_tasks` → 404 `PGRST205` (does not exist; this was a wrong first guess of mine)
+- `public.ai_tasks` → 404 `PGRST205`, hint suggests `public.ai_runs_summary`
+- `graveyard.ai_tasks` → 401, `permission denied for schema graveyard` (browser cannot read it)
+- generated types carry `ai_tasks` **only** under `graveyard`, and it is the only relation in the
+  whole schema carrying the `time_to_first_token` / `tokens_total` telemetry shape this code maps.
+  `graveyard.ai_runs` (its parent) is dead too.
+
+Candidate: `chat.agent_task` / `chat.agent_run` — both exist and are browser-reachable (200).
+But the shapes differ from `AiTask` (`features/ai-runs/types/aiRunTypes.ts`) and
+`mapAiTaskRow` (`features/ai-runs/utils/db-row-mappers.ts`, typed
+`Database["graveyard"]["Tables"]["ai_tasks"]["Row"]`), so this is a re-modelling of the admin
+page against a different runtime, not a repoint.
+
+**Decision needed:** is per-AI-call telemetry now `chat.agent_task`, or somewhere else
+(runtime/hindsight)? Then either re-model the page against it, or — per WE DON'T DO LEGACY —
+delete `features/ai-runs/**`, the admin route, and `utils/supabase/deprecated-tables.ts` outright.
+Note the shim file exists **only** for this caller now: the other 12 names in
+`DEPRECATED_TABLE_NAMES` have zero callers, so closing this entry deletes the whole shim.
+
 ### D215 — aidream continuation runs have no per-turn variable/context channel to deliver a NEW visible message (2026-08-18)
 
 `features/agents/war-room-master-tools/handlers/message-thread.handler.ts` (fork-mode branch,
