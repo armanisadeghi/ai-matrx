@@ -5,7 +5,9 @@
 -- components/mardown-display/blocks/search-kinds/). These rows satisfy the
 -- render leg of the activation dual gate; activation itself runs via aidream
 -- scripts/seed_search_kind_family.py after these land.
--- Idempotent: one row per (kind, web, output, bundled), insert-if-absent.
+-- Idempotent: preserve any existing default for (kind, web, output), regardless
+-- of source. The live unique constraint owns that identity; an existing DB
+-- component must continue to win instead of colliding with a bundled fallback.
 
 with family(kind) as (
   values
@@ -29,6 +31,5 @@ where kd.deleted_at is null
     where kc.kind_definition_id = kd.id
       and kc.platform = 'web'
       and kc.role = 'output'
-      and kc.source = 'bundled'
       and kc.deleted_at is null
   );
