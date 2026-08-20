@@ -13,6 +13,14 @@
 > loudly, has no override, and pauses campaigns with their identity. But it governs **one lane and
 > one channel while the platform sends on many**:
 >
+> 🚨 **The number that says it best: an independent no-context sweep found ~45 code paths that put
+> a message in front of a human. TWO consult the authority** — and both are the CRM outreach lane
+> below. The rule that no caller may reimplement its checks is **enforced by comment, not by
+> mechanism**: no lint, no chokepoint, no trigger on the outbound tables, no grant structure that
+> forces the RPC. (`tool.definition.side_effect_class = 'sends_to_human'` is the one piece of
+> machinery that could carry it, and it is purely descriptive.) There is also **no `middleware.ts`**
+> — `proxy.ts` excludes `/api` first, so every route is on its own.
+>
 > - The authority is **email-shaped**, so every SMS and voice path bypasses it *by necessity*.
 >   Called against a live phone medium it refuses with "no working mail exchanger".
 > - The authority **reads columns the gated customer can write**. `authenticated` holds UPDATE on
