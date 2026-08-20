@@ -86,6 +86,9 @@ full snapshot refresh.
 
 ### Adding a metered capability
 
+0. **Check it against D-5 first** (above): is this metering AI generation / depth /
+   convenience, or is it metering the act of practicing? The second is forbidden, and
+   `pnpm test features/entitlements` will tell you so.
 1. Add an entry to `CAPABILITY_REGISTRY` in [`registry.ts`](./registry.ts) (`enforced: false`).
 2. Consumers call `useEntitlement("<your.capability>")`. Done — permissive until enforcement.
 3. To ENFORCE: land the `billing.capability_limit` row + the aidream-side spend re-check, get
@@ -97,6 +100,8 @@ full snapshot refresh.
 |---|---|
 | [`types.ts`](./types.ts) | The verdict shape (`EntitlementResult`), tiers, reasons. Stable contract. |
 | [`registry.ts`](./registry.ts) | Capability registry — the single source of truth for metered/gated actions. |
+| [`__tests__/`](./__tests__) | The invariant guard rails: D-5 (core practice never metered), a visible limit must decrement, a spend path fails closed. |
+| [`__tests__/studySpineVocabulary.ts`](./__tests__/studySpineVocabulary.ts) | Test-only. Derives the core-practice vocabulary by scanning the study spine's declared modes, so D-5 covers modes that do not exist yet. |
 | [`hooks.ts`](./hooks.ts) | `useEntitlement(capability)` (day-1 read hook) + `useEntitlementConsume(capability)` → `commit()` (consume-on-success primitive). |
 | [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `consumeEntitlement` (records usage, never short-circuits on `enforced:false`) + `usageFromConsume` + `fetchEntitlementSnapshot` (boot). SQL resolver: `migrations/billing_plan_system.sql`, hardened by `billing_resolve_capability_optional_plan_guard.sql`. |
 | [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. `setCapabilityUsage` patches one capability after a consume so the meter re-renders. |
@@ -182,6 +187,55 @@ were zero sending identities. `minTier: "trial"` (not premium) — the abuse fil
 wants an *identified* account. The current enforced plan dimensions are recorded
 in `PLAN_MODEL.md`; this page does not keep a second list. Rationale:
 [`docs/handoffs/outreach-system.md`](../../docs/handoffs/outreach-system.md) §5.6.
+
+## 🚨 D-5 — THE CORE-PRACTICE LAW: core practice is never metered
+
+> **Source:** Arman, education program law **D-5** — recorded in
+> [`common-docs/projects/education-platform/STATE.md`](../../../common-docs/projects/education-platform/STATE.md)
+> §4.1 E. Restated: **unlimited studying, review and all study modes stay free
+> forever; gating applies to DEPTH and CONVENIENCE only.**
+
+**What the law forbids.** No capability may meter or gate the act of practicing:
+studying, reviewing, recording an attempt, opening a deck, or running a study
+session **in any mode** — classic review, Learn, Write, Match, Test, FastFire,
+adaptive/due review, weak-area drill, spoken practice, games, or any mode that
+ships after this line was written. Not by a usage meter, and not by a `minTier`
+above `free` — a tier gate locks practice just as effectively as a cap, with no
+usage number for anyone to notice it by.
+
+**What the law permits.** Metering the **AI GENERATION** that produces the
+material, and gating **convenience/depth**. `education.quiz_generate` is legal;
+`education.quiz_attempt` is not. Generating a deck is metered; studying that deck
+forever is not. This is the same line the metering model draws below ("meter AI
+generation, NEVER saved content") — D-5 is that principle stated as a hard
+invariant instead of a design intention.
+
+**Why it is written here.** Until 2026-08-20 the law held *only because nobody
+had added such a capability*. There was no invariant, no test, and no line in
+this file — nothing stopped a future agent registering `education.study_session`
+and metering the act of studying. That is the whole reason the guard exists.
+
+**The guard rail.**
+[`__tests__/core-practice-never-metered.test.ts`](./__tests__/core-practice-never-metered.test.ts)
+fails if any capability in `CAPABILITY_REGISTRY` meters core practice — whether
+registered, enforced, or tier-gated. Its forbidden vocabulary is **derived, not
+hand-typed**: [`__tests__/studySpineVocabulary.ts`](./__tests__/studySpineVocabulary.ts)
+scans the study spine's own source for every `study_session.mode` the platform
+can write (the [`features/education/study/modes.ts`](../education/study/modes.ts)
+register, `const *_MODE / *_METHOD` constants, `createSession({ mode })` literals,
+and `*_MODES` arrays), so **a study mode that ships tomorrow is covered with no
+edit to the test.** The scanner throws rather than narrowing silently if those
+patterns stop matching.
+
+**If that test fails, do not loosen it.** Meter the generation that produced the
+material instead, or take the capability to Arman — D-5 is his ruling and only he
+can change it.
+
+**Not the same question as enforcement.** Whether the *legal* education
+capabilities get enforced (and at what free-tier numbers) is an open owner
+decision — STATE.md Q2, with staged numbers already sitting in
+`billing.capability_limit` for 15 of the 16. D-5 is orthogonal: it says which
+capabilities may exist at all, not which of the existing ones are switched on.
 
 ## Metering model (Arman decisions, 2026-07-07)
 
@@ -278,6 +332,10 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
 
 ## Invariants
 
+- 🚨 **CORE PRACTICE IS NEVER METERED (D-5).** No capability may meter or tier-gate
+  studying, reviewing, recording an attempt, opening a deck, or running a study session in
+  any mode. Guarded by `__tests__/core-practice-never-metered.test.ts` over a vocabulary
+  derived from the study spine. Full law + rationale above.
 - **Features never read plan/subscription/usage tables directly.** They ask the resolver
   (`useEntitlement` / `checkEntitlement`). One central resolver, modeled on `iam.has_access`.
 - **Server re-check is truth on every enforced action.** UI reads may fail open; the spend path
@@ -398,6 +456,22 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-08-20** — **The first tests this feature has ever had, and D-5 written down.**
+  `features/entitlements/__tests__/` did not exist, in the most invariant-heavy feature in
+  the stack (STATE.md §4.1 E item 16). Added: (1) **D-5, the core-practice law** — now a named
+  law in this file with its source, guarded by `core-practice-never-metered.test.ts` over a
+  vocabulary **derived** from the study spine (`studySpineVocabulary.ts` scans declared
+  `study_session.mode` tokens), so a study mode shipped tomorrow is covered without editing the
+  test; (2) **a visible limit must decrement** — `consumeEntitlement` round-trips even while
+  `enforced: false`, and the consume result reaches the rendered verdict through the binding
+  window; (3) **a spend path fails closed** — an enforced capability refuses on resolver error,
+  no data, throw, and reject, while an un-enforced one stays permissive with no round trip.
+  Enabling change: the duplicated, drifted `MODE_LABEL` maps in `sessionListDisplay.ts` and
+  `SessionDetailView.tsx` were converged into one register,
+  [`features/education/study/modes.ts`](../education/study/modes.ts) (which also picked up the
+  eight modes both copies were missing). **No enforcement was flipped** — the free-tier numbers
+  remain an open owner decision (STATE.md Q2).
 
 - **2026-08-15** — **Fixed SQLSTATE 55000 in the shared plan resolver.**
   `billing_plan_system.sql` declared `v_lim record`, assigned it only for a

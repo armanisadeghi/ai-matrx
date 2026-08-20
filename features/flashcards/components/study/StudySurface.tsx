@@ -17,6 +17,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeck } from "./StudyDeck";
 import { FlashcardStudyWindowDevTrigger } from "./FlashcardStudyWindowDevTrigger";
+import { OfflineDeckButton } from "../set-detail/OfflineDeckButton";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { getVoiceTestForCard } from "./voiceTestExtra";
 
@@ -34,11 +35,21 @@ export function StudySurface({ setId }: { setId: string }) {
           title={title}
           backHref={`${EDU_BASE}/${setId}`}
           actions={
-            <FlashcardStudyWindowDevTrigger
-              setId={setId}
-              title={title}
-              disabled={study.loading || study.cards.length === 0}
-            />
+            <div className="flex items-center gap-2">
+              {/* Download where the learner actually is when they realise
+                  they're about to lose signal — the SAME control as the deck
+                  page, not a second variant. */}
+              <OfflineDeckButton
+                setId={setId}
+                size="sm"
+                disabled={study.loading || study.cards.length === 0}
+              />
+              <FlashcardStudyWindowDevTrigger
+                setId={setId}
+                title={title}
+                disabled={study.loading || study.cards.length === 0}
+              />
+            </div>
           }
         />
       </PageHeader>

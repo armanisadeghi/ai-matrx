@@ -5,19 +5,10 @@
 
 import type { SessionAttemptSummary, StudySessionRow } from "../types";
 
-const MODE_LABEL: Record<string, string> = {
-  fast_fire: "Fast Fire",
-  classic_review: "Study",
-  flashcards: "Study",
-  quiz: "Quiz",
-  practice_test: "Practice Test",
-  adaptive: "Adaptive",
-};
-
-export function sessionModeLabel(mode: string | null): string {
-  if (!mode) return "Session";
-  return MODE_LABEL[mode] ?? mode.replace(/_/g, " ");
-}
+// The mode vocabulary lives in ONE register (`../modes`) — this file used to
+// carry a hand-copied, drifted duplicate of it. Re-exported so every existing
+// importer of `sessionModeLabel` keeps working unchanged.
+export { sessionModeLabel } from "../modes";
 
 export function readSessionSettings(settings: StudySessionRow["settings"]): {
   cardCount?: number;

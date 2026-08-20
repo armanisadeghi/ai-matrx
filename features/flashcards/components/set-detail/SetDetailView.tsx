@@ -98,6 +98,7 @@ import { serializeDeck } from "@/features/education/media/audio/audioBrief";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import { ClassPicker } from "@/features/education/classes/components/ClassPicker";
+import { OfflineDeckButton } from "./OfflineDeckButton";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -764,6 +765,14 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <Printer className="mr-1.5 h-4 w-4" />
                   Print
                 </Button>
+                {/* Download for offline — the control `OfflineStudyPanel`
+                    names in its copy. Distinct from Export beside it: Export
+                    hands you a FILE for another app, Download keeps THIS deck
+                    studiable in THIS app with no connection. */}
+                <OfflineDeckButton
+                  setId={setId}
+                  disabled={data.cards.length === 0}
+                />
                 {canEdit && (
                   <Button
                     variant="outline"

@@ -434,6 +434,15 @@ export function FlashcardsHome() {
       onPress: () => goTo("__progress__", `${EDU_BASE}/progress`),
     },
     {
+      // THE DOOR LAW — /education/offline was reachable only by the service
+      // worker serving it on a failed navigation, so a learner could never
+      // open it deliberately to check what they have downloaded or whether
+      // their answers have synced.
+      icon: "CloudOff",
+      label: "Downloaded & offline",
+      onPress: () => goTo("__offline__", "/education/offline"),
+    },
+    {
       icon: "FileSearch",
       label: "New deck from a document",
       onPress: () => goTo("__from_source__", `${EDU_BASE}/new/from-source`),

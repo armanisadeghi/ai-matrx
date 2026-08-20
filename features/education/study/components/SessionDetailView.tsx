@@ -53,15 +53,7 @@ import {
   parseSessionReview,
 } from "../utils/parseSessionReview";
 import { readGradeScore } from "../utils/gradeScore";
-
-const MODE_LABEL: Record<string, string> = {
-  fast_fire: "Fast Fire",
-  classic_review: "Study",
-  flashcards: "Study",
-  quiz: "Quiz",
-  practice_test: "Practice Test",
-  adaptive: "Adaptive",
-};
+import { sessionModeLabel } from "../modes";
 
 const RESULT_META: Record<
   string,
@@ -269,9 +261,7 @@ export function SessionDetailView({
   };
 
   const session = data?.session;
-  const modeLabel = session?.mode
-    ? (MODE_LABEL[session.mode] ?? session.mode.replace(/_/g, " "))
-    : "Session";
+  const modeLabel = sessionModeLabel(session?.mode);
   const coachReview = parseSessionReview(session?.session_review);
   const coachReviewPending = isAwaitingCoachReview(
     session?.mode,

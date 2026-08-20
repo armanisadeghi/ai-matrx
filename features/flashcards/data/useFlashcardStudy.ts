@@ -23,6 +23,8 @@ import { toast } from "@/lib/toast";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { readOfflineDeck } from "./offlineDeck";
+import { isNetworkFailure } from "@/features/education/study/offline/recordAttemptOffline";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { FcSetRow, CardWithDetails } from "./types";
@@ -167,6 +169,12 @@ export function useFlashcardStudy(
   // Whose attempt — the offline outbox is scoped per user so one device's
   // queue can never flush under another login.
   const userId = useAppSelector(selectUserId) ?? "";
+  // Read inside the load effect (the offline snapshot is scoped per learner)
+  // via a ref rather than a dependency ON PURPOSE: adding `userId` to the load
+  // effect's deps makes the deck reload the moment auth hydrates, which opens
+  // a SECOND study_session for one sitting and abandons the first — exactly
+  // the session-truth defect the close path below exists to remove.
+  const userIdRef = useRef(userId);
   const [session, setSession] = useState<StudySessionRow | null>(null);
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
@@ -192,6 +200,12 @@ export function useFlashcardStudy(
     currentIndexRef.current = currentIndex;
     masteredIdsRef.current = masteredIds;
   }, [cards, currentIndex, masteredIds]);
+
+  // Declared BEFORE the load effect so it commits first on mount — the load
+  // effect's offline fallback reads it.
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   // Load the set, its cards, and the current user's existing mastery per card.
   // All state writes happen inside the async body so none fire synchronously in
@@ -232,14 +246,48 @@ export function useFlashcardStudy(
       // dynamic route, no key, so the hook never unmounts.)
       setResultsByCard({});
 
-      const setRes = await fcService.getSetWithCards(setId);
+      // THE OFFLINE READ PATH. A deck the learner downloaded must OPEN with
+      // no connection — that is the entire point of the download, and until
+      // this branch existed `getOfflineDeck` had zero callers, so a downloaded
+      // deck still showed "Failed to load flashcard set" on a train.
+      //
+      // Offline-first when the device says it is offline (skip a fetch that
+      // cannot succeed), and offline-as-fallback when the fetch fails for a
+      // NETWORK reason. A server REFUSAL (RLS, deleted set) is never masked by
+      // the cache — showing stale cards for a deck we just lost access to
+      // would be worse than the error.
+      const offlineFirst =
+        typeof navigator !== "undefined" && navigator.onLine === false;
+
+      let loadedFromCache = false;
+      let setRes = offlineFirst
+        ? { data: null, error: "offline" as string | null }
+        : await fcService.getSetWithCards(setId);
       if (cancelled) return;
+
+      if (!setRes.data && (offlineFirst || isNetworkFailure(setRes.error))) {
+        const snapshot = await readOfflineDeck(userIdRef.current, setId);
+        if (cancelled) return;
+        if (snapshot) {
+          loadedFromCache = true;
+          setRes = {
+            data: { set: snapshot.set, cards: snapshot.cards },
+            error: null,
+          };
+          setMasteryByCard(snapshot.masteryByCard);
+        }
+      }
+
       if (!setRes.data) {
         setSet(null);
         setCards([]);
         setResultsByCard({});
         setMasteryByCard({});
-        setError(setRes.error ?? "Failed to load flashcard set");
+        setError(
+          offlineFirst || isNetworkFailure(setRes.error)
+            ? "You're offline and this deck isn't downloaded. Open it once with a signal and choose Download to study it anywhere."
+            : (setRes.error ?? "Failed to load flashcard set"),
+        );
         setLoading(false);
         return;
       }
@@ -253,7 +301,9 @@ export function useFlashcardStudy(
       // resultsByCard. Every card with history has a last_result; counting
       // those as "done" would freeze the progress bar and instantly complete
       // the session (same invariant as useDueReview).
-      if (loadedCards.length > 0) {
+      // The cached snapshot already seeded mastery above; refetching it here
+      // would fail (no network) and blank out what we just restored.
+      if (loadedCards.length > 0 && !loadedFromCache) {
         const masteryRes = await studyService.getMasteryBulk(
           loadedCards.map((c) => ({
             itemType: FC_CARD_ITEM_TYPE,
@@ -274,13 +324,17 @@ export function useFlashcardStudy(
           setResultsByCard({});
           setMasteryByCard(masterySeed);
         }
-      } else {
+      } else if (!loadedFromCache) {
         setResultsByCard({});
         setMasteryByCard({});
       }
 
-      // Optionally open a session this study tags its attempts with.
-      if (withSession) {
+      // Optionally open a session this study tags its attempts with. Never
+      // offline: `createSession` is a network insert, and its own transient
+      // retry would burn three round trips against a connection that is gone.
+      // Attempts are valid session-less, and every one of them still queues in
+      // the outbox — so an offline sitting loses grouping, never answers.
+      if (withSession && !loadedFromCache) {
         const sessionRes = await studyService.createSession({
           mode,
           sourceKind: "set", //  study_session.source_kind CHECK = set|dynamic_batch|adaptive
