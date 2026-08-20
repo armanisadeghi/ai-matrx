@@ -284,7 +284,7 @@ not paper over that with guessed bounces.
 Today outreach is write-only. Without inbound we cannot stop on reply (G4), cannot suppress on hard
 bounce, and cannot measure anything. **The reply-opt-out seam is already waiting:** provider adapters
 emit one `InboundReply`; the shared detector immediately writes permanent suppression through
-`crm.honor_reply_opt_out()`. G6 must deliver replies into that seam, not duplicate it. **This is not
+`crm.honor_consent_decision()`. G6 must deliver replies into that seam, not duplicate it. **This is not
 optional polish — it is what separates outreach from spam,** and it is legally load-bearing (§5).
 Needs: provider webhooks (delivered/bounced/complained) and reply ingestion. ✅ Threading is DONE
 in both directions (2026-08-16): an inbound reply lands on the party's `crm.interaction` timeline

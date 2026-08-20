@@ -54,12 +54,14 @@ set search_path = crm, public, pg_temp
 as $fn$
 declare
   original crm.sending_event;
+  v_correlated boolean := false;   -- never read `original` without this
   v_medium_id uuid := p_medium_id;
   v_created_medium boolean := false;
   v_already boolean := false;
   v_event_id uuid := null;
-  v_reason text := coalesce(nullif(btrim(p_reason), ''), p_via || '_opt_out');
   v_via text := nullif(btrim(p_via), '');
+  v_reason text;
+  v_evidence jsonb := nullif(coalesce(p_detail, '{}'::jsonb), '{}'::jsonb);
 begin
   if p_decision not in ('opt_out', 'opt_in') then
     raise exception 'p_decision must be opt_out or opt_in, got %', p_decision
@@ -69,6 +71,7 @@ begin
     raise exception 'a consent decision must say how it arrived (p_via)'
       using errcode = '22023';
   end if;
+  v_reason := coalesce(nullif(btrim(p_reason), ''), v_via || '_opt_out');
 
   -- Path A: the caller already resolved the medium (SMS keyword, dialer).
   -- Path B: an email reply — correlate it to the send that provoked it.
@@ -96,6 +99,7 @@ begin
         'matched', false,
         'error', 'original_send_not_found');
     end if;
+    v_correlated := true;
     v_medium_id := original.medium_id;
   end if;
 
@@ -143,8 +147,11 @@ begin
            suppression_expires_at = null,
            consent_basis = 'none',
            consent_source = v_via,
-           consent_evidence = p_detail,
-           consent_evidence_at = p_received_at
+           -- An empty p_detail means "the caller had no evidence to add", not
+           -- "erase what we already recorded".
+           consent_evidence = coalesce(v_evidence, consent_evidence),
+           consent_evidence_at = case when v_evidence is null
+                                 then consent_evidence_at else p_received_at end
      where id = v_medium_id;
 
     update crm.party_contact_point
@@ -156,7 +163,7 @@ begin
     -- The outreach ledger only exists where a sending identity sent something.
     -- An SMS STOP has no identity, so there is no event to write — the medium
     -- and the channel's own message log carry the trail.
-    if original.id is not null then
+    if v_correlated then
       insert into crm.sending_event
         (identity_id, event_kind, party_id, medium_id, outreach_list_id,
          interaction_id, to_address_key, provider_message_id, actor_kind,
@@ -169,7 +176,7 @@ begin
          jsonb_build_object(
            'via', v_via,
            'in_reply_to_provider_message_id', p_in_reply_to_provider_message_id,
-           'detected_phrase', p_detected_phrase) || p_detail)
+           'detected_phrase', p_detected_phrase) || coalesce(v_evidence, '{}'::jsonb))
       on conflict (identity_id, event_kind, provider_message_id)
         where provider_message_id is not null and deleted_at is null
       do nothing
@@ -187,8 +194,9 @@ begin
        set consent_basis = 'express',
            consent_recorded_at = p_received_at,
            consent_source = v_via,
-           consent_evidence = p_detail,
-           consent_evidence_at = p_received_at,
+           consent_evidence = coalesce(v_evidence, consent_evidence),
+           consent_evidence_at = case when v_evidence is null
+                                 then consent_evidence_at else p_received_at end,
            unsubscribed_at = null,
            suppressed_at = null,
            suppression_reason = null,

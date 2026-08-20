@@ -134,9 +134,18 @@ after the same received-message proof.
 
 Reply opt-outs use the G6 seam rather than a second inbox. Provider adapters will emit one
 `InboundReply`; aidream's quoted-reply-safe detector recognizes explicit requests such as “remove
-me” and “take me off your list”, then the service-role-only `crm.honor_reply_opt_out()` atomically
-sets permanent suppression and writes one idempotent `unsubscribed` event. The detector and write
-are live now; only provider reply delivery remains in G6.
+me” and “take me off your list”, then the service-role-only `crm.honor_consent_decision()`
+atomically sets permanent suppression and writes one idempotent `unsubscribed` event. The detector
+and write are live now; only provider reply delivery remains in G6.
+
+**That function is THE ONE SUPPRESSION AUTHORITY, and it is channel-agnostic (2026-08-19).** It
+replaced the email-only `crm.honor_reply_opt_out()`, which could only find a medium by correlating
+a provider message id — so the SMS STOP path hand-wrote `crm.contact_medium` itself and a third
+decider, the trigger `public.sms_handle_opt_out_keywords`, wrote `communication.sms_consent` off
+its own keyword list. All three are now one function: it resolves the medium by id, by correlated
+reply, or by `(organization_id, channel, value_key)` — creating the medium rather than dropping a
+STOP from a number we have not met. `communication.sms_consent` is demoted to a
+preference/verification record and is no longer a suppression gate.
 
 `findUnresolvedMergeFields()` gives the browser an early warning. The authoritative rule lives in
 aidream's generic `services/message_templates` renderer: **an unresolved, null, blank, empty, or

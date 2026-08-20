@@ -71,8 +71,14 @@ Full detail, with file paths and traps, in `STATE.md` §4.1. In priority order:
    (`service.ts:1169-1191`) matches on exact lowercased `display_name` only. Fix it while exactly
    one imported party exists to be harmed. **Do it together with the durable import job** — the
    same commit loop is both defects.
-2. **SMS opt-out must call `crm.honor_reply_opt_out`**, not hand-write suppression columns
-   (`lib/sms/receive.ts:699-711`). Violates the one-authority ruling.
+2. ~~**SMS opt-out must call the one authority**, not hand-write suppression columns~~ — **DONE
+   2026-08-19.** It was worse than recorded: THREE deciders (the email-only
+   `crm.honor_reply_opt_out`, the hand-written block in `lib/sms/receive.ts`, and the trigger
+   `public.sms_handle_opt_out_keywords` writing `communication.sms_consent`), and enforcement was
+   split too — the SMS send gate read only `sms_consent`, which the trigger updated only
+   `WHERE status = 'opted_in'`, so a STOP from an unenrolled number was enforced nowhere. Now one
+   channel-agnostic `crm.honor_consent_decision`; trigger dropped; `isPhoneNumberOptedOut` reads
+   `crm.contact_medium`. See `migrations/crm_08_one_suppression_authority.sql`.
 3. **The three contact folds** — `users.invitation_requests` (8), `public.contact_submissions`
    (70, tripled in four days), `users.user_form_profile` (1). Reference:
    `migrations/plan_entity_person_org_fold.sql`. Register in `scripts/dead-relations.json` +
