@@ -32,6 +32,7 @@ import {
   LayoutDashboard,
   Lightbulb,
   Link2,
+  ListChecks,
   ListTree,
   Map,
   MessageSquareQuote,
@@ -74,6 +75,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "backlinks:overview": LayoutDashboard,
   "backlinks:links": Link2,
   "backlinks:changes": Activity,
+  "backlinks:coverage": Newspaper,
   "backlinks:domains": Globe,
   "backlinks:anchors": Type,
   "backlinks:pages": FileText,
@@ -98,6 +100,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "ai-visibility:sources": BookOpen,
   "ai-visibility:signals": Radar,
   "ai-visibility:history": History,
+  "ai-visibility:panels": ListChecks,
 
   "settings:site": Settings,
   "settings:integrations": Plug,

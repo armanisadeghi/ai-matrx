@@ -17,8 +17,12 @@
  * it changes what the page IS, it is a sub-view.
  *
  * Consumed by:
- *   • the site header (renders the ACTIVE section's sub-views — 3-7 items, the
- *     range where `RouteModeNav` reaches its icon+label variant)
+ *   • the site header (renders the ACTIVE section's sub-views). 3-7 is the
+ *     range where `RouteModeNav` reaches its icon+label variant; the budget
+ *     and the one section over it are `MARKETING_SUBNAV_CEILING` below.
+ *     EVERY sub-view needs an icon in `site-subview-icons.ts` — `RouteModeNav`
+ *     skips its compact `icons` stage unless all of them have one, so a single
+ *     omission drops the whole set to one dropdown.
  *   • the marketing sidebar (counts and reaches them)
  *   • `site-subviews.test.ts` (the completeness guard — a sub-view that exists
  *     in a component and not here, or here and not there, fails the build)
@@ -166,6 +170,39 @@ export const MARKETING_SITE_SUBVIEWS = [
     ],
   },
 ] as const satisfies readonly MarketingSectionSubViews[];
+
+/**
+ * THE HEADER CEILING — how many sub-views one section may hand the site header.
+ *
+ * `RouteModeNav` degrades full (icon + label) → icons → one dropdown by MEASURED
+ * width, so this is a design budget, not a hard limit: a section that grows past
+ * it is a signal to SPLIT the section, never to let the header degrade again.
+ * That degradation is the failure the whole 2026-08-14 rework existed to remove.
+ *
+ * Declared HERE, beside the registry, because it was previously restated as a
+ * literal in two separate test files — `site-subviews.test.ts` carried the
+ * maintained ceiling and its whole audit trail while `site-subnav.test.ts` still
+ * asserted the original 7, so the two drifted for two days and the second one
+ * read as a regression in the header rather than as the debt it records.
+ *
+ * 🚨 `backlinks` is a DEBT MARKER, not a budget. It reached ten (Prospects, then
+ * Link changes, then Coverage) and is now two sections' worth of surface wearing
+ * one name. The split is Arman's open decision in
+ * `common-docs/projects/outreach-system/wp2-backlinks-nav-options.md`
+ * (recommendation: split Backlinks / Outreach prospecting, which also rehouses
+ * Coverage). Nothing new may join backlinks until that lands, and no other
+ * section may pass `MARKETING_SUBNAV_CEILING`.
+ */
+export const MARKETING_SUBNAV_CEILING = 9;
+
+export const MARKETING_SUBNAV_SECTION_DEBT: Readonly<Record<string, number>> = {
+  backlinks: 10,
+};
+
+/** The ceiling that applies to one section, debt included. */
+export function marketingSubNavCeiling(section: string): number {
+  return MARKETING_SUBNAV_SECTION_DEBT[section] ?? MARKETING_SUBNAV_CEILING;
+}
 
 /**
  * The same registry at its declared width. `as const satisfies` narrows each

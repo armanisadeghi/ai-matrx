@@ -1,10 +1,12 @@
 import { MARKETING_SITE_SECTIONS } from "./route-sections";
 import {
   MARKETING_SITE_SUBVIEWS,
+  MARKETING_SUBNAV_SECTION_DEBT,
   countMarketingSiteDestinations,
   defaultMarketingSubView,
   isMarketingSubView,
   listMarketingSubViews,
+  marketingSubNavCeiling,
   marketingSubViewHref,
 } from "./site-subviews";
 
@@ -39,41 +41,23 @@ describe("marketing site sub-view registry", () => {
   );
 
   it("keeps every section's sub-navigation inside the header's good range", () => {
-    // RouteModeNav renders icon+label only while the items fit. The whole
-    // point of moving the 26 sections into the sidebar is that what remains in
-    // the header is a set this size. A section that grows past this is a
-    // signal to split it, not to let the header degrade again.
-    //
-    // The ceiling moved 7 → 8 on 2026-08-15 for backlinks only, when Prospects
-    // (the site-wide competitor link gap) joined it. Every backlinks sub-view
-    // has an icon, so RouteModeNav's measured `icons` variant carries the
-    // eighth item rather than collapsing to a dropdown.
-    //
-    // 🚨 It moved 8 → 9 on 2026-08-15 when Link changes joined backlinks
-    // (`seo.backlink_change_event`), and that ninth item is the one the
-    // previous note said should SPLIT the section instead. It is registered
-    // because the view is otherwise unreachable (no dead ends) — but backlinks
-    // is now past the size the header was rebuilt for, and the split is a real
-    // outstanding decision, not a settled new ceiling. Nothing else may use
-    // the ninth slot.
-    //
-    // 🚨🚨 IT WAS BREACHED ANYWAY. `backlinks:coverage` (WP4's coverage feed,
-    // `seo.coverage_mention`) took a TENTH slot on 2026-08-16 and this guard was
-    // not updated in that change — so the breach shipped silently, which is
-    // exactly what the guard exists to prevent. Recorded here rather than
-    // quietly normalised: backlinks is now TWO sections' worth of surface
-    // wearing one name, and the split is Arman's open decision in
-    // `common-docs/projects/outreach-system/wp2-backlinks-nav-options.md`
-    // (recommendation: split Backlinks / Outreach prospecting, which also
-    // rehouses Coverage). This ceiling exists for backlinks ALONE and is a
-    // debt marker, not a budget — no other section may pass 9, and nothing new
-    // may join backlinks until the split lands.
-    const BACKLINKS_DEBT_CEILING = 10;
+    // The budget, the backlinks debt, and the whole audit trail of how it got
+    // to ten now live beside the registry in `site-subviews.ts`. They used to
+    // be a literal here AND a different literal in `site-subnav.test.ts`, and
+    // the two drifted the moment the ceiling moved.
     for (const entry of MARKETING_SITE_SUBVIEWS) {
       expect(entry.views.length).toBeLessThanOrEqual(
-        entry.section === "backlinks" ? BACKLINKS_DEBT_CEILING : 9,
+        marketingSubNavCeiling(entry.section),
       );
     }
+  });
+
+  it("keeps the backlinks debt from spreading", () => {
+    // The debt is backlinks ALONE and it is frozen until Arman's split lands.
+    // A second entry here means someone normalised a breach instead of
+    // recording it — which is exactly how the tenth slot shipped silently.
+    expect(Object.keys(MARKETING_SUBNAV_SECTION_DEBT)).toEqual(["backlinks"]);
+    expect(MARKETING_SUBNAV_SECTION_DEBT.backlinks).toBe(10);
   });
 
   it("resolves the default view and omits its param from the href", () => {

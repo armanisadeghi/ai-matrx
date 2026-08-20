@@ -1,5 +1,8 @@
 import { MARKETING_SITE_SECTIONS } from "./route-sections";
-import { MARKETING_SITE_SUBVIEWS } from "./site-subviews";
+import {
+  MARKETING_SITE_SUBVIEWS,
+  marketingSubNavCeiling,
+} from "./site-subviews";
 import { marketingSubViewIcon } from "./site-subview-icons";
 import {
   buildMarketingSubNav,
@@ -16,11 +19,19 @@ describe("what the site header renders", () => {
    * THE POINT OF THE WHOLE REWORK. The header used to be handed all 26
    * sections, which no width fits — RouteModeNav degraded them to bare icons,
    * or on a narrow window to one 26-row dropdown. It now shows one level down.
+   *
+   * This asserted a bare `<= 7` until 2026-08-20, restating a number that
+   * `site-subviews.test.ts` had already moved to 9 (+ the backlinks debt) with
+   * its reasoning. Two literals for one budget is why the drift shipped, so
+   * both now read `marketingSubNavCeiling` — the ONE declaration, in
+   * `site-subviews.ts`, next to what it constrains.
    */
-  it("never shows more than seven items on any site page", () => {
+  it("never shows more items than the header's ceiling allows", () => {
     for (const section of MARKETING_SITE_SECTIONS) {
       const pathname = section.slug ? `${SITE}/${section.slug}` : SITE;
-      expect(navFor(pathname).modes.length).toBeLessThanOrEqual(7);
+      expect(navFor(pathname).modes.length).toBeLessThanOrEqual(
+        marketingSubNavCeiling(section.slug ?? ""),
+      );
     }
   });
 
@@ -30,10 +41,13 @@ describe("what the site header renders", () => {
     expect(backlinks.modes.map((mode) => mode.name)).toEqual([
       "Overview",
       "Backlinks",
+      "Link changes",
+      "Coverage",
       "Referring domains",
       "Anchors",
       "Top pages",
       "Competitors",
+      "Prospects",
       "Insights",
     ]);
   });
@@ -90,6 +104,7 @@ describe("what the site header renders", () => {
       "Sources",
       "Decision signals",
       "History",
+      "Panels",
     ]);
     expect(overview.activeHref).toBe(`${SITE}/ai-visibility`);
     expect(navFor(`${SITE}/ai-visibility/signals`).activeHref).toBe(
