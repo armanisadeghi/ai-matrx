@@ -60136,6 +60136,18 @@ export interface components {
             /** Depth */
             depth: number;
         };
+        /** TypeResult */
+        TypeResult: {
+            /** Status */
+            status: string;
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence?: number;
+            /** Detail */
+            detail?: string | null;
+        };
         /** UnarchiveWorkflowResponse */
         UnarchiveWorkflowResponse: {
             /** Unarchived */
@@ -97512,7 +97524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["TypeResult"];
                 };
             };
             /** @description Validation Error */

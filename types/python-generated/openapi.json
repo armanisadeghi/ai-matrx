@@ -49714,7 +49714,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TypeResult"
+                }
               }
             }
           },
@@ -156361,6 +156363,35 @@
         ],
         "title": "TypeLeak",
         "description": "One exact point where typing stops."
+      },
+      "TypeResult": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 0
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TypeResult"
       },
       "UnarchiveWorkflowResponse": {
         "properties": {
