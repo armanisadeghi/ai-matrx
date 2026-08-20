@@ -518,6 +518,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
             "/administration/utilities/kind-registry/[kind]",
           ]),
           destination("/administration/utilities/kind-registry/build"),
+          destination("/administration/utilities/taxonomy"),
         ],
       },
       {

@@ -638,6 +638,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Feature Registry",
+        description:
+          "The platform taxonomy — Domains, Features, and Sub-features from platform.taxonomy_node — with full CRUD, status ratification, entity and review counts, and a visual map of the whole platform.",
+        iconName: "Network",
+        link: "/administration/utilities/taxonomy",
+        isNew: true,
+      },
+      {
         title: "Build a Kind",
         description:
           "Hand the admin builder agent a data structure; it builds and activates the whole content-ir kind end to end (schema, live component, skill, content blocks, activation) in one pass.",
