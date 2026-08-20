@@ -224,11 +224,7 @@ export function RunStage({
             hideRunStatusCards
             hideProgressRails
           />
-          <RunEmissions
-            runId={runId}
-            stepLabels={stepLabels}
-            definition={definition}
-          />
+          <RunEmissions runId={runId} stepLabels={stepLabels} />
           <RunDeliverables runId={runId} deliverables={ownDeliverables} />
         </div>
       </div>

@@ -61,10 +61,10 @@ export const DbEmitRendererImpl: React.FC<DbEmitRendererImplProps> = ({
   // with the cache cleared; the previous compile keeps rendering until the
   // fresh one lands, so an edited renderer repaints with no blank flash.
   useEffect(() => {
-    if (!componentRef) {
-      setComponent(null);
-      return undefined;
-    }
+    // No ref = the generic path; the initializer already seeded `null` and an
+    // emission's `component_ref` is frozen for the life of its element (the
+    // list keys on the durable seq), so there is nothing to clear here.
+    if (!componentRef) return undefined;
 
     let cancelled = false;
     void loadEmitRenderer(componentRef).then((compiled) => {

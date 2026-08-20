@@ -25,20 +25,27 @@
  *
  * Placement: ABOVE the deliverables. An emission is a mid-run aside; the
  * deliverables are the finished goods, and they stay last.
+ *
+ * 🚨 NEVER import `emitRendererCache` (or anything else under
+ * `features/workflow-emit/` except `DbEmitRenderer` and `types`) FROM HERE.
+ * `emitRendererCache` → `compileEmitRenderer` → the agent-apps compiler →
+ * a STATIC `@babel/standalone`. `DbEmitRenderer`'s `next/dynamic` boundary is
+ * the only thing keeping Babel out of the run-surface bundle, and a static
+ * import here walks straight around it. That is the D115 shape — the import
+ * edge that cost +14 GB peak build RSS and OOM'd 12 straight builds. Warming
+ * the cache from the definition (`prefetchEmitRenderer`) is not worth that
+ * trade: the generic body paints immediately and the custom component upgrades
+ * it in place, so there is no flash to fix.
  */
 
-import { useEffect, useMemo } from "react";
 import { MonitorUp } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import { collectEmitComponentRefs } from "@/features/workflow-emit/collectEmitComponentRefs";
-import { prefetchEmitRenderer } from "@/features/workflow-emit/emitRendererCache";
 import type { EmitMode } from "@/features/workflow-emit/types";
 
 import { selectRunEmissions } from "../../redux/workflow-runs.selectors";
 import type { WorkflowRunEmission } from "../../redux/workflow-runs.slice";
-import type { WorkflowDefinitionLike } from "../../trigger-points";
 
 /** The four modes the backend can send; anything else renders as "full". */
 const EMIT_MODES: readonly EmitMode[] = [
@@ -104,28 +111,11 @@ export function RunEmissions({
   runId,
   /** Step id → the author's human name. A missing label falls back to the id. */
   stepLabels,
-  /**
-   * The workflow definition, when the host has it. Used ONLY to warm the
-   * renderer cache for the `component_ref`s the definition already names, so a
-   * custom component is compiled before its step emits rather than a beat
-   * after. Omitting it costs nothing but that head start.
-   */
-  definition,
 }: {
   runId: string;
   stepLabels?: Record<string, string>;
-  definition?: WorkflowDefinitionLike | null;
 }) {
   const emissions = useAppSelector(selectRunEmissions(runId));
-
-  const declaredRefs = useMemo(
-    () => collectEmitComponentRefs(definition),
-    [definition],
-  );
-
-  useEffect(() => {
-    for (const ref of declaredRefs) prefetchEmitRenderer(ref);
-  }, [declaredRefs]);
 
   if (emissions.length === 0) return null;
 

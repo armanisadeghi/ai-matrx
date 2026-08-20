@@ -506,6 +506,42 @@ describe("workflow-runs slice", () => {
     expect(emissions[99]?.title).toBe("Emission 104");
   });
 
+  test("node_emitted records the durable seq and whether it came from replay", () => {
+    let state = attached();
+
+    const emit = (title: string): WorkflowRunEvent =>
+      ({
+        event: "node_emitted",
+        run_id: RUN_ID,
+        node_id: "emit",
+        step: 1,
+        attempt: 1,
+        mode: "summary",
+        payload: { title },
+        component_ref: "status_card",
+        surface: "matrx-user/workflow",
+        title,
+        ts: title,
+      }) as WorkflowRunEvent;
+
+    // A history refold — what a refresh does before the live follow starts.
+    state = apply(state, emit("replayed"), { seq: 700, replay: true });
+    // A live arrival.
+    state = apply(state, emit("live"), { seq: 701 });
+
+    const emissions = state.byRunId[RUN_ID]?.emissions ?? [];
+    expect(emissions).toHaveLength(2);
+    expect(emissions[0]).toMatchObject({
+      seq: 700,
+      persisted: true,
+      componentRef: "status_card",
+    });
+    expect(emissions[1]).toMatchObject({ seq: 701, persisted: false });
+    // The seq is THE identity — it must be unique across the ring so a key
+    // built from it never collides.
+    expect(new Set(emissions.map((e) => e.seq)).size).toBe(2);
+  });
+
   test("work_set_progress keeps the latest wave and refuses a rollback", () => {
     let state = attached();
     const wave = (n: number, done: boolean): WorkflowRunEvent =>
