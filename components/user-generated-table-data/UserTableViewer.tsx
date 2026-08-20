@@ -65,6 +65,13 @@ import {
   type BulkMergeOp,
   type FieldDataType,
 } from "@/features/data-tables/types";
+import {
+  applyColumnFilters as applyFilters,
+  hasAnyActiveFilter,
+  isActiveFilter,
+  type ColumnFilter,
+  type ColumnFilterMap,
+} from "@/features/data-tables/column-filters";
 import { TableSkeleton } from "./TableSkeleton";
 import { CellCleanupButton } from "@/components/content-cleanup/CellCleanupButton";
 import { cleanValue } from "@/lib/content-cleanup/clean-cells";
@@ -299,12 +306,15 @@ const UserTableViewer = ({
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Per-column filter state. Maps field_name -> filter substring. Applied
-  // client-side over the full dataset (loaded on demand) so filtering works
-  // across pages, not just the current server page.
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(
-    {},
-  );
+  // Per-column filter state. Maps field_name -> a STRUCTURED filter (pick
+  // values / match text / range) — never a bare substring again. See
+  // `features/data-tables/column-filters.ts` for why, and for the one place a
+  // row is tested against a filter.
+  const [columnFilters, setColumnFilters] = useState<ColumnFilterMap>({});
+  /** Set when a filter ran over a capped subset — never left implicit. */
+  const [filterTruncatedAt, setFilterTruncatedAt] = useState<number | null>(null);
+  /** Set when the rows a filter needs could not be loaded at all. */
+  const [fullDatasetError, setFullDatasetError] = useState<string | null>(null);
   const [fullDatasetCache, setFullDatasetCache] = useState<
     TableDataRow[] | null
   >(null);
@@ -658,9 +668,7 @@ const UserTableViewer = ({
   // tables beyond this filter only across the loaded subset.
   const FILTER_FETCH_CAP = 5000;
 
-  const hasColumnFilters = Object.values(columnFilters).some(
-    (v) => v.trim() !== "",
-  );
+  const hasColumnFilters = hasAnyActiveFilter(columnFilters);
 
   // Load the full dataset (sans server sort/pagination) so column filters can
   // run across every row. Respects the active global search term so the two
@@ -668,6 +676,7 @@ const UserTableViewer = ({
   const loadFullDataset = async () => {
     try {
       setLoadingFullDataset(true);
+      setFullDatasetError(null);
       const { data: allData, error } = await supabase.rpc(
         "get_user_table_data_paginated_v2",
         {
@@ -686,9 +695,23 @@ const UserTableViewer = ({
         throw new Error(allData.error || "Failed to load data for filtering");
 
       const payload = allData as typeof allData & { data: unknown[] };
-      setFullDatasetCache(asTableDataRows(payload.data));
+      const rows = asTableDataRows(payload.data);
+      setFullDatasetCache(rows);
+      // LOUD, not silent. Past the cap the filter runs over a subset while the
+      // row count reads like the whole truth — a confident wrong answer. Record
+      // it so the grid can say so instead of quietly lying.
+      setFilterTruncatedAt(
+        totalCount > FILTER_FETCH_CAP ? FILTER_FETCH_CAP : null,
+      );
     } catch (err) {
+      // A failed load used to reach console.error and leave an empty grid,
+      // which the user reads as "nothing matched". Say what actually happened.
       console.error("Error loading full dataset for filtering:", err);
+      setFullDatasetError(
+        err instanceof Error
+          ? err.message
+          : "The rows needed for this filter could not be loaded.",
+      );
     } finally {
       setLoadingFullDataset(false);
     }
@@ -704,36 +727,26 @@ const UserTableViewer = ({
 
   // Update a single column's filter. Resets to page 1; when the last filter is
   // cleared we re-sync with the server page so pagination stays authoritative.
-  const handleColumnFilterChange = (fieldName: string, value: string) => {
-    const next = { ...columnFilters };
-    if (value.trim()) {
-      next[fieldName] = value;
-    } else {
-      delete next[fieldName];
-    }
-    setColumnFilters(next);
+  const handleColumnFilterChange = (
+    fieldName: string,
+    next: ColumnFilter | undefined,
+  ) => {
+    const nextFilters = { ...columnFilters };
+    if (next && isActiveFilter(next)) nextFilters[fieldName] = next;
+    else if (next) nextFilters[fieldName] = next; // keep the chosen MODE while empty
+    else delete nextFilters[fieldName];
+    setColumnFilters(nextFilters);
     setCurrentPage(1);
 
-    const stillFiltering = Object.values(next).some((v) => v.trim() !== "");
-    if (!stillFiltering) {
+    if (!hasAnyActiveFilter(nextFilters)) {
       loadTableData(1, limit, sortField, sortDirection, searchTerm);
     }
   };
 
-  // Apply active column filters to a row set (case-insensitive substring).
-  const applyColumnFilters = (rows: TableDataRow[]): TableDataRow[] => {
-    if (!hasColumnFilters) return rows;
-    const active = Object.entries(columnFilters).filter(([, v]) => v.trim());
-    return rows.filter((row) =>
-      active.every(([fieldName, term]) => {
-        const value = row?.data?.[fieldName];
-        if (value === null || value === undefined) return false;
-        const haystack =
-          typeof value === "object" ? JSON.stringify(value) : String(value);
-        return haystack.toLowerCase().includes(term.trim().toLowerCase());
-      }),
-    );
-  };
+  // ONE matcher for the grid, copy, and export — `column-filters.ts` owns what
+  // "matching" means so these can never drift apart.
+  const applyColumnFilters = (rows: TableDataRow[]): TableDataRow[] =>
+    applyFilters(rows, columnFilters);
 
   // Live updates from other clients (or our own writes that bypass the
   // local refetch). Debounced so a 1k-row bulk import doesn't trigger 1k
@@ -1949,6 +1962,50 @@ const UserTableViewer = ({
         toolbarTrailing={toolbarTrailing}
       />
 
+      {/* A filter that could not read every row must SAY so. Both of these were
+          silent before: the cap produced a confident wrong count, and a failed
+          load produced an empty grid the user read as "no matches". */}
+      {hasColumnFilters && fullDatasetError && (
+        <div className="flex shrink-0 items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+          <div className="min-w-0">
+            <p className="font-medium text-destructive">
+              This filter couldn&rsquo;t be applied
+            </p>
+            <p className="text-muted-foreground">
+              {fullDatasetError} The rows below are unfiltered — clear the filter
+              or try again.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-6 shrink-0 px-2 text-xs"
+            onClick={() => {
+              setFullDatasetCache(null);
+              setFullDatasetError(null);
+            }}
+          >
+            Try again
+          </Button>
+        </div>
+      )}
+
+      {hasColumnFilters && !fullDatasetError && filterTruncatedAt !== null && (
+        <div className="flex shrink-0 items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="min-w-0 text-muted-foreground">
+            <span className="font-medium text-amber-700 dark:text-amber-300">
+              Filtering the first {filterTruncatedAt.toLocaleString()} rows only.
+            </span>{" "}
+            This table has {totalCount.toLocaleString()}, so the count below is
+            not the whole table. Narrow it with the search box first for an exact
+            answer.
+          </p>
+        </div>
+      )}
+
       {selectedRowIds.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
           <span className="text-xs font-medium">
@@ -2014,7 +2071,7 @@ const UserTableViewer = ({
               </TableHead>
               {fields.map((field) => {
                 const isSorted = sortField === field.field_name;
-                const filterValue = columnFilters[field.field_name] ?? "";
+                const columnFilter = columnFilters[field.field_name];
                 return (
                   <TableHead
                     key={field.id}
@@ -2035,11 +2092,14 @@ const UserTableViewer = ({
                         )}
                       </button>
                       <ColumnHeaderMenu
+                        tableId={tableId}
                         fieldName={field.field_name}
                         displayName={field.display_name}
+                        dataType={field.data_type}
                         isSorted={isSorted}
                         sortDirection={sortDirection}
-                        filterValue={filterValue}
+                        filter={columnFilter}
+                        searchTerm={searchTerm}
                         onSortAsc={() => handleSort(field.field_name, "asc")}
                         onSortDesc={() => handleSort(field.field_name, "desc")}
                         onClearSort={clearSort}
