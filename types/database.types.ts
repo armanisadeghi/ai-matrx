@@ -32146,6 +32146,392 @@ export type Database = {
       [_ in never]: never
     }
   }
+  interview: {
+    Tables: {
+      document_revision: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document: string
+          id: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          round: number
+          session_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document: string
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          round?: number
+          session_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document?: string
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          round?: number
+          session_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_revision_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hole: {
+        Row: {
+          claim_attacked: string
+          classification: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          question_id: string | null
+          reclassified_by_human: boolean
+          resolution: string | null
+          round_opened: number
+          roundtrip_count: number
+          routed_to: string | null
+          session_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          why_it_breaks: string | null
+        }
+        Insert: {
+          claim_attacked: string
+          classification: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          question_id?: string | null
+          reclassified_by_human?: boolean
+          resolution?: string | null
+          round_opened?: number
+          roundtrip_count?: number
+          routed_to?: string | null
+          session_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          why_it_breaks?: string | null
+        }
+        Update: {
+          claim_attacked?: string
+          classification?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          question_id?: string | null
+          reclassified_by_human?: boolean
+          resolution?: string | null
+          round_opened?: number
+          roundtrip_count?: number
+          routed_to?: string | null
+          session_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          why_it_breaks?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hole_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hole_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question: {
+        Row: {
+          answer_note: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          dodge_count: number
+          id: string
+          last_state_round: number
+          metadata: Json
+          missing_part: string | null
+          organization_id: string
+          parent_question_id: string | null
+          position: number
+          question: string
+          raised_by: string
+          round_raised: number
+          session_id: string
+          state: string
+          times_raised: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          answer_note?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dodge_count?: number
+          id?: string
+          last_state_round?: number
+          metadata?: Json
+          missing_part?: string | null
+          organization_id: string
+          parent_question_id?: string | null
+          position?: number
+          question: string
+          raised_by?: string
+          round_raised?: number
+          session_id: string
+          state?: string
+          times_raised?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          answer_note?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dodge_count?: number
+          id?: string
+          last_state_round?: number
+          metadata?: Json
+          missing_part?: string | null
+          organization_id?: string
+          parent_question_id?: string | null
+          position?: number
+          question?: string
+          raised_by?: string
+          round_raised?: number
+          session_id?: string
+          state?: string
+          times_raised?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "question"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session: {
+        Row: {
+          cleaned_transcript: string | null
+          created_at: string
+          created_by: string | null
+          current_round: number
+          deleted_at: string | null
+          document: string
+          finalized_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          requirements_document: string | null
+          role_bindings: Json
+          run_id: string | null
+          settings: Json
+          stage: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          vision_document: string | null
+          vision_statement: string | null
+        }
+        Insert: {
+          cleaned_transcript?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_round?: number
+          deleted_at?: string | null
+          document?: string
+          finalized_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          requirements_document?: string | null
+          role_bindings?: Json
+          run_id?: string | null
+          settings?: Json
+          stage?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          vision_document?: string | null
+          vision_statement?: string | null
+        }
+        Update: {
+          cleaned_transcript?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_round?: number
+          deleted_at?: string | null
+          document?: string
+          finalized_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          requirements_document?: string | null
+          role_bindings?: Json
+          run_id?: string | null
+          settings?: Json
+          stage?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          vision_document?: string | null
+          vision_statement?: string | null
+        }
+        Relationships: []
+      }
+      turn: {
+        Row: {
+          audio_file_id: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          node_id: string | null
+          organization_id: string
+          position: number
+          round: number
+          run_id: string | null
+          session_id: string
+          speaker: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          audio_file_id?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id?: string | null
+          organization_id: string
+          position: number
+          round?: number
+          run_id?: string | null
+          session_id: string
+          speaker: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          audio_file_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id?: string | null
+          organization_id?: string
+          position?: number
+          round?: number
+          run_id?: string | null
+          session_id?: string
+          speaker?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turn_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   legal: {
     Tables: {
       _stage_dockets_966c18eca7: {
@@ -68128,6 +68514,9 @@ export const Constants = {
     Enums: {},
   },
   iam: {
+    Enums: {},
+  },
+  interview: {
     Enums: {},
   },
   legal: {
