@@ -38,6 +38,7 @@ import {
   type RecordValueType,
 } from "./kind-schema.types";
 import { buildCompliantKindSnapshot } from "./kind-snapshot";
+import { getSurfaceForJsonRootKey } from "../registry/surface-registry";
 
 /** Kept as the historical name for the parser's event paths. */
 export type JsonPath = IrPath;
@@ -212,6 +213,11 @@ export class KindStreamParser {
   private readonly awaitingKindPaths = new Set<string>();
   /** Paths whose kind came from parent-schema prediction, unconfirmed so far. */
   private readonly speculativeKinds = new Set<string>();
+  /**
+   * Kind named by the root object's FIRST key through the `json_root_key`
+   * surface registry — a candidate, adopted only at root finalize.
+   */
+  private rootSurfaceKind: string | null = null;
   /** kind → paths (by key) waiting for the resolver's cold fetch. */
   private readonly pendingSchemaPaths = new Map<string, Map<string, JsonPath>>();
   /** Pending-schema paths whose object already closed. */
@@ -498,6 +504,46 @@ export class KindStreamParser {
   }
 
   /**
+   * THE JSON-ROOT-KEY SURFACE — `content_ir.kind_surface` rows of type
+   * `json_root_key`, live at last (they were inert phantom rows until
+   * 2026-08-20).
+   *
+   * A legacy payload such as `{"quiz_title": ...}` carries no `__kind`, but
+   * the ONE surface registry knows exactly which kind that root key names —
+   * the same lookup the SERVER performs before adapting the payload
+   * (`aidream .../processing/blocks/envelope.py`). Consulting it HERE, in the
+   * shared parser core, is what makes one place decide it: both hosts — the
+   * one-shot `normalizeJsonRegion` (DB reload / reconcile) and the live
+   * `openParseSession` (streaming) — build their parser through
+   * `createKindStreamParser`, so neither passes an option and neither can
+   * drift from the other.
+   *
+   * Recorded at the first root key; ADOPTED only when the root object closes
+   * (`completeTypedObject`). That is the surface registry's complete-only
+   * convergence law, and every json_root_key row is `streaming:false` — these
+   * legacy shapes are recognised by their whole payload, so speculating
+   * mid-stream would flash a kind component over an object that may never
+   * satisfy the schema. An explicit `expectedRootKind` (an agent's declared
+   * output schema) is stronger context and always wins; an actual `__kind`
+   * still wins over both.
+   */
+  private noteRootSurfaceKind(key: string): void {
+    if (key === KIND_KEY) return;
+    if (this.options.expectedRootKind) return;
+    if (this.rootKind || this.objectKinds.has(this.pathKey([]))) return;
+
+    const entry = getSurfaceForJsonRootKey(key);
+    if (!entry) return;
+
+    this.rootSurfaceKind = entry.kind;
+
+    // Warm a cold schema now so finalize can actually validate against it.
+    if (!this.lookupSchema(entry.kind)) {
+      this.resolver.request?.(entry.kind);
+    }
+  }
+
+  /**
    * Prediction from the parent schema: object field → declared kind; array
    * item → sole itemKind; root → expectedRootKind. Only when the schema is
    * actually resolvable (a prediction we can't validate against is not a
@@ -647,6 +693,10 @@ export class KindStreamParser {
         `Duplicate key "${key}".`,
         at,
       );
+    }
+
+    if (frame.path.length === 0 && frame.keyCount === 0) {
+      this.noteRootSurfaceKind(key);
     }
 
     frame.currentKey = key;
@@ -941,6 +991,33 @@ export class KindStreamParser {
     if (!declaredKind && committedKind && this.speculativeKinds.has(pathKey)) {
       this.speculativeKinds.delete(pathKey);
       this.finalizeSpeculatedObject(path, objectValue, committedKind, at);
+      return;
+    }
+
+    // THE JSON-ROOT-KEY SURFACE converges here (see noteRootSurfaceKind).
+    // Same posture as any speculation: it NEVER claims a kind it cannot
+    // validate — a payload that doesn't satisfy the schema still degrades to
+    // raw, but with a notice naming the expected kind and the real contract
+    // gap instead of the misleading `Object is missing "__kind"`.
+    if (
+      path.length === 0 &&
+      !declaredKind &&
+      !committedKind &&
+      this.rootSurfaceKind
+    ) {
+      const surfaceKind = this.rootSurfaceKind;
+      this.rootSurfaceKind = null;
+      this.objectKinds.set(pathKey, surfaceKind);
+      this.rootKind = surfaceKind;
+      this.emit({
+        type: "kind_identified",
+        kind: surfaceKind,
+        path,
+        speculative: true,
+        at,
+      });
+      this.clearKindWait(path, "identified", at, surfaceKind);
+      this.finalizeSpeculatedObject(path, objectValue, surfaceKind, at);
       return;
     }
 
