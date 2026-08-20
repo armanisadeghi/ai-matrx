@@ -1,0 +1,3570 @@
+{
+  "_source": "Generated from the REAL Python producer (matrx_ai StreamBlockProcessor). Regenerate: aidream scripts/generate_partial_kind_fixture.py. Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md",
+  "fixtures": {
+    "clean_finish": [
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 1,
+          "fingerprint": "k-1eawjgh1b822w3",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "S",
+              "title": "S",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 2,
+          "fingerprint": "o-11h6jke22t4r0",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space",
+              "title": "Space",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 3,
+          "fingerprint": "s-17uy7eg1aynk8e",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Bas",
+              "title": "Space Bas",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 4,
+          "fingerprint": "w-1r9ig7l73n11f",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "title": "Space Basics",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 5,
+          "fingerprint": "1k-1trz4ei1y9n4b4",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [],
+              "title": "Space Basics",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 6,
+          "fingerprint": "1s-1gxguv7mkkkwd",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {}
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 7,
+          "fingerprint": "2c-5nm6041b6xuj2",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Cl"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Cl",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 8,
+          "fingerprint": "2g-1jjchpar8e0ro",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closes"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closes",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 9,
+          "fingerprint": "2k-1y99yzx50qohj",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest st"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest st",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 10,
+          "fingerprint": "2o-1g5uzva1imc0y4",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star t"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star t",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 11,
+          "fingerprint": "2s-hvkfrrd62yu9",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Ea"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Ea",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 12,
+          "fingerprint": "2w-ifsl1o1o201qe",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 13,
+          "fingerprint": "3k-1e70711f489uj",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": []
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 14,
+          "fingerprint": "3s-yncf8r1qut61x",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "T"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "T"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 15,
+          "fingerprint": "3w-1x9dusd2ypmmb",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The S"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The S"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 16,
+          "fingerprint": "40-1bq0r2c1r9mgka",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 17,
+          "fingerprint": "4c-1ru4ea0m6fjk2",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Si"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Si"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 18,
+          "fingerprint": "4g-xhc5tlcvqsu3",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 19,
+          "fingerprint": "5g-1f98pdn1h95cjt",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": ""
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 20,
+          "fingerprint": "5k-tyda3edbc61k",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 21,
+          "fingerprint": "5o-1pul662s8asi4",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 22,
+          "fingerprint": "6c-1vf43rf1hf4ped",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": ""
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": ""
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 23,
+          "fingerprint": "6g-qyg1o1blx3wu",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "Abou"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "Abou"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 24,
+          "fingerprint": "6k-1pvnomio0zjq4",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 15"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 15"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 25,
+          "fingerprint": "6o-injg2sxpjl72",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 mi"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 mi"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 26,
+          "fingerprint": "6s-qrb05c11f3k26",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 millio"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 millio"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 27,
+          "fingerprint": "6w-17zejgm1p3s7o4",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 28,
+          "fingerprint": "70-m416zld37c9v",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km awa"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km awa"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 29,
+          "fingerprint": "74-15eoca6mh55ic",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 30,
+          "fingerprint": "7g-1yg6qgc718mxe",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {}
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 31,
+          "fingerprint": "80-qtt4zqqt2hx0",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": ""
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 32,
+          "fingerprint": "84-15kkgttq5baxz",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Whic"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Whic",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 33,
+          "fingerprint": "88-1x8vz7hahe9a3",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which pl"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which pl",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 34,
+          "fingerprint": "8c-190gjmnjgmbtd",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 35,
+          "fingerprint": "8g-1hm6sqf1nxh0z9",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 36,
+          "fingerprint": "8k-y1kvzn1wvbi4p",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 37,
+          "fingerprint": "98-xnbps21uif8mk",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": []
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 38,
+          "fingerprint": "9g-1jfhvk7198mm79",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "M"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "M"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 39,
+          "fingerprint": "9k-yefyp18ep7pn",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 40,
+          "fingerprint": "9w-1ne48l7oh129",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "V"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "V"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 41,
+          "fingerprint": "a0-7wxz6016u1pla",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ]
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 42,
+          "fingerprint": "b0-n2t38el5wyyw",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": ""
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 43,
+          "fingerprint": "b4-x0gr6f1hbtw0h",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": null
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 44,
+          "fingerprint": "bw-x321va1kuwutg",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iro"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iro"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 45,
+          "fingerprint": "c0-1nzcs71jq6z05",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron ox"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron ox"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 46,
+          "fingerprint": "c4-16guutz17o5925",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 47,
+          "fingerprint": "c8-3mc9xiijnd7o",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on t"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on t"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 48,
+          "fingerprint": "cc-1ykj2u4149mrda",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on the s"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on the s"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 49,
+          "fingerprint": "cg-16t16nmuys2no",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on the surfa"
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on the surfa"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 50,
+          "fingerprint": "ck-ujdvduiycdc8",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "Space Basics",
+              "multiple_choice": [
+                {
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on the surface."
+                }
+              ],
+              "title": "Space Basics",
+              "questions": [
+                {
+                  "type": "multiple_choice",
+                  "question": "Closest star to Earth?",
+                  "options": [
+                    "The Sun",
+                    "Sirius"
+                  ],
+                  "correct_answer": "The Sun",
+                  "explanation": "About 150 million km away."
+                },
+                {
+                  "type": "multiple_choice",
+                  "question": "Which planet is red?",
+                  "options": [
+                    "Mars",
+                    "Venus"
+                  ],
+                  "correct_answer": "Mars",
+                  "explanation": "Iron oxide on the surface."
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_1",
+        "blockType": "quiz",
+        "blockStatus": "complete",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "superseded",
+          "seq": 51,
+          "kind": "quiz_set"
+        }
+      }
+    ],
+    "wrong_detection_retracted": [
+      {
+        "blockId": "blk_0",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 1,
+          "fingerprint": "g-1rc7w8e1k0dvz4",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "",
+              "title": "Quiz",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 2,
+          "fingerprint": "j-qmg36si2xdw6",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "X",
+              "title": "X",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 3,
+          "fingerprint": "14-845o6l1trag4j",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "X",
+              "multiple_choice": [],
+              "title": "X",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "quiz",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 4,
+          "fingerprint": "17-ro0ioyrxxikk",
+          "root": {
+            "role": "structured",
+            "kind": "quiz_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "quiz_set",
+              "quiz_title": "X",
+              "multiple_choice": [
+                1
+              ],
+              "title": "X",
+              "questions": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "retracted",
+          "seq": 5,
+          "kind": "quiz_set",
+          "reason": "block re-typed to 'text', which declares no kind",
+          "becameKind": null,
+          "becameBlockType": "text"
+        }
+      }
+    ],
+    "prose_and_code_no_partials": []
+  }
+}

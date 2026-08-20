@@ -193,6 +193,7 @@ import { patchAgentConversationMetadata } from "@/features/agents/redux/conversa
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
 import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
+import { sanitizeInboundPartialKindMetadata } from "@/features/content-ir/core/partial-kind";
 import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
@@ -1519,9 +1520,29 @@ export async function processStream({
         // can never poison kind routing or the persistence cache. Note these
         // events never feed the StreamBlockAccumulator (only chunk text
         // does), so no FE shadow parse region ever opens for them.
-        const sanitizedMetadata = sanitizeInboundEnvelopeMetadata(
-          event.data.metadata,
+        // The partial channel (metadata.__ir_partial) is gated at the SAME
+        // wire boundary and for the same reason: a malformed server event is
+        // stripped here, loudly, instead of being carried into Redux for every
+        // later reader to re-decide. The two channels never touch — __ir means
+        // "validated against the registered schema" and is seeded into the
+        // envelope memo; a partial is provisional by definition and is seeded
+        // nowhere. Contract: common-docs/systems/content-ir-system/
+        // STREAMING_PARTIAL_KINDS.md.
+        const sanitizedMetadata = sanitizeInboundPartialKindMetadata(
+          sanitizeInboundEnvelopeMetadata(event.data.metadata, {
+            blockId: event.data.blockId,
+          }),
           { blockId: event.data.blockId },
+          {
+            reportMalformed: ({ blockId, raw }) => {
+              captureError({
+                source: "content-ir",
+                message: `render_block "${blockId}" carried a malformed metadata.__ir_partial event — dropped before Redux so it can never drive a provisional render`,
+                relation: "partial-kind",
+                raw,
+              });
+            },
+          },
         );
         const eventBlock =
           sanitizedMetadata === event.data.metadata
