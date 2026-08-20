@@ -3,7 +3,7 @@
  * Migration ledger check — the matrx-frontend half of the cross-repo migration
  * durability system. See the "Database migrations" section in CLAUDE.md.
  *
- * Supabase (`txzxabzwovsujtloxrus`) is the source of truth for the database — NOT
+ * Supabase (`brsgrqvjdzwihsvnfqkf`) is the source of truth for the database — NOT
  * the .sql files in `migrations/`. A migration file sitting on disk has changed
  * NOTHING until it is applied. Agents keep writing one and reporting "done"; the
  * file never ran, types were never regenerated, and production breaks days later.

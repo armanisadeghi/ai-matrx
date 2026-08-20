@@ -8,7 +8,7 @@
  *     pnpm tsx features/change-policy/generate-seed.ts          # print idempotent seed SQL
  *     pnpm tsx features/change-policy/generate-seed.ts --check  # diff catalogue vs live DB (exit 1 on drift)
  *
- * Apply the printed SQL via the Supabase MCP (project txzxabzwovsujtloxrus)
+ * Apply the printed SQL via the Supabase MCP (project brsgrqvjdzwihsvnfqkf)
  * in the same session you edit the catalogue — a seed that only exists as
  * output has changed nothing.
  */

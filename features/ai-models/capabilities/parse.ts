@@ -3,7 +3,7 @@
 // Parser for `ai.model_definition.capabilities`.
 //
 // The column is CANONICAL for every row in the live DB. Verified 2026-07-07
-// against project txzxabzwovsujtloxrus: all 205 rows (142 active + 63
+// against project brsgrqvjdzwihsvnfqkf: all 205 rows (142 active + 63
 // deprecated) hold a JSON object carrying `input` / `output` / `features` /
 // `interaction`. Zero rows are null, "", a flat label array, a Google-style
 // boolean map, or the literal "[transcription]".

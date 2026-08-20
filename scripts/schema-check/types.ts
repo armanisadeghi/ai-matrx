@@ -51,7 +51,7 @@ export interface CodeFile {
 export interface GeneratedInfo {
   /** e.g. "Supabase database types". */
   label: string;
-  /** What truly produces it, e.g. "the live Supabase database (project txzxabzwovsujtloxrus)". */
+  /** What truly produces it, e.g. "the live Supabase database (project brsgrqvjdzwihsvnfqkf)". */
   source: string;
   /** The command that regenerates it, e.g. "pnpm db-types". */
   regen: string;

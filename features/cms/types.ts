@@ -53,7 +53,7 @@ export interface ClientSite {
    * (Arman, 2026-08-15) — before this it was private-ownership-only, which is
    * why an org's marketing site could name a CMS site no teammate could open.
    *
-   * `organization_id` is a MAIN-project (`txzxabzwovsujtloxrus`)
+   * `organization_id` is a MAIN-project (`brsgrqvjdzwihsvnfqkf`)
    * `iam.organizations.id` carried BARE: no FK is possible across databases,
    * the same convention as `web_site_id`. Null = owner-only.
    *

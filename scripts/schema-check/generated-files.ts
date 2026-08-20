@@ -34,7 +34,7 @@ const RULES: Rule[] = [
     test: exact("types/database.types.ts"),
     info: {
       label: "Supabase database types",
-      source: "the live Supabase database (project txzxabzwovsujtloxrus)",
+      source: "the live Supabase database (project brsgrqvjdzwihsvnfqkf)",
       regen: "pnpm db-types",
       why: "these types are generated 1:1 from the live DB schema — the database is the source of truth, not this file",
     },

@@ -2,7 +2,7 @@
  * Shared CMS Supabase client + ownership checks for the `/api/cms/*` action-dispatch routes.
  *
  * Project: viyklljfdhtidwecakwx (separate Auth domain, separate RLS from the main
- * txzxabzwovsujtloxrus project). API keys: ONLY sb_secret_* — legacy JWT keys
+ * brsgrqvjdzwihsvnfqkf project). API keys: ONLY sb_secret_* — legacy JWT keys
  * (SUPABASE_HTML_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY) are DEPRECATED and BANNED.
  * https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
  */

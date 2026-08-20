@@ -4,7 +4,7 @@
 // docs/canonicalization_worklog.md §5b). Manually typed — the `audit` schema
 // is intentionally not exposed to PostgREST (read only through
 // `execute_admin_query`), so it never appears in the generated database types.
-// Verified live against project txzxabzwovsujtloxrus on 2026-07-01.
+// Verified live against the database now hosted as project brsgrqvjdzwihsvnfqkf.
 
 export interface AuditSummaryRow {
   schema_name: string;
