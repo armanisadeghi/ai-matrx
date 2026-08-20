@@ -139,6 +139,37 @@ answer them (the page/action/question rule).
 - **Commit and push as you go.** Docs, models, seeds, components — small
   commits to origin/main; the state doc row is only true once pushed.
 
+## Distillation laws (Arman, 2026-08-20, ratified during the first run)
+
+- **A drop is a loss of data we paid for.** Never inherit a drop from the existing
+  code — past code dropping a field may have been the mistake this pipeline exists
+  to fix. Every drop is justified on its own merits. Drop freely ONLY provider
+  plumbing: request echoes, tracking/redirect links, pagination endpoints, the
+  provider's own UI chrome. Real-world data defaults to KEPT, as structure.
+- **Provider asymmetry is never a drop reason.** One provider carrying a field the
+  other lacks → optional field on the shared kind; map both providers' variants
+  onto the same field wherever the underlying data is the same thing.
+- **Known string formats become structured data.** Parse hours, dates, ratings,
+  addresses into typed structure. Retain the original string alongside only when
+  the parse is lossy or relative ("2 weeks ago"); never synthesize precision the
+  source didn't give. Datetimes/URLs stay scalar JSON-Schema formats, not kinds.
+- **Recurring small structures are core-primitive candidates.** When the same
+  small shape shows up across sections or providers (rating, opening hours,
+  postal address, geo coordinates), propose it as a system-wide primitive kind —
+  small kinds held by bigger kinds. Check the registry first; never mint a
+  primitive that exists.
+- **Layer where identification helps; never a wrapper that carries nothing.**
+  Every level whose identification helps downstream handling gets a kind (the
+  collection, the item, the primitive). But a wrapper whose only content is its
+  payload is over-layering — self-identifying item kinds (discriminator as a
+  real field) already make any single item portable to any surface.
+- **Embedded HTML is judged by what's inside.** Pre-rendered UI with no unique
+  data → discard. Unique data wearing HTML formatting → convert to structure
+  (text + extracted links); never store raw provider HTML in a kind.
+- **One copy of everything.** Kinds reference canonical entities rather than
+  duplicating them; merged kinds keep provenance (a `source`/provider field),
+  never duplicate records per provider.
+
 ## SDK wishlist (Stage A agents append friction here; the SDK build consumes it)
 
 - (empty — first run pending)
