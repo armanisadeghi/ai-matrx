@@ -31815,6 +31815,40 @@ export type Database = {
           url_path_template: string
         }[]
       }
+      admin_taxonomy_delete: { Args: { p_id: string }; Returns: undefined }
+      admin_taxonomy_list: {
+        Args: never
+        Returns: {
+          anchors: Json
+          child_count: number
+          created_at: string
+          docs_path: string
+          entity_count: number
+          id: string
+          level: string
+          name: string
+          notes: string
+          parent_id: string
+          review_count: number
+          slug: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      admin_taxonomy_upsert: {
+        Args: {
+          p_anchors?: Json
+          p_docs_path?: string
+          p_id?: string
+          p_level?: string
+          p_name?: string
+          p_notes?: string
+          p_parent_id?: string
+          p_slug?: string
+          p_status?: string
+        }
+        Returns: string
+      }
       admin_unregistered_pairs: {
         Args: never
         Returns: {
