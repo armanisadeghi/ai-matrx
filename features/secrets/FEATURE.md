@@ -199,7 +199,54 @@ Personal and organization credentials render through the same
 | [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Basic-purpose picker first, searchable full catalog second, then definition-driven form + Custom builder (with `KEY=value` paste-to-fill); login passwords support local generation and Show/Hide.                                                                                               |
 | [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode (name, description, field values/metadata, notes, URLs, other details), plus share, transfer, fork, soft delete, and audit trail.                                                                                            |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                   |
+| [`authenticator-service.ts`](./authenticator-service.ts)                       | `/api/authenticator/*` client — metadata only, by construction (never a seed, never a code).                                                                                                                                                                                                      |
+| [`authenticator-otpauth.ts`](./authenticator-otpauth.ts)                       | Pure client parse of a setup key / `otpauth://` URI, kept in lockstep with aidream's `otpauth.py`, for the instant enrollment preview.                                                                                                                                                            |
+| [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | THE authenticator hook: entries, enrollable items, and a create-login-then-enroll `enroll` action.                                                                                                                                                                                                |
+| [`components/authenticator/`](./components/authenticator/)                     | The `/vault/authenticator` workspace + the two-step enroll dialog (Credenza = Dialog/Drawer responsive).                                                                                                                                                                                          |
 | [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` (single dotenv-line paste-to-fill) + `generateVaultPassword` (Web Crypto, unambiguous alphabet, all basic character groups).                                                                                                                                                |
+
+## Authenticator enrollment (2026-08-20)
+
+`/vault/authenticator` is the GA manage surface for the Matrx Authenticator
+(cross-repo spec: `common-docs/systems/matrx-authenticator/FEATURE.md`). It is
+**enroll + manage + consent only** — no code is displayed and there is no
+reveal, at any privilege (D-15).
+
+**The secret comes first, the account second** — the same order Google,
+1Password, and Bitwarden use, because the only thing a person standing at a
+site's two-factor screen can act on is the code in front of them.
+
+- **Every intake route, in one control.** `<QrCodeInput>`
+  ([`components/qr/QrCodeInput.tsx`](../../components/qr/QrCodeInput.tsx)) takes
+  a **pasted** screenshot (⌘V anywhere inside it), a **dropped** image, a
+  **chosen** file, or a live **camera scan**, and the setup key can always be
+  typed instead. Reach for that component for ANY QR intake — never build a
+  second one.
+- **Decoding is LOCAL and instant.** [`lib/qr/decode.ts`](../../lib/qr/decode.ts)
+  is the platform decoder (`BarcodeDetector` → lazily-imported `jsqr`
+  fallback). Nothing is uploaded, stored, or persisted: the image lives in a
+  canvas for one call. The server's multipart `/enroll/qr` route still exists
+  for clients with no local decoder; this client does not use it.
+- **The parse is echoed back before anything is written.**
+  [`authenticator-otpauth.ts`](./authenticator-otpauth.ts) mirrors aidream's
+  `otpauth.py` / `otp.py` rules, so the surface can say "GitHub · me@x.com ·
+  6 digits · every 30s" the moment it can read the code, and refuse an
+  unusable one in plain words. 🚨 Keep the two in lockstep — a preview that
+  accepts what the server refuses is worse than no preview.
+- **A new login can be created inline.** "Save it on" always offers **A new
+  login** (prefilled from the code's issuer) alongside every existing vault
+  item. Before 2026-08-20 the picker listed only `website_login` items, so a
+  user whose vault held API keys saw an empty list and a permanently disabled
+  Enroll button — the surface's own dead end. A seed is one more sealed field
+  on any credential item; the server never required a login.
+- **Consent is its own step.** Step 2 carries the plain-language explanation
+  the spec requires (D-14 first capture) with the trade-off paragraph one click
+  away — not stacked on the intake, in front of someone who has not decided
+  anything yet. Competitors show 2-3 sentences at intake; the extra disclosure
+  here is earned by what enrollment actually grants, and it is placed where the
+  decision is made.
+- **Every entry is a door.** The card's "View credential in Vault" opens THAT
+  credential via `/vault?item=<id>` (the deep link `VaultPage` now owns).
 
 ## Invariants
 
@@ -238,6 +285,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-20** — Rebuilt authenticator enrollment against what the best password managers actually ship: one intake control for paste / drop / file / camera scan, local QR decoding (`lib/qr/decode.ts` + the reusable `<QrCodeInput>`), an instant parsed preview, inline "A new login" creation, every vault item eligible (not just `website_login` — the empty-picker dead end), page copy cut to one sentence, and consent moved to its own confirm step. `/vault?item=<id>` deep-links a credential.
 
 - **2026-08-18** — Closed two Vault navigation hazards: scope results are now
   request-ordered and keyed to the active scope so stale credentials cannot
