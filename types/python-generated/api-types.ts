@@ -21523,25 +21523,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{stream_slug}/{path}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Proxy Stream Http */
-        get: operations["proxy_stream_http__stream_slug___path__post__get__stream_slug_path"];
-        put?: never;
-        /** Proxy Stream Http */
-        post: operations["proxy_stream_http__stream_slug___path__post__post__stream_slug_path"];
-        delete?: never;
-        options?: never;
-        /** Proxy Stream Http */
-        head: operations["proxy_stream_http__stream_slug___path__post__head__stream_slug_path"];
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -102189,102 +102170,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__post__get__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__post__post__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    proxy_stream_http__stream_slug___path__post__head__stream_slug_path: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                stream_slug: string;
-                path: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
             };
             /** @description Validation Error */
             422: {
