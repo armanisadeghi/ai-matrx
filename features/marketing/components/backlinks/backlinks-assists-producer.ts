@@ -341,7 +341,11 @@ function reviewBacklogCandidate(
     entityType: "web_site",
     entityId: state.siteId,
     surfaceName: BACKLINKS_ASSIST_SURFACE,
-    dedupeKey: `${SOURCE_PREFIX}.review_backlog:${state.siteId}:${requestKey}`,
+    // One site has one review-backlog condition. The live count belongs in
+    // the refreshed title/body and route request, not in the condition's
+    // identity: otherwise every completed batch mints a second chip and a
+    // dismissal lasts only until the count changes.
+    dedupeKey: `${SOURCE_PREFIX}.review_backlog:${state.siteId}`,
     expiresAt,
     // A review backlog is ordinary queue work, not a finding.
     priority: assistPriority("normal", 5),

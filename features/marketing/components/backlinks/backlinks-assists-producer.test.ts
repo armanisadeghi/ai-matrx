@@ -295,6 +295,29 @@ describe("buildBacklinksAssistCandidates", () => {
     });
   });
 
+  test("keeps one durable review-backlog identity while its count changes", () => {
+    const withAwaiting = (awaiting: number) =>
+      candidate(
+        baseline({
+          enrichment: {
+            total: 25,
+            completed: 25 - awaiting,
+            awaiting,
+            failed: 0,
+            highPriority: 0,
+            controllable: 0,
+          },
+        }),
+        ".review_backlog",
+      );
+
+    const before = withAwaiting(15);
+    const after = withAwaiting(10);
+    expect(after.dedupeKey).toBe(before.dedupeKey);
+    expect(after.title).not.toBe(before.title);
+    expect(after.action).not.toEqual(before.action);
+  });
+
   test("uses competitor intersections as a signal without inventing a gap count", () => {
     const found = candidate(
       baseline({
