@@ -828,6 +828,13 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-20 — **A routed site the caller cannot read renders the Access Gate,
+  never the empty workspace.** Once `useSiteOptions` settles (it is an
+  unfiltered RLS read of every visible site), a `[siteId]` with no matching
+  row returns `<AccessGate token="web_site">` from the workbench body, and the
+  header collapses to a back-only chevron instead of a "Pick a site" picker
+  over a record the user DID pick. Was map-rebuild evidence finding 1: a
+  no-membership admin saw a silent blank canvas.
 - 2026-08-20 — **Pillar map ruled for REBUILD** (Arman, Q14 — "completely
   garbage… no agent has ever actually used it"). Evidence pass driven at 295
   real nodes; findings + session agenda in

@@ -36,10 +36,10 @@ Driven with real data: `http://localhost:3001/marketing/content-plan/f8e332bb-df
 (prpinjectionmd.com, 295 nodes — the largest plan the test admin can see; Arman's 341-node
 All Green URL is org `5dc930e9` AI Matrx, which `admin@admin.com` has no membership in).
 
-1. **Arman's exact URL renders a SILENT EMPTY CANVAS for every test agent.** RLS returns zero
-   rows → empty map, header says "Pick a site", zero explanation. Violates the Access Gate law
-   and is why no agent ever caught the rest. (Chip spawned for the AccessGate fix — it is a
-   workspace bug, not a map bug.)
+1. ~~Arman's exact URL renders a SILENT EMPTY CANVAS for every test agent.~~ **FIXED
+   2026-08-20:** the workbench renders `<AccessGate token="web_site">` (verified in the browser
+   as the no-membership admin: named site, owner, org, request-access) and the header collapses
+   to a back-only chevron. Test agents on Arman's URL now see an honest denial, not a blank map.
 2. **The default view is information-free at real scale.** Radial layout constants
    (`RADIAL_MIN_RING_GAP=260`, min arc 120px) spread 295 nodes over a huge canvas; fitView lands
    at zoom ≈0.05–0.1 where every node is a ~3px dot. Semantic zoom hides article/cluster labels

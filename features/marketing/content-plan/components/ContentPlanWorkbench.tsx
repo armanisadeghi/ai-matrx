@@ -16,6 +16,7 @@ import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 import { Panel, type Layout } from "react-resizable-panels";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   buildGroomerPresetPayload,
@@ -728,6 +729,30 @@ export function ContentPlanWorkbench({
       return { view: next.view };
     },
   });
+
+  // The URL names a site the caller cannot read. `listSiteOptions` is an
+  // unfiltered RLS read of every visible site, so once it settles, a routed
+  // siteId with no matching row means one of four things — denied, deleted,
+  // never existed, or a signed-out session — and this surface cannot tell
+  // them apart. It used to render the empty workspace ("Pick a site" + a
+  // blank canvas), which is the silent wrong state the Access Gate law
+  // forbids. The gate asks the platform and says the true one, with a way
+  // forward. (A failed list read lands here too when a site is routed —
+  // the gate renders faults honestly with a retry that can work.)
+  if (siteId && !site && !sites.isPending) {
+    return (
+      <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="web_site"
+          id={siteId}
+          error={sites.error ?? undefined}
+          onRetry={() => void sites.refetch()}
+          fallbackHref="/marketing/content-plan"
+          fallbackLabel="All content plans"
+        />
+      </div>
+    );
+  }
 
   if (sites.isError) {
     return (
