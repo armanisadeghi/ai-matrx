@@ -1,5 +1,7 @@
 # Scheduling
 
+Cross-repo work order: `/Users/armanisadeghi/code/common-docs/projects/production-reliability-closeout/SCHEDULED_WORK_WORK_ORDER.md` — read it before changing production schedule enablement, cadence, failure visibility, or auto-suspension controls.
+
 > **Status:** Active (v1)
 > **Tier:** 1
 > **Last updated:** 2026-05-16
@@ -203,6 +205,9 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-20** — Linked the production reliability work order for approved cadence governance,
+  complete failure visibility, and repair/re-enable controls.
 
 - **2026-08-15** — Replaced `sch_task` / `sch_run` `postgres_changes`
   consumers with one ref-counted private per-user Broadcast channel. Database
