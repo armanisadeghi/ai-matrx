@@ -189,7 +189,7 @@ export function NewsResultBlock({ serverData, className }: SearchKindBlockProps)
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40",
+        "group flex max-w-xl flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40",
         className,
       )}
     >
@@ -257,7 +257,7 @@ export function VideoResultBlock({ serverData, className }: SearchKindBlockProps
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40",
+        "group flex max-w-xl flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40",
         className,
       )}
     >
