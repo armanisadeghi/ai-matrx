@@ -194,3 +194,40 @@ describe("emitRendererCache invalidation (D115 — the sibling gap)", () => {
     expect(cache.isKnownNoEmitRenderer("ref_x")).toBe(false);
   });
 });
+
+describe("residualPayload (the confirmation line is not printed twice)", () => {
+  // Imported lazily: the component module pulls the assist/mandate tree, and
+  // this file's `jest.resetModules()` in the cache blocks must not race it.
+  const load = async () =>
+    (await import("../GenericEmitRenderer")).residualPayload;
+
+  it("consumes `message` when the LINE came from it — the live `urgent` node", async () => {
+    const residualPayload = await load();
+    expect(
+      residualPayload(
+        { message: "Urgent — this one needs attention today." },
+        true,
+      ),
+    ).toBeNull();
+  });
+
+  it("keeps a genuine remainder alongside the consumed message", async () => {
+    const residualPayload = await load();
+    expect(residualPayload({ message: "Done", count: 3 }, true)).toEqual({
+      count: 3,
+    });
+  });
+
+  it("keeps `message` untouched when a TITLE supplied the line", async () => {
+    const residualPayload = await load();
+    const payload = { message: "Done", count: 3 };
+    expect(residualPayload(payload, false)).toBe(payload);
+  });
+
+  it("is total on a non-object payload", async () => {
+    const residualPayload = await load();
+    expect(residualPayload("just text", true)).toBeNull();
+    expect(residualPayload(null, true)).toBeNull();
+    expect(residualPayload([1, 2], true)).toBeNull();
+  });
+});

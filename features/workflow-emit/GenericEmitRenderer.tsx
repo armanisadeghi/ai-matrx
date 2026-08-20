@@ -12,7 +12,8 @@
  * and beautifully without per-shape code here.
  *
  *   confirmation → a single inline confirmation line (title / payload.message),
- *                  with the rest of the payload shown below when present.
+ *                  with whatever the LINE did not already say shown below. A
+ *                  bare `{message}` payload therefore renders once, not twice.
  *   summary | full | restructured → the title (markdown) + the full payload.
  */
 
@@ -85,6 +86,30 @@ function extractMessage(payload: unknown): string | null {
 }
 
 /**
+ * What is left of the payload once the confirmation LINE has already said it.
+ *
+ * `output.to_frontend` shapes a confirmation as `{"message": "..."}` — that
+ * one string IS the whole emission. Rendering the payload underneath the line
+ * printed it a second time as a "Message" field, which is what the live
+ * `urgent` node looked like: the same sentence twice, stacked. So when the
+ * line came FROM `message` (no title to outrank it), `message` is consumed and
+ * only a genuine remainder renders. When a title supplied the line, `message`
+ * was never shown and stays.
+ *
+ * Returns null when nothing is left — HIDE NOTHING still holds, because there
+ * is nothing left to hide.
+ */
+export function residualPayload(payload: unknown, consumedMessage: boolean): unknown {
+  if (!consumedMessage) return payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  const rest: Record<string, unknown> = { ...(payload as Record<string, unknown>) };
+  delete rest.message;
+  return Object.keys(rest).length > 0 ? rest : null;
+}
+
+/**
  * True when the payload is the `{ value }` wrapper the backend uses for a
  * non-dict emission — we unwrap it so a scalar/list/string renders as itself.
  */
@@ -124,7 +149,8 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
   if (mode === "confirmation") {
     const message = extractMessage(payload);
     const line = title ?? message ?? "Done.";
-    const hasExtra = message ? value !== message : value != null;
+    // The line consumed `message` only when no title outranked it.
+    const residue = residualPayload(payload, !title && message !== null);
 
     return (
       <div className="space-y-2">
@@ -132,9 +158,9 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
           <span className="min-w-0 break-words">{line}</span>
         </div>
-        {hasExtra && (
+        {residue !== null && (
           <div className="pl-6">
-            <ResultValue value={value} density="full" />
+            <ResultValue value={unwrapValue(residue)} density="full" />
           </div>
         )}
       </div>
