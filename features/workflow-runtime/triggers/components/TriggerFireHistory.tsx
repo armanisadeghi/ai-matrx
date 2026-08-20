@@ -25,12 +25,10 @@ import { formatInZone } from "./RecurrenceEditor";
 
 export function TriggerFireHistory({
   triggerId,
-  timezone,
   lastRunId,
   load,
 }: {
   triggerId: string;
-  timezone: string;
   /** Known from the trigger row itself, so the door survives a failed read. */
   lastRunId: string | null;
   load: (triggerId: string) => Promise<TriggerFire[] | null>;
@@ -99,7 +97,7 @@ export function TriggerFireHistory({
           className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5"
         >
           <span className="text-[11px] text-muted-foreground">
-            {formatInZone(fire.firedAt, timezone)}
+            {formatInZone(fire.firedAt)}
           </span>
           {fire.status === "failed" ? (
             <span className="flex items-center gap-1 text-[11px] text-destructive">

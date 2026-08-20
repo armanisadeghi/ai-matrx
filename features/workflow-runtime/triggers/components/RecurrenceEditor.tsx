@@ -418,13 +418,22 @@ export function RecurrenceEditor({
   );
 }
 
-/** An instant written the way the person set the schedule up. */
-export function formatInZone(iso: string, timezone: string): string {
+/**
+ * An instant written the way the person set the schedule up.
+ *
+ * Pass the SCHEDULE's timezone for a future fire — that is the promise the
+ * person authored ("every day at 9am, Tokyo time"). Pass nothing for a PAST
+ * one: history is a moment the viewer is reading, so it belongs in the
+ * viewer's own zone. A webhook trigger has no meaningful zone at all — its
+ * stored `timezone` is just the "UTC" default — so its history read as
+ * "8:11 AM UTC" to somebody for whom it was ten past one in the morning.
+ */
+export function formatInZone(iso: string, timezone?: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   try {
     return date.toLocaleString(undefined, {
-      timeZone: timezone,
+      timeZone: timezone ?? browserTimezone(),
       weekday: "short",
       month: "short",
       day: "numeric",

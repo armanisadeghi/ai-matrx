@@ -126,7 +126,7 @@ export function TriggerCard({
             ? "Hasn't run yet"
             : `Ran ${trigger.fireCount} ${trigger.fireCount === 1 ? "time" : "times"}`}
           {trigger.lastFiredAt
-            ? ` · last ${formatInZone(trigger.lastFiredAt, trigger.timezone)}`
+            ? ` · last ${formatInZone(trigger.lastFiredAt)}`
             : ""}
         </span>
 
@@ -191,7 +191,6 @@ export function TriggerCard({
         <div className="mt-2 border-t border-border pt-2">
           <TriggerFireHistory
             triggerId={trigger.id}
-            timezone={trigger.timezone}
             lastRunId={trigger.lastRunId}
             load={loadFires}
           />
