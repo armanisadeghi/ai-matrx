@@ -76,7 +76,42 @@ pending / documented-but-not-built / built-but-not-documented. Then move.
     decidable in under a minute: what's done and pushed (branch/PR) · **decisions you need
     from him, up top, one line each** (each one guided-session shaped; anything that will
     wait goes on the [attention board](/operations/attention.md)) · what's next and what
-    you deliberately deferred.
+    you deliberately deferred. Every word of it obeys the check-in contract below.
+
+## The check-in contract — how you talk to Arman (always in force)
+
+He is managing ~20 developers at once. Every check-in is a **cold open**: assume he
+remembers nothing of this conversation and reads none of the documentation — every .md
+(plan, state, handoff) is by agents FOR agents, never for him.
+
+1. **Plain groundwork, then the ask.** A few jargon-free sentences giving him only what he
+   needs — no doc references, no item numbers, no codenames. Then the question, and end
+   your turn there.
+2. **Only two question shapes.** *Open-ended* — ask for his vision and extract what you
+   need from the answer. *Specific* — the options, the best practice, your analysis, and
+   ONE recommendation, so "go with your recommendation" is a complete reply. **Never hand
+   him your homework**: anything decidable from code, facts, or research is your job; he
+   is only needed where vision steers. (Full doctrine:
+   [`decisions-must-be-complete`](/policies/decisions-must-be-complete.md) — escalate a
+   plan, never a fork.)
+3. **A UI question carries a clickable route** plus the exact steps to reach the thing
+   you're asking about. Server-side questions still paint the whole picture, concisely.
+4. **A UI deliverable is a URL, never a file list.** Localhost link when you need instant
+   feedback; `https://aimatrx.com/...` once pushed. *No URL he can click and test = no
+   front-end work happened.*
+5. **"Done" means YOU verified it** — it works, desktop + tablet + mobile friendly, no
+   major bugs, and it meets his vision. He sees it after that, never before. Claiming
+   built what is untested is a false report.
+6. **Deployment is never his business**
+   ([`deployment-is-the-deploy-agents-job`](/policies/deployment-is-the-deploy-agents-job.md)).
+   The only release facts that may ever reach him: you are truly unable to proceed, or
+   finished work has sat unpushed for over an hour. Never narrate branches, releases, or
+   other agents' repo traffic.
+7. **Lead with what is NOT done.** Never let deep focus on one slice imply the whole is
+   further ahead than it is — no silent shortcuts, no quietly parked work. Every undone
+   part gets an explicit fate: (a) his approved deferral with a real timer (a scheduled
+   task that fires), (b) you build it, or (c) you spawn a focused session for it NOW
+   (chip / subagent).
 
 ## Closing the take — the system's bookkeeping
 
@@ -95,6 +130,10 @@ pending / documented-but-not-built / built-but-not-documented. Then move.
 
 # Changelog
 
+- 2026-08-21 — Added the check-in contract (Arman's spoken rules, condensed): cold-open
+  groundwork with no jargon/doc references, the two question shapes, UI = clickable URL
+  never a file list, done = self-verified on all three form factors, deployment silence
+  with the one-hour escalation exception, and the explicit-fate rule for undone work.
 - 2026-08-21 — Created from Arman's Feature Task Assignment prompt (his rules preserved
   verbatim) and wired to the Feature Registry system: register-row claim law, node doc
   kit, attention board, rotation stamp, review-queue registration, closure standard.
