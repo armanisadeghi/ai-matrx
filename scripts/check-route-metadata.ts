@@ -51,6 +51,7 @@ function read(relativePath: string): string {
 
 function routeDirectories(family: RouteFamily): string[] {
   const absolute = join(root, family.directory);
+  if (!existsSync(absolute)) return [];
   return readdirSync(absolute, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
     .filter((entry) => existsSync(join(absolute, entry.name, "page.tsx")))
