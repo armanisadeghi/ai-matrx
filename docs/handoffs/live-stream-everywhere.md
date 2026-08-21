@@ -110,7 +110,7 @@ history. The durable findings it produced live where they are enforced: the
 each feature's own change log.
 
 **This doc is now the whole thing** — the vision, the primitives, and the recipe.
-Cluster state: [`common-docs/projects/workflow-runtime/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/workflow-runtime/STATE.md)
+Cluster state: [`common-docs/systems/workflows/workflow-runtime/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/workflows/workflow-runtime/STATE.md)
 §4.8 (the primitives backlog — the standing job).
 
 One item that sweep does not own, because it is server-side:
