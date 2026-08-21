@@ -175,3 +175,114 @@ export interface FacetUsageRow {
 }
 
 export type RegistryDimension = "seo_facet" | "seo_value_band" | "seo_geo_band";
+
+// ── Industry starter packs (D36) ────────────────────────────────────────────
+
+/**
+ * A pack is the meaning layer a brand-new site in one industry adopts on day
+ * one: suggested topic worth, qualifier/value rules, and the site's band
+ * vocabularies. Packs are TEMPLATE ROWS, never code — adoption is a
+ * copy-insert into the site-scoped tables, and everything it writes is a
+ * starting position the business then edits or overrides.
+ *
+ * SoR: common-docs/systems/marketing/seo/seo-keywords/value-system.md.
+ */
+export interface StarterPackSummary {
+  id: string;
+  slug: string;
+  name: string;
+  industry: string;
+  summary: string | null;
+  description: string | null;
+  /** draft · proposed · ratified · retired — only ratified packs are canonical. */
+  status: string;
+  geo_model: string;
+  guidelines: string | null;
+  source_notes: string | null;
+  source_corpus: Array<Record<string, unknown>>;
+  ratified_at: string | null;
+  ratification_notes: string | null;
+  topic_count: number;
+  rule_count: number;
+  value_band_count: number;
+  geo_band_count: number;
+  geo_area_count: number;
+}
+
+export interface StarterPackTopicItem {
+  item_id: string;
+  topic_id: string;
+  name: string;
+  slug: string;
+  node_type: string;
+  parent_id: string | null;
+  description: string | null;
+  weight: number | null;
+  lead_quality: string | null;
+  service_match: string | null;
+  notes: string | null;
+  sort: number;
+}
+
+export interface StarterPackBandItem {
+  item_id: string;
+  value: string;
+  label: string;
+  description: string | null;
+  config: Record<string, unknown>;
+  notes: string | null;
+  sort: number;
+}
+
+export interface StarterPackGeoAreaItem {
+  item_id: string;
+  label: string;
+  area_kind: string | null;
+  match_tokens: string[];
+  geo_band: string;
+  notes: string | null;
+  sort: number;
+}
+
+export interface StarterPackRuleItem {
+  rule_id: string;
+  name: string;
+  description: string | null;
+  pattern: string | null;
+  match_kind: string | null;
+  match_facet: string | null;
+  match_facet_value: string | null;
+  target_class: string | null;
+  value_multiplier: number | null;
+  notes: string | null;
+}
+
+export interface StarterPackDetail {
+  pack: StarterPackSummary;
+  topics: StarterPackTopicItem[];
+  value_bands: StarterPackBandItem[];
+  geo_bands: StarterPackBandItem[];
+  geo_areas: StarterPackGeoAreaItem[];
+  rules: StarterPackRuleItem[];
+}
+
+/** What a pack part is called on the wire — the adopt RPC's `p_include`. */
+export type StarterPackPart =
+  | "topics"
+  | "value_bands"
+  | "geo_bands"
+  | "geo_areas"
+  | "rules";
+
+/** Counts of rows actually written. Adoption is additive and idempotent: a
+ *  second adopt writes nothing new, and never overwrites a site's own ruling. */
+export interface StarterPackAdoptResult {
+  pack: string;
+  site_id: string;
+  topics: number;
+  value_bands: number;
+  geo_bands: number;
+  geo_areas: number;
+  rules: number;
+  guidelines_seeded: boolean;
+}

@@ -19,6 +19,10 @@ import type {
   RegistryEntry,
   SiteGeoArea,
   SiteTopicValue,
+  StarterPackAdoptResult,
+  StarterPackDetail,
+  StarterPackPart,
+  StarterPackSummary,
   TopicNode,
   ValueBandDef,
   ValueReviewQuery,
@@ -305,4 +309,47 @@ export async function addFacetRegistryValue(
     p_description: description ?? undefined,
   });
   return assertData(response.data, response.error);
+}
+
+// ── Industry starter packs (D36) ────────────────────────────────────────────
+// Packs are platform-global template rows, so every read and the one write go
+// through SECURITY DEFINER RPCs — the same posture as gsc_value_vocabulary.
+
+export const starterPackCatalogQueryKey = ["seo", "starter-packs"] as const;
+export const starterPackDetailQueryKey = (packId: string) =>
+  ["seo", "starter-pack", packId] as const;
+
+export async function getStarterPackCatalog(
+  status?: string | null,
+  signal?: AbortSignal,
+): Promise<StarterPackSummary[]> {
+  const response = await (await seoDb())
+    .rpc("starter_pack_catalog", { p_status: status ?? undefined })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as StarterPackSummary[];
+}
+
+export async function getStarterPackDetail(
+  packId: string,
+  signal?: AbortSignal,
+): Promise<StarterPackDetail> {
+  const response = await (await seoDb())
+    .rpc("starter_pack_detail", { p_pack_id: packId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as unknown as StarterPackDetail;
+}
+
+/** THE one adoption path. Copy-insert, additive, idempotent — a site's own
+ *  rows are never overwritten, and re-adopting writes only what is missing. */
+export async function adoptStarterPack(
+  siteId: string,
+  packId: string,
+  parts?: StarterPackPart[],
+): Promise<StarterPackAdoptResult> {
+  const response = await (await seoDb()).rpc("adopt_starter_pack", {
+    p_site_id: siteId,
+    p_pack_id: packId,
+    ...(parts && parts.length ? { p_include: parts } : {}),
+  });
+  return assertData(response.data, response.error) as unknown as StarterPackAdoptResult;
 }
