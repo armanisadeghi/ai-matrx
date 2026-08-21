@@ -194,7 +194,7 @@ export function CloudBrowserRunCard({
             className="flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-accent/40 hover:text-foreground"
             aria-expanded={expanded}
           >
-            <span className="shrink-0">
+            <span className="min-w-0 truncate">
               Continued browsing · {entries.length} actions
             </span>
             {expanded ? (
@@ -226,9 +226,7 @@ export function CloudBrowserRunCard({
             <MonitorUp className="size-3.5" />
           </Button>
         </div>
-        {expanded && (
-          <div className="ml-4 border-l border-border/50">{activityBody}</div>
-        )}
+        {expanded && <div className="mt-1">{activityBody}</div>}
       </div>
     );
   }
