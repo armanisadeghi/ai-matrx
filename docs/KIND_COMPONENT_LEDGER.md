@@ -16,8 +16,8 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 ## Counts (live, refresh on every edit)
 
 - Active non-contract-artifact kinds: **211**
-- Already routed (web/output row exists): **83**
-- **Missing a route: 128** — 45 individual + 83 in the `web_*_v1` audit-check family
+- Already routed (web/output row exists): **211** — live recount 2026-08-20
+- **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
 - Individual rows: unclaimed **0** · claimed **12** · done **24** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-D)
 
 > Contract artifacts (`is_contract_artifact = true`, 774 active) are quarantined per §7.8 and
@@ -292,3 +292,4 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 - 2026-08-20 — copy-B **batch 2 done**: the research/evidence cluster is routed (`migrations/content_ir_research_evidence_kind_routes.sql`, applied live + ledgered). Five missing canonical examples authored and validated against the LIVE schemas with negative controls. `claim_evidence` is **blocked on its example only** — its schema carries a dangling `#/$defs/EvidenceSource` with no `$defs` and cannot compile (FOUND_DEFECTS **D219**, a class of 5 active kinds incl. all four `plan_page_*`); its route is live and verified.
 - 2026-08-20 — copy-B claims batch 3: `http_response`, `office_extraction_result`, `office_file_result`, `page`, `regex_extract_result`, `scraped_page`, `research_page_analysis`, `research_setup_suggestion`.
 - 2026-08-20 — copy-B **batch 3 done**: `http_response`, `office_extraction_result`, `office_file_result`, `page`, `regex_extract_result`, `scraped_page`, `research_page_analysis`, `research_setup_suggestion` routed (`migrations/content_ir_io_result_kind_routes.sql`, applied live + ledgered). 25 verification tests now render every copy-B kind's LIVE canonical example through the seam.
+- 2026-08-20 — **LIVE RECOUNT: 211 / 211 routed, 0 missing.** Verified directly against `content_ir.kind_component` (project `brsgrqvjdzwihsvnfqkf`) after copy-B/C/D/E batches landed. Rows still reading `claimed` below are routed in the DB; their owners flip the status. Open follow-ups: `claim_evidence` blocked on its EXAMPLE (FOUND_DEFECTS **D219** — 5 active kinds carry an uncompilable `emitted_json_schema`), and contract artifacts remain quarantined and deliberately out of scope.
