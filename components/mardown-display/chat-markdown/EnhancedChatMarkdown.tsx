@@ -46,6 +46,7 @@ import {
 } from "@/features/tool-call-visualization/grouping/foldAgentWork";
 import { AgentWorkGroup } from "@/features/tool-call-visualization/components/AgentWorkGroup";
 import { getToolDisplayMode } from "@/features/tool-call-visualization/registry/registry";
+import { isCloudBrowserToolName } from "@/features/tool-call-visualization/renderers/cloud-browser/cloudBrowserRun";
 import { selectMessageInterleavedContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -131,32 +132,43 @@ const TOOL_BATCH_MIN = 2;
 
 /** A live unified slot, or a folded run of consecutive tool slots. */
 type GroupedSlot =
-  UnifiedSlot | { kind: "tool_batch"; callIds: string[]; seq: number };
+  | UnifiedSlot
+  | {
+      kind: "tool_batch";
+      callIds: string[];
+      seq: number;
+      batchKind: "default" | "cloud-browser";
+    };
 
 function groupConsecutiveToolSlots(
   slots: UnifiedSlot[],
   // Result-is-purpose / stay-open tools (knowledge_search, document_search, …) are
   // the DELIVERABLE — they render their full card directly and are never
   // hidden behind a "N tool calls" line. Only "auto" tools batch.
-  isBatchable: (callId: string) => boolean,
+  getBatchKind: (callId: string) => "default" | "cloud-browser" | null,
 ): GroupedSlot[] {
   const out: GroupedSlot[] = [];
   for (let i = 0; i < slots.length;) {
     const s = slots[i];
-    if (s.kind === "tool" && isBatchable(s.callId)) {
+    const batchKind = s.kind === "tool" ? getBatchKind(s.callId) : null;
+    if (s.kind === "tool" && batchKind) {
       const callIds: string[] = [s.callId];
       let j = i + 1;
-      while (
-        j < slots.length &&
-        slots[j].kind === "tool" &&
-        isBatchable((slots[j] as { callId: string }).callId)
-      ) {
-        callIds.push((slots[j] as { callId: string }).callId);
+      while (j < slots.length) {
+        const candidate = slots[j];
+        if (
+          !candidate ||
+          candidate.kind !== "tool" ||
+          getBatchKind(candidate.callId) !== batchKind
+        ) {
+          break;
+        }
+        callIds.push(candidate.callId);
         j++;
       }
       out.push(
         callIds.length >= TOOL_BATCH_MIN
-          ? { kind: "tool_batch", callIds, seq: s.seq }
+          ? { kind: "tool_batch", callIds, seq: s.seq, batchKind }
           : s,
       );
       i = j;
@@ -171,25 +183,37 @@ function groupConsecutiveToolSlots(
 /** A persisted content segment, or a folded run of consecutive db_tool segments. */
 type GroupedSegment =
   | ContentSegment
-  | { type: "db_tool_batch"; segments: ContentSegmentDbTool[]; key: string };
+  | {
+      type: "db_tool_batch";
+      segments: ContentSegmentDbTool[];
+      key: string;
+      batchKind: "default" | "cloud-browser";
+    };
 
 function groupConsecutiveDbTools(
   segments: ContentSegment[],
   // Same rule as the live path: deliverable-card tools never batch.
-  isBatchable: (seg: ContentSegmentDbTool) => boolean,
+  getBatchKind: (
+    seg: ContentSegmentDbTool,
+  ) => "default" | "cloud-browser" | null,
 ): GroupedSegment[] {
   const out: GroupedSegment[] = [];
   for (let i = 0; i < segments.length;) {
     const seg = segments[i];
-    if (seg.type === "db_tool" && isBatchable(seg)) {
+    const batchKind = seg.type === "db_tool" ? getBatchKind(seg) : null;
+    if (seg.type === "db_tool" && batchKind) {
       const run: ContentSegmentDbTool[] = [seg];
       let j = i + 1;
-      while (
-        j < segments.length &&
-        segments[j].type === "db_tool" &&
-        isBatchable(segments[j] as ContentSegmentDbTool)
-      ) {
-        run.push(segments[j] as ContentSegmentDbTool);
+      while (j < segments.length) {
+        const candidate = segments[j];
+        if (
+          !candidate ||
+          candidate.type !== "db_tool" ||
+          getBatchKind(candidate) !== batchKind
+        ) {
+          break;
+        }
+        run.push(candidate);
         j++;
       }
       out.push(
@@ -198,6 +222,7 @@ function groupConsecutiveDbTools(
               type: "db_tool_batch",
               segments: run,
               key: `db-tool-batch-${run[0].callId}`,
+              batchKind,
             }
           : seg,
       );
@@ -219,7 +244,7 @@ function groupConsecutiveDbTools(
  */
 function flattenWorkSlots(items: GroupedSlot[]): GroupedSlot[] {
   return items.flatMap((item) =>
-    item.kind === "tool_batch"
+    item.kind === "tool_batch" && item.batchKind === "default"
       ? item.callIds.map((callId): GroupedSlot => ({
           kind: "tool",
           callId,
@@ -231,7 +256,9 @@ function flattenWorkSlots(items: GroupedSlot[]): GroupedSlot[] {
 
 function flattenWorkSegments(items: GroupedSegment[]): GroupedSegment[] {
   return items.flatMap((item) =>
-    item.type === "db_tool_batch" ? item.segments : [item],
+    item.type === "db_tool_batch" && item.batchKind === "default"
+      ? item.segments
+      : [item],
   );
 }
 
@@ -425,21 +452,20 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // `hasDbInterleavedSpecial` branch checks still read the raw arrays.
   const groupedSlots = useMemo(
     () =>
-      groupConsecutiveToolSlots(
-        unifiedSlots,
-        (callId) =>
-          getToolDisplayMode(toolLifecycleMap?.[callId]?.toolName ?? null) ===
-          "auto",
-      ),
+      groupConsecutiveToolSlots(unifiedSlots, (callId) => {
+        const toolName = toolLifecycleMap?.[callId]?.toolName ?? null;
+        if (getToolDisplayMode(toolName) !== "auto") return null;
+        return isCloudBrowserToolName(toolName) ? "cloud-browser" : "default";
+      }),
     [unifiedSlots, toolLifecycleMap],
   );
   const groupedSegments = useMemo(
     () =>
-      groupConsecutiveDbTools(
-        messageInterleavedContent,
-        (seg) =>
-          getToolDisplayMode(seg.record?.toolName ?? seg.stubName) === "auto",
-      ),
+      groupConsecutiveDbTools(messageInterleavedContent, (seg) => {
+        const toolName = seg.record?.toolName ?? seg.stubName;
+        if (getToolDisplayMode(toolName) !== "auto") return null;
+        return isCloudBrowserToolName(toolName) ? "cloud-browser" : "default";
+      }),
     [messageInterleavedContent],
   );
 

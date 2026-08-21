@@ -56,6 +56,8 @@ export interface ToolResultCardProps {
   onToggleExpanded?: () => void;
   /** Tool-specific dropdown items — rendered BEFORE the canonical pair. */
   menuItems?: ToolResultCardMenuItem[];
+  /** A visible, tool-specific primary action rendered in the header. */
+  headerAction?: React.ReactNode;
   /** Canonical destinations (the shell provides these). */
   onOpenWindowPanel?: () => void;
   onOpenOverlay?: () => void;
@@ -71,6 +73,7 @@ export function ToolResultCard({
   expanded,
   onToggleExpanded,
   menuItems,
+  headerAction,
   onOpenWindowPanel,
   onOpenOverlay,
   className,
@@ -80,7 +83,8 @@ export function ToolResultCard({
   const isOpen = expanded ?? selfOpen;
   const toggle = onToggleExpanded ?? (() => setSelfOpen((v) => !v));
 
-  const hasBody = children !== undefined && children !== null && children !== false;
+  const hasBody =
+    children !== undefined && children !== null && children !== false;
   const showBody = hasBody && isOpen;
   const hasMenu =
     (menuItems && menuItems.length > 0) || onOpenWindowPanel || onOpenOverlay;
@@ -103,11 +107,30 @@ export function ToolResultCard({
           showBody ? "rounded-t-xl border-b-0" : "rounded-xl",
         )}
       >
-        <Icon className={cn("size-[18px] shrink-0", iconClassName)} strokeWidth={2.25} />
+        <Icon
+          className={cn("size-[18px] shrink-0", iconClassName)}
+          strokeWidth={2.25}
+        />
         <span className="min-w-0 flex-1">
-          <span className="block break-words text-sm font-medium text-foreground sm:truncate">{title}</span>
-          {sub && <span className="block break-words text-xs text-muted-foreground sm:truncate">{sub}</span>}
+          <span className="block break-words text-sm font-medium text-foreground sm:truncate">
+            {title}
+          </span>
+          {sub && (
+            <span className="block break-words text-xs text-muted-foreground sm:truncate">
+              {sub}
+            </span>
+          )}
         </span>
+
+        {headerAction && (
+          <span
+            className="shrink-0"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            {headerAction}
+          </span>
+        )}
 
         {hasMenu && (
           <DropdownMenu>
@@ -125,7 +148,10 @@ export function ToolResultCard({
                 <ChevronDown className="size-3" />
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuContent
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+            >
               {menuItems?.map((item) => (
                 <DropdownMenuItem
                   key={item.label}
@@ -136,9 +162,11 @@ export function ToolResultCard({
                   {item.label}
                 </DropdownMenuItem>
               ))}
-              {menuItems && menuItems.length > 0 && (onOpenWindowPanel || onOpenOverlay) && (
-                <DropdownMenuSeparator />
-              )}
+              {menuItems &&
+                menuItems.length > 0 &&
+                (onOpenWindowPanel || onOpenOverlay) && (
+                  <DropdownMenuSeparator />
+                )}
               {onOpenWindowPanel && (
                 <DropdownMenuItem onClick={onOpenWindowPanel} className="gap-2">
                   <PanelRightOpen className="size-4" />

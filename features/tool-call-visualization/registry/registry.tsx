@@ -95,6 +95,8 @@ import { SqlInline } from "../renderers/sql/SqlInline";
 import { FsInline } from "../renderers/fs/FsInline";
 import { SkillInline } from "../renderers/skill/SkillInline";
 import { AskInline } from "../renderers/ask/AskInline";
+import { CloudBrowserInline } from "../renderers/cloud-browser/CloudBrowserRunCard";
+import { cloudBrowserAction } from "../renderers/cloud-browser/cloudBrowserRun";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
 import { AgentCallInline } from "../renderers/agent-call/AgentCallInline";
@@ -253,11 +255,167 @@ function webHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
   return null;
 }
 
+function cloudBrowserPhaseLabels(entry: ToolLifecycleEntry): ToolPhaseLabels {
+  const action = cloudBrowserAction(entry);
+  switch (action) {
+    case "navigate":
+      return {
+        running: "Opening Cloud Browser",
+        complete: "Opened Cloud Browser",
+        errorPrefix: "Couldn’t open Cloud Browser",
+      };
+    case "click":
+      return {
+        running: "Clicking in Cloud Browser",
+        complete: "Clicked in Cloud Browser",
+        errorPrefix: "Browser click failed",
+      };
+    case "type_text":
+      return {
+        running: "Entering text in Cloud Browser",
+        complete: "Entered text in Cloud Browser",
+        errorPrefix: "Couldn’t enter text",
+      };
+    case "select_option":
+      return {
+        running: "Selecting an option",
+        complete: "Selected an option",
+        errorPrefix: "Couldn’t select an option",
+      };
+    case "wait_for":
+      return {
+        running: "Waiting on the page",
+        complete: "Waited on the page",
+        errorPrefix: "Browser wait failed",
+      };
+    case "get_element":
+      return {
+        running: "Reading the page",
+        complete: "Read the page",
+        errorPrefix: "Couldn’t read the page",
+      };
+    case "scroll":
+      return {
+        running: "Scrolling the page",
+        complete: "Scrolled the page",
+        errorPrefix: "Couldn’t scroll the page",
+      };
+    case "screenshot":
+      return {
+        running: "Capturing the browser",
+        complete: "Captured the browser",
+        errorPrefix: "Screenshot failed",
+      };
+    case "close":
+      return {
+        running: "Closing Cloud Browser",
+        complete: "Closed Cloud Browser",
+        errorPrefix: "Couldn’t close Cloud Browser",
+      };
+    case "credential:list":
+      return {
+        running: "Checking saved sign-ins",
+        complete: "Checked saved sign-ins",
+        errorPrefix: "Couldn’t check saved sign-ins",
+      };
+    case "credential:discover":
+      return {
+        running: "Preparing secure sign-in",
+        complete: "Prepared secure sign-in",
+        errorPrefix: "Couldn’t prepare secure sign-in",
+      };
+    case "credential:authenticator":
+      return {
+        running: "Completing two-step verification",
+        complete: "Completed two-step verification",
+        errorPrefix: "Two-step verification failed",
+      };
+    case "credential:report":
+      return {
+        running: "Reporting a sign-in issue",
+        complete: "Reported a sign-in issue",
+        errorPrefix: "Couldn’t report sign-in issue",
+      };
+    case "credential:auto":
+    case "credential:attempt":
+      return {
+        running: "Signing in securely",
+        complete: "Signed in securely",
+        errorPrefix: "Secure sign-in failed",
+      };
+    default:
+      return {
+        running: "Using Cloud Browser",
+        complete: "Used Cloud Browser",
+        errorPrefix: "Cloud Browser action failed",
+      };
+  }
+}
+
+const cloudBrowserRendererBase = {
+  chrome: "card",
+  displayName: "Cloud Browser",
+  resultsLabel: "Activity",
+  InlineComponent: CloudBrowserInline,
+  OverlayComponent: CloudBrowserInline,
+  keepExpandedOnStream: true,
+  getPhaseLabels: cloudBrowserPhaseLabels,
+} satisfies Omit<ToolRenderer, "toolName">;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Static tool registry
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const toolRendererRegistry: ToolRegistry = {
+  cloud_browser: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser",
+  },
+  cloud_browser_navigate: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_navigate",
+  },
+  cloud_browser_click: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_click",
+  },
+  cloud_browser_type: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_type",
+  },
+  cloud_browser_type_text: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_type_text",
+  },
+  cloud_browser_select_option: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_select_option",
+  },
+  cloud_browser_wait_for: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_wait_for",
+  },
+  cloud_browser_get_element: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_get_element",
+  },
+  cloud_browser_scroll: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_scroll",
+  },
+  cloud_browser_screenshot: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_screenshot",
+  },
+  cloud_browser_close: {
+    ...cloudBrowserRendererBase,
+    toolName: "cloud_browser_close",
+  },
+  credential_login: {
+    ...cloudBrowserRendererBase,
+    toolName: "credential_login",
+    displayName: "Credential Login",
+  },
   agent_call: {
     toolName: "agent_call",
     displayName: "Agent Call",
@@ -293,7 +451,8 @@ export const toolRendererRegistry: ToolRegistry = {
       const agent = collab.agentName;
       if (entry.status === "completed" && collab.resultText) {
         const snippet = collab.resultText.replace(/\s+/g, " ").trim();
-        const short = snippet.length > 90 ? `${snippet.slice(0, 90)}…` : snippet;
+        const short =
+          snippet.length > 90 ? `${snippet.slice(0, 90)}…` : snippet;
         return agent ? `${agent} — ${short}` : short;
       }
       return agent ?? "reviewing a conversation";

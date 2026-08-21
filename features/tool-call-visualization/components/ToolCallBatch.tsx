@@ -45,6 +45,8 @@ import {
   wasToolCardLive,
 } from "./toolCardUiSession";
 import { asFsListing, FsBatchCard } from "../renderers/fs/FsInline";
+import { CloudBrowserRunCard } from "../renderers/cloud-browser/CloudBrowserRunCard";
+import { isCloudBrowserRun } from "../renderers/cloud-browser/cloudBrowserRun";
 
 export interface ToolCallBatchProps {
   /** One entry per tool in the run — drives the count + streaming state. */
@@ -134,6 +136,24 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
 
   if (count === 0) return null;
+
+  // Cloud Browser + Credential Login are one human-meaningful activity stream,
+  // not N generic tool cards. Keep the first browser header and append every
+  // action beneath it, including screenshots and secure sign-in steps.
+  if (isCloudBrowserRun(entries)) {
+    return (
+      <CloudBrowserRunCard
+        entries={entries}
+        conversationId={conversationId}
+        expanded={isExpanded}
+        onToggleExpanded={() => {
+          setToolCardUserChoice(batchKey, !isExpanded);
+          setUserChoiceState(!isExpanded);
+        }}
+        className={className}
+      />
+    );
+  }
 
   // ── Consolidation (owner template): a run of uniform, completed `fs_list`
   // calls becomes ONE card — header + one row per listing, rows expanding
