@@ -234,11 +234,18 @@ boundary. From there, three projections:
 
 From the search pilot (2026-08-20):
 
-1. **No `@kind` decorator / `KindModel` base exists.** Every model hand-carries
-   `Field(alias="__kind")` + `ConfigDict(populate_by_name=True,
-   serialize_by_alias=True)` — leading-underscore field names are private in
-   pydantic, so the alias is the only way to declare the discriminator. The SDK
-   base must own this.
+1. **`@kind` / `KindModel`: BUILT** (`matrx_graph.content_ir.model` +
+   `.sdk`). The base owns the discriminator entirely — `Field(alias="__kind")`
+   (leading-underscore field names are private in pydantic, so the alias is the
+   only way) plus BOTH halves of that alias in the config: `populate_by_name`
+   to accept `__kind` on the way in and `serialize_by_alias` to emit it on the
+   way out. The second half was missed at first and it is not cosmetic: a
+   `model_dump` override covers only a direct dump, so a kind NESTED in a plain
+   model serialized as `kind_` and its own `additionalProperties:false` schema
+   rejected it (fixed 2026-08-20; pinned by
+   `packages/matrx-graph/tests/test_content_ir_model.py`). The pilot's local
+   `SearchKindModel` (`aidream/services/search_kinds/models.py`) still predates
+   the base and should fold into it.
 2. **Registry→TypeScript codegen: BUILT (Stage B, 2026-08-20).** matrx-frontend
    `pnpm shape:types <kind…>` / `--all-generated` / `pnpm check:kind-types`
    (`scripts/shape/generate-kind-types.ts`) reads `emitted_json_schema` from
