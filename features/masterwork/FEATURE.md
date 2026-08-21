@@ -1,7 +1,7 @@
 # Masterwork — Rulebooks, rules, Masterworks (Masterwork Studio's UI home)
 
 > **Vocabulary is settled** ([`common-docs/systems/vocabulary/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md)
-> § Settled — Masterwork; work order: [`docs/handoffs/masterwork-distillation.md`](/Users/armanisadeghi/code/matrx-frontend/docs/handoffs/masterwork-distillation.md)):
+> § Settled — Masterwork; work order: [`common-docs/systems/masterwork/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/systems/masterwork/HANDOFF.md)):
 > **Rulebook** (was pack) · **a Masterwork** (was desk) · **Build** (was compile) ·
 > **Audition** (was backtest) · **Scout** (was Expertise Interviewer) · **Approach**
 > (was lane/mode). This feature directory was renamed from `features/expertise/`
@@ -226,7 +226,7 @@
   shared-with-me list filter exists yet — lib/list-scope Brief 3A; add the shelf when it lands).
 - **Server half:** aidream Masterwork services (Build + ingest Approaches + the `rulebook`
   tool, one shared rule builder and one shared CAS write path).
-- **Next (work order: docs/handoffs/masterwork-distillation.md):** the Arman-SEO honest test
+- **Next (work order: common-docs/systems/masterwork/HANDOFF.md):** the Arman-SEO honest test
   (Rulebook `arman-seo-method` scaffolded, draft, owned by Arman — the interview Approach
   unblocks it).
 
@@ -384,7 +384,7 @@ signed-in user can truly read: the public mandate registry (`fetchMandatePins`)
 plus each bound agent's `agent.definition` revision count + last-changed date. It
 NEVER fabricates review activity. Closing the gap (review summaries/findings for
 Experts) needs a deliberate server-side read path — tracked in
-`docs/handoffs/masterwork-distillation.md`.
+`common-docs/systems/masterwork/HANDOFF.md`.
 
 ## Data
 
@@ -696,7 +696,7 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
 > CREATION funnel, and six Approaches he personally approved on 2026-08-17 had
 > no row at all — so the picker he was looking at showed the nine weakest of
 > the fifteen. The catalog with its provenance is
-> `common-docs/projects/masterwork/STATE.md` § 3b.
+> `common-docs/systems/masterwork/STATE.md` Part II § 3b.
 
 **Two orthogonal flags, and they must never be conflated:**
 
