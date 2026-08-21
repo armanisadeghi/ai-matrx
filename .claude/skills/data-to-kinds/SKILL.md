@@ -122,6 +122,15 @@ answer them (the page/action/question rule).
    state doc's queue and fire a Stage A chip that references ONLY this skill.
    The replication run is the test — its friction is your failure list.
 
+## Maturity tiers (shared vocabulary — every agent states the tier it leaves a kind at)
+
+`content_ir.kind_definition.metadata.maturity`: **placeholder** (outer structure honest, data
+not studied — the fast-fire tier and the SDK default) → **distilled** (real data studied, shape
+designed — what THIS skill's Stage A produces) → **verified** (distilled + proven end-to-end
+through component and real render — awarded only by the verification pass, never declared).
+Registering a basic FE route does not promote a tier. Over-engineering guard: a boring flat
+result whose placeholder shape already tells the truth is promoted "simple-is-correct" as-is.
+
 ## Standing rules (all stages)
 
 - **Every keep/drop/merge/require decision is Arman's.** Propose; never decide.
