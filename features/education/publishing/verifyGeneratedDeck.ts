@@ -12,6 +12,7 @@ import {
 import { fcService } from "@/features/flashcards/data/fcService";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 export interface DeckCardVerification {
   cardId: string;
@@ -70,6 +71,10 @@ export async function verifyGeneratedDeck(
   }
   assertGeneratedDeckHasCards(loaded.data.cards.length);
 
+  // Execution refuses a run with no organization, so resolve one up front —
+  // the never-null personal org — rather than depending on whatever the person
+  // happens to have selected in the sidebar.
+  const organizationId = await ensureOrgId(undefined);
   const allowed = new Set(allowedChunkIds);
   const results: DeckCardVerification[] = [];
   for (const card of loaded.data.cards) {
@@ -102,6 +107,7 @@ export async function verifyGeneratedDeck(
           mandateKey: FC_MANDATES.verifyAgainstSource,
           surfaceKey: "education-content-pipeline-verify",
           sourceFeature: "education-flashcards",
+          organizationId,
           variables: {
             front: card.front,
             back: card.back,

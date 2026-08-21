@@ -67,6 +67,7 @@ function makeRun(kind: "quiz" | "practice_test") {
       mandateKey: ASSESSMENT_MANDATES.generateQuizFromSource,
       surfaceKey: `education-convert-${defaults.base}`,
       sourceFeature: "education-ingest",
+      organizationId: ctx.orgId,
       variables: {
         source_content: source.text,
         source_label: source.title ?? "",

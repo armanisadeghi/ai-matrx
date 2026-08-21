@@ -30,6 +30,7 @@ async function run(
     mandateKey: EDU_MEMORY_MANDATES.memoryAid,
     surfaceKey: "education-ingest-memory",
     sourceFeature: "education-ingest",
+    organizationId: ctx.orgId,
     variables: {
       source_content: source.text,
       title: source.title ?? "Study material",

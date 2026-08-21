@@ -96,23 +96,37 @@ export function KitBoard({
   const stillWorking = kit.targets.filter(
     (t) => t.status === "running" || (t.status === "success" && t.stillGenerating),
   ).length;
+  const failed = kit.targets.filter((t) => t.status === "error").length;
+
+  // Say the TRUE state — "0 ready" beside a cheerful "your kit is ready" is the
+  // kind of line that teaches a student not to trust the screen.
+  const headline =
+    kit.phase === "ingesting"
+      ? "Reading your material — nothing is stuck, you can watch each step below."
+      : stillWorking > 0
+        ? finished > 0
+          ? `${finished} ready · ${stillWorking} still being made — you can open the finished ones now.`
+          : `${stillWorking} being made — this takes a minute or two.`
+        : failed > 0 && finished === 0
+          ? failed === 1
+            ? "That one didn't come through — see why below."
+            : `None came through — see why below.`
+          : failed > 0
+            ? `${finished} ready · ${failed} didn't come through.`
+            : `${finished} ready`;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-foreground">
-            {done && stillWorking === 0
+            {done && stillWorking === 0 && finished > 0
               ? "Your study kit is ready"
-              : "Building your study kit"}
+              : done && stillWorking === 0
+                ? "Nothing was created"
+                : "Building your study kit"}
           </h2>
-          <p className="text-xs text-muted-foreground">
-            {kit.phase === "ingesting"
-              ? "Reading your material — nothing is stuck, you can watch each step below."
-              : stillWorking > 0
-                ? `${finished} ready · ${stillWorking} still being made — you can open the finished ones now.`
-                : `${finished} ready`}
-          </p>
+          <p className="text-xs text-muted-foreground">{headline}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {kit.busy && kit.startedAt && (

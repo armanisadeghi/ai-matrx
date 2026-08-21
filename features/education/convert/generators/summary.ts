@@ -57,6 +57,7 @@ async function run(
     mandateKey: CONVERT_MANDATES.summarize,
     surfaceKey: "education-ingest-summary",
     sourceFeature: "education-ingest",
+    organizationId: ctx.orgId,
     variables: {
       source_content: source.text,
       title: source.title ?? "",

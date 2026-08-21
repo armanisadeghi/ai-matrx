@@ -152,6 +152,7 @@ async function run(
     mandateKey: CONVERT_MANDATES.deckFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
+    organizationId: ctx.orgId,
     variables: {
       source_content: chunkForGrounding(source.text),
       title: source.title ?? "Study material",

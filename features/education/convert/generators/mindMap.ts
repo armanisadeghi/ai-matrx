@@ -44,6 +44,7 @@ async function run(
     mandateKey: EDU_MEDIA_MANDATES.mindMap,
     surfaceKey: "education-ingest-mindmap",
     sourceFeature: "education-ingest",
+    organizationId: ctx.orgId,
     variables: {
       source_content: source.text,
       title: source.title ?? "Study material",

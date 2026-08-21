@@ -79,6 +79,7 @@ async function run(
     mandateKey: NOTES_MANDATES.studyNotes,
     surfaceKey: "education-convert-notes",
     sourceFeature: "education-ingest",
+    organizationId: ctx.orgId,
     variables: {
       source_content: source.text,
       title: source.title ?? "",
