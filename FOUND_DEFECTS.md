@@ -146,118 +146,42 @@ policies ALSO read — so the natural scope is "retire the workbench UDT legacy 
 bridge", not "drop is_public". `workbench.udt_datasets` is the one table where this is the only
 thing left between it and certification.
 
-### D234 — `sandbox_instance` is 91.6% of the entire version store: 4.83M of 5.28M rows over 375 rows (2026-08-21)
-
-Found while verifying the versioned-without-capture migration (D233's sibling; measured live).
+### D234 — `sandbox_instance` was 92% of the version store, and 100% of it was no-op (2026-08-21; **capture fixed, corpus decision open**)
 
 ```
-history.row_versions total          5,281,006
-  entity_type='sandbox_instance'    4,835,068   (91.6%)
-  distinct row_id for it                  375   (~12,900 versions PER ROW)
+history.row_versions total            5,281,006
+  entity_type='sandbox_instance'      4,864,004   (92%)
+  distinct row_id                           375   (~12,970 versions PER ROW)
 ```
 
-It is still growing at ~3,850 UPDATE snapshots per 30 minutes — by far the largest writer, and
-essentially all of it is heartbeat/lifecycle churn on a small fleet of sandbox rows, not content a
-human revises. This is precisely the failure mode db-rules §7's **sanctioned split-trigger shape**
-exists to prevent, and it is already deployed on `workflow.trigger` and (2026-08-21)
-`scheduler.sch_task` / `sch_trigger`.
+Diffing 14,982 consecutive snapshot pairs over a 2-hour window, the only keys that EVER differed were
+`updated_at` and `version` — the two columns `platform._touch_row` moves by itself. **100% no-op.**
+There is no content history in that corpus; something writes no-change UPDATEs to
+`public.sandbox_instances` continuously and every one cost a version row.
 
-**Fix (mechanical, same recipe):** replace the plain `_version_capture` on the sandbox instance table
-with the pair — unconditional `AFTER INSERT OR DELETE`, plus `AFTER UPDATE … WHEN` comparing
-`to_jsonb(OLD.*)`/`to_jsonb(NEW.*)` minus the runtime columns (status/heartbeat/last_seen/ip/port
-style columns, plus `updated_at` and `version`). Identify the runtime columns from the actual write
-path before choosing the strip list.
+**FIXED — capture.** `migrations/sandbox_instance_version_capture_split_d234.sql` applies the
+sanctioned split-trigger shape (db-rules §7), stripping `updated_at`, `version`, and
+`last_heartbeat_at` (the analogue of `last_fired_at` in the `workflow.trigger` precedent — it was not
+moving during the sample, but it is exactly what would re-open the firehose when heartbeats resume).
+Verified in a rolled-back transaction: no-op write captures nothing, heartbeat captures nothing, real
+edit captures one. Verified live after applying: **~3,850 snapshots/30min → 0**, newest capture frozen
+at the moment of the fix.
 
-**Not done here** because it is outside the versioned-without-capture backlog (that table already HAS
-capture, so it was never in the 47) and because pruning the 4.8M existing rows is a separate decision:
-`version_prune(token, id, keep)` exists, but whether sandbox history is worth keeping at all is
-Arman's call — the honest options are prune-to-N, or set `is_versioned=false` and drop the corpus.
+**STILL OPEN — two things, neither of which a fix should decide by itself:**
 
-### D232 — the DDL-guard backlog, triaged; §A/§B/§C closed, §D's hard remainder split out (2026-08-21)
+1. **The 4.86M existing rows.** They are pure noise and they are 92% of the table. `version_prune(token,
+   id, keep)` can drop them per row. Deleting history is Arman's call — recommendation: prune to
+   `keep=5` per row (leaves ~1,875 rows, reclaims ~4.86M).
+2. **The upstream writer.** The fix stops the *history* cost; the wasted write traffic to
+   `sandbox_instances` is untouched and still running. Needs a code hunt in `aidream` /
+   `matrx-sandbox` for the loop issuing no-change UPDATEs (likely a status/heartbeat poller writing
+   unconditionally instead of on change).
 
-Product of giving `platform.ddl_guard_log` a reader (`migrations/ddl_guard_log_ack_contract.sql`,
-`scripts/check-ddl-guard-log.ts`, docs-steward daily step). All firings are acknowledged **with a
-reason**; this entry is the residue no ack should hide. Every line below was re-verified live
-against `iam.verify_canonical` / `iam.canonical_certify_ok` / `pg_trigger` / `pg_attribute`
-immediately before it was acted on.
-
-**The `hand_rolled_entity` class is closed at the source** — `d2b8e526b` flipped that rule from WARN
-to ERROR the same day. A fresh `hand_rolled_entity` row appearing after 2026-08-21 means the event
-trigger was disabled.
-
-**Ratchets moved, which is the proof:** unregistered entity-like tables **48 → 41**
-(`scripts/canonical-ratchets/unregistered-entities-baseline.json`), post-doctrine FAIL findings
-**22 → 1** (`post-doctrine-baseline.json`), org-backstop exemptions **78 → 6**
-(aidream `scripts/org_backstop_exemptions.json`).
-
-**A. Unregistered entity-looking tables (9) — CLOSED as dispositioned.** Judged by purpose
-(changeover doctrine §5) and recorded, with a required reason each, in
-`scripts/canonical-ratchets/unregistered-entities-allowlist.json` — that file IS the "reviewed,
-deliberately unregistered" record the 08-15 audit found missing. Five are structurally not entities
-(PK is `organization_id` / `user_id` / `country_code` / `token` / a composite, so there is no `id`
-identity to register): `billing.org_plan`, `billing.user_plan`, `crm.jurisdiction_policy`,
-`crm.unsubscribe_token`, `platform.org_change_policy`. `billing.plan` has an `id TEXT` PK
-(`'personal-pro'`) and no org/owner/visibility — a global price list. Two were declared non-entities
-in their own creating migrations and the allowlist quotes them: `platform.retention_policy`
-("deliberately NOT a canonical entity table: a configuration registry with no owner and nothing
-shareable") and `content_ir.io_contract` ("a TYPE SIGNATURE, never a Shape"). The ninth,
-`crm.outreach_acceptance`, is a genuine entity candidate and is the one that needs a decision —
-split out as **D237**.
-
-**B. Registered but failing certify — CLOSED.** `migrations/d232_seo_canonical_repair.sql`:
-`seo.source_request` and `seo.story_angle` are now `canonical_certify_ok = true` (org FK +
-`NOT NULL` + backstop, `created_by`/`updated_by` FKs, `_stamp_actor`, `visibility` at `internal`
-with the §6a-1 justification written into the migration, and `iam.apply_rls` re-run to restore the
-`created_by` short-circuit `std_select` was missing — a live 42501 risk for a row's own owner).
-`seo.landscape_brief` and `seo.page_measurement_health` (the 4th post-doctrine table, 7 FAILs) are
-at **zero FAIL**, holding only the `soft_delete` WARN. **That WARN is the one open question here and
-it is Arman's: does a ledger/event table need `deleted_at`, or should `iam.verify_canonical` stop
-WARNing when `has_soft_delete=false` is deliberate?** One WARN is all that stands between those two
-and certification.
-
-**C. `organization_id NOT NULL` with no backstop — CLOSED (13 tables), and the CHECKER was wrong.**
-`migrations/d232_org_backstop_11_laggards.sql` (the original 11: `_stamp_org_default` on the seven
-roots, `platform.inherit_org_from_parent` on the four children) plus
-`migrations/d232_org_backstop_seo_starter_pack.sql` (`seo.starter_pack` /
-`seo.starter_pack_item`, which appeared the same day from parallel work).
-**The bigger win was the gate:** aidream's `matrx_orm.catalog.org_backstop_coverage` matched on the
-TRIGGER NAME `_stamp_org_default`, so every child entity carrying the documented
-`inherit_org_from_parent` backstop read as drift — **72 of the 78 grandfathered exemptions were
-never real**. It now matches the trigger FUNCTION against all three legal backstops (db-rules §2),
-`scripts/org_backstop_exemptions.json` is pruned 78 → 6, and
-`validate_org_backstop_coverage.py --strict` is green.
-
-**D. Kill-list columns — 2 cut, 2 code-complete and deploy-gated, 1 dispositioned, 4 split out.** Disagreement was measured per
-column first (db-rules §6a: three different correct outcomes), then acted on:
-- **Cut, pure dead weight** (`migrations/d232_kill_list_dead_weight_drops.sql`):
-  `canvas.canvas_comments.deleted` (0 rows) and `public.sandbox_instances.is_public`
-  (283 rows / 0 true / zero consumers anywhere).
-- **Code repointed, DROP deploy-gated — D238**: `canvas.canvas_items.is_public` (632 rows, 0 true,
-  `visibility` agrees). Its three readers now read `visibility` — `features/canvas/services/canvasItemsService.ts`,
-  `features/canvas/core/SavedCanvasItems.tsx`, and the `/maps` feature. The maps list SELECTs the
-  column by name, so the DROP waits for a READY production deployment (doctrine §8a-1 state 3).
-- **Bivalent, drop filed as D238**: `legal.wc_claim.is_public` — written by aidream's WC router.
-  `migrations/d232_wc_claim_visibility_bivalent.sql` installs the is_public ↔ visibility mirror and
-  drops the column's `NOT NULL` (§8d step 2) so each repo cuts over independently; both repos are
-  repointed. The DROP is gated on the **deployed** aidream SHA — **D238**.
-- **NOT a kill-list violation, no cut**: `billing.plan.is_public` means "shows on /pricing" on a
-  text-PK global price list with no owner, no org and no `visibility` column. It is a merchandising
-  flag, not an access driver, so there is nothing to map (db-rules §2 kills `is_public` *as the
-  access driver*). Dispositioned; leave it.
-- **Split out as D236**: the seven `workbench.udt_*` `is_public` columns. Their additive half is
-  already live (a `_bridge_legacy_owner` trigger keeps `is_public` and `visibility` in agreement and
-  the FE already writes only `visibility`), but the breaking half is 15 RPCs, three child RLS
-  policies, a shared bridge function and the aidream ORM — one coherent unit of work, not nine.
-
-**Observed, out of scope:** `browser.profile_checkpoint` is the single remaining post-doctrine FAIL
-(`policies_canonical: missing={pub_read}`). Every other `restricted`-variant table has `pub_read`, so
-the table — not the checker — is the outlier and one `iam.apply_rls` call fixes it; left alone
-because it was born 2026-08-18 in another session's work (doctrine §8c). Note db-rules §5's
-"`restricted` … No `pub_read`" line has drifted from what `iam.apply_rls` actually generates.
-
-Re-run the census any time: `pnpm check:ddl-guard-log`, or `select * from platform.ddl_guard_unacked;`.
-Acknowledging is `platform.ddl_guard_ack(p_reason => '…', p_by => '…', p_rule => '…' | p_object_ref => '…' | p_ids => '{…}')`
-— the reason is constraint-enforced.
+**Related, smaller, unfixed:** no-op captures exist elsewhere too — `web_page` 9,024 of 213,213
+UPDATEs (4.2%), `note` 2,072 of 13,965 (14.8%), `app_instance` 0 of 17,370. A no-op guard inside
+`platform._version_capture` itself would kill the whole class in one place, but that changes shared
+behavior across all ~158 capturing tokens (anything using a version row as a "who touched this" log
+would see fewer rows), so it is a platform decision rather than a fix.
 
 ### D233 — `agent_card`: a permission key the registry guard cannot hold (2026-08-21; **took prod down once, now restored**)
 
