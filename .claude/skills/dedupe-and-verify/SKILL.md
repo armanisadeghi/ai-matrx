@@ -33,6 +33,24 @@ current task. What is never acceptable: noting the disagreement and moving on.
 `common-docs/operations/scheduled-tasks.md` — the claim protocol there is the mandatory
 first step of every scheduled run), plus these on-demand spin-offs.
 
+## 🚨 The rotation — every node gets a close look on a consistent cycle (Arman, 2026-08-21)
+
+*"I wanna make sure that we don't mess any of that stuff up. I want these documents to stay
+nice, clean, up to date, accurate consistently."* The scheduled DAILY run is not free-roaming:
+it works a rotation over the registry so the whole corpus is deep-reviewed on a cycle.
+
+1. **Pick the next node(s)** from the DB (project `brsgrqvjdzwihsvnfqkf`):
+   `select slug, docs_path, last_reviewed_at from platform.taxonomy_node
+    where docs_path is not null order by last_reviewed_at asc nulls first limit 2;`
+   Flagged nodes (a contradiction reported anywhere, a `review_notes` flag) jump the queue.
+2. **Run the full pass below on that node's doc kit** — every claim in its STATE/HANDOFF
+   verified against live code/DB, duplicates collapsed, staleness fixed, vision untouched.
+3. **Stamp it:** `update platform.taxonomy_node set last_reviewed_at = now(),
+   review_notes = '<one line: verdict + anything flagged>' where slug = '<slug>';`
+   An un-stamped review didn't happen.
+4. **Cycle math:** ~45 doc-homed nodes at 2/day ≈ a full corpus pass every ~3 weeks. The
+   docs-steward monitors staleness daily — any node past 45 days unreviewed is an alarm.
+
 ## Scope
 
 Any subject, any size: two files that disagree, one directory, one registry node. For a
