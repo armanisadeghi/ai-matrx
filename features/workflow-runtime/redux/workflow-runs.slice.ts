@@ -27,6 +27,7 @@ import {
   type WorkflowRunEvent,
   type WorkflowRunStatus,
 } from "@/features/workflow-runtime/types";
+import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";
@@ -43,7 +44,34 @@ export interface NodeInvocationState {
   durationMs: number | null;
   /** From node_completed — REPLACED wholesale per attempt, never merged. */
   output: Record<string, unknown> | null;
+  /**
+   * The kind this step's output IS — the key the readout routes on.
+   *
+   * TWO sources, in-band FIRST (KINDS EVERYWHERE, the one-shape doctrine):
+   *
+   *  1. `output.__kind` — the discriminator carried INSIDE the payload. Under
+   *     the kinds migration this is what a kind instance is: self-describing
+   *     data (Stripe `object`, FHIR `resourceType`). It describes the value we
+   *     are actually holding, so it wins for RENDERING.
+   *  2. `event.output_kind` — the node's out-of-band DECLARATION, which is all
+   *     the engine emitted before the migration.
+   *
+   * Reading only (2) meant a payload that names its own kind still fell to the
+   * raw `SettledOutputBody` printer whenever the event omitted the declaration
+   * — the exact legacy path this system exists to retire. Measured on the live
+   * DB 2026-08-20: over 30 days of `workflow.node_events`, 2,728 node_completed
+   * events, 0 payloads carry `__kind` yet (the engine still strips it — the
+   * documented defection being reversed in aidream Stage 1) and 41 events carry
+   * no `output_kind` at all. So this is the FE half landing AHEAD of the engine
+   * half: the moment interior payloads keep their `__kind`, they route.
+   */
   outputKind: string | null;
+  /**
+   * The node's declared output kind, verbatim from `event.output_kind`. Kept
+   * separate from `outputKind` so a disagreement between what a node PROMISED
+   * and what it actually EMITTED stays visible instead of being overwritten.
+   */
+  outputKindDeclared: string | null;
   outputKindOk: boolean | null;
   /** node_completed `metadata.__ir` when present. */
   irEnvelope: unknown | null;
@@ -442,6 +470,7 @@ function makeInvocation(
     durationMs: null,
     output: null,
     outputKind: null,
+    outputKindDeclared: null,
     outputKindOk: null,
     irEnvelope: null,
     error: null,
@@ -606,10 +635,17 @@ function applyEvent(
       invocation.output = asRecord(event.output);
       invocation.durationMs =
         typeof event.duration_ms === "number" ? event.duration_ms : null;
-      invocation.outputKind =
+      const declaredKind =
         typeof event.output_kind === "string" && event.output_kind
           ? event.output_kind
           : null;
+      // In-band wins: the payload's own `__kind` describes the value we hold.
+      // The declaration is what the node promised. See the field docs above.
+      const inBandKind = invocation.output
+        ? readObjectKind(invocation.output)
+        : null;
+      invocation.outputKindDeclared = declaredKind;
+      invocation.outputKind = inBandKind ?? declaredKind;
       invocation.outputKindOk =
         typeof event.output_kind_ok === "boolean" ? event.output_kind_ok : null;
       const metadata = asRecord(event.metadata);

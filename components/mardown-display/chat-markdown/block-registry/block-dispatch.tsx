@@ -65,7 +65,7 @@ import {
   GENERIC_STRUCTURED_COMPONENT_KEY,
 } from "@/features/content-ir/react/kind-route";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
-import WebAuditCheckResultBlock from "@/components/mardown-display/blocks/web-audit/WebAuditCheckResultBlock";
+import WebAnalysisItemBlock from "@/components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
 import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComponent";
@@ -240,8 +240,8 @@ export function isBlockLoading(block: {
  *  - `generic_structured` — produced ONLY by `applyIrKindRoute`'s R6 generic
  *    fallback (a KNOWN shape nothing render-trusted claims); never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
- *  - `web_audit_check_result` — the ONE renderer for the `web-audit-check`
- *    kind family (the 85 registered `web_*_v1` site-audit checks, which share
+ *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
+ *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
  *    path, from a `content_ir.kind_component` row per kind; never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
@@ -369,7 +369,7 @@ export type FeSynthesizedBlockType =
   | "opening_hours"
   | "postal_address"
   | "geo_coordinates"
-  | "web_audit_check_result"
+  | "web_analysis_item"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -479,7 +479,7 @@ export type ShapeBlockType =
   | "map"
   | "stats"
   | "diff"
-  | "web_audit_check_result"
+  | "web_analysis_item"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -2044,12 +2044,12 @@ const SHAPE_BLOCK_DISPATCH = {
     />
   ),
 
-  // The `web-audit-check` family route (features/content-ir/react/kind-route.ts
-  // resolver-only path): all 85 `web_*_v1` site-audit check kinds carry one
+  // The `web_analysis_item` family route (features/content-ir/react/kind-route.ts
+  // resolver-only path): all 83 `web_*_v1` site-audit check kinds carry one
   // verified shape, so one component serves every one of them — pointed at by
   // a `kind_component` row per kind. Reached ONLY via applyIrKindRoute.
-  web_audit_check_result: ({ block, index }) => (
-    <WebAuditCheckResultBlock
+  web_analysis_item: ({ block, index }) => (
+    <WebAnalysisItemBlock
       key={index}
       content={block.content}
       metadata={block.metadata}

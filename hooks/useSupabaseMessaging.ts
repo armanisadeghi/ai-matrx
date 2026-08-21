@@ -32,6 +32,11 @@ import type {
   UseConversationsReturn,
 } from "@/features/messaging/types";
 import { toConversationWithDetails } from "@/features/messaging/data/conversation-list";
+import { fetchConversationsWithDetails } from "@/features/messaging/data/conversationsWithDetails";
+import {
+  fetchDmUserInfo,
+  fetchDmUserInfoMap,
+} from "@/features/messaging/data/dmUserInfo";
 
 function toConversationType(value: string): ConversationType {
   return value === "group" ? "group" : "direct";
@@ -108,18 +113,13 @@ export function useMessages(
         // Reverse to display in chronological order (oldest first)
         const data = rawData ? [...rawData].reverse() : [];
 
-        // Fetch sender info for each unique sender
-        const senderIds = [...new Set(data.map((m) => m.sender_id))];
-        const senderInfoMap = new Map<string, UserBasicInfo>();
-
-        for (const senderId of senderIds) {
-          const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-            p_user_id: senderId,
-          });
-          if (userInfo && userInfo[0]) {
-            senderInfoMap.set(senderId, userInfo[0]);
-          }
-        }
+        // Sender profiles come from the ONE deduped/cached reader — a thread
+        // whose messages share a few senders must not issue a profile RPC per
+        // sender per load, and two surfaces asking at once share one request.
+        const senderInfoMap = await fetchDmUserInfoMap(
+          supabase,
+          data.map((m) => m.sender_id),
+        );
 
         // Attach sender info to messages
         const messagesWithSender = data.map((m) => ({
@@ -161,12 +161,10 @@ export function useMessages(
       // sender info, and the merge below preserves it.
       let senderInfo: UserBasicInfo | undefined;
       if (newMessage.sender_id !== userId) {
-        const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-          p_user_id: newMessage.sender_id,
-        });
-        if (userInfo && userInfo[0]) {
-          senderInfo = userInfo[0];
-        }
+        senderInfo =
+          (await fetchDmUserInfo(supabase, newMessage.sender_id).catch(
+            () => null,
+          )) ?? undefined;
       }
 
       // Realtime-echo doctrine: never let a stale/out-of-order payload
@@ -369,18 +367,11 @@ export function useMessages(
         return;
       }
 
-      // Fetch sender info
-      const senderIds = [...new Set(data.map((m) => m.sender_id))];
-      const senderInfoMap = new Map<string, UserBasicInfo>();
-
-      for (const senderId of senderIds) {
-        const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-          p_user_id: senderId,
-        });
-        if (userInfo && userInfo[0]) {
-          senderInfoMap.set(senderId, userInfo[0]);
-        }
-      }
+      // Sender profiles via the ONE deduped/cached reader (see loadMessages).
+      const senderInfoMap = await fetchDmUserInfoMap(
+        supabase,
+        data.map((m) => m.sender_id),
+      );
 
       const messagesWithSender = data.map((m) => ({
         ...m,
@@ -591,22 +582,14 @@ export function useConversations(
     setError(null);
 
     try {
-      // Use the database function for efficient loading
-      const { data, error: fetchError } = await supabase.rpc(
-        "get_dm_conversations_with_details",
-        { p_user_id: userId },
-      );
+      // ONE canonical, deduped request. It already carries participants and
+      // their permitted profile fields — this loader is no longer an N+1
+      // waterfall, and a mount racing the initializer issues a single call.
+      const data = await fetchConversationsWithDetails(supabase, userId, {
+        maxAgeMs: 0,
+      });
 
       if (!mountedRef.current) return;
-
-      if (fetchError) {
-        console.error(
-          "[Messaging] Error loading conversations:",
-          fetchError.message,
-        );
-        setError(fetchError.message);
-        return;
-      }
 
       const conversationsWithParticipants = data.map((conversation) =>
         toConversationWithDetails(conversation, userId),
@@ -657,11 +640,11 @@ export function useConversations(
       uniqueChannelTopic(`dm_conversations:${userId}`),
     );
 
-    // Debounced full reload — `loadConversations` is an N+1 waterfall (one
-    // `get_dm_user_info` RPC per participant), and this handler fires for
-    // EVERY visible dm_messages INSERT. Unthrottled, busy DM traffic (or a
-    // burst of our own sends echoing back) turned this into a reload storm —
-    // the realtime-echo doctrine's dispatch-storm class.
+    // Debounced full reload — this handler fires for EVERY visible
+    // dm_messages INSERT. `loadConversations` is now ONE request, but
+    // unthrottled, busy DM traffic (or a burst of our own sends echoing back)
+    // still turned this into a reload storm — the realtime-echo doctrine's
+    // dispatch-storm class.
     let reloadTimer: ReturnType<typeof setTimeout> | null = null;
     const scheduleReload = () => {
       if (reloadTimer) clearTimeout(reloadTimer);

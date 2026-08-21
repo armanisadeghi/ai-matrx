@@ -58,13 +58,13 @@ A family is one shape ⇒ one component ⇒ one claim.
 
 | Family | Kinds | Shared shape | Component | Claim | Status |
 |---|---|---|---|---|---|
-| `web_*_v1` — site-audit check results | 83 | `summary`, `checked`, `issues_found`, `evidence[]`, `recommendations[]` (+ per-check scalars) — verified identical core across all 83 | `web_audit_check_result` | **another copy (in flight)** | claimed |
+| `web_*_v1` — site-audit check results | 83 | `summary`, `checked`, `issues_found`, `evidence[]`, `recommendations[]` (+ per-check scalars) — verified identical core across all 83 | `web_analysis_item` | **another copy (in flight)** | claimed |
 
 ### Family: `web_*_v1` site-audit check results — ALREADY IN FLIGHT, DO NOT TOUCH
 
 copy-D claimed this family, then found it **already being built** by a parallel copy:
-uncommitted work in the shared checkout (`components/mardown-display/blocks/web-audit/
-WebAuditCheckResultBlock.tsx` + the `web_audit_check_result` key wired into
+uncommitted work in the shared checkout (`components/mardown-display/blocks/web-analysis/
+WebAnalysisItemBlock.tsx` + the `web_analysis_item` key wired into
 `block-dispatch.tsx`'s `ShapeBlockType` / `FeSynthesizedBlockType` / `SHAPE_BLOCK_DISPATCH`
 and its test). copy-D **released the claim** rather than duplicate it, and moved to the
 primitive kinds below. Whoever owns that work: flip this row to `done` when the 83
@@ -216,7 +216,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
   128 kinds missing a `(kind, 'web', 'output')` row. copy-D claimed the `web_*_v1` family
   (83 kinds, one proven shared shape ⇒ one component).
 - 2026-08-20 — copy-D **released** the `web_*_v1` family: a parallel copy already had
-  `WebAuditCheckResultBlock` + the dispatch wiring uncommitted in the shared checkout.
+  `WebAnalysisItemBlock` + the dispatch wiring uncommitted in the shared checkout.
   copy-D re-claimed the 8 primitive kinds instead (`boolean`, `items`, `json`, `number`,
   `string_list`, `table_rows`, `text`, `value`).
 - 2026-08-20 — copy-E claims the 8 engine-result kinds (`branch_result`, `bulk_result`,

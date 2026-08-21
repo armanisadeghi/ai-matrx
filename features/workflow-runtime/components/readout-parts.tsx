@@ -120,6 +120,49 @@ function JsonTextBody({ text }: { text: string }) {
 }
 
 /**
+ * The engine's output-kind verdict, made VISIBLE. Recovery layers scream when
+ * they fire — and this one was mute: the scheduler has always carried
+ * `output_kind_ok` on `node_completed` (a node whose payload failed its
+ * declared kind's check), and nothing in the UI read it. A run could show a
+ * confidently-rendered document whose shape the engine had already judged
+ * wrong.
+ *
+ * Two drifts, both worth the reader's attention and neither worth hiding the
+ * output for:
+ *
+ *  - **declared !== emitted** — the payload names a different `__kind` than the
+ *    node promised. We render what the data SAYS it is (see
+ *    `NodeInvocationState.outputKind`) and say so out loud.
+ *  - **`output_kind_ok === false`** — the engine's own drift check failed.
+ *
+ * Silent on the happy path (the overwhelmingly common case), so it costs a
+ * clean run nothing.
+ */
+function KindShapeDriftNote({
+  invocation,
+}: {
+  invocation: NodeInvocationState;
+}) {
+  const declared = invocation.outputKindDeclared;
+  const emitted = invocation.outputKind;
+  const mismatched =
+    declared !== null && emitted !== null && declared !== emitted;
+  const checkFailed = invocation.outputKindOk === false;
+  if (!mismatched && !checkFailed) return null;
+
+  return (
+    <p className="mb-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+      <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+      <span>
+        {mismatched
+          ? `This step declared ${declared} but produced ${emitted} — shown as what it produced.`
+          : `This step's output did not match its declared shape (${declared ?? emitted}).`}
+      </span>
+    </p>
+  );
+}
+
+/**
  * What a settled step PRODUCED, for a step whose shape has no kind component.
  *
  * An `ai.agent.start` step's output is the run ENVELOPE, not the answer: it
@@ -277,15 +320,18 @@ export function InvocationBody({
     // registered, active kind with no component. So the fallback shows what
     // the agent produced instead of what it cost us.
     return (
-      <KindInstanceRender
-        kind={invocation.outputKind}
-        value={invocation.output}
-        showRoutingNote={false}
-        // The readout cell already draws the titled card — a second border +
-        // background + padding here is the box-in-a-box (THE WRAPPER LAW).
-        variant="bare"
-        unroutableFallback={<SettledOutputBody output={invocation.output} />}
-      />
+      <>
+        <KindShapeDriftNote invocation={invocation} />
+        <KindInstanceRender
+          kind={invocation.outputKind}
+          value={invocation.output}
+          showRoutingNote={false}
+          // The readout cell already draws the titled card — a second border +
+          // background + padding here is the box-in-a-box (THE WRAPPER LAW).
+          variant="bare"
+          unroutableFallback={<SettledOutputBody output={invocation.output} />}
+        />
+      </>
     );
   }
   if (invocation.textTail) {

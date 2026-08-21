@@ -15,28 +15,13 @@ import { createClient } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 import { toConversationWithDetails } from "@/features/messaging/data/conversation-list";
-import type {
-  ConversationType,
-  ConversationWithDetails,
-  Message,
-  ParticipantRole,
-} from "../types";
+import { fetchConversationsWithDetails } from "@/features/messaging/data/conversationsWithDetails";
+import type { ConversationWithDetails, Message } from "../types";
 import {
   playNotificationSound,
   showDesktopNotification,
   unlockAudio,
 } from "../utils/notificationSound";
-
-function toConversationType(value: string): ConversationType {
-  return value === "group" ? "group" : "direct";
-}
-
-function toParticipantRole(value: string | null | undefined): ParticipantRole {
-  if (value === "owner" || value === "admin" || value === "member") {
-    return value;
-  }
-  return "member";
-}
 
 /**
  * MessagingInitializer - Central hub for messaging state management
@@ -131,85 +116,19 @@ export function MessagingInitializer() {
       if (!userId) return null;
 
       try {
-        // Get conversation basic info
-        const { data: convData, error: convError } = await supabase
-          .schema("communication")
-          .from("dm_conversations")
-          .select("*")
-          .eq("id", conversationId)
-          .single();
-
-        if (convError || !convData) return null;
-
-        // Get participants with user info
-        const { data: participants } = await supabase
-          .schema("communication")
-          .from("dm_conversation_participants")
-          .select("*")
-          .eq("conversation_id", conversationId);
-
-        const participantsWithUser = await Promise.all(
-          (participants || []).map(async (p) => {
-            const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-              p_user_id: p.user_id,
-            });
-            return {
-              ...p,
-              user: userInfo?.[0] ?? undefined,
-            };
-          }),
-        );
-
-        // Get last message
-        const { data: lastMsgData } = await supabase
-          .schema("communication")
-          .from("dm_messages")
-          .select("*")
-          .eq("conversation_id", conversationId)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        const lastMessage = lastMsgData?.[0] || null;
-
-        // Get unread count
-        const { data: unreadData } = await supabase.rpc("get_dm_unread_count", {
-          p_conversation_id: conversationId,
-          p_user_id: userId,
+        // ONE canonical request. It already carries participants + their
+        // permitted profile fields, the last message, and the unread count —
+        // never re-derive them with a participants SELECT plus a
+        // `get_dm_user_info` call per participant (that N+1 turned a single
+        // transport hiccup into 909 captured errors on 2026-08-21).
+        // `maxAgeMs: 0` because this path runs right after a write we must see.
+        const rows = await fetchConversationsWithDetails(supabase, userId, {
+          maxAgeMs: 0,
         });
+        const row = rows.find((r) => r.conversation_id === conversationId);
+        if (!row) return null;
 
-        // Find the other participant for direct chats
-        const otherParticipant = participantsWithUser.find(
-          (p) => p.user_id !== userId,
-        );
-
-        return {
-          id: convData.id,
-          type: convData.type,
-          group_name: convData.group_name,
-          group_image_url: convData.group_image_url,
-          created_by: convData.created_by,
-          created_at: convData.created_at,
-          updated_at: convData.updated_at,
-          participants: participantsWithUser,
-          last_message: lastMessage
-            ? {
-                ...lastMessage,
-                status: "sent" as const,
-              }
-            : null,
-          unread_count: unreadData || 0,
-          display_name:
-            convData.type === "direct" && otherParticipant
-              ? otherParticipant.user?.display_name ||
-                otherParticipant.user?.email ||
-                "Unknown"
-              : convData.group_name || "Group Chat",
-          display_image:
-            convData.type === "direct" && otherParticipant
-              ? otherParticipant.user?.avatar_url
-              : convData.group_image_url,
-        } as unknown as ConversationWithDetails;
+        return toConversationWithDetails(row, userId);
       } catch (error) {
         console.error(
           "[Messaging] Failed to fetch conversation details:",
@@ -233,24 +152,14 @@ export function MessagingInitializer() {
     dispatch(setLoading(true));
 
     try {
-      // Use the database function for efficient loading
-      const { data, error: fetchError } = await supabase.rpc(
-        "get_dm_conversations_with_details",
-        { p_user_id: userId },
-      );
+      // Use the database function for efficient loading. The shared reader
+      // dedupes concurrent callers so a mount racing a realtime refresh issues
+      // ONE request, not two.
+      const data = await fetchConversationsWithDetails(supabase, userId);
 
       if (!mountedRef.current) return;
 
-      if (fetchError) {
-        console.error(
-          "[Messaging] Error loading conversations:",
-          fetchError.message,
-        );
-        dispatch(setLoading(false));
-        return;
-      }
-
-      const conversationsWithParticipants = (data || []).map((conversation) =>
+      const conversationsWithParticipants = data.map((conversation) =>
         toConversationWithDetails(conversation, userId),
       );
 

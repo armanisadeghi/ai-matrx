@@ -81,4 +81,17 @@ export interface KitTargetState {
   startedAt?: number;
   /** Epoch ms this target settled (success or error). */
   finishedAt?: number;
+  /**
+   * Live COVERAGE progress for a segmented generation (`convert/coverage.ts`).
+   * A big artifact is deliberately many agent calls, and a single spinner for a
+   * three-minute fan-out is the "we are wasting your time" state this flow was
+   * built to kill: this is what lets the board say "section 3 of 8 -
+   * Measurements, 24 items so far".
+   */
+  coverage?: {
+    done: number;
+    total: number;
+    label: string;
+    items: number;
+  };
 }

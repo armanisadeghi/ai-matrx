@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The ONE renderer for the `web-audit-check` kind family — the 85 registered
+ * The ONE renderer for the `web_analysis_item` kind family — the 83 registered
  * `web_*_v1` site-audit checks (`web_title_presence_v1`,
  * `web_broken_images_v1`, `web_cwv_lcp_v1`, …).
  *
@@ -38,7 +38,7 @@ import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope"
 import { reconstructRegionValue } from "@/features/content-ir/core/envelope-value";
 import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 
-export interface WebAuditCheckResultBlockProps {
+export interface WebAnalysisItemBlockProps {
   /** The raw region source — the zero-loss floor when no envelope survived. */
   content: string;
   /** Carries `__ir` (the parsed envelope) and `__ir_route` (the seam marker). */
@@ -103,7 +103,7 @@ function checkTitle(kind: string): string {
   return core ? humanizeKey(core) : "";
 }
 
-const WebAuditCheckResultBlock: React.FC<WebAuditCheckResultBlockProps> = ({
+const WebAnalysisItemBlock: React.FC<WebAnalysisItemBlockProps> = ({
   content,
   metadata,
   className,
@@ -212,4 +212,4 @@ const WebAuditCheckResultBlock: React.FC<WebAuditCheckResultBlockProps> = ({
   );
 };
 
-export default WebAuditCheckResultBlock;
+export default WebAnalysisItemBlock;

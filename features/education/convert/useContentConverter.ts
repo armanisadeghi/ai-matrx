@@ -15,6 +15,7 @@ import { runConvert } from "./registry";
 import "./generators"; // ensure generators are registered even if index.ts wasn't imported
 import type {
   ConvertOptions,
+  ConvertProgress,
   ConvertRequest,
   ConvertResult,
   ConvertSource,
@@ -43,6 +44,12 @@ export interface UseContentConverter {
     options?: ConvertOptions,
     onEach?: (outcome: KitTargetOutcome) => void,
     onRequestId?: (kind: TargetKind, id: string) => void,
+    /**
+     * Live coverage progress per target. A segmented generation is many agent
+     * calls for one artifact, so this is the difference between a board that
+     * narrates itself and a board of spinners.
+     */
+    onProgress?: (kind: TargetKind, progress: ConvertProgress) => void,
   ) => Promise<KitTargetOutcome[]>;
 }
 
@@ -65,6 +72,7 @@ export function useContentConverter(): UseContentConverter {
       options?: ConvertOptions,
       onEach?: (outcome: KitTargetOutcome) => void,
       onRequestId?: (kind: TargetKind, id: string) => void,
+      onProgress?: (kind: TargetKind, progress: ConvertProgress) => void,
     ): Promise<KitTargetOutcome[]> => {
       const orgId = await ensureOrgId(undefined);
       return Promise.all(
@@ -78,6 +86,9 @@ export function useContentConverter(): UseContentConverter {
                 orgId,
                 onRequestId: onRequestId
                   ? (id) => onRequestId(targetKind, id)
+                  : undefined,
+                onProgress: onProgress
+                  ? (p) => onProgress(targetKind, p)
                   : undefined,
               },
             );

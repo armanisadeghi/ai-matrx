@@ -9,7 +9,10 @@
 
 import { useCallback, useState } from "react";
 import { getGenerator } from "@/features/education/convert/registry";
-import type { TargetKind } from "@/features/education/convert/types";
+import type {
+  ConvertOptions,
+  TargetKind,
+} from "@/features/education/convert/types";
 import { useContentConverter } from "@/features/education/convert/useContentConverter";
 import { useIngest } from "./useIngest";
 import type {
@@ -44,7 +47,7 @@ export interface UseKitGeneration {
   run: (
     input: RawIngestInput,
     kinds: TargetKind[],
-    options?: { count?: number; difficulty?: string; focus?: string },
+    options?: ConvertOptions,
   ) => Promise<boolean>;
   reset: () => void;
 }
@@ -87,7 +90,7 @@ export function useKitGeneration(): UseKitGeneration {
     async (
       input: RawIngestInput,
       kinds: TargetKind[],
-      options?: { count?: number; difficulty?: string; focus?: string },
+      options?: ConvertOptions,
     ): Promise<boolean> => {
       if (kinds.length === 0) {
         setError("Pick at least one thing to create.");
@@ -157,6 +160,7 @@ export function useKitGeneration(): UseKitGeneration {
           }
         },
         (kind, requestId) => patchTarget(kind, { requestId }),
+        (kind, progress) => patchTarget(kind, { coverage: progress }),
       );
 
       setPhase("done");

@@ -33,8 +33,10 @@ import { EntitlementMeter } from "@/features/entitlements/components/Entitlement
 import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
+import type { CoverageDepth } from "@/features/education/convert/coverage";
 import { useKitGeneration } from "../useKitGeneration";
 import { KitBoard } from "./KitBoard";
+import { KitDepthPicker } from "./KitDepthPicker";
 import {
   INGEST_ACCEPT,
   describeIngestSupport,
@@ -62,6 +64,10 @@ export function StartHero() {
     () => new Set(DEFAULT_TARGETS),
   );
   const [focus, setFocus] = useState("");
+  // How much kit to build. `depth` scales everything; `count` is the exact
+  // number for a student who knows what they want (blank = size to the source).
+  const [depth, setDepth] = useState<CoverageDepth>("standard");
+  const [count, setCount] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,8 +114,13 @@ export function StartHero() {
                 url,
               } as const);
 
+      const requested = Number.parseInt(count, 10);
       // Meter only a real ingest; an empty selection / failed ingest burns nothing.
-      const ok = await kit.run(input, kinds, { focus: focus.trim() || undefined });
+      const ok = await kit.run(input, kinds, {
+        focus: focus.trim() || undefined,
+        depth,
+        count: Number.isFinite(requested) && requested > 0 ? requested : undefined,
+      });
       if (ok) await ingestGuard.commit();
     });
   }, [
@@ -122,6 +133,8 @@ export function StartHero() {
     url,
     isYouTube,
     focus,
+    depth,
+    count,
     kit,
     coppa,
   ]);
@@ -175,6 +188,13 @@ export function StartHero() {
           )}
 
           <KitPicker selected={selected} onToggle={toggleTarget} />
+
+          <KitDepthPicker
+            depth={depth}
+            onDepth={setDepth}
+            count={count}
+            onCount={setCount}
+          />
 
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">

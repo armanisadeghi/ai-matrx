@@ -20,6 +20,7 @@ const error: CapturedError = {
   requestId: "8b27a610-608f-450b-a3ab-8a9439ef8743",
   tier: "red",
   raw: { error_type: "unknown_error" },
+  dedupeKey: "agent-stream-error||||unknown_error|An unexpected unknown error occurred. Retrying...",
 };
 
 describe("Error Inspector investigation prompts", () => {

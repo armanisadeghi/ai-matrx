@@ -305,7 +305,23 @@ function TargetRow({ target: t, now }: { target: KitTargetState; now: number }) 
 
       {running && (
         <div className="mt-2.5">
-          <IndeterminateBar className={look.bar} />
+          {t.coverage && t.coverage.total > 1 ? (
+            // Real, measured progress: sections settled out of sections planned.
+            // An indeterminate bar for a run we can measure is a lie of omission.
+            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn("h-full rounded-full transition-all", look.bar)}
+                style={{
+                  width: `${Math.max(
+                    3,
+                    Math.round((t.coverage.done / t.coverage.total) * 100),
+                  )}%`,
+                }}
+              />
+            </div>
+          ) : (
+            <IndeterminateBar className={look.bar} />
+          )}
         </div>
       )}
 
@@ -327,12 +343,27 @@ function TargetRow({ target: t, now }: { target: KitTargetState; now: number }) 
   return body;
 }
 
-/** The honest present-tense line for a running generator: its verb + the live
- *  stream phase the agent is actually in (never a bare "Generating…"). */
+/** The honest present-tense line for a running generator.
+ *
+ *  COVERAGE WINS. A segmented generation (`convert/coverage.ts`) knows exactly
+ *  which part of the student's material it is on and how much it has produced,
+ *  and that is a far better answer to "what is happening" than a stream phase.
+ *  The phase line stays for single-pass runs, which have no sections to report. */
 function RunningLine({ target: t }: { target: KitTargetState }) {
   const look = TARGET_PRESENTATION[t.targetKind];
   const phase = useAppSelector(selectCurrentPhase(t.requestId ?? ""));
   const phaseCopy = phase ? PHASE_COPY[phase] : null;
+  const cov = t.coverage;
+  if (cov && cov.total > 1) {
+    return (
+      <p className="truncate text-xs text-muted-foreground">
+        {look.runningVerb} · section {Math.min(cov.done + 1, cov.total)} of{" "}
+        {cov.total}
+        {cov.label ? ` · ${cov.label}` : ""}
+        {cov.items > 0 ? ` · ${cov.items} so far` : ""}
+      </p>
+    );
+  }
   return (
     <p className="truncate text-xs text-muted-foreground">
       {look.runningVerb}

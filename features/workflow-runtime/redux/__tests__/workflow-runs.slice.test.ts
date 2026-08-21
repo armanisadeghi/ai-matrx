@@ -104,6 +104,71 @@ describe("workflow-runs slice", () => {
     seqCounter = 0;
   });
 
+  describe("output kind resolution — in-band `__kind` wins (KINDS EVERYWHERE)", () => {
+    function invocationOf(state: WorkflowRunsState) {
+      return state.byRunId[RUN_ID]!.nodes[invocationKeyOf("n1", null, 0)]!;
+    }
+
+    test("a payload that names its own kind routes on it even with NO declaration", () => {
+      // The legacy path this retires: the event omits `output_kind`, so the
+      // readout used to fall through to the raw SettledOutputBody printer even
+      // though the data itself said exactly what it was.
+      let state = attached();
+      state = apply(state, runStartedEvent());
+      state = apply(
+        state,
+        nodeCompleted("n1", {
+          output: { __kind: "gather_result", count: 3, values: [1, 2, 3] },
+          output_kind: null,
+        }),
+      );
+      const inv = invocationOf(state);
+      expect(inv.outputKind).toBe("gather_result");
+      expect(inv.outputKindDeclared).toBeNull();
+    });
+
+    test("the declaration still answers when the payload carries no `__kind`", () => {
+      // Today's engine strips the marker; nothing about that regresses.
+      let state = attached();
+      state = apply(state, runStartedEvent());
+      state = apply(
+        state,
+        nodeCompleted("n1", {
+          output: { count: 3, values: [1, 2, 3] },
+          output_kind: "gather_result",
+        }),
+      );
+      const inv = invocationOf(state);
+      expect(inv.outputKind).toBe("gather_result");
+      expect(inv.outputKindDeclared).toBe("gather_result");
+    });
+
+    test("disagreement keeps BOTH — render what was produced, remember what was promised", () => {
+      let state = attached();
+      state = apply(state, runStartedEvent());
+      state = apply(
+        state,
+        nodeCompleted("n1", {
+          output: { __kind: "operation_result", action: "created" },
+          output_kind: "gather_result",
+        }),
+      );
+      const inv = invocationOf(state);
+      expect(inv.outputKind).toBe("operation_result");
+      expect(inv.outputKindDeclared).toBe("gather_result");
+    });
+
+    test("neither source ⇒ null, and the raw output still stands", () => {
+      let state = attached();
+      state = apply(state, runStartedEvent());
+      state = apply(state, nodeCompleted("n1"));
+      const inv = invocationOf(state);
+      expect(inv.outputKind).toBeNull();
+      expect(inv.outputKindDeclared).toBeNull();
+      expect(inv.output).toEqual({ value: "done" });
+    });
+  });
+
   test("full lifecycle fold — fan-out settles only when all invocations complete", () => {
     let state = attached();
     state = apply(state, runStartedEvent());

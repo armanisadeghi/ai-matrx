@@ -1,5 +1,6 @@
 /**
- * The eight workflow runtime RESULT kinds now have a REGISTERED web/output
+ * EXPLICIT BASIC ROUTES — the workflow runtime RESULT kinds and the
+ * research/evidence cluster now have a REGISTERED web/output
  * route (migrations/content_ir_workflow_result_output_routes.sql). Before it,
  * every one of them reached the reader only by SILENT fallback —
  * `by:'generic', unverified:true, reason:'no-component'` — which is exactly
@@ -148,6 +149,84 @@ const FIXTURES: Fixture[] = [
     },
     visible: ["d2f8a1c4-0000-4000-8000-000000000000"],
   },
+  // ── the research/evidence cluster (batch 2) ──────────────────────────────
+  {
+    kind: "evidence_source",
+    data: {
+      summary:
+        "A 2024 systematic review found no consistent link between the two, across 31 trials.",
+      sourceTitle: "Systematic review of 31 randomized trials (2024)",
+      sourceUrl: "https://example.org/reviews/2024-systematic-review",
+    },
+    visible: ["Systematic review of 31 randomized trials (2024)"],
+  },
+  {
+    kind: "entity_mention",
+    data: {
+      name: "World Health Organization",
+      entityType: "organization",
+      role: "Cited as the source of the 2023 guideline the speaker relies on.",
+      mentions: ["the WHO", "World Health Organization", "the agency"],
+    },
+    visible: ["World Health Organization", "the agency"],
+  },
+  {
+    kind: "notable_timestamp",
+    data: {
+      timecode: "00:12:45",
+      seconds: 765,
+      label: "Speaker states the central claim for the first time",
+      type: "key_claim",
+    },
+    visible: ["00:12:45", "Speaker states the central claim for the first time"],
+  },
+  {
+    kind: "topic_relevance",
+    data: {
+      topic: "Regulatory approval process",
+      relevanceScore: 0.82,
+      rationale:
+        "Roughly a third of the transcript walks through the approval timeline in detail.",
+    },
+    visible: ["Regulatory approval process"],
+  },
+  {
+    kind: "transcript_usage",
+    data: {
+      model: "gemini-2.5-pro",
+      videoDuration: "00:41:18",
+      timestampPrecision: "second",
+      inputTokens: 184320,
+      outputTokens: 6144,
+      totalTokens: 190464,
+      notes:
+        "Timestamps taken from the provider transcript; no re-alignment was needed.",
+    },
+    visible: ["gemini-2.5-pro", "00:41:18"],
+  },
+  {
+    kind: "research_cross_cutting_tags",
+    data: {
+      suggested_tags: [
+        {
+          name: "regulation",
+          reason: "Regulatory constraints appear under both keywords.",
+          confidence: 0.8,
+          keywords_spanned: ["botox market size", "dermal filler safety"],
+        },
+      ],
+    },
+    visible: ["regulation"],
+  },
+  {
+    kind: "research_tag_suggestions",
+    data: {
+      suggested_tags: [
+        { name: "pricing", reason: "Page lists procedure costs.", confidence: 0.9 },
+      ],
+    },
+    visible: ["pricing"],
+  },
 ];
 
 /** The row the migration created, as the warm loader projects it. */
@@ -246,4 +325,59 @@ describe("workflow result kinds route through a REGISTERED component row", () =>
       expect(markup).not.toContain("Unverified shape");
     },
   );
+});
+
+/**
+ * `claim_evidence` gets its ROUTE but no canonical example: its live
+ * `emitted_json_schema` references `#/$defs/EvidenceSource` while carrying no
+ * `$defs`, so the schema cannot compile and nothing can be validated against
+ * it (FOUND_DEFECTS.md — four `plan_page_*` kinds share the defect). The route
+ * still has to work, because a broken SCHEMA must never mean a broken SCREEN.
+ */
+describe("claim_evidence routes even though its schema cannot compile", () => {
+  it("resolves by:'db' and renders its nested evidence_source children", () => {
+    kindRegistry.upsertDefinition({
+      kind: "claim_evidence",
+      schema: null,
+      schemaSource: "content_ir",
+      tier: "warm",
+    });
+    componentRegistry.ingestDbRows([registeredRow("claim_evidence")]);
+
+    const routed = applyIrKindRoute(
+      kindBlock("claim_evidence", {
+        claim: "Approval times for this device class have roughly doubled since 2019.",
+        speakerPosition:
+          "Argues the slowdown is caused by a 2019 change in review policy.",
+        timecode: "00:12:45",
+        seconds: 765,
+        supportingEvidence: [
+          {
+            __kind: "evidence_source",
+            summary:
+              "Agency data shows median review time rising from 148 to 291 days.",
+            sourceTitle: "Annual device review performance report (2024)",
+            sourceUrl: "https://example.org/agency/2024-performance",
+          },
+        ],
+      }),
+    );
+
+    expect(markerOf(routed)).toEqual({
+      by: "db",
+      key: GENERIC_STRUCTURED_COMPONENT_KEY,
+    });
+
+    const markup = renderToStaticMarkup(
+      <GenericStructuredBlock
+        content={routed.content}
+        metadata={routed.metadata}
+      />,
+    );
+    expect(markup).toContain(
+      "Approval times for this device class have roughly doubled since 2019.",
+    );
+    // The nested evidence_source instance is on screen, not swallowed.
+    expect(markup).toContain("Annual device review performance report (2024)");
+  });
 });

@@ -284,6 +284,15 @@ export interface CapturedError {
   tierRuleId?: string;
   /** The downgrade rule's reason, for display. */
   tierReason?: string;
+
+  /**
+   * Cached dedupe key (see `signatureOf`). Computed once at capture and reused
+   * on every later occurrence: a transport storm fires the same signature
+   * hundreds of times in under a second, and rebuilding the key for all ~300
+   * held entries on each occurrence turned the collapse itself into the cost.
+   * Internal — never rendered.
+   */
+  dedupeKey: string;
 }
 
 /** The minimal input a capture site provides; the store fills the rest. */
@@ -479,7 +488,7 @@ export function captureError(input: CaptureInput): string {
   occurrences += 1;
 
   const sig = signatureOf(input);
-  const existingIdx = entries.findIndex((e) => signatureOf(e) === sig);
+  const existingIdx = entries.findIndex((e) => e.dedupeKey === sig);
 
   if (existingIdx !== -1) {
     const existing = entries[existingIdx];
@@ -527,6 +536,7 @@ export function captureError(input: CaptureInput): string {
     stack: input.stack,
     callSite: input.callSite,
     raw: input.raw,
+    dedupeKey: sig,
     // Classified below; seeded to the default so the object is well-typed.
     tier: "red",
   };
