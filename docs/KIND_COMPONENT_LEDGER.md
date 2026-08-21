@@ -219,8 +219,8 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `entity_mention` | Entity Mention | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `evidence_source` | Evidence Source | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | claimed | copy-D | final 4 |
-| `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | claimed | copy-D | final 4 |
+| `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
+| `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `http_response` | HTTP Response | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
 | `items` | Items (list result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
@@ -243,8 +243,8 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | claimed | copy-D | final 4 |
-| `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | claimed | copy-D | final 4 |
+| `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
+| `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `string_list` | String List | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `table_rows` | Table Rows | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `text` | Text | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
@@ -337,3 +337,40 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 - 2026-08-20 — copy-B claims batch 3: `http_response`, `office_extraction_result`, `office_file_result`, `page`, `regex_extract_result`, `scraped_page`, `research_page_analysis`, `research_setup_suggestion`.
 - 2026-08-20 — copy-B **batch 3 done**: `http_response`, `office_extraction_result`, `office_file_result`, `page`, `regex_extract_result`, `scraped_page`, `research_page_analysis`, `research_setup_suggestion` routed (`migrations/content_ir_io_result_kind_routes.sql`, applied live + ledgered). 25 verification tests now render every copy-B kind's LIVE canonical example through the seam.
 - 2026-08-20 — **LIVE RECOUNT: 211 / 211 routed, 0 missing.** Verified directly against `content_ir.kind_component` (project `brsgrqvjdzwihsvnfqkf`) after copy-B/C/D/E batches landed. Rows still reading `claimed` below are routed in the DB; their owners flip the status. Open follow-ups: `claim_evidence` blocked on its EXAMPLE (FOUND_DEFECTS **D219** — 5 active kinds carry an uncompilable `emitted_json_schema`), and contract artifacts remain quarantined and deliberately out of scope.
+- 2026-08-21 — copy-D **done**, batches 3 + final: the SEO analysis cluster
+  (`competitor_opportunity_autopsy_v1`, `competitor_page_autopsy_v1`,
+  `digital_pr_reputation_brief_v1`, `keyword_classification_batch_v1`,
+  `page_keyword_analysis_v1`, `page_keyword_map_v1`, `seo_authority_route_analysis`,
+  `topic_assignment_batch_v1`) and the final four (`gsc_site_intake_bundle`,
+  `gsc_site_intake_proposal`, `seo_finding_fix_context`, `seo_finding_fix_proposal`).
+  Migrations [`content_ir_seo_analysis_kind_routes.sql`](../migrations/content_ir_seo_analysis_kind_routes.sql)
+  and [`content_ir_final_kind_routes.sql`](../migrations/content_ir_final_kind_routes.sql),
+  applied live + recorded in `public._schema_migrations`. Verified live: **0 of 211**
+  active non-contract-artifact kinds are missing a route. `pnpm type-check` clean;
+  `features/content-ir` 890/890 green (stable across five runs incl. `--runInBand`).
+
+  **The one registry lie found:** `keyword_classification_batch_v1` already HAD a real
+  component — `features/content-ir/kinds/keyword-research.ts` declares
+  `legacyBlockType: "keyword_classification_batch"` — so it was never a silent fallback.
+  The missing row meant the DATABASE did not record the component the platform actually
+  renders. Its row now names the real component; the compiled bridge still wins the route
+  and nothing about its rendering changed. Worth checking for elsewhere: a missing
+  `kind_component` row does not always mean a missing renderer.
+
+  **Two rendering findings, pinned as tests rather than hidden** — both are the honest
+  ceiling of a *basic* route and neither is fixed here (a basic route does not get to
+  invent a renderer, and maturity is not promoted by this work):
+  1. `gsc_site_intake_bundle` is a TABULAR payload expressed as
+     `{columns: string[], rows: unknown[][]}` blocks. `StructuredValueView` tables uniform
+     arrays of OBJECTS, not arrays of ARRAYS, so `columns` renders as a bullet list and no
+     cell value reaches the document at all. **This is the clearest earned case for a real
+     component in copy-D's whole claim** — handing it to the distillation pass.
+  2. An object nested inside a TABLE cell collapses behind an `{n fields}` Expand control,
+     so `page_keyword_map_v1`'s proposed page TITLE is one click away, not on screen.
+
+  **One question left open, deliberately:** `FindingFixCard`
+  (features/marketing/components/analysis/) already consumes `seo_finding_fix_proposal`,
+  but as an interactive APPLY surface (before/after, confirm dialog, CMS-draft writeback)
+  that cannot render from a kind envelope alone — so it is NOT a competing renderer and was
+  not repointed or deleted. Whether a STREAMED proposal should render as a read-only twin
+  of that card is product semantics, not a route decision.
