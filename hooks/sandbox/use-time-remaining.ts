@@ -22,8 +22,9 @@ type Granularity = "second" | "minute";
  *   - `'minute'` ticks every 30s and renders `Hh Mm`. Use this for lists
  *     where dozens of rows could each be running their own interval.
  *
- * Returns `{ text: 'Ended', isExpired: true }` when `expiresAt` is past, and
- * `{ text: '--', isExpired: false }` when `expiresAt` is null. Callers
+ * Returns `{ text: 'Ended', isExpired: true }` when `expiresAt` is past,
+ * `{ text: 'No expiry', isExpired: false }` for the permanent-worker year-9999
+ * sentinel, and `{ text: '--', isExpired: false }` when `expiresAt` is null. Callers
  * deciding whether to disable an "extend" button should use `isExpired` or
  * `millisRemaining`, never string-match against `text`.
  */
@@ -32,15 +33,15 @@ export function useTimeRemaining(
   granularity: Granularity = "minute",
 ): TimeRemaining {
   const [value, setValue] = useState<TimeRemaining>(() =>
-    compute(expiresAt, granularity),
+    computeTimeRemaining(expiresAt, granularity),
   );
 
   useEffect(() => {
-    setValue(compute(expiresAt, granularity));
+    setValue(computeTimeRemaining(expiresAt, granularity));
     if (!expiresAt) return undefined;
     const intervalMs = granularity === "second" ? 1000 : 30000;
     const interval = setInterval(() => {
-      setValue(compute(expiresAt, granularity));
+      setValue(computeTimeRemaining(expiresAt, granularity));
     }, intervalMs);
     return () => clearInterval(interval);
   }, [expiresAt, granularity]);
@@ -48,14 +49,30 @@ export function useTimeRemaining(
   return value;
 }
 
-function compute(
+export function computeTimeRemaining(
   expiresAt: string | null | undefined,
   granularity: Granularity,
 ): TimeRemaining {
   if (!expiresAt) {
     return { text: "--", isExpired: false, millisRemaining: 0 };
   }
-  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (expiresAt.startsWith("9999-12-31")) {
+    return {
+      text: "No expiry",
+      isExpired: false,
+      millisRemaining: Number.POSITIVE_INFINITY,
+    };
+  }
+
+  // Postgres may serialize microseconds, while JavaScript's ISO parser accepts
+  // milliseconds. Truncate only the excess fractional digits; never invent a
+  // timestamp when the value is otherwise invalid.
+  const normalizedExpiresAt = expiresAt.replace(/\.(\d{3})\d+/, ".$1");
+  const expiresAtMillis = Date.parse(normalizedExpiresAt);
+  if (!Number.isFinite(expiresAtMillis)) {
+    return { text: "--", isExpired: false, millisRemaining: 0 };
+  }
+  const diff = expiresAtMillis - Date.now();
   if (diff <= 0) {
     return { text: "Ended", isExpired: true, millisRemaining: 0 };
   }

@@ -144,7 +144,9 @@ container.
   rename a sandbox from its detail header; the stored `sandbox_instances.name`
   is shown in the sandbox list, Code workspace, active connection banner, copy
   summaries, and the shared compute-target picker. `sandbox_id` remains visible
-  as technical identity and is the fallback for older unnamed rows.
+  as technical identity and is the fallback for older unnamed rows. Permanent
+  workers use the orchestrator's year-9999 expiry sentinel and render it as
+  **No expiry**, never as a malformed countdown.
 - `2026-08-15` — **Fixed the live PTY's first production interaction failures.** The daemon emits raw binary terminal bytes, but the browser adapter discarded every non-string message and attempted to parse text as JSON; the shell therefore opened while its prompt/echo/output stayed invisible, making the first typed character appear to disable the terminal. `openPty()` now requests `arraybuffer`, decodes every binary frame verbatim, rejects mixed-content `ws://` endpoints explicitly, and allows 15 seconds for orchestrator container resolution. `TerminalTab` publishes the live handle before swapping listeners so a close during attachment always restores buffered input. The adapter test now proves binary prompt delivery in addition to raw input and control frames.
 - `2026-08-15` — **Made Ctrl-C deterministic in the xterm surface.** `TerminalTab` intercepts plain Ctrl-C and writes ETX directly to the active PTY (or the buffered handler), while leaving Ctrl-Shift-C available for copy.
 - `2026-08-15` — **Removed the new-terminal handshake race.** A new xterm now shows a connecting marker and disables input until PTY attachment succeeds or the loud buffered fallback is ready, so early keystrokes can never be erased during listener handoff.
