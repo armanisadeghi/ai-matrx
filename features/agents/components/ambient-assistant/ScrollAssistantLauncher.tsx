@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ScrollAssistantLauncherImplProps } from "./ScrollAssistantLauncherImpl";
 
+export interface ScrollAssistantLauncherProps {
+  inputVariant?: "single-line" | "multiline" | "text-voice";
+}
+
 const ScrollAssistantLauncherImpl = dynamic<ScrollAssistantLauncherImplProps>(
   () => import("./ScrollAssistantLauncherImpl"),
   {
@@ -15,13 +19,21 @@ const ScrollAssistantLauncherImpl = dynamic<ScrollAssistantLauncherImplProps>(
   },
 );
 
+const ScrollVoiceAssistantLauncherImpl = dynamic(
+  () => import("./ScrollVoiceAssistantLauncherImpl"),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
+
 /**
  * Tiny front door for the ambient page assistant. The expensive agent/chat
  * graph is not requested until a desktop user actually scrolls the surface.
  */
 export function ScrollAssistantLauncher({
   inputVariant = "single-line",
-}: ScrollAssistantLauncherImplProps) {
+}: ScrollAssistantLauncherProps) {
   const isMobile = useIsMobile();
   const [revealed, setRevealed] = useState(false);
 
@@ -107,5 +119,8 @@ export function ScrollAssistantLauncher({
   }, [isMobile, revealed]);
 
   if (isMobile || !revealed) return null;
+  if (inputVariant === "text-voice") {
+    return <ScrollVoiceAssistantLauncherImpl />;
+  }
   return <ScrollAssistantLauncherImpl inputVariant={inputVariant} />;
 }

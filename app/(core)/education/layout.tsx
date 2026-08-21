@@ -5,6 +5,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 import { EducationHeader } from "@/features/education/components/EducationHeader";
 import { OfflineStudySyncMount } from "@/features/education/study/offline/OfflineStudySyncMount";
 import { EducationAgeGateMount } from "@/features/education/compliance/EducationAgeGateMount";
+import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
 export const metadata = {
   ...createRouteMetadata("/education", {
@@ -43,6 +44,7 @@ export default function EducationLayout({
       <div className="box-border h-full min-h-0 pt-[var(--shell-header-h)]">
         {children}
       </div>
+      <ScrollAssistantLauncher inputVariant="text-voice" />
     </>
   );
 }
