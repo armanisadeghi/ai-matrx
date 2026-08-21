@@ -62,6 +62,7 @@ function verificationLabel(candidate: ContactCandidateView): {
     case "risky":
       return { text: "Accepts anything — risky", variant: "secondary" };
     case "invalid":
+      // access-errors: ok — provider-verified email verification verdict about a mailbox, not a record read
       return { text: "Does not exist", variant: "destructive" };
     default:
       return { text: "Not checked yet", variant: "outline" };

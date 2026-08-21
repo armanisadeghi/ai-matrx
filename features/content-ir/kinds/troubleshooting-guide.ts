@@ -615,6 +615,7 @@ export const TROUBLESHOOTING_GUIDE_EXAMPLE_FULL: Record<string, unknown> = {
     },
     {
       __kind: "troubleshooting_issue",
+      // access-errors: ok — static sample content inside a kind demo fixture, not error copy
       symptom: "Intermittent 401 Unauthorized responses",
       severity: "critical",
       causes: [

@@ -8,6 +8,7 @@
  */
 
 import type { Database, Json } from "@/types/database.types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   KIND_KEY,
   type FieldSchema,
@@ -200,7 +201,12 @@ export async function getFlexibleData(id: string): Promise<FlexibleDataRecord> {
   }
 
   if (!data) {
-    throw new FlexibleDataError(`flexible_data row "${id}" was not found.`);
+    throw recordUnavailable({
+      entity: "data record",
+      reason: "unknown",
+      recordId: id,
+      relation: "platform.flexible_data",
+    });
   }
 
   return assertFlexibleDataRecord(data);

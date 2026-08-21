@@ -23,6 +23,7 @@
 import type { components } from "@/types/python-generated/api-types";
 import { apiGet, apiPost, apiPut, buildPath } from "@/lib/api/typed-client";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import type { PartyRow } from "../types";
 
 export type DomainFoldReport = components["schemas"]["DomainFoldReport"];
@@ -191,7 +192,7 @@ export async function findOutletPartyByDomain(args: {
     .is("canonical_id", null)
     .order("created_at", { ascending: true })
     .limit(1);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("look up that company by its domain", error);
   return (data?.[0] as PartyRow | undefined) ?? null;
 }
 

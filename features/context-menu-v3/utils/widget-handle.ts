@@ -152,6 +152,7 @@ export function buildEditableWidgetHandle(
       if (current === null) throw new Error("Surface content is unreadable");
       const idx = current.indexOf(search_text);
       if (idx === -1)
+        // access-errors: ok — in-memory text-patch match against the surface's own content, no record read
         throw new Error("search_text not found in surface content");
       writeFull(
         current.slice(0, idx) +

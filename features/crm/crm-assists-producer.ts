@@ -73,6 +73,7 @@ export async function produceCrmDedupAssists(args: {
       {
         sourceKey: `${SOURCE_KEY}.auto`,
         title: `${autoMerged} duplicate record${autoMerged === 1 ? "" : "s"} auto-merged`,
+        // access-errors: ok — describes our own completed merge action; "nothing was deleted" is a verified fact of the merge, not an access guess
         body: `${autoMerged} record${autoMerged === 1 ? "" : "s"} sharing a verified identity email or phone ${autoMerged === 1 ? "was" : "were"} merged automatically. Nothing was deleted — open the review queue to see exactly what moved and undo any merge with one click.`,
         action: {
           kind: "navigate",
