@@ -321,6 +321,7 @@ function repoSources(): SourceFileInput[] {
     .split("\0")
     .filter(Boolean)
     .filter(shouldScanPath)
+    .filter((path) => existsSync(resolve(ROOT, path)))
     .map((path) => ({ path, text: readFileSync(resolve(ROOT, path), "utf8") }));
 }
 
