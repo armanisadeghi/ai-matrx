@@ -98,7 +98,7 @@ flight: seo backstop pair + ack, last 9 versioned-without-capture, D232 residue,
 component created_by neutralization, NULL-org annihilation + screamers, batch access, drift
 schedule. **DONE 2026-08-21: variant-contract reclassification** — `iam.verify_canonical` v4
 (db-rules §6d-3) makes the base contract per-variant, so "machinery exemption" is retired as a
-concept for base columns; FAILs 799→445, certified 250→289, 42 tables fixed / 0 regressed, and
+concept for base columns; FAILs 799→445, certified 242→281, 42 tables fixed / 0 regressed, and
 the `seo`+`runtime` families are FAIL-free. **Read §6d-3 before reading any base-column finding.** Next run: verify those landed, then groom
 this list down.
 
