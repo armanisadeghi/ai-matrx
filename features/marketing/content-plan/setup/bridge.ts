@@ -28,6 +28,7 @@ import { describeBackendFailure, parseStreamError } from "@/lib/api/errors";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import type { components } from "@/types/python-generated/api-types";
 import {
   coerceEffortTier,
   DEFAULT_EFFORT_TIER,
@@ -111,12 +112,7 @@ export interface BridgePublishResult {
 
 // ── rendered-shell inspection (aidream cms_verify/shell_check.py) ───────────
 
-export interface ShellIssue {
-  key: string;
-  /** "site" = shell defect that breaks every page; "page" = this page only. */
-  severity: "site" | "page";
-  message: string;
-}
+export type ShellIssue = components["schemas"]["ShellIssue"];
 
 export interface ShellPageResult {
   pageId: string | null;
