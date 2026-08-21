@@ -386,16 +386,24 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    (Q14): home at the top, pages branching below on visible connector lines,
    every page a rectangular card whose TITLE WRAPS AND READS (never
    middle-truncated) with its route beneath. Plain DOM + CSS — native
-   two-axis scroll, no canvas zoom. Left accent = status color (legend strip
-   under the toolbar), dots = live-on-site / missing keyword. Click a card →
-   the canonical NodePanel; per-branch chevron collapse (+N count) and a
-   Collapse-branches overview; search + status/keyword filters share the
-   tree's ancestor-keeping math (`filterWithAncestors` / `collapseVisible`,
-   now in `lib/tree-view.ts`); while a search/filter is active the collapse
-   set is bypassed so every match is visible. Stray parentless roots render
-   as extra columns — a page is never hidden by a missing parent link.
-   **Reparenting and bulk status edits belong to the TREE view** — the map is
-   for seeing the site and going places, and carries no unguarded writes.
+   two-axis scroll. Left accent = status color (legend strip under the
+   toolbar), dots = live-on-site / missing keyword. **Semantic zoom**
+   (toolbar buttons or ctrl/⌘+wheel, CSS `zoom` so scrollbars stay honest):
+   below 75% routes and dots hide; below 55% branches deeper than the
+   pillar tier auto-collapse into counts unless clicked open. Click a card →
+   it SELECTS (edges to parent and children light primary, the card widens
+   and shows its FULL un-truncated URL) and opens the canonical NodePanel in
+   the 760px `SidePanelSurface`; **drag a card onto another = real reparent**
+   (same dnd-kit sensors + cycle pre-check as the tree; DB trigger stays the
+   authority). Per-branch chevron collapse (+N count), a Collapse-branches
+   overview, search + status/keyword filters via the shared ancestor-keeping
+   math (`filterWithAncestors` / `collapseVisible` in `lib/tree-view.ts`);
+   while a search/filter is active the collapse set is bypassed so every
+   match is visible. Stray parentless roots render as extra columns — a page
+   is never hidden by a missing parent link. **Bulk status edits belong to
+   the TREE view.** The NodePanel's pipeline strip is ONE horizontal row
+   that scrolls sideways when narrow — chips wrapping onto extra lines is
+   the defect this replaced.
    3b. **Site Setup** (`setup/`, `?view=setup`): go from nothing (or half a plan)
    to a structured site plan in minutes, never writing a page the user has not
    seen first. Three columns left to right — **Shape** (the archetype library:
@@ -835,6 +843,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   header collapses to a back-only chevron instead of a "Pick a site" picker
   over a record the user DID pick. Was map-rebuild evidence finding 1: a
   no-membership admin saw a silent blank canvas.
+- 2026-08-20 — **Site map round 2** (Arman's live feedback): semantic zoom
+  (details hide, deep branches auto-collapse far out), drag-to-reparent
+  restored via the tree's dnd-kit pattern, click lights the selected page's
+  edges + reveals its full URL, NodePanel widened to 760px with the pipeline
+  strip as one horizontal scrolling row (`NodeStepRail` tab mode nowrap).
 - 2026-08-20 — **Map view REBUILT as the site map** (Arman's Q14 ruling +
   live direction the same day). React Flow dot graph deleted wholesale
   (`PillarMap.tsx` + `pillar-map/`); new `SiteMap.tsx` draws home → branches

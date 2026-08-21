@@ -32,11 +32,11 @@ a Google search"* · *"without the connections, what's the point?"*
 
 1. **Arman's live review** of the rebuilt map; fold in his feedback (registered in the review
    queue — whoever takes the feedback updates the row per the `agent-review-queue` skill).
-2. Two deliberate build choices to confirm with him, in the map or in chat:
-   - Reparent + bulk status edits stayed TREE-only; the map carries no unguarded writes.
-   - His "clicking… half-ass thing on the side" comment: card click opens the canonical
-     NodePanel (same panel the tree/table use). If the complaint stands, it is a NodePanel
-     work item, not a map one — route it to the Content Planning handoff.
+2. Round-2 feedback (2026-08-20) is BUILT: semantic zoom, drag-to-reparent, selection edge
+   highlighting, full-URL on the selected card, one-row pipeline strip in a 760px panel.
+   Remaining choice to confirm: bulk status edits are still TREE-only.
+   Known unproven path: an actual drag-DROP reparent write was not exercised (it would mutate
+   the client plan); the handler is the tree's verbatim logic — confirm once on a scratch plan.
 
 ## Done
 
