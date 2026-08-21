@@ -19,6 +19,19 @@ export interface RunAgentExtractionOpts {
   sourceFeature: SourceFeature;
   /** The agent's declared variable values (all stringified). */
   variables: Record<string, string>;
+  /**
+   * The organization this run belongs to — REQUIRED, never optional.
+   *
+   * Execution treats organization as a hard boundary: a launch with none is
+   * refused outright ("Select an organization before sending this message"),
+   * which is correct for a chat composer and catastrophic for a headless
+   * generator — every study-kit target failed with the opaque line "The
+   * generation agent failed before returning a result" for any student who had
+   * not picked an org in the sidebar. Converters already resolve the personal
+   * org (`ctx.orgId`); passing it is the whole fix, and it is required here so
+   * a new generator cannot forget it and rediscover the same outage.
+   */
+  organizationId: string | null | undefined;
   /** Extraction ceiling. Defaults to 180s — generous for a full artifact. */
   timeoutMs?: number;
   pollIntervalMs?: number;
@@ -51,6 +64,7 @@ export async function runAgentExtraction(
     surfaceKey: opts.surfaceKey,
     sourceFeature: opts.sourceFeature,
     variables: opts.variables,
+    organizationId: opts.organizationId ?? null,
     displayMode: "direct",
     // Live converter UI renders the stream via onRequestId — keep the
     // instance so those selectors stay populated (pre-D126 behavior).
