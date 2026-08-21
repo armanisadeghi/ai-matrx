@@ -55,6 +55,33 @@ beforeEach(() => {
 describe("resolveProvisionalKindRender — the real quiz_set stream", () => {
   const rows = FIXTURES.clean_finish ?? [];
 
+  it("a dead stream drops the provisional render — no stuck skeleton", () => {
+    // Law 1 (exactly one terminal per partial) is a PRODUCER guarantee with at
+    // least three ways to not fire: the drain skips a block missing from the
+    // final block list, the emitter early-returns once the stream ended or was
+    // cancelled (a client abort drops every retraction), and a flush failure is
+    // swallowed so it never kills a run. Once the stream is over no terminal can
+    // arrive, so a still-open provisional is stuck by definition.
+    const live = rows.find(
+      (row) => resolveProvisionalKindRender(blockFor(row.event)) !== null,
+    );
+    if (!live) throw new Error("fixture routed no provisional value");
+
+    expect(resolveProvisionalKindRender(blockFor(live.event))).not.toBeNull();
+    expect(
+      resolveProvisionalKindRender(blockFor(live.event), {
+        streamActive: false,
+      }),
+    ).toBeNull();
+    // Explicitly live, and the omitted case, both still render.
+    expect(
+      resolveProvisionalKindRender(blockFor(live.event), { streamActive: true }),
+    ).not.toBeNull();
+    expect(
+      resolveProvisionalKindRender(blockFor(live.event), {}),
+    ).not.toBeNull();
+  });
+
   it("routes provisional values to the quiz component and grows question by question", () => {
     const counts: number[] = [];
     let routedAtLeastOnce = false;

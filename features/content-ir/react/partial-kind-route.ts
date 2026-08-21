@@ -137,7 +137,36 @@ export interface ProvisionalKindRender<T> {
  */
 export function resolveProvisionalKindRender<
   T extends IrRoutableBlock & { metadata?: Record<string, unknown> },
->(block: T): ProvisionalKindRender<T> | null {
+>(
+  block: T,
+  options?: {
+    /**
+     * Is the STREAM still running? Message-wide, deliberately — not this
+     * block's own completion.
+     *
+     * 🚨 THE ANTI-STUCK-SKELETON BACKSTOP. Law 1 of the contract says every
+     * partial ends in exactly one terminal, and that law is the ONLY thing
+     * standing between a user and a "Still arriving" skeleton that never
+     * resolves. It is a producer guarantee with at least three ways to not
+     * fire: the drain skips a block missing from the final block list, the
+     * emitter early-returns once the stream ended or was cancelled (so a
+     * client abort drops every retraction), and a flush failure is swallowed
+     * so it never kills a run.
+     *
+     * Once the stream is over, no terminal can ever arrive, so a still-open
+     * provisional is stuck by definition — drop it and let the block's own
+     * content and `__ir` be the truth. Correct to be message-wide: a terminal
+     * for THIS block may still be in flight while the block itself looks
+     * finished.
+     *
+     * `undefined` reads as active, so a caller that does not thread stream
+     * state keeps today's behaviour rather than silently losing live rendering.
+     */
+    streamActive?: boolean;
+  },
+): ProvisionalKindRender<T> | null {
+  if (options?.streamActive === false) return null;
+
   const event = readPartialKindEvent(block.metadata);
   // Terminal (superseded / retracted) → no provisional render, in this frame.
   if (!isProvisionalKind(event)) return null;

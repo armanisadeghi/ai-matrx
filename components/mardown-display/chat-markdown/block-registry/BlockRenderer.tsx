@@ -260,7 +260,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
   const provisional = suppressLoadingGate
     ? null
-    : resolveProvisionalKindRender(rawBlock);
+    : resolveProvisionalKindRender(rawBlock, { streamActive: isStreamActive });
   if (provisional) {
     return (
       <ProvisionalKindBoundary
