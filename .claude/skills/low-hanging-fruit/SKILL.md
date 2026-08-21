@@ -15,7 +15,7 @@ timestamp: 2026-08-20T00:00:00Z
 
 # low-hanging-fruit — find the almost-done and CLOSE it
 
-**Arman, 2026-08-20 (vision — [/systems/docs-system/VISION.md](/systems/docs-system/VISION.md)):**
+**Arman, 2026-08-20 (vision — [/systems/platform/docs-system/VISION.md](/systems/platform/docs-system/VISION.md)):**
 *"Features, concepts, projects, things that are so close to completion that it's just so
 much easier to stop other stuff, focus on it, get it done, close it out… so that we can
 delete all the documentation and all the plans and all that stuff and clean it up. Right

@@ -620,7 +620,7 @@ sequenceDiagram
   `dm_messages.action_data`; no parallel notification transport exists. The DM
   envelope is never trusted for a write: the button re-resolves the durable,
   caller-authorized inbox row and uses that action payload. Canonical contract:
-  `common-docs/systems/setting-doors/FEATURE.md`.
+  `common-docs/systems/platform/setting-doors/FEATURE.md`.
 
 - **2026-08-12 — the `matrx-user/messages` surface now emits a truthful loaded-message count; still deliberately NOT agent-writable.**
   `ChatThread` gained an optional `onLoadedMessageCountChange` callback so the

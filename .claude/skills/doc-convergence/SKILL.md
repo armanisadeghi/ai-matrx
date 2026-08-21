@@ -41,7 +41,7 @@ verbatim vision, verified state, grouped pending list, question ledger, boundary
    rows are the staffing interface; you update links, never delete rows.
 5. `/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md` — never recommend
    deleting purpose-built CODE artifacts; docs are the only thing you delete.
-6. `/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md` — canonical names only.
+6. `/Users/armanisadeghi/code/common-docs/systems/platform/vocabulary/FEATURE.md` — canonical names only.
 
 ## Phase 0 — Scope confirmation with Arman (interactive, fast, ALWAYS first)
 

@@ -85,6 +85,16 @@ export const selectRunError = (runId: string) =>
     (byRunId): Record<string, unknown> | null => byRunId[runId]?.error ?? null,
   );
 
+/**
+ * The run's `run_result` runtime wrapper, payload already rehydrated at the
+ * ingest gate. Null until the run read lands (and for pre-wrapper runs).
+ */
+export const selectRunResult = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): WorkflowRunState["result"] => byRunId[runId]?.result ?? null,
+  );
+
 export const selectRunInterrupt = (runId: string) =>
   createSelector(
     [selectByRunId],

@@ -10,7 +10,7 @@
  * durable (never re-emitted). Capped per sweep so a bulk import never
  * floods the dock.
  *
- * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
+ * System-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md
  */
 
 import type { AppDispatch } from "@/lib/redux/store";

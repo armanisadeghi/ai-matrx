@@ -1,5 +1,5 @@
 {
-  "generated_for": "454-kinds+ec1adb4463c6",
+  "generated_for": "456-kinds+76d142a09435",
   "columns": [
     "definition",
     "example",
@@ -221,6 +221,20 @@
       }
     },
     {
+      "kind": "asset_variant",
+      "is_active": false,
+      "family": "files",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "basic_card",
       "is_active": false,
       "family": null,
@@ -338,8 +352,8 @@
       "family": null,
       "assets": {
         "definition": "ok",
-        "example": "warn",
-        "gate_structural": "warn",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "skill": "missing",
         "content_block": "missing",
@@ -1523,6 +1537,34 @@
       }
     },
     {
+      "kind": "human_answer",
+      "is_active": false,
+      "family": "control_flow",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "human_text_answer",
+      "is_active": false,
+      "family": "control_flow",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "image_concept",
       "is_active": false,
       "family": "ai_image",
@@ -1986,7 +2028,7 @@
     },
     {
       "kind": "markdown",
-      "is_active": false,
+      "is_active": true,
       "family": "primitive",
       "assets": {
         "definition": "ok",
@@ -2210,16 +2252,16 @@
     },
     {
       "kind": "node_outcome",
-      "is_active": false,
+      "is_active": true,
       "family": "runtime",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -3133,20 +3175,6 @@
       }
     },
     {
-      "kind": "record_projection_result",
-      "is_active": false,
-      "family": "primitive",
-      "assets": {
-        "definition": "ok",
-        "example": "ok",
-        "gate_structural": "ok",
-        "component": "missing",
-        "skill": "missing",
-        "content_block": "missing",
-        "surface": "warn"
-      }
-    },
-    {
       "kind": "record_result",
       "is_active": false,
       "family": "data_ops",
@@ -3400,13 +3428,13 @@
     },
     {
       "kind": "run_result",
-      "is_active": false,
+      "is_active": true,
       "family": "runtime",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
+        "component": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -6369,12 +6397,6 @@
   ],
   "findings": [
     {
-      "severity": "red",
-      "code": "active-gate-fail",
-      "kind": "claim_evidence",
-      "message": "ACTIVE kind \"claim_evidence\" fails its recomputed structural gate (schema drifted under the interim sample_data): emitted_json_schema failed to compile: can't resolve reference #/$defs/EvidenceSource from id #"
-    },
-    {
       "severity": "yellow",
       "code": "detector-token-unregistered",
       "message": "detector token \"artifact\" (xml_tag; stream-block-accumulator.ts#ATTR_XML_TAGS, content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
@@ -6413,12 +6435,6 @@
       "severity": "yellow",
       "code": "detector-token-unregistered",
       "message": "detector token \"schema_proposal\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-canonical-example",
-      "kind": "claim_evidence",
-      "message": "kind \"claim_evidence\" has only interim sample_data — author a canonical kind_example (ratified 2026-07-15: every kind carries a canonical example)"
     },
     {
       "severity": "yellow",
@@ -6491,6 +6507,12 @@
       "code": "no-content-block",
       "kind": "assertion_result",
       "message": "kind \"assertion_result\" has no content block referencing \"__kind\": \"assertion_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "asset_variant",
+      "message": "kind \"asset_variant\" has no content block referencing \"__kind\": \"asset_variant\""
     },
     {
       "severity": "yellow",
@@ -6777,6 +6799,18 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "human_answer",
+      "message": "kind \"human_answer\" has no content block referencing \"__kind\": \"human_answer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "human_text_answer",
+      "message": "kind \"human_text_answer\" has no content block referencing \"__kind\": \"human_text_answer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "image_concepts_result",
       "message": "kind \"image_concepts_result\" has no content block referencing \"__kind\": \"image_concepts_result\""
     },
@@ -6929,6 +6963,12 @@
       "code": "no-content-block",
       "kind": "news_search_results",
       "message": "kind \"news_search_results\" has no content block referencing \"__kind\": \"news_search_results\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "node_outcome",
+      "message": "kind \"node_outcome\" has no content block referencing \"__kind\": \"node_outcome\""
     },
     {
       "severity": "yellow",
@@ -7139,12 +7179,6 @@
       "code": "no-content-block",
       "kind": "rating",
       "message": "kind \"rating\" has no content block referencing \"__kind\": \"rating\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "record_projection_result",
-      "message": "kind \"record_projection_result\" has no content block referencing \"__kind\": \"record_projection_result\""
     },
     {
       "severity": "yellow",
@@ -8739,6 +8773,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "asset_variant",
+      "message": "kind \"asset_variant\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "broken_link_prospecting_preview",
       "message": "kind \"broken_link_prospecting_preview\" has no render_block skill teaching it"
     },
@@ -9015,6 +9055,18 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "human_answer",
+      "message": "kind \"human_answer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "human_text_answer",
+      "message": "kind \"human_text_answer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "image_concepts_result",
       "message": "kind \"image_concepts_result\" has no render_block skill teaching it"
     },
@@ -9137,6 +9189,12 @@
       "code": "no-skill",
       "kind": "news_search_results",
       "message": "kind \"news_search_results\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "node_outcome",
+      "message": "kind \"node_outcome\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -9341,12 +9399,6 @@
       "code": "no-skill",
       "kind": "rating",
       "message": "kind \"rating\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "record_projection_result",
-      "message": "kind \"record_projection_result\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -10311,12 +10363,6 @@
     {
       "severity": "yellow",
       "code": "stale-example",
-      "kind": "ai_extract_result",
-      "message": "kind \"ai_extract_result\" example is older than the kind definition (example 2026-08-21T00:58:13.07704+00:00 < kind 2026-08-21T03:57:26.361078+00:00) — revalidate/recapture"
-    },
-    {
-      "severity": "yellow",
-      "code": "stale-example",
       "kind": "assertion_result",
       "message": "kind \"assertion_result\" example is older than the kind definition (example 2026-08-21T00:56:02.53382+00:00 < kind 2026-08-21T04:48:34.954347+00:00) — revalidate/recapture"
     },
@@ -10509,14 +10555,14 @@
     {
       "severity": "yellow",
       "code": "stale-example",
-      "kind": "loop_iteration_result",
-      "message": "kind \"loop_iteration_result\" example is older than the kind definition (example 2026-08-21T01:00:51.673477+00:00 < kind 2026-08-21T05:04:19.004405+00:00) — revalidate/recapture"
+      "kind": "mapped_list_result",
+      "message": "kind \"mapped_list_result\" example is older than the kind definition (example 2026-08-21T00:56:06.45147+00:00 < kind 2026-08-21T04:53:11.575637+00:00) — revalidate/recapture"
     },
     {
       "severity": "yellow",
       "code": "stale-example",
-      "kind": "mapped_list_result",
-      "message": "kind \"mapped_list_result\" example is older than the kind definition (example 2026-08-21T00:56:06.45147+00:00 < kind 2026-08-21T04:53:11.575637+00:00) — revalidate/recapture"
+      "kind": "markdown",
+      "message": "kind \"markdown\" example is older than the kind definition (example 2026-08-21T04:57:37.916988+00:00 < kind 2026-08-21T07:24:12.851398+00:00) — revalidate/recapture"
     },
     {
       "severity": "yellow",
@@ -10593,12 +10639,6 @@
     {
       "severity": "yellow",
       "code": "stale-example",
-      "kind": "record_projection_result",
-      "message": "kind \"record_projection_result\" example is older than the kind definition (example 2026-08-21T00:59:27.203951+00:00 < kind 2026-08-21T03:57:26.361078+00:00) — revalidate/recapture"
-    },
-    {
-      "severity": "yellow",
-      "code": "stale-example",
       "kind": "record_result",
       "message": "kind \"record_result\" example is older than the kind definition (example 2026-08-21T00:56:07.33999+00:00 < kind 2026-08-21T04:14:36.616079+00:00) — revalidate/recapture"
     },
@@ -10643,12 +10683,6 @@
       "code": "stale-example",
       "kind": "text_result",
       "message": "kind \"text_result\" example is older than the kind definition (example 2026-08-21T00:59:31.835232+00:00 < kind 2026-08-21T04:14:38.772151+00:00) — revalidate/recapture"
-    },
-    {
-      "severity": "yellow",
-      "code": "stale-example",
-      "kind": "uploaded_asset",
-      "message": "kind \"uploaded_asset\" example is older than the kind definition (example 2026-08-21T01:07:52.513186+00:00 < kind 2026-08-21T04:22:33.588632+00:00) — revalidate/recapture"
     },
     {
       "severity": "yellow",

@@ -2,7 +2,7 @@
 --
 -- Marketing's cross-channel container. Named `initiative`, never `campaign`:
 -- a table name may repeat across schemas only when it means the same role
--- (common-docs/systems/db-rules/FEATURE.md §1a), and crm.outreach_list — the
+-- (common-docs/systems/platform/db-rules/FEATURE.md §1a), and crm.outreach_list — the
 -- former crm.campaign — is a worked contact list, a different thing entirely.
 --
 -- Its own schema because it is genuinely none of the existing ones: it spans

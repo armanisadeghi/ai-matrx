@@ -15,7 +15,7 @@ timestamp: 2026-08-20T00:00:00Z
 
 # domain-vision-interview — the minimal vision and the final vision
 
-**Arman, 2026-08-20 (verbatim in [/systems/docs-system/VISION.md](/systems/docs-system/VISION.md)):**
+**Arman, 2026-08-20 (verbatim in [/systems/platform/docs-system/VISION.md](/systems/platform/docs-system/VISION.md)):**
 *"An agent comes to me and does a quick interview, and it's a big picture interview where
 the agent essentially extracts from me the minimal vision for the particular module and
 then the final vision. So the minimal vision would be what we have to have before we can go
@@ -24,7 +24,7 @@ then what's like the ultimate goal of this thing — and capturing those and doc
 allows for agents to be able to do a much better job of doing gap analysis."*
 
 **Disambiguation:** this is NOT the platform's Vision Interview System
-(`systems/vision-interview/` — a Masterwork Approach, a product feature for users). This is
+(`systems/masterwork/vision-interview/` — a Masterwork Approach, a product feature for users). This is
 an internal docs-system skill: a short conversation with Arman about one Domain.
 
 ## Before the interview

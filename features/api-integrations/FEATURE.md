@@ -40,7 +40,7 @@ before adding a Microsoft OAuth client, scope, callback, MCP server, or connecti
 
 **Provider access discovery, scope selection, submissions, verification, and follow-through:** the
 cross-repo operating contract is
-`/Users/armanisadeghi/code/common-docs/systems/provider-access/FEATURE.md`. Read it before creating
+`/Users/armanisadeghi/code/common-docs/systems/integrations/provider-access/FEATURE.md`. Read it before creating
 or changing a provider app, permission campaign, API key, remote MCP connection, publisher listing,
 review dossier, or approval monitor.
 

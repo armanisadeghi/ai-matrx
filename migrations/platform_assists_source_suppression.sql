@@ -12,7 +12,7 @@
 -- discovered dedupe_key would immediately punch through the user's mute.
 --
 -- System-of-record:
--- /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
+-- /Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md
 
 begin;
 

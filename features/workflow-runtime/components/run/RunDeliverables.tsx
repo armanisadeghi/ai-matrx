@@ -15,11 +15,12 @@
  */
 
 import { useState } from "react";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { formatDurationMs } from "@/features/agents/components/observational-memory/components/format";
 
 import { selectNodeAggregate } from "../../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../../redux/workflow-runs.slice";
@@ -98,9 +99,23 @@ function DeliverableCard({
           <p className="truncate text-sm font-semibold text-foreground">
             {title}
           </p>
+          {/* Provenance, read from the step's `node_outcome` wrapper — the
+              timing it reports, and the engine's verdict when (and only when)
+              the check actually FAILED. A deliverable is what the person came
+              for; ids and "unchecked" belong in the readout, not on it. */}
           <p className="truncate text-[11px] text-muted-foreground">
             {step.label} · ready
+            {ready.wrapper?.duration_ms !== null &&
+            ready.wrapper?.duration_ms !== undefined
+              ? ` in ${formatDurationMs(ready.wrapper.duration_ms)}`
+              : ""}
           </p>
+          {ready.wrapper?.output_kind_ok === false ? (
+            <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              Did not match its declared shape
+            </p>
+          ) : null}
         </div>
         <ChevronDown
           className={cn(

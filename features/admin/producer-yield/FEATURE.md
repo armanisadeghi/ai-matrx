@@ -1,6 +1,6 @@
 # FEATURE — Yield register (pointer)
 
-**Canonical doc:** [`common-docs/systems/producer-yield/FEATURE.md`](../../../../common-docs/systems/producer-yield/FEATURE.md)
+**Canonical doc:** [`common-docs/systems/improvement/producer-yield/FEATURE.md`](../../../../common-docs/systems/improvement/producer-yield/FEATURE.md)
 
 The admin surface for disease D13: every autonomous spender in the platform and
 what its money actually bought. Route:

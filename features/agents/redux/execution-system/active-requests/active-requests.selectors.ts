@@ -1607,7 +1607,7 @@ export const selectHighWarnings = (requestId: string) =>
  *
  * A low/medium-severity warning is telemetry by default (FEATURE.md's
  * documented policy) — but `setting_not_supported` is the client half of the
- * Configuration Equivalence law (common-docs/systems/configuration-equivalence/
+ * Configuration Equivalence law (common-docs/systems/platform/configuration-equivalence/
  * FEATURE.md): an UNEXPECTED drop of a requested setting during translation
  * (model/provider swap, unsupported control value). The user chose that
  * setting; silently swallowing it is exactly the failure the law exists to

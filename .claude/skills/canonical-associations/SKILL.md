@@ -20,7 +20,7 @@ When a newly-canonicalized entity must be "added to all the places we have assoc
 
 ## 🚨 Edges are TOMBSTONED, never purged, when an endpoint is trashed (2026-08-14, D135)
 
-`platform.associations` carries `deleted_at` + a `deleted_via_type`/`deleted_via_id` stamp. Soft-deleting an entity tombstones its live edges; restoring it revives exactly those; only a hard `DELETE` purges. **Every READ is live-only** — SQL reads `platform.associations_live`, a direct PostgREST read passes `.is("deleted_at", null)`, aidream's ORM engine filters it automatically. A reader that sees a tombstone is an **access leak** (edges convey access via `platform.containment_edges` → `platform.reachability`). Re-attaching over a tombstone revives it (BEFORE INSERT trigger) — never "fix" a unique violation by deleting the tombstone. Full contract: `common-docs/systems/access-architecture/FEATURE.md` §2.4c.
+`platform.associations` carries `deleted_at` + a `deleted_via_type`/`deleted_via_id` stamp. Soft-deleting an entity tombstones its live edges; restoring it revives exactly those; only a hard `DELETE` purges. **Every READ is live-only** — SQL reads `platform.associations_live`, a direct PostgREST read passes `.is("deleted_at", null)`, aidream's ORM engine filters it automatically. A reader that sees a tombstone is an **access leak** (edges convey access via `platform.containment_edges` → `platform.reachability`). Re-attaching over a tombstone revives it (BEFORE INSERT trigger) — never "fix" a unique violation by deleting the tombstone. Full contract: `common-docs/systems/platform/access/FEATURE.md` §2.4c.
 
 ## The one load-bearing boundary — DO NOT cross it
 

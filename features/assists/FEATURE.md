@@ -1,6 +1,6 @@
 # Assists — AI assists everywhere (frontend half)
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md` — read it before touching this feature in ANY repo. This doc covers only this repo's wiring.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md` — read it before touching this feature in ANY repo. This doc covers only this repo's wiring.
 
 Chip Rescue rubric, producer dispositions, live controls, and migration state:
 `/Users/armanisadeghi/code/common-docs/projects/chip-rescue/HANDOFF.md`.

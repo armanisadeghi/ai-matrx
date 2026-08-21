@@ -23,7 +23,7 @@ instead of mass-adopting it.
 
 **This campaign IS a registered Pattern Patrol.** CLAUDE.md's Pattern Patrols
 section lists "unused primitives" among the 10 live patrols
-(`common-docs/systems/pattern-patrols/PATROL_REGISTRY.md`), so this sweep is the
+(`common-docs/systems/improvement/pattern-patrols/PATROL_REGISTRY.md`), so this sweep is the
 standing patrol for that pattern, not a one-off. Two consequences: a fix batch
 from here wants **certification by a second adversarial agent** (that is the
 patrol contract, and it is what caught five real defects on PR #72), and a

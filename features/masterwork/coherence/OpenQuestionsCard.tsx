@@ -18,7 +18,7 @@
 //   2. IT CHANGES NO RULE. Settling a question records the ANSWER. If the answer
 //      means a rule should change, that is the Expert's own edit (or the Scout's
 //      draft they approve) — an AI never overwrites human-authored work
-//      (common-docs/systems/provenance-stamping/FEATURE.md).
+//      (common-docs/systems/platform/provenance/FEATURE.md).
 //   3. IT NEVER ASKS TWICE. Every outcome here is final; the server feeds settled
 //      questions back to the partner so it cannot re-raise them.
 //

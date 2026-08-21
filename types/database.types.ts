@@ -11542,6 +11542,57 @@ export type Database = {
         }
         Relationships: []
       }
+      io_contract: {
+        Row: {
+          created_at: string
+          direction: string
+          family: string
+          fingerprint: string
+          id: string
+          json_schema: Json
+          label: string
+          organization_id: string
+          retired_at: string | null
+          slug: string
+          source_id: string | null
+          source_name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          family: string
+          fingerprint: string
+          id?: string
+          json_schema: Json
+          label?: string
+          organization_id: string
+          retired_at?: string | null
+          slug: string
+          source_id?: string | null
+          source_name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          family?: string
+          fingerprint?: string
+          id?: string
+          json_schema?: Json
+          label?: string
+          organization_id?: string
+          retired_at?: string | null
+          slug?: string
+          source_id?: string | null
+          source_name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       kind_component: {
         Row: {
           component_key: string
@@ -30645,317 +30696,6 @@ export type Database = {
           admin_level?: Database["public"]["Enums"]["admin_level"] | null
           is_admin?: never
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      dict_entries: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          created_by: string | null
-          definition: string | null
-          id: string | null
-          ipa: string | null
-          is_active: boolean | null
-          organization_id: string | null
-          pronunciation: string | null
-          scope_id: string | null
-          scope_type_id: string | null
-          sounds_like: string[] | null
-          term: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          definition?: string | null
-          id?: string | null
-          ipa?: string | null
-          is_active?: boolean | null
-          organization_id?: string | null
-          pronunciation?: string | null
-          scope_id?: string | null
-          scope_type_id?: string | null
-          sounds_like?: string[] | null
-          term?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          definition?: string | null
-          id?: string | null
-          ipa?: string | null
-          is_active?: boolean | null
-          organization_id?: string | null
-          pronunciation?: string | null
-          scope_id?: string | null
-          scope_type_id?: string | null
-          sounds_like?: string[] | null
-          term?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      dict_provider_publication: {
-        Row: {
-          created_at: string | null
-          error: Json | null
-          external_id: string | null
-          id: string | null
-          level: string | null
-          owner_id: string | null
-          provider: string | null
-          rule_count: number | null
-          rule_strings: string[] | null
-          rules_hash: string | null
-          synced_at: string | null
-          updated_at: string | null
-          version_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          error?: Json | null
-          external_id?: string | null
-          id?: string | null
-          level?: string | null
-          owner_id?: string | null
-          provider?: string | null
-          rule_count?: number | null
-          rule_strings?: string[] | null
-          rules_hash?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-          version_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          error?: Json | null
-          external_id?: string | null
-          id?: string | null
-          level?: string | null
-          owner_id?: string | null
-          provider?: string | null
-          rule_count?: number | null
-          rule_strings?: string[] | null
-          rules_hash?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-          version_id?: string | null
-        }
-        Relationships: []
-      }
-      dict_settings: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          id: string | null
-          max_inline_chars: number | null
-          metadata: Json | null
-          organization_id: string | null
-          scope_id: string | null
-          scope_type_id: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          max_inline_chars?: number | null
-          metadata?: Json | null
-          organization_id?: string | null
-          scope_id?: string | null
-          scope_type_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          max_inline_chars?: number | null
-          metadata?: Json | null
-          organization_id?: string | null
-          scope_id?: string | null
-          scope_type_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
-      guest_conversion_audit: {
-        Row: {
-          anon_user_id: string | null
-          created_at: string | null
-          fingerprint: string | null
-          id: string | null
-          new_user_id: string | null
-          skipped: Json | null
-          total_rows: number | null
-          transferred: Json | null
-        }
-        Insert: {
-          anon_user_id?: string | null
-          created_at?: string | null
-          fingerprint?: string | null
-          id?: string | null
-          new_user_id?: string | null
-          skipped?: Json | null
-          total_rows?: number | null
-          transferred?: Json | null
-        }
-        Update: {
-          anon_user_id?: string | null
-          created_at?: string | null
-          fingerprint?: string | null
-          id?: string | null
-          new_user_id?: string | null
-          skipped?: Json | null
-          total_rows?: number | null
-          transferred?: Json | null
-        }
-        Relationships: []
-      }
-      guest_execution_log: {
-        Row: {
-          cost: number | null
-          created_at: string | null
-          error_message: string | null
-          execution_time_ms: number | null
-          fingerprint: string | null
-          guest_id: string | null
-          id: string | null
-          ip_address: unknown
-          referer: string | null
-          resource_id: string | null
-          resource_name: string | null
-          resource_type: string | null
-          success: boolean | null
-          task_id: string | null
-          tokens_used: number | null
-          user_agent: string | null
-        }
-        Insert: {
-          cost?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          execution_time_ms?: number | null
-          fingerprint?: string | null
-          guest_id?: string | null
-          id?: string | null
-          ip_address?: unknown
-          referer?: string | null
-          resource_id?: string | null
-          resource_name?: string | null
-          resource_type?: string | null
-          success?: boolean | null
-          task_id?: string | null
-          tokens_used?: number | null
-          user_agent?: string | null
-        }
-        Update: {
-          cost?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          execution_time_ms?: number | null
-          fingerprint?: string | null
-          guest_id?: string | null
-          id?: string | null
-          ip_address?: unknown
-          referer?: string | null
-          resource_id?: string | null
-          resource_name?: string | null
-          resource_type?: string | null
-          success?: boolean | null
-          task_id?: string | null
-          tokens_used?: number | null
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "guest_execution_log_guest_id_fkey"
-            columns: ["guest_id"]
-            isOneToOne: false
-            referencedRelation: "guest_executions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      guest_executions: {
-        Row: {
-          auth_user_id: string | null
-          blocked_reason: string | null
-          blocked_until: string | null
-          converted_at: string | null
-          converted_to_user_id: string | null
-          created_at: string | null
-          daily_executions: number | null
-          daily_reset_at: string | null
-          fingerprint: string | null
-          first_execution_at: string | null
-          id: string | null
-          ip_address: unknown
-          is_blocked: boolean | null
-          last_execution_at: string | null
-          metadata: Json | null
-          total_executions: number | null
-          updated_at: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          auth_user_id?: string | null
-          blocked_reason?: string | null
-          blocked_until?: string | null
-          converted_at?: string | null
-          converted_to_user_id?: string | null
-          created_at?: string | null
-          daily_executions?: number | null
-          daily_reset_at?: string | null
-          fingerprint?: string | null
-          first_execution_at?: string | null
-          id?: string | null
-          ip_address?: unknown
-          is_blocked?: boolean | null
-          last_execution_at?: string | null
-          metadata?: Json | null
-          total_executions?: number | null
-          updated_at?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          auth_user_id?: string | null
-          blocked_reason?: string | null
-          blocked_until?: string | null
-          converted_at?: string | null
-          converted_to_user_id?: string | null
-          created_at?: string | null
-          daily_executions?: number | null
-          daily_reset_at?: string | null
-          fingerprint?: string | null
-          first_execution_at?: string | null
-          id?: string | null
-          ip_address?: unknown
-          is_blocked?: boolean | null
-          last_execution_at?: string | null
-          metadata?: Json | null
-          total_executions?: number | null
-          updated_at?: string | null
-          user_agent?: string | null
         }
         Relationships: []
       }

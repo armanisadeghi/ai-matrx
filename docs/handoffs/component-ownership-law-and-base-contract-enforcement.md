@@ -3,7 +3,7 @@ status: active
 updated: 2026-08-14
 repos: [matrx-frontend, aidream]
 vision:
-  - /Users/armanisadeghi/code/common-docs/systems/db-rules/FEATURE.md
+  - /Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md
   - /Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md
   - /Users/armanisadeghi/code/common-docs/policies/database-changeover-doctrine.md
 ---
@@ -83,7 +83,7 @@ On the newer findings (2026-08-14), verbatim:
 
 ## Resources
 
-- **Canon (read first):** `common-docs/systems/db-rules/FEATURE.md` §2 (base entity),
+- **Canon (read first):** `common-docs/systems/platform/db-rules/FEATURE.md` §2 (base entity),
   §6a/6a-1 (visibility), §6d (RLS variants), **§6d-1 THE COMPONENT OWNERSHIP LAW**,
   **§6d-2 variant-keyed GRANTs + THE SAFETY RAIL**.
 - **Generator (live):** `iam.apply_rls(schema, table, token, variant)` and

@@ -14,7 +14,7 @@
  * Adding a lens = one entry here (+ optionally one in `./metadata.ts` for
  * social/meta tags). Never add a per-type `switch` on a share surface again.
  *
- * Cross-repo charter: common-docs/systems/sharing-experience/VISION.md
+ * Cross-repo charter: common-docs/systems/platform/sharing/VISION.md
  * Plan: common-docs/projects/sharing-experience/PLAN.md
  */
 

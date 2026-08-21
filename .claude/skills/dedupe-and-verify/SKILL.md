@@ -15,7 +15,7 @@ timestamp: 2026-08-20T00:00:00Z
 
 # dedupe-and-verify — one truth per subject, facts confirmed, misalignment surfaced
 
-**Arman, 2026-08-20 (vision — [/systems/docs-system/VISION.md](/systems/docs-system/VISION.md)):**
+**Arman, 2026-08-20 (vision — [/systems/platform/docs-system/VISION.md](/systems/platform/docs-system/VISION.md)):**
 *"They find that there are duplicate docs, and then they report that the documents don't
 agree with each other in terms of what to do, and they don't agree in terms of the state of
 the current project either… things got built that one of the documents claims are not

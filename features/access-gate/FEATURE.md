@@ -40,7 +40,7 @@ no `AccessDenied` component at all, and no way for a blocked user to ask.
 They compose. Do not add a third marker error.
 
 The setting-specific extension is governed by the cross-repo contract in
-[`common-docs/systems/setting-doors/FEATURE.md`](../../../common-docs/systems/setting-doors/FEATURE.md).
+[`common-docs/systems/platform/setting-doors/FEATURE.md`](../../../common-docs/systems/platform/setting-doors/FEATURE.md).
 
 **Pass the `token` when you throw.** `recordUnavailable({ entity, recordId, token })` carries the canonical entity token, and any renderer holding one should defer to `<AccessGate token id/>` rather than reciting both possibilities — describing the ambiguity is the best answer only while we cannot get the real one (live example: `features/marketing/components/shared/RecordUnavailableNotice.tsx`). A **proven** deletion is already the truth and needs no gate.
 

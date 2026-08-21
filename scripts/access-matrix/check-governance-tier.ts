@@ -3,11 +3,11 @@
  *
  * Acceptance probe for THE GOVERNANCE-COLUMN TIER — the column axis of the
  * tiered access model (viewer < editor < admin). See
- * common-docs/systems/access-architecture/FEATURE.md §2.6 and
+ * common-docs/systems/platform/access/FEATURE.md §2.6 and
  * migrations/iam_governance_column_tier.sql (FOUND_DEFECTS D119).
  *
  * THE THREE SHARE LEVELS (Arman, 2026-08-14 — see
- * common-docs/systems/access-architecture/SHARE_LEVELS.md):
+ * common-docs/systems/platform/access/SHARE_LEVELS.md):
  *   VIEW  — see everything, change nothing.
  *   EDIT  — edit the basics. NOT delete, NOT destructive things, NOT the core
  *           fields that say who the item belongs to. Publishing IS included —

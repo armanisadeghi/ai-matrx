@@ -26,7 +26,7 @@
   primitive axis (`media_config.py`), so unqualified "kind" here is ambiguous. The **wire
   key stays `kind`** for now — that is UNFINISHED WORK under vocabulary Law 4 awaiting
   Arman's ruling (O-1), not a decision that internal names may keep the old word. Canon:
-  `common-docs/systems/vocabulary/FEATURE.md` § Settled — Content IR / Shapes ·
+  `common-docs/systems/platform/vocabulary/FEATURE.md` § Settled — Content IR / Shapes ·
   `common-docs/systems/content-ir-system/NOMENCLATURE.md`.
 - **`type`** *(string, required)* — the specific op within the `kind`. Descriptive
   (`create_project_with_tasks`, `user_table_cell`, `is_valid_email`).

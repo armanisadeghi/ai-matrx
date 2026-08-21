@@ -1,6 +1,6 @@
 # Agent creators — frontend implementation
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/agent-creation-studio/FEATURE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/masterwork/agent-creation-studio/FEATURE.md — read it before touching this feature in ANY repo.
 
 Verified against code and production **2026-08-12**.
 

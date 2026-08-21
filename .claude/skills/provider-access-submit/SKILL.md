@@ -16,7 +16,7 @@ submission brief; stop and rescout if the live portal materially disagrees.
 
 ## Preconditions
 
-1. Read `common-docs/systems/provider-access/FEATURE.md` when available.
+1. Read `common-docs/systems/integrations/provider-access/FEATURE.md` when available.
 2. The campaign key is unique; the task contains a current official-source scouting record.
 3. Every requested scope maps to an implemented product action and verification operation.
 4. The task is `Phase: ready_to_submit`, or the scout recorded `easy_execute` and every gate passed.

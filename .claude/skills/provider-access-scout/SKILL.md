@@ -16,7 +16,7 @@ continue without rereading the entire web or repeating portal discovery.
 
 ## Before research
 
-1. Read `common-docs/systems/provider-access/FEATURE.md` when available.
+1. Read `common-docs/systems/integrations/provider-access/FEATURE.md` when available.
 2. Open the assigned task and set `status=active`, `Phase: scouting`, and yourself as owner using the
    normal Projects/Tasks product path.
 3. Inventory existing implementation and assets before proposing access:

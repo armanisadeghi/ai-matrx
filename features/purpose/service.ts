@@ -2,7 +2,7 @@
 //
 // THE PURPOSE REGISTRY — this repo's half. C-20 of the Dynamic Agent Graph
 // program. Cross-repo system of record:
-// /Users/armanisadeghi/code/common-docs/systems/purpose-registry/FEATURE.md
+// /Users/armanisadeghi/code/common-docs/systems/platform/purpose-registry/FEATURE.md
 //
 // Engram §3.3 makes purpose mandatory on every unit of work — NO PURPOSE, NO
 // BUILD. A purpose says WHY a unit exists; the output schema already says what

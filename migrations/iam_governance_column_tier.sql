@@ -9,7 +9,7 @@
 -- on the STATEMENT axis for the entity family —
 --     std_select viewer · std_insert owner · std_update editor · std_delete ADMIN
 -- That `admin` on delete is the EDITOR-CAP RULING made concrete
--- (common-docs/systems/access-architecture/SHARING_MODEL.md §5):
+-- (common-docs/systems/platform/access/SHARING_MODEL.md §5):
 -- "members work, owners/admins govern."
 --
 -- WHAT WAS NEVER BUILT: the COLUMN axis. `std_update` is column-blind, so the

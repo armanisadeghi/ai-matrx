@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The single user-facing surface for every preference in the app — a VS Code-style window with a hierarchical tree on desktop and an iOS-style push-nav drawer on mobile. Every preference across every Redux slice (`userPreferences`, `theme`, `adminPreferences`, `layout`, `windowManager`) is read and written through one unified hook (`useSetting`) and composed from one tightly controlled set of primitives. No tab imports Redux directly; no tab imports shadcn directly. Any behavior governed here from another surface reaches the exact control through the platform-wide setting-door contract in [`common-docs/systems/setting-doors/FEATURE.md`](../../../common-docs/systems/setting-doors/FEATURE.md).
+The single user-facing surface for every preference in the app — a VS Code-style window with a hierarchical tree on desktop and an iOS-style push-nav drawer on mobile. Every preference across every Redux slice (`userPreferences`, `theme`, `adminPreferences`, `layout`, `windowManager`) is read and written through one unified hook (`useSetting`) and composed from one tightly controlled set of primitives. No tab imports Redux directly; no tab imports shadcn directly. Any behavior governed here from another surface reaches the exact control through the platform-wide setting-door contract in [`common-docs/systems/platform/setting-doors/FEATURE.md`](../../../common-docs/systems/platform/setting-doors/FEATURE.md).
 
 ---
 

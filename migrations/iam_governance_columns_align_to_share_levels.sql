@@ -4,7 +4,7 @@
 -- Corrects two mistakes in `iam_governance_column_tier.sql`, both of them mine,
 -- both from misreading what the three levels mean. The canonical statement of
 -- the levels now lives in
--- common-docs/systems/access-architecture/SHARE_LEVELS.md — read that first.
+-- common-docs/systems/platform/access/SHARE_LEVELS.md — read that first.
 --
 -- THE RULE, in Arman's words: "I can give you view access, which means you can
 -- see everything but not edit. I can give you edit access, which means you can
@@ -59,7 +59,7 @@ as $$
 $$;
 
 comment on function iam.governance_columns(text) is
-  'Resolves the governance-column set for an entity token: the per-type override on platform.entity_types.governed_columns, else the platform default {created_by, organization_id, deleted_at} — the columns an EDIT-level sharee may not touch. NOT visibility: publishing is an edit-level action (Arman, 2026-08-14). See common-docs/systems/access-architecture/SHARE_LEVELS.md.';
+  'Resolves the governance-column set for an entity token: the per-type override on platform.entity_types.governed_columns, else the platform default {created_by, organization_id, deleted_at} — the columns an EDIT-level sharee may not touch. NOT visibility: publishing is an edit-level action (Arman, 2026-08-14). See common-docs/systems/platform/access/SHARE_LEVELS.md.';
 
 create or replace function iam._guard_governance_columns()
 returns trigger
@@ -168,4 +168,4 @@ end
 $$;
 
 comment on function iam._guard_governance_columns() is
-  'THE GOVERNANCE-COLUMN TIER. BEFORE UPDATE guard for entity-family tables enforcing the EDIT/FULL boundary of the three share levels: an edit-level sharee may not delete (set deleted_at), may not re-home an owned organization_id, and may never rewrite created_by (refused at every level). Publishing (visibility) is deliberately NOT governed — it is an edit-level action. Restoring (clearing deleted_at) and adopting an org-less row are deliberately allowed. Skips the privileged lane. See common-docs/systems/access-architecture/SHARE_LEVELS.md.';
+  'THE GOVERNANCE-COLUMN TIER. BEFORE UPDATE guard for entity-family tables enforcing the EDIT/FULL boundary of the three share levels: an edit-level sharee may not delete (set deleted_at), may not re-home an owned organization_id, and may never rewrite created_by (refused at every level). Publishing (visibility) is deliberately NOT governed — it is an edit-level action. Restoring (clearing deleted_at) and adopting an org-less row are deliberately allowed. Skips the privileged lane. See common-docs/systems/platform/access/SHARE_LEVELS.md.';

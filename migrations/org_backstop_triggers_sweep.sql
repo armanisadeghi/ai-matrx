@@ -3,7 +3,7 @@
 -- 40 active registered tables carry organization_id NOT NULL with NO filling
 -- mechanism (no _stamp_org_default, no inherit_org_from_parent, no column
 -- default) — each a latent 500 on any insert that forgets org. Per the base
--- contract (common-docs/systems/db-rules/FEATURE.md §2), the backstop is
+-- contract (common-docs/systems/platform/db-rules/FEATURE.md §2), the backstop is
 -- REQUIRED whenever organization_id is NOT NULL.
 --
 -- Components inherit org from their platform.entity_relationships composition

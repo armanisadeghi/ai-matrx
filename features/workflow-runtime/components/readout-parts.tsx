@@ -26,17 +26,21 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import MarkdownStream from "@/components/MarkdownStream";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import {
+  NODE_OUTCOME_KIND,
+  RUN_RESULT_KIND,
+} from "@/features/content-ir/core/runtime-wrapper";
 
-import { looksLikeJsonDocument, readAgentRunOutput } from "../agent-run-output";
+import { SettledOutputBody } from "./SettledOutputBody";
+
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
 import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,
   selectRunInterrupt,
+  selectRunResult,
   selectRunStatus,
   selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
@@ -93,33 +97,6 @@ function WorkingBody({ message }: { message: string | null }) {
 }
 
 /**
- * Structured output whose shape has no kind component. It renders as a human
- * DOCUMENT through the platform floor: prose through the canonical markdown
- * renderer, uniform object arrays as a real table, media through
- * `InlineMediaRef`, nested objects as titled sections with humanized keys —
- * with the raw data one click away for us.
- */
-function JsonBody({ value }: { value: Record<string, unknown> | unknown[] }) {
-  return <StructuredValueView value={value} />;
-}
-
-/**
- * A settled string that is really a JSON document (an agent that answered with
- * JSON rather than through a bound schema). Parsed once and handed to the same
- * floor; unparseable text falls back to the canonical markdown renderer, which
- * is what it is.
- */
-function JsonTextBody({ text }: { text: string }) {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch {
-    return <MarkdownStream content={text} />;
-  }
-  return <StructuredValueView value={parsed} />;
-}
-
-/**
  * The engine's output-kind verdict, made VISIBLE. Recovery layers scream when
  * they fire — and this one was mute: the scheduler has always carried
  * `output_kind_ok` on `node_completed` (a node whose payload failed its
@@ -140,14 +117,22 @@ function JsonTextBody({ text }: { text: string }) {
  */
 function KindShapeDriftNote({
   invocation,
+  verdictShownElsewhere = false,
 }: {
   invocation: NodeInvocationState;
+  /**
+   * True when the `node_outcome` wrapper is rendering its own verdict chip
+   * right below this note. The chip owns `output_kind_ok`; the note keeps the
+   * one thing the chip cannot say — that the payload named a DIFFERENT kind
+   * than the node promised. Saying it twice is noise, not emphasis.
+   */
+  verdictShownElsewhere?: boolean;
 }) {
   const declared = invocation.outputKindDeclared;
   const emitted = invocation.outputKind;
   const mismatched =
     declared !== null && emitted !== null && declared !== emitted;
-  const checkFailed = invocation.outputKindOk === false;
+  const checkFailed = invocation.outputKindOk === false && !verdictShownElsewhere;
   if (!mismatched && !checkFailed) return null;
 
   return (
@@ -158,32 +143,6 @@ function KindShapeDriftNote({
           ? `This step declared ${declared} but produced ${emitted} — shown as what it produced.`
           : `This step's output did not match its declared shape (${declared ?? emitted}).`}
       </span>
-    </p>
-  );
-}
-
-/**
- * What a settled step PRODUCED, for a step whose shape has no kind component.
- *
- * An `ai.agent.start` step's output is the run ENVELOPE, not the answer: it
- * carries the verbatim prompt, the model id and the token bill beside the two
- * keys the reader wants. Read it (`readAgentRunOutput`) and show only what the
- * agent produced; anything else is genuine data and gets the JSON viewer.
- */
-function SettledOutputBody({ output }: { output: Record<string, unknown> }) {
-  const agent = readAgentRunOutput(output);
-  if (!agent) return <JsonBody value={output} />;
-  if (agent.structured) return <JsonBody value={agent.structured} />;
-  if (agent.finalText) {
-    return looksLikeJsonDocument(agent.finalText) ? (
-      <JsonTextBody text={agent.finalText} />
-    ) : (
-      <MarkdownStream content={agent.finalText} />
-    );
-  }
-  return (
-    <p className="text-xs text-muted-foreground">
-      This step ran, and handed its result to the next one.
     </p>
   );
 }
@@ -312,6 +271,27 @@ export function InvocationBody({
   }
   if (laneOwnsDisplay && working) {
     return <WorkingBody message={invocation.progress?.message ?? null} />;
+  }
+  // THE WRAPPER BRANCH. When the engine sent a `node_outcome`, the readout
+  // renders THAT — provenance chrome (workflow, step, timing, kind verdict)
+  // from the wrapper's own component, which then hands the nested payload back
+  // to the registry so the data kind's component draws it. One packet, one
+  // path, no second renderer and no second `final_text` reader here.
+  //
+  // Null wrapper = a pre-wrapper run or a producer that failed open, and the
+  // branches below carry the surface exactly as they always did.
+  if (settledOutput && invocation.wrapper) {
+    return (
+      <>
+        <KindShapeDriftNote invocation={invocation} verdictShownElsewhere />
+        <KindInstanceRender
+          kind={NODE_OUTCOME_KIND}
+          value={invocation.wrapper}
+          showRoutingNote={false}
+          variant="bare"
+        />
+      </>
+    );
   }
   if (
     invocation.phase === "settled" &&
@@ -460,6 +440,36 @@ export function RunErrorCard({
         {message}
       </p>
     </div>
+  );
+}
+
+/**
+ * RunResultCard — the finished run as ONE `run_result` packet: identity,
+ * status, timing, and one `node_outcome` per terminal node, each delegating
+ * its payload to the data kind's own component.
+ *
+ * Deliberately NOT rendered beside `RunDeliverables`: the deliverables section
+ * already draws the same terminal payloads through the same components, and
+ * rendering one shape twice on one screen is the duplication THE CANONICAL
+ * COMPONENT LAW exists to prevent. Hosts that show deliverables pass this by;
+ * hosts that don't (the zero-config board, a run with nothing declared) show
+ * it, so a finished run is never a surface with no result on it.
+ */
+export function RunResultCard({ runId }: { runId: string }) {
+  const result = useAppSelector(selectRunResult(runId));
+  if (!result) return null;
+  return (
+    <section className="rounded-xl border border-border bg-card p-3">
+      <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Run result
+      </h2>
+      <KindInstanceRender
+        kind={RUN_RESULT_KIND}
+        value={result}
+        showRoutingNote={false}
+        variant="bare"
+      />
+    </section>
   );
 }
 

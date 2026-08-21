@@ -1,4 +1,4 @@
-> ARCHIVED 2026-07-26 — superseded by `common-docs/systems/scope-context-system/FEATURE.md` (the canonical model) + `features/scopes/FEATURE.md` (the FE implementation). Historical record of the pre-`features/scopes` scope-system UI effort.
+> ARCHIVED 2026-07-26 — superseded by `common-docs/systems/scopes-context/FEATURE.md` (the canonical model) + `features/scopes/FEATURE.md` (the FE implementation). Historical record of the pre-`features/scopes` scope-system UI effort.
 
 # Scope System — Pages Matrix (the tracking list)
 

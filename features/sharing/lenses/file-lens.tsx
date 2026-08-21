@@ -5,7 +5,7 @@
  * (and the future dedicated pdf entry, if one is ever split out).
  *
  * A shared file is a product surface, not a download card: the recipient is
- * a prospect (see common-docs/systems/sharing-experience/VISION.md — a share
+ * a prospect (see common-docs/systems/platform/sharing/VISION.md — a share
  * IS a referral). Two jobs:
  *
  *   1. VIEW IT PROPERLY — full-bleed use of the landing (the registry marks

@@ -9,7 +9,7 @@
 //
 // 🚨 It also changes NO rule. If the Expert's answer means a rule should change,
 // that is a separate edit that lands as a draft they approve — AI never overwrites
-// human-authored work (common-docs/systems/provenance-stamping/FEATURE.md).
+// human-authored work (common-docs/systems/platform/provenance/FEATURE.md).
 
 import { supabase } from "@/utils/supabase/client";
 import type { RulebookRow } from "../types";

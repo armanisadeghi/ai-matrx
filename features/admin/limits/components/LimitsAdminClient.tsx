@@ -8,7 +8,7 @@
 // matters: an ALLOWANCE belongs to an account and lives in billing; a KNOB
 // belongs to the platform and lives in platform.feature_knob. Putting an
 // allowance in a knob (or vice versa) is how the platform grows a second level
-// ladder — see common-docs/systems/entitlements-and-tiers/PLAN_MODEL.md.
+// ladder — see common-docs/systems/platform/entitlements-knobs/PLAN_MODEL.md.
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FeatureKnobsPanel } from "./FeatureKnobsPanel";

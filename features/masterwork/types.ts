@@ -2,7 +2,7 @@ import type { Database } from "@/types/database.types";
 
 /**
  * Rulebooks — the versioned, citable capture of one Expert's judgment.
- * DB truth: platform.rulebook (see common-docs systems/vocabulary/FEATURE.md
+ * DB truth: platform.rulebook (see common-docs systems/platform/vocabulary/FEATURE.md
  * § Settled — Masterwork). The generated Row type keeps the JSONB columns as
  * Json; these are the ONE set of app-level shapes for their contents — never
  * re-declare them beside a consumer.

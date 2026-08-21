@@ -40,7 +40,7 @@ import {
   type RunSurfaceConfig,
 } from "../../surface/config";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
-import { InterruptCard } from "../readout-parts";
+import { InterruptCard, RunResultCard } from "../readout-parts";
 import { RunSurfaceView } from "../RunSurfaceView";
 import { RunActivityFeed } from "./RunActivityFeed";
 import { RunDeliverables } from "./RunDeliverables";
@@ -225,6 +225,11 @@ export function RunStage({
           />
           <RunEmissions runId={runId} stepLabels={stepLabels} />
           <RunDeliverables runId={runId} deliverables={ownDeliverables} />
+          {/* The run's own `run_result` packet — shown ONLY when no deliverable
+              section is drawing those same terminal payloads. Rendering one
+              shape twice on one screen is the duplication THE CANONICAL
+              COMPONENT LAW exists to prevent. */}
+          {deliverables.length === 0 ? <RunResultCard runId={runId} /> : null}
         </div>
       </div>
     </div>

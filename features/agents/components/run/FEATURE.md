@@ -10,7 +10,7 @@
   surface promotes them. One promotion exists today: `setting_not_supported`
   (`level: "low"`, `recoverable: true`) — the Configuration Equivalence law's
   client-facing signal for an unexpected dropped setting
-  (`common-docs/systems/configuration-equivalence/FEATURE.md`). It renders
+  (`common-docs/systems/platform/configuration-equivalence/FEATURE.md`). It renders
   inline via `selectVisibleWarnings` / `AssistantWarning` even though its
   server-declared level is low, because the run completed normally (never an
   error state) but the user's chosen setting was silently discarded — exactly

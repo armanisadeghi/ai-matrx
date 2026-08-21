@@ -6,7 +6,7 @@ description: The Pattern Patrols system — recurring, certified sweeps that kee
 # pattern-patrol — keep eradicated problems dead
 
 **Canonical system (read first):**
-`/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/FEATURE.md`
+`/Users/armanisadeghi/code/common-docs/systems/improvement/pattern-patrols/FEATURE.md`
 **Arman's target:** `.../pattern-patrols/VISION.md`
 **The patrol list + status:** `.../pattern-patrols/PATROL_REGISTRY.md`
 This skill is the matrx-frontend mechanics. Never duplicate the registry here.

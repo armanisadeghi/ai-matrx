@@ -6,7 +6,7 @@ change log). **This file is only what is still ahead.** Do not restate the
 feature here — if you learn something durable, it belongs in that FEATURE.md.
 
 **Read first:** `features/access-gate/FEATURE.md`, then the cross-repo
-system-of-record `/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md`
+system-of-record `/Users/armanisadeghi/code/common-docs/systems/platform/access/FEATURE.md`
 (§3.9 is this lane).
 
 **The one-line premise:** a zero-row read has FOUR causes — denied, deleted,

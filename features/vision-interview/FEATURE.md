@@ -1,7 +1,7 @@
 # Vision Interview — the multi-agent interview room
 
 **Status:** v3 frontend (2026-08-18) — the THREE-PANEL room. Cross-repo system-of-record:
-`common-docs/systems/vision-interview/FEATURE.md` — read it first; this file is
+`common-docs/systems/masterwork/vision-interview/FEATURE.md` — read it first; this file is
 only the matrx-frontend half. Backend (engine, workflow, service, `interview.*`
 tables) lives in aidream (`aidream/services/vision_interview/`).
 

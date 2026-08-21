@@ -63,6 +63,9 @@ interface UserTable {
   field_count: number;
   updated_at: string;
   is_public: boolean;
+  /** Canonical sharing reach. Legacy rows may predate it — see VisibilityBadge. */
+  visibility?: string | null;
+  organization_id?: string | null;
   user_id: string;
 }
 
@@ -111,6 +114,70 @@ function getCardsLimit(columns: number, hasCreateCard: boolean): number {
     const rowsToShow = 2;
     return columns * rowsToShow;
   }
+}
+
+/**
+ * What a table's sharing reach actually is, in the user's words.
+ *
+ * `visibility` is canonical; `is_public` is the legacy boolean kept only as a
+ * fallback for a row written before the column existed. When neither is known
+ * we SAY so rather than guessing "Private" — an unknown reach displayed as
+ * private is exactly the lie this component was written to end.
+ */
+function VisibilityBadge({
+  visibility,
+  isPublic,
+}: {
+  visibility?: string | null;
+  isPublic?: boolean;
+}) {
+  const resolved = visibility ?? (isPublic ? "public" : null);
+
+  const spec: Record<string, { label: string; title: string; className: string }> = {
+    personal: {
+      label: "Only you",
+      title: "Only you can open this table.",
+      className: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400",
+    },
+    internal: {
+      label: "Your organization",
+      title: "Everyone in your organization can find and open this table.",
+      className:
+        "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+    },
+    link: {
+      label: "Anyone with the link",
+      title: "Anyone who has the link can open this table.",
+      className:
+        "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400",
+    },
+    public: {
+      label: "Public",
+      title: "Anyone on the internet can open this table.",
+      className: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
+    },
+  };
+
+  const chosen = resolved ? spec[resolved] : undefined;
+  if (!chosen) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+        title="This table's sharing setting could not be read."
+      >
+        Sharing unknown
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${chosen.className}`}
+      title={chosen.title}
+    >
+      {chosen.label}
+    </span>
+  );
 }
 
 export default function TableCards() {
@@ -446,17 +513,16 @@ export default function TableCards() {
                 <span>Updated: {formatDate(table.updated_at)}</span>
               </div>
 
+              {/* THE BADGE MUST NOT LIE. This read the legacy `is_public`
+                  boolean and called everything else "Private" — while every
+                  dataset here is `internal`, i.e. visible to the whole
+                  organization. Telling someone their data is more private than
+                  it is, is the worst direction for this to be wrong in. */}
               <div className="flex items-center gap-2">
-                {table.is_public && (
-                  <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                    Public
-                  </span>
-                )}
-                {!table.is_public && (
-                  <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                    Private
-                  </span>
-                )}
+                <VisibilityBadge
+                  visibility={table.visibility}
+                  isPublic={table.is_public}
+                />
               </div>
             </div>
           </CardContent>

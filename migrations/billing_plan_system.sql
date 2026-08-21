@@ -2,7 +2,7 @@
 --
 -- THE PLAN SYSTEM. One plan per account; each dimension upgradable on its own.
 --
--- Arman's ruling, 2026-08-14 (canon: common-docs/systems/entitlements-and-tiers/PLAN_MODEL.md):
+-- Arman's ruling, 2026-08-14 (canon: common-docs/systems/platform/entitlements-knobs/PLAN_MODEL.md):
 --
 --   "A user has ONE overall plan. Some individual aspects of a plan — outreach
 --    emails, storage space, and possibly a few other things — are the types of

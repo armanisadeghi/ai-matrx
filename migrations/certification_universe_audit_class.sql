@@ -18,7 +18,7 @@
 --
 -- Also applies the ratified per-row verdicts (8 machinery rows) and registry-flag
 -- truth fixes (is_versioned/has_soft_delete/rls_variant that contradicted live state).
--- Rules doc: common-docs/systems/db-rules/FEATURE.md §11.
+-- Rules doc: common-docs/systems/platform/db-rules/FEATURE.md §11.
 
 -- ── 1. Columns + constraints ────────────────────────────────────────────────
 ALTER TABLE platform.entity_types

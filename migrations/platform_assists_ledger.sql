@@ -5,7 +5,7 @@
 -- the user sees chips; accepting one dispatches the typed `action` binding
 -- through the frontend assist action registry (features/assists/).
 --
--- System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
+-- System-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md
 --
 -- Canonical model: ENTITY (token `assist`), RLS via iam.apply_rls — never
 -- hand-written. An assist is addressed to ONE person: producers set

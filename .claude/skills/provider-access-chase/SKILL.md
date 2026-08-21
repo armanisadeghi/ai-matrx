@@ -32,7 +32,7 @@ declared Mandate by `mandate_key`; it may not take a hardcoded agent UUID or sil
 
 ## Selection and idempotency
 
-1. Read `common-docs/systems/provider-access/FEATURE.md` when available.
+1. Read `common-docs/systems/integrations/provider-access/FEATURE.md` when available.
 2. Open the live `Provider Access Launch` Project.
 3. Select only planned/active tasks in a pending phase with a due `Next check` or due date. Never check the
    whole catalog simply because the dispatcher woke.

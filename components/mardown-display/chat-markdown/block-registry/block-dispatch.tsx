@@ -304,6 +304,13 @@ export function isBlockLoading(block: {
  *    no half-written one. The bridge hands the component what the agent
  *    PRODUCED plus the run's numbers — never `messages`, which is why the
  *    envelope's verbatim prompt cannot reach a reader through this path.
+ *  - `node_outcome` / `run_result` — the RUNTIME WRAPPER kinds, produced ONLY
+ *    by `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only
+ *    — no tag/fence surface); never emitted upstream. COMPLETE bridges: a
+ *    wrapper describes SETTLED work (a node that finished, a run that
+ *    terminated), so there is no half-written one. Their components render
+ *    PROVENANCE ONLY and hand the nested `output` back to this same registry —
+ *    see common-docs RUNTIME_WRAPPER_WIRE.md §5.
  *  - `episode_title_options` — produced ONLY by `applyIrKindRoute`'s
  *    compiled-bridge flip for the registered `episode_title_options` kind
  *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
@@ -356,6 +363,8 @@ export type FeSynthesizedBlockType =
   | "episode_title_options"
   | "masterwork_checkup_finding"
   | "agent_result"
+  | "node_outcome"
+  | "run_result"
   | "seo_package"
   | "plan_page_research"
   | "plan_page_outline"
@@ -463,6 +472,8 @@ export type ShapeBlockType =
   | "episode_title_options"
   | "masterwork_checkup_finding"
   | "agent_result"
+  | "node_outcome"
+  | "run_result"
   | "seo_package"
   | "plan_page_research"
   | "plan_page_outline"
@@ -1713,6 +1724,51 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.AgentResultBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (node_outcome / run_result): the RUNTIME WRAPPERS. COMPLETE
+  // bridges. Each renders provenance chrome and delegates the nested payload
+  // back to the registry — never a payload renderer of its own.
+  node_outcome: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.NodeOutcomeBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  run_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.RunResultBlock
           key={index}
           serverData={block.serverData}
         />

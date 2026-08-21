@@ -1,5 +1,5 @@
 -- Canvas share-token convergence onto the ONE canonical share-link lane.
--- Context: common-docs/systems/access-architecture/FEATURE.md §3.4 (canonical lane)
+-- Context: common-docs/systems/platform/access/FEATURE.md §3.4 (canonical lane)
 -- and §7-G3 (the files fork, killed 2026-07-15). Canvas ran the SAME disease:
 -- canvas.shared_canvas_items.share_token (+ a broken second mint on
 -- canvas.canvas_items.share_token) resolved by raw client selects at

@@ -160,7 +160,7 @@ export interface ResourceVisibility {
  * better may change visibility, not just the creator. In real companies the
  * publisher is the approver at the end of the line, not whoever clicked "new"
  * first (Arman, 2026-08-14). Do NOT re-gate this on ownership; see
- * common-docs/systems/access-architecture/SHARE_LEVELS.md.
+ * common-docs/systems/platform/access/SHARE_LEVELS.md.
  *
  * So a zero-row result here does NOT mean "you're not the owner" — under RLS it
  * means the row is invisible to this user, deleted, or gone. Never assert a

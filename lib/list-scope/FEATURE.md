@@ -46,7 +46,7 @@ industries, the grant is a deliberate revocable act, and reach is computed the
 same way for every feature. Never an `industry_id` column on the record (one
 industry only, re-classification with no audit trail) and never a
 `platform.associations` edge (associations are explicitly NOT an access grant —
-see `common-docs/systems/access-architecture/FEATURE.md` §2.4).
+see `common-docs/systems/platform/access/FEATURE.md` §2.4).
 
 `iam.industries` is a hierarchy with a `facet` (`domain` / `jurisdiction` /
 `practice_area`): `legal` → `workers-comp` → `ca-workers-comp`. Reach should

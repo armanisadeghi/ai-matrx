@@ -1,6 +1,6 @@
 # Sandbox proxy + FS-change events — FE integration guide
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/compute-targets/FEATURE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/infrastructure/compute-targets/FEATURE.md` — read it before touching this feature in ANY repo.
 
 **Status:** Backend shipped 2026-04-27. FE side is what this doc walks through.
 **Companion specs:** [SANDBOX_DIRECT_ENDPOINTS.md](./SANDBOX_DIRECT_ENDPOINTS.md) (your original ask), [SYSTEM_STATE.md](./SYSTEM_STATE.md) (workspace truth).

@@ -14,7 +14,7 @@
  * - the action is real: launches the `notes.organizer` mandate
  *   (swappable from /agents/mandates, no deploy) with the note list ready.
  *
- * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
+ * System-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md
  */
 
 import type { AppDispatch } from "@/lib/redux/store";

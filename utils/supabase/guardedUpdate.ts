@@ -3,7 +3,7 @@
  * contract for direct-Supabase writes.
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/systems/optimistic-concurrency/FEATURE.md
+ * /Users/armanisadeghi/code/common-docs/systems/platform/optimistic-concurrency/FEATURE.md
  * — read it before touching this feature in ANY repo.
  *
  * The revision token is the canonical `version` int column (bumped by the

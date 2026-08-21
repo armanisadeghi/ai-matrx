@@ -2,7 +2,7 @@
 status: blocked
 updated: 2026-08-15
 repos: [matrx-frontend]
-vision: [/Users/armanisadeghi/code/common-docs/systems/db-rules/FEATURE.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md]
 ---
 
 # Access kernel — the last 10% of the unfiltered-scan cost
@@ -16,7 +16,7 @@ remaining moves need Arman's ruling, not more engineering.
 
 ## Vision — Arman's words
 
-From `common-docs/systems/db-rules/FEATURE.md` §6, THE SECURITY PHILOSOPHY:
+From `common-docs/systems/platform/db-rules/FEATURE.md` §6, THE SECURITY PHILOSOPHY:
 
 > "Real security is when **the right people get in without blinking, and the
 > wrong people cannot get in no matter what they do.** … a legitimate user (or

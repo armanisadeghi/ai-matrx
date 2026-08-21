@@ -5,7 +5,7 @@
 // at runtime, so every ceiling in the app stayed a constant and turning a knob
 // changed nothing. This is the missing half.
 //
-// Contract (cross-repo SoR: common-docs/systems/feature-knobs/FEATURE.md):
+// Contract (cross-repo SoR: common-docs/systems/platform/feature-knobs/FEATURE.md):
 //   - A MISSING knob RAISES. There is deliberately no constant to fall back on:
 //     a frozen fallback is exactly the silent failure the knob system exists to
 //     end. Seed the row in a migration, then read it here.

@@ -1,6 +1,6 @@
 # Research Content Engine — Build Handoff
 
-> **For the next agent.** Living status of the "research → content engine" build (the vision in [`/Users/armanisadeghi/code/common-docs/systems/research/VISION_AND_GAPS.md`](/Users/armanisadeghi/code/common-docs/systems/research/VISION_AND_GAPS.md), plan at `~/.claude/plans/mutable-gathering-oasis.md`). Last updated 2026-06-16 by the build agent. Read this first, then the plan's PROGRESS LOG.
+> **For the next agent.** Living status of the "research → content engine" build (the vision in [`/Users/armanisadeghi/code/common-docs/systems/knowledge/research/VISION_AND_GAPS.md`](/Users/armanisadeghi/code/common-docs/systems/knowledge/research/VISION_AND_GAPS.md), plan at `~/.claude/plans/mutable-gathering-oasis.md`). Last updated 2026-06-16 by the build agent. Read this first, then the plan's PROGRESS LOG.
 
 ---
 

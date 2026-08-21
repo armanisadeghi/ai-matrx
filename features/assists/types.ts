@@ -2,7 +2,7 @@
  * Assists — the platform-wide "AI assists everywhere" primitive.
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md — read it
+ * /Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md — read it
  * before touching this feature in ANY repo.
  *
  * An assist is a system-noticed, one-click-actionable item: deterministic

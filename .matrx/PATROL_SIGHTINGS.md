@@ -1,7 +1,7 @@
 # Patrol Sightings — matrx-frontend
 
 One line per spotted violation of a REGISTERED patrol (see
-`/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/PATROL_REGISTRY.md`;
+`/Users/armanisadeghi/code/common-docs/systems/improvement/pattern-patrols/PATROL_REGISTRY.md`;
 protocol in the `pattern-patrol` skill). Agents on other missions log here and
 move on; patrol runs verify each line themselves and check it off with a
 one-word outcome. Sightings are hints, not facts.

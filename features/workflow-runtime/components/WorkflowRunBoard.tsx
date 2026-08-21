@@ -37,6 +37,7 @@ import {
   PhaseIcon,
   PHASE_LABEL,
   RunErrorCard,
+  RunResultCard,
 } from "./readout-parts";
 
 function NodeRow({ runId, nodeId }: { runId: string; nodeId: string }) {
@@ -174,6 +175,12 @@ export function WorkflowRunBoard({
       {nodeOrder.map((nodeId) => (
         <NodeRow key={nodeId} runId={runId} nodeId={nodeId} />
       ))}
+
+      {/* The finished run as ONE `run_result` packet — provenance + one
+          node_outcome per terminal node, each delegating its payload to the
+          data kind's own component. The board declares no deliverables, so
+          nothing else on this surface draws those payloads. */}
+      <RunResultCard runId={runId} />
 
       {/* Mid-run `node_emitted` content, through the one emit renderer. The
           board has no definition to prefetch from and no author's labels — the

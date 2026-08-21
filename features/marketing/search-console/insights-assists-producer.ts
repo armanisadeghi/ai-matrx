@@ -19,7 +19,7 @@
  *   day vs the previous 28 — never the user's URL range, so findings (and
  *   dedupe keys) don't churn with view state.
  *
- * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
+ * System-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md
  */
 
 import type { AppDispatch } from "@/lib/redux/store";

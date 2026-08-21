@@ -144,6 +144,12 @@ export interface RunRow {
   completed_at: string | null;
   metadata: Record<string, unknown> | null;
   conversation_id: string | null;
+  /**
+   * The `run_result` runtime wrapper — additive, and absent on a server that
+   * predates it. Rehydrated (and typed) at the ingest gate; see
+   * `features/content-ir/core/runtime-wrapper.ts`.
+   */
+  result?: Record<string, unknown> | null;
 }
 
 export interface HeartbeatStreamTail {

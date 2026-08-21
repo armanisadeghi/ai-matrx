@@ -30,4 +30,4 @@ Demo clients, test pages, FastAPI thunks (`submitChatFastAPI`, `submitAppletAgen
 
 ## Docs / examples (non-runtime; update when you refresh protocol docs)
 
-Examples still show only the verbose shape: `types/python-generated/AI_CORE_API.md`, `/Users/armanisadeghi/code/common-docs/systems/research/STREAMING_GUIDE.md`, `features/agents/redux/execution-system/thunks/event-change-documentation.md`, and similar.
+Examples still show only the verbose shape: `types/python-generated/AI_CORE_API.md`, `/Users/armanisadeghi/code/common-docs/systems/knowledge/research/STREAMING_GUIDE.md`, `features/agents/redux/execution-system/thunks/event-change-documentation.md`, and similar.

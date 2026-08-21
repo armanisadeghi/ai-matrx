@@ -16,7 +16,7 @@
 --   This deliberately WIDENS the visible row set from "effectively nobody" to
 --   "the parents you can actually view" — which is what rls_variant='component'
 --   is defined to mean. Same direction, same rationale as the 2026-08-13 repair;
---   see common-docs/systems/db-rules/FEATURE.md §6d. Not a leak: all 10 are
+--   see common-docs/systems/platform/db-rules/FEATURE.md §6d. Not a leak: all 10 are
 --   SELECT-only or no-grant for `authenticated`, none has an anon policy, and
 --   iam.permissions holds no direct grants on any of these tokens.
 --

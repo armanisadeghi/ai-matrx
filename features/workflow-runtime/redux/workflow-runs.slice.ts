@@ -28,6 +28,12 @@ import {
   type WorkflowRunStatus,
 } from "@/features/workflow-runtime/types";
 import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import {
+  rehydrateNodeOutcome,
+  rehydrateRunResult,
+  type NodeOutcomeWrapper,
+  type RunResultWrapper,
+} from "@/features/content-ir/core/runtime-wrapper";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";
@@ -75,6 +81,23 @@ export interface NodeInvocationState {
   outputKindOk: boolean | null;
   /** node_completed `metadata.__ir` when present. */
   irEnvelope: unknown | null;
+  /**
+   * The `node_outcome` RUNTIME WRAPPER off `node_completed.wrapper` — the
+   * self-describing packet that names which workflow, which node, the timing
+   * and the engine's kind verdict, with the data kind nested inside.
+   *
+   * REHYDRATED HERE, at the one ingest gate: the wire elides the payload
+   * (`output: null` + `output_ref` naming the frame field) so it is never
+   * serialized twice, and this reducer is the single place that resolves it —
+   * exactly as `__ir`'s `value_ref` is resolved. Nothing downstream may
+   * re-resolve it, and nothing downstream ever sees an elided wrapper.
+   *
+   * Null is NORMAL, not a failure: the producer fails open, and a run recorded
+   * before the wrapper shipped has none. Every field it carries also still
+   * exists on the event, so a null wrapper costs the surface nothing.
+   * Contract: common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md
+   */
+  wrapper: NodeOutcomeWrapper | null;
   error: { type: string | null; message: string | null } | null;
   progress: {
     message: string | null;
@@ -178,6 +201,18 @@ export interface WorkflowRunState {
   status: WorkflowRunStatus;
   statusTs: string | null;
   error: Record<string, unknown> | null;
+  /**
+   * The `run_result` RUNTIME WRAPPER off the single-run read (`GET /runs/{id}`
+   * → `result`): run identity + status + timing, with one `node_outcome` per
+   * TERMINAL node nested inside, each carrying its own data kind.
+   *
+   * REHYDRATED at the ingest gate (`seedRunRow`) — the run read response is
+   * the frame `output.<node_id>` addresses. Null until the row lands, and null
+   * forever for a run recorded before the wrapper shipped: the producer fails
+   * open and every field also still exists on the row.
+   * Contract: common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md
+   */
+  result: RunResultWrapper | null;
   interrupt: {
     nodeId: string;
     payload: Record<string, unknown>;
@@ -304,6 +339,7 @@ function makeRunState(
     definitionId,
     status: "pending",
     statusTs: null,
+    result: null,
     error: null,
     interrupt: null,
     nodes: {},
@@ -473,6 +509,7 @@ function makeInvocation(
     outputKindDeclared: null,
     outputKindOk: null,
     irEnvelope: null,
+    wrapper: null,
     error: null,
     progress: null,
     iteration: null,
@@ -651,6 +688,10 @@ function applyEvent(
       const metadata = asRecord(event.metadata);
       invocation.irEnvelope =
         metadata && "__ir" in metadata ? metadata["__ir"] : null;
+      // THE ELISION GATE (see the field docs above). The event IS the frame
+      // `output_ref` addresses, so the rehydrated wrapper carries the real
+      // payload from here on.
+      invocation.wrapper = rehydrateNodeOutcome(event.wrapper, event);
       // A retry that succeeded makes prior diagnostics stale.
       invocation.error = null;
       invocation.progress = null;
@@ -921,6 +962,12 @@ const workflowRunsSlice = createSlice({
         if (rowTerminal && row.completed_at) run.statusTs = row.completed_at;
       }
       if (row.error && run.error === null) run.error = row.error;
+      // THE ELISION GATE for the run read: the ROW is the frame, so
+      // `output_ref: "output.<node_id>"` resolves against it here and nowhere
+      // else. A row without a `result` leaves the previous one alone — a later
+      // heartbeat re-read must never blank a wrapper we already have.
+      const result = rehydrateRunResult(row.result, row);
+      if (result) run.result = result;
       // The engine's own start time. `run_started` (replayed above) wins; the
       // row is the fallback for a run whose first event predates the cursor.
       if (run.startedAtTs === null && row.created_at) {

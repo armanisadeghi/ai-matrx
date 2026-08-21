@@ -6,7 +6,7 @@ vision:
   [
     /Users/armanisadeghi/code/common-docs/systems/content-ir-system/UNIFICATION.md,
     /Users/armanisadeghi/code/common-docs/systems/content-ir-system/NOMENCLATURE.md,
-    /Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md,
+    /Users/armanisadeghi/code/common-docs/systems/platform/vocabulary/FEATURE.md,
   ]
 ---
 

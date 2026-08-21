@@ -1,6 +1,6 @@
 # Research System Frontend
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/research/FEATURE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/knowledge/research/FEATURE.md` — read it before touching this feature in ANY repo.
 
 AI-powered research pipeline with human-in-the-loop curation. Searches the web, scrapes content, analyzes sources with specialized AI agents, and generates comprehensive research reports.
 

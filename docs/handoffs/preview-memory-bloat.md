@@ -3,7 +3,7 @@ status: active
 updated: 2026-08-15
 repos: [matrx-frontend]
 vision:
-  [/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/VISION.md]
+  [/Users/armanisadeghi/code/common-docs/systems/improvement/pattern-patrols/VISION.md]
 ---
 
 # Preview memory bloat

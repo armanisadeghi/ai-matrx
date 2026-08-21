@@ -75,6 +75,7 @@ import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-o
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
 import { AGENT_RESULT_KIND_DEFINITIONS } from "../kinds/agent-result";
+import { RUNTIME_WRAPPER_KIND_DEFINITIONS } from "../kinds/runtime-wrappers";
 import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
 import { GENERATED_VIDEO_SET_KIND_DEFINITIONS } from "../kinds/generated-video-set";
 import { GENERATED_AUDIO_KIND_DEFINITIONS } from "../kinds/generated-audio";
@@ -118,6 +119,11 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // after an active, componentless `agent_result` printed the verbatim system
   // prompt and the token bill into a learner's "Study notes" box.
   ...AGENT_RESULT_KIND_DEFINITIONS,
+  // The RUNTIME WRAPPER kinds — `node_outcome` / `run_result`. Instance
+  // context (which workflow, which node, timing, the kind verdict) with the
+  // data kind NESTED inside; their components render provenance chrome only
+  // and hand `output` back to this registry. See kinds/runtime-wrappers.ts.
+  ...RUNTIME_WRAPPER_KIND_DEFINITIONS,
   // Media workflow-I/O (python-owned models — see each module header).
   ...GENERATED_IMAGE_SET_KIND_DEFINITIONS,
   ...GENERATED_VIDEO_SET_KIND_DEFINITIONS,

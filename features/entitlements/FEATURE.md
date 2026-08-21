@@ -1,6 +1,6 @@
 # Entitlements & Billing Integrity (P8)
 
-> 🚨 **Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/entitlements-and-tiers/FEATURE.md`.**
+> 🚨 **Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/entitlements-knobs/FEATURE.md`.**
 > Read it before writing ANY tier check, plan gate, quota, or "is this org allowed
 > to…" branch in ANY repo. It holds THE NO-REGRESSION RULE, the org-tier model,
 > and the aidream half. This file is the frontend contract only.
@@ -117,7 +117,7 @@ full snapshot refresh.
 `billing.plan` / `billing.plan_limit`; changing a plan is one row, never a
 deploy. `features/pricing/data.ts` was the old hardcoded ladder and is
 superseded — a constant describing a plan is a bug. Full model + the change
-table: `common-docs/systems/entitlements-and-tiers/PLAN_MODEL.md`.
+table: `common-docs/systems/platform/entitlements-knobs/PLAN_MODEL.md`.
 
 | Piece | Role |
 |---|---|

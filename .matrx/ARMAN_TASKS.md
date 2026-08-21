@@ -33,7 +33,7 @@ table on a hunch is exactly the speculative work the doctrine forbids.
 ### 0a. Run the agent-machine setup on your OTHER Macs (~5 min each, mostly one command)
 Done on the 16GB Mac 2026-08-09; **every other machine and account still needs it**, or agents there will crash the box with a second dev server and be unable to drive the desktop app.
 
-Full checklist + rationale: `/Users/armanisadeghi/code/common-docs/systems/agent-machine-setup/FEATURE.md`. Short form:
+Full checklist + rationale: `/Users/armanisadeghi/code/common-docs/systems/infrastructure/agent-machine-setup/FEATURE.md`. Short form:
 1. `cd ai-matrx && pnpm setup:agent-harness` — installs the one-dev-server guard into `~/.claude` + `~/.codex` (idempotent; `pnpm check:agent-harness` to verify). In Codex, run `/hooks` once and trust the Matrx guard after reviewing it.
 2. System Settings → Privacy & Security → **Accessibility** → enable Claude Code (without it agents cannot click/type in desktop apps).
 3. Authorize the **Supabase MCP** via `/mcp` in an interactive session (per-account OAuth; does not travel with the repo).
@@ -137,7 +137,7 @@ navigable record; render it token-less".
 A branch-wide sweep of `token="scope"` (8 sites) was run when (3) was found: all
 the others are genuine `context.scopes` rows.
 
-**Your call:** add to `common-docs/systems/pattern-patrols/PATROL_REGISTRY.md`?
+**Your call:** add to `common-docs/systems/improvement/pattern-patrols/PATROL_REGISTRY.md`?
 
 ## Pending Arman review
 
