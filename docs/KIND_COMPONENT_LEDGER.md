@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **83**
 - **Missing a route: 128** — 45 individual + 83 in the `web_*_v1` audit-check family
-- Claimed: **91** (1 family row + 8 individual) · Done: **0** · Blocked: **0**
+- Individual rows: unclaimed **12** · claimed **8** · done **16** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-D)
 
 > Contract artifacts (`is_contract_artifact = true`, 774 active) are quarantined per §7.8 and
 > are OUT of scope for this mission. Do not register routes for them.
@@ -167,13 +167,13 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `boolean` | Boolean | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `claim_evidence` | Claim Evidence | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `claim_evidence` | Claim Evidence | — | 0 | `generic_structured` | blocked | copy-B | ROUTE IS LIVE (renders, incl. nested `evidence_source`). Blocked on the EXAMPLE only: its `emitted_json_schema` has a dangling `#/$defs/EvidenceSource` with no `$defs`, so the schema cannot compile and nothing validates against it — producer-side, FOUND_DEFECTS D219. |
 | `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `criteria_gate_result` | Criteria Gate Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `entity_mention` | Entity Mention | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
-| `evidence_source` | Evidence Source | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `entity_mention` | Entity Mention | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
+| `evidence_source` | Evidence Source | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
@@ -182,7 +182,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `notable_timestamp` | Notable Timestamp | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `notable_timestamp` | Notable Timestamp | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
@@ -192,10 +192,10 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `page_keyword_map_v1` | Page Keyword Map | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `regex_extract_result` | Regex Extract Result | — | 1 | | unclaimed | | |
 | `rendered_text` | Rendered Text | — | 1 | `generic_structured` | done | copy-E | explicit basic route LIVE — migrations/content_ir_rendered_text_output_route.sql, applied + verified in the DB. Reuse-first: nothing in the compiled bootstrap or the block dispatch registry renders `{text, rendered, truncated}`. UPGRADE PATH: `text` IS markdown, so a component streaming it through MarkdownStream (with rendered/truncated as chrome) beats the JSON tree view — a one-line component_key swap on this same row. Route case belongs in features/content-ir/__tests__/kind-explicit-basic-routes.test.tsx (copy-B's file, in flight at the time). |
-| `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `research_page_analysis` | Research Page Analysis | — | 1 | | unclaimed | | |
 | `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | unclaimed | | |
-| `research_tag_suggestions` | Research Tag Suggestions | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `research_tag_suggestions` | Research Tag Suggestions | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | | unclaimed | | |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
@@ -205,8 +205,8 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `table_rows` | Table Rows | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `text` | Text | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `topic_relevance` | Topic Relevance | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
-| `transcript_usage` | Transcript Usage | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `topic_relevance` | Topic Relevance | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
+| `transcript_usage` | Transcript Usage | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `value` | Value (single result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `workflow_run_result` | Workflow Run Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 
@@ -289,3 +289,4 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
   name a kind that does NOT exist in `kind_definition` —
   `action_io_action_ai_util_parse_llm_json_98c46b15_output` fired 12 times in 30 days against no
   registered kind. That is declaration drift, not a missing component.
+- 2026-08-20 — copy-B **batch 2 done**: the research/evidence cluster is routed (`migrations/content_ir_research_evidence_kind_routes.sql`, applied live + ledgered). Five missing canonical examples authored and validated against the LIVE schemas with negative controls. `claim_evidence` is **blocked on its example only** — its schema carries a dangling `#/$defs/EvidenceSource` with no `$defs` and cannot compile (FOUND_DEFECTS **D219**, a class of 5 active kinds incl. all four `plan_page_*`); its route is live and verified.
