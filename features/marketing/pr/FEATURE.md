@@ -56,9 +56,15 @@ labelled, weighted axes, opened by the same Enter that opens the row; the invali
 and the prefill rides `PartyCreateForm`'s new `initialName`, so every surface naming a person the
 CRM should hold gets the same door rather than a second create flow. The analyse trigger exists —
 "Find my stories" on the sample banner and "Find stories" in the header call
-`POST /seo/sites/{id}/press/angles/generate` through `api.ts` (canonical `lib/python-client`),
-with a result panel reporting angles kept, angles REFUSED with reasons, pages captured/failed and
-the analyst's stated limitations. Rulings persist. The `vh` rail cap is `dvh`. The dismissed count
+`POST /seo/sites/{site_id}/press/angles/generate` through `api.ts` as a DURABLE STREAMED
+command (canonical `callApi` with `stream: true`, the `useFindingFixer` shape): the analyst pass
+is minutes of paid model work and the production gateway severs a synchronous response at 60s —
+proven live 2026-08-21, when the old JSON call completed server-side behind an HTTP 504. The
+surface narrates each milestone (`seo.press_evidence_bundle_built` / `_gated` / `_persisted`)
+in a running banner, and the result panel reports angles kept, angles REFUSED with reasons,
+pages captured/failed, the analyst's stated limitations, and what actually happened to the
+durable backlog (`created` / `updated` / `unchanged` — a converging re-run must not look
+identical to a first run). Rulings persist. The `vh` rail cap is `dvh`. The dismissed count
 is a door into All angles. The request rail's angle link, CoverageWon's recorded-but-not-loaded
 state, scoped arrow keys, and agent-copy sample disclosure are all in.
 
@@ -278,3 +284,10 @@ satisfaction flags, and never discarding an unreadable entry's content. Its
 Dropped: sharp's separate `press-model.ts` vocabulary (duplicated `types.ts`),
 dense's four-tab shell (the consolidated surface shows all four things at once),
 and both losers' fixture files.
+
+## Change Log
+
+- 2026-08-21 — "Find my stories" consumes the durable streamed command: `api.ts` moved from
+  `postJson` to `callApi` (`stream: true`) with milestone narration and a running banner in
+  `PressRoomWorkspace`; result panel gained the `created`/`updated`/`unchanged` persistence
+  counts. Live-server proof: the analyst leg works on production; only the transport was broken.

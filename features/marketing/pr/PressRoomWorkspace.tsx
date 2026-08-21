@@ -55,6 +55,7 @@ import {
   generateStoryAngles,
   type GenerateAnglesResult,
 } from "@/features/marketing/pr/api";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
   InlineQueryError,
@@ -256,28 +257,42 @@ export default function PressRoomWorkspace() {
    * than spinning silently: how many angles survived, how many were refused and
    * why, and what the analyst could not see.
    */
+  const dispatch = useAppDispatch();
   const [analysis, setAnalysis] = useState<{
     running: boolean;
+    /** The command's current milestone — the run takes minutes, so the
+     * surface narrates what is happening instead of spinning silently. */
+    stage: string | null;
     result: GenerateAnglesResult | null;
     error: string | null;
-  }>({ running: false, result: null, error: null });
+  }>({ running: false, stage: null, result: null, error: null });
 
   const runAnalysis = useCallback(async () => {
     if (!siteId) return;
-    setAnalysis({ running: true, result: null, error: null });
+    setAnalysis({
+      running: true,
+      stage: "Connecting",
+      result: null,
+      error: null,
+    });
     try {
-      const result = await generateStoryAngles(siteId, { capturePages: 8 });
-      setAnalysis({ running: false, result, error: null });
+      const result = await generateStoryAngles(dispatch, siteId, {
+        capturePages: 8,
+        onStage: (stage) =>
+          setAnalysis((current) => ({ ...current, stage })),
+      });
+      setAnalysis({ running: false, stage: null, result, error: null });
       // Whatever survived the gates is now in the table; go read it.
       press.refetch();
     } catch (err) {
       setAnalysis({
         running: false,
+        stage: null,
         result: null,
         error: err instanceof Error ? err.message : "Analysis failed.",
       });
     }
-  }, [siteId, press]);
+  }, [dispatch, siteId, press]);
   const selectedBrand = brands.data?.find((brand) => brand.id === brandId);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
 
@@ -600,6 +615,17 @@ export default function PressRoomWorkspace() {
               </Banner>
             ) : null}
 
+            {analysis.running ? (
+              <Banner
+                tone="info"
+                icon={<Loader2 className="h-4 w-4 animate-spin" />}
+                title="Finding your stories"
+              >
+                {analysis.stage ?? "Connecting"}. This takes a few minutes —
+                the run keeps going on the server even if you leave this page.
+              </Banner>
+            ) : null}
+
             {analysis.error ? (
               <Banner
                 tone="info"
@@ -650,6 +676,18 @@ export default function PressRoomWorkspace() {
                     : ""}
                   .
                 </span>
+                {analysis.result.kept > 0 ? (
+                  <span className="mt-1 block text-[11px]">
+                    {analysis.result.created} new
+                    {analysis.result.updated
+                      ? `, ${analysis.result.updated} refreshed`
+                      : ""}
+                    {analysis.result.unchanged
+                      ? `, ${analysis.result.unchanged} already in your queue`
+                      : ""}
+                    .
+                  </span>
+                ) : null}
                 {analysis.result.gates.some((g) => !g.kept) ? (
                   <span className="mt-1 block text-[11px]">
                     Refused, with reasons —{" "}
