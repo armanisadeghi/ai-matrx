@@ -80,12 +80,17 @@ export default function HeaderOrgReminder() {
           // asymptotes toward opacity 0, so the card could stay mounted,
           // invisible, and still swallowing clicks at z-50 over the page's own
           // top-right controls.
-          exit={{ opacity: 0, y: -8, scale: 0.97, pointerEvents: "none" }}
+          exit={{
+            opacity: 0,
+            y: -8,
+            scale: 0.97,
+            pointerEvents: "none",
+            transition: { type: "tween", duration: 0.18, ease: "easeOut" },
+          }}
           transition={{
             type: "spring",
             stiffness: 360,
             damping: 30,
-            exit: { type: "tween", duration: 0.18, ease: "easeOut" },
           }}
           onMouseEnter={engage}
           style={{ top: "calc(var(--header-height, 2.5rem) + 0.5rem)" }}
