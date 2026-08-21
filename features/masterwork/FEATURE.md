@@ -1,6 +1,6 @@
 # Masterwork — Rulebooks, rules, Masterworks (Masterwork Studio's UI home)
 
-> **Vocabulary is settled** ([`common-docs/systems/vocabulary/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md)
+> **Vocabulary is settled** ([`common-docs/systems/platform/vocabulary/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/platform/vocabulary/FEATURE.md)
 > § Settled — Masterwork; work order: [`common-docs/systems/masterwork/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/systems/masterwork/HANDOFF.md)):
 > **Rulebook** (was pack) · **a Masterwork** (was desk) · **Build** (was compile) ·
 > **Audition** (was backtest) · **Scout** (was Expertise Interviewer) · **Approach**
@@ -77,7 +77,7 @@
   - **The `rulebook` tool is DEMOTED, not retired.** Variables substitute once, at
     conversation start, so the Scout — which WRITES rules mid-conversation — still re-reads
     after its own writes. What is forbidden is the FIRST read being a tool call.
-  - Law: `common-docs/systems/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE
+  - Law: `common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE
     COROLLARY · register: `common-docs/operations/agent-failure-diseases.md` § D4 · live
     proof: `aidream/scripts/_verify_d4_document_variable.py`.
 

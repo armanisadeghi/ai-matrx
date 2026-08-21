@@ -1,4 +1,4 @@
-> ARCHIVED 2026-08-14 — historical May-2026 migration narrative; its table names predate the June schema transition. Current truth: /Users/armanisadeghi/code/common-docs/systems/tool-registry/FEATURE.md.
+> ARCHIVED 2026-08-14 — historical May-2026 migration narrative; its table names predate the June schema transition. Current truth: /Users/armanisadeghi/code/common-docs/systems/agents/agent-tools/FEATURE.md.
 
 # matrx-frontend Migration Guide — Tool Registry Redesign
 

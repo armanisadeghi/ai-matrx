@@ -66,4 +66,4 @@ builder (the switch and the policy editor still save and reload) and
 in `common-docs/operations/unassigned-handoffs.md` in the same commit.
 
 Cross-repo system of record:
-`/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` § Context.
+`/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` § Context.

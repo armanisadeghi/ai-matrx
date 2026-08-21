@@ -26,7 +26,7 @@ Remaining polish candidates: per-row accept/reject (today it's accept-all-then-e
 
 Entry: a second action in the surface Agents chrome panel (`SurfaceAgentsPanelImpl`) — "Create an agent for this page". User describes what they want in plain language; an orchestrated builder produces a ready-to-run, already-bound agent.
 
-- Reuse, do not fork: the trained builder behind `agent_author` / the agent-creation-studio (see `common-docs/systems/agent-creation-studio/`), the Orchestra/conductor primitives (`features/agents` orchestras; `orchestras.role_describer` mandate is a live client exemplar), the content-IR kind seeding recipe (`workflow-io-kinds` skill; `features/content-ir/` + `kind_surface`/`kind_component` assets and the `shape-system` skill for the results component).
+- Reuse, do not fork: the trained builder behind `agent_author` / the agent-creation-studio (see `common-docs/systems/masterwork/agent-creation-studio/`), the Orchestra/conductor primitives (`features/agents` orchestras; `orchestras.role_describer` mandate is a live client exemplar), the content-IR kind seeding recipe (`workflow-io-kinds` skill; `features/content-ir/` + `kind_surface`/`kind_component` assets and the `shape-system` skill for the results component).
 - Suggested decomposition (Arman's): conductor + three members — (1) surface-agent definition builder (input: surface values + write targets + user's description; output: full agent definition with **context policies first-class**), (2) output-schema + kind creator (registers the kind so results render canonically), (3) shape/component creator (`kind_component` asset). Then auto-bind via the Phase-1 mapper and `bindAgentToSurface`.
 - Every generated definition must follow mandates / hardcoded-prompt law: definitions live in the DB; the client holds mandate keys and ids only.
 
@@ -44,5 +44,5 @@ Entry: a second action in the surface Agents chrome panel (`SurfaceAgentsPanelIm
 ## Resources
 
 - Quick-bind chain: `features/surfaces/FEATURE.md` Change Log 2026-08-16/17 entries.
-- Mandate system SoR: `common-docs/systems/mandates/FEATURE.md`; variable binding SoR: `common-docs/systems/agent-variable-binding/FEATURE.md`.
+- Mandate system SoR: `common-docs/systems/agents/mandates/FEATURE.md`; variable binding SoR: `common-docs/systems/agents/agent-variable-binding/FEATURE.md`.
 - Mapper agent run cost observed: ~$0.012 / proposal (gemini-3.1-pro, ~4.3k tokens).

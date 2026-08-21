@@ -1,6 +1,6 @@
 # Mandates — client half (resolution + the user/org override surface)
 
-**Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` — read it before touching mandates in ANY repo.** Admin pin management lives in `features/admin/mandates/` (`/administration/agents/mandates`). This folder is the USER-facing half.
+**Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` — read it before touching mandates in ANY repo.** Admin pin management lives in `features/admin/mandates/` (`/administration/agents/mandates`). This folder is the USER-facing half.
 
 **Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before implementing the proposed individual Mandate workspace or personal, organization, administration, feature, test, compare, or Binding experience. It has no implementation authority until Arman approves it.**
 
@@ -40,7 +40,7 @@ Route: `app/(core)/agents/mandates/page.tsx` (+ `MandatesHeader` in the shell he
 - A **spilled** variable is never counted missing: it arrives as user text. Structured content may never take that path.
 - **A surface that resolves-then-launches must pre-check**, so the user sees a real refusal instead of a thrown promise — call `missingRequiredVariables(mandate.contract, vars)` and render the message from `missingVariablesMessage`. Worked reference: `features/masterwork/conduct/ConductorPanel.tsx` and `features/masterwork/components/detail/ScoutInterviewPanel.tsx`.
 
-Law: `/Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE COROLLARY · register: `/Users/armanisadeghi/code/common-docs/operations/agent-failure-diseases.md` § D4. Tests: `__tests__/document-variable-precondition.test.ts`.
+Law: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE COROLLARY · register: `/Users/armanisadeghi/code/common-docs/operations/agent-failure-diseases.md` § D4. Tests: `__tests__/document-variable-precondition.test.ts`.
 
 ## Invariants
 
@@ -64,7 +64,7 @@ Recipe: React run site → `useMandateRunner`; React non-run site (a `defaultAge
 
 **Migrated:** research Outputs Studio (3), content-plan setup (7), kind architect, kind creator (twin collapsed to one floating mandate), agent-app coding agent, flashcards spoken-front TTS, War Room (3), chat defaults (`chat.default_new_chat` + `chat.cx_default`), `projects.creation_guide` — and, 2026-08-18 (education-platform WP2), **the entire education tree**: 31 raw UUIDs across 9 `agents.ts` registries became the 28-key `education.*`/`flashcards.*` roster (IC-1 in `common-docs/systems/education/INTEGRATION_MAP.md`); registries deleted, 39 call sites converted, 2 dead ids deleted unmandated.
 
-🚨 **The placeholder census is NOT a hardcoded-id census.** The query above counts only rows someone SEEDED as placeholders — a UUID that was never seeded is invisible to it, which is exactly how education's 31 UUIDs sat outside a "worklist: empty" verdict for a month. An empty placeholder worklist means *seeded migrations are done*; the authority on remaining un-seeded hardcoded ids is `common-docs/systems/mandates/ROLLOUT.md` (F8 — ~13 ids remain outside education). A new hardcoded agent id is a new placeholder to seed + migrate, not a precedent. (`prompts.categorizer` was deleted as a dead pin.)
+🚨 **The placeholder census is NOT a hardcoded-id census.** The query above counts only rows someone SEEDED as placeholders — a UUID that was never seeded is invisible to it, which is exactly how education's 31 UUIDs sat outside a "worklist: empty" verdict for a month. An empty placeholder worklist means *seeded migrations are done*; the authority on remaining un-seeded hardcoded ids is `common-docs/systems/agents/mandates/ROLLOUT.md` (F8 — ~13 ids remain outside education). A new hardcoded agent id is a new placeholder to seed + migrate, not a precedent. (`prompts.categorizer` was deleted as a dead pin.)
 
 **When the call site PERSISTS the agent id** (War Room is the worked reference): the mandate decides only what a NEW record is CREATED with. A stored id — an association edge's `metadata.agentId`, a localStorage roster keyed by agent — always wins on rebind, so rebinding can neither rewrite nor orphan existing rows, and a migration of legacy state stamps the agent it was born under, never today's resolution. Gate the MINT affordance on resolution (disabled + the message) and let already-persisted records bind without the mandate. **Surface manifests** (`war-room*.manifest.ts`) keep a hardcoded `agentRoles[].defaultAgentId`: a manifest is static module-scope data seeded into `ui_surface_agent_role` and cannot resolve a mandate — the ruling is that it stays a documented SEED MIRROR of the mandate's system default, not a second authority (nothing reads it at run time).
 

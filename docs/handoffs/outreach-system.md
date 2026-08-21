@@ -446,7 +446,7 @@ A sending identity is a first-class record, not a config field: *which mailbox m
 org, how fast, and is it healthy right now.*
 
 > ✅ **Deliverability research DONE 2026-08-14 — read before building any of this.**
-> **`/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
+> **`/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
 > — what Instantly/Smartlead/lemlist/Mailreach mechanically do, what actually moves inbox
 > placement, the safe/grey/reckless risk ledger, and the ship/optional/refuse ranking. It changes
 > items 1, 4, 5 and 6 below.
@@ -637,7 +637,7 @@ bypasses the four floor items closed above; see `ENGINEERING_GAPS.md` § "Still 
 
 ### ✅ Research pass DONE 2026-08-14 — read it before writing any send code
 
-**System-of-record: `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/`**
+**System-of-record: `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/`**
 (cross-repo: the obligations land in this repo, in aidream, and in the shared DB). Full research
 against primary sources — CAN-SPAM §7704, CRTC/CASL, CNIL, §7 UWG, ICO/PECR, Australia's Spam Act,
 the Google/Yahoo/Microsoft bulk-sender regime, RFC 8058, and the eight vendor policies §5.1 names.
@@ -755,7 +755,7 @@ system that catches abuse quickly — not a substitute for one.**
 > function; the client answer is UX, the server answer is truth.
 >
 > **System-of-record (read this before touching any tier/plan/quota code in ANY
-> repo):** `common-docs/systems/entitlements-and-tiers/FEATURE.md`.
+> repo):** `common-docs/systems/platform/entitlements-knobs/FEATURE.md`.
 >
 > - **Where it is enforced:** one step at the TOP of the refusal order in
 >   `aidream/services/sending_identity/gate.py`, in **both** entry points
@@ -836,7 +836,7 @@ never an agent's. Listed with a recommendation so each can be answered with a ye
 today (`billing.tier` commercial, `files.account_tiers` storage/compute) and that
 is already one more than ideal. Any new "plan"/"tier"/"quota" idea extends
 `billing` or it does not ship — see
-`common-docs/systems/entitlements-and-tiers/FEATURE.md`.
+`common-docs/systems/platform/entitlements-knobs/FEATURE.md`.
 
 ---
 
@@ -951,7 +951,7 @@ global view): `common-docs/systems/crm/HANDOFF.md` (the contact-table folds feed
 supply) · aidream `docs/handoffs/features-to-workflows.md` (plans CRM/outreach WORKFLOW NODES —
 when built, they must go through the one send/draft primitives, never a side door) ·
 aidream `docs/handoffs/assist-producer-noise.md` (assists-dock hygiene; outreach's producers write
-into that same dock) · `common-docs/systems/mandates/ROLLOUT.md` (vocabulary/binding campaign that
+into that same dock) · `common-docs/systems/agents/mandates/ROLLOUT.md` (vocabulary/binding campaign that
 renamed agent slots to Mandates across these docs).
 
 1. **The five human gates** — see the status block above. All guided by
@@ -966,7 +966,7 @@ renamed agent slots to Mandates across these docs).
    door onto an empty room is worse than no door. The fold producer and provenance renderer already
    handle it; build it the day competitors are confirmed. SERP, broken-link, imported and captured
    prospects all have their doors today.
-4. **Compliance engineering gaps** that remain FLOOR items — `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md`
+4. **Compliance engineering gaps** that remain FLOOR items — `common-docs/systems/marketing/outreach-compliance/ENGINEERING_GAPS.md`
    § "Still open" (G2 anti-harvesting notice, prohibited-content classification). No tier and no
    trust level buys past them.
 5. **A first real `platform.assists` producer** for the two outreach surface strips — the strips are
@@ -1066,7 +1066,7 @@ EARNED-TRUST LADDER) before acting on any of these — it is the lens they were 
 
    ### ✅ Research pass DONE 2026-08-14 — the answer, in full, with sources
 
-   **`/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
+   **`/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
    — read it before building warmup, caps, health, or the sending-identity schema. Headlines:
 
    - **The decision is settled by precedent, not principle.** Google's 2022-11-18 notice ordered
@@ -1111,7 +1111,7 @@ EARNED-TRUST LADDER) before acting on any of these — it is the lens they were 
    comfortably inside Gmail restricted scopes is arguable both ways and an agent may not settle it.
 4. **Media/journalist data acquisition — research and first crawl DONE 2026-08-14; scaled
    ingestion remains open.** Cross-repo source of truth:
-   `/Users/armanisadeghi/code/common-docs/systems/outreach-data/FEATURE.md`. It contains the full
+   `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-data/FEATURE.md`. It contains the full
    source/license matrix, actual prices, vendor-rights questions, purchase brief, and live crawl
    receipt. Headline decision: start the CC0/free registry spine with Wikidata, DOAJ, Crossref,
    OpenAlex, and ORCID; buy a **$34/month annual-billing Hunter Starter** candidate-enrichment

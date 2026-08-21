@@ -1,6 +1,6 @@
 # Tool Registry · UI Surfaces (v2)
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/tool-registry/FEATURE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-tools/FEATURE.md` — read it before touching this feature in ANY repo.
 
 **Status**: shipped
 **Owner**: tool-registry

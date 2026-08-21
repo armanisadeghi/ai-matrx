@@ -1,8 +1,8 @@
 # Mandates admin console
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` — read it before touching this feature in ANY repo.
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md` — read it before touching this feature in ANY repo. It governs how a mandate's variables actually reach the agent (the mapping vocabulary, the scenario matrix, and why the UI must read live code truth instead of the `contract` column).
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-variable-binding/FEATURE.md` — read it before touching this feature in ANY repo. It governs how a mandate's variables actually reach the agent (the mapping vocabulary, the scenario matrix, and why the UI must read live code truth instead of the `contract` column).
 
 Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before promoting this console's floating detail, test bench, comparison, or Binding controls into the proposed full individual Mandate workspace. It has no implementation authority until Arman approves it.
 

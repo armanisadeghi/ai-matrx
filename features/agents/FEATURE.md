@@ -1,6 +1,6 @@
 # FEATURE.md — `agents`
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agent-execution-runtime/FEATURE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/FEATURE.md` — read it before touching this feature in ANY repo.
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
@@ -112,7 +112,7 @@ level (`agent.mandate.auto_context_disabled`); the effective value is
 can never reopen what the Holder refused — the same rule `max_inline_chars`
 already follows as `min(agent, surface)`, extended from _how much_ to _whether
 at all_. Cross-repo system of record:
-`/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` § Context.
+`/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` § Context.
 
 ⚠️ **The DB column is still `context_slots`.** The client reads
 `agent.definition` directly, so the column flips to `context_policies` in
@@ -407,7 +407,7 @@ model overrides.
   presented as an exact field date. The existing agent `EntityRef`, Versions
   doors, comparison verdict, and reviewed sync paths remain canonical.
 - `2026-08-17` — **Configuration Equivalence's `setting_not_supported` warning is now user-visible.**
-  The server-side law (`common-docs/systems/configuration-equivalence/FEATURE.md`) began emitting
+  The server-side law (`common-docs/systems/platform/configuration-equivalence/FEATURE.md`) began emitting
   a standard `warning` stream event when a requested setting is unexpectedly dropped during
   translation (`code: "setting_not_supported"`, `level: "low"`, `recoverable: true`,
   `metadata.dropped`). The event was already captured into Redux (`addWarning` →

@@ -12,7 +12,7 @@ vision: []
 **What this is:** A realtime voice model (the Communicator) speaks FOR the smartest agents — the mouth, never the brain — as a layer on any conversation.
 **Scope:** Feature.
 **Mandate:** `voice.communicator`.
-**SoR:** `common-docs/systems/voice-communication-layer/FEATURE.md`. Repo: `features/voice-agent/FEATURE.md`.
+**SoR:** `common-docs/systems/agents/voice/FEATURE.md`. Repo: `features/voice-agent/FEATURE.md`.
 
 ## 🚨 VISION MISSING
 
@@ -22,7 +22,7 @@ When he writes the vision, put his words here verbatim and fill `vision:` in the
 
 ## Resources
 
-- SoR: `common-docs/systems/voice-communication-layer/FEATURE.md` (§ rulings, Fast Twin, naming).
+- SoR: `common-docs/systems/agents/voice/FEATURE.md` (§ rulings, Fast Twin, naming).
 - Relay: `features/voice-agent/relay/`.
 - Demo: `/demos/voice-relay`. First real surface: Masterwork Scout interview (`ScoutInterviewPanel`).
 
