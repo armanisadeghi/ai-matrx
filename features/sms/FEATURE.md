@@ -13,7 +13,7 @@ inbound/status webhooks, preferences, conversations, and delivery diagnostics. T
 browser uses Next.js routes only where Twilio credentials, webhook validation, or a
 server-authenticated consent write require a secret boundary.
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications-platform/FEATURE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications-platform/STATE.md — read it before touching this feature in ANY repo.
 
 ---
 

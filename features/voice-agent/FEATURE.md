@@ -19,7 +19,7 @@ provider wire protocols interchangeable.
 This feature is browser realtime voice. It does not implement PSTN calls, Twilio Voice/TwiML,
 ConversationRelay, Media Streams, `CallSid` lifecycle, or phone handoff.
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications-platform/FEATURE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications-platform/STATE.md — read it before touching this feature in ANY repo.
 
 ---
 

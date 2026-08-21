@@ -3,7 +3,7 @@
 **Status:** active foundation; SMS live, closed inbound Voice owner-beta gate implemented.
 
 Cross-repo system of record:
-`/Users/armanisadeghi/code/common-docs/systems/communications-platform/FEATURE.md`.
+`/Users/armanisadeghi/code/common-docs/systems/communications-platform/STATE.md`.
 
 ## Ownership
 
