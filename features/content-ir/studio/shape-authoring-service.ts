@@ -571,6 +571,7 @@ export async function setShapeActivation(
   if (error) {
     // The RPC raises with the gate's specific blockers; surface them verbatim
     // rather than a generic "activation failed" the user cannot act on.
+    // access-errors: ok — set_kind_activation raises sentences authored FOR the user (the dual gate's own blockers)
     throw new Error(error.message);
   }
   const row = data as unknown as {

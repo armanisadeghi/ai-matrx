@@ -280,6 +280,7 @@ export async function fulfillClassPurchase(
       `[stripe/connect] LOUD: edu_class_confer_purchase failed for sale ${sale.id} ` +
         `(class ${sale.class_id}, buyer ${sale.buyer_user_id}): ${error.message}`,
     );
+    // access-errors: ok — webhook handler; the throw becomes a 500 read by Stripe's retry machinery, never rendered to a person
     throw new Error(error.message); // 500 → Stripe retries; the upsert above is idempotent
   }
   return true;
@@ -310,6 +311,7 @@ export async function revokeClassPurchaseByPaymentIntent(
     console.error(
       `[stripe/connect] LOUD: edu_class_revoke_purchase failed for sale ${sale.id}: ${error.message}`,
     );
+    // access-errors: ok — webhook handler; the throw becomes a 500 read by Stripe's retry machinery, never rendered to a person
     throw new Error(error.message);
   }
 
