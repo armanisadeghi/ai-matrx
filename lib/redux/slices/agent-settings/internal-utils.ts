@@ -23,7 +23,6 @@ import type {
   NormalizedControls,
   PendingModelSwitch,
   ResolutionMode,
-  UI_ONLY_FIELDS,
 } from "./types";
 import { AgentContext } from "./types";
 import { isUiGateKey, UI_GATE_KEYS } from "./ui-gates";
@@ -507,8 +506,6 @@ export function computeOverrideDiff(
  *  a flattened value can never leak; the rest are genuine FE-only settings. */
 const UI_ONLY_SET = new Set<string>([
   ...UI_GATE_KEYS,
-  "internal_web_search",
-  "internal_url_context",
   "output_format", // deprecated
 ]);
 

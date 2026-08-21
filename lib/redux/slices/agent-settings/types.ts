@@ -95,8 +95,6 @@ export type ResponseFormatValue =
  * UI_GATE_KEYS, not here.
  */
 export const UI_ONLY_FIELDS: ReadonlyArray<keyof AgentSettings> = [
-  "internal_web_search",
-  "internal_url_context",
   "output_format", // deprecated — never send
 ] as const;
 
