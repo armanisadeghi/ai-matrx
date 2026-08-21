@@ -45,62 +45,56 @@ capture, so it was never in the 47) and because pruning the 4.8M existing rows i
 `version_prune(token, id, keep)` exists, but whether sandbox history is worth keeping at all is
 Arman's call — the honest options are prune-to-N, or set `is_versioned=false` and drop the corpus.
 
-### D232 — the DDL-guard backlog, triaged: 9 unregistered entity-looking tables, 3 hard-FAIL certifies, 11 org-backstop laggards, 9 live kill-list columns (2026-08-21)
+### D232 — the DDL-guard backlog, triaged; §A and §D remain (2026-08-21)
 
 Product of giving `platform.ddl_guard_log` a reader (`migrations/ddl_guard_log_ack_contract.sql`,
-`scripts/check-ddl-guard-log.ts`, docs-steward daily step). All 865 firings were unacknowledged
-because nothing read the table; the 2026-08-21 triage acknowledged every one **with a reason** and
-left these four residues, which are real work no ack should hide. Live-verified 2026-08-21 against
+`scripts/check-ddl-guard-log.ts`, docs-steward daily step). All firings are now acknowledged **with a
+reason**; this entry is the residue that no ack should hide. Live-verified against
 `iam.canonical_certify_ok` / `iam.verify_canonical` / `pg_trigger` / `pg_attribute`.
 
-**The `hand_rolled_entity` class is now closed at the source** — `d2b8e526b` flipped that rule from
-WARN to ERROR the same day, so no *new* rows of this class can accrue. §A and §B below are the
-backlog it left behind; a fresh `hand_rolled_entity` row appearing after 2026-08-21 means the event
-trigger was disabled.
+**The `hand_rolled_entity` class is closed at the source** — `d2b8e526b` flipped that rule from WARN
+to ERROR the same day, so no *new* rows of this class can accrue. A fresh `hand_rolled_entity` row
+appearing after 2026-08-21 means the event trigger was disabled.
 
-**A. Unregistered entity-looking tables (9)** — each needs one decision: register via the token
+**§B and §C are RESOLVED; §A and §D are open.** Full status:
+
+**A. Unregistered entity-looking tables (9) — OPEN.** Each needs one decision: register via the token
 registry, or record why it is deliberately not an entity. Not an agent's call to make silently.
-`billing.plan`, `billing.org_plan`, `billing.user_plan` (`matrx-frontend/migrations/billing_*.sql`),
-`crm.jurisdiction_policy`, `crm.outreach_acceptance`, `crm.unsubscribe_token` (`migrations/crm_06_compliance.sql`),
-`platform.org_change_policy` (`migrations/change_type_policy_c18.sql`),
-`content_ir.io_contract`, `platform.retention_policy` (aidream — see that repo's twin entry).
-Most of the `billing`/`crm`/`platform` ones are per-org or per-user CONFIG rows keyed on
-`organization_id`/`user_id`/`country_code` with no `id` PK — a "declare non-entity" answer is very
-plausible; it just has to be written down. (`platform.expertise_run` also fired and is simply gone —
-no `pg_class` row, no registry row — already acknowledged as historical.)
+`billing.plan`, `billing.org_plan`, `billing.user_plan` (`migrations/billing_*.sql`),
+`crm.jurisdiction_policy`, `crm.outreach_acceptance`, `crm.unsubscribe_token`
+(`migrations/crm_06_compliance.sql`), `platform.org_change_policy`
+(`migrations/change_type_policy_c18.sql`), `content_ir.io_contract`, `platform.retention_policy`
+(aidream — see that repo's twin entry). Most of the `billing`/`crm`/`platform` ones are per-org or
+per-user CONFIG rows keyed on `organization_id`/`user_id`/`country_code` with no `id` PK — a
+"declare non-entity" answer is very plausible; it just has to be written down.
 
-**B. Registered but `canonical_certify_ok` = false with hard FAILs (3)** — aidream-owned `seo`:
-`seo.source_request` and `seo.story_angle` each carry 8 FAILs (missing `created_by`/`updated_by`/
-`organization_id` FKs, `organization_id` nullable, no `_stamp_actor`/`_touch_row`, `is_versioned=true`
-with no `_version_capture` trigger, and `std_select` missing the `created_by` short-circuit — a live
-42501 risk); `seo.landscape_brief` carries 3 (no `created_by`, no `updated_by`, no `_stamp_actor`).
-16 further registered tables fail certify on WARNs only — 15 on `soft_delete` (`no deleted_at`,
-`has_soft_delete=false`), plus `browser.stream_ticket` (legacy owner column) and
-`platform.judge_verdict` (no `visibility` enum). The WARN-only 16 are a doctrine question, not a
-bug list: event/ledger tables arguably should never soft-delete, and `iam.verify_canonical` WARNs
-on all of them anyway. **Decision for Arman: does a ledger/event table need `deleted_at`, or should
-`verify_canonical` stop WARNing when `has_soft_delete=false` is deliberate?** Today that single WARN
-is what keeps 15 otherwise-clean tables off "certified".
+**B. Registered but failing certify — RESOLVED 2026-08-21.** The 3 hard-FAIL tables
+(`seo.source_request`, `seo.story_angle`, `seo.landscape_brief`) are all
+`iam.canonical_certify_ok` = true: the first two were repaired by the parallel canonicalization
+session, the third by the soft-delete pass below. The 16 tables that failed on the `soft_delete`
+WARN alone are certified — see `migrations/soft_delete_and_visibility_positive_adds.sql`.
 
-**C. `organization_id NOT NULL` with no backstop — 11 live laggards.** 251 of the 271 tables the
-guard flagged now carry `_stamp_org_default` / `_inherit_parent_org` / `_stamp_from_node`; 9 are
-gone. These 11 do not, so an org-forgetting write 500s:
-`billing.account_addon`, `billing.org_plan`, `content_ir.io_contract`, `crm.outreach_acceptance`,
-`crm.unsubscribe_token`, `platform.masterwork_run`, `platform.org_change_policy`,
-`platform.org_module_config`, `seo.landscape_brief`, `seo.page_measurement_health`,
-`web.listing_publisher`. Fix = attach the backstop trigger, one migration.
+**C. `organization_id NOT NULL` with no backstop — RESOLVED for the original 11.** All eleven have
+since gained `_stamp_org_default` / `_inherit_parent_org` / `_stamp_from_node`. Two NEW laggards
+appeared 2026-08-21 from parallel work and are open: **`seo.starter_pack`** and
+**`seo.starter_pack_item`** — `organization_id` is NOT NULL with no default and no backstop trigger,
+so an org-forgetting write 500s. Fix = attach the backstop trigger, one migration.
 
-**D. Kill-list columns still live on 9 tables.** `billing.plan`, `canvas.canvas_items`,
-`legal.wc_claim`, `public.sandbox_instances`, `workbench.udt_datasets`, `workbench.udt_documents`,
-`workbench.udt_structured_lists`, `workbench.udt_workbooks` (all `is_public`) and
-`canvas.canvas_comments` (`deleted`). Canonical: `visibility` enum / `deleted_at`. The other 7
-flagged objects are genuinely remediated (column dropped, or the `public` table relocated to
-`workbench.heatmap_saves` / `agent.message_template` / dropped).
+**D. Kill-list columns still live on 10 tables — OPEN.** All ten are `is_public`, where the
+canonical access driver is the `visibility` enum: `billing.plan`, `canvas.canvas_items`,
+`legal.wc_claim`, and the seven `workbench.udt_*` tables (`datasets`, `dataset_fields`,
+`dataset_rows`, `documents`, `structured_lists`, `structured_list_items`, `workbooks`). This is a
+**removal**, not an add — every one has live cross-repo consumers reading `is_public`, so it is
+deliberately excluded from the 2026-08-21 positive-adds rule (`migrations/soft_delete_*.sql`) and
+needs its own migration per consumer. `canvas.canvas_comments` (`deleted`) and `public.sandbox_instances` (`is_public`) were
+cleaned by parallel sessions the same day; the other 7 flagged objects were already remediated.
+`workbench.udt_datasets` is the one table where this is now the ONLY thing between it and
+certification.
 
-Re-run the census any time: `pnpm check:ddl-guard-log`, or
-`select * from platform.ddl_guard_unacked;`. Acknowledging a firing is
-`platform.ddl_guard_ack(p_reason => '…', p_by => '…', p_rule => '…' | p_object_ref => '…' | p_ids => '{…}')`
+Re-run the census any time: `pnpm check:ddl-guard-log`, or `select * from platform.ddl_guard_unacked;`.
+Acknowledging is `platform.ddl_guard_ack(p_reason => '…', p_by => '…', p_rule => '…' | p_object_ref => '…' | p_ids => '{…}')`
 — the reason is constraint-enforced.
+
 ### D233 — `agent_card` is a registered ACTIVE entity pointing at a VIEW, and the conformance check can't see it (2026-08-21)
 
 Found clearing the versioned-without-capture backlog (`migrations/platform_versioned_without_capture_adjudication.sql`).
