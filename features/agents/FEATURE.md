@@ -371,18 +371,20 @@ model overrides.
   surface context into the existing Quick Chat side panel. Notes, Data, and the
   shared `ModuleLanding` template mount the launcher; dismiss lasts until the
   page reloads.
-- `2026-08-21` — **"Runs on" runtime badges in the tool pickers.** `AgentToolsManager`
-  tool cards and `AgentBundlesPanel` bundle cards now label where each tool
-  executes — Server / Web app / Chrome extension / Desktop app / MCP — sourced
+- `2026-08-21` — **Tool availability is explicit in the tool pickers.** `AgentToolsManager`
+  renders a first-class Availability row below every tool description: the full
+  Everywhere / Web app / Chrome extension / Desktop app / MCP vocabulary stays
+  visible in equal rectangular labels, with only supported contexts active.
+  `AgentBundlesPanel` keeps runtime caveats for mixed bundles. Availability is sourced
   from `tool.binding` executor bindings via
   `features/tool-registry/shared/toolRuntimes.service.ts` (one cached
   `readAllRows` sweep, consumed through `useToolRuntimes`; no bindings =
-  Server). Tools bound ONLY to `chrome-extension` / `matrx-local` get a subdued
+  Everywhere). Tools bound ONLY to `chrome-extension` / `matrx-local` get a subdued
   "Only runs when the Chrome extension / desktop app is connected" line; bundles
   show the same warning when everything they carry is client-only, or a mixed
   "Includes …-only tools" indicator. Labeling only — assignment is never
   blocked (agents are surface-independent; the server gates at runtime), and a
-  failed bindings read renders no badge rather than breaking a picker.
+  failed bindings read renders no availability row rather than breaking a picker.
 - `2026-08-20` — **Delegated Matrx Extend tools execute from normal Chat.**
   The delegated-tool router offers otherwise-unowned tool names to the
   installed extension's live capabilities catalog, forwards owned calls over

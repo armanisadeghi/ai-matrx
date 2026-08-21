@@ -111,7 +111,10 @@ import { supportsTools } from "@/features/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
 import { useToolRuntimes } from "./useToolRuntimes";
-import { runtimeInfoForExecutors } from "@/features/tool-registry/shared/toolRuntimes.service";
+import {
+  runtimeInfoForExecutors,
+  TOOL_AVAILABILITY_LABELS,
+} from "@/features/tool-registry/shared/toolRuntimes.service";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -3822,8 +3825,8 @@ function ToolCard({
   dupBundles?: string[];
   /** Model can't use tools — block selecting this (unselected) card. */
   addDisabled?: boolean;
-  /** Active executor names from tool.binding — drives the "runs on" badge.
-   * `null` = not loaded yet (render no badge); `[]` = no bindings = Server. */
+  /** Active executor names from tool.binding — drives the availability matrix.
+   * `null` = not loaded yet (render no matrix); `[]` = available everywhere. */
   executors?: string[] | null;
 }) {
   const hasDetails = tool.has_details ?? true;
@@ -3899,22 +3902,36 @@ function ToolCard({
                 )}
               </div>
             )}
-            {/* "Runs on" — where the tool's executor bindings let it execute */}
-            {runtime &&
-              runtime.badges.map((label) => (
-                <Badge
-                  key={label}
-                  variant="outline"
-                  className="text-[9px] h-4 px-1 font-normal text-muted-foreground border-border"
-                >
-                  {label}
-                </Badge>
-              ))}
           </div>
           {tool.description && (
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               {tool.description}
             </p>
+          )}
+          {runtime && (
+            <div className="mt-2" aria-label="Tool availability">
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-foreground">
+                Availability
+              </p>
+              <div className="grid grid-cols-2 gap-1 min-[560px]:grid-cols-5">
+                {TOOL_AVAILABILITY_LABELS.map((label) => {
+                  const isAvailable = runtime.activeLabels.includes(label);
+                  return (
+                    <span
+                      key={label}
+                      aria-label={`${label}: ${isAvailable ? "available" : "unavailable"}`}
+                      className={`flex h-6 min-w-0 items-center justify-center rounded-sm border px-1.5 text-center text-[9px] font-semibold leading-none transition-colors ${
+                        isAvailable
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border/60 bg-muted/25 text-muted-foreground/45"
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
           )}
           {runtime?.clientOnlyNote && (
             <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">

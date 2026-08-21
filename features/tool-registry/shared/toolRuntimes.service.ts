@@ -3,9 +3,9 @@
 /**
  * Tool runtime ("runs on") lookup for the tool/bundle pickers.
  *
- * A tool's executor bindings (`tool.binding`) say WHERE it runs: on the server,
- * in the web app UI, in the Chrome extension, in the desktop app, or on an MCP
- * server. The pickers use this to label each tool so nobody assigns a
+ * A tool's executor bindings (`tool.binding`) say WHERE it runs: everywhere,
+ * in the web app UI, in the Chrome extension, in the desktop app, or through
+ * MCP. The pickers use this to label each tool so nobody assigns a
  * client-only tool (e.g. a Chrome-extension loader) to an agent expecting it to
  * work in a plain chat. Labeling only — assignment is never blocked here:
  * agents are surface-independent and the server gates execution at runtime.
@@ -18,41 +18,44 @@ import { readAllRows } from "@/lib/supabase/readAllRows";
 
 // ─── Executor name → runtime label ───────────────────────────────────────────
 
-export type RuntimeBadgeLabel =
-  | "Server"
+export type ToolAvailabilityLabel =
+  | "Everywhere"
   | "Web app"
   | "Chrome extension"
   | "Desktop app"
   | "MCP";
 
-/** Client executors: the tool only runs when that client is attached to the conversation. */
-const CLIENT_ONLY_EXECUTORS = new Set(["chrome-extension", "matrx-local"]);
-
-export function executorRuntimeLabel(executorName: string): RuntimeBadgeLabel {
-  if (executorName === "chrome-extension") return "Chrome extension";
-  if (executorName === "matrx-local") return "Desktop app";
-  if (executorName === "matrx-user") return "Web app";
-  if (executorName.startsWith("mcp.")) return "MCP";
-  // matrx-ai-core, aidream, and anything unrecognized run server-side.
-  return "Server";
-}
-
-export interface ToolRuntimeInfo {
-  /** Deduped labels in a stable order. `["Server"]` when there are no bindings
-   * (a tool with no binding rows executes server-side by default). */
-  badges: RuntimeBadgeLabel[];
-  /** Set when the tool is bound ONLY to client executors (chrome-extension /
-   * matrx-local) — a full "Only runs when …" sentence, else null. */
-  clientOnlyNote: string | null;
-}
-
-const BADGE_ORDER: RuntimeBadgeLabel[] = [
-  "Server",
+/** The complete, stable availability vocabulary shown for every tool. */
+export const TOOL_AVAILABILITY_LABELS: readonly ToolAvailabilityLabel[] = [
+  "Everywhere",
   "Web app",
   "Chrome extension",
   "Desktop app",
   "MCP",
 ];
+
+/** Client executors: the tool only runs when that client is attached to the conversation. */
+const CLIENT_ONLY_EXECUTORS = new Set(["chrome-extension", "matrx-local"]);
+
+export function executorAvailabilityLabel(
+  executorName: string,
+): ToolAvailabilityLabel {
+  if (executorName === "chrome-extension") return "Chrome extension";
+  if (executorName === "matrx-local") return "Desktop app";
+  if (executorName === "matrx-user") return "Web app";
+  if (executorName.startsWith("mcp.")) return "MCP";
+  // matrx-ai-core, aidream, and anything unrecognized run server-side.
+  return "Everywhere";
+}
+
+export interface ToolRuntimeInfo {
+  /** Deduped labels in a stable order. `["Everywhere"]` when there are no
+   * bindings (the server-backed default is available from every surface). */
+  activeLabels: ToolAvailabilityLabel[];
+  /** Set when the tool is bound ONLY to client executors (chrome-extension /
+   * matrx-local) — a full "Only runs when …" sentence, else null. */
+  clientOnlyNote: string | null;
+}
 
 /** True when the executor list is non-empty and every executor is a client. */
 export function isClientOnly(executorNames: string[]): boolean {
@@ -78,13 +81,13 @@ export function clientOnlyNoteFor(executorNames: string[]): string | null {
 export function runtimeInfoForExecutors(
   executorNames: string[],
 ): ToolRuntimeInfo {
-  const labels = new Set<RuntimeBadgeLabel>(
+  const labels = new Set<ToolAvailabilityLabel>(
     executorNames.length > 0
-      ? executorNames.map(executorRuntimeLabel)
-      : ["Server"],
+      ? executorNames.map(executorAvailabilityLabel)
+      : ["Everywhere"],
   );
   return {
-    badges: BADGE_ORDER.filter((b) => labels.has(b)),
+    activeLabels: TOOL_AVAILABILITY_LABELS.filter((label) => labels.has(label)),
     clientOnlyNote: clientOnlyNoteFor(executorNames),
   };
 }
