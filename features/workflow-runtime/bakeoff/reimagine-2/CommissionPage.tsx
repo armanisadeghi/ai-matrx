@@ -83,6 +83,7 @@ interface LoadedWorkflow {
 
 export function CommissionPage({ definitionId }: { definitionId: string }) {
   const router = useRouter();
+  const back = () => router.back();
   const searchParams = useSearchParams();
   const runParam = searchParams.get("run");
 
