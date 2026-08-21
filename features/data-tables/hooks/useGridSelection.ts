@@ -105,10 +105,57 @@ export function useGridSelection(args: {
         );
       }
       // The editor had focus; without this the grid goes deaf after one edit.
-      requestAnimationFrame(refocusGrid);
+      //
+      // But only reclaim it when the user is still IN the grid. A blur-commit
+      // caused by clicking a toolbar button (or anywhere else) would otherwise
+      // yank focus straight back out of whatever they just clicked.
+      requestAnimationFrame(() => {
+        const active = document.activeElement;
+        const stillInside =
+          active === null ||
+          active === document.body ||
+          containerRef.current?.contains(active) === true;
+        if (move || stillInside) refocusGrid();
+      });
     },
     [fieldNames, refocusGrid, rowIds],
   );
+
+  // CLICKING AWAY DESELECTS. A selection that survives a click into the rest of
+  // the app is a lie: the grid looks focused, the keyboard no longer reaches
+  // it, and the next Delete or Cmd-Z appears to target a cell that is not
+  // actually current any more. Losing focus must lose the selection.
+  //
+  // Two exceptions, and only two:
+  //  - inside the grid itself, which manages its own selection;
+  //  - inside a floating layer the grid OPENED (a choice chooser, a confirm
+  //    dialog, a toast). Those render in portals OUTSIDE the container, so a
+  //    naive outside-click test would treat picking an option as clicking away
+  //    and tear down the very editor the user is answering.
+  //
+  // `pointerdown` rather than `click`, so the selection clears on press and
+  // cannot briefly appear active over a control the user has already moved to.
+  useEffect(() => {
+    if (!selected && !editing) return undefined;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (containerRef.current?.contains(target)) return;
+      if (
+        target instanceof Element &&
+        target.closest(
+          '[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster]',
+        )
+      ) {
+        return;
+      }
+      clear();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [clear, editing, selected]);
 
   // Keep the selected cell on screen. `block/inline: "nearest"` so moving
   // within the visible area never yanks the viewport around — only a move that

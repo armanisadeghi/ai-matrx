@@ -253,11 +253,13 @@ export function EditableCell({
     return (
       <div
         data-selected={selected || undefined}
+        // THE RING BELONGS TO THE CELL, NOT TO THE CONTENT. It used to sit on
+        // this inner div, so it drew a small box around the text inside the
+        // padding instead of outlining the cell — which read as a stray
+        // artefact rather than a selection. The <td> owns it now (see
+        // UserTableViewer); this element only reports its state.
         className={cn(
-          "relative rounded-sm px-1 -mx-1 py-0.5",
-          // The ring IS the selected state. It must read as "this is the
-          // current cell", never as "this cell is being edited".
-          selected && "ring-2 ring-primary/70 ring-inset bg-primary/5",
+          "relative",
           editable && !directClickable && "cursor-text",
         )}
         onClick={(e) => {

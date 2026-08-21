@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 import TableToolbar from "./TableToolbar";
 import {
   Pencil,
@@ -2525,7 +2526,17 @@ const UserTableViewer = ({
                           rowId: row.id,
                           fieldName: field.field_name,
                         })}
-                        className="py-3 max-w-0 group"
+                        // THE SELECTION RING OUTLINES THE WHOLE CELL. An inset
+                        // ring on the <td> follows the cell's real edges; drawn
+                        // on the inner content div it boxed the text and left
+                        // the padding outside, which looked like a glitch
+                        // rather than a selection. `ring-inset` matters — an
+                        // outset ring is clipped by the neighbouring cells.
+                        className={cn(
+                          "py-3 max-w-0 group",
+                          grid.isSelected(row.id, field.field_name) &&
+                            "bg-primary/5 ring-2 ring-inset ring-primary/70",
+                        )}
                       >
                         <div className="flex items-center justify-between gap-2 min-w-0">
                           <div className="flex-1 min-w-0">
