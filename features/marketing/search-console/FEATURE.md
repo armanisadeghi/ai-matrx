@@ -252,6 +252,35 @@ before touching value tiers in ANY repo. FE home: `features/marketing/seo/value-
 + the bake-off workbench at `/marketing/brands/[brandId]/sites/[siteId]/value` (default
 forwards to the ruling winner among `/a…/d`).
 
+🚨 **The resolver resolves ONLY what is about to be read.** `seo.keyword_value_map`
+takes the keyword ids its caller is about to render (NULL means whole-site); a reader
+that passes nothing matches the site's every rule and geo area against the 196k-row
+global corpus, blows the 8s statement timeout, and renders a skeleton that reads as
+"loading". Every reader passes its GSC window. THE SCOPE RULE in the SoR has the
+measurement.
+
+**The vocabularies are editable, and that is the point** (Arman, 2026-08-21: "the rules
+can't live in the agent's head"). Two planes, two paths:
+- **Site bands** — `features/marketing/seo/value-system/vocabulary/BandVocabularyEditor.tsx`,
+  opened from "How value is computed" on the workbench. Adopt-then-edit: the platform
+  template is copied in on first save and the site owns its vocabulary after that.
+  Renaming a band re-labels every keyword instantly (the screen shows the rename, it does
+  not warn about it); moving a threshold shows, server-side, how many real keywords change
+  band before you commit (`gsc_value_band_preview`); removing one asks where its rulings
+  go. Coherence is enforced by ONE DB predicate (`gsc_assert_vocabulary_coherent`) — the
+  client checks in `vocabulary/lib.ts` exist only to keep the preview honest, and the
+  database is right when they disagree.
+- **Platform facets** — `/administration/knowledge/seo-facets` (super-admin), over
+  `platform.categories` dimensions `seo_facet` / `seo_value_band` / `seo_geo_band`.
+  Labels and descriptions only; **adding a facet value requires widening
+  `seo.keyword`'s matching CHECK in the same change** and the DB refuses until it lands.
+
+**Governance messages are not PostgREST prose.** These RPCs raise sentences written for
+the reader ("3 rulings are set to Bronze — choose where they move before removing it").
+`data.ts`'s `assertGoverned` passes a raise carrying one of our governance codes through
+verbatim and leaves everything else to `assertData`'s generic sentence. Do not route a new
+vocabulary write through bare `assertData` — it swallows the rule.
+
 ## Classification UI — the manual truth-editing surface (2026-08-08)
 
 Classification is important enough for a DEDICATED UI (Arman, 2026-08-08).
