@@ -20,16 +20,6 @@ import type { LLMParams } from "@/features/agents/types/agent-api-types";
  */
 export type AgentSettings = LLMParams;
 
-/**
- * Fields in AgentSettings that are UI-only and must be stripped before API
- * submission. The model-gated UI flags (image_urls / file_urls /
- * youtube_videos / tools) moved to agent.uiGates and are stripped via
- * UI_GATE_KEYS, not here.
- */
-export const UI_ONLY_FIELDS: ReadonlyArray<keyof AgentSettings> = [
-  "output_format", // deprecated — never send
-] as const;
-
 // ── Model Controls ─────────────────────────────────────────────────────────────
 
 export type ControlType =

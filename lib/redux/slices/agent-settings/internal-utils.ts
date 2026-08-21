@@ -501,13 +501,10 @@ export function computeOverrideDiff(
 
 // ── API Payload Builder ────────────────────────────────────────────────────────
 
-/** All UI-only field names — never sent to the Python backend. The model-gated
- *  UI flags (now in agent.uiGates) are pulled from the canonical UI_GATE_KEYS so
- *  a flattened value can never leak; the rest are genuine FE-only settings. */
-const UI_ONLY_SET = new Set<string>([
-  ...UI_GATE_KEYS,
-  "output_format", // deprecated
-]);
+/** UI-only field names—never sent to the Python backend. The generated
+ * `LLMParams` contract is otherwise passed through without a handwritten
+ * deny-list; `output_format` is a real server parameter. */
+const UI_ONLY_SET = new Set<string>(UI_GATE_KEYS);
 
 /**
  * Build the payload to send to the Python backend for a given context.

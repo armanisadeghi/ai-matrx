@@ -43,4 +43,10 @@ describe("buildApiPayload", () => {
       internal_url_context: false,
     });
   });
+
+  it("preserves the generated output_format parameter", () => {
+    expect(
+      buildApiPayload({ output_format: "png" }, {}, "builder"),
+    ).toEqual({ output_format: "png" });
+  });
 });
