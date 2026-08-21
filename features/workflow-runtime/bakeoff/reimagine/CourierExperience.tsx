@@ -40,7 +40,6 @@ import {
   selectRunStatusTs,
 } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
 import {
-  deliverableSteps,
   describeWorkflowSteps,
   stepsByNodeId,
 } from "@/features/workflow-runtime/components/run/node-presentation";
@@ -154,7 +153,14 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   const stepsById = stepsByNodeId(steps);
   const stepLabels: Record<string, string> = {};
   for (const step of steps) stepLabels[step.nodeId] = step.label;
-  const deliverables = deliverableSteps(steps);
+  // The promise: every step that hands the person something — a declared
+  // output_kind, or a "show on screen" deliver step that declares none. A
+  // workflow that declares neither still ends somewhere: its final step's
+  // result is what the person came for, so that is what gets promised.
+  const declared = steps.filter(
+    (step) => step.outputKind !== null || step.family === "deliver",
+  );
+  const deliverables = declared.length > 0 ? declared : steps.slice(-1);
 
   const followedNodeId = runId
     ? pickFollowedNode(steps, phases, pinnedNodeId, interrupt?.nodeId ?? null)
