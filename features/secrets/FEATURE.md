@@ -291,6 +291,13 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- **2026-08-20** — Replaced the oversized authenticator cards with a compact,
+  code-first account list modeled on Google and Microsoft Authenticator: one
+  provider/account identity, a tap-to-copy grouped code, live countdown ring,
+  dependable favicon-to-globe fallback, and a single management menu. Search
+  appears only when the list is large enough to need it; the full Vault and
+  new-tab doors remain available without permanent explanatory chrome.
+
 - **2026-08-20** — Made the authenticator usable end to end: enrollment now
   immediately returns to a large current-code screen for provider confirmation,
   and every saved authenticator leads with its site/account name and rotating
