@@ -508,7 +508,9 @@ export function ValueWorkbenchC() {
         <BandScoreboard
           metas={metas}
           summary={summary.data}
-          isLoading={summary.isLoading || vocab.isLoading}
+          // isPending, not isLoading: a paused fetch (offline) must show the
+          // skeleton — zero-filled tiles for data that never arrived are a lie.
+          isLoading={summary.isPending || vocab.isPending}
           activeBand={bandFilter}
           onSelectBand={(band) =>
             table.onStateChange({
@@ -543,7 +545,7 @@ export function ValueWorkbenchC() {
           data={rows}
           columns={columns}
           getRowId={(row) => row.keyword_id}
-          isLoading={review.isLoading}
+          isLoading={review.isPending}
           isFetching={review.isFetching}
           query={{
             mode: "controlled",
