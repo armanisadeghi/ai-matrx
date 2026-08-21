@@ -9,11 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import type { Database } from "@/types/database.types";
+import { parseConversationParticipants } from "@/features/messaging/data/conversation-list";
 import { z } from "zod";
-
-type DmConversationDetail =
-  Database["public"]["Functions"]["get_dm_conversations_with_details"]["Returns"][number];
 
 // ============================================
 // Validation Schemas
@@ -72,71 +69,55 @@ export async function GET(request: NextRequest) {
     const paginatedConversations =
       conversations?.slice(offset, offset + limit) || [];
 
-    // Fetch participants for each conversation
-    const conversationsWithParticipants = await Promise.all(
-      paginatedConversations.map(async (conv: DmConversationDetail) => {
-        const { data: participants } = await supabase
-          .schema("communication").from("dm_conversation_participants")
-          .select("*")
-          .eq("conversation_id", conv.conversation_id);
+    const conversationsWithParticipants = paginatedConversations.map((conv) => {
+      const participantsWithUser = parseConversationParticipants(
+        conv.participants,
+      );
 
-        // Fetch user info for each participant
-        const participantsWithUser = await Promise.all(
-          (participants || []).map(async (p) => {
-            const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-              p_user_id: p.user_id,
-            });
-            return {
-              ...p,
-              user: userInfo?.[0] || null,
-            };
-          }),
-        );
+      // For direct chats, compute display name/image from the other participant
+      const otherParticipant = participantsWithUser.find(
+        (p) => p.user_id !== userId,
+      );
 
-        // For direct chats, compute display name/image from the other participant
-        const otherParticipant = participantsWithUser.find(
-          (p) => p.user_id !== userId,
-        );
-
-        return {
-          ConversationID: conv.conversation_id,
-          Type: conv.conversation_type,
-          GroupName: conv.group_name,
-          GroupImage: conv.group_image_url,
-          CreatedAt: conv.conversation_created_at,
-          UpdatedAt: conv.conversation_updated_at,
-          DisplayName:
-            conv.conversation_type === "direct" && otherParticipant
-              ? otherParticipant.user?.display_name ||
-                otherParticipant.user?.email ||
-                "Unknown"
-              : conv.group_name || "Group Chat",
-          DisplayImage:
-            conv.conversation_type === "direct" && otherParticipant
-              ? otherParticipant.user?.avatar_url
-              : conv.group_image_url,
-          IsMuted:
-            participants?.find((p) => p.user_id === userId)?.is_muted || false,
-          LastReadAt: participants?.find((p) => p.user_id === userId)
-            ?.last_read_at,
-          Participants: participantsWithUser.map((p) => ({
-            UserID: p.user_id,
-            DisplayName: p.user?.display_name,
-            Email: p.user?.email,
-            AvatarUrl: p.user?.avatar_url,
-            Role: p.role,
-          })),
-          LastMessage: conv.last_message_content
-            ? {
-                Content: conv.last_message_content,
-                SenderID: conv.last_message_sender_id,
-                CreatedAt: conv.last_message_at,
-              }
-            : null,
-          UnreadCount: conv.unread_count,
-        };
-      }),
-    );
+      return {
+        ConversationID: conv.conversation_id,
+        Type: conv.conversation_type,
+        GroupName: conv.group_name,
+        GroupImage: conv.group_image_url,
+        CreatedAt: conv.conversation_created_at,
+        UpdatedAt: conv.conversation_updated_at,
+        DisplayName:
+          conv.conversation_type === "direct" && otherParticipant
+            ? otherParticipant.user?.display_name ||
+              otherParticipant.user?.email ||
+              "Unknown"
+            : conv.group_name || "Group Chat",
+        DisplayImage:
+          conv.conversation_type === "direct" && otherParticipant
+            ? otherParticipant.user?.avatar_url
+            : conv.group_image_url,
+        IsMuted:
+          participantsWithUser.find((p) => p.user_id === userId)?.is_muted ||
+          false,
+        LastReadAt: participantsWithUser.find((p) => p.user_id === userId)
+          ?.last_read_at,
+        Participants: participantsWithUser.map((p) => ({
+          UserID: p.user_id,
+          DisplayName: p.user?.display_name,
+          Email: p.user?.email,
+          AvatarUrl: p.user?.avatar_url,
+          Role: p.role,
+        })),
+        LastMessage: conv.last_message_content
+          ? {
+              Content: conv.last_message_content,
+              SenderID: conv.last_message_sender_id,
+              CreatedAt: conv.last_message_at,
+            }
+          : null,
+        UnreadCount: conv.unread_count,
+      };
+    });
 
     return NextResponse.json({
       success: true,

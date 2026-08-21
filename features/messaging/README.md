@@ -104,7 +104,7 @@ A message can carry a generic **`action_data`** envelope `{ kind, version, paylo
 - `is_dm_participant(user_id, conversation_id)` - Check participation
 - `get_dm_unread_count(user_id, conversation_id)` - Get unread count
 - `get_dm_user_info(user_id)` - Get user info from auth.users
-- `get_dm_conversations_with_details(user_id)` - List conversations with metadata
+- `get_dm_conversations_with_details(user_id)` - **Canonical conversation-list read.** Returns conversation metadata, unread count, and active participants with guarded profile fields in one request. List loaders must consume this payload; per-conversation participant SELECTs and per-participant `get_dm_user_info` fan-out are forbidden.
 - `find_dm_direct_conversation(user1_id, user2_id)` - Find existing direct chat (read-only)
 - `dm_get_or_create_direct_conversation(user1_id, user2_id, org_id?)` - **Canonical atomic** find-or-create for a 1:1 DM. Advisory-locks the unordered pair so concurrent callers (two tabs / double-click / batched system notifications) can't mint duplicate conversations — the old client-side `find_dm` → insert-conversation → insert-participants raced and silently did. All 4 DM find-or-create callsites route through this (browser + service-role). SECURITY DEFINER; guards that an `authenticated` caller can only pass themselves as user1. `2026-07-04`.
 
@@ -569,6 +569,13 @@ sequenceDiagram
 4. Console logs show correct count after fetch
 
 ## Change Log
+
+- **2026-08-20 — conversation bootstrap is one database request.**
+  `get_dm_conversations_with_details` now returns active participants and their
+  permitted profile fields with each conversation. `MessagingInitializer`,
+  `useConversations`, and the compatibility API consume that payload through
+  `features/messaging/data/conversation-list.ts`; a transport loss can no longer
+  multiply into one participant query and one profile RPC per participant.
 
 - **2026-08-15 — a CMS access ask can be completed inside the DM.** The
   cross-project CMS Access Gate sends `setting_access_request` with the

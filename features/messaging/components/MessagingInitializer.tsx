@@ -13,8 +13,8 @@ import {
 } from "../redux/messagingSlice";
 import { createClient } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
-import type { Database } from "@/types/database.types";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
+import { toConversationWithDetails } from "@/features/messaging/data/conversation-list";
 import type {
   ConversationType,
   ConversationWithDetails,
@@ -26,9 +26,6 @@ import {
   showDesktopNotification,
   unlockAudio,
 } from "../utils/notificationSound";
-
-type DmConversationRpcRow =
-  Database["public"]["Functions"]["get_dm_conversations_with_details"]["Returns"][number];
 
 function toConversationType(value: string): ConversationType {
   return value === "group" ? "group" : "direct";
@@ -253,82 +250,8 @@ export function MessagingInitializer() {
         return;
       }
 
-      // Fetch participants for each conversation
-      const conversationsWithParticipants = await Promise.all(
-        (data || []).map(async (conv: DmConversationRpcRow) => {
-          const { data: participants } = await supabase
-            .schema("communication")
-            .from("dm_conversation_participants")
-            .select("*")
-            .eq("conversation_id", String(conv.conversation_id));
-
-          // Fetch user info for each participant
-          const participantsWithUser = await Promise.all(
-            (participants || []).map(async (p) => {
-              const { data: userInfo } = await supabase.rpc(
-                "get_dm_user_info",
-                { p_user_id: p.user_id },
-              );
-              return {
-                ...p,
-                role: toParticipantRole(p.role),
-                is_muted: p.is_muted ?? false,
-                is_archived: p.is_archived ?? false,
-                user: userInfo?.[0] ?? undefined,
-              };
-            }),
-          );
-
-          // For direct chats, compute display name/image from the other participant
-          const otherParticipant = participantsWithUser.find(
-            (p) => p.user_id !== userId,
-          );
-
-          const conversation: ConversationWithDetails = {
-            id: conv.conversation_id,
-            type: toConversationType(conv.conversation_type),
-            group_name: conv.group_name,
-            group_image_url: conv.group_image_url,
-            created_by: null,
-            created_at: conv.conversation_created_at,
-            updated_at: conv.conversation_updated_at,
-            participants: participantsWithUser || [],
-            last_message: conv.last_message_content
-              ? {
-                  id: "",
-                  conversation_id: conv.conversation_id,
-                  sender_id: conv.last_message_sender_id,
-                  content: conv.last_message_content,
-                  message_type: "text",
-                  media_url: null,
-                  media_thumbnail_url: null,
-                  media_metadata: null,
-                  status: "sent",
-                  reply_to_id: null,
-                  deleted_at: null,
-                  deleted_for_everyone: false,
-                  created_at: conv.last_message_at,
-                  edited_at: null,
-                  client_message_id: null,
-                  action_data: null,
-                  metadata: {},
-                }
-              : null,
-            unread_count: conv.unread_count,
-            display_name:
-              conv.conversation_type === "direct" && otherParticipant
-                ? otherParticipant.user?.display_name ||
-                  otherParticipant.user?.email ||
-                  "Unknown"
-                : conv.group_name || "Group Chat",
-            display_image:
-              conv.conversation_type === "direct" && otherParticipant
-                ? otherParticipant.user?.avatar_url
-                : conv.group_image_url,
-          };
-
-          return conversation;
-        }),
+      const conversationsWithParticipants = (data || []).map((conversation) =>
+        toConversationWithDetails(conversation, userId),
       );
 
       if (!mountedRef.current) return;

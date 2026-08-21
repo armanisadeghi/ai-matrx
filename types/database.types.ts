@@ -34766,6 +34766,7 @@ export type Database = {
           last_message_at: string
           last_message_content: string
           last_message_sender_id: string
+          participants: Json
           unread_count: number
         }[]
       }
