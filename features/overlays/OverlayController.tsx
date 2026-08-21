@@ -4737,6 +4737,17 @@ export default function OverlayController() {
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
             progress={parseLiveRunProgressState(data?.progress)}
+            initialMinimized={data?.initialMinimized === true}
+            workingMessage={
+              typeof data?.workingMessage === "string"
+                ? data.workingMessage
+                : null
+            }
+            completeMessage={
+              typeof data?.completeMessage === "string"
+                ? data.completeMessage
+                : null
+            }
             // Undefined when unset so the window's chat-matched size defaults
             // apply; a per-kind override arrives as a number or "70vh".
             width={

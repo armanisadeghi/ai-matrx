@@ -88,4 +88,38 @@ describe("WindowPanel minimize boundary", () => {
       store.getState().windowManager.windows["throwing-collector-window"].state,
     ).toBe("minimized");
   });
+
+  it("can register directly into the tray without a windowed flash", async () => {
+    const store = configureStore({
+      reducer: {
+        overlays: overlayReducer,
+        windowManager: windowManagerReducer,
+        adminDebug: adminDebugReducer,
+        urlSync: urlSyncReducer,
+      },
+    });
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <WindowPanel
+            id="initially-minimized-window"
+            title="Working on it"
+            overlayId="liveRunWindow"
+            overlayInstanceId="assist-run"
+            initialState="minimized"
+          >
+            body
+          </WindowPanel>
+        </Provider>,
+      );
+      await Promise.resolve();
+    });
+
+    const entry =
+      store.getState().windowManager.windows["initially-minimized-window"];
+    expect(entry.state).toBe("minimized");
+    expect(entry.traySlot).toBe(0);
+    expect(entry.preMinimizedRect).not.toBeNull();
+  });
 });

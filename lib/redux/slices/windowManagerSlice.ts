@@ -281,11 +281,13 @@ const windowManagerSlice = createSlice({
         id: string;
         title?: string;
         initial: WindowRect;
+        initialState?: "windowed" | "minimized";
         persistence?: WindowPersistenceRegistration;
         viewport?: { width: number; height: number };
       }>,
     ) {
-      const { id, title, initial, persistence, viewport } = action.payload;
+      const { id, title, initial, initialState, persistence, viewport } =
+        action.payload;
       if (state.windows[id]) return;
 
       // Defense in depth against the "window opens invisible" class: a caller
@@ -316,15 +318,23 @@ const windowManagerSlice = createSlice({
             ? clampRectToViewport(pending.windowedRect, viewport)
             : pending.renderRect
         : undefined;
+      const startsMinimized =
+        !pending && initialState === "minimized" && viewport !== undefined;
+      const initialTraySlot = startsMinimized ? state.trayCount : null;
       state.windows[id] = {
         id,
         title: title ?? pending?.title ?? id,
-        state: pending?.state ?? "windowed",
+        state: pending?.state ?? (startsMinimized ? "minimized" : "windowed"),
         windowed: pendingRenderRect ?? safeInitial,
         preMinimizedRect:
-          pending?.state === "minimized" ? pending.windowedRect : null,
+          pending?.state === "minimized"
+            ? pending.windowedRect
+            : startsMinimized
+              ? safeInitial
+              : null,
         zIndex: pending?.zIndex ?? state.nextZIndex++,
-        traySlot: pending?.state === "minimized" ? pending.traySlot : null,
+        traySlot:
+          pending?.state === "minimized" ? pending.traySlot : initialTraySlot,
         popoutMode: null,
         prePopoutRect: null,
         ...(persistence
@@ -342,6 +352,10 @@ const windowManagerSlice = createSlice({
 
       if (pending?.state === "minimized" && pending.traySlot !== null) {
         state.trayCount = Math.max(state.trayCount, pending.traySlot + 1);
+      } else if (startsMinimized && viewport) {
+        state.trayCount += 1;
+        state.trayViewport = viewport;
+        recomputeAllTrayRects(state);
       }
       if (pending && pending.zIndex >= state.nextZIndex) {
         state.nextZIndex = pending.zIndex + 1;

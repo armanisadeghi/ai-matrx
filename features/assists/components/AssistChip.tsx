@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { Timer, X } from "lucide-react";
+import { Sparkles, Timer, X } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -35,15 +35,18 @@ const HOVER_CLOSE_MS = 250;
 export function AssistChip({
   assist,
   className,
+  ambient = false,
 }: {
   assist: Assist;
   className?: string;
+  /** Scarce global presentation: friendly, never alarm-coloured or timed. */
+  ambient?: boolean;
 }) {
   const { dismissAssist } = useAssistRunner();
   // Urgency changes how the chip LOOKS, never what it does: expand only.
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
-  const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
+  const UrgencyIcon = ambient ? Sparkles : ASSIST_URGENCY_ICON[urgency];
   // Countdown is informational only — it never changes what a click does.
   const expiry = useAssistExpiry(assist);
   const [open, setOpen] = useState(false);
@@ -73,7 +76,9 @@ export function AssistChip({
           onMouseLeave={hoverClose}
           className={cn(
             "group flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-2 pr-1 text-xs shadow-sm",
-            urgencyMeta.chipClass,
+            ambient
+              ? "border-primary/20 bg-card text-foreground"
+              : urgencyMeta.chipClass,
             className,
           )}
         >
@@ -83,18 +88,21 @@ export function AssistChip({
           <button
             type="button"
             aria-label={
-              urgency === "normal"
+              ambient || urgency === "normal"
                 ? `${assist.title} — expand for details and actions`
                 : `${urgencyMeta.label}: ${assist.title} — expand for details and actions`
             }
             className="flex min-w-0 items-center gap-1.5 text-left text-foreground hover:text-primary"
           >
             <UrgencyIcon
-              className={cn("h-3.5 w-3.5 shrink-0", urgencyMeta.iconClass)}
+              className={cn(
+                "h-3.5 w-3.5 shrink-0",
+                ambient ? "text-primary" : urgencyMeta.iconClass,
+              )}
             />
             <span className="truncate">{assist.title}</span>
           </button>
-          {expiry?.soon && (
+          {!ambient && expiry?.soon && (
             // Compact countdown, only inside the 48h window (chips stay
             // compact). Icon + text, never colour alone; both themes explicit.
             <span

@@ -28,6 +28,7 @@ import {
   singleMessageTrayPreview,
   smartCodeEditorTrayPreview,
   transcriptStudioTrayPreview,
+  liveRunTrayPreview,
 } from "./tray-previews";
 import type { ReactNode } from "react";
 
@@ -54,6 +55,7 @@ const TRAY_PREVIEW_REGISTRY: Record<string, TrayPreviewEntry> = {
   transcriptStudioWindow: {
     renderTrayPreview: transcriptStudioTrayPreview,
   },
+  liveRunWindow: { renderTrayPreview: liveRunTrayPreview },
 };
 
 export function getTrayPreviewEntry(overlayId: string): TrayPreviewEntry {

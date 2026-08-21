@@ -17,6 +17,7 @@
  */
 
 import type { OpenAgentRunWindowOptions } from "@/features/overlays/openers/agentRunWindow";
+import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { Assist } from "../types";
 
 export type AssistActionResult =
@@ -29,6 +30,15 @@ export interface AssistActionContext {
   userId: string | null;
   /** Open the shared floating agent-run window (pre-fill only, user sends). */
   openAgentRun: (opts: OpenAgentRunWindowOptions) => void;
+  /** Start a strict mandate-backed run and return once it is safely underway. */
+  runMandate: (opts: {
+    assistId: string;
+    mandateKey: string;
+    sourceFeature: SourceFeature;
+    variables: Record<string, string>;
+    workingMessage: string;
+    completeMessage?: string;
+  }) => Promise<AssistActionResult>;
   /** Client-side navigation. */
   navigate: (href: string) => void;
   /**

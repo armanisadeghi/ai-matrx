@@ -92,6 +92,9 @@ export interface LiveRunWindowProps {
   width?: number | string;
   height?: number | string;
   progress?: LiveRunProgressState | null;
+  initialMinimized?: boolean;
+  workingMessage?: string | null;
+  completeMessage?: string | null;
 }
 
 export default function LiveRunWindow({
@@ -105,6 +108,9 @@ export default function LiveRunWindow({
   width = LIVE_RUN_WIDTH,
   height = LIVE_RUN_HEIGHT,
   progress = null,
+  initialMinimized = false,
+  workingMessage = null,
+  completeMessage = null,
 }: LiveRunWindowProps) {
   const runSetEntries = useAppSelector((state) =>
     selectRunSetEntries(state, runSetKey ?? ""),
@@ -131,6 +137,8 @@ export default function LiveRunWindow({
       id={`live-run-window-${windowInstanceId}`}
       title={title}
       overlayId="liveRunWindow"
+      overlayInstanceId={windowInstanceId}
+      initialState={initialMinimized ? "minimized" : "windowed"}
       minWidth={380}
       minHeight={320}
       width={width}

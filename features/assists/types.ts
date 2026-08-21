@@ -13,6 +13,10 @@
 
 import type { Database } from "@/types/database.types";
 import type { Json } from "@/types/database.types";
+import {
+  isSourceFeature,
+  type SourceFeature,
+} from "@/types/python-generated/source-attribution";
 
 export type AssistRow = Database["platform"]["Tables"]["assists"]["Row"];
 
@@ -61,6 +65,16 @@ export interface AssistEvidence {
  * plus one register call; nothing else widens.
  */
 export type AssistAction =
+  | {
+      /** Execute a governed mandate immediately and float canonical progress. */
+      kind: "run_mandate";
+      mandateKey: string;
+      sourceFeature: SourceFeature;
+      /** Declared variables only. Structured content never becomes user_input. */
+      variables: Record<string, string>;
+      workingMessage: string;
+      completeMessage?: string;
+    }
   | {
       kind: "launch_agent";
       /** Direct agent id — or leave unset and provide `mandateKey`. */
@@ -449,6 +463,33 @@ function narrowAction(value: Json): AssistAction | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const obj = value as Record<string, Json | undefined>;
   const kind = obj.kind;
+  if (
+    kind === "run_mandate" &&
+    typeof obj.mandateKey === "string" &&
+    typeof obj.sourceFeature === "string" &&
+    isSourceFeature(obj.sourceFeature) &&
+    typeof obj.workingMessage === "string" &&
+    obj.variables !== null &&
+    typeof obj.variables === "object" &&
+    !Array.isArray(obj.variables)
+  ) {
+    const variables = Object.fromEntries(
+      Object.entries(obj.variables).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    );
+    return {
+      kind,
+      mandateKey: obj.mandateKey,
+      sourceFeature: obj.sourceFeature,
+      variables,
+      workingMessage: obj.workingMessage,
+      completeMessage:
+        typeof obj.completeMessage === "string"
+          ? obj.completeMessage
+          : undefined,
+    };
+  }
   if (kind === "navigate" && typeof obj.href === "string") {
     return {
       kind,

@@ -66,15 +66,18 @@ import {
 import { AssistChip } from "./AssistChip";
 import { useDockDrag } from "./useDockDrag";
 import { useAssistsPrefs } from "../hooks/useAssistsPrefs";
-import { ASSISTS_MANAGER_HREF, partitionByConfidence } from "../constants";
+import { ASSISTS_MANAGER_HREF } from "../constants";
+import {
+  chooseAssistPresentationCycle,
+  isAssistPresentationCycleCurrent,
+  presentedAssists,
+} from "../presentation-cycle";
 import {
   DEFAULT_QUIET_KEY,
   formatQuietRemaining,
   QUIET_WINDOWS,
   type QuietWindowKey,
 } from "../quiet";
-
-const MAX_VISIBLE = 6;
 
 export default function AssistsDock() {
   const dispatch = useAppDispatch();
@@ -83,8 +86,17 @@ export default function AssistsDock() {
   const loaded = useAppSelector(selectAssistsLoaded);
   const [openRequested, setOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { quiet, quietUntil, goQuiet, resume, dockPosition, setDockPosition } =
-    useAssistsPrefs();
+  const {
+    ready: preferencesReady,
+    quiet,
+    quietUntil,
+    goQuiet,
+    resume,
+    dockPosition,
+    setDockPosition,
+    presentationCycle,
+    setPresentationCycle,
+  } = useAssistsPrefs();
   // Derived, not an effect: a quiet dock must never sit open over the page it
   // was just told to get out of.
   const open = openRequested && !quiet;
@@ -104,8 +116,29 @@ export default function AssistsDock() {
     return () => window.removeEventListener("focus", onFocus);
   }, [dispatch, userId, loaded]);
 
+  useEffect(() => {
+    if (!loaded || !preferencesReady) return;
+    if (isAssistPresentationCycleCurrent(presentationCycle)) return;
+    // Do not start an empty initial cycle: the first eligible treat should be
+    // able to appear immediately. An existing non-empty cycle is replaced at
+    // expiry even if its three rows were completed, preserving the no-refill
+    // satisfaction within the cycle.
+    if (!presentationCycle && pending.length === 0) return;
+    setPresentationCycle(
+      chooseAssistPresentationCycle(pending, presentationCycle),
+    );
+  }, [
+    loaded,
+    preferencesReady,
+    pending,
+    presentationCycle,
+    setPresentationCycle,
+  ]);
+
   if (!userId) return null;
-  if (pending.length === 0 && !quiet) return null;
+  const visible = presentedAssists(pending, presentationCycle);
+
+  if (visible.length === 0 && !quiet) return null;
 
   const quietFor = (window: QuietWindowKey, label: string) => {
     goQuiet(window);
@@ -184,23 +217,19 @@ export default function AssistsDock() {
     );
   }
 
-  const { strong, weak } = partitionByConfidence(pending);
-  const visible = strong.slice(0, MAX_VISIBLE);
-  const overflow = strong.length - visible.length + weak.length;
-
   if (isMobile) {
     return (
       <>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label={`Open ${pending.length} assist${pending.length === 1 ? "" : "s"}`}
+          aria-label={`Open ${visible.length} assist${visible.length === 1 ? "" : "s"}`}
           className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden"
           style={mobileLauncherStyle}
         >
           <Lightbulb className="h-5 w-5 text-primary" />
           <span className="absolute -left-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background">
-            {pending.length > 99 ? "99+" : pending.length}
+            {visible.length}
           </span>
         </button>
 
@@ -220,10 +249,10 @@ export default function AssistsDock() {
               </DrawerClose>
               <div className="min-w-0 flex-1">
                 <DrawerTitle className="text-base">
-                  {pending.length} assist{pending.length === 1 ? "" : "s"}
+                  {visible.length} assist{visible.length === 1 ? "" : "s"}
                 </DrawerTitle>
                 <p className="text-xs text-muted-foreground">
-                  Suggestions waiting for you
+                  A few things we can do for you
                 </p>
               </div>
               <Button
@@ -250,6 +279,7 @@ export default function AssistsDock() {
                   <AssistChip
                     key={assist.id}
                     assist={assist}
+                    ambient
                     className="min-h-11 w-full py-0 pl-3 text-sm [&>button:first-of-type]:min-h-11 [&>button:last-of-type]:h-11 [&>button:last-of-type]:w-11 [&>button:last-of-type]:shrink-0"
                   />
                 ))}
@@ -259,7 +289,7 @@ export default function AssistsDock() {
                 onClick={() => setOpen(false)}
                 className="mt-3 flex min-h-11 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-accent"
               >
-                {overflow > 0 ? `See ${overflow} more` : "Open all assists"}
+                Want more? Explore all assists
               </Link>
             </div>
           </DrawerContent>
@@ -279,14 +309,19 @@ export default function AssistsDock() {
       {open && (
         <div className="flex max-h-[50dvh] w-72 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
           {visible.map((assist) => (
-            <AssistChip key={assist.id} assist={assist} className="w-full" />
+            <AssistChip
+              key={assist.id}
+              assist={assist}
+              ambient
+              className="w-full"
+            />
           ))}
           {/* A count is a door (THE DOOR LAW) — "+N more" reaches them. */}
           <Link
             href={ASSISTS_MANAGER_HREF}
             className="px-2 py-0.5 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
-            {overflow > 0 ? `+${overflow} more — ` : ""}Open all assists
+            Want more? Open all assists
           </Link>
         </div>
       )}
@@ -320,7 +355,7 @@ export default function AssistsDock() {
           ) : (
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
           )}
-          {pending.length} assist{pending.length === 1 ? "" : "s"}
+          {visible.length} assist{visible.length === 1 ? "" : "s"}
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

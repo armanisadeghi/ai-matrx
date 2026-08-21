@@ -14,8 +14,47 @@
  */
 
 import type { ReactNode } from "react";
+import { Sparkles } from "lucide-react";
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspectorTrayChip";
+import { useLiveRunStatus } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { TrayStatusChip } from "../WindowTray/TrayStatusChip";
+
+function LiveRunTrayPreview({ data }: { data: Record<string, unknown> }) {
+  const conversationId =
+    typeof data.conversationId === "string" ? data.conversationId : null;
+  const requestId = typeof data.requestId === "string" ? data.requestId : null;
+  const pending = data.pending === true;
+  const workingMessage =
+    typeof data.workingMessage === "string" && data.workingMessage
+      ? data.workingMessage
+      : "Working on it";
+  const completeMessage =
+    typeof data.completeMessage === "string" && data.completeMessage
+      ? data.completeMessage
+      : "Ready for you";
+  const status = useLiveRunStatus(conversationId, requestId, pending);
+  useRetainRequestForViewer(status.requestId, "live-run-tray-preview");
+  return (
+    <TrayStatusChip
+      icon={Sparkles}
+      tone={status.errorMessage ? "critical" : status.isActive ? "info" : "neutral"}
+      caption={
+        status.errorMessage
+          ? "Needs another try"
+          : status.isActive || pending
+            ? workingMessage
+            : completeMessage
+      }
+      pulse={status.isActive || pending}
+    />
+  );
+}
+
+export function liveRunTrayPreview({ data }: TrayPreviewContext): ReactNode {
+  return <LiveRunTrayPreview data={data} />;
+}
 
 function compactId(value: unknown): string | null {
   return typeof value === "string" && value

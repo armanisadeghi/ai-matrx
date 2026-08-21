@@ -236,5 +236,6 @@ export const defaultUserPreferences: UserPreferences = {
     dockPosition: null,
     // null = not quiet. Keep in sync with userPreferencesSlice.ts.
     quietUntil: null,
+    presentationCycle: null,
   },
 };

@@ -54,6 +54,12 @@ export interface OpenLiveRunWindowOptions {
   height?: number | string;
   /** Stable row-based progress for non-token work; replaces the transcript. */
   progress?: LiveRunProgressState | null;
+  /** Start in the desktop tray; mobile restores because it has no tray. */
+  initialMinimized?: boolean;
+  /** Friendly Assist-specific copy shown while the minimized run is active. */
+  workingMessage?: string | null;
+  /** Friendly copy shown in the tray after the run finishes. */
+  completeMessage?: string | null;
 }
 
 export interface LiveRunWindowHandle {
@@ -87,6 +93,9 @@ export function openLiveRunWindowAction(
       width: opts.width,
       height: opts.height,
       progress: opts.progress ?? null,
+      initialMinimized: opts.initialMinimized ?? false,
+      workingMessage: opts.workingMessage ?? null,
+      completeMessage: opts.completeMessage ?? null,
     },
   });
 }
@@ -159,6 +168,9 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     width,
     height,
     progress,
+    initialMinimized,
+    workingMessage,
+    completeMessage,
   } = opts;
 
   useEffect(() => {
@@ -172,6 +184,9 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
       runSetKey,
       label,
       progress,
+      initialMinimized,
+      workingMessage,
+      completeMessage,
       // `pending` only until a stream handle exists to bind.
       pending: !requestId && !conversationId,
     });
@@ -186,6 +201,9 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     width,
     height,
     progress,
+    initialMinimized,
+    workingMessage,
+    completeMessage,
   ]);
 }
 
@@ -208,6 +226,9 @@ export function LiveRunWindowController(
     width,
     height,
     progress,
+    initialMinimized,
+    workingMessage,
+    completeMessage,
   } = props;
 
   useEffect(() => {
@@ -229,6 +250,9 @@ export function LiveRunWindowController(
       width,
       height,
       progress,
+      initialMinimized,
+      workingMessage,
+      completeMessage,
     });
   }, [
     conversationId,
@@ -239,6 +263,9 @@ export function LiveRunWindowController(
     width,
     height,
     progress,
+    initialMinimized,
+    workingMessage,
+    completeMessage,
   ]);
 
   return null;

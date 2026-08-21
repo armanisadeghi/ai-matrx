@@ -72,26 +72,39 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-/** My live pending assists, highest priority first. */
+/**
+ * My ambient-eligible assists, highest priority first.
+ *
+ * The full ledger remains available through `queryAssists`. This narrow read
+ * is governed by the producer registry so a report/notification/task can stay
+ * in history without claiming one of the three ambient presentation slots.
+ */
 export async function listMyPendingAssists(userId: string): Promise<Assist[]> {
   const supabase = createClient();
-  const now = nowIso();
   const { data, error } = await supabase
     .schema("platform")
-    .from(TABLE)
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "pending")
-    .is("deleted_at", null)
-    .or(`expires_at.is.null,expires_at.gt.${now}`)
-    .or(`suppressed_until.is.null,suppressed_until.lt.${now}`)
-    .order("priority", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(50);
+    .rpc("list_my_presentable_assists", { p_limit: 50 });
   if (error) {
     throw new Error(`[assists] list failed: ${error.message}`);
   }
+  // The RPC is auth.uid()-scoped. Keep the explicit argument in this browser
+  // API so callers cannot accidentally turn a mine-scope read into a global
+  // one; the mismatch is a loud programming error, never ignored.
+  if (!userId) throw new Error("[assists] list requires a user id");
   return narrowRows(data ?? []);
+}
+
+/** Read the shared production gate before a producer does optional work. */
+export async function canProduceAssist(sourceKey: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .rpc("assist_production_allowed", { p_source_key: sourceKey });
+  if (error) {
+    console.error(`[assists] production policy failed: ${error.message}`);
+    return false;
+  }
+  return data === true;
 }
 
 /**
@@ -103,6 +116,7 @@ export async function emitAssist(
   userId: string,
   input: EmitAssistInput,
 ): Promise<string | null> {
+  if (!(await canProduceAssist(input.sourceKey))) return null;
   const supabase = createClient();
   const payload = {
     user_id: userId,

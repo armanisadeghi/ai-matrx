@@ -428,6 +428,11 @@ export interface AssistsPreferences {
   dockPosition: { right: number; bottom: number } | null;
   /** ISO timestamp, `"infinity"`, or null. */
   quietUntil: string | null;
+  /** The three scarce ambient slots pinned for one presentation cycle. */
+  presentationCycle: {
+    startedAt: string;
+    assistIds: string[];
+  } | null;
 }
 
 export interface OrganizationPreferences {
@@ -1064,6 +1069,7 @@ export const initializeUserPreferencesState = (
       // null = the default bottom-right corner; the user has not dragged it.
       dockPosition: null,
       quietUntil: null,
+      presentationCycle: null,
     },
   };
 

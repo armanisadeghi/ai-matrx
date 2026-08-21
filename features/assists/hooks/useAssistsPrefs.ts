@@ -20,6 +20,8 @@ import type { DockOffset } from "../dock-position";
 const selectAssistsPrefs = (state: RootState) => state.userPreferences.assists;
 
 export interface AssistsPrefsApi {
+  /** Remote preferences have hydrated; safe to create a new cycle. */
+  ready: boolean;
   /** Everything is quiet right now (flips back on its own at the deadline). */
   quiet: boolean;
   /** The raw stored value — ISO, `"infinity"`, or null. */
@@ -30,6 +32,13 @@ export interface AssistsPrefsApi {
   /** Stored dock offset, or null for the default corner. */
   dockPosition: DockOffset | null;
   setDockPosition: (offset: DockOffset | null) => void;
+  presentationCycle: {
+    startedAt: string;
+    assistIds: string[];
+  } | null;
+  setPresentationCycle: (
+    cycle: { startedAt: string; assistIds: string[] } | null,
+  ) => void;
 }
 
 /**
@@ -57,6 +66,9 @@ function useQuietNow(until: string | null): boolean {
 export function useAssistsPrefs(): AssistsPrefsApi {
   const dispatch = useAppDispatch();
   const prefs = useAppSelector(selectAssistsPrefs);
+  const ready = useAppSelector(
+    (state) => state.userPreferences._meta.loadedPreferences !== null,
+  );
   const storedUntil = prefs?.quietUntil ?? null;
   const quiet = useQuietNow(storedUntil);
 
@@ -68,6 +80,7 @@ export function useAssistsPrefs(): AssistsPrefsApi {
   };
 
   return {
+    ready,
     quiet,
     quietUntil: storedUntil,
     goQuiet: (window: QuietWindowKey) => write({ quietUntil: quietUntil(window) }),
@@ -75,5 +88,13 @@ export function useAssistsPrefs(): AssistsPrefsApi {
     dockPosition: prefs?.dockPosition ?? null,
     setDockPosition: (offset: DockOffset | null) =>
       write({ dockPosition: offset }),
+    presentationCycle: prefs?.presentationCycle ?? null,
+    setPresentationCycle: (presentationCycle) =>
+      dispatch(
+        setModulePreferences({
+          module: "assists",
+          preferences: { presentationCycle },
+        }),
+      ),
   };
 }

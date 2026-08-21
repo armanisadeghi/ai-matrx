@@ -23,6 +23,13 @@ export function describeAssistAction(
   action: AssistAction,
 ): AssistActionDescriptor | null {
   switch (action.kind) {
+    case "run_mandate":
+      return {
+        verb: "Do it for me",
+        explainer:
+          "Starts this work now in a small background window. You can expand it to watch, minimize it again, or keep working on this page.",
+        receipt: `Started — ${action.workingMessage.toLowerCase()}.`,
+      };
     case "launch_agent": {
       const name = action.agentName ?? "the agent";
       return {

@@ -131,6 +131,8 @@ export interface UseWindowPanelOptions {
   minHeight?: number;
   /** Where to place the window initially. Default: "center". */
   position?: WindowPosition;
+  /** Park a brand-new desktop window in the tray without a visible flash. */
+  initialState?: "windowed" | "minimized";
   /**
    * @deprecated Pass `width`, `height`, and `position` instead.
    * Low-level initial rect — overrides width/height/position when provided.
@@ -235,6 +237,7 @@ export function useWindowPanel(
         id,
         title: opts.title,
         initial,
+        initialState: opts.initialState,
         persistence: opts.persistence,
         // Sanitized dims: a degenerate 0×0 measurement must never become the
         // clamp target, or every rect collapses to garbage (see safeViewportDims).

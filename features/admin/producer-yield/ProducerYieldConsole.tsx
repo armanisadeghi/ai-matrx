@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { AssistProducerControl } from "@/features/admin/assist-control/AssistProducerControl";
 import { ADMIN_REPORTING_SURFACE_NAME } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -226,6 +227,8 @@ export function ProducerYieldConsole() {
         </div>
         <AssistStrip surfaceName={ADMIN_REPORTING_SURFACE_NAME} />
       </header>
+
+      <AssistProducerControl />
 
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">

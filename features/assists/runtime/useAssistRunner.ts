@@ -16,7 +16,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
+import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
+import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { callApi } from "@/lib/api/call-api";
+import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { siteConfig } from "@/config/extras/site";
 import type { Json } from "@/types/database.types";
 import { decideAssist, snoozeAssist, suppressAssistSource } from "../service";
@@ -34,6 +37,7 @@ import type { Assist } from "../types";
 // added by importing them here.
 import "./handlers/apply-page-meta";
 import "./handlers/launch-agent";
+import "./handlers/run-mandate";
 import "./handlers/navigate";
 import "./handlers/server-action";
 import "./handlers/surface-write";
@@ -77,6 +81,67 @@ export function useAssistRunner(): AssistRunnerApi {
     () => ({
       userId: userId ?? null,
       openAgentRun,
+      runMandate: async (options) => {
+        const instanceId = `assist:${options.assistId || crypto.randomUUID()}`;
+        dispatch(
+          openLiveRunWindowAction({
+            instanceId,
+            label: options.workingMessage,
+            pending: true,
+            initialMinimized: true,
+            workingMessage: options.workingMessage,
+            completeMessage: options.completeMessage ?? "Ready for you",
+          }),
+        );
+
+        return new Promise<AssistActionResult>((resolve) => {
+          let started = false;
+          const launch = dispatch(
+            launchAgentExecution({
+              mandateKey: options.mandateKey,
+              sourceFeature: options.sourceFeature,
+              surfaceKey: instanceId,
+              initiation: "user",
+              apiEndpointMode: "agent",
+              config: {
+                displayMode: "direct",
+                autoRun: true,
+                allowChat: true,
+              },
+              runtime: { variables: options.variables },
+              onConversationCreated: (conversationId) => {
+                dispatch(
+                  openLiveRunWindowAction({
+                    instanceId,
+                    conversationId,
+                    label: options.workingMessage,
+                    pending: false,
+                    initialMinimized: true,
+                    workingMessage: options.workingMessage,
+                    completeMessage:
+                      options.completeMessage ?? "Ready for you",
+                  }),
+                );
+                if (!started) {
+                  started = true;
+                  resolve({ ok: true, result: { conversationId } });
+                }
+              },
+            }),
+          );
+          void launch.unwrap().catch((error: unknown) => {
+            if (started) return;
+            dispatch(closeOverlay({ overlayId: "liveRunWindow", instanceId }));
+            resolve({
+              ok: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "The Assist could not start.",
+            });
+          });
+        });
+      },
       navigate: (href: string) => {
         const target = resolveAssistNavigation(href, {
           profile: process.env.NEXT_PUBLIC_MATRX_PROFILE || "full",
