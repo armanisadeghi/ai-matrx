@@ -668,8 +668,6 @@ export type ComponentEntityToken =
   | "seo_competitor_opportunity"
   | "seo_coverage_mention"
   | "seo_coverage_tracker"
-  | "seo_gsc_dig_rule"
-  | "seo_keyword_class_rule"
   | "seo_keyword_market_observation"
   | "seo_landscape_brief"
   | "seo_link_gap_domain"
@@ -1455,9 +1453,9 @@ export const ENTITY_TYPE_METADATA = {
   "seo_competitor_opportunity": { token: "seo_competitor_opportunity", schema: "seo", table: "competitor_opportunity", label: "Competitor Opportunity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_coverage_mention": { token: "seo_coverage_mention", schema: "seo", table: "coverage_mention", label: "Coverage Mention", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_coverage_tracker": { token: "seo_coverage_tracker", schema: "seo", table: "coverage_tracker", label: "Coverage Tracker", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "seo_gsc_dig_rule": { token: "seo_gsc_dig_rule", schema: "seo", table: "gsc_dig_rule", label: "GSC Dig Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_gsc_dig_rule": { token: "seo_gsc_dig_rule", schema: "seo", table: "gsc_dig_rule", label: "GSC Dig Rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "phrase", contentRole: null, referenceCategory: null },
-  "seo_keyword_class_rule": { token: "seo_keyword_class_rule", schema: "seo", table: "keyword_class_rule", label: "Keyword Class Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_keyword_class_rule": { token: "seo_keyword_class_rule", schema: "seo", table: "keyword_class_rule", label: "Keyword Class Rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_edge": { token: "seo_keyword_edge", schema: "seo", table: "keyword_edge", label: "Keyword Edge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_market": { token: "seo_keyword_market", schema: "seo", table: "keyword_market", label: "Keyword Market Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_market_observation": { token: "seo_keyword_market_observation", schema: "seo", table: "keyword_market_observation", label: "Keyword Market Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
