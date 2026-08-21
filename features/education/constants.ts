@@ -10,7 +10,7 @@ import {
   GraduationCap,
   Target,
   Layers,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { siteConfig } from "@/config/extras/site";
 import type { AxisConfig } from "./types";
@@ -78,7 +78,7 @@ export const EDU_AXES: AxisConfig[] = [
     label: "Features",
     segment: "features",
     blurb: "FastFire, the AI tutor, voice grading — what makes us different.",
-    icon: Sparkles,
+    icon: BrainCircuit,
     letter: "Ef",
   },
 ];

@@ -64,7 +64,6 @@ import {
   NotebookText,
   RefreshCw,
   Sheet,
-  Sparkles,
   Table,
   Tag,
   Target,
@@ -239,7 +238,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // invent an `hrefFor` that 404s. Tracked in
   // docs/handoffs/inventory-law-sweep.md.
   skill: {
-    Icon: Sparkles,
+    Icon: Wrench,
     labelPlural: "Skills",
   },
   // `workflow` HAS a detail route: /workflows/[id] sets one up, runs it, and
