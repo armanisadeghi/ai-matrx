@@ -66,6 +66,7 @@ import {
 } from "@/features/content-ir/react/kind-route";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import WebAnalysisItemBlock from "@/components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock";
+import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
 import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComponent";
@@ -245,6 +246,13 @@ export function isBlockLoading(block: {
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
  *    path, from a `content_ir.kind_component` row per kind; never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
+ *  - `markdown_stream` — the registered renderer for the `markdown` kind
+ *    (`{ text }`), which hands the text to MarkdownStream: the two-path render
+ *    law ("declared kind component, or streaming markdown") collapsed into one
+ *    by making the second path a kind. Produced ONLY by `applyIrKindRoute`'s
+ *    resolver-only path, from that kind's `content_ir.kind_component` row;
+ *    never emitted upstream, so it has no vocabulary row. Shape-classified by
+ *    construction.
  *  - `db_kind_component` — produced ONLY by `applyIrKindRoute`'s db-override
  *    flip (an ACTIVE `content_ir.kind_component` row with `source='db'` won
  *    the resolution); never emitted upstream. Shape-classified by
@@ -370,6 +378,7 @@ export type FeSynthesizedBlockType =
   | "postal_address"
   | "geo_coordinates"
   | "web_analysis_item"
+  | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -480,6 +489,7 @@ export type ShapeBlockType =
   | "stats"
   | "diff"
   | "web_analysis_item"
+  | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -2053,6 +2063,20 @@ const SHAPE_BLOCK_DISPATCH = {
       key={index}
       content={block.content}
       metadata={block.metadata}
+    />
+  ),
+
+  // The `markdown` kind route (features/content-ir/react/kind-route.ts
+  // resolver-only path): `{ text }` goes to MarkdownStream — the SAME engine
+  // that renders every streamed assistant message — so prose renders as prose
+  // and any kind payload fenced inside it routes to its own component. Reached
+  // ONLY via applyIrKindRoute.
+  markdown_stream: ({ block, index, isStreamActive }) => (
+    <MarkdownKindBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+      isStreamActive={isStreamActive}
     />
   ),
 

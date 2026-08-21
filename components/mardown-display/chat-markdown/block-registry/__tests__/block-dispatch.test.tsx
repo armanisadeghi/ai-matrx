@@ -147,6 +147,9 @@ const FE_SYNTHESIZED_TYPES = [
   // The `web_analysis_item` family route: one component for the 83 `web_*_v1`
   // site-audit check kinds, reached through a kind_component row per kind.
   "web_analysis_item",
+  // The `markdown` kind route: MarkdownStream, reached through that kind's
+  // kind_component row — the streaming-markdown render law, as a kind.
+  "markdown_stream",
 ];
 
 describe("block-dispatch registry", () => {
