@@ -12,7 +12,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
   name: "Education Hub",
   slug: "education",
   description:
-    "The AI study platform. Two layers under /education: a server-rendered marketing/discovery layer (five axes + a pure-SEO content engine) and an interactive app-tool layer (all 16 tools live). Source of truth for WHAT we build is common-docs/projects/education-platform/VISION.md; the converged state is that project's STATE.md.",
+    "The AI study platform. Two layers under /education: a server-rendered marketing/discovery layer (five axes + a pure-SEO content engine) and an interactive app-tool layer (all 16 tools live). Source of truth for WHAT we build is common-docs/systems/education/VISION.md; the converged state is that project's STATE.md.",
   docs: [
     {
       label: "VISION (source of truth)",

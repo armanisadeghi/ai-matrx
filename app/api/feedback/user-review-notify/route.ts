@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
     const { data: storedMessage, error: messageError } = await admin
-      .schema("users")
       .from("feedback_user_messages")
       .select(
         "id, feedback_id, content, sender_type, sender_name, email_sent",
@@ -56,7 +55,13 @@ export async function POST(request: NextRequest) {
       .eq("id", messageId)
       .single();
 
-    if (messageError || !storedMessage) {
+    if (
+      messageError ||
+      !storedMessage ||
+      !storedMessage.id ||
+      !storedMessage.feedback_id ||
+      storedMessage.content === null
+    ) {
       return NextResponse.json(
         { success: false, error: "Review message not found" },
         { status: 404 },

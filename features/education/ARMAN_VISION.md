@@ -5,7 +5,7 @@ POINTER — this document has moved.
 # Education vision — moved to common-docs
 
 **The canonical education vision now lives at
-`/Users/armanisadeghi/code/common-docs/projects/education-platform/VISION.md`** (moved verbatim
+`/Users/armanisadeghi/code/common-docs/systems/education/VISION.md`** (moved verbatim
 2026-08-17). It is Arman's document; agents never rewrite it.
 
 It moved because the education product spans matrx-frontend + aidream + the shared database, and

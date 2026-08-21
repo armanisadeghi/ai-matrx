@@ -2,7 +2,7 @@
 
 > **Read this before adding ANY route under `/education`.** It is the contract that keeps
 > marketing, content, and the app tools coherent. The product vision is
-> `common-docs/projects/education-platform/VISION.md` (the local `VISION-education-hub.md` is a
+> `common-docs/systems/education/VISION.md` (the local `VISION-education-hub.md` is a
 > pointer stub to it); the converged state — what is built, what is pending — is that project's
 > `STATE.md`; the feature doc is
 > [`features/education/FEATURE.md`](../../../features/education/FEATURE.md). If something here

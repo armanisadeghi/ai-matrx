@@ -309,4 +309,4 @@ From Stage B (2026-08-20):
 
 | Pilot | State doc |
 |---|---|
-| Search results (Brave + SerpAPI Google) | `common-docs/systems/content-ir-system/SEARCH_KINDS_PILOT.md` |
+| Search results (Brave + SerpAPI Google) | `common-docs/operations/search-kinds-pilot.md` |

@@ -8,7 +8,7 @@
 //
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in the canonical vision
-// (common-docs/projects/education-platform/VISION.md).
+// (common-docs/systems/education/VISION.md).
 
 import { FileText, Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck } from "lucide-react";
 import type { EduToolEntry } from "../types";

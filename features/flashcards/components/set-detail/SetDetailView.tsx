@@ -101,6 +101,7 @@ import { serializeDeck } from "@/features/education/media/audio/audioBrief";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
+import { AddMoreCardsButton } from "./AddMoreCardsButton";
 import { ClassPicker } from "@/features/education/classes/components/ClassPicker";
 import { OfflineDeckButton } from "./OfflineDeckButton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -929,9 +930,19 @@ export function SetDetailView({ setId }: { setId: string }) {
             </div>
 
             {/* Forward lineage — the material this deck was made from, and the
-                rest of the kit that came out of the same upload. */}
-            <div className="mt-3">
+                rest of the kit that came out of the same upload. Beside it, the
+                way to get MORE out of that same material: a generated deck used
+                to be a dead end at whatever size the generator chose. */}
+            <div className="mt-3 space-y-2">
               <MadeFromSource entityType="fc_set" entityId={setId} />
+              <AddMoreCardsButton
+                setId={setId}
+                existingFronts={data.cards.map((c) => c.front)}
+                onAdded={() => {
+                  setReloadKey((k) => k + 1);
+                  setLineageKey((k) => k + 1);
+                }}
+              />
             </div>
 
             {/* Reverse lineage — study artifacts made from this deck. */}

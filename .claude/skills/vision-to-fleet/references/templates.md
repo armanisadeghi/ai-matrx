@@ -5,7 +5,7 @@ example carries the register and density the template can't.
 
 | Artifact | Worked example |
 |---|---|
-| Vision doc | `common-docs/projects/education-platform/VISION.md` |
+| Vision doc | `common-docs/systems/education/VISION.md` |
 | Competitive insights | `common-docs/projects/education-platform/research/2026-07-competitive-insights.md` |
 | Master plan | `common-docs/projects/outreach-system/MASTER_PLAN.md` |
 | Project brief | `common-docs/projects/outreach-system/work-packages/wp1-pipeline-core.md` (best all-round), `wp4-architecture.md` (contract-owner shape) |

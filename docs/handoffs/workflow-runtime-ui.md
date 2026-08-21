@@ -16,7 +16,7 @@ days); the gaps below are doors that were never built, not plumbing that was nev
 **work on the primitives**), the verified state of every part, the full ordered pending list, the
 question ledger, and the census. This handoff is this repo's slice of that list.
 
-**Vision:** `common-docs/systems/workflow-runtime-ui/PLAN.md` (R1–R12 settled — read it for
+**Vision:** `common-docs/projects/workflow-runtime/PLAN.md` (R1–R12 settled — read it for
 mechanics, never for vocabulary).
 **Code contract:** `features/workflow-runtime/FEATURE.md` (parts table, invariants, change log).
 **Server half:** `aidream docs/handoffs/workflow-runtime-ui-server.md`.

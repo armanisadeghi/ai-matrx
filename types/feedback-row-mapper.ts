@@ -22,10 +22,10 @@ export type FeedbackCommentRowLike =
   | Database["public"]["Functions"]["add_feedback_comment"]["Returns"];
 
 export type SystemAnnouncementRow =
-  Database["users"]["Tables"]["system_announcements"]["Row"];
+  Database["public"]["Views"]["system_announcements"]["Row"];
 
 export type FeedbackUserMessageRowLike =
-  Database["users"]["Tables"]["feedback_user_messages"]["Row"];
+  Database["public"]["Views"]["feedback_user_messages"]["Row"];
 
 function isJsonRecord(value: Json): value is Record<string, Json> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -404,18 +404,28 @@ function narrowMessageSenderType(
   throw new Error(`Invalid feedback_user_message sender_type: ${raw}`);
 }
 
+function requireViewString(value: string | null, field: string): string {
+  if (value !== null) return value;
+  throw new Error(`Missing required ${field}`);
+}
+
+function requireViewBoolean(value: boolean | null, field: string): boolean {
+  if (value !== null) return value;
+  throw new Error(`Missing required ${field}`);
+}
+
 export function mapFeedbackUserMessageRow(
   row: FeedbackUserMessageRowLike,
 ): FeedbackUserMessage {
   return {
-    id: row.id,
-    feedback_id: row.feedback_id,
-    sender_type: narrowMessageSenderType(row.sender_type),
+    id: requireViewString(row.id, "feedback_user_messages.id"),
+    feedback_id: requireViewString(row.feedback_id, "feedback_user_messages.feedback_id"),
+    sender_type: narrowMessageSenderType(requireViewString(row.sender_type, "feedback_user_messages.sender_type")),
     sender_name: row.sender_name,
-    content: row.content,
-    created_at: row.created_at,
-    email_sent: row.email_sent,
-    image_file_ids: row.image_file_ids,
+    content: requireViewString(row.content, "feedback_user_messages.content"),
+    created_at: requireViewString(row.created_at, "feedback_user_messages.created_at"),
+    email_sent: requireViewBoolean(row.email_sent, "feedback_user_messages.email_sent"),
+    image_file_ids: row.image_file_ids ?? [],
     image_urls: row.image_urls,
   };
 }
@@ -498,17 +508,17 @@ function isAnnouncementType(raw: string): raw is AnnouncementType {
 export function mapSystemAnnouncementRow(
   row: SystemAnnouncementRow,
 ): SystemAnnouncement {
-  if (!isAnnouncementType(row.announcement_type)) {
+  if (row.announcement_type === null || !isAnnouncementType(row.announcement_type)) {
     throw new Error(`Invalid announcement_type: ${row.announcement_type}`);
   }
   return {
-    id: row.id,
-    title: row.title,
-    message: row.message,
+    id: requireViewString(row.id, "system_announcements.id"),
+    title: requireViewString(row.title, "system_announcements.title"),
+    message: requireViewString(row.message, "system_announcements.message"),
     announcement_type: row.announcement_type,
-    is_active: row.is_active,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
+    is_active: requireViewBoolean(row.is_active, "system_announcements.is_active"),
+    created_at: requireViewString(row.created_at, "system_announcements.created_at"),
+    updated_at: requireViewString(row.updated_at, "system_announcements.updated_at"),
     created_by: row.created_by,
     min_display_seconds: row.min_display_seconds ?? 0,
   };

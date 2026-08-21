@@ -10,7 +10,7 @@
 > including the 2026-08-17 gap analysis and work packages, which had gone stale within 48 hours.
 
 > 🔴 **THE SOURCE OF TRUTH IS THE VISION DOC, NOT THIS FILE.**
-> `common-docs/projects/education-platform/VISION.md` (the repo copies are now pointers) defines WHAT the Education Hub is and does. This FEATURE.md documents only HOW it is built. **If anything here — or in the code — drifts from the vision, the vision wins, and you must report the drift to the user immediately. Do not silently "fix" the vision to match the code.** When the user approves a change that expands or improves the vision, update the vision doc first, then this file.
+> `common-docs/systems/education/VISION.md` (the repo copies are now pointers) defines WHAT the Education Hub is and does. This FEATURE.md documents only HOW it is built. **If anything here — or in the code — drifts from the vision, the vision wins, and you must report the drift to the user immediately. Do not silently "fix" the vision to match the code.** When the user approves a change that expands or improves the vision, update the vision doc first, then this file.
 
 ---
 

@@ -1,6 +1,6 @@
 /**
  * Trigger Points — the flat, stable, enumerable namespace of named moments in a
- * workflow run (design ruling R2, common-docs/systems/workflow-runtime-ui/PLAN.md).
+ * workflow run (design ruling R2, common-docs/projects/workflow-runtime/PLAN.md).
  *
  * The start of a node and the traversal of an edge are the same kind of thing:
  * a NAMED moment anything can bind behavior to (`appearOn`, `pageChangeOn`,

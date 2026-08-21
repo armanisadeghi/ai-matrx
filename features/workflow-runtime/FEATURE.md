@@ -5,7 +5,7 @@ designer, actions/HITL. 263 runs in the last 14 days across 92 definitions. Rema
 doors that were never built, not plumbing (cluster state:
 `common-docs/projects/workflow-runtime/STATE.md`; this repo's slice:
 `docs/handoffs/workflow-runtime-ui.md`). AI-authored surfaces (PLAN R6 step 3+) are still ahead.
-**Cross-repo system-of-record:** `common-docs/systems/workflow-runtime-ui/PLAN.md` — the rulings
+**Cross-repo system-of-record:** `common-docs/projects/workflow-runtime/PLAN.md` — the rulings
 (R1–R12), the scale target (20–100 nodes, nested runs), and the phase plan live THERE; this doc is
 the code contract for what exists in this repo. Read the plan before extending this feature.
 
