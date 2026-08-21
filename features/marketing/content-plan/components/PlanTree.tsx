@@ -58,6 +58,7 @@ import {
   type TreeFilters,
   type TreeLevel,
   type TreeSortMode,
+  filterWithAncestors,
 } from "../lib/tree-view";
 import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
 import { buildPlanTree } from "../types";
@@ -65,7 +66,6 @@ import { planNodeKeyFields, planNodeSummary } from "../format";
 import type { NodePipelineProgress } from "../lib/pipeline-progress";
 import { NodeMeasureDoor } from "./NodeMeasureDoor";
 import { PipelineProgressBadge } from "./PipelineProgressBadge";
-import { filterWithAncestors } from "./pillar-map/layouts";
 import { PlanTreeToolbar, type TreeStatusOption } from "./PlanTreeToolbar";
 
 interface FlatRow {

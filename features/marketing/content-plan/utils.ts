@@ -3,7 +3,7 @@
  *
  * Shared pure helpers for this feature's list surfaces (PlanNodesTable,
  * PlanSitesList). Table-shape helpers only — tree/layout logic lives in
- * lib/tree-view.ts and pillar-map/layouts.ts.
+ * lib/tree-view.ts.
  */
 
 /** Compact date for "Updated" columns — month + day, year only when not this year. */

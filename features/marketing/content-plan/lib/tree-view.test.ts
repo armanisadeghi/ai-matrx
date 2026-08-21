@@ -1,4 +1,9 @@
-import { collapseAllTargets, collapseTargetsForLevel } from "./tree-view";
+import {
+  collapseAllTargets,
+  collapseTargetsForLevel,
+  collapseVisible,
+  filterWithAncestors,
+} from "./tree-view";
 import { buildPlanTree, type PlanNodeRow, type PlanNodeType } from "../types";
 
 function planNode(
@@ -57,5 +62,69 @@ describe("content-plan tree collapse targets", () => {
   it("never collapses Home in a level preset", () => {
     expect(collapseTargetsForLevel(tree, "pillars").has("home")).toBe(false);
     expect(collapseTargetsForLevel(tree, "clusters").has("home")).toBe(false);
+  });
+});
+
+describe("filterWithAncestors", () => {
+  const rows = [
+    { id: "home", parent_id: null },
+    { id: "p1", parent_id: "home" },
+    { id: "c1", parent_id: "p1" },
+    { id: "a1", parent_id: "c1" },
+    { id: "a2", parent_id: "c1" },
+    { id: "p2", parent_id: "home" },
+    { id: "a5", parent_id: "p2" },
+  ];
+
+  it("keeps ancestors of matches and marks them dimmed", () => {
+    const { rows: kept, dimmed } = filterWithAncestors(
+      rows,
+      (row) => row.id === "a1",
+    );
+    expect(kept.map((row) => row.id)).toEqual(["home", "p1", "c1", "a1"]);
+    expect(dimmed).toEqual(new Set(["home", "p1", "c1"]));
+  });
+
+  it("returns everything undimmed when all rows match", () => {
+    const { rows: kept, dimmed } = filterWithAncestors(rows, () => true);
+    expect(kept).toHaveLength(rows.length);
+    expect(dimmed.size).toBe(0);
+  });
+});
+
+describe("collapseVisible", () => {
+  const rows = [
+    { id: "home", parent_id: null },
+    { id: "p1", parent_id: "home" },
+    { id: "c1", parent_id: "p1" },
+    { id: "a1", parent_id: "c1" },
+    { id: "a2", parent_id: "c1" },
+    { id: "p2", parent_id: "home" },
+    { id: "a5", parent_id: "p2" },
+  ];
+
+  it("hides descendants and counts them on the collapsed node", () => {
+    const { rows: visible, hiddenCounts } = collapseVisible(
+      rows,
+      new Set(["p1"]),
+    );
+    expect(visible.map((row) => row.id)).toEqual(["home", "p1", "p2", "a5"]);
+    expect(hiddenCounts.get("p1")).toBe(3);
+  });
+
+  it("drops the badge for a collapsed node hidden inside an outer collapse", () => {
+    const { rows: visible, hiddenCounts } = collapseVisible(
+      rows,
+      new Set(["p1", "c1"]),
+    );
+    expect(visible.map((row) => row.id)).toEqual(["home", "p1", "p2", "a5"]);
+    expect(hiddenCounts.get("p1")).toBe(3);
+    expect(hiddenCounts.has("c1")).toBe(false);
+  });
+
+  it("is a no-op with nothing collapsed", () => {
+    const { rows: visible, hiddenCounts } = collapseVisible(rows, new Set());
+    expect(visible).toHaveLength(rows.length);
+    expect(hiddenCounts.size).toBe(0);
   });
 });

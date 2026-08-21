@@ -1,13 +1,12 @@
 /**
  * features/marketing/content-plan/lib/tree-view.ts
  *
- * Pure list-management helpers for the plan tree view: client-side
- * search/filter predicates, sibling-level sorting (never flattens the
- * hierarchy), collapse-to-level targeting, and descendant counts. All of it
- * operates on already-loaded `plan.node` rows — no queries, no side effects.
- * The pillar map's `filterWithAncestors` (components/pillar-map/layouts.ts)
- * is the shared ancestor-keeping filter; this file adds only what the TREE
- * needs on top of it.
+ * Pure list-management helpers for the plan tree AND site-map views:
+ * client-side search/filter predicates, sibling-level sorting (never flattens
+ * the hierarchy), collapse-to-level targeting, descendant counts, the shared
+ * ancestor-keeping filter (`filterWithAncestors`) and collapse projection
+ * (`collapseVisible`). All of it operates on already-loaded `plan.node`
+ * rows — no queries, no side effects.
  */
 import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
 
@@ -249,4 +248,82 @@ export function countDescendants(
   };
   for (const item of items) walk(item);
   return counts;
+}
+
+// ─── Shared visibility projections (tree + site map) ───────────────────────
+
+/** Minimal row shape the visibility helpers need. */
+export interface PlanishRow {
+  id: string;
+  parent_id: string | null;
+}
+
+/**
+ * Keep every row matching the predicate PLUS its ancestors (so the tree never
+ * shatters into orphans when a filter is active). Non-matching ancestors come
+ * back in `dimmed` — views render them faded but still actionable.
+ */
+export function filterWithAncestors<T extends PlanishRow>(
+  rows: T[],
+  matches: (row: T) => boolean,
+): { rows: T[]; dimmed: Set<string> } {
+  const byId = new Map<string, T>();
+  for (const row of rows) byId.set(row.id, row);
+
+  const keep = new Set<string>();
+  const matched = new Set<string>();
+  for (const row of rows) {
+    if (!matches(row)) continue;
+    matched.add(row.id);
+    let cursor: T | undefined = row;
+    while (cursor && !keep.has(cursor.id)) {
+      keep.add(cursor.id);
+      cursor = cursor.parent_id ? byId.get(cursor.parent_id) : undefined;
+    }
+  }
+
+  const dimmed = new Set<string>();
+  for (const id of keep) if (!matched.has(id)) dimmed.add(id);
+  return { rows: rows.filter((row) => keep.has(row.id)), dimmed };
+}
+
+/**
+ * Remove the descendants of every collapsed id, and report how many rows each
+ * visible collapsed node is hiding (its count badge). A collapsed id nested
+ * inside another collapsed subtree simply stays hidden.
+ */
+export function collapseVisible<T extends PlanishRow>(
+  rows: T[],
+  collapsed: ReadonlySet<string>,
+): { rows: T[]; hiddenCounts: Map<string, number> } {
+  const hiddenCounts = new Map<string, number>();
+  if (collapsed.size === 0) return { rows, hiddenCounts };
+
+  const childrenByParent = new Map<string, T[]>();
+  for (const row of rows) {
+    if (!row.parent_id) continue;
+    const siblings = childrenByParent.get(row.parent_id);
+    if (siblings) siblings.push(row);
+    else childrenByParent.set(row.parent_id, [row]);
+  }
+
+  const hidden = new Set<string>();
+  const hideSubtree = (id: string): number => {
+    let count = 0;
+    for (const child of childrenByParent.get(id) ?? []) {
+      hidden.add(child.id);
+      count += 1 + hideSubtree(child.id);
+    }
+    return count;
+  };
+
+  for (const id of collapsed) {
+    if (!rows.some((row) => row.id === id)) continue;
+    hiddenCounts.set(id, hideSubtree(id));
+  }
+  // A collapsed node hidden by an outer collapse contributes no badge.
+  for (const id of hiddenCounts.keys()) {
+    if (hidden.has(id)) hiddenCounts.delete(id);
+  }
+  return { rows: rows.filter((row) => !hidden.has(row.id)), hiddenCounts };
 }

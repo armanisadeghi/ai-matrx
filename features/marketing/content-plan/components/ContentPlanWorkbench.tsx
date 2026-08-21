@@ -60,7 +60,6 @@ import {
   usePlanProfiles,
   useReparentPlanNode,
 } from "../data/hooks";
-import { updatePlanNode } from "../data/service";
 import {
   usePlanBulkDeepen,
   usePlanDeepen,
@@ -97,12 +96,11 @@ import { PlanTree } from "./PlanTree";
 import { SetupView } from "../setup/components/SetupView";
 import { useCmsLink } from "../setup/hooks";
 
-// React Flow is heavy and browser-only; the map chunk loads only when the
-// user switches to it (the conditional render below is the deferral,
-// ssr:false keeps it off the server). One boundary — nothing below it is
-// split again.
-const PillarMap = dynamic(
-  () => import("./PillarMap").then((module) => module.PillarMap),
+// The map chunk loads only when the user switches to it (the conditional
+// render below is the deferral; ssr:false keeps the split shape unchanged).
+// One boundary — nothing below it is split again.
+const SiteMap = dynamic(
+  () => import("./SiteMap").then((module) => module.SiteMap),
   {
     ssr: false,
     loading: () => (
@@ -581,33 +579,6 @@ export function ContentPlanWorkbench({
     [reparent],
   );
 
-  const handleBulkStatus = useCallback(
-    (ids: string[], statusId: string) => {
-      // One pass through the service, ONE list invalidation at the end —
-      // not N mutations each refetching the whole site.
-      void (async () => {
-        const failures: string[] = [];
-        for (const id of ids) {
-          try {
-            await updatePlanNode(id, { status_id: statusId });
-          } catch (error) {
-            failures.push(extractErrorMessage(error));
-          }
-        }
-        await queryClient.invalidateQueries({
-          queryKey: planKeys.nodes(siteId ?? "none"),
-        });
-        if (failures.length > 0) {
-          toast.error(
-            `Status change failed for ${failures.length} of ${ids.length} nodes: ${failures[0]}`,
-          );
-        } else {
-          toast.success(`Status updated on ${ids.length} nodes.`);
-        }
-      })();
-    },
-    [queryClient, siteId],
-  );
 
   const openNewNode = (parentId: string | null) => {
     setNewNodeParentId(parentId);
@@ -951,13 +922,11 @@ export function ContentPlanWorkbench({
               )}
             />
           ) : view === "map" ? (
-            <PillarMap
+            <SiteMap
               nodes={nodeRows}
               statusSlugById={statusSlugById}
               liveById={liveById}
               onSelect={setSelectedNodeId}
-              onReparent={(id, parentId) => handleReparent(id, parentId)}
-              onBulkStatus={handleBulkStatus}
             />
           ) : nodes.isLoading ? (
             <TreeViewSkeleton />
