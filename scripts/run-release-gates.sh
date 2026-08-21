@@ -187,6 +187,10 @@ if $STRICT; then
         # hook — which is exactly how ~1,200 hatches landed unfrozen between
         # 2026-07-02 and 2026-08-14 and the ratchet stopped ratcheting (D136).
         "Type-escape hatch ratchet|pnpm check:hatches"
+        # Generated API types are boundary authority. Existing handwritten
+        # shadows are baselined by declaration; any NEW shadow hard-fails the
+        # strict lane, while direct generated aliases remain legal.
+        "Generated API type shadow ratchet|pnpm check:generated-contracts"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -286,6 +290,9 @@ else
         # New escape hatches vs the frozen baseline — advisory, loud. See the
         # strict list above for why this gate exists here at all (D136).
         "Type-escape hatch ratchet|pnpm check:hatches"
+        # Loud here and blocking in --strict: a new handwritten API mirror
+        # suppresses the generated-contract drift errors we need to see.
+        "Generated API type shadow ratchet|pnpm check:generated-contracts"
     )
 fi
 

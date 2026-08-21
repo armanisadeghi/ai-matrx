@@ -68,6 +68,8 @@
     "check:hatches": "tsx scripts/check-type-hatches.ts",
     "check:hatches:strict": "tsx scripts/check-type-hatches.ts --strict",
     "check:hatches:update": "tsx scripts/check-type-hatches.ts --update",
+    "check:generated-contracts": "tsx scripts/check-generated-type-contracts.ts",
+    "check:generated-contracts:accept": "tsx scripts/check-generated-type-contracts.ts --accept",
     "generate:type-drift-hitlists": "tsx scripts/generate-type-drift-hitlists.ts",
     "fix:hatches": "tsx scripts/check-type-hatches.ts",
     "wave:split": "tsx scripts/wave-split.ts",
