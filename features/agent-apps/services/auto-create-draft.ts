@@ -19,6 +19,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import type { AppMetadata } from "../types";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
@@ -140,8 +141,8 @@ export async function createGenerationDraft(
     .select("id, metadata")
     .single();
 
-  if (error) throw new Error(error.message || "Failed to save app draft");
-  if (!data) throw new Error("No data returned from database");
+  if (error) throw operationFailed("save this app draft", error);
+  if (!data) throw operationFailed("save this app draft");
 
   const row = data as { id: string; metadata: Json | null };
   return {
@@ -236,10 +237,7 @@ export async function saveDraftCode(
     );
   }
 
-  throw new Error(
-    (lastError as { message?: string })?.message ||
-      "Failed to save generated code",
-  );
+  throw operationFailed("save the generated code", lastError);
 }
 
 /**
@@ -259,7 +257,7 @@ export async function finalizeDraft(handle: DraftHandle): Promise<void> {
     })
     .eq("id", handle.appId);
 
-  if (error) throw new Error(error.message || "Failed to finalize app");
+  if (error) throw operationFailed("publish this app", error);
 }
 
 /**

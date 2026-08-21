@@ -1,5 +1,6 @@
 import type { QueryData } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 
@@ -120,7 +121,7 @@ export async function fetchCodingSessions(opts?: {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
-  if (authError) throw new Error(authError.message);
+  if (authError) throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Sign in to view your coding sessions.");
 
   const limit = opts?.limit ?? CODING_SESSION_PAGE_SIZE;
@@ -129,7 +130,7 @@ export async function fetchCodingSessions(opts?: {
     limit: limit + 1,
     beforeLastSeenAt: opts?.beforeLastSeenAt ?? null,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load your coding sessions", error);
   const hasMore = data.length > limit;
   const rows = hasMore ? data.slice(0, limit) : data;
   const oldestLastSeenAt =
@@ -186,13 +187,13 @@ export async function fetchCodingSessionBindings(
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
-  if (authError) throw new Error(authError.message);
+  if (authError) throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Sign in to inspect coding-session bindings.");
 
   const { data, error } = await codingSessionBindingsQuery(
     user.id,
     conversationId,
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this session's provider bindings", error);
   return data;
 }
