@@ -332,12 +332,27 @@ export function advancePartialKind(
  * The per-block staleness GATE, as a stateful closure over `advancePartialKind`
  * — one per stream.
  *
- * `upsertRenderBlock` REPLACES the stored block, so a replayed or out-of-order
- * event landing on a block would regress what the user is looking at (a
- * filled-in quiz snapping back to two questions, or a terminal being undone by
- * a late `partial`). The highest accepted event is CARRIED FORWARD rather than
- * dropped, so a stale arrival is a no-op on screen instead of a flicker back to
- * the skeleton.
+ * `upsertRenderBlock` REPLACES the stored block, so an event landing on a block
+ * would regress what the user is looking at (a filled-in quiz snapping back to
+ * two questions, or a terminal being undone by a late `partial`). The highest
+ * accepted event is CARRIED FORWARD rather than dropped, so it is a no-op on
+ * screen instead of a flicker back to the skeleton.
+ *
+ * 🚨 TWO arrivals must be carried, and the second one is the common case:
+ *
+ *  1. A STALE key — a replay or an out-of-order event (`seq <= last`).
+ *  2. **NO key at all.** The producer clears `__ir_partial` at the top of every
+ *     stamp and re-adds it only when the value genuinely advanced
+ *     (`stream_processor.py::_stamp_partial` → `_partials.advanced(...)`), so
+ *     it is CORRECT for it to omit the key — re-shipping an identical payload
+ *     every token is pure wire cost. But the block still ships whole, and
+ *     replacing the stored block with one that has no partial metadata is what
+ *     made the provisional render vanish between advances: every non-advancing
+ *     token dropped the user back to the pending skeleton.
+ *
+ * Carrying stops at the TERMINAL, and only there. After `superseded` /
+ * `retracted` the region's truth is its own content or `__ir`, so resurrecting
+ * a provisional value would be a lie that outlives its own contract.
  *
  * Returns the metadata to store: the same reference when nothing changed, a
  * copy with the carried-forward event otherwise.
@@ -348,9 +363,19 @@ export function makePartialKindStalenessGate(): (
 ) => Record<string, unknown> | undefined {
   const seen: Record<string, number> = {};
   const lastAccepted: Record<string, unknown> = {};
+  const terminated: Record<string, true> = {};
 
   return (blockId, metadata) => {
-    if (!isRecord(metadata) || !(IR_PARTIAL_KEY in metadata)) return metadata;
+    if (!isRecord(metadata)) return metadata;
+
+    if (!(IR_PARTIAL_KEY in metadata)) {
+      // The producer omitted the key because nothing advanced. Keep showing the
+      // last provisional value — unless this block already terminated, in which
+      // case its own content/`__ir` is the truth and the partial must stay gone.
+      const open = lastAccepted[blockId];
+      if (terminated[blockId] || open === undefined) return metadata;
+      return { ...metadata, [IR_PARTIAL_KEY]: open };
+    }
     // Anything malformed was stripped by `sanitizeInboundPartialKindMetadata`
     // at the same boundary, so a key still present here reads as valid.
     const parsed = readPartialKindEvent(metadata);
@@ -358,12 +383,18 @@ export function makePartialKindStalenessGate(): (
 
     if (advancePartialKind(seen, blockId, parsed) !== null) {
       seen[blockId] = parsed.seq;
+      // The highest accepted event is always retained — including a TERMINAL,
+      // so a replayed `partial` arriving after it is suppressed by the terminal
+      // rather than re-opening a closed region.
       lastAccepted[blockId] = metadata[IR_PARTIAL_KEY];
+      if (isTerminalKindEvent(parsed)) terminated[blockId] = true;
       return metadata;
     }
 
     const carried = lastAccepted[blockId];
-    if (carried === metadata[IR_PARTIAL_KEY]) return metadata;
+    if (carried === undefined || carried === metadata[IR_PARTIAL_KEY]) {
+      return metadata;
+    }
     return { ...metadata, [IR_PARTIAL_KEY]: carried };
   };
 }

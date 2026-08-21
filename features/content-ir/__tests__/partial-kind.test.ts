@@ -263,6 +263,53 @@ describe("makePartialKindStalenessGate — a stale event never regresses a block
     }
   });
 
+  it("carries the last partial forward when the producer omits the key", () => {
+    // The producer clears `__ir_partial` and re-adds it only when the value
+    // ADVANCED, so most events carry no key at all. Without carry-forward the
+    // provisional render vanished on every non-advancing token and the user
+    // watched a filled-in quiz flicker back to the pending skeleton.
+    const gate = makePartialKindStalenessGate();
+    const first = rows[0];
+    if (!first) throw new Error("fixture has no partial events");
+    expect(gate("blk_0", first)).toBe(first);
+
+    const noKey = { language: "json" } as Record<string, unknown>;
+    const carried = gate("blk_0", noKey);
+    expect(carried).not.toBe(noKey);
+    expect(carried?.[IR_PARTIAL_KEY]).toBe(first[IR_PARTIAL_KEY]);
+    // untouched keys survive
+    expect(carried?.language).toBe("json");
+  });
+
+  it("stops carrying once the block terminates, and never resurrects", () => {
+    const gate = makePartialKindStalenessGate();
+    const first = rows[0];
+    if (!first) throw new Error("fixture has no partial events");
+    gate("blk_0", first);
+
+    const terminal = {
+      [IR_PARTIAL_KEY]: {
+        v: 1,
+        engine: "py-block-detector",
+        state: "superseded",
+        seq: 9_999,
+        kind: "quiz_set",
+      },
+    } as Record<string, unknown>;
+    expect(gate("blk_0", terminal)).toBe(terminal);
+
+    // Every later event omits the key; the region's own content is the truth
+    // now, so nothing provisional may come back.
+    const noKey = {} as Record<string, unknown>;
+    expect(gate("blk_0", noKey)).toBe(noKey);
+  });
+
+  it("does not invent a partial for a block that never had one", () => {
+    const gate = makePartialKindStalenessGate();
+    const noKey = { language: "json" } as Record<string, unknown>;
+    expect(gate("blk_never", noKey)).toBe(noKey);
+  });
+
   it("carries the last accepted event forward when a stale one replays", () => {
     const gate = makePartialKindStalenessGate();
     const latest = rows[rows.length - 1]!;
@@ -276,13 +323,21 @@ describe("makePartialKindStalenessGate — a stale event never regresses a block
     expect(gated[IR_PARTIAL_KEY]).toBe(latest[IR_PARTIAL_KEY]);
   });
 
-  it("tracks blocks independently and passes metadata with no partial through", () => {
+  it("tracks blocks independently, and carries an OPEN block's partial across a keyless event", () => {
     const gate = makePartialKindStalenessGate();
-    gate("blk_0", rows[5]!);
+    const open = rows[5]!;
+    gate("blk_0", open);
     expect(gate("blk_1", rows[0]!)).toBe(rows[0]!);
 
-    const plain = { isComplete: false };
-    expect(gate("blk_0", plain)).toBe(plain);
+    // blk_0 is still OPEN (no terminal), and the producer omits the key on any
+    // event that did not advance — carrying is what keeps the provisional
+    // render on screen instead of flickering back to the skeleton.
+    const plain = { isComplete: false } as Record<string, unknown>;
+    const gated = gate("blk_0", plain)!;
+    expect(gated).not.toBe(plain);
+    expect(gated[IR_PARTIAL_KEY]).toBe(open[IR_PARTIAL_KEY]);
+    expect(gated.isComplete).toBe(false);
+
     expect(gate("blk_0", undefined)).toBeUndefined();
   });
 });
