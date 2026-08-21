@@ -212,6 +212,8 @@ import {
 } from "../utils/handoff-stream-state";
 import { runToolStateEffects } from "@/features/tool-call-visualization/effects/toolStateEffects";
 import { noteBrowserActivity } from "@/features/cloud-browser/redux/cloudBrowserSlice";
+import { adoptCloudBrowserRunFromStream } from "@/features/cloud-browser/redux/adoptRunFromStream";
+import { readHumanRequiredSignal } from "@/features/cloud-browser/redux/streamHandoffSignal";
 
 // =============================================================================
 // Types
@@ -1517,6 +1519,20 @@ export async function processStream({
             toolData.tool_name === "credential_login")
         ) {
           dispatch(noteBrowserActivity(Date.now()));
+        }
+
+        // The browser stopped for a PERSON. This is the only place the app
+        // learns that before someone opens the panel, so the handoff is
+        // adopted into cloudBrowserSlice here and
+        // CloudBrowserHandoffCanvasOpener takes it from there. Pure read of
+        // the payload; the thunk owns the effect and never starts a browser.
+        const handoffSignal = readHumanRequiredSignal(
+          toolData.event,
+          toolData.tool_name,
+          (toolData.data as { result?: unknown } | undefined)?.result,
+        );
+        if (handoffSignal) {
+          void dispatch(adoptCloudBrowserRunFromStream(handoffSignal));
         }
 
         if (toolData.event === "tool_started") {
