@@ -58,9 +58,17 @@ A family is one shape ⇒ one component ⇒ one claim.
 
 | Family | Kinds | Shared shape | Component | Claim | Status |
 |---|---|---|---|---|---|
-| `web_*_v1` — site-audit check results | 83 | `summary`, `checked`, `issues_found`, `evidence[]`, `recommendations[]` (+ per-check scalars) — verified identical core across all 83 | _TBD_ | **copy-D** | claimed |
+| `web_*_v1` — site-audit check results | 83 | `summary`, `checked`, `issues_found`, `evidence[]`, `recommendations[]` (+ per-check scalars) — verified identical core across all 83 | `web_audit_check_result` | **another copy (in flight)** | claimed |
 
-### Family: `web_*_v1` site-audit check results (claimed by copy-D)
+### Family: `web_*_v1` site-audit check results — ALREADY IN FLIGHT, DO NOT TOUCH
+
+copy-D claimed this family, then found it **already being built** by a parallel copy:
+uncommitted work in the shared checkout (`components/mardown-display/blocks/web-audit/
+WebAuditCheckResultBlock.tsx` + the `web_audit_check_result` key wired into
+`block-dispatch.tsx`'s `ShapeBlockType` / `FeSynthesizedBlockType` / `SHAPE_BLOCK_DISPATCH`
+and its test). copy-D **released the claim** rather than duplicate it, and moved to the
+primitive kinds below. Whoever owns that work: flip this row to `done` when the 83
+`kind_component` rows and canonical examples land.
 
 | Kind | Label |
 |---|---|
@@ -156,7 +164,7 @@ A family is one shape ⇒ one component ⇒ one claim.
 
 | Kind | Label | Maturity | Ex | Component | Status | Claim | Notes |
 |---|---|---|---|---|---|---|---|
-| `boolean` | Boolean | — | 1 | | unclaimed | | |
+| `boolean` | Boolean | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `branch_result` | Branch Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 201 live node_completed events in 30d |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
 | `claim_evidence` | Claim Evidence | — | 0 | | unclaimed | | |
@@ -170,12 +178,12 @@ A family is one shape ⇒ one component ⇒ one claim.
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
 | `http_response` | HTTP Response | — | 1 | | unclaimed | | |
-| `items` | Items (list result) | — | 1 | | unclaimed | | |
-| `json` | JSON (any value) | — | 1 | | unclaimed | | |
+| `items` | Items (list result) | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `json` | JSON (any value) | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | unclaimed | | |
 | `map_result` | Map Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 43 live events |
 | `notable_timestamp` | Notable Timestamp | — | 0 | | unclaimed | | |
-| `number` | Number | — | 1 | | unclaimed | | |
+| `number` | Number | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
 | `operation_result` | Operation Result (action receipt) | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
@@ -193,20 +201,24 @@ A family is one shape ⇒ one component ⇒ one claim.
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | unclaimed | | |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
 | `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | unclaimed | | |
-| `string_list` | String List | — | 1 | | unclaimed | | |
-| `table_rows` | Table Rows | — | 1 | | unclaimed | | |
-| `text` | Text | — | 1 | | unclaimed | | |
+| `string_list` | String List | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `table_rows` | Table Rows | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `text` | Text | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | unclaimed | | |
 | `topic_relevance` | Topic Relevance | — | 0 | | unclaimed | | |
 | `transcript_usage` | Transcript Usage | — | 0 | | unclaimed | | |
-| `value` | Value (single result) | — | 1 | | unclaimed | | |
+| `value` | Value (single result) | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `workflow_run_result` | Workflow Run Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 65 live events |
 
 ## Change log
 
 - 2026-08-20 — Ledger generated from the live registry (project `brsgrqvjdzwihsvnfqkf`).
-  128 kinds missing a `(kind, 'web', 'output')` row. copy-D claims the `web_*_v1` family
+  128 kinds missing a `(kind, 'web', 'output')` row. copy-D claimed the `web_*_v1` family
   (83 kinds, one proven shared shape ⇒ one component).
+- 2026-08-20 — copy-D **released** the `web_*_v1` family: a parallel copy already had
+  `WebAuditCheckResultBlock` + the dispatch wiring uncommitted in the shared checkout.
+  copy-D re-claimed the 8 primitive kinds instead (`boolean`, `items`, `json`, `number`,
+  `string_list`, `table_rows`, `text`, `value`).
 - 2026-08-20 — copy-E claims the 8 engine-result kinds (`branch_result`, `bulk_result`,
   `criteria_gate_result`, `gather_result`, `map_result`, `operation_result`, `rendered_text`,
   `workflow_run_result`) — chosen by LIVE traffic: they are the top unrouted kinds in
