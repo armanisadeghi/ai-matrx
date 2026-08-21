@@ -151,8 +151,9 @@ The repo is a conformant **Open Knowledge Format** bundle — the vendored spec 
 standard; the same setup is planned for every user sandbox). Every edit here keeps it conformant:
 
 1. **Every non-reserved `.md` gets YAML frontmatter with a non-empty `type`** (§9). House `type`
-   vocabulary — reuse before inventing: `System of Record`, `Guide`, `Reference`, `Policy`,
-   `Playbook`, `Skill`, `Specification`. Recommended fields in priority order: `title`,
+   vocabulary — reuse before inventing: `State`, `Vision`, `Policy`, `Plan`, `Handoff`,
+   `Register`, `Guide`, `Reference`, `Skill`, `Specification` (legacy docs may still carry
+   `System of Record` until migrated). Recommended fields in priority order: `title`,
    `description` (one sentence — index entries reuse it verbatim), `resource` (URI of the
    underlying asset: Supabase dashboard URL, GitHub repo/tree, route), `tags`, `timestamp`
    (ISO 8601, last MEANINGFUL change — not every touch).
@@ -175,11 +176,14 @@ keep using plain absolute filesystem paths.
 
 ## Recipes
 
-**New cross-repo doc:** confirm it fails the placement test's single-repo branch → pick the
-branch via the filing test (truth → `systems/`, work → `projects/`, doctrine → `policies/`) →
-create `common-docs/systems/<system>/FEATURE.md` (or `projects/<project>/<doc>.md`) with:
-verification-date line, Repositories table (repo | role), the truth, changelog → commit →
-plant pointer lines in every touched repo → commit those.
+**New cross-repo doc:** confirm it fails the placement test's single-repo branch → find (or
+propose) the subject's registry node → node truth goes INTO the node's `STATE.md` (create the
+kit file if the node home lacks it; a brand-new node gets `status: proposed` in the registry)
+— never a new parallel doc beside an existing STATE; cross-feature work → `projects/<project>/`
+with a `touches:` list. Every truth doc carries: verification-date line, Repositories table
+(repo | role), the truth, changelog → commit → plant pointer lines in every touched repo →
+commit those. (Unmigrated node homes still carry a legacy `FEATURE.md` — edit THAT in place
+rather than creating a competing STATE.md; the doc-migration board owns the rename.)
 
 **Editing an existing doc:** read it whole → verify the claims you're building on against live
 code/DB → edit in place (merge, don't append addenda) → bump the verification date + changelog →
