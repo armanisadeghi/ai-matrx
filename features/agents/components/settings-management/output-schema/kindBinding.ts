@@ -164,16 +164,32 @@ export interface KindBoundOutputSchema {
  *  1. **The model may now emit `__kind` itself.** The caller-stamps-the-kind
  *     step becomes redundant rather than load-bearing; it is only a conflict if
  *     the model emits a DIFFERENT slug than the one being stamped.
- *  2. **`strict: true` + an optional `__kind`.** All 96 declare `__kind` in
- *     `properties` but NONE list it in `required`. Strict structured-output
- *     modes generally require every declared property to be required, so a
- *     strict binding to one of these can be rejected by the provider on a
- *     schema that is perfectly valid JSON Schema. The fix belongs on the
- *     EMITTING side (the kind SDK should mark the discriminator required), not
- *     in a frontend patch that would quietly rewrite a python-owned contract.
+ *  2. **`strict: true` + a non-strict schema — RESOLVED UPSTREAM 2026-08-21.**
+ *     Re-measured live: 178 of 178 kind_sdk rows set
+ *     `additionalProperties: false`, and ZERO list every declared property in
+ *     `required` (89 carry no `required` key at all). `__kind` is declared on
+ *     all 178 and required on none — Pydantic gives the discriminator a
+ *     default. So the gap was never just the discriminator; these schemas are
+ *     wholesale non-conforming to OpenAI/Anthropic strict mode.
  *
- * Anyone binding a kind_sdk kind and seeing a provider schema rejection: this
- * note is the explanation, and (2) is the thing to fix upstream.
+ *     The earlier note here said the fix belonged on the EMITTING side. That
+ *     was wrong, and writing `strict: true` from this file is NOT the defect
+ *     either. `emitted_json_schema` is canonical JSON Schema and is RIGHT to
+ *     mark optional fields optional — forcing all-required into the registry
+ *     would make the row lie to every validator and renderer that reads it.
+ *     Provider portability is a WIRE concern, and aidream already owns the
+ *     adapter for it (`matrx_ai.schema.lint.lint_output_schema` →
+ *     `portable_schema`), which `response_format_for_kind` has always used.
+ *
+ *     The real defect was that the runtime never REACHED that adapter:
+ *     `ai_task.py` looks the agent up by its `agent_io_<uuid>_output` contract
+ *     slug, and all 165 of those rows were soft-deleted in the 2026-08-20
+ *     contract-artifact eviction (0 live) — so the lookup misses for every
+ *     agent and the fallback sent this stored schema out VERBATIM under
+ *     `strict: true`. Fixed in `aidream/services/ai_execution/ai_task.py`
+ *     (`_portable_fallback`): the fallback now runs the same lint adapter, so
+ *     the wire gets all-required + `__kind` required while the registry keeps
+ *     the honest contract. Nothing to change on this side.
  *
  * Null when neither source yields a schema.
  */
