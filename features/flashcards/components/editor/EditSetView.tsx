@@ -20,7 +20,6 @@ import {
   ArrowLeft,
   Plus,
   Layers,
-  AlertCircle,
   Eye,
   EyeOff,
   Loader2,
@@ -36,6 +35,7 @@ import {
   Sigma,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -581,23 +581,12 @@ export function EditSetView({ setId }: { setId: string }) {
             </div>
           </>
         ) : error || !data ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
-            <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              Couldn&apos;t load this set
-            </p>
-            <p className="max-w-md text-xs text-muted-foreground">
-              {error ?? "This flashcard set could not be found."}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => router.push(EDU_BASE)}
-            >
-              All flashcards
-            </Button>
-          </div>
+          <AccessGate
+            token="fc_set"
+            id={setId}
+            fallbackHref={EDU_BASE}
+            fallbackLabel="All flashcards"
+          />
         ) : (
           <>
             {/* Set details */}

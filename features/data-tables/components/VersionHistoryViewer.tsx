@@ -121,6 +121,7 @@ export function VersionHistoryViewer({
       const ok = await confirm({
         title: "Restore deleted row",
         description:
+          // access-errors: ok — deletion is proven by the row's own version history (a delete version exists)
           "The row was deleted, so this snapshot will be re-inserted as a new row (with a fresh history).",
         confirmLabel: "Restore row",
       });

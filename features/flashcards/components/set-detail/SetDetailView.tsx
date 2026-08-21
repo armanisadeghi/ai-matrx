@@ -14,7 +14,6 @@ import { useRouter } from "next/navigation";
 import {
   Play,
   Layers,
-  AlertCircle,
   BookOpen,
   Lightbulb,
   Quote,
@@ -43,6 +42,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -575,23 +575,12 @@ export function SetDetailView({ setId }: { setId: string }) {
             </div>
           </>
         ) : error || !data ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
-            <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              Couldn&apos;t load this set
-            </p>
-            <p className="max-w-md text-xs text-muted-foreground">
-              {error ?? "This flashcard set could not be found."}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => router.push(EDU_BASE)}
-            >
-              All flashcards
-            </Button>
-          </div>
+          <AccessGate
+            token="fc_set"
+            id={setId}
+            fallbackHref={EDU_BASE}
+            fallbackLabel="All flashcards"
+          />
         ) : (
           <>
             {/* Header */}

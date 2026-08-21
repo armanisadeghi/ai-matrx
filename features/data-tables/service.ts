@@ -28,6 +28,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
 import type {
+import { operationFailed } from "@/utils/errors";
   BulkOp,
   BulkWriteResponse,
   ChangeFieldTypeResponse,
@@ -544,7 +545,7 @@ export async function updateTableMetadata(
   if (!envelope || envelope.success !== true || !envelope.table) {
     return {
       success: false,
-      error: envelope?.error ?? "Table not found or update failed",
+      error: envelope?.error ?? operationFailed("update this table").message,
     };
   }
   return { success: true, data: envelope.table };

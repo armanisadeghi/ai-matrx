@@ -27,6 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
+import { operationFailed } from "@/utils/errors";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 import {
   getLatestSnapshot,
@@ -86,7 +88,14 @@ export function WorkbookHistoryViewer({ workbookId, editable = true }: Props) {
       if (fetchErr || !full) {
         toast({
           title: "Could not load snapshot",
-          description: fetchErr?.message ?? "snapshot not found",
+          description: fetchErr
+            ? operationFailed("load that snapshot", fetchErr).message
+            : recordUnavailable({
+                entity: "snapshot",
+                reason: "unknown",
+                recordId: snapshotId,
+                relation: "workbench.udt_workbook_snapshots",
+              }).message,
           variant: "destructive",
         });
         setRestoringId(null);

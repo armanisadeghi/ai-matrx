@@ -95,9 +95,12 @@ function writeHelperText(card: CardWithDetails) {
     const existing = card.details.map((d) => ({ kind: d.kind, text: d.text }));
     const result = await runHeadlessAgentJson(dispatch, getState, {
       mandateKey: FC_MANDATES.enrichCard,
-      surfaceKey: "flashcards-helper-audio-text",
-      sourceFeature: "education-fastfire",
-      surfaceName: "matrx-user/education-fastfire",
+      // The proven enrich posture (EnhanceSetDialog) — the fastfire surface
+      // identity broke the launch (2026-08-21 live test), and this IS the
+      // enrich lane, just batch-driven.
+      surfaceKey: "flashcards-enrich-card",
+      sourceFeature: "education-flashcards",
+      surfaceName: "matrx-user/education-flashcards",
       initiation: "auto",
       variables: {
         front: card.front,

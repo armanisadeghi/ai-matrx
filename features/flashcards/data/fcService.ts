@@ -19,6 +19,7 @@ import {
 } from "@/lib/supabase/mergeJsonColumn";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { EDGE_ROLE } from "./types";
 import type {
   FcResult,
@@ -247,7 +248,13 @@ export const fcService = {
       if (!data)
         return {
           data: null,
-          error: "Set not found or you don't have access to it",
+          error: recordUnavailable({
+            entity: "flashcard set",
+            reason: "unknown",
+            recordId: setId,
+            token: "fc_set",
+            relation: "fc_set",
+          }).message,
         };
       return { data: data as FcSetRow, error: null };
     } catch (e) {
