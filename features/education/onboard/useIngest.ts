@@ -21,7 +21,12 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { usePdfClient } from "@/features/pdf/api/client";
-import { streamPdfExtractText } from "@/features/pdf-extractor/service/streamPdf";
+import {
+  streamPdfExtractText,
+  streamPdfExtractTextRemote,
+} from "@/features/pdf-extractor/service/streamPdf";
+import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
+import { formatBytes } from "@/features/image-studio/utils/format-bytes";
 import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { extractOfficeText } from "./officeExtract";
@@ -45,6 +50,30 @@ function titleFromUrl(url: string): string {
   }
 }
 
+/**
+ * Byte-accurate upload reporting. A 78 MB drop spends minutes in this ONE step;
+ * reporting only "Uploading…" is what made the flow look frozen (D: the hero
+ * discarded every progress event it was already being handed).
+ */
+function uploadProgressReporter(
+  label: string,
+  onProgress?: (p: IngestProgress) => void,
+): ((loaded: number, total: number) => void) | undefined {
+  if (!onProgress) return undefined;
+  return (loaded, total) => {
+    const ratio = total > 0 ? Math.min(1, loaded / total) : undefined;
+    onProgress({
+      phase: "uploading",
+      message: label,
+      ratio,
+      detail:
+        total > 0
+          ? `${formatBytes(loaded)} of ${formatBytes(total)}`
+          : formatBytes(loaded),
+    });
+  };
+}
+
 export interface UseIngestResult {
   normalize: (
     input: RawIngestInput,
@@ -60,11 +89,18 @@ export function useIngest(): UseIngestResult {
 
   /** Persist arbitrary extracted text as a durable `.md` file the user owns. */
   const anchorText = useCallback(
-    async (text: string, title: string): Promise<string | undefined> => {
+    async (
+      text: string,
+      title: string,
+      onProgress?: (p: IngestProgress) => void,
+    ): Promise<string | undefined> => {
       const safe = title.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_").slice(0, 60) || "source";
       const blob = new Blob([text], { type: "text/markdown" });
       const file = new File([blob], `${safe}.md`, { type: "text/markdown" });
-      const result = await upload({ kind: "file", file });
+      const result = await upload(
+        { kind: "file", file },
+        { onProgress: uploadProgressReporter(`Saving ${title}…`, onProgress) },
+      );
       if (!result.fileId) {
         // Loud recovery: without an anchor fileId, artifacts can't link a
         // `source` lineage edge — the "durable anchor" guarantee is broken.
@@ -89,7 +125,7 @@ export function useIngest(): UseIngestResult {
         if (!raw) throw new Error("Nothing to ingest — paste some text first.");
         const title = input.title?.trim() || raw.split(/\n/)[0].slice(0, 60) || "Pasted notes";
         onProgress?.({ phase: "uploading", message: "Saving your notes…" });
-        const fileId = await anchorText(raw, title);
+        const fileId = await anchorText(raw, title, onProgress);
         const { text, truncated } = clamp(raw);
         return {
           text,
@@ -124,7 +160,7 @@ export function useIngest(): UseIngestResult {
         }
         const title = input.title?.trim() || titleFromUrl(url);
         onProgress?.({ phase: "uploading", message: "Saving the transcript…" });
-        const fileId = await anchorText(raw, title);
+        const fileId = await anchorText(raw, title, onProgress);
         const { text, truncated } = clamp(raw);
         return {
           text,
@@ -156,7 +192,7 @@ export function useIngest(): UseIngestResult {
           scraped?.overview?.page_title ||
           titleFromUrl(url);
         onProgress?.({ phase: "uploading", message: "Saving the source…" });
-        const fileId = await anchorText(raw, title);
+        const fileId = await anchorText(raw, title, onProgress);
         const { text, truncated } = clamp(raw);
         return {
           text,
@@ -179,8 +215,21 @@ export function useIngest(): UseIngestResult {
 
       // Upload the original for durable ownership (goes to "my files"). This is
       // the lineage anchor for EVERY file kind — PDF, image, audio, video, text.
-      onProgress?.({ phase: "uploading", message: `Uploading ${file.name}…` });
-      const uploaded = await upload({ kind: "file", file });
+      onProgress?.({
+        phase: "uploading",
+        message: `Uploading ${file.name}…`,
+        ratio: 0,
+        detail: `0 B of ${formatBytes(file.size)}`,
+      });
+      const uploaded = await upload(
+        { kind: "file", file },
+        {
+          onProgress: uploadProgressReporter(
+            `Uploading ${file.name}…`,
+            onProgress,
+          ),
+        },
+      );
       const fileId = uploaded.fileId;
 
       // ── Image → OCR via the pdf-extractor stream (accepts images; Tesseract) ─
@@ -284,16 +333,37 @@ export function useIngest(): UseIngestResult {
       }
 
       if (kind === "pdf") {
+        // The bytes are already in cloud storage from the anchor upload above,
+        // so extraction is requested BY FILE ID. Posting the file a second time
+        // as multipart made a 78 MB drop upload 156 MB — minutes of silence for
+        // work the server could already reach. One upload, one canonical path.
+        if (!fileId) {
+          throw new Error(
+            "Couldn't save that PDF to extract it — please try again.",
+          );
+        }
         onProgress?.({ phase: "extracting", message: "Extracting text from the PDF…" });
-        const complete = await streamPdfExtractText({
-          file,
+        const complete = await streamPdfExtractTextRemote({
+          body: buildPdfSourceFromFileId(fileId),
           baseUrl: pdf.backendUrl ?? "",
           headers: await pdf.authHeaders(),
           callbacks: {
+            onStarted: (started) =>
+              onProgress?.({
+                phase: "extracting",
+                message: "Extracting text from the PDF…",
+                ratio: 0,
+                detail: started.total_pages
+                  ? `${started.total_pages} pages to read`
+                  : undefined,
+              }),
             onPageExtracted: (p) =>
               onProgress?.({
                 phase: "extracting",
-                message: `Extracting page ${p.page_number} / ${p.total_pages}…`,
+                message: "Extracting text from the PDF…",
+                ratio:
+                  p.total_pages > 0 ? p.page_number / p.total_pages : undefined,
+                detail: `page ${p.page_number} of ${p.total_pages}`,
               }),
           },
         });

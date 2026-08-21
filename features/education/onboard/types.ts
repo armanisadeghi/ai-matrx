@@ -44,6 +44,15 @@ export interface NormalizedIngest {
 export interface IngestProgress {
   phase: "uploading" | "extracting" | "scraping" | "transcribing" | "ready";
   message: string;
+  /**
+   * 0..1 when the step can be measured honestly (bytes uploaded, pages
+   * extracted). Omitted for genuinely unmeasurable steps (a transcription the
+   * backend does not report progress for) — the UI then shows motion + elapsed
+   * time rather than inventing a percentage.
+   */
+  ratio?: number;
+  /** The measured detail behind `ratio` — "34.2 MB of 78.0 MB", "page 12 of 340". */
+  detail?: string;
 }
 
 /** One target's live state in the kit fan-out. */
@@ -68,4 +77,8 @@ export interface KitTargetState {
   error?: string;
   /** Live streaming request id (for token-level preview), when available. */
   requestId?: string;
+  /** Epoch ms this target started running — powers the honest elapsed clock. */
+  startedAt?: number;
+  /** Epoch ms this target settled (success or error). */
+  finishedAt?: number;
 }

@@ -10,7 +10,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -34,10 +34,10 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAccess } from "@/utils/permissions/access";
-import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAudioStudyScope } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { studyMediaService } from "../../service";
+import { useAudioStudyRunPersistence } from "../useAudioStudyRunPersistence";
 import type { StudyMediaRow } from "../../types";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
@@ -312,62 +312,16 @@ function LiveAudioRun({
   onReady: (updated: StudyMediaRow) => void;
 }) {
   const run = useStudioRun(media.run_id ?? "");
-  const persistedRef = useRef(false);
-
   const { state } = run;
 
-  // Persist the finished episode onto the artifact row — once.
-  useEffect(() => {
-    if (state.status !== "done" || persistedRef.current) return;
-    const fileId =
-      state.audioFileId ?? fileIdFromUserFilesUrl(state.audioUrl ?? "");
-    // A durable anchor is either the re-mintable file_id (live path) OR the
-    // produced episode (recovery path — no live file_id was ever captured).
-    if (!fileId && !state.episodeId) return;
-    persistedRef.current = true;
-    void (async () => {
-      const res = await studyMediaService.update(media.id, {
-        status: "ready",
-        episode_id: state.episodeId,
-        audio_file_id: fileId,
-        title: state.title || media.title,
-      });
-      if (res.error || !res.data) {
-        toast.error(res.error ?? "Couldn't save the finished audio");
-        return;
-      }
-      toast.success("Audio study ready");
-      onReady(res.data);
-    })();
-  }, [
-    state.status,
-    state.audioFileId,
-    state.audioUrl,
-    state.episodeId,
-    state.title,
-    media.id,
-    media.title,
+  // Outcome → artifact row. The rules live in ONE hook shared with the study-kit
+  // board, which hosts the same run on /education/start.
+  useAudioStudyRunPersistence({
+    media,
+    state,
+    streaming: run.streaming,
     onReady,
-  ]);
-
-  // Mark the artifact errored so the library reflects it (best-effort).
-  useEffect(() => {
-    if (state.status === "error" && media.status !== "error") {
-      void studyMediaService.update(media.id, { status: "error" });
-    }
-  }, [state.status, media.id, media.status]);
-
-  // ...and put it BACK to generating the moment a retry starts streaming.
-  // Without this the library kept showing "Failed" while a re-run was actively
-  // producing audio. Covers every retry path (this page's button and the shared
-  // recovery banner's "Re-run from source") because it keys on the run, not on
-  // which control the learner pressed.
-  useEffect(() => {
-    if (media.status !== "error") return;
-    if (run.streaming || state.status === "running") {
-      void studyMediaService.update(media.id, { status: "generating" });
-    }
-  }, [run.streaming, state.status, media.id, media.status]);
+  });
 
   if (!media.run_id) {
     // No run row to retry — but never a dead end: generating a fresh version

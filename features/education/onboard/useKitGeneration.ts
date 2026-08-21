@@ -23,6 +23,10 @@ export type KitPhase = "idle" | "ingesting" | "generating" | "done" | "error";
 
 export interface UseKitGeneration {
   phase: KitPhase;
+  /** Epoch ms the run started — the UI's elapsed clock reads from this. */
+  startedAt: number | null;
+  /** Epoch ms ingest finished (text in hand); null while still ingesting. */
+  ingestFinishedAt: number | null;
   /** Live ingest progress line (upload/extract/scrape). */
   ingestProgress: IngestProgress | null;
   /** Per-target live state (pending → running → success/error). */
@@ -54,6 +58,8 @@ export function useKitGeneration(): UseKitGeneration {
   const [targets, setTargets] = useState<KitTargetState[]>([]);
   const [source, setSource] = useState<NormalizedIngest | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [ingestFinishedAt, setIngestFinishedAt] = useState<number | null>(null);
 
   const reset = useCallback(() => {
     setPhase("idle");
@@ -61,6 +67,8 @@ export function useKitGeneration(): UseKitGeneration {
     setTargets([]);
     setSource(null);
     setError(null);
+    setStartedAt(null);
+    setIngestFinishedAt(null);
   }, []);
 
   const patchTarget = useCallback(
@@ -90,6 +98,8 @@ export function useKitGeneration(): UseKitGeneration {
       setSource(null);
       setPhase("ingesting");
       setIngestProgress(null);
+      setStartedAt(Date.now());
+      setIngestFinishedAt(null);
 
       // Seed the target board so the UI can render slots immediately.
       setTargets(
@@ -104,6 +114,7 @@ export function useKitGeneration(): UseKitGeneration {
       try {
         normalized = await normalize(input, setIngestProgress);
         setSource(normalized);
+        setIngestFinishedAt(Date.now());
       } catch (e) {
         setError(e instanceof Error ? e.message : "Couldn't read that source.");
         setPhase("error");
@@ -111,7 +122,14 @@ export function useKitGeneration(): UseKitGeneration {
       }
 
       setPhase("generating");
-      setTargets((prev) => prev.map((t) => ({ ...t, status: "running" as const })));
+      const generationStartedAt = Date.now();
+      setTargets((prev) =>
+        prev.map((t) => ({
+          ...t,
+          status: "running" as const,
+          startedAt: generationStartedAt,
+        })),
+      );
 
       await convertMany(
         { text: normalized.text, title: normalized.title, ref: normalized.ref },
@@ -122,6 +140,7 @@ export function useKitGeneration(): UseKitGeneration {
             const r = outcome.result;
             patchTarget(outcome.targetKind, {
               status: "success",
+              finishedAt: Date.now(),
               href: r.href,
               title: r.title,
               detail: r.detail,
@@ -132,6 +151,7 @@ export function useKitGeneration(): UseKitGeneration {
           } else {
             patchTarget(outcome.targetKind, {
               status: "error",
+              finishedAt: Date.now(),
               error: outcome.error,
             });
           }
@@ -147,6 +167,8 @@ export function useKitGeneration(): UseKitGeneration {
 
   return {
     phase,
+    startedAt,
+    ingestFinishedAt,
     ingestProgress,
     targets,
     source,

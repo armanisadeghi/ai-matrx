@@ -13,14 +13,6 @@ import {
   Upload,
   FileText,
   Link2,
-  Layers,
-  Network,
-  ScrollText,
-  Headphones,
-  ListChecks,
-  FileCheck2,
-  NotebookPen,
-  Brain,
   Loader2,
   CheckCircle2,
   AlertCircle,
@@ -38,30 +30,20 @@ import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
-import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
+import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import { useKitGeneration } from "../useKitGeneration";
+import { KitBoard } from "./KitBoard";
 import {
   INGEST_ACCEPT,
   describeIngestSupport,
   describeUrlSupport,
   classifyIngestUrl,
 } from "../formatSupport";
-import type { KitTargetState } from "../types";
+
 
 type InputMode = "upload" | "paste" | "link";
-
-const TARGET_ICON: Record<TargetKind, LucideIcon> = {
-  deck: Layers,
-  summary: ScrollText,
-  mind_map: Network,
-  audio: Headphones,
-  memory_aid: Brain,
-  quiz: ListChecks,
-  practice_test: FileCheck2,
-  notes: NotebookPen,
-};
 
 const DEFAULT_TARGETS: TargetKind[] = ["deck", "summary", "mind_map"];
 
@@ -144,7 +126,13 @@ export function StartHero() {
     coppa,
   ]);
 
-  const showResults = kit.phase === "generating" || kit.phase === "done";
+  // The board goes up the INSTANT the run starts — ingest included. Hiding it
+  // until generation began is what left a multi-minute upload+extract behind a
+  // single button spinner with nothing to read.
+  const showResults =
+    kit.phase === "ingesting" ||
+    kit.phase === "generating" ||
+    kit.phase === "done";
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
@@ -237,9 +225,7 @@ export function StartHero() {
         </>
       )}
 
-      {showResults && (
-        <KitResults kit={kit} onReset={kit.reset} />
-      )}
+      {showResults && <KitBoard kit={kit} onReset={kit.reset} />}
     </div>
   );
 }
@@ -408,7 +394,7 @@ function KitPicker(props: {
         {ALL_TARGET_KINDS.map((kind) => {
           const gen = getGenerator(kind);
           const available = isTargetAvailable(kind);
-          const Icon = TARGET_ICON[kind];
+          const Icon = TARGET_PRESENTATION[kind].icon;
           const on = props.selected.has(kind);
           return (
             <button
@@ -445,128 +431,4 @@ function KitPicker(props: {
       </div>
     </div>
   );
-}
-
-// ─── Results / live board ────────────────────────────────────────────────────
-
-function KitResults(props: {
-  kit: ReturnType<typeof useKitGeneration>;
-  onReset: () => void;
-}) {
-  const { kit } = props;
-  const done = kit.phase === "done";
-  const successCount = kit.targets.filter((t) => t.status === "success").length;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">
-          {done ? "Your study kit" : "Building your kit…"}
-        </h2>
-        {done && (
-          <Button variant="outline" size="sm" onClick={props.onReset}>
-            Make another
-          </Button>
-        )}
-      </div>
-
-      {kit.ingestProgress && kit.phase === "ingesting" && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {kit.ingestProgress.message}
-        </p>
-      )}
-
-      {kit.source && (
-        <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Source: <span className="text-foreground">{kit.source.title}</span> ·{" "}
-          {kit.source.meta.chars.toLocaleString()} chars
-          {kit.source.meta.pages ? ` · ${kit.source.meta.pages} pages` : ""}
-          {kit.source.meta.truncated ? " · trimmed to fit" : ""}
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {kit.targets.map((t) => (
-          <TargetRow key={t.targetKind} target={t} />
-        ))}
-      </div>
-
-      {done && successCount > 0 && (
-        <p className="text-center text-xs text-muted-foreground">
-          {(() => {
-            // Count only artifacts that actually EXIST. A streamed target
-            // (audio) has a row but no content yet and may still fail, so
-            // counting it here was the kit claiming work it had not done.
-            const finished = kit.targets.filter(
-              (t) => t.status === "success" && !t.stillGenerating,
-            ).length;
-            const generating = kit.targets.filter(
-              (t) => t.status === "success" && t.stillGenerating,
-            ).length;
-            const head =
-              finished > 0
-                ? `${finished} artifact${finished === 1 ? "" : "s"} created, all linked to your source.`
-                : "";
-            const tail =
-              generating > 0
-                ? `${finished > 0 ? " " : ""}${generating} more still being produced — we'll keep working even if you close this.`
-                : "";
-            return `${head}${tail}`;
-          })()}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function TargetRow({ target: t }: { target: KitTargetState }) {
-  const Icon = TARGET_ICON[t.targetKind];
-  const body = (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg border px-3 py-3 transition-colors",
-        t.status === "success"
-          ? "border-border bg-card hover:bg-muted/50"
-          : t.status === "error"
-            ? "border-destructive/30 bg-destructive/5"
-            : "border-border bg-card",
-      )}
-    >
-      <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
-          {t.title || t.label}
-        </p>
-        {t.status === "error" ? (
-          <p className="truncate text-xs text-destructive">{t.error}</p>
-        ) : t.detail ? (
-          <p className="truncate text-xs text-muted-foreground">{t.detail}</p>
-        ) : (
-          <p className="truncate text-xs text-muted-foreground">
-            {t.status === "running" ? "Generating…" : "Queued"}
-          </p>
-        )}
-      </div>
-      {t.status === "running" && (
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      )}
-      {t.status === "error" && <AlertCircle className="h-4 w-4 text-destructive" />}
-      {t.status === "success" && t.stillGenerating && (
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      )}
-      {t.status === "success" && !t.stillGenerating && (
-        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-      )}
-    </div>
-  );
-
-  if (t.status === "success" && t.href) {
-    return (
-      <Link href={t.href} className="block">
-        {body}
-      </Link>
-    );
-  }
-  return body;
 }
