@@ -4169,6 +4169,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/authenticator/{credential_item_id}/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Authenticator Code
+         * @description Show the current rotating code to the signed-in Vault owner.
+         */
+        get: operations["get_authenticator_code_authenticator__credential_item_id__code_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/authenticator/enroll": {
         parameters: {
             query?: never;
@@ -4367,6 +4387,23 @@ export interface paths {
         put?: never;
         /** Disconnect */
         post: operations["disconnect_google_integrations_disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/youtube/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Youtube Preview */
+        post: operations["youtube_preview_google_integrations_youtube_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25151,6 +25188,16 @@ export interface components {
              * @description compare_vanilla only: the SAME input the Masterwork was given (the text to edit, or the job brief), so the vanilla arm is a fair fight.
              */
             vanilla_input?: string | null;
+        };
+        /**
+         * AuthenticatorCodeOut
+         * @description The current user-visible code and its remaining lifetime.
+         */
+        AuthenticatorCodeOut: {
+            /** Code */
+            code: string;
+            /** Valid For Seconds */
+            valid_for_seconds: number;
         };
         /**
          * AuthenticatorEntryOut
@@ -65221,6 +65268,36 @@ export interface components {
              */
             no_signal_min_cost_usd?: number;
         };
+        /** YouTubeChannelPreview */
+        YouTubeChannelPreview: {
+            /** Channel Id */
+            channel_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /** Custom Url */
+            custom_url: string | null;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+            /** Subscriber Count */
+            subscriber_count: number | null;
+            /** View Count */
+            view_count: number | null;
+            /** Video Count */
+            video_count: number | null;
+            /** Recent Videos */
+            recent_videos: components["schemas"]["YouTubeVideoPreview"][];
+        };
+        /** YouTubePreviewRequest */
+        YouTubePreviewRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Channel Id */
+            channel_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
         /** YouTubeSearchPage */
         YouTubeSearchPage: {
             /** Search Id */
@@ -65524,6 +65601,27 @@ export interface components {
             is_in_topic?: boolean;
             /** Topic Source Id */
             topic_source_id?: string | null;
+        };
+        /** YouTubeVideoPreview */
+        YouTubeVideoPreview: {
+            /** Video Id */
+            video_id: string;
+            /** Title */
+            title: string;
+            /** Published At */
+            published_at: string | null;
+            /** Description */
+            description: string | null;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+            /** View Count */
+            view_count: number | null;
+            /** Like Count */
+            like_count: number | null;
+            /** Comment Count */
+            comment_count: number | null;
+            /** Privacy Status */
+            privacy_status: string | null;
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -73759,6 +73857,37 @@ export interface operations {
             };
         };
     };
+    get_authenticator_code_authenticator__credential_item_id__code_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credential_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticatorCodeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     enroll_authenticator_enroll_post: {
         parameters: {
             query?: never;
@@ -74112,6 +74241,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    youtube_preview_google_integrations_youtube_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeChannelPreview"];
+                };
             };
             /** @description Validation Error */
             422: {

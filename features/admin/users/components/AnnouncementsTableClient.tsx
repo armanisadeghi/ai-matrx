@@ -20,7 +20,7 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
-import CreateAnnouncementDialog from "@/app/(admin)/administration/users/feedback/components/CreateAnnouncementDialog";
+import CreateAnnouncementDialog from "./CreateAnnouncementDialog";
 import {
   getAllAnnouncements,
   updateAnnouncement,
@@ -258,3 +258,4 @@ export function AnnouncementsTableClient() {
     </div>
   );
 }
+

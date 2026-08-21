@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Loader2, Wand2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DEFAULT_DATABASE_SCHEMA } from "@/app/(admin)/administration/database/config";
+import { DEFAULT_DATABASE_SCHEMA } from "@/features/administration/database-hub/database-tools";
 import { useRegisteredTables } from "../hooks/useRegisteredTables";
 import { OverrideCombobox } from "./OverrideCombobox";
 

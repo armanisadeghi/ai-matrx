@@ -10552,6 +10552,49 @@
         }
       }
     },
+    "/authenticator/{credential_item_id}/code": {
+      "get": {
+        "tags": [
+          "Authenticator"
+        ],
+        "summary": "Get Authenticator Code",
+        "description": "Show the current rotating code to the signed-in Vault owner.",
+        "operationId": "get_authenticator_code_authenticator__credential_item_id__code_get",
+        "parameters": [
+          {
+            "name": "credential_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Credential Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticatorCodeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/authenticator/enroll": {
       "post": {
         "tags": [
@@ -11043,6 +11086,47 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/youtube/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Youtube Preview",
+        "operationId": "youtube_preview_google_integrations_youtube_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YouTubeChannelPreview"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -66413,6 +66497,28 @@
         ],
         "title": "AuditionCompareRequest",
         "description": "Judge a Masterwork's output against the real published exemplar (the R2\noutcome signal). Comparison verdict cites rulebook rule ids; gaps the\nreference exposes optionally land as DRAFT rules (never auto-activated)."
+      },
+      "AuthenticatorCodeOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6,8}$",
+            "title": "Code"
+          },
+          "valid_for_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Valid For Seconds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "valid_for_seconds"
+        ],
+        "title": "AuthenticatorCodeOut",
+        "description": "The current user-visible code and its remaining lifetime."
       },
       "AuthenticatorEntryOut": {
         "properties": {
@@ -169629,6 +169735,135 @@
         "title": "YieldFloors",
         "description": "The thresholds the alarm uses, so the surface can show its own rules."
       },
+      "YouTubeChannelPreview": {
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "title": "Channel Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "custom_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Url"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "subscriber_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscriber Count"
+          },
+          "view_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Count"
+          },
+          "video_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Count"
+          },
+          "recent_videos": {
+            "items": {
+              "$ref": "#/components/schemas/YouTubeVideoPreview"
+            },
+            "type": "array",
+            "title": "Recent Videos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel_id",
+          "title",
+          "description",
+          "custom_url",
+          "thumbnail_url",
+          "subscriber_count",
+          "view_count",
+          "video_count",
+          "recent_videos"
+        ],
+        "title": "YouTubeChannelPreview"
+      },
+      "YouTubePreviewRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "channel_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Channel Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "channel_id"
+        ],
+        "title": "YouTubePreviewRequest"
+      },
       "YouTubeSearchPage": {
         "properties": {
           "search_id": {
@@ -170542,6 +170777,108 @@
           "last_seen_at"
         ],
         "title": "YouTubeVideoLibraryRecord"
+      },
+      "YouTubeVideoPreview": {
+        "properties": {
+          "video_id": {
+            "type": "string",
+            "title": "Video Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "view_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Count"
+          },
+          "like_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Like Count"
+          },
+          "comment_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Count"
+          },
+          "privacy_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Privacy Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "video_id",
+          "title",
+          "published_at",
+          "description",
+          "thumbnail_url",
+          "view_count",
+          "like_count",
+          "comment_count",
+          "privacy_status"
+        ],
+        "title": "YouTubeVideoPreview"
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {
