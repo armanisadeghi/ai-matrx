@@ -633,7 +633,7 @@ function MarketingConnectionsContent() {
                             {" subscribers · "}
                             {youtubePreview.data.video_count?.toLocaleString() ??
                               "—"}
-                            {" videos · "}
+                            {" public videos · "}
                             {youtubePreview.data.view_count?.toLocaleString() ??
                               "—"}
                             {" channel views"}
