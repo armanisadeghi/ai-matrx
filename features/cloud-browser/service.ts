@@ -15,6 +15,9 @@ import type {
   CloudBrowserRun,
   ControllerKind,
   ControllerState,
+  CredentialCaptureField,
+  CredentialCaptureOutcome,
+  CredentialCaptureRequest,
   ExecutionTarget,
   HandoffReason,
   HandoffState,
@@ -332,7 +335,90 @@ function mapEvent(row: EventRow): ProgressEvent {
     origin: row.origin,
   };
 }
+/**
+ * The D-11 capture card's spec, as the aidream executor wrote it onto
+ * `browser.handoff.metadata.capture_request`. Field NAMES and selectors only —
+ * a malformed or value-bearing shape is simply not a card (null), never a
+ * partially-rendered box.
+ */
+function mapCaptureRequest(
+  value: Json | undefined,
+): CredentialCaptureRequest | null {
+  const raw = jsonObject(value ?? null);
+  const handoffId = raw.handoff_id;
+  const loginUrl = raw.login_url;
+  const rawFields = raw.fields;
+  if (
+    typeof handoffId !== "string" ||
+    typeof loginUrl !== "string" ||
+    !Array.isArray(rawFields)
+  )
+    return null;
+  const fields: CredentialCaptureField[] = [];
+  for (const entry of rawFields) {
+    const field = jsonObject(entry);
+    if (typeof field.field_key !== "string" || typeof field.selector !== "string")
+      continue;
+    fields.push({
+      fieldKey: field.field_key,
+      selector: field.selector,
+      label:
+        typeof field.label === "string" && field.label
+          ? field.label
+          : field.field_key,
+      secret: field.secret !== false,
+      step: typeof field.step === "number" ? field.step : 0,
+    });
+  }
+  if (fields.length === 0) return null;
+  const mode = raw.uri_match_mode;
+  return {
+    handoffId,
+    displayName:
+      typeof raw.display_name === "string" && raw.display_name
+        ? raw.display_name
+        : loginUrl,
+    description: typeof raw.description === "string" ? raw.description : null,
+    providerKey: typeof raw.provider_key === "string" ? raw.provider_key : null,
+    loginUrl,
+    host:
+      typeof raw.host === "string" && raw.host
+        ? raw.host
+        : safeHost(loginUrl),
+    submitSelector:
+      typeof raw.submit_selector === "string" ? raw.submit_selector : null,
+    uriMatchMode:
+      mode === "domain" || mode === "exact" || mode === "never" ? mode : "host",
+    branch: raw.branch === "known" ? "known" : "unknown",
+    guidance: typeof raw.guidance === "string" ? raw.guidance : "",
+    expiresAt:
+      typeof raw.expires_at === "string" ? raw.expires_at : new Date(0).toISOString(),
+    fields,
+  };
+}
+function mapCaptureOutcome(
+  value: Json | undefined,
+): CredentialCaptureOutcome | null {
+  const raw = jsonObject(value ?? null);
+  const status = raw.status;
+  if (status !== "captured" && status !== "cancelled" && status !== "expired")
+    return null;
+  return {
+    status,
+    credentialItemId:
+      typeof raw.credential_item_id === "string" ? raw.credential_item_id : null,
+    recordedAt: typeof raw.recorded_at === "string" ? raw.recorded_at : null,
+  };
+}
+function safeHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
 function mapHandoff(row: HandoffRow): CloudBrowserHandoff {
+  const metadata = jsonObject(row.metadata);
   return {
     id: row.id,
     runId: row.run_id,
@@ -345,6 +431,8 @@ function mapHandoff(row: HandoffRow): CloudBrowserHandoff {
     origin: row.origin,
     requestedAt: row.requested_at,
     expiresAt: row.expires_at,
+    captureRequest: mapCaptureRequest(metadata.capture_request),
+    captureOutcome: mapCaptureOutcome(metadata.capture_outcome),
   };
 }
 function mapBinding(row: BindingRow): AccountBinding {
@@ -818,6 +906,92 @@ export async function saveAndFillHumanLogin(input: {
       human_confirmed: true,
     });
   }
+}
+
+/**
+ * D-11 — write the values the person typed into the agent-raised capture card
+ * STRAIGHT to their vault, then retire the card with a value-free receipt.
+ *
+ * 🚨 THE LEAK BOUNDARY. `values` is the ONLY place plaintext appears on this
+ * path: it goes into the vault write body and nowhere else — never Redux, never
+ * a log, never the control-plane receipt, never a tool result the agent reads.
+ * The caller drops it the moment this resolves.
+ *
+ * The card SAVES; it does not fill. The agent signs in afterwards with
+ * `credential_login action='auto'`, which is what keeps it value-free — the
+ * same division of labour the Matrx Extend card has.
+ */
+export async function submitCredentialCapture(input: {
+  runId: string;
+  profileId: string;
+  request: CredentialCaptureRequest;
+  values: Record<string, string>;
+}): Promise<{ credentialItemId: string | null; proposeRecipe: boolean }> {
+  const { request } = input;
+  if (Date.now() >= new Date(request.expiresAt).getTime())
+    throw new Error(
+      "This sign-in request expired. Ask your agent to try the login again.",
+    );
+  const fieldValues: Record<string, string> = {};
+  for (const field of request.fields)
+    fieldValues[field.fieldKey] = input.values[field.fieldKey] ?? "";
+
+  const { data: captured } = await postJson<unknown>(
+    "/api/vault/browser-login/capture",
+    {
+      display_name: request.displayName,
+      login_url: request.loginUrl,
+      description: request.description,
+      provider_key: request.providerKey,
+      fields: request.fields.map((field) => ({
+        field_key: field.fieldKey,
+        selector: field.selector,
+        label: field.label,
+        secret: field.secret,
+        step: field.step,
+      })),
+      submit_selector: request.submitSelector,
+      uri_match_mode: request.uriMatchMode,
+      field_values: fieldValues,
+      run_id: input.runId,
+      profile_id: input.profileId,
+    },
+  );
+  const receipt = record(captured);
+  if (receipt.status !== "captured" || receipt.proceed !== true)
+    throw new Error(
+      typeof receipt.detail === "string"
+        ? receipt.detail
+        : "The sign-in information could not be saved.",
+    );
+  const credentialItemId =
+    typeof receipt.credential_item_id === "string"
+      ? receipt.credential_item_id
+      : null;
+  await recordCaptureOutcome({
+    runId: input.runId,
+    handoffId: request.handoffId,
+    status: "captured",
+    credentialItemId,
+  });
+  return { credentialItemId, proposeRecipe: receipt.propose_recipe === true };
+}
+
+/** Retire the capture card with status only — never a value, never a name. */
+export async function recordCaptureOutcome(input: {
+  runId: string;
+  handoffId: string;
+  status: "captured" | "cancelled" | "expired";
+  credentialItemId?: string | null;
+}): Promise<void> {
+  await postJson<unknown>(
+    `/browser-manager/runs/${input.runId}/capture-result`,
+    {
+      handoff_id: input.handoffId,
+      status: input.status,
+      credential_item_id: input.credentialItemId ?? null,
+    },
+  );
 }
 
 export interface SavedLoginChoice {

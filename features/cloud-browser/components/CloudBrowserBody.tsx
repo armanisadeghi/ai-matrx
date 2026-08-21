@@ -44,6 +44,7 @@ import { AccountSettings } from "./AccountSettings";
 import { ShareControl } from "./ShareControl";
 import { DeletionFlow } from "./DeletionFlow";
 import { Walkthrough } from "./Walkthrough";
+import { CredentialCaptureCard } from "./CredentialCaptureCard";
 import { LoginCapturePanel } from "./LoginCapturePanel";
 import { AuthenticatorPanel } from "./AuthenticatorPanel";
 
@@ -159,6 +160,13 @@ export function CloudBrowserBody({
       setBusy(false);
     }
   }, [cb]);
+
+  // The agent-raised capture card, while it is still open. A recorded outcome
+  // (saved, cancelled, expired) retires it — the row itself outlives the card.
+  const captureRequest =
+    cb.handoff?.captureRequest && !cb.handoff.captureOutcome
+      ? cb.handoff.captureRequest
+      : null;
 
   const needsNotificationPrompt =
     !!cb.notificationConsent && cb.notificationConsent.acknowledgedAt === null;
@@ -304,10 +312,21 @@ export function CloudBrowserBody({
                 </div>
               </div>
             ) : null}
-            {isMeDriving &&
-            cb.handoff?.reason === "credentials_missing" &&
-            cb.handoff.origin &&
-            cb.run ? (
+            {/* D-11 — the agent asked for a login it has no credential for.
+                The private value box renders for the person the browser
+                belongs to whether or not they are driving: what they type goes
+                to their vault, not to this browser. */}
+            {captureRequest && cb.run ? (
+              <CredentialCaptureCard
+                runId={cb.run.id}
+                profileId={cb.run.profileId}
+                request={captureRequest}
+                onSettled={() => void cb.reload()}
+              />
+            ) : isMeDriving &&
+              cb.handoff?.reason === "credentials_missing" &&
+              cb.handoff.origin &&
+              cb.run ? (
               <LoginCapturePanel
                 runId={cb.run.id}
                 profileId={cb.run.profileId}

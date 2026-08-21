@@ -169,6 +169,50 @@ export interface CloudBrowserHandoff {
   origin: string | null;
   requestedAt: string;
   expiresAt: string | null;
+  /** The agent asked for a NEW login it has no credential for (D-11). */
+  captureRequest: CredentialCaptureRequest | null;
+  /** What the person did with that card — status only, never a value. */
+  captureOutcome: CredentialCaptureOutcome | null;
+}
+
+/**
+ * ONE field the agent identified on the login form. Field NAMES, labels and
+ * selectors only — 🚨 there is deliberately no shape here a credential value
+ * could ride in on, in either direction.
+ */
+export interface CredentialCaptureField {
+  fieldKey: string;
+  selector: string;
+  label: string;
+  secret: boolean;
+  step: number;
+}
+
+/**
+ * The D-11 capture card's spec, written by the aidream executor onto
+ * `browser.handoff.metadata.capture_request` (`credential_login
+ * action="capture"`). Mirrors matrx-extend's `CaptureCredentialRequest`.
+ */
+export interface CredentialCaptureRequest {
+  handoffId: string;
+  displayName: string;
+  description: string | null;
+  providerKey: string | null;
+  loginUrl: string;
+  host: string;
+  submitSelector: string | null;
+  uriMatchMode: "host" | "domain" | "exact" | "never";
+  branch: "known" | "unknown";
+  guidance: string;
+  /** The card must never write a vault item past this moment. */
+  expiresAt: string;
+  fields: CredentialCaptureField[];
+}
+
+export interface CredentialCaptureOutcome {
+  status: "captured" | "cancelled" | "expired";
+  credentialItemId: string | null;
+  recordedAt: string | null;
 }
 
 export interface AccountBinding {

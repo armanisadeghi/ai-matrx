@@ -141,6 +141,8 @@ export const FIXTURE_HANDOFF: CloudBrowserHandoff = {
   origin: "https://signin.aws.amazon.com",
   requestedAt: minsAgo(1),
   expiresAt: new Date(Date.now() + 29 * 60_000).toISOString(),
+  captureRequest: null,
+  captureOutcome: null,
 };
 
 export const FIXTURE_CONTROLLER_AGENT: ControllerState = {
