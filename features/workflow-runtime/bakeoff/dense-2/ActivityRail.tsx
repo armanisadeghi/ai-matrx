@@ -47,7 +47,6 @@ function timeOf(ts: string): string {
 export function ActivityRail({
   runId,
   stepLabels,
-  nodeIdOf,
   onAim,
 }: {
   runId: string;
