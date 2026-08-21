@@ -25942,6 +25942,111 @@ export type Database = {
         }
         Relationships: []
       }
+      assist_producer_policy: {
+        Row: {
+          audit_status: string
+          config: Json
+          cost_class: string
+          created_at: string
+          created_by: string | null
+          display_name: string
+          disposition: string
+          feature_key: string
+          id: string
+          match_kind: string
+          max_pending_per_user: number
+          max_presented_per_cycle: number
+          presentation_enabled: boolean
+          production_enabled: boolean
+          rationale: string
+          source_pattern: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          working_message: string | null
+        }
+        Insert: {
+          audit_status?: string
+          config?: Json
+          cost_class?: string
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          disposition?: string
+          feature_key: string
+          id?: string
+          match_kind?: string
+          max_pending_per_user?: number
+          max_presented_per_cycle?: number
+          presentation_enabled?: boolean
+          production_enabled?: boolean
+          rationale: string
+          source_pattern: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          working_message?: string | null
+        }
+        Update: {
+          audit_status?: string
+          config?: Json
+          cost_class?: string
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          disposition?: string
+          feature_key?: string
+          id?: string
+          match_kind?: string
+          max_pending_per_user?: number
+          max_presented_per_cycle?: number
+          presentation_enabled?: boolean
+          production_enabled?: boolean
+          rationale?: string
+          source_pattern?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          working_message?: string | null
+        }
+        Relationships: []
+      }
+      assist_producer_policy_history: {
+        Row: {
+          after: Json
+          before: Json | null
+          changed_at: string
+          changed_by: string | null
+          id: number
+          match_kind: string
+          policy_id: string
+          reason: string
+          source_pattern: string
+        }
+        Insert: {
+          after: Json
+          before?: Json | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: never
+          match_kind: string
+          policy_id: string
+          reason: string
+          source_pattern: string
+        }
+        Update: {
+          after?: Json
+          before?: Json | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: never
+          match_kind?: string
+          policy_id?: string
+          reason?: string
+          source_pattern?: string
+        }
+        Relationships: []
+      }
       assists: {
         Row: {
           action: Json
@@ -28201,6 +28306,10 @@ export type Database = {
     Functions: {
       actor_system: { Args: never; Returns: string }
       actor_tier: { Args: never; Returns: string }
+      assist_production_allowed: {
+        Args: { p_source_key: string }
+        Returns: boolean
+      }
       clear_output_feedback: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
@@ -28384,6 +28493,37 @@ export type Database = {
       refresh_reachability: {
         Args: { p_container_id: string; p_container_type: string }
         Returns: undefined
+      }
+      resolve_assist_producer_policy: {
+        Args: { p_source_key: string }
+        Returns: {
+          audit_status: string
+          config: Json
+          cost_class: string
+          created_at: string
+          created_by: string | null
+          display_name: string
+          disposition: string
+          feature_key: string
+          id: string
+          match_kind: string
+          max_pending_per_user: number
+          max_presented_per_cycle: number
+          presentation_enabled: boolean
+          production_enabled: boolean
+          rationale: string
+          source_pattern: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          working_message: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assist_producer_policy"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       resolve_change_handling: {
         Args: { p_change_type_key: string; p_organization_id: string }
@@ -31824,6 +31964,33 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "app_config"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_upsert_assist_producer_policy: {
+        Args: {
+          p_audit_status: string
+          p_config: Json
+          p_cost_class: string
+          p_display_name: string
+          p_disposition: string
+          p_expected_version?: number
+          p_feature_key: string
+          p_match_kind: string
+          p_max_pending_per_user: number
+          p_max_presented_per_cycle: number
+          p_presentation_enabled: boolean
+          p_production_enabled: boolean
+          p_rationale: string
+          p_reason: string
+          p_source_pattern: string
+          p_working_message: string
+        }
+        Returns: Database["platform"]["Tables"]["assist_producer_policy"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "assist_producer_policy"
           isOneToOne: true
           isSetofReturn: false
         }
