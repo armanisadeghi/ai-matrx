@@ -9,6 +9,11 @@
  * than growing a second reader of the same envelope. Two callers, one
  * implementation — the wrapper delegates, it never reimplements.
  *
+ * It reads the SAME envelope through the same reader, so the §6 `content`
+ * channel wins here too: an ordered list of typed instances renders through
+ * `AgentContentList` (each entry via its own kind component) before either flat
+ * field is considered. An empty channel is the normal case and changes nothing.
+ *
  * The rule it encodes: an `ai.agent.start` step's output is the run ENVELOPE,
  * not the answer — it carries the verbatim prompt, the model id and the token
  * bill beside the two keys the reader wants. So read it
@@ -21,6 +26,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 
 import { looksLikeJsonDocument, readAgentRunOutput } from "../agent-run-output";
+import { AgentContentList } from "./AgentContentList";
 
 /**
  * Structured output whose shape has no kind component. It renders as a human
@@ -61,6 +67,7 @@ export function SettledOutputBody({
 }) {
   const agent = readAgentRunOutput(output);
   if (!agent) return <JsonBody value={output} />;
+  if (agent.content.length > 0) return <AgentContentList content={agent.content} />;
   if (agent.structured) return <JsonBody value={agent.structured} />;
   if (agent.finalText) {
     return looksLikeJsonDocument(agent.finalText) ? (

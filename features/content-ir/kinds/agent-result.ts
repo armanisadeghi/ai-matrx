@@ -48,6 +48,7 @@ import {
   readAgentRunFacts,
   readAgentRunOutput,
   looksLikeJsonDocument,
+  type AgentRunContentEntry,
   type AgentRunFacts,
 } from "@/features/workflow-runtime/agent-run-output";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
@@ -71,6 +72,11 @@ export const agentResultKindSchema: KindSchema = {
       type: "json",
       description:
         "The schema-bound payload, when the agent was bound to an output schema.",
+    },
+    content: {
+      type: "json[]",
+      description:
+        "THE AGENT OUTPUT CONTRACT: the response as an ORDERED list of typed kind instances, each carrying its own __kind. The richest form of the answer — prose is one markdown instance, a bound answer is one instance of its bound kind, interleaved content is the sequence. Empty when the answer named no kind; final_text stays the verbatim transcript either way.",
     },
     // Declared so the parser keeps them in the value rather than pushing them
     // into residue — and NEVER read past the bridge. See the module header.
@@ -119,6 +125,12 @@ export const agentResultKindSchema: KindSchema = {
 
 /** Exactly what `AgentResultBlock` renders — no envelope reaches the component. */
 export interface AgentResultData extends Record<string, unknown> {
+  /**
+   * The §6 content channel, in the server's order. When non-empty it IS the
+   * answer and wins over the two fields below; empty is the normal case for a
+   * schema-bound answer that named no kind, and costs nothing.
+   */
+  content: AgentRunContentEntry[];
   /** The agent's own text, ready for the canonical markdown pipeline. */
   finalText: string | null;
   /** True when `finalText` is a bare JSON document and needs a json fence. */
@@ -140,6 +152,7 @@ export const agentResultServerData = makeCompleteEnvelopeBridge<AgentResultData>
     if (!produced || !facts) return undefined;
 
     return {
+      content: produced.content,
       finalText: produced.finalText,
       finalTextIsJson:
         produced.finalText !== null && looksLikeJsonDocument(produced.finalText),
@@ -160,6 +173,11 @@ export const agentResultServerData = makeCompleteEnvelopeBridge<AgentResultData>
 export function agentResultMarkdown(value: Record<string, unknown>): string {
   const produced = readAgentRunOutput(value);
   if (!produced) return "";
+  // The §6 `content` channel wins on SCREEN (see `AgentResultBlock`) but
+  // deliberately not here: it is DERIVED from these two fields — prose is
+  // `final_text` re-detected, a bound answer IS `structured_output` — so the
+  // branches below already export the same content, and fencing a `markdown`
+  // instance as JSON would hand a reader source where they had prose.
   if (produced.finalText) {
     return looksLikeJsonDocument(produced.finalText)
       ? `\`\`\`json\n${produced.finalText}\n\`\`\``

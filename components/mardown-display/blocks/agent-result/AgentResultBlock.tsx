@@ -14,9 +14,17 @@
  *
  * ## The split
  *
- * CONTENT is what the agent produced: `final_text` through the canonical
- * markdown pipeline (`MarkdownStream`), or `structured_output` when the agent
- * was schema-bound. A payload carrying a `__kind` of its own is fenced as JSON,
+ * The RICHEST form of what the agent produced is the §6 `content` channel: the
+ * response as an ORDERED LIST OF KIND INSTANCES, each carrying its own
+ * `__kind`. When it is present it wins outright, and every entry renders
+ * through its own kind component, in the server's order
+ * (`AgentContentList`). The server sends `[]` for a schema-bound answer that
+ * named no kind, which is NORMAL — the two fields below then carry the answer
+ * exactly as they always have.
+ *
+ * Otherwise CONTENT is what the agent produced: `final_text` through the
+ * canonical markdown pipeline (`MarkdownStream`), or `structured_output` when
+ * the agent was schema-bound. A payload carrying a `__kind` of its own is fenced as JSON,
  * which means the pipeline routes it to ITS kind component — a schema-bound
  * flashcard set renders as flashcards here, for free, exactly as THE CANONICAL
  * COMPONENT LAW requires.
@@ -50,6 +58,7 @@ import { ChevronDown, ChevronRight, MessagesSquare } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AgentContentList } from "@/features/workflow-runtime/components/AgentContentList";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
 import { cn } from "@/lib/utils";
@@ -249,6 +258,22 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
   if (!data) return null;
 
   const { finalText, finalTextIsJson, structured, facts } = data;
+  // A pre-`content` producer (or a hand-built serverData) has no channel at
+  // all — the same "absent" as an empty one, never a crash.
+  const content = Array.isArray(data.content) ? data.content : [];
+
+  // THE §6 CHANNEL WINS. A typed instance list is strictly richer than the two
+  // flat fields it was derived from, so when the server sent one it is what the
+  // reader sees — each entry through its own component, in order. The run
+  // facts stay where they are: below the content, behind one disclosure.
+  if (content.length > 0) {
+    return (
+      <div className={cn("w-full", className)}>
+        <AgentContentList content={content} />
+        <RunDetail facts={facts} />
+      </div>
+    );
+  }
 
   // Schema-bound runs put the answer in `structured_output` and leave
   // `final_text` empty or duplicated; the bound payload wins. It goes through

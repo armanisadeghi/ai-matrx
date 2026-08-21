@@ -18,9 +18,11 @@
  * The transcript stays reachable the honest way: `facts.conversationId` is a
  * door to the conversation itself, where access is decided by the database.
  *
- * Pure module — returns values, imports nothing, renders nothing. The caller
- * hands the result to the canonical pipeline (`MarkdownStream` / the kind
- * registry); this never parses a stream and never formats.
+ * Pure module — returns values, renders nothing, and imports only the `__kind`
+ * key constant (spelling the discriminator by hand is how two readers drift
+ * apart). The caller hands the result to the canonical pipeline
+ * (`MarkdownStream` / the kind registry); this never parses a stream and never
+ * formats.
  *
  * Consumers (all of them — a third ad-hoc reader of `final_text` is a defect):
  * - `features/content-ir/kinds/agent-result.ts` — the `agent_result` kind's
@@ -31,8 +33,38 @@
  * - `features/masterwork/service.ts`
  */
 
-/** What the agent produced — the only two keys a reader ever wants. */
+import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+
+/**
+ * ONE element of the §6 content channel — a typed instance the agent produced,
+ * carried in the order it produced it.
+ *
+ * `kind` is the instance's own `__kind` when it named one. The server never
+ * invents a name (`_extract_content` folds anything it cannot name back into
+ * prose), so a null `kind` here means a producer we do not control sent an
+ * unnamed element — it still renders, on the platform floor, because dropping
+ * it would lose content and fencing it would print JSON at a reader.
+ */
+export interface AgentRunContentEntry {
+  /** The instance's `__kind`, or null when it named none. */
+  kind: string | null;
+  /** The instance itself, verbatim — the kind's component receives THIS. */
+  value: unknown;
+}
+
+/** What the agent produced — the only keys a reader ever wants. */
 export interface AgentRunOutputView {
+  /**
+   * THE AGENT OUTPUT CONTRACT (WORKFLOW_KINDS_DESIGN.md §6): the response as an
+   * ORDERED list of typed kind instances — the RICHEST form of the answer, and
+   * the one a reader should see when it is present.
+   *
+   * Empty is NORMAL, not an error: the server returns `[]` for a schema-bound
+   * answer that carries no `__kind` (`shared.py#_extract_content`), and every
+   * consumer falls through to `structured` / `finalText` exactly as it did
+   * before this channel existed.
+   */
+  content: AgentRunContentEntry[];
   /** The text the agent produced. Null when it produced none. */
   finalText: string | null;
   /** The schema-bound payload, when the agent was bound to one. */
@@ -74,6 +106,19 @@ function text(value: unknown): string | null {
 }
 
 /**
+ * The §6 content channel off the envelope. Order is the SERVER'S order and is
+ * never re-sorted; a non-list (an older producer, a failed-open view) is simply
+ * an absent channel.
+ */
+function readContent(raw: unknown): AgentRunContentEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry) => {
+    const named = isRecord(entry) ? text(entry[KIND_KEY]) : null;
+    return { kind: named, value: entry };
+  });
+}
+
+/**
  * True when `output` is an agent-run envelope. `final_text` alone is enough,
  * and a run that produced no text is still recognisable by the transcript +
  * usage pair.
@@ -111,7 +156,7 @@ export function readAgentRunOutput(
         ? raw
         : null;
 
-  return { finalText, structured };
+  return { content: readContent(output.content), finalText, structured };
 }
 
 /**
