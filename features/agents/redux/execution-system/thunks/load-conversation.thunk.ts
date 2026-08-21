@@ -42,6 +42,9 @@ import {
   initInstanceOverrides,
   setOverrides,
 } from "../instance-model-overrides/instance-model-overrides.slice";
+import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
+import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
+import { parsePersistedInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import { initInstanceUIState } from "../instance-ui-state/instance-ui-state.slice";
 import {
   initInstanceContext,
@@ -366,6 +369,23 @@ export const loadConversation = createAsyncThunk<
         }),
       );
     }
+
+    const baseInputCapabilities = conv.initial_agent_id
+      ? await fetchInputCapabilitiesSnapshot({
+          agentId: conv.initial_agent_id,
+          agentVersionId: conv.initial_agent_version_id,
+        })
+      : {};
+    const persistedInputCapabilities = parsePersistedInputCapabilities(
+      conv.metadata,
+    );
+    dispatch(
+      initInputCapabilities({
+        conversationId,
+        base: baseInputCapabilities,
+        overrides: persistedInputCapabilities.overrides,
+      }),
+    );
 
     // ── 5. Display + context (stored under metadata.display / metadata.context
     //      per the Phase 7 decision — config is server-strict) ────────────────

@@ -6,6 +6,7 @@ import reducer, {
 } from "../instance-input-capabilities.slice";
 import { selectAttachmentCapabilities } from "../instance-input-capabilities.selectors";
 import type { RootState } from "@/lib/redux/store";
+import { parsePersistedInputCapabilities } from "../instance-input-capabilities.persistence";
 
 describe("instance input capabilities", () => {
   it("keeps frontend capability state independent from model overrides", () => {
@@ -88,5 +89,28 @@ describe("instance input capabilities", () => {
       base: { image_urls: false, file_urls: true },
       overrides: { image_urls: true },
     });
+  });
+});
+
+describe("persisted input capabilities", () => {
+  it("hydrates only the dedicated metadata block and strips unknown keys", () => {
+    expect(
+      parsePersistedInputCapabilities({
+        display: { density: "compact" },
+        input_capabilities: {
+          overrides: {
+            image_urls: true,
+            file_urls: false,
+            future_unregistered_gate: true,
+          },
+        },
+      }),
+    ).toEqual({
+      overrides: { image_urls: true, file_urls: false },
+    });
+  });
+
+  it("defaults safely when old conversations have no capability metadata", () => {
+    expect(parsePersistedInputCapabilities({})).toEqual({ overrides: {} });
   });
 });
