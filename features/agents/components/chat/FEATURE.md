@@ -1,7 +1,7 @@
 # FEATURE.md — `chat route` (the live `/chat` surface)
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/client-tool-delegation/FEATURE.md` — read it before touching this feature in ANY repo.
-> Runtime-continuity system-of-record: `/Users/armanisadeghi/code/common-docs/systems/runtime-continuity/FEATURE.md`.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/clients/client-tool-delegation/FEATURE.md` — read it before touching this feature in ANY repo.
+> Runtime-continuity system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/runtime-continuity/FEATURE.md`.
 
 **Status:** `active`
 **Tier:** `1`
@@ -114,7 +114,7 @@ High-severity non-fatal stream warnings are also user-visible, alongside any
 warning code explicitly promoted regardless of severity (today: the
 Configuration Equivalence law's `setting_not_supported` — an unexpected
 setting drop during model/provider translation; see
-`common-docs/systems/configuration-equivalence/FEATURE.md`).
+`common-docs/systems/platform/configuration-equivalence/FEATURE.md`).
 `AgentAssistantMessage` reads `selectVisibleWarnings(requestId)` and renders
 each one as an `AssistantWarning` below the turn, including an optional
 technical details disclosure. A recoverable mirror failure — or a silently

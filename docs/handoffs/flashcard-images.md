@@ -1,6 +1,6 @@
 # Flashcard images — remaining lanes
 
-**SoR (read first):** `/Users/armanisadeghi/code/common-docs/systems/flashcard-images/VISION_AND_PLAN.md`
+**SoR (read first):** `/Users/armanisadeghi/code/common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md`
 — its §0/status blocks say exactly what is LIVE as of 2026-08-18: the data model, ONE renderer
 wired through every UI + 5 print variants, the web-sourcing lane (mandate
 `education.card_image_web_source`, demonstrated on real cards incl. correct refusals), the

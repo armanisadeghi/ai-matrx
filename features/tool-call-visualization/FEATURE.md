@@ -178,7 +178,7 @@ Never write a second URL heuristic; extend `recognizeOurFileUrl` or `shape.ts` i
 ### An agent_call hands back media as an IDENTITY
 
 aidream now declares a child agent's media on a canonical channel instead of
-flattening it to a link (cross-repo SoR: `common-docs/systems/media-durability/FEATURE.md`).
+flattening it to a link (cross-repo SoR: `common-docs/systems/media/media-durability/FEATURE.md`).
 Two shapes arrive, and `findResultMedia` reads the declared channel FIRST, ahead
 of every url-ish heuristic:
 

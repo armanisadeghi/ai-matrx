@@ -165,7 +165,7 @@ Selected conversation → `ConversationOrganizationPanel` → canonical `Associa
 - `features/agents/components/chat/FEATURE.md` — canonical AI Matrx chat.
 - `features/tasks/FEATURE.md` — task association and task creation.
 - `features/war-room/FEATURE.md` — conversation-capable command rooms.
-- `/Users/armanisadeghi/code/common-docs/systems/coding-session-bridge/FEATURE.md` — provider/session contract.
+- `/Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/FEATURE.md` — provider/session contract.
 
 ---
 

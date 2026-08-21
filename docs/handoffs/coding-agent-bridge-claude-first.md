@@ -5,8 +5,8 @@ repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-p
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
   - /Users/armanisadeghi/code/common-docs/projects/coding-agent-bridge/PLAN.md
-  - /Users/armanisadeghi/code/common-docs/systems/coding-session-bridge/FEATURE.md
-  - /Users/armanisadeghi/code/common-docs/systems/coding-session-bridge/BEHAVIOR.md
+  - /Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/FEATURE.md
+  - /Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md
 ---
 
 # Coding Integrations — THE feature handoff (all packages, UI, services)
@@ -62,11 +62,11 @@ individually "works". Verified ground truth below is from a three-way full-featu
 
 ## Resources
 
-- **Behavior bar (read FIRST):** `common-docs/systems/coding-session-bridge/BEHAVIOR.md` — MUSTs
+- **Behavior bar (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md` — MUSTs
   for identity/capture/runtime, provider-cloud verdict (no user-subscription cloud triggering;
   Anthropic Managed Agents is the only credible future cloud destination), Arman's verification
   script. Baseline says v1.4.33; nothing in v1.4.34/35 contradicts a MUST.
-- **Contract:** `common-docs/systems/coding-session-bridge/FEATURE.md`. Product plan:
+- **Contract:** `common-docs/systems/coding/coding-session-bridge/FEATURE.md`. Product plan:
   `common-docs/projects/ai-work-hub/PLAN.md`. Adapter plan: `projects/coding-agent-bridge/PLAN.md`.
 - **Backend:** `aidream/services/coding_session_bridge/` (+ `ownership.py` server-side org
   resolution, bounded checkpoint reads, `mandates.py`); MCP `api/mcp/agent_service/`; REST

@@ -156,7 +156,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 - **`features/skills/`** — skill definitions, categories, and skill resources (all formerly here).
 - **`features/content-ir/`** — the Shape system; `render_kind` blocks bind to `content_ir.kind_component` (SHAPE_SYSTEM R1).
 - **`features/api-integrations/`** — external integrations + credential storage.
-- **Coding Session Bridge** — cross-repo contract: `/Users/armanisadeghi/code/common-docs/systems/coding-session-bridge/FEATURE.md`.
+- **Coding Session Bridge** — cross-repo contract: `/Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/FEATURE.md`.
 - **`features/window-panels/` / `features/overlays/`** — the overlay surface (`agentConnectionsWindow`).
 - `skl-migration-guide.md` (this folder) — the 2026-04 `skl_` namespace migration rationale; historical context, superseded on table names by the live schema (`skill.render_definition`, `platform.categories`).
 

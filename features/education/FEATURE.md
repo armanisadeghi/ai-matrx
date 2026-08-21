@@ -65,7 +65,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 
 `features/math` (Quick Math) · `features/notes`, `features/podcasts`/`features/audio`, `features/scheduling` (consumed by the Notes / Audio Study / Planner tools when built) · `features/pricing` + the forked entitlements system (funnel) · RAG (AI Tutor grounding) · `features/shell` (`MarketingPageShell`, `AuthedWorkspaceCTA`) · `features/admin` (`FeatureAdminPage`).
 
-**Images on flashcard faces (planned, cross-repo):** the full determination — rendering path, `fc_detail.image_file_id` model, upload/Unsplash/verified-generation sourcing lanes, the adversarial vision-judge pipeline (finishing aidream's orphaned `media.images.produce`), and the `education.card_image_generate` cost model — is `common-docs/systems/flashcard-images/VISION_AND_PLAN.md`. Read it BEFORE adding any image support to cards; do not improvise a second design.
+**Images on flashcard faces (planned, cross-repo):** the full determination — rendering path, `fc_detail.image_file_id` model, upload/Unsplash/verified-generation sourcing lanes, the adversarial vision-judge pipeline (finishing aidream's orphaned `media.images.produce`), and the `education.card_image_generate` cost model — is `common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md`. Read it BEFORE adding any image support to cards; do not improvise a second design.
 
 ## Doctrine compliance
 

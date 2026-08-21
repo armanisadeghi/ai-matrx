@@ -43,7 +43,7 @@ own fresh conversation):
   principle still double-create. Observed writer gap in production was ~500ms;
   live-verified single-set behavior 2026-08-18.
 
-## Images on card faces — cross-repo SoR: `common-docs/systems/flashcard-images/VISION_AND_PLAN.md`
+## Images on card faces — cross-repo SoR: `common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md`
 
 - **Model:** `fc_detail` kinds `front_image` / `back_image` — one ACTIVE row per face
   (writers soft-delete prior rows of the kind). `image_file_id` = stored platform file;

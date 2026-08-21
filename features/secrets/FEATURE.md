@@ -208,7 +208,7 @@ Personal and organization credentials render through the same
 ## Authenticator enrollment (2026-08-20)
 
 `/vault/authenticator` is the GA manage surface for the Matrx Authenticator
-(cross-repo spec: `common-docs/systems/matrx-authenticator/FEATURE.md`). It is
+(cross-repo spec: `common-docs/systems/clients/matrx-authenticator/FEATURE.md`). It is
 **enroll + use + manage** — the signed-in owner sees the current rotating code;
 the sealed setup seed has no reveal path at any privilege.
 

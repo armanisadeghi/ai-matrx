@@ -2,7 +2,7 @@
 status: active
 updated: 2026-07-28
 repos: [matrx-frontend, aidream]
-vision: [docs/media-capture-plan.md, /Users/armanisadeghi/code/common-docs/systems/media-capture/FEATURE.md]
+vision: [docs/media-capture-plan.md, /Users/armanisadeghi/code/common-docs/systems/media/media-capture/FEATURE.md]
 ---
 
 # Media capture — unification + real-device proof
@@ -38,7 +38,7 @@ The original brief, in full (all eight still stand):
 ## Resources
 
 - **Contract + change log:** `features/media-capture/FEATURE.md` (read this before the code).
-- **Cross-repo system of record:** `/Users/armanisadeghi/code/common-docs/systems/media-capture/FEATURE.md`
+- **Cross-repo system of record:** `/Users/armanisadeghi/code/common-docs/systems/media/media-capture/FEATURE.md`
   (schemas, TUS wire, server contracts). Plan: `docs/media-capture-plan.md`.
 - **Studio/UI:** `features/media-capture/components/` — `CaptureStudio`, `CaptureControls`,
   `CaptureDeviceRail`, `RecordingHud`, `CaptureReview`, `CaptureLibrary`, `CameraControlTab`,
