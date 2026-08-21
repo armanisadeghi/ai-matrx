@@ -120,10 +120,13 @@ export function SmsAssistantSettingsSection() {
             <MandateAgentPicker mandateKey={SMS_ASSISTANT_OWNER_BETA_MANDATE} />
           </div>
         </SettingsRow>
+        {/* THE DOOR LAW: deep-link filtered to this feature's domain — the
+            bare /agents/mandates lands on 264 mandates across 45 domains,
+            which is a scroll, not a door. */}
         <SettingsLink
           label="Mandate controls"
           description="Open the full Mandate editor to inspect provenance, version policy, and reset your Binding."
-          href="/agents/mandates"
+          href="/agents/mandates?feature=sms"
           actionLabel="Open Mandates"
         />
         {state?.chatConversationId ? (

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, Plus } from "lucide-react";
+import { BrainCircuit, ChevronLeft, Plus } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import TopicList from "@/features/research/components/landing/TopicList";
@@ -26,13 +26,28 @@ export default async function ResearchTopicsPage() {
             <ChevronLeft className="h-4 w-4 shrink-0" />
             <span className="font-medium">Research</span>
           </Link>
-          <Link
-            href="/research/topics/new"
-            className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-            aria-label="New research topic"
-          >
-            <Plus className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* THE DOOR LAW — every stage of research (report, condensers,
+                coverage audit, tagging, page summaries) is a Mandate the user
+                may re-point at their own agent. The per-topic roles page only
+                covers one topic; this is the door to the whole domain.
+                Deep-linked: the bare list is 264 mandates across 45 domains. */}
+            <Link
+              href="/agents/mandates?feature=research"
+              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+              aria-label="Research agents"
+              title="Research agents"
+            >
+              <BrainCircuit className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/research/topics/new"
+              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+              aria-label="New research topic"
+            >
+              <Plus className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </PageHeader>
       <TopicList />

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { BrainCircuit } from "lucide-react";
 import {
   PanelLeftTapButton,
   MenuTapButton,
@@ -12,10 +14,11 @@ import { TasksAssistStrip } from "@/features/tasks/components/TasksAssistStrip";
  * via <PageHeader/>. Toggles the two collapsible side columns through the
  * shared <PanelControlProvider/>.
  *
- * Layout: [sidebar toggle] [list toggle] [title "Tasks"] [assist chips]
+ * Layout: [sidebar toggle] [list toggle] [title "Tasks"] [assist chips] [agents]
  *  - Toggle buttons on the left (icons reflect collapsed state).
  *  - Title sits inline next to the toggles; the assist strip renders nothing
  *    when there are no chips, so the chrome stays compact.
+ *  - Trailing "Task agents" icon is THE DOOR to /agents/mandates?feature=tasks.
  */
 export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();
@@ -47,6 +50,18 @@ export function TasksHeaderControls() {
       {/* Page-layer assist chips (overdue pileup) — renders nothing when
           there are none, so the header stays exactly as before. */}
       <TasksAssistStrip className="ml-3 min-w-0 flex-nowrap overflow-hidden" />
+      {/* THE DOOR LAW — the agent that triages tasks is a Mandate
+          (`tasks.triage`) the user may swap for their own, with no deploy.
+          Deep-linked to the `tasks` domain: the bare list is 264 mandates
+          across 45 domains. */}
+      <Link
+        href="/agents/mandates?feature=tasks"
+        aria-label="Task agents"
+        title="Task agents"
+        className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <BrainCircuit className="h-4 w-4" />
+      </Link>
     </div>
   );
 }

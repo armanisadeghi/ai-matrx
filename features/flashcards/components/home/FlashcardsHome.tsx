@@ -415,6 +415,16 @@ export function FlashcardsHome() {
       onPress: () => goTo("__offline__", "/education/offline"),
     },
     {
+      // THE DOOR LAW — every AI step in flashcards (grading, live help, batch
+      // review, card images) is a Mandate the learner may re-point at their
+      // own agent, and this surface named none of that. Deep-linked to the
+      // `flashcards` domain: the bare list is 264 mandates across 45 domains.
+      icon: "BrainCircuit",
+      label: "Flashcard agents",
+      onPress: () =>
+        goTo("__mandates__", "/agents/mandates?feature=flashcards"),
+    },
+    {
       icon: "FileSearch",
       label: "New deck from a document",
       onPress: () => goTo("__from_source__", `${EDU_BASE}/new/from-source`),
