@@ -135,6 +135,17 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-20 — **ui-reimagine bake-off entry: the Courier run page** at
+  `/workflows/bakeoff/reimagine/[id]` (`bakeoff/reimagine/**`) — a candidate
+  PRESENTATION only, consuming the canonical data layer unchanged (adoption,
+  selectors, `InvocationBody`, `DbEmitRenderer`, `RunFormFieldControl`,
+  `activity-copy`). One fixed-shape page: marquee + promise strip, folding
+  route line, a camera window that follows the work (camera-driven
+  `ensureLane`, 1–3 lanes), wire ticker. Deleted or promoted when the
+  bake-off is judged. Found while building it (spun off, not fixed here): a
+  watchdog-force-failed run replays as "running" forever because `seedRunRow`
+  ignores a terminal ROW status once replay stamped `statusTs`.
+
 - 2026-08-20 — **schedules and webhooks got a door: `/workflows/[id]/triggers`.**
   The entire trigger stack (CRUD, the webhook fire endpoint, the `CronWatcher`
   inside the deployed workflow worker) had been live and **never once used** —
