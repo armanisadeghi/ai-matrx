@@ -51,11 +51,18 @@ jest.mock("../../service", () => ({
 }));
 
 jest.mock("@/features/workflow-runtime/run-failure-explanation", () => ({
-  explainRunFailure: (reason: string | null, whatItRuns: string) => ({
+  // The real primitive takes the WHOLE error record; the stub mirrors that so
+  // this test would catch a caller that went back to passing one string.
+  explainRunFailure: (input: unknown, whatItRuns: string) => ({
     headline: `${whatItRuns} stopped`,
     nextStep: "Try again.",
-    technical: reason,
+    technical:
+      typeof input === "string"
+        ? input
+        : ((input as { message?: string } | null)?.message ?? null),
     unrecognized: false,
+    action: null,
+    cause: (input as { cause?: string } | null)?.cause ?? null,
   }),
 }));
 
@@ -86,7 +93,7 @@ it("settles an errored run from its live terminal event without the row-poll rec
     .mockResolvedValueOnce({ status: "running" })
     .mockResolvedValueOnce({
       status: "errored",
-      errorMessage: "The worker rejected the input.",
+      error: { message: "The worker rejected the input." },
     });
   const onRunFinished = jest.fn();
   const consoleError = jest.spyOn(console, "error").mockImplementation();

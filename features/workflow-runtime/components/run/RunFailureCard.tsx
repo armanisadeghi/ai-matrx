@@ -37,14 +37,16 @@ import { explainRunFailure } from "../../run-failure-explanation";
 
 const STOPPED_STATUSES = new Set(["failed", "errored", "cancelled"]);
 
-function errorMessage(error: Record<string, unknown> | null): string | null {
-  if (!error) return null;
-  for (const key of ["message", "error_message", "detail", "reason", "type"]) {
-    const value = error[key];
-    if (typeof value === "string" && value.trim()) return value;
-  }
-  return null;
-}
+/**
+ * A cancelled run has no recorded error, so there is nothing for the shared
+ * primitive to read. Hand it the one fact we do have.
+ *
+ * Everything else passes the WHOLE `workflow.run.error` record through — the
+ * server writes the structured failure there (cause/step_label/field/expected/
+ * technical), and reducing it to one string is the exact information loss this
+ * card used to paper over.
+ */
+const CANCELLED_FAILURE = { cause: "cancelled" } as const;
 
 export function RunFailureCard({
   runId,
@@ -68,15 +70,27 @@ export function RunFailureCard({
   if (status === null || !STOPPED_STATUSES.has(status)) return null;
 
   const cancelled = status === "cancelled";
-  const raw = errorMessage(error);
+  // Status is authoritative over anything the row recorded: a run cancelled
+  // after a step had already errored must still read as cancelled. The
+  // recorded technical line is kept either way — never dropped.
   const explanation = explainRunFailure(
-    cancelled ? (raw ?? "cancelled") : raw,
+    cancelled ? { ...(error ?? {}), ...CANCELLED_FAILURE } : error,
     whatItRan,
   );
 
+  // The sticky facts are the live-stream record of which nodes failed. On a
+  // COLD load (open a failed run from the runs list, never having watched it)
+  // there are none — and the contract says a failure must always name what was
+  // being run. The engine now records the author's name for the failing step on
+  // the row itself, so fall back to that rather than to nothing.
   const failedSteps = Object.keys(sticky.failedNodes).map(
     (nodeId) => stepLabels[nodeId] ?? nodeId,
   );
+  const recordedStep =
+    typeof error?.step_label === "string" && error.step_label.trim()
+      ? error.step_label
+      : null;
+  const namedSteps = failedSteps.length > 0 ? failedSteps : recordedStep ? [recordedStep] : [];
 
   return (
     <section
@@ -98,11 +112,11 @@ export function RunFailureCard({
           <h2 className="text-sm font-semibold text-foreground">
             {explanation.headline}
           </h2>
-          {failedSteps.length > 0 ? (
+          {namedSteps.length > 0 ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
               It stopped at{" "}
               <span className="font-medium text-foreground">
-                {failedSteps.join(", ")}
+                {namedSteps.join(", ")}
               </span>
               .
             </p>

@@ -38,6 +38,7 @@ import { RichDocument } from "@/features/rich-document/RichDocument";
 import {
   explainRunFailure,
   type RunFailureExplanation,
+  type RunFailureInput,
 } from "@/features/workflow-runtime/run-failure-explanation";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import {
@@ -155,16 +156,18 @@ export function TryMasterworkBox({
   // there is exactly one place that decides what a stopped run says — and it
   // is never bare. `raw` is the best reason we hold at the call site; when a
   // run row exists, its recorded error is richer than anything the stream
-  // carries, so it is read and preferred before explaining.
-  const failRunRef = useRef<(runId: string | null, raw?: string | null) => Promise<void>>(
-    async () => undefined,
-  );
+  // carries, so it is read and preferred before explaining. It travels as the
+  // WHOLE error record (or a bare string, from a throw) — never narrowed —
+  // because that record is where the engine's structured cause lives.
+  const failRunRef = useRef<
+    (runId: string | null, raw?: RunFailureInput) => Promise<void>
+  >(async () => undefined);
   failRunRef.current = async (runId, raw) => {
-    let reason = raw ?? null;
+    let reason: RunFailureInput = raw ?? null;
     if (runId) {
       try {
         const row = await getMasterworkRunVerdict(runId);
-        if (row?.errorMessage) reason = row.errorMessage;
+        if (row?.error) reason = row.error;
       } catch {
         // The run row is unreadable — explain from what we already have
         // rather than degrade to "something went wrong".
@@ -197,7 +200,7 @@ export function TryMasterworkBox({
               setVerdict(result);
               setPhase("done");
             } else {
-              void failRunRef.current(runId, result.errorMessage);
+              void failRunRef.current(runId, result.error);
             }
             onRunFinished();
           }
@@ -255,6 +258,9 @@ export function TryMasterworkBox({
             technical: null,
             unrecognized: false,
             action: null,
+            // Not a run failure at all — the run succeeded and the verdict
+            // read didn't. There is no engine cause to carry.
+            cause: null,
           });
         } finally {
           onRunFinished();
@@ -297,7 +303,7 @@ export function TryMasterworkBox({
           return;
         }
         if (TERMINAL_STATUSES.includes(result.status)) {
-          void failRunRef.current(runId, result.errorMessage);
+          void failRunRef.current(runId, result.error);
           return;
         }
         // Still running: rejoin the live feed. abortRef is this box's single

@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **211** — live recount 2026-08-20
 - **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
-- Individual rows (45 total): unclaimed **0** · claimed **8** · done **36** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows by the army watchdog 2026-08-20 21:45 (the previous line read 12 claimed / 24 done and had not been refreshed after copy-D's last four flips)
+- Individual rows (45 total): unclaimed **0** · claimed **8** (army-fe-wd1) · done **36** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows by the army watchdog 2026-08-20 21:45 (the previous line read 12 claimed / 24 done and had not been refreshed after copy-D's last four flips)
 
 **Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
 non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
@@ -212,10 +212,10 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `claim_evidence` | Claim Evidence | — | 0 | `generic_structured` | blocked | copy-B | ROUTE IS LIVE (renders, incl. nested `evidence_source`). Blocked on the EXAMPLE only: its `emitted_json_schema` has a dangling `#/$defs/EvidenceSource` with no `$defs`, so the schema cannot compile and nothing validates against it — producer-side, FOUND_DEFECTS D219. |
-| `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
+| `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
 | `criteria_gate_result` | Criteria Gate Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
 | `entity_mention` | Entity Mention | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `evidence_source` | Evidence Source | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
@@ -224,7 +224,7 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `http_response` | HTTP Response | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
 | `items` | Items (list result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
-| `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `notable_timestamp` | Notable Timestamp | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
@@ -232,8 +232,8 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `office_file_result` | Office File Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
 | `operation_result` | Operation Result (action receipt) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `page` | Page (paginated window) | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
-| `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `page_keyword_map_v1` | Page Keyword Map | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
+| `page_keyword_map_v1` | Page Keyword Map | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
 | `regex_extract_result` | Regex Extract Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
 | `rendered_text` | Rendered Text | — | 1 | `generic_structured` | done | copy-E | explicit basic route LIVE — migrations/content_ir_rendered_text_output_route.sql, applied + verified in the DB. Reuse-first: nothing in the compiled bootstrap or the block dispatch registry renders `{text, rendered, truncated}`. UPGRADE PATH: `text` IS markdown, so a component streaming it through MarkdownStream (with rendered/truncated as chrome) beats the JSON tree view — a one-line component_key swap on this same row. Route case belongs in features/content-ir/__tests__/kind-explicit-basic-routes.test.tsx (copy-B's file, in flight at the time). |
 | `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
@@ -242,13 +242,13 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `research_tag_suggestions` | Research Tag Suggestions | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
-| `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `string_list` | String List | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `table_rows` | Table Rows | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `text` | Text | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
-| `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | claimed | army-fe-wd1 | SEO analysis cluster — batch 3 |
 | `topic_relevance` | Topic Relevance | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `transcript_usage` | Transcript Usage | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `value` | Value (single result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
@@ -376,3 +376,4 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
   of that card is product semantics, not a route decision.
 
 | `markdown` | primitive | distilled | todo | — | REGISTER THE STREAMING MARKDOWN RENDERER as its (kind,'web',output) component — this activates the kind (dual gate) and collapses the two render laws into one. Inactive today, which is why the generation query missed it. |
+- 2026-08-20 — **army-fe-wd1**: claim of the 8 SEO-analysis-cluster rows taken over from `copy-D` as ABANDONED per the army watchdog (no commit against the rows for 70+ min). Verification of copy-D's already-committed work is in progress; rows will be flipped only on live evidence.

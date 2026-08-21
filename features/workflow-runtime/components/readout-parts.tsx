@@ -198,10 +198,15 @@ function SettledOutputBody({ output }: { output: Record<string, unknown> }) {
  * card already explained the same cause in a sentence. So: the shared
  * explanation primitive supplies the headline, the run-level card carries the
  * next action, and the technical cause stays one tap away for us.
+ *
+ * Takes the WHOLE `node_outcome.error` record, not `.message` — the server
+ * merges the structured failure (cause/step_label/field/expected) into that
+ * record, and pulling one string back out is exactly the throwing-away this
+ * surface used to compensate for with regexes.
  */
-function StepErrorBody({ message }: { message: string | null }) {
+function StepErrorBody({ error }: { error: Record<string, unknown> }) {
   const [showTechnical, setShowTechnical] = useState(false);
-  const explanation = explainRunFailure(message, "This step");
+  const explanation = explainRunFailure(error, "This step");
   return (
     <div className="space-y-1.5">
       <div className="flex items-start gap-1.5">
@@ -345,7 +350,7 @@ export function InvocationBody({
     return <SettledOutputBody output={invocation.output} />;
   }
   if (invocation.error) {
-    return <StepErrorBody message={invocation.error.message} />;
+    return <StepErrorBody error={invocation.error} />;
   }
   if (working) {
     return <WorkingBody message={invocation.progress?.message ?? null} />;

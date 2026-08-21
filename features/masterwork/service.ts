@@ -417,11 +417,16 @@ export interface MasterworkRunVerdict {
    */
   understudyText: string | null;
   /**
-   * What the run RECORDED when it failed (`workflow.run.error.message`), raw.
+   * The WHOLE `workflow.run.error` record the run wrote when it failed.
+   *
    * The one input to explainRunFailure — without it a failed run can only be
    * described as "it didn't finish", which is the bare error Arman reported.
+   * Passed through intact rather than narrowed to `.message`: since 2026-08-20
+   * the engine writes a structured failure there (cause, the author's name for
+   * the failing step, the field, what it expected), and reducing it to one
+   * string is what forced the client to regex English back into meaning.
    */
-  errorMessage: string | null;
+  error: Record<string, unknown> | null;
 }
 
 /**
@@ -493,20 +498,25 @@ export async function getMasterworkRunVerdict(
     chiefText: byNode.get("chief") ?? null,
     editorText: correctedProse(byNode.get("editor") ?? null),
     understudyText: byNode.get("understudy") ?? null,
-    errorMessage: runErrorMessage(run.error),
+    error: runErrorRecord(run.error),
   };
 }
 
 /**
- * `workflow.run.error` is a jsonb the engine writes as `{message: "..."}`; a
- * plain string and an absent value are both legal in the wild. Narrowed here,
- * at the one read boundary, so no surface has to guess at its shape.
+ * `workflow.run.error` is a jsonb record; a plain string and an absent value
+ * are both legal in the wild (older rows, and any writer that predates the
+ * structured failure). Normalized to a record here, at the one read boundary,
+ * so no surface has to guess at its shape — and NOT narrowed to a single
+ * field, so the structure survives the trip.
  */
-function runErrorMessage(raw: unknown): string | null {
-  if (typeof raw === "string") return raw.trim() || null;
-  if (raw && typeof raw === "object") {
-    const message = (raw as { message?: unknown }).message;
-    if (typeof message === "string") return message.trim() || null;
+function runErrorRecord(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    return trimmed ? { message: trimmed } : null;
+  }
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const record = raw as Record<string, unknown>;
+    return Object.keys(record).length ? record : null;
   }
   return null;
 }
