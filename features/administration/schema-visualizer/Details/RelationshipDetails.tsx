@@ -37,6 +37,7 @@ export function RelationshipDetails({
                 <div className="space-y-6 p-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
+                        {/* // access-errors: ok — verified absence: the index is looked up in the in-memory schema snapshot already loaded, not a DB read */}
                         <AlertTitle>Relationship not found</AlertTitle>
                         <AlertDescription>
                             No relationship at index {relationshipIndex} on table{" "}

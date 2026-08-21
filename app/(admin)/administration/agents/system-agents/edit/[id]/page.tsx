@@ -2,10 +2,9 @@
 
 import React, { use, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { AlertCircle, ArrowLeft, Copy, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
@@ -86,28 +85,12 @@ export default function AdminEditShortcutPage({
   if (!resolved) {
     return (
       <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center p-6 bg-textured">
-        <Card className="max-w-md w-full border-destructive/30">
-          <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-            <div className="p-3 bg-destructive/10 rounded-full">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">
-                Shortcut not found
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                This shortcut doesn&apos;t exist or isn&apos;t visible in the
-                global scope.
-              </p>
-            </div>
-            <Link href="/administration/agents/system-agents/shortcuts">
-              <Button size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1.5" />
-                Back to shortcuts
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <AccessGate
+          token="agent_shortcut"
+          id={id}
+          fallbackHref="/administration/agents/system-agents/shortcuts"
+          fallbackLabel="All shortcuts"
+        />
       </div>
     );
   }

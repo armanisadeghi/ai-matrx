@@ -7,15 +7,9 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  AlertCircle,
-  ArrowLeft,
-  ExternalLink,
-  Loader2,
-  Pencil,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, Pencil } from "lucide-react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -303,27 +297,13 @@ export default function AdminEditAgentAppPage({
   if (notFound || !app) {
     return (
       <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center p-6 bg-textured">
-        <Card className="max-w-md w-full border-destructive/30">
-          <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-            <div className="p-3 bg-destructive/10 rounded-full">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">
-                Agent app not found
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                This app doesn&apos;t exist or has been removed.
-              </p>
-            </div>
-            <Link href="/administration/agents/agent-apps/apps">
-              <Button size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1.5" />
-                Back to apps
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <AccessGate
+          token="app"
+          id={id}
+          onRetry={() => void load()}
+          fallbackHref="/administration/agents/agent-apps/apps"
+          fallbackLabel="All apps"
+        />
       </div>
     );
   }

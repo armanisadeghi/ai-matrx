@@ -44,6 +44,7 @@ export function FieldDetails({ table, fieldName }: FieldDetailsProps) {
         <div className="space-y-6 p-6">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
+            {/* // access-errors: ok — verified absence: the column name is looked up in the in-memory schema snapshot already loaded, not a DB read */}
             <AlertTitle>Field not found</AlertTitle>
             <AlertDescription>
               Could not find column <code>{fieldName}</code> on table{" "}

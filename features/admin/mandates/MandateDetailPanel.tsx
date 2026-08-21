@@ -634,8 +634,9 @@ function UnresolvedPinPanel({
 
       {result !== null && agent === null && (
         <p className="text-rose-600">
-          The pinned agent no longer exists — the record was deleted. Choose a
-          replacement in “Change pinned agent” below.
+          {/* // access-errors: ok — verified by the service-role admin lookup, which bypasses RLS: no row with the pinned id exists */}
+          The pinned agent no longer exists — nothing with the pinned id is in
+          the agents table. Choose a replacement in “Change pinned agent” below.
         </p>
       )}
 

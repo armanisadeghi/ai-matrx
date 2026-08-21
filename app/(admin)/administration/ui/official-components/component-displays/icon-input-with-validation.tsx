@@ -237,6 +237,7 @@ export default function IconInputWithValidationDisplay({
           <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300 list-disc list-inside">
             <li>Click the refresh icon or press Enter to validate</li>
             <li>Green checkmark = icon found and valid</li>
+            {/* // access-errors: ok — demo legend describing icon-name validation against the bundled Lucide set, not record access copy */}
             <li>Red X = icon not found</li>
             <li>Lowercase names auto-capitalize (e.g., "star" → "Star")</li>
             <li>All 1000+ Lucide icons supported via IconResolver</li>
