@@ -81,6 +81,8 @@ export function FastFireLiveCard({
   const [instantHelp, setInstantHelp] = useState<{
     fileId: string;
     text: string | null;
+    /** Bumped per tap so a re-tap remounts the player and replays the clip. */
+    nonce: number;
   } | null>(null);
   const cardShownAtRef = useRef<number>(0);
 
@@ -139,7 +141,11 @@ export function FastFireLiveCard({
     // never wait on the AI"). The live lane below still runs for the deeper,
     // context-aware answer.
     if (card.helperFileId) {
-      setInstantHelp({ fileId: card.helperFileId, text: card.helperText ?? null });
+      setInstantHelp((prev) => ({
+        fileId: card.helperFileId as string,
+        text: card.helperText ?? null,
+        nonce: (prev?.nonce ?? 0) + 1,
+      }));
     }
     setHelpLoading(true);
     setHelp(null);
@@ -268,7 +274,10 @@ export function FastFireLiveCard({
             zero-wait lane). The player is text-independent — the live answer
             below may replace the text while the audio keeps playing. */}
         {instantHelp && (
-          <SpokenFrontPlayer fileId={instantHelp.fileId} cardId={card.id} />
+          <SpokenFrontPlayer
+            fileId={instantHelp.fileId}
+            cardId={`${card.id}-help-${instantHelp.nonce}`}
+          />
         )}
         {!shownHelp && instantHelp?.text && (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
