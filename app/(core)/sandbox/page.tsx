@@ -45,7 +45,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
-import { sandboxInstanceSummary } from "@/lib/sandbox/format";
+import {
+  sandboxDisplayName,
+  sandboxInstanceSummary,
+} from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
@@ -183,7 +186,7 @@ export default function SandboxListPage() {
       setCreatedInstanceId(result.instance.id);
       setCreating(false);
       setCreateSuccess(true);
-      toast.success(`Sandbox ${result.instance.sandbox_id} created`);
+      toast.success(`Sandbox ${sandboxDisplayName(result.instance)} created`);
 
       // Brief success state before redirect
       setTimeout(() => {
@@ -403,7 +406,7 @@ export default function SandboxListPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Sandbox ID</TableHead>
+                      <TableHead>Sandbox</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Time Remaining</TableHead>
@@ -481,7 +484,7 @@ export default function SandboxListPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Sandbox ID</TableHead>
+                          <TableHead>Sandbox</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Created</TableHead>
                           <TableHead>Time Remaining</TableHead>
@@ -503,8 +506,15 @@ export default function SandboxListPage() {
                                 router.push(`/sandbox/${instance.id}`)
                               }
                             >
-                              <TableCell className="font-mono text-sm">
-                                {instance.sandbox_id}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {sandboxDisplayName(instance)}
+                                </div>
+                                {instance.name && (
+                                  <div className="font-mono text-xs text-muted-foreground">
+                                    {instance.sandbox_id}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <StatusBadge status={effectiveStatus} />
@@ -530,7 +540,7 @@ export default function SandboxListPage() {
                                 >
                                   <CopyButtons
                                     size="icon"
-                                    label={`Sandbox ${instance.sandbox_id}`}
+                                    label={`Sandbox ${sandboxDisplayName(instance)}`}
                                     human={() => sandboxInstanceSummary(instance)}
                                     agent={() => ({
                                       kind: "sandbox-instance",
@@ -644,7 +654,7 @@ export default function SandboxListPage() {
                                   aria-label="Select all history rows"
                                 />
                               </TableHead>
-                              <TableHead>Sandbox ID</TableHead>
+                              <TableHead>Sandbox</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Created</TableHead>
                               <TableHead>Stopped</TableHead>
@@ -677,11 +687,16 @@ export default function SandboxListPage() {
                                       onCheckedChange={() =>
                                         toggleHistorySelection(instance.id)
                                       }
-                                      aria-label={`Select ${instance.sandbox_id}`}
+                                      aria-label={`Select ${sandboxDisplayName(instance)}`}
                                     />
                                   </TableCell>
-                                  <TableCell className="font-mono text-sm text-muted-foreground">
-                                    {instance.sandbox_id}
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    <div>{sandboxDisplayName(instance)}</div>
+                                    {instance.name && (
+                                      <div className="font-mono text-xs">
+                                        {instance.sandbox_id}
+                                      </div>
+                                    )}
                                   </TableCell>
                                   <TableCell>
                                     <StatusBadge status={effectiveStatus} />
@@ -869,7 +884,7 @@ export default function SandboxListPage() {
                 <h3 className="font-semibold text-lg">Sandbox Deleted</h3>
                 {deleteTarget && (
                   <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {deleteTarget.sandbox_id}
+                    {sandboxDisplayName(deleteTarget)}
                   </p>
                 )}
               </div>
@@ -887,7 +902,7 @@ export default function SandboxListPage() {
                 </p>
                 {deleteTarget && (
                   <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {deleteTarget.sandbox_id}
+                    {sandboxDisplayName(deleteTarget)}
                   </p>
                 )}
               </div>

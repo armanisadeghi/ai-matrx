@@ -78,7 +78,9 @@ export async function GET() {
   const [sandboxResult, appInstanceResult, tierLimit] = await Promise.all([
     supabase
       .from("sandbox_instances")
-      .select("id, sandbox_id, status, tier, config, expires_at, updated_at")
+      .select(
+        "id, name, sandbox_id, status, tier, config, expires_at, updated_at",
+      )
       .eq("user_id", user.id)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
@@ -107,7 +109,7 @@ export async function GET() {
     sandboxes.push({
       id: String(row.id),
       kind: tier,
-      name: config.template || row.sandbox_id || "Sandbox",
+      name: row.name?.trim() || config.template || row.sandbox_id || "Sandbox",
       status: row.status ?? "stopped",
       is_online: row.status === "running" || row.status === "ready",
       is_this_device: false,

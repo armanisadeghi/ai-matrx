@@ -46,6 +46,7 @@ import {
   statusPillClasses,
 } from "@/lib/sandbox/status";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { CreateSandboxModal } from "./CreateSandboxModal";
 import { MockFilesystemAdapter } from "../../adapters/MockFilesystemAdapter";
 import {
@@ -202,15 +203,9 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       // bind their conversation to the in-container Python server. Null
       // until the orchestrator surfaces `proxy_url` on SandboxInstance.
       dispatch(setActiveSandboxProxyUrl(instance.proxy_url ?? null));
-      const label = instance.sandbox_id
-        ? instance.sandbox_id.slice(0, 10)
-        : instance.id.slice(0, 8);
+      const label = sandboxDisplayName(instance);
       const rootPath = instance.hot_path || "/home/agent";
-      const fs = new SandboxFilesystemAdapter(
-        instance.id,
-        `Sandbox ${label}`,
-        rootPath,
-      );
+      const fs = new SandboxFilesystemAdapter(instance.id, label, rootPath);
       setFilesystem(fs);
       setProcess(new SandboxProcessAdapter(instance.id, rootPath));
       // Best-effort: surface the per-sandbox session report (written by the
@@ -286,7 +281,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
             dispatch(setActiveSandboxId(null));
             dispatch(setActiveSandboxProxyUrl(null));
             setError(
-              `Sandbox ${instance.sandbox_id?.slice(0, 14) ?? instance.id.slice(0, 8)} no longer exists on the orchestrator — it was destroyed out of band. The row has been cleaned up.`,
+              `Sandbox ${sandboxDisplayName(instance)} no longer exists on the orchestrator — it was destroyed out of band. The row has been cleaned up.`,
             );
             void refresh();
           }
@@ -333,8 +328,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
           }),
         });
         const data = (await resp.json()) as
-          | SandboxDetailResponse
-          | { error?: string };
+          SandboxDetailResponse | { error?: string };
         if (!resp.ok) {
           const err = "error" in data ? data.error : undefined;
           throw new Error(err ?? `Create failed (${resp.status})`);
@@ -581,9 +575,8 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
           deleteTarget ? (
             <>
               This will permanently delete sandbox{" "}
-              <span className="font-mono">
-                {deleteTarget.sandbox_id?.slice(0, 14) ??
-                  deleteTarget.id.slice(0, 8)}
+              <span className="font-medium">
+                {sandboxDisplayName(deleteTarget)}
               </span>
               . Any unsaved files in the container will be lost. This cannot be
               undone.
@@ -651,7 +644,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
   const canExtend = ACTIVE_EFFECTIVE_STATUSES.includes(effective);
   const canReset = canStop || effective === "stopped";
   const remaining = useTimeRemaining(instance.expires_at, "minute");
-  const idShort = instance.sandbox_id?.slice(0, 14) ?? instance.id.slice(0, 8);
+  const displayName = sandboxDisplayName(instance);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetWipe, setResetWipe] = useState(false);
 
@@ -704,7 +697,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                 )}
               />
             )}
-            <span className="truncate font-mono">{idShort}</span>
+            <span className="truncate font-medium">{displayName}</span>
             {isActive && (
               <span className="shrink-0 rounded bg-blue-100 px-1 py-[1px] font-mono text-[9px] uppercase tracking-wider text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                 active
@@ -1024,8 +1017,8 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
       <div className="flex items-center justify-between gap-2 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <Plug size={12} />
-          <span className="truncate font-mono">
-            {instance.sandbox_id?.slice(0, 14) ?? instance.id.slice(0, 8)}
+          <span className="truncate font-medium">
+            {sandboxDisplayName(instance)}
           </span>
           <span className="opacity-70">connected</span>
         </div>

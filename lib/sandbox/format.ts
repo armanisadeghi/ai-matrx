@@ -1,5 +1,12 @@
 import type { SandboxInstance } from "@/types/sandbox";
 
+/** User-facing identity with the immutable orchestrator id as a safe fallback. */
+export function sandboxDisplayName(
+  instance: Pick<SandboxInstance, "name" | "sandbox_id">,
+): string {
+  return instance.name?.trim() || instance.sandbox_id;
+}
+
 /**
  * Human-readable, multi-line summary of a single sandbox instance — the
  * "Copy" (human) flavor shared by every sandbox surface (admin table, user
@@ -10,7 +17,8 @@ export function sandboxInstanceSummary(i: SandboxInstance): string {
   const ttlH = Math.floor(i.ttl_seconds / 3600);
   const ttlM = Math.floor((i.ttl_seconds % 3600) / 60);
   return [
-    `Sandbox: ${i.sandbox_id}`,
+    `Sandbox: ${sandboxDisplayName(i)}`,
+    i.name ? `Sandbox ID: ${i.sandbox_id}` : null,
     `Status: ${i.status}`,
     `Tier: ${i.tier ?? "—"}`,
     `User ID: ${i.user_id}`,

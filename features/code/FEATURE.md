@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-20`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(a)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -107,6 +107,13 @@ Two paths:
 
 Tier selection happens at `New sandbox` time and sticks per-user (`userPreferences.coding.lastSandboxTier`). Detail lives in [`SANDBOX_DIRECT_ENDPOINTS.md`](./SANDBOX_DIRECT_ENDPOINTS.md) and [`SANDBOX_PROXY_AND_FS_EVENTS_FE_INTEGRATION.md`](./SANDBOX_PROXY_AND_FS_EVENTS_FE_INTEGRATION.md).
 
+Sandbox identity has two layers: `sandbox_instances.name` is the editable,
+user-facing name, while `sandbox_id` remains the immutable orchestrator routing
+key and diagnostics fallback. `/sandbox`, `/sandbox/[id]`, the Code workspace,
+and the unified compute-target picker all use the stored name first. Renaming
+updates only the owned database row; it never renames or replaces the running
+container.
+
 ---
 
 ## Invariants & gotchas
@@ -133,6 +140,11 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 
 ## Change log
 
+- `2026-08-20` — **Sandboxes have persistent editable names.** The owner can
+  rename a sandbox from its detail header; the stored `sandbox_instances.name`
+  is shown in the sandbox list, Code workspace, active connection banner, copy
+  summaries, and the shared compute-target picker. `sandbox_id` remains visible
+  as technical identity and is the fallback for older unnamed rows.
 - `2026-08-15` — **Fixed the live PTY's first production interaction failures.** The daemon emits raw binary terminal bytes, but the browser adapter discarded every non-string message and attempted to parse text as JSON; the shell therefore opened while its prompt/echo/output stayed invisible, making the first typed character appear to disable the terminal. `openPty()` now requests `arraybuffer`, decodes every binary frame verbatim, rejects mixed-content `ws://` endpoints explicitly, and allows 15 seconds for orchestrator container resolution. `TerminalTab` publishes the live handle before swapping listeners so a close during attachment always restores buffered input. The adapter test now proves binary prompt delivery in addition to raw input and control frames.
 - `2026-08-15` — **Made Ctrl-C deterministic in the xterm surface.** `TerminalTab` intercepts plain Ctrl-C and writes ETX directly to the active PTY (or the buffered handler), while leaving Ctrl-Shift-C available for copy.
 - `2026-08-15` — **Removed the new-terminal handshake race.** A new xterm now shows a connecting marker and disables input until PTY attachment succeeds or the loud buffered fallback is ready, so early keystrokes can never be erased during listener handoff.

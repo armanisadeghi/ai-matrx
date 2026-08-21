@@ -60,6 +60,75 @@ export async function GET(
   }
 }
 
+/** Rename a sandbox without changing its immutable routing identity. */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const body = (await request.json()) as { name?: unknown };
+    if (typeof body.name !== "string") {
+      return NextResponse.json(
+        { error: "name must be a string" },
+        { status: 400 },
+      );
+    }
+
+    const name = body.name.trim();
+    if (name.length < 1 || name.length > 100) {
+      return NextResponse.json(
+        { error: "name must be between 1 and 100 characters" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "User not authenticated" },
+        { status: 401 },
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("sandbox_instances")
+      .update({ name })
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return NextResponse.json(
+          { error: "Sandbox instance not found" },
+          { status: 404 },
+        );
+      }
+      return NextResponse.json(
+        { error: "Failed to rename sandbox", details: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ instance: decorateSandboxRow(data) });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 /**
  * PUT /api/sandbox/[id]
  *

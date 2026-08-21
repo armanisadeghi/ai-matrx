@@ -209,6 +209,29 @@ export function useSandboxInstances(projectId?: string) {
     }
   }, []);
 
+  const renameInstance = useCallback(async (id: string, name: string) => {
+    setError(null);
+    try {
+      const resp = await fetch(`/api/sandbox/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!resp.ok) {
+        throw new Error(
+          await extractSandboxError(resp, "Failed to rename sandbox"),
+        );
+      }
+      const { instance }: SandboxDetailResponse = await resp.json();
+      setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
+      return instance;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(msg);
+      return null;
+    }
+  }, []);
+
   const extendInstance = useCallback(
     async (id: string, additionalSeconds = 3600) => {
       setError(null);
@@ -364,6 +387,7 @@ export function useSandboxInstances(projectId?: string) {
     total,
     fetchInstances,
     createInstance,
+    renameInstance,
     stopInstance,
     extendInstance,
     deleteInstance,

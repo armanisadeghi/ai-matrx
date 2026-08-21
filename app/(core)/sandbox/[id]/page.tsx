@@ -23,8 +23,10 @@ import {
   RefreshCw,
   ScrollText,
   Network,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -44,7 +46,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
-import { sandboxInstanceSummary } from "@/lib/sandbox/format";
+import {
+  sandboxDisplayName,
+  sandboxInstanceSummary,
+} from "@/lib/sandbox/format";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import {
   STATUS_BADGE_VARIANT,
@@ -81,6 +86,10 @@ export default function SandboxDetailPage() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
   const remaining = useTimeRemaining(instance?.expires_at, "second");
   const [cwd, setCwd] = useState(DEFAULT_CWD);
   // Staged-vs-typed affordance for the surface write targets. An agent-staged
@@ -321,6 +330,34 @@ export default function SandboxDetailPage() {
     }
   };
 
+  const handleRename = async () => {
+    const name = nameDraft.trim();
+    if (!name || name.length > 100) {
+      setNameError("Enter a name between 1 and 100 characters.");
+      return;
+    }
+
+    setNameSaving(true);
+    setNameError(null);
+    try {
+      const resp = await fetch(`/api/sandbox/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error || "Failed to rename sandbox");
+      }
+      setInstance(data.instance);
+      setRenaming(false);
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Failed to rename");
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
@@ -388,6 +425,7 @@ export default function SandboxDetailPage() {
   const statusLabel = STATUS_LABELS[effectiveStatus] ?? effectiveStatus;
   const initialTtlHours = Math.floor(instance.ttl_seconds / 3600);
   const initialTtlMins = Math.floor((instance.ttl_seconds % 3600) / 60);
+  const displayName = sandboxDisplayName(instance);
 
   const detailActions: EntityHeaderAction[] = [
     ...(isActive
@@ -404,6 +442,15 @@ export default function SandboxDetailPage() {
           },
         ]
       : []),
+    {
+      label: "Rename",
+      icon: Pencil,
+      onPress: () => {
+        setNameDraft(instance.name ?? "");
+        setNameError(null);
+        setRenaming(true);
+      },
+    },
     {
       label: "Delete",
       icon: Trash2,
@@ -526,14 +573,14 @@ export default function SandboxDetailPage() {
     >
       <EntityModeHeader
         backHref="/sandbox"
-        entityLabel={instance.sandbox_id}
+        entityLabel={displayName}
         actions={detailActions}
         right={
           <div className="flex items-center gap-2">
             <Badge variant={statusVariant}>{statusLabel}</Badge>
             <CopyButtons
               size="icon"
-              label={`Sandbox ${instance.sandbox_id}`}
+              label={`Sandbox ${displayName}`}
               human={() => sandboxInstanceSummary(instance)}
               agent={() => ({
                 kind: "sandbox-instance",
@@ -556,9 +603,45 @@ export default function SandboxDetailPage() {
       <div className="h-full flex flex-col overflow-hidden bg-textured">
         <div className="flex-1 overflow-y-auto px-4 pt-[calc(var(--shell-header-h)+1rem)] pb-8">
         <div className="max-w-6xl mx-auto space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Created {new Date(instance.created_at).toLocaleString()}
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Created {new Date(instance.created_at).toLocaleString()}
+            </p>
+            {renaming && (
+              <form
+                className="flex max-w-xl flex-wrap items-start gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleRename();
+                }}
+              >
+                <div className="min-w-64 flex-1">
+                  <Input
+                    autoFocus
+                    value={nameDraft}
+                    maxLength={100}
+                    aria-label="Sandbox name"
+                    onChange={(event) => setNameDraft(event.target.value)}
+                  />
+                  {nameError && (
+                    <p className="mt-1 text-xs text-destructive">{nameError}</p>
+                  )}
+                </div>
+                <Button type="submit" size="sm" disabled={nameSaving}>
+                  {nameSaving ? "Saving…" : "Save name"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={nameSaving}
+                  onClick={() => setRenaming(false)}
+                >
+                  Cancel
+                </Button>
+              </form>
+            )}
+          </div>
           {error && !instance && (
             <Card className="border-destructive">
               <CardContent className="flex items-center gap-2 p-4">
@@ -1106,7 +1189,7 @@ export default function SandboxDetailPage() {
 
       <footer className="shrink-0 border-t border-border bg-card px-4 py-2">
         <div className="flex items-center justify-between gap-4 max-w-6xl mx-auto text-xs text-muted-foreground">
-          <span className="font-mono truncate">{instance.sandbox_id}</span>
+          <span className="truncate font-medium">{displayName}</span>
           <div className="flex items-center gap-3 shrink-0">
             <Badge variant={statusVariant}>{statusLabel}</Badge>
             {!remaining.isExpired && (

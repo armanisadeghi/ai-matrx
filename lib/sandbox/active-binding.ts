@@ -419,6 +419,7 @@ export async function resolveSandboxRefDetails(
     }
     const json = (await resp.json()) as {
       instance?: {
+        name?: string | null;
         proxy_url?: string | null;
         tier?: string | null;
         config?: { template?: string | null } | null;
@@ -437,7 +438,11 @@ export async function resolveSandboxRefDetails(
       proxyUrl,
       tier:
         inst?.tier === "ec2" || inst?.tier === "hosted" ? inst.tier : undefined,
-      name: inst?.config?.template ?? inst?.sandbox_id ?? undefined,
+      name:
+        inst?.name?.trim() ||
+        inst?.config?.template ||
+        inst?.sandbox_id ||
+        undefined,
     };
     PROXY_URL_CACHE.set(sandboxRowId, details);
     console.warn(
