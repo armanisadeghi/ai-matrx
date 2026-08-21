@@ -42431,6 +42431,7 @@ export type Database = {
           link_kind: string | null
           metadata: Json
           meters: Json
+          organization_id: string
           parent_execution_id: string | null
           request_id: string
           root_execution_id: string
@@ -42454,6 +42455,7 @@ export type Database = {
           link_kind?: string | null
           metadata?: Json
           meters?: Json
+          organization_id: string
           parent_execution_id?: string | null
           request_id: string
           root_execution_id: string
@@ -42477,6 +42479,7 @@ export type Database = {
           link_kind?: string | null
           metadata?: Json
           meters?: Json
+          organization_id?: string
           parent_execution_id?: string | null
           request_id?: string
           root_execution_id?: string
@@ -42516,6 +42519,7 @@ export type Database = {
           execution_id: string
           id: string
           metadata: Json
+          organization_id: string
           state: Json
         }
         Insert: {
@@ -42523,6 +42527,7 @@ export type Database = {
           execution_id: string
           id?: string
           metadata?: Json
+          organization_id: string
           state: Json
         }
         Update: {
@@ -42530,6 +42535,7 @@ export type Database = {
           execution_id?: string
           id?: string
           metadata?: Json
+          organization_id?: string
           state?: Json
         }
         Relationships: [
@@ -42594,6 +42600,7 @@ export type Database = {
           id: string
           kind: string
           metadata: Json
+          organization_id: string
           root_execution_id: string | null
           seq: number | null
         }
@@ -42604,6 +42611,7 @@ export type Database = {
           id?: string
           kind: string
           metadata?: Json
+          organization_id: string
           root_execution_id?: string | null
           seq?: number | null
         }
@@ -42614,6 +42622,7 @@ export type Database = {
           id?: string
           kind?: string
           metadata?: Json
+          organization_id?: string
           root_execution_id?: string | null
           seq?: number | null
         }
@@ -42641,6 +42650,7 @@ export type Database = {
           id: string
           label: string | null
           metadata: Json
+          organization_id: string
           payload: Json | null
           quantities: Json
         }
@@ -42650,6 +42660,7 @@ export type Database = {
           id?: string
           label?: string | null
           metadata?: Json
+          organization_id: string
           payload?: Json | null
           quantities?: Json
         }
@@ -42659,6 +42670,7 @@ export type Database = {
           id?: string
           label?: string | null
           metadata?: Json
+          organization_id?: string
           payload?: Json | null
           quantities?: Json
         }
@@ -42677,34 +42689,46 @@ export type Database = {
           allow_unknown: boolean
           app: string
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           id: string
           metadata: Json
+          organization_id: string
           surface: string
           updated_at: string
+          updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           allow_unknown?: boolean
           app: string
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           id?: string
           metadata?: Json
+          organization_id: string
           surface: string
           updated_at?: string
+          updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           allow_unknown?: boolean
           app?: string
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           id?: string
           metadata?: Json
+          organization_id?: string
           surface?: string
           updated_at?: string
+          updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -42777,6 +42801,7 @@ export type Database = {
           max_attempts: number
           metadata: Json
           not_before: string | null
+          organization_id: string
           payload: Json | null
           raw_key: string | null
           seq: number
@@ -42799,6 +42824,7 @@ export type Database = {
           max_attempts?: number
           metadata?: Json
           not_before?: string | null
+          organization_id: string
           payload?: Json | null
           raw_key?: string | null
           seq?: number
@@ -42821,6 +42847,7 @@ export type Database = {
           max_attempts?: number
           metadata?: Json
           not_before?: string | null
+          organization_id?: string
           payload?: Json | null
           raw_key?: string | null
           seq?: number
@@ -45979,7 +46006,7 @@ export type Database = {
           is_template: boolean
           metadata: Json
           name: string
-          organization_id: string | null
+          organization_id: string
           row_limit: number
           site_id: string | null
           sort_dir: string
@@ -45988,6 +46015,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           base_filters?: Json
@@ -46001,7 +46029,7 @@ export type Database = {
           is_template?: boolean
           metadata?: Json
           name: string
-          organization_id?: string | null
+          organization_id: string
           row_limit?: number
           site_id?: string | null
           sort_dir?: string
@@ -46010,6 +46038,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           base_filters?: Json
@@ -46023,7 +46052,7 @@ export type Database = {
           is_template?: boolean
           metadata?: Json
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           row_limit?: number
           site_id?: string | null
           sort_dir?: string
@@ -46032,6 +46061,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -46150,7 +46180,7 @@ export type Database = {
           metadata: Json
           name: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           pack_id: string | null
           pattern: string | null
           site_id: string | null
@@ -46159,6 +46189,7 @@ export type Database = {
           updated_by: string | null
           value_multiplier: number | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           auto_apply?: boolean
@@ -46175,7 +46206,7 @@ export type Database = {
           metadata?: Json
           name: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           pack_id?: string | null
           pattern?: string | null
           site_id?: string | null
@@ -46184,6 +46215,7 @@ export type Database = {
           updated_by?: string | null
           value_multiplier?: number | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           auto_apply?: boolean
@@ -46200,7 +46232,7 @@ export type Database = {
           metadata?: Json
           name?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           pack_id?: string | null
           pattern?: string | null
           site_id?: string | null
@@ -46209,6 +46241,7 @@ export type Database = {
           updated_by?: string | null
           value_multiplier?: number | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -47148,36 +47181,42 @@ export type Database = {
       }
       provider_call: {
         Row: {
+          created_at: string
           currency: string
           estimated_cost: number | null
           external_task_id: string | null
           fetched_at: string
           id: string
           metadata: Json
+          organization_id: string
           provider_call_key: string
           reported_cost: number | null
           request_count: number
           run_id: string
         }
         Insert: {
+          created_at?: string
           currency?: string
           estimated_cost?: number | null
           external_task_id?: string | null
           fetched_at?: string
           id?: string
           metadata?: Json
+          organization_id: string
           provider_call_key: string
           reported_cost?: number | null
           request_count?: number
           run_id: string
         }
         Update: {
+          created_at?: string
           currency?: string
           estimated_cost?: number | null
           external_task_id?: string | null
           fetched_at?: string
           id?: string
           metadata?: Json
+          organization_id?: string
           provider_call_key?: string
           reported_cost?: number | null
           request_count?: number
@@ -47196,6 +47235,7 @@ export type Database = {
       provider_task: {
         Row: {
           completed_at: string | null
+          created_at: string
           currency: string
           endpoint: string | null
           error: Json | null
@@ -47204,6 +47244,7 @@ export type Database = {
           id: string
           last_polled_at: string | null
           metadata: Json
+          organization_id: string
           provider_cost: number | null
           request_count: number
           request_payload: Json
@@ -47211,9 +47252,11 @@ export type Database = {
           run_id: string
           status: string
           submitted_at: string
+          updated_at: string
         }
         Insert: {
           completed_at?: string | null
+          created_at?: string
           currency?: string
           endpoint?: string | null
           error?: Json | null
@@ -47222,6 +47265,7 @@ export type Database = {
           id?: string
           last_polled_at?: string | null
           metadata?: Json
+          organization_id: string
           provider_cost?: number | null
           request_count?: number
           request_payload?: Json
@@ -47229,9 +47273,11 @@ export type Database = {
           run_id: string
           status: string
           submitted_at?: string
+          updated_at?: string
         }
         Update: {
           completed_at?: string | null
+          created_at?: string
           currency?: string
           endpoint?: string | null
           error?: Json | null
@@ -47240,6 +47286,7 @@ export type Database = {
           id?: string
           last_polled_at?: string | null
           metadata?: Json
+          organization_id?: string
           provider_cost?: number | null
           request_count?: number
           request_payload?: Json
@@ -47247,6 +47294,7 @@ export type Database = {
           run_id?: string
           status?: string
           submitted_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -47485,6 +47533,7 @@ export type Database = {
           id: string
           metadata: Json
           offload_error: Json | null
+          organization_id: string
           payload: Json | null
           provider_schema_version: string | null
           run_id: string
@@ -47500,6 +47549,7 @@ export type Database = {
           id?: string
           metadata?: Json
           offload_error?: Json | null
+          organization_id: string
           payload?: Json | null
           provider_schema_version?: string | null
           run_id: string
@@ -47515,6 +47565,7 @@ export type Database = {
           id?: string
           metadata?: Json
           offload_error?: Json | null
+          organization_id?: string
           payload?: Json | null
           provider_schema_version?: string | null
           run_id?: string
@@ -48098,11 +48149,13 @@ export type Database = {
       serp_result: {
         Row: {
           absolute_rank: number
+          created_at: string
           domain: string | null
           extras: Json
           id: string
           metadata: Json
           organic_rank: number | null
+          organization_id: string
           result_type: string
           snapshot_id: string
           snippet: string | null
@@ -48111,11 +48164,13 @@ export type Database = {
         }
         Insert: {
           absolute_rank: number
+          created_at?: string
           domain?: string | null
           extras?: Json
           id?: string
           metadata?: Json
           organic_rank?: number | null
+          organization_id: string
           result_type?: string
           snapshot_id: string
           snippet?: string | null
@@ -48124,11 +48179,13 @@ export type Database = {
         }
         Update: {
           absolute_rank?: number
+          created_at?: string
           domain?: string | null
           extras?: Json
           id?: string
           metadata?: Json
           organic_rank?: number | null
+          organization_id?: string
           result_type?: string
           snapshot_id?: string
           snippet?: string | null
@@ -50134,7 +50191,7 @@ export type Database = {
         }[]
       }
       keyword_value_map: {
-        Args: { p_site_id: string }
+        Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: {
           keyword_id: string
           reasons: Json
@@ -53714,7 +53771,7 @@ export type Database = {
           is_online: boolean
           last_seen_at: string | null
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           status_text: string | null
           updated_at: string
           updated_by: string | null
@@ -53739,7 +53796,7 @@ export type Database = {
           is_online?: boolean
           last_seen_at?: string | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           status_text?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -53764,7 +53821,7 @@ export type Database = {
           is_online?: boolean
           last_seen_at?: string | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           status_text?: string | null
           updated_at?: string
           updated_by?: string | null

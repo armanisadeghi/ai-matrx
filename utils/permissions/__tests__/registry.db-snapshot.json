@@ -63,6 +63,17 @@
     "display_label": "Auto-ingest Batch",
     "url_path_template": "",
     "rls_uses_has_permission": false,
+    "is_active": false
+  },
+  {
+    "resource_type": "browser_profile",
+    "table_name": "profile",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Cloud Browser Profile",
+    "url_path_template": "/browser/profiles/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -150,6 +161,17 @@
     "is_public_column": null,
     "display_label": "Conversation",
     "url_path_template": "/chat/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "crm_deal",
+    "table_name": "deal",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Deal",
+    "url_path_template": "/crm/deals/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -886,7 +908,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow",
-    "url_path_template": "",
+    "url_path_template": "/workflows/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },

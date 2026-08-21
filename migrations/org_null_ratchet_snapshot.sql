@@ -22,13 +22,22 @@
 --     flip: the flip is not forced, but writing new NULL-org rows fails the
 --     gate. A NOT NULL column cannot hold a NULL, so scanning only the nullable
 --     ones is complete, not a shortcut.
+--
+--     `history` is EXCLUDED from this scan, and the reason is not cost. A
+--     history.row_versions row is a SNAPSHOT of a row that is already counted
+--     at its source, so including it double-counts one defect -- and worse, it
+--     inverts the gate: editing or soft-deleting an existing legacy NULL-org
+--     row captures a NEW NULL-org version, so the count would GROW and fail a
+--     release for touching old data rather than for creating a new defect. A
+--     ratchet that punishes cleanup is a broken ratchet. (It is also the whole
+--     cost: 50s of a 64s scan was the row_versions partition set.)
 --   * `nullable_org_columns` — the tables that still ALLOW it, restricted to
 --     the entity-looking-or-registered class the DDL guard uses, so the two
 --     layers agree on the population by construction.
 --
--- Cost: a seq scan of every nullable-org table. Measured live at apply time
--- (~1.7M rows total, the bulk of it rag.kg_edges) — a couple of seconds, once
--- per release. It never runs on a hot path.
+-- Cost: a seq scan of every nullable-org table outside `history`. Measured
+-- live at apply time — see the timing note in scripts/canonical-ratchets/
+-- FEATURE.md. It runs once per release and never on a hot path.
 
 BEGIN;
 
@@ -42,6 +51,8 @@ DECLARE
   c_exempt_schemas CONSTANT text[] := ARRAY[
     'graveyard','auth','storage','realtime','vault','extensions','supabase_functions',
     'supabase_migrations','cron','net','pgsodium','_analytics','_realtime'];
+  -- see the header: history is a snapshot of rows counted at their source.
+  c_exempt_rowscan CONSTANT text[] := ARRAY['history'];
   rec record;
   v_nulls bigint;
   v_rows jsonb := '[]'::jsonb;
@@ -63,6 +74,7 @@ BEGIN
       AND NOT c.relispartition
       AND n.nspname NOT LIKE 'pg\_%'
       AND n.nspname <> ALL (c_exempt_schemas)
+      AND n.nspname <> ALL (c_exempt_rowscan)
     ORDER BY n.nspname, c.relname
   LOOP
     EXECUTE format('SELECT count(*) FROM %I.%I WHERE organization_id IS NULL', rec.s, rec.t)
