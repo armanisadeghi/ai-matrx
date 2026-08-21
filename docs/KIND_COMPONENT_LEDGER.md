@@ -164,7 +164,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 
 | Kind | Label | Maturity | Ex | Component | Status | Claim | Notes |
 |---|---|---|---|---|---|---|---|
-| `boolean` | Boolean | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `boolean` | Boolean | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `claim_evidence` | Claim Evidence | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
@@ -178,12 +178,12 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
 | `http_response` | HTTP Response | — | 1 | | unclaimed | | |
-| `items` | Items (list result) | — | 1 | | claimed | copy-D | primitive-kinds set |
-| `json` | JSON (any value) | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `items` | Items (list result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
+| `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | unclaimed | | |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `notable_timestamp` | Notable Timestamp | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
-| `number` | Number | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
 | `operation_result` | Operation Result (action receipt) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
@@ -201,13 +201,13 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | unclaimed | | |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
 | `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | unclaimed | | |
-| `string_list` | String List | — | 1 | | claimed | copy-D | primitive-kinds set |
-| `table_rows` | Table Rows | — | 1 | | claimed | copy-D | primitive-kinds set |
-| `text` | Text | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `string_list` | String List | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
+| `table_rows` | Table Rows | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
+| `text` | Text | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | unclaimed | | |
 | `topic_relevance` | Topic Relevance | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `transcript_usage` | Transcript Usage | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
-| `value` | Value (single result) | — | 1 | | claimed | copy-D | primitive-kinds set |
+| `value` | Value (single result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `workflow_run_result` | Workflow Run Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 
 ## Change log
@@ -242,3 +242,38 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
   `entity_mention`, `evidence_source`, `notable_timestamp`, `topic_relevance`,
   `transcript_usage`, `research_cross_cutting_tags`, `research_tag_suggestions`.
   Six of the eight have **0** canonical examples — those must be authored and validated first.
+- 2026-08-21 — copy-D **done**: `boolean`, `number`, `text`, `string_list`, `json`, `items`,
+  `value`, `table_rows` — the Python engine's workflow I/O primitives. All eight reached the
+  generic viewer by *silent fallback*; each now carries an explicit
+  `(kind,'web','output') → generic_structured` row
+  ([`migrations/content_ir_primitive_kind_routes.sql`](../migrations/content_ir_primitive_kind_routes.sql),
+  applied live + recorded in `public._schema_migrations`). Reuse was checked first — nothing in
+  the repo renders "a number", "a string", or the `{archetype, …}` envelopes, and no bespoke
+  display of these primitives exists to repoint or delete. Verified by
+  [`features/content-ir/__tests__/kind-primitive-routes.test.tsx`](../features/content-ir/__tests__/kind-primitive-routes.test.tsx)
+  (14 tests, each rendering the kind's LIVE canonical example through the production path;
+  negative controls confirmed the assertions bite). `pnpm type-check` clean;
+  `features/content-ir` 840/840 green. Maturity untouched.
+
+  **Finding for the verification pass — the honest ceiling of a basic route.** Five of these
+  kinds (`boolean`, `number`, `text`, `string_list`, and `json` when its value is scalar) are
+  BARE scalars/arrays. A bare scalar has nowhere to put `__kind`, so it never forms a
+  kind-carrying region and `applyIrKindRoute` can never claim it — *no block-level route will
+  ever fire for them, whatever row is registered.* What the row does buy is real:
+  `kindIsRoutable()` in `KindInstanceRender` now answers true, so the workflow readout stops
+  showing the amber "no custom component" note for a value the platform HAS chosen a renderer
+  for; the value itself renders on the same floor (`StructuredValueView`) either way. This is
+  recorded, not papered over — if the platform ever wants a scalar kind to reach a real
+  component, `KindInstanceRender`'s `isRecordValue(value)` guard
+  (features/content-ir/studio/components/KindInstanceRender.tsx) is the seam that would have to
+  consult the resolver. That is a deliberate design change, not this mission's to make.
+
+  Re-run the counts with:
+  ```sql
+  select count(*) filter (where not exists (
+           select 1 from content_ir.kind_component c
+           where c.kind_definition_id = d.id and c.platform='web'
+             and c.role='output' and c.deleted_at is null)) as still_missing
+  from content_ir.kind_definition d
+  where d.is_active and d.deleted_at is null and d.is_contract_artifact = false;
+  ```
