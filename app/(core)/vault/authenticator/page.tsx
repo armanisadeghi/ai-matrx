@@ -8,9 +8,8 @@ import { AuthenticatorWorkspace } from "@/features/secrets/components/authentica
 /**
  * /vault/authenticator — the Matrx Authenticator manage surface.
  *
- * General availability: any signed-in user can enroll and manage their own
- * authenticators. Enroll + manage + consent ONLY (D-15) — there is no code
- * shown anywhere and no "reveal" path. Spec:
+ * General availability: any signed-in user can enroll, view current rotating
+ * codes, and manage their own authenticators. Seeds have no reveal path. Spec:
  * common-docs/systems/matrx-authenticator/FEATURE.md.
  */
 export default async function AuthenticatorRoute() {

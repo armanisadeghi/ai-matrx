@@ -1,8 +1,8 @@
 /**
  * Matrx Authenticator — wire types for the GA manage surface.
  *
- * 🚨 There is deliberately no `code` and no `seed` member on any shape here, and
- * there never will be (D-15). Everything is metadata.
+ * Seeds never cross this boundary. Entries are metadata; the separate code
+ * response is short-lived and belongs only to the signed-in owner surface.
  */
 
 /** One account's authenticator as the manage surface reports it. */
@@ -17,4 +17,9 @@ export interface AuthenticatorEntry {
   enabled: boolean;
   login_urls: string[];
   seed_field_id: string | null;
+}
+
+export interface AuthenticatorCode {
+  code: string;
+  valid_for_seconds: number;
 }

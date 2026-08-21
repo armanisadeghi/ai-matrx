@@ -2,17 +2,17 @@
  * Matrx Authenticator — client for the GA manage surface (aidream
  * `/api/authenticator/*`).
  *
- * 🚨 THE LOAD-BEARING INVARIANT (D-15): this client NEVER receives a seed and
- * NEVER receives a generated code — there is no such endpoint. Enrollment sends
- * the setup key / otpauth URI the USER supplies; every response is metadata only
- * (issuer / account / label / params / enabled). Generation-and-typing is the
- * trusted browser data-plane's server-side act, never reachable from here.
+ * This client never receives a seed. The signed-in Vault owner may request the
+ * current short-lived code for display; enrollment responses remain metadata.
  *
  * Spec: common-docs/systems/matrx-authenticator/FEATURE.md
  */
 
 import { createClient } from "@/utils/supabase/client";
-import type { AuthenticatorEntry } from "./authenticator-types";
+import type {
+  AuthenticatorCode,
+  AuthenticatorEntry,
+} from "./authenticator-types";
 
 function backendBase(): string {
   return (
@@ -66,6 +66,15 @@ async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
 export async function fetchAuthenticators(): Promise<AuthenticatorEntry[]> {
   const resp = await authFetch<{ entries: AuthenticatorEntry[] }>("");
   return resp.entries ?? [];
+}
+
+/** Fetch the code the signed-in Vault owner needs to finish a provider login. */
+export function fetchAuthenticatorCode(
+  credentialItemId: string,
+): Promise<AuthenticatorCode> {
+  return authFetch<AuthenticatorCode>(
+    `/${encodeURIComponent(credentialItemId)}/code`,
+  );
 }
 
 /** Enroll from a setup key or a full otpauth:// URI.

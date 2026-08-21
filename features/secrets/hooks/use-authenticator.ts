@@ -3,8 +3,8 @@
  *
  * Loads the user's enrolled authenticators (metadata only), the login items
  * eligible to enroll onto, and funnels every mutation through `actions` so
- * busy-state, toasts, and refresh behave identically everywhere. No seed and no
- * code ever enter this hook — the service cannot return them.
+ * busy-state, toasts, and refresh behave identically everywhere. No seed enters
+ * this hook; current codes are fetched only by the short-lived code component.
  */
 "use client";
 
@@ -76,18 +76,22 @@ export function useAuthenticator() {
       );
     } catch (err) {
       if (!mounted.current) return;
-      setError(err instanceof Error ? err.message : "Failed to load authenticators");
+      setError(
+        err instanceof Error ? err.message : "Failed to load authenticators",
+      );
     } finally {
       if (mounted.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // The route's initial external fetch owns the loading state it updates.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 
   const run = useCallback(
-    async <T,>(op: () => Promise<T>, success: string): Promise<T | null> => {
+    async <T>(op: () => Promise<T>, success: string): Promise<T | null> => {
       setBusy(true);
       try {
         const result = await op();

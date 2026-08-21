@@ -3,10 +3,8 @@
 /**
  * Matrx Authenticator — the general-availability manage surface.
  *
- * Enroll + manage + consent ONLY (D-15). There is deliberately NO code shown
- * anywhere on this surface and no "reveal" — a rotating code is never displayed
- * to a human or a model. Generation happens server-side and types the code
- * straight into the page during an agent login; nothing here can read it.
+ * The signed-in owner's authenticator: enroll, show rotating codes, manage,
+ * consent, and revoke. Seeds remain sealed and never reach this surface.
  *
  * `(core)` body contract: `h-full overflow-hidden` with the scroll container
  * inside (features/shell/components/header/variants/USAGE.md).
@@ -30,6 +28,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuthenticator } from "../../hooks/use-authenticator";
 import type { AuthenticatorEntry } from "../../authenticator-types";
 import { AuthenticatorEnrollDialog } from "./AuthenticatorEnrollDialog";
+import { AuthenticatorCode } from "./AuthenticatorCode";
 
 /** `totp_label` holds the URI's raw `Issuer:account` path. Show the account
  *  alone when the issuer is already the card's title — nobody wants to read
@@ -60,7 +59,6 @@ function EntryCard({
 }) {
   const title =
     entry.issuer || entry.label || entry.display_name || "Authenticator";
-  const origin = entry.login_urls[0];
   const account = accountLabel(entry);
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -80,20 +78,6 @@ function EntryCard({
               {[entry.display_name, account]
                 .filter((part) => part && part !== title)
                 .join(" · ")}
-            </p>
-            {origin ? (
-              <a
-                href={origin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                {origin}
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            ) : null}
-            <p className="mt-1 text-xs text-muted-foreground">
-              {entry.digits} digits · {entry.period}s · {entry.algorithm}
             </p>
           </div>
         </div>
@@ -120,6 +104,13 @@ function EntryCard({
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <AuthenticatorCode
+          credentialItemId={entry.credential_item_id}
+          enabled={entry.enabled}
+        />
       </div>
 
       <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
@@ -157,9 +148,7 @@ export function AuthenticatorWorkspace() {
                   Authenticator
                 </h1>
                 <p className="max-w-xl text-sm text-muted-foreground">
-                  Six-digit codes Matrx can produce for you when it signs in on
-                  your behalf. Codes are never shown — they are typed straight
-                  into the sign-in page.
+                  Open this page whenever a site asks for your six-digit code.
                 </p>
               </div>
             </div>

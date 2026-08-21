@@ -20,16 +20,15 @@
  * lives — not stacked on top of the intake, where it is a wall of text in front
  * of a person who has not decided anything yet.
  *
- * 🚨 No code is shown here and there is no "reveal" — the surface is enroll
- * only (D-15). The decoded secret never leaves this component except as the
- * enrollment request body.
+ * After saving, the dialog immediately shows the current code so the person can
+ * finish the provider's setup. The decoded seed leaves only in the enrollment
+ * request body and is never returned.
  */
 
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
   KeyRound,
   Loader2,
   Plus,
@@ -64,6 +63,8 @@ import {
   parseEnrollmentInput,
 } from "../../authenticator-otpauth";
 import type { EnrollableItem } from "../../hooks/use-authenticator";
+import type { AuthenticatorEntry } from "../../authenticator-types";
+import { AuthenticatorCode } from "./AuthenticatorCode";
 
 /** Sentinel option value: enroll onto a login created on the spot. */
 const NEW_LOGIN = "__new__";
@@ -82,12 +83,13 @@ interface Props {
   enrollable: EnrollableItem[];
   busy: boolean;
   /** Performs the write. `secret` is the raw setup key or otpauth URI. */
-  onEnroll: (target: EnrollTarget, secret: string) => Promise<unknown>;
+  onEnroll: (
+    target: EnrollTarget,
+    secret: string,
+  ) => Promise<AuthenticatorEntry | null>;
 }
 
-/** The consent moment (spec §"What we tell the person"). Headline + the five
- *  promises stay visible; the honest trade-off paragraph is one click away, so
- *  the step reads as a decision rather than a document. */
+/** A short, honest consent moment before the seed is stored. */
 function ConsentStep({ name }: { name: string }) {
   return (
     <div className="space-y-3">
@@ -95,50 +97,15 @@ function ConsentStep({ name }: { name: string }) {
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-sm text-foreground">
           Matrx will be able to produce the six-digit codes for{" "}
-          <span className="font-medium">{name}</span> — the same codes your phone
-          app makes — so it can sign in for you without interrupting you.
+          <span className="font-medium">{name}</span> — the same codes your
+          phone app makes — so it can sign in for you without interrupting you.
         </p>
       </div>
 
-      <ul className="space-y-1.5 text-sm text-muted-foreground">
-        <li className="flex gap-2">
-          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          Only this account, only on its website, only when signing in.
-        </li>
-        <li className="flex gap-2">
-          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          The AI never sees the secret or the code — our system types it.
-        </li>
-        <li className="flex gap-2">
-          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          We still stop and ask before anything sensitive: security settings,
-          payments, sign-in methods, account recovery.
-        </li>
-        <li className="flex gap-2">
-          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          Turn it off or delete the secret at any time — both take effect
-          immediately.
-        </li>
-        <li className="flex gap-2">
-          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          Keep your backup codes somewhere we do not hold them.
-        </li>
-      </ul>
-
-      <details className="group rounded-md border border-border bg-card p-3">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground">
-          What you are trading away
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-        </summary>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Normally your password and your code are two separate things kept in
-          two separate places, so someone who steals one still cannot get in. If
-          we hold both, they are in one place. You are trading that separation
-          for being signed in without being interrupted. We keep a record of
-          every code produced — the account, the site, and the time — never the
-          secret and never the code.
-        </p>
-      </details>
+      <p className="text-sm text-muted-foreground">
+        The AI never sees the setup secret or code. You can turn this off or
+        delete it at any time. Keep your backup codes somewhere else.
+      </p>
     </div>
   );
 }
@@ -150,7 +117,8 @@ export function AuthenticatorEnrollDialog({
   busy,
   onEnroll,
 }: Props) {
-  const [step, setStep] = useState<"secret" | "confirm">("secret");
+  const [step, setStep] = useState<"secret" | "confirm" | "code">("secret");
+  const [enrolled, setEnrolled] = useState<AuthenticatorEntry | null>(null);
   const [rawInput, setRawInput] = useState("");
   /** A failure from the QR reader (no code in the image, camera blocked). The
    *  parse failure below is derived, never stored. */
@@ -165,6 +133,7 @@ export function AuthenticatorEnrollDialog({
     setDecodeError(null);
     setChosenItemId(null);
     setTypedName(null);
+    setEnrolled(null);
   };
 
   const close = (next: boolean) => {
@@ -178,7 +147,10 @@ export function AuthenticatorEnrollDialog({
     const text = rawInput.trim();
     if (!text) return { parsed: null, error: null as string | null };
     try {
-      return { parsed: parseEnrollmentInput(text), error: null as string | null };
+      return {
+        parsed: parseEnrollmentInput(text),
+        error: null as string | null,
+      };
     } catch (err) {
       return {
         parsed: null,
@@ -197,9 +169,7 @@ export function AuthenticatorEnrollDialog({
    * from an effect) is what keeps a later vault refresh from walking over a
    * deliberate choice.
    */
-  const suggestedName = parsed
-    ? (parsed.issuer ?? parsed.account ?? "")
-    : "";
+  const suggestedName = parsed ? (parsed.issuer ?? parsed.account ?? "") : "";
   const suggestedItemId = useMemo(() => {
     const needle = parsed?.issuer?.toLowerCase();
     if (!needle) return null;
@@ -233,8 +203,11 @@ export function AuthenticatorEnrollDialog({
 
   const submit = async () => {
     if (!parsed || !canContinue) return;
-    const ok = await onEnroll(target, parsed.raw);
-    if (ok) close(false);
+    const result = await onEnroll(target, parsed.raw);
+    if (result) {
+      setEnrolled(result);
+      setStep("code");
+    }
   };
 
   return (
@@ -253,7 +226,11 @@ export function AuthenticatorEnrollDialog({
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             ) : null}
-            {step === "secret" ? "Add an authenticator" : "Turn on codes"}
+            {step === "secret"
+              ? "Add an authenticator"
+              : step === "confirm"
+                ? "Turn on codes"
+                : "Enter this code in the site"}
           </CredenzaTitle>
         </CredenzaHeader>
 
@@ -300,8 +277,7 @@ export function AuthenticatorEnrollDialog({
                       {describeEnrollment(parsed)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {parsed.digits} digits · every {parsed.period}s
-                      {parsed.algorithm === "SHA1" ? "" : ` · ${parsed.algorithm}`}
+                      Ready to save
                     </p>
                   </div>
                 </div>
@@ -322,8 +298,7 @@ export function AuthenticatorEnrollDialog({
                   <SelectContent>
                     <SelectItem value={NEW_LOGIN}>
                       <span className="flex items-center gap-1.5">
-                        <Plus className="h-3.5 w-3.5" />
-                        A new login
+                        <Plus className="h-3.5 w-3.5" />A new login
                       </span>
                     </SelectItem>
                     {enrollable.length ? (
@@ -361,15 +336,32 @@ export function AuthenticatorEnrollDialog({
                 </div>
               ) : null}
             </>
-          ) : (
+          ) : step === "confirm" ? (
             <ConsentStep name={targetName} />
-          )}
+          ) : enrolled ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Go back to the site and enter this code to finish turning on
+                two-factor authentication.
+              </p>
+              <AuthenticatorCode
+                credentialItemId={enrolled.credential_item_id}
+                enabled={enrolled.enabled}
+              />
+            </div>
+          ) : null}
         </CredenzaBody>
 
         <CredenzaFooter>
-          <Button variant="ghost" onClick={() => close(false)} disabled={busy}>
-            Cancel
-          </Button>
+          {step !== "code" ? (
+            <Button
+              variant="ghost"
+              onClick={() => close(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+          ) : null}
           {step === "secret" ? (
             <Button
               onClick={() => setStep("confirm")}
@@ -377,11 +369,13 @@ export function AuthenticatorEnrollDialog({
             >
               Continue
             </Button>
-          ) : (
+          ) : step === "confirm" ? (
             <Button onClick={submit} disabled={busy}>
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Turn on codes
             </Button>
+          ) : (
+            <Button onClick={() => close(false)}>Done</Button>
           )}
         </CredenzaFooter>
       </CredenzaContent>
