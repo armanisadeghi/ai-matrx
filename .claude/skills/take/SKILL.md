@@ -112,6 +112,12 @@ remembers nothing of this conversation and reads none of the documentation — e
    part gets an explicit fate: (a) his approved deferral with a real timer (a scheduled
    task that fires), (b) you build it, or (c) you spawn a focused session for it NOW
    (chip / subagent).
+8. **Never end fuzzy.** The last line of EVERY response is one of exactly three closes —
+   he must never sit there guessing whether you're done:
+   - **Done:** "Everything you've given me is complete." Then ask if there's anything
+     else — and name any weaknesses or improvements you'd pursue, if you see them.
+   - **Not done:** "Next, I'm doing X."
+   - **Met, but:** "Your requirements are met; I think we could go further on X."
 
 ## Closing the take — the system's bookkeeping
 
@@ -130,6 +136,9 @@ remembers nothing of this conversation and reads none of the documentation — e
 
 # Changelog
 
+- 2026-08-21 — Contract rule 8 added: every response ends with one of three explicit
+  closes (done + anything else? · next, I'm doing X · requirements met, could go further
+  on X) — never a fuzzy ending.
 - 2026-08-21 — Added the check-in contract (Arman's spoken rules, condensed): cold-open
   groundwork with no jargon/doc references, the two question shapes, UI = clickable URL
   never a file list, done = self-verified on all three form factors, deployment silence
