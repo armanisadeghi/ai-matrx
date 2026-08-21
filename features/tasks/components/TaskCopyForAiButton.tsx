@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { fetchTaskExportBundle } from "@/features/tasks/services/aiExportService";
 import { serializeTaskForAi } from "@/features/tasks/utils/serializeProjectTaskForAi";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 export function TaskCopyForAiButton({
   taskId,
@@ -40,7 +41,12 @@ export function TaskCopyForAiButton({
       agent={async () => {
         const bundle = await fetchTaskExportBundle(taskId);
         if (!bundle) {
-          throw new Error("Task not found");
+          throw recordUnavailable({
+            entity: "task",
+            reason: "unknown",
+            recordId: taskId,
+            token: "task",
+          });
         }
         return serializeTaskForAi(bundle, location);
       }}

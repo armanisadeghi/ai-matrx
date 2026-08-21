@@ -3,6 +3,7 @@
 
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 
 interface SendSharingNotificationOptions {
   recipientUserId: string;
@@ -164,7 +165,10 @@ export async function sendSharingNotification(
       !usersData[0]?.email
     ) {
       console.warn("No email found for user:", recipientUserId);
-      return { success: false, error: "User email not found" };
+      return {
+        success: false,
+        error: operationFailed("find an email address for that user").message,
+      };
     }
 
     const userData = usersData[0];
@@ -176,7 +180,10 @@ export async function sendSharingNotification(
         resourceType,
         resourceId,
       });
-      return { success: false, error: "Resource details not found" };
+      return {
+        success: false,
+        error: operationFailed("look up what was shared").message,
+      };
     }
 
     // Send email

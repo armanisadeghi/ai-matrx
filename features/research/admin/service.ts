@@ -8,6 +8,7 @@ import type {
   AgentConfigKey,
 } from "./types";
 import { jsonToAgentConfigStrings } from "./types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 const supabase = createClient();
 
@@ -118,7 +119,12 @@ export async function updateTemplateAgentConfig(
   value: string | null,
 ): Promise<ResearchTemplate> {
   const template = await fetchTemplateById(templateId);
-  if (!template) throw new Error("Template not found");
+  if (!template)
+    throw recordUnavailable({
+      entity: "research template",
+      reason: "unknown",
+      recordId: templateId,
+    });
 
   const updatedConfig = jsonToAgentConfigStrings(template.agent_config);
 

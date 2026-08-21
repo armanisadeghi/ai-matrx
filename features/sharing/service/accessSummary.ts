@@ -21,6 +21,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 export type AccessGranteeType = "user" | "organization";
@@ -164,7 +165,7 @@ export async function fetchAccessSummary(
     p_type: entityType,
     p_id: entityId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load the access summary", error);
   return parseSummary(data);
 }
 
@@ -187,7 +188,7 @@ export async function fetchEntityTitles(
     p_type: entityType,
     p_ids: unique,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load those titles", error);
   for (const raw of Array.isArray(data) ? data : []) {
     const row = record(raw);
     const id = row ? str(row.id) : null;

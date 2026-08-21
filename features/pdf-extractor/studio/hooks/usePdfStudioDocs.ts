@@ -17,6 +17,7 @@ import { docprocDb } from "@/utils/supabase/docprocDb";
 import { filesDb } from "@/features/files/filesDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { operationFailed } from "@/utils/errors";
 
 export interface StudioDocSummary {
   id: string;
@@ -111,7 +112,7 @@ export function usePdfStudioDocs(opts?: {
         .eq("owner_id", userId);
       if (err) {
         setDocs(prev);
-        throw new Error(err.message);
+        throw operationFailed("archive that document", err);
       }
     },
     [userId],

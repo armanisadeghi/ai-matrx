@@ -8,6 +8,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { renameFile } from "@/features/files/redux/thunks";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { operationFailed } from "@/utils/errors";
 
 export interface RenameStudioDocumentInput {
   docId: string;
@@ -27,7 +28,7 @@ export async function renameStudioDocument(
     .from("processed_documents")
     .update({ name: trimmed })
     .eq("id", input.docId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("rename this document", error);
 
   if (input.sourceKind === "cld_file" && input.sourceId) {
     await input
