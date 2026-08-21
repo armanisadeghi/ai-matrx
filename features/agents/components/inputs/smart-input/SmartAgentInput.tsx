@@ -11,6 +11,7 @@
  * Layout modes:
  *   default           — SmartAgentInputStacked: variables → chips → textarea → toolbar
  *   singleRowTextarea — SmartAgentInputSingleRow: horizontal row, textarea left, buttons right
+ *   ambient           — either quiet single-line or multiline launcher chrome
  *
  * Required prop: conversationId.
  */
@@ -31,6 +32,8 @@ interface SmartAgentInputProps {
    * conversation surface opens.
    */
   presentation?: "default" | "ambient";
+  /** Choose the ambient launcher's footprint without changing its behavior. */
+  ambientLayout?: "single-line" | "multiline";
   singleRowTextarea?: boolean;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
@@ -55,6 +58,7 @@ interface SmartAgentInputProps {
 export function SmartAgentInput({
   conversationId,
   presentation = "default",
+  ambientLayout = "single-line",
   singleRowTextarea = false,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
@@ -88,7 +92,7 @@ export function SmartAgentInput({
       <ChatConnectorStrip className="mt-1.5" />
     ) : null;
 
-  if (singleRowTextarea || isAmbient) {
+  if (singleRowTextarea || (isAmbient && ambientLayout === "single-line")) {
     return (
       <>
         {queueStrip}
@@ -116,6 +120,7 @@ export function SmartAgentInput({
       {queueStrip}
       <SmartAgentInputStacked
         conversationId={conversationId}
+        presentation={presentation}
         sendButtonVariant={sendButtonVariant}
         showSubmitOnEnterToggle={showSubmitOnEnterToggle}
         uploadRoot={uploadRoot}

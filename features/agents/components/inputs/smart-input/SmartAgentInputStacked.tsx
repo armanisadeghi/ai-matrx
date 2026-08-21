@@ -18,6 +18,7 @@ import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
+import { SingleRowActionButtons } from "./SingleRowActionButtons";
 import { ConversationContextRail } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
 import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
+  presentation?: "default" | "ambient";
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
   uploadRoot?: string;
@@ -50,6 +52,7 @@ interface SmartAgentInputStackedProps {
 
 export function SmartAgentInputStacked({
   conversationId,
+  presentation = "default",
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
   uploadRoot = "userContent",
@@ -64,6 +67,7 @@ export function SmartAgentInputStacked({
   extraRightControls,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
+  const isAmbient = presentation === "ambient";
   // Gate send (button + Enter) while the mic is recording or finishing a
   // transcript — submitting mid-voice drops the trailing audio and leaves the
   // recorder running.
@@ -99,12 +103,52 @@ export function SmartAgentInputStacked({
   // `transition-[padding,border-color]` lets focus/expansion changes flow
   // smoothly; the textarea inside owns its own height transition.
   const shellClassName = cn(
-    "w-full rounded-[28px] border border-border bg-card",
-    "shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+    "w-full border",
     "flex flex-col min-h-0 overflow-hidden",
-    "transition-colors focus-within:border-foreground/25",
-    compact ? "max-w-[500px]" : "max-w-[800px]",
+    isAmbient
+      ? "min-h-24 rounded-[22px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
+      : "rounded-[28px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+    isAmbient ? "max-w-[440px]" : compact ? "max-w-[500px]" : "max-w-[800px]",
   );
+
+  if (isAmbient) {
+    return (
+      <SmartInputFileDropTarget
+        conversationId={conversationId}
+        uploadRoot={uploadRoot}
+        uploadPath={uploadPath}
+        className={cn(shellClassName, "gap-1 px-2.5 pb-2 pt-2.5")}
+        data-ambient-input="multiline"
+      >
+        <AgentTextarea
+          conversationId={conversationId}
+          uploadRoot={uploadRoot}
+          uploadPath={uploadPath}
+          enablePasteImages={enablePasteImages}
+          surfaceKey={surfaceKey}
+          disableSend={sendBlocked}
+          autoFocus={false}
+          requireTextForSubmit
+          showExpandToggle={false}
+        />
+        <div className="flex min-h-6 items-center justify-end">
+          <SingleRowActionButtons
+            conversationId={conversationId}
+            uploadRoot={uploadRoot}
+            uploadPath={uploadPath}
+            showSendButton={showSendButton}
+            showVariableIcon={showVariableIcon}
+            sendButtonVariant={sendButtonVariant}
+            surfaceKey={surfaceKey}
+            disableSend={sendBlocked}
+            onVoiceBusyChange={setVoiceBusy}
+            extraRightControls={extraRightControls}
+            minimal
+          />
+        </div>
+      </SmartInputFileDropTarget>
+    );
+  }
 
   // Variables-only mode: hide chips + textarea + full toolbar. Render the
   // variables panel and a single Run button. Apps that want a structured

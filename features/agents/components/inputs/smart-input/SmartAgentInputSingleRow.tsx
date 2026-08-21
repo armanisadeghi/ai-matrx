@@ -115,9 +115,10 @@ export function SmartAgentInputSingleRow({
       <div
         className={
           isAmbient
-            ? "flex min-h-9 w-full min-w-0 items-center gap-1 rounded-xl border border-transparent bg-card/80 px-2 py-1 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.45)] backdrop-blur-md transition-[border-color,background-color,box-shadow] focus-within:border-ring/45 focus-within:bg-card focus-within:shadow-[0_10px_32px_-14px_rgba(0,0,0,0.5)]"
+            ? "flex min-h-9 w-full min-w-0 items-center gap-1 rounded-xl border border-glass-edge bg-glass px-2 py-1 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
             : "flex w-full min-w-0 items-center gap-1 rounded-none border border-border bg-card px-2 py-1"
         }
+        data-ambient-input="single-line"
       >
         {/* Textarea — flex-1 so it fills available width */}
         <div className="flex-1 min-w-0">

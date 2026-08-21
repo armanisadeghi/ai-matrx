@@ -30,7 +30,7 @@ export default async function DataLayout({
       <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-muted/40 text-foreground scrollbar-none">
         {children}
       </div>
-      <ScrollAssistantLauncher />
+      <ScrollAssistantLauncher inputVariant="single-line" />
     </>
   );
 }

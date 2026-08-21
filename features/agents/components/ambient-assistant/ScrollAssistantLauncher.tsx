@@ -3,17 +3,15 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import type { ScrollAssistantLauncherImplProps } from "./ScrollAssistantLauncherImpl";
 
-const ScrollAssistantLauncherImpl = dynamic(
+const ScrollAssistantLauncherImpl = dynamic<ScrollAssistantLauncherImplProps>(
   () => import("./ScrollAssistantLauncherImpl"),
   {
     ssr: false,
-    loading: () => (
-      <div
-        aria-hidden
-        className="pointer-events-none fixed bottom-5 left-1/2 z-[35] h-9 w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 animate-pulse rounded-xl bg-card/55 shadow-sm backdrop-blur-md"
-      />
-    ),
+    // A prop-blind loading shell would jump between the two supported heights.
+    // Reveal the correctly sized implementation once its chunk is ready.
+    loading: () => null,
   },
 );
 
@@ -21,7 +19,9 @@ const ScrollAssistantLauncherImpl = dynamic(
  * Tiny front door for the ambient page assistant. The expensive agent/chat
  * graph is not requested until a desktop user actually scrolls the surface.
  */
-export function ScrollAssistantLauncher() {
+export function ScrollAssistantLauncher({
+  inputVariant = "single-line",
+}: ScrollAssistantLauncherImplProps) {
   const isMobile = useIsMobile();
   const [revealed, setRevealed] = useState(false);
 
@@ -45,7 +45,8 @@ export function ScrollAssistantLauncher() {
     // move before a DOM `scroll` event reaches React (notably feature landing
     // pages), while the user's wheel intent is still delivered synchronously.
     const revealOnWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) < 8 || isNavigationScroll(event.target)) return;
+      if (Math.abs(event.deltaY) < 8 || isNavigationScroll(event.target))
+        return;
       setRevealed(true);
     };
 
@@ -69,5 +70,5 @@ export function ScrollAssistantLauncher() {
   }, [isMobile, revealed]);
 
   if (isMobile || !revealed) return null;
-  return <ScrollAssistantLauncherImpl />;
+  return <ScrollAssistantLauncherImpl inputVariant={inputVariant} />;
 }

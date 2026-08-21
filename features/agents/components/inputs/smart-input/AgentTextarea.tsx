@@ -61,6 +61,8 @@ interface AgentTextareaProps {
   autoFocus?: boolean;
   /** Ambient chat launchers need a human message; variables-only runs do not. */
   requireTextForSubmit?: boolean;
+  /** Hide the expansion control when the host deliberately keeps sparse chrome. */
+  showExpandToggle?: boolean;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -82,6 +84,7 @@ export function AgentTextarea({
   initiallyExpanded = false,
   autoFocus = true,
   requireTextForSubmit = false,
+  showExpandToggle = true,
 }: AgentTextareaProps) {
   const dispatch = useAppDispatch();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -144,7 +147,9 @@ export function AgentTextarea({
 
   // Expand icon: show whenever expanded OR text is long enough to need it (hidden in singleRow)
   const showExpand =
-    !singleRow && (isExpanded || (isSubmitting ? 0 : charCount) > 80);
+    showExpandToggle &&
+    !singleRow &&
+    (isExpanded || (isSubmitting ? 0 : charCount) > 80);
 
   // Send is ALWAYS a send — never a disguised Stop. While a run is streaming,
   // smartExecute applies the three send modes (docs/TURN_BOUNDARY_INBOX.md):

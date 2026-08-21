@@ -420,7 +420,7 @@ export function ModuleLanding({
         surfaceId={surfaceId}
         moduleName={workspaceLabel}
       />
-      <ScrollAssistantLauncher />
+      <ScrollAssistantLauncher inputVariant="multiline" />
     </div>
   );
 }

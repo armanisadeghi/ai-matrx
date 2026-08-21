@@ -13,13 +13,20 @@ import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-fea
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@/lib/utils";
+
+export interface ScrollAssistantLauncherImplProps {
+  inputVariant?: "single-line" | "multiline";
+}
 
 /**
  * The live half of the scroll assistant. It creates one ordinary managed chat
  * conversation, lets the canonical SmartAgentInput own the draft/submit, and
  * hands that same conversation to Quick Chat when the first turn is accepted.
  */
-export default function ScrollAssistantLauncherImpl() {
+export default function ScrollAssistantLauncherImpl({
+  inputVariant = "single-line",
+}: ScrollAssistantLauncherImplProps) {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
@@ -72,10 +79,24 @@ export default function ScrollAssistantLauncherImpl() {
   };
 
   return (
-    <div className="pointer-events-none fixed bottom-5 left-1/2 z-[35] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div
+      className={cn(
+        "pointer-events-none fixed bottom-5 left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
+        inputVariant === "multiline"
+          ? "w-[min(440px,calc(100vw-2rem))]"
+          : "w-[min(380px,calc(100vw-2rem))]",
+      )}
+    >
       <div className="pointer-events-auto opacity-70 transition-opacity hover:opacity-100 focus-within:opacity-100">
         {loading ? (
-          <div className="h-9 animate-pulse rounded-xl bg-card/65 shadow-sm backdrop-blur-md" />
+          <div
+            className={cn(
+              "animate-pulse bg-glass shadow-glass backdrop-blur-glass",
+              inputVariant === "multiline"
+                ? "h-24 rounded-[22px]"
+                : "h-9 rounded-xl",
+            )}
+          />
         ) : error || !mandate ? (
           <div className="flex h-9 items-center gap-2 rounded-xl bg-card/80 px-3 text-xs text-muted-foreground shadow-sm backdrop-blur-md">
             <span className="min-w-0 flex-1 truncate">
@@ -92,10 +113,20 @@ export default function ScrollAssistantLauncherImpl() {
               <X className="h-3.5 w-3.5" />
             </Button>
           </div>
+        ) : !conversationId ? (
+          <div
+            className={cn(
+              "animate-pulse bg-glass shadow-glass backdrop-blur-glass",
+              inputVariant === "multiline"
+                ? "h-24 rounded-[22px]"
+                : "h-9 rounded-xl",
+            )}
+          />
         ) : (
           <SmartAgentInput
             conversationId={conversationId}
             presentation="ambient"
+            ambientLayout={inputVariant}
             surfaceKey={surfaceKey}
             showConnectors={false}
             enablePasteImages={false}

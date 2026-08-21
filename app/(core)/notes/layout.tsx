@@ -78,7 +78,7 @@ export default async function NotesV2Layout({
           {children}
         </NotesRouteBody>
       </div>
-      <ScrollAssistantLauncher />
+      <ScrollAssistantLauncher inputVariant="multiline" />
     </>
   );
 }
