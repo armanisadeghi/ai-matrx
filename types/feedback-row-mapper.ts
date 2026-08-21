@@ -22,10 +22,10 @@ export type FeedbackCommentRowLike =
   | Database["public"]["Functions"]["add_feedback_comment"]["Returns"];
 
 export type SystemAnnouncementRow =
-  Database["public"]["Tables"]["system_announcements"]["Row"];
+  Database["users"]["Tables"]["system_announcements"]["Row"];
 
 export type FeedbackUserMessageRowLike =
-  Database["public"]["Tables"]["feedback_user_messages"]["Row"];
+  Database["users"]["Tables"]["feedback_user_messages"]["Row"];
 
 function isJsonRecord(value: Json): value is Record<string, Json> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

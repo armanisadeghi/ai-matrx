@@ -2,7 +2,7 @@
 
 **Status:** `inbox LIVE · chasebox LIVE · inbound ingestion PENDING (aidream)` · **Tier:** `1` · **Last updated:** `2026-08-15`
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md`.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md`.
 Program: `/Users/armanisadeghi/code/common-docs/projects/outreach-system/` (this is WP1's client half).
 Read [`features/crm/FEATURE.md`](../FEATURE.md) and
 [`features/crm/compliance/FEATURE.md`](../compliance/FEATURE.md) first — the contact-medium

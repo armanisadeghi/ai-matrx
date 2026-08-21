@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       ? await ensureOrgIdServer(supabase, undefined)
       : await resolveSystemOrgId(adminSupabase);
     const { data: submission, error: dbError } = await adminSupabase
+      .schema("communication")
       .from("contact_submissions")
       .insert({
         organization_id: organizationId,
@@ -160,6 +161,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch submissions
     let query = adminSupabase
+      .schema("communication")
       .from("contact_submissions")
       .select("*", { count: "exact" })
       .is("deleted_at", null)

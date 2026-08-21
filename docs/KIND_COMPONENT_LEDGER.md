@@ -18,7 +18,17 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **211** — live recount 2026-08-20
 - **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
-- Individual rows: unclaimed **0** · claimed **12** · done **24** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-D)
+- Individual rows: unclaimed **0** · claimed **12** · done **24** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**)
+
+**Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
+non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
+`workflow_io` (12) machine-contract families that absence is CORRECT by classification
+(`decideKindInputPath` refuses them on `dataOnly` regardless of any row). The other **38**
+— 25 unfamilied, 8 `search`, 4 `primitive`, 1 `structured_output` — are candidates for the
+same gap copy-C fixed for `web_analysis_item`: the compiled input floor only reaches COMPILED
+kinds, so a DB-registered kind's `/shapes/<kind>/test` refuses, and for a kind with no
+canonical example that is the only way to verify its route. Check `role='input'` when you
+claim rows; do not blanket-insert (verify the kind is not a machine contract first).
 
 > Contract artifacts (`is_contract_artifact = true`, 774 active) are quarantined per §7.8 and
 > are OUT of scope for this mission. Do not register routes for them.
@@ -58,17 +68,51 @@ A family is one shape ⇒ one component ⇒ one claim.
 
 | Family | Kinds | Shared shape | Component | Claim | Status |
 |---|---|---|---|---|---|
-| `web_*_v1` — site-audit check results | 83 | `summary`, `checked`, `issues_found`, `evidence[]`, `recommendations[]` (+ per-check scalars) — verified identical core across all 83 | `web_analysis_item` | **another copy (in flight)** | claimed |
+| `web_*_v1` — site-audit check results (`metadata.family = 'web_analysis_item'`) | 83 | `summary`, `checked`, `issues_found`, `evidence[]`, `recommendations[]` (+ per-check scalars) — verified identical core across all 83 | `web_analysis_item` | **copy-C** | **done** ✅ |
 
-### Family: `web_*_v1` site-audit check results — ALREADY IN FLIGHT, DO NOT TOUCH
+### Family: `web_*_v1` site-audit check results — DONE (copy-C, 2026-08-20)
 
-copy-D claimed this family, then found it **already being built** by a parallel copy:
-uncommitted work in the shared checkout (`components/mardown-display/blocks/web-analysis/
-WebAnalysisItemBlock.tsx` + the `web_analysis_item` key wired into
-`block-dispatch.tsx`'s `ShapeBlockType` / `FeSynthesizedBlockType` / `SHAPE_BLOCK_DISPATCH`
-and its test). copy-D **released the claim** rather than duplicate it, and moved to the
-primitive kinds below. Whoever owns that work: flip this row to `done` when the 83
-`kind_component` rows and canonical examples land.
+copy-D claimed this family, found it already in flight, and released it; copy-C owned and
+finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row pointing at
+`web_analysis_item`** — verified live in the registry, not from an apply report.
+
+- **Component:** [`components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock.tsx`](../components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock.tsx),
+  wired into `block-dispatch.tsx` (`ShapeBlockType` + `SHAPE_BLOCK_DISPATCH` + the
+  FE-synthesized list in its test). It contributes only the audit verdict, the check name
+  (derived from the kind slug — no 83 hardcoded titles), and the fix list; evidence and prose
+  reuse `ResultValue` / `ResultMarkdown`.
+- **Guard:** [`features/content-ir/__tests__/kind-web-analysis-item-family.test.tsx`](../features/content-ir/__tests__/kind-web-analysis-item-family.test.tsx)
+  — proves the before/after (silent `by:'generic'` → registered `by:'db'`), a failing check,
+  a passing check, ragged evidence, and the never-swallow backstop.
+- **Live verification:** `/shapes/web_broken_images_v1/test`, rendered through the real
+  production path (2026-08-20).
+
+**Two findings from this family, both acted on:**
+
+1. **The `role='input'` floor does not reach DB-registered kinds.** The compiled bootstrap
+   (`features/content-ir/registry/system-components.ts`) gives EVERY compiled kind a
+   `role='input'` / `generic_structured` row, so `/shapes/<kind>/test` works. Kinds that live
+   only in the DB get nothing, and the Test tab refuses — *"No input component is registered …
+   add the kind_component row, never a guessed form."* For a kind with **no canonical example**
+   that surface is the ONLY way to verify a route, so the gap blocks verification outright.
+   copy-C registered the same D1 floor row for all 83 (they are honest data kinds, not
+   data-only machine contracts). ⚠️ **The same gap almost certainly affects every other
+   DB-registered kind in this ledger** — check `role='input'` when you claim rows.
+2. **Media-shaped evidence rendered as a wall of failed-load boxes.** `detectResultShape`
+   embeds any image-extension URL as media, so a *broken images* audit — where every evidence
+   URL is broken by definition — filled the table with red "Image failed to load" panels and
+   buried the finding. Fixed at the seam: `detectResultShape` / `ResultValue` / `ResultTable` /
+   `KeyValueGrid` gained an **`embedMedia` opt-out (default `true`, nothing else changes)**;
+   the family component passes `false`, so an evidence URL renders as a chip that still opens
+   it. Our own signed storage URLs stay on the media path on purpose.
+
+**Still open for this family (NOT copy-C's lane):**
+
+- **No canonical examples.** None of the 83 carries a `kind_example` row or `sample_data`.
+  The route and component are proven against schema-derived payloads, which is enough for a
+  ROUTE and explicitly **not** enough for `verified` maturity. Maturity was not promoted.
+- Spun off as a chip: in a results table where every row shares a host, `UrlChip` renders
+  identical domain-only labels, so evidence rows cannot be told apart.
 
 | Kind | Label |
 |---|---|

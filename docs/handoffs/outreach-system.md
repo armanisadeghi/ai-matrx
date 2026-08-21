@@ -60,7 +60,7 @@ the platform was missing and did not know it was missing.
 > Separately, and not blocking the send path: take `ATTORNEY_BRIEF.md` to counsel — every jurisdiction
 > row is `ratified_by='agent-research'`, and each row counsel ratifies is a market that opens.
 
-> **Read `docs/handoffs/crm-system.md` first.** Outreach is not a new domain — it is the CRM's
+> **Read `common-docs/systems/crm/HANDOFF.md` first.** Outreach is not a new domain — it is the CRM's
 > reason to exist, pointed at two specific opportunity sources. Every target is a `crm.party`.
 > Do not build a parallel contact store, a parallel suppression list, or a parallel activity log.
 >
@@ -947,7 +947,7 @@ and printed on their live page rather than deleted: **Lane A opt-in email**
 (`marketing.monitoring.alerts`).
 
 **Related fronts OTHER programs own that touch this feature** (so no future owner loses the
-global view): `docs/handoffs/crm-system.md` (the contact-table folds feed outreach's contact
+global view): `common-docs/systems/crm/HANDOFF.md` (the contact-table folds feed outreach's contact
 supply) · aidream `docs/handoffs/features-to-workflows.md` (plans CRM/outreach WORKFLOW NODES —
 when built, they must go through the one send/draft primitives, never a side door) ·
 aidream `docs/handoffs/assist-producer-noise.md` (assists-dock hygiene; outreach's producers write

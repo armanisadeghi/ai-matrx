@@ -262,7 +262,7 @@ export default function GoogleAPIProvider({
         scope: finalScopes.join(" "),
         // Picker receives a drive.file-only browser token even if this Google
         // account later grants gmail.send to the same Cloud project.
-        include_granted_scopes: false,
+        include_granted_scopes: true,
         prompt: "",
         ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: TokenResponse) => {

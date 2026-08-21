@@ -351,7 +351,7 @@ system shipped: `crm.party` is live with `expert_status`
 (seeded, includes Expert), and the `party_observation` edge payload kind for
 `party → research_source` provenance. **Experts are born on `crm.party` — do
 NOT build a research-local expert table.** The exact write recipe is
-[`docs/handoffs/crm-system.md`](./crm-system.md) step "Research → experts"
+[`common-docs/systems/crm/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/systems/crm/HANDOFF.md) step "Research → experts"
 (emit a content-IR kind from the extraction agent; the apply step writes
 `crm.party` rows + observation edges + a `topic.experts` entry in
 `features/research/resources/catalog.ts`). Workstream B item 4 is unblocked.

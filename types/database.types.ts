@@ -133,6 +133,39 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_login_audit: {
+        Row: {
+          id: string
+          jwt_jti: string
+          metadata: Json
+          requested_at: string
+          requester_ip: string | null
+          requester_secret_hash: string
+          target_user_id: string
+          ttl_seconds: number
+        }
+        Insert: {
+          id: string
+          jwt_jti: string
+          metadata?: Json
+          requested_at?: string
+          requester_ip?: string | null
+          requester_secret_hash: string
+          target_user_id: string
+          ttl_seconds?: number
+        }
+        Update: {
+          id?: string
+          jwt_jti?: string
+          metadata?: Json
+          requested_at?: string
+          requester_ip?: string | null
+          requester_secret_hash?: string
+          target_user_id?: string
+          ttl_seconds?: number
+        }
+        Relationships: []
+      }
       feature_docs: {
         Row: {
           area: string | null
@@ -9906,6 +9939,69 @@ export type Database = {
   }
   communication: {
     Tables: {
+      contact_submissions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          email: string
+          id: string
+          message: string
+          metadata: Json
+          name: string
+          organization_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          email: string
+          id?: string
+          message: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       dm_conversation_participants: {
         Row: {
           conversation_id: string
@@ -27349,6 +27445,72 @@ export type Database = {
         }
         Relationships: []
       }
+      mtx_media_heal_queue: {
+        Row: {
+          bad_value: string | null
+          column_name: string
+          created_at: string
+          error: string | null
+          healed_at: string | null
+          id: string
+          row_id: string
+          schema_name: string
+          status: string
+          table_name: string
+        }
+        Insert: {
+          bad_value?: string | null
+          column_name: string
+          created_at?: string
+          error?: string | null
+          healed_at?: string | null
+          id?: string
+          row_id: string
+          schema_name: string
+          status?: string
+          table_name: string
+        }
+        Update: {
+          bad_value?: string | null
+          column_name?: string
+          created_at?: string
+          error?: string | null
+          healed_at?: string | null
+          id?: string
+          row_id?: string
+          schema_name?: string
+          status?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      mtx_public_url_guard: {
+        Row: {
+          column_name: string
+          created_at: string
+          id: string
+          note: string | null
+          schema_name: string
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          schema_name: string
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          schema_name?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       org_change_policy: {
         Row: {
           change_type_key: string
@@ -29873,102 +30035,6 @@ export type Database = {
         }
         Relationships: []
       }
-      contact_submissions: {
-        Row: {
-          admin_notes: string | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          email: string
-          id: string
-          message: string
-          metadata: Json
-          name: string
-          organization_id: string
-          resolved_at: string | null
-          resolved_by: string | null
-          status: string
-          subject: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          admin_notes?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          email: string
-          id?: string
-          message: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: string
-          subject: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          admin_notes?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          email?: string
-          id?: string
-          message?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: string
-          subject?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: []
-      }
-      dev_login_audit: {
-        Row: {
-          id: string
-          jwt_jti: string
-          metadata: Json
-          requested_at: string
-          requester_ip: string | null
-          requester_secret_hash: string
-          target_user_id: string
-          ttl_seconds: number
-        }
-        Insert: {
-          id: string
-          jwt_jti: string
-          metadata?: Json
-          requested_at?: string
-          requester_ip?: string | null
-          requester_secret_hash: string
-          target_user_id: string
-          ttl_seconds?: number
-        }
-        Update: {
-          id?: string
-          jwt_jti?: string
-          metadata?: Json
-          requested_at?: string
-          requester_ip?: string | null
-          requester_secret_hash?: string
-          target_user_id?: string
-          ttl_seconds?: number
-        }
-        Relationships: []
-      }
       dict_entries: {
         Row: {
           category: string | null
@@ -30116,69 +30182,6 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           version?: number
-        }
-        Relationships: []
-      }
-      feedback_comments: {
-        Row: {
-          author_name: string | null
-          author_type: string
-          content: string
-          created_at: string
-          feedback_id: string
-          id: string
-        }
-        Insert: {
-          author_name?: string | null
-          author_type: string
-          content: string
-          created_at?: string
-          feedback_id: string
-          id?: string
-        }
-        Update: {
-          author_name?: string | null
-          author_type?: string
-          content?: string
-          created_at?: string
-          feedback_id?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      feedback_user_messages: {
-        Row: {
-          content: string
-          created_at: string
-          email_sent: boolean
-          feedback_id: string
-          id: string
-          image_file_ids: string[]
-          image_urls: string[] | null
-          sender_name: string | null
-          sender_type: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          email_sent?: boolean
-          feedback_id: string
-          id?: string
-          image_file_ids?: string[]
-          image_urls?: string[] | null
-          sender_name?: string | null
-          sender_type: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          email_sent?: boolean
-          feedback_id?: string
-          id?: string
-          image_file_ids?: string[]
-          image_urls?: string[] | null
-          sender_name?: string | null
-          sender_type?: string
         }
         Relationships: []
       }
@@ -30373,105 +30376,6 @@ export type Database = {
           stale_after_seconds?: number
           state?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      library_audit_log: {
-        Row: {
-          action: string
-          actor_user_id: string | null
-          created_at: string
-          data_store_id: string | null
-          detail: Json
-          id: string
-          industry_id: string | null
-          organization_id: string | null
-        }
-        Insert: {
-          action: string
-          actor_user_id?: string | null
-          created_at?: string
-          data_store_id?: string | null
-          detail?: Json
-          id?: string
-          industry_id?: string | null
-          organization_id?: string | null
-        }
-        Update: {
-          action?: string
-          actor_user_id?: string | null
-          created_at?: string
-          data_store_id?: string | null
-          detail?: Json
-          id?: string
-          industry_id?: string | null
-          organization_id?: string | null
-        }
-        Relationships: []
-      }
-      mtx_media_heal_queue: {
-        Row: {
-          bad_value: string | null
-          column_name: string
-          created_at: string
-          error: string | null
-          healed_at: string | null
-          id: string
-          row_id: string
-          schema_name: string
-          status: string
-          table_name: string
-        }
-        Insert: {
-          bad_value?: string | null
-          column_name: string
-          created_at?: string
-          error?: string | null
-          healed_at?: string | null
-          id?: string
-          row_id: string
-          schema_name: string
-          status?: string
-          table_name: string
-        }
-        Update: {
-          bad_value?: string | null
-          column_name?: string
-          created_at?: string
-          error?: string | null
-          healed_at?: string | null
-          id?: string
-          row_id?: string
-          schema_name?: string
-          status?: string
-          table_name?: string
-        }
-        Relationships: []
-      }
-      mtx_public_url_guard: {
-        Row: {
-          column_name: string
-          created_at: string
-          id: string
-          note: string | null
-          schema_name: string
-          table_name: string
-        }
-        Insert: {
-          column_name: string
-          created_at?: string
-          id?: string
-          note?: string | null
-          schema_name: string
-          table_name: string
-        }
-        Update: {
-          column_name?: string
-          created_at?: string
-          id?: string
-          note?: string | null
-          schema_name?: string
-          table_name?: string
         }
         Relationships: []
       }
@@ -30711,45 +30615,6 @@ export type Database = {
         }
         Relationships: []
       }
-      system_announcements: {
-        Row: {
-          announcement_type: string
-          created_at: string
-          created_by: string | null
-          id: string
-          is_active: boolean
-          message: string
-          min_display_seconds: number | null
-          target_user_id: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          announcement_type?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          message: string
-          min_display_seconds?: number | null
-          target_user_id?: string | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          announcement_type?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          message?: string
-          min_display_seconds?: number | null
-          target_user_id?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       system_error: {
         Row: {
           agent_id: string | null
@@ -30896,6 +30761,69 @@ export type Database = {
       }
     }
     Views: {
+      contact_submissions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          id: string | null
+          message: string | null
+          metadata: Json | null
+          name: string | null
+          organization_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          subject: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          id?: string | null
+          message?: string | null
+          metadata?: Json | null
+          name?: string | null
+          organization_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          id?: string | null
+          message?: string | null
+          metadata?: Json | null
+          name?: string | null
+          organization_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       current_user_is_admin: {
         Row: {
           admin_level: Database["public"]["Enums"]["admin_level"] | null
@@ -30911,6 +30839,201 @@ export type Database = {
           admin_level?: Database["public"]["Enums"]["admin_level"] | null
           is_admin?: never
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      dev_login_audit: {
+        Row: {
+          id: string | null
+          jwt_jti: string | null
+          metadata: Json | null
+          requested_at: string | null
+          requester_ip: string | null
+          requester_secret_hash: string | null
+          target_user_id: string | null
+          ttl_seconds: number | null
+        }
+        Insert: {
+          id?: string | null
+          jwt_jti?: string | null
+          metadata?: Json | null
+          requested_at?: string | null
+          requester_ip?: string | null
+          requester_secret_hash?: string | null
+          target_user_id?: string | null
+          ttl_seconds?: number | null
+        }
+        Update: {
+          id?: string | null
+          jwt_jti?: string | null
+          metadata?: Json | null
+          requested_at?: string | null
+          requester_ip?: string | null
+          requester_secret_hash?: string | null
+          target_user_id?: string | null
+          ttl_seconds?: number | null
+        }
+        Relationships: []
+      }
+      feedback_comments: {
+        Row: {
+          author_name: string | null
+          author_type: string | null
+          content: string | null
+          created_at: string | null
+          feedback_id: string | null
+          id: string | null
+        }
+        Insert: {
+          author_name?: string | null
+          author_type?: string | null
+          content?: string | null
+          created_at?: string | null
+          feedback_id?: string | null
+          id?: string | null
+        }
+        Update: {
+          author_name?: string | null
+          author_type?: string | null
+          content?: string | null
+          created_at?: string | null
+          feedback_id?: string | null
+          id?: string | null
+        }
+        Relationships: []
+      }
+      feedback_user_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          email_sent: boolean | null
+          feedback_id: string | null
+          id: string | null
+          image_file_ids: string[] | null
+          image_urls: string[] | null
+          sender_name: string | null
+          sender_type: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          email_sent?: boolean | null
+          feedback_id?: string | null
+          id?: string | null
+          image_file_ids?: string[] | null
+          image_urls?: string[] | null
+          sender_name?: string | null
+          sender_type?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          email_sent?: boolean | null
+          feedback_id?: string | null
+          id?: string | null
+          image_file_ids?: string[] | null
+          image_urls?: string[] | null
+          sender_name?: string | null
+          sender_type?: string | null
+        }
+        Relationships: []
+      }
+      library_audit_log: {
+        Row: {
+          action: string | null
+          actor_user_id: string | null
+          created_at: string | null
+          data_store_id: string | null
+          detail: Json | null
+          id: string | null
+          industry_id: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          actor_user_id?: string | null
+          created_at?: string | null
+          data_store_id?: string | null
+          detail?: Json | null
+          id?: string | null
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          actor_user_id?: string | null
+          created_at?: string | null
+          data_store_id?: string | null
+          detail?: Json | null
+          id?: string | null
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Relationships: []
+      }
+      mtx_media_heal_queue: {
+        Row: {
+          bad_value: string | null
+          column_name: string | null
+          created_at: string | null
+          error: string | null
+          healed_at: string | null
+          id: string | null
+          row_id: string | null
+          schema_name: string | null
+          status: string | null
+          table_name: string | null
+        }
+        Insert: {
+          bad_value?: string | null
+          column_name?: string | null
+          created_at?: string | null
+          error?: string | null
+          healed_at?: string | null
+          id?: string | null
+          row_id?: string | null
+          schema_name?: string | null
+          status?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          bad_value?: string | null
+          column_name?: string | null
+          created_at?: string | null
+          error?: string | null
+          healed_at?: string | null
+          id?: string | null
+          row_id?: string | null
+          schema_name?: string | null
+          status?: string | null
+          table_name?: string | null
+        }
+        Relationships: []
+      }
+      mtx_public_url_guard: {
+        Row: {
+          column_name: string | null
+          created_at: string | null
+          id: string | null
+          note: string | null
+          schema_name: string | null
+          table_name: string | null
+        }
+        Insert: {
+          column_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          note?: string | null
+          schema_name?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          column_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          note?: string | null
+          schema_name?: string | null
+          table_name?: string | null
         }
         Relationships: []
       }
@@ -30947,6 +31070,45 @@ export type Database = {
             referencedColumns: ["file_id"]
           },
         ]
+      }
+      system_announcements: {
+        Row: {
+          announcement_type: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          is_active: boolean | null
+          message: string | null
+          min_display_seconds: number | null
+          target_user_id: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          announcement_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          message?: string | null
+          min_display_seconds?: number | null
+          target_user_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          announcement_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          message?: string | null
+          min_display_seconds?: number | null
+          target_user_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       v_context_item_suggestions: {
         Row: {
@@ -31245,14 +31407,7 @@ export type Database = {
           p_content: string
           p_feedback_id: string
         }
-        Returns: {
-          author_name: string | null
-          author_type: string
-          content: string
-          created_at: string
-          feedback_id: string
-          id: string
-        }
+        Returns: Database["users"]["Tables"]["feedback_comments"]["Row"]
         SetofOptions: {
           from: "*"
           to: "feedback_comments"
@@ -31289,14 +31444,7 @@ export type Database = {
       }
       _d31_impl_get_feedback_comments: {
         Args: { p_feedback_id: string }
-        Returns: {
-          author_name: string | null
-          author_type: string
-          content: string
-          created_at: string
-          feedback_id: string
-          id: string
-        }[]
+        Returns: Database["users"]["Tables"]["feedback_comments"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "feedback_comments"
@@ -31310,17 +31458,7 @@ export type Database = {
       }
       _d31_impl_get_user_messages: {
         Args: { p_feedback_id: string }
-        Returns: {
-          content: string
-          created_at: string
-          email_sent: boolean
-          feedback_id: string
-          id: string
-          image_file_ids: string[]
-          image_urls: string[] | null
-          sender_name: string | null
-          sender_type: string
-        }[]
+        Returns: Database["users"]["Tables"]["feedback_user_messages"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "feedback_user_messages"
@@ -31495,14 +31633,7 @@ export type Database = {
           p_content: string
           p_feedback_id: string
         }
-        Returns: {
-          author_name: string | null
-          author_type: string
-          content: string
-          created_at: string
-          feedback_id: string
-          id: string
-        }
+        Returns: Database["users"]["Tables"]["feedback_comments"]["Row"]
         SetofOptions: {
           from: "*"
           to: "feedback_comments"
@@ -35058,14 +35189,7 @@ export type Database = {
       }
       get_feedback_comments: {
         Args: { p_feedback_id: string }
-        Returns: {
-          author_name: string | null
-          author_type: string
-          content: string
-          created_at: string
-          feedback_id: string
-          id: string
-        }[]
+        Returns: Database["users"]["Tables"]["feedback_comments"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "feedback_comments"
@@ -35446,17 +35570,7 @@ export type Database = {
       get_user_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_messages: {
         Args: { p_feedback_id: string }
-        Returns: {
-          content: string
-          created_at: string
-          email_sent: boolean
-          feedback_id: string
-          id: string
-          image_file_ids: string[]
-          image_urls: string[] | null
-          sender_name: string | null
-          sender_type: string
-        }[]
+        Returns: Database["users"]["Tables"]["feedback_user_messages"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "feedback_user_messages"
@@ -39726,6 +39840,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      library_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          data_store_id: string | null
+          detail: Json
+          id: string
+          industry_id: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          data_store_id?: string | null
+          detail?: Json
+          id?: string
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          data_store_id?: string | null
+          detail?: Json
+          id?: string
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Relationships: []
       }
       library_docs: {
         Row: {
@@ -51905,6 +52052,85 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_comments: {
+        Row: {
+          author_name: string | null
+          author_type: string
+          content: string
+          created_at: string
+          feedback_id: string
+          id: string
+        }
+        Insert: {
+          author_name?: string | null
+          author_type: string
+          content: string
+          created_at?: string
+          feedback_id: string
+          id?: string
+        }
+        Update: {
+          author_name?: string | null
+          author_type?: string
+          content?: string
+          created_at?: string
+          feedback_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_comments_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "user_feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_user_messages: {
+        Row: {
+          content: string
+          created_at: string
+          email_sent: boolean
+          feedback_id: string
+          id: string
+          image_file_ids: string[]
+          image_urls: string[] | null
+          sender_name: string | null
+          sender_type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          email_sent?: boolean
+          feedback_id: string
+          id?: string
+          image_file_ids?: string[]
+          image_urls?: string[] | null
+          sender_name?: string | null
+          sender_type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          email_sent?: boolean
+          feedback_id?: string
+          id?: string
+          image_file_ids?: string[]
+          image_urls?: string[] | null
+          sender_name?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_user_messages_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "user_feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_connection_resources: {
         Row: {
           connection_id: string
@@ -52262,6 +52488,45 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      system_announcements: {
+        Row: {
+          announcement_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          message: string
+          min_display_seconds: number | null
+          target_user_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          announcement_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          message: string
+          min_display_seconds?: number | null
+          target_user_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          announcement_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          min_display_seconds?: number | null
+          target_user_id?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }

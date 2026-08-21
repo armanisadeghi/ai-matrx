@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
     const { data: storedMessage, error: messageError } = await admin
+      .schema("users")
       .from("feedback_user_messages")
       .select(
         "id, feedback_id, content, sender_type, sender_name, email_sent",

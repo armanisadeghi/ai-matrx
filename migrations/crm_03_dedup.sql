@@ -1,7 +1,7 @@
 -- crm_03_dedup.sql — dedup automation: name_key canonicalization, merge
 -- candidates, detection RPC (auto-merge on identity-key collisions), dismissal.
 --
--- Contract: features/crm/FEATURE.md · docs/handoffs/crm-system.md §4 Wave 3.
+-- Contract: features/crm/FEATURE.md · common-docs/systems/crm/HANDOFF.md §4 Wave 3.
 -- Everything here is idempotent. The merge/unmerge machinery this builds on
 -- (public.crm_merge_parties / crm_unmerge_parties) lives in crm_02_core.sql.
 --

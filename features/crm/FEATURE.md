@@ -5,7 +5,7 @@ Cross-repo Public Relations program: /Users/armanisadeghi/code/common-docs/syste
 
 **Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-20`
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md` — read it before touching this feature in ANY repo.
 
 ---
 
@@ -803,7 +803,7 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 - "Shared" list scope (needs a crm grant-reader RPC).
 - The `web.brand` fold and public expert registration — see
-  [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
+  [`common-docs/systems/crm/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/systems/crm/HANDOFF.md).
 
 ---
 
