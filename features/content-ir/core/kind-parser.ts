@@ -38,7 +38,6 @@ import {
   type RecordValueType,
 } from "./kind-schema.types";
 import { buildCompliantKindSnapshot } from "./kind-snapshot";
-import { getSurfaceForJsonRootKey } from "../registry/surface-registry";
 
 /** Kept as the historical name for the parser's event paths. */
 export type JsonPath = IrPath;
@@ -52,6 +51,37 @@ export interface SchemaResolver {
   get(kind: string): KindSchema | undefined;
   /** Fire-and-forget cold fetch. Absent = static source, unknown kinds go raw. */
   request?(kind: string): void;
+  /**
+   * Optional per-resolver override for legacy root-key recognition. Most hosts
+   * leave this unset and register the lookup once via
+   * `setJsonRootKeyLookup` — see that function for why.
+   */
+  kindForJsonRootKey?(key: string): string | null;
+}
+
+/**
+ * Legacy root-key recognition: `{"quiz_title": …}` → `quiz_set`.
+ *
+ * REGISTERED BY THE HOST, never imported by this file. The surface registry is
+ * host-coupled (it reaches `captureError`), and this file is a pinned kernel
+ * twin shared with aidream's Workflow Studio — a direct import breaks that
+ * build outright.
+ *
+ * It is a module seam rather than a constructor argument because recognition
+ * must not depend on each CALLER remembering to inject it: most callers pass a
+ * plain `Record<string, KindSchema>` for `schemas`, which cannot carry a
+ * function. Making this per-call silently disabled root-key recognition for
+ * every one of them.
+ *
+ * Unset = the host has no surface table and root-key recognition does not
+ * happen — the correct posture for a pure consumer like Workflow Studio.
+ */
+let jsonRootKeyLookup: ((key: string) => string | null) | null = null;
+
+export function setJsonRootKeyLookup(
+  lookup: ((key: string) => string | null) | null,
+): void {
+  jsonRootKeyLookup = lookup;
 }
 
 type ObjectFrame = {
@@ -532,14 +562,15 @@ export class KindStreamParser {
     if (this.options.expectedRootKind) return;
     if (this.rootKind || this.objectKinds.has(this.pathKey([]))) return;
 
-    const entry = getSurfaceForJsonRootKey(key);
-    if (!entry) return;
+    const kind =
+      this.resolver.kindForJsonRootKey?.(key) ?? jsonRootKeyLookup?.(key);
+    if (!kind) return;
 
-    this.rootSurfaceKind = entry.kind;
+    this.rootSurfaceKind = kind;
 
     // Warm a cold schema now so finalize can actually validate against it.
-    if (!this.lookupSchema(entry.kind)) {
-      this.resolver.request?.(entry.kind);
+    if (!this.lookupSchema(kind)) {
+      this.resolver.request?.(kind);
     }
   }
 

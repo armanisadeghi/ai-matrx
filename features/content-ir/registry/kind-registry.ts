@@ -19,12 +19,16 @@
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { KindSchema } from "../core/kind-schema.types";
-import type { SchemaResolver } from "../core/kind-parser";
+import {
+  setJsonRootKeyLookup,
+  type SchemaResolver,
+} from "../core/kind-parser";
 import {
   getKindSchemaAndMetaBySlugFromTables,
   listKindSchemasFromTables,
 } from "./schema-source-kind-tables";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
+import { getSurfaceForJsonRootKey } from "./surface-registry";
 import type { KindDefinition } from "./kind-registry.types";
 
 type SchemaArrivalListener = (kind: string, schema: KindSchema | null) => void;
@@ -291,5 +295,9 @@ class KindRegistry {
     };
   }
 }
+
+// The host owns the surface table; the kernel stays importless. Registered here
+// because this module is on the import path of every real parse entry point.
+setJsonRootKeyLookup((key) => getSurfaceForJsonRootKey(key)?.kind ?? null);
 
 export const kindRegistry = new KindRegistry(SYSTEM_KIND_DEFINITIONS);
