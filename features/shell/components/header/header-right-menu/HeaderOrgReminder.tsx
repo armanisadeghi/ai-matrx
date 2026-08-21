@@ -15,7 +15,7 @@
 // the canonical OrganizationPickerPanel (org list + "Set as default" switch).
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { Building2, X } from "lucide-react";
 import {
   Popover,
@@ -27,6 +27,9 @@ import { selectShouldPromptForOrganization } from "@/lib/redux/slices/appContext
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 
 const AUTO_HIDE_MS = 8_000;
+// How long the card stays mounted after it hides, purely so the exit animation
+// can play. It is already pointer-events:none for that whole window.
+const EXIT_MS = 250;
 
 // Module-scoped so the reminder shows AT MOST ONCE per session — it must never
 // re-drop on route changes / shell remounts. After dismissal the red avatar
@@ -67,104 +70,112 @@ export default function HeaderOrgReminder() {
     return () => clearTimeout(timer);
   }, [show, engaged, pickerOpen]);
 
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="org-reminder"
-          initial={{ opacity: 0, y: -12, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          // pointerEvents flips to "none" the instant the exit starts (motion
-          // applies non-animatable values immediately), and the exit runs on a
-          // finite tween rather than the entrance spring — a spring only
-          // asymptotes toward opacity 0, so the card could stay mounted,
-          // invisible, and still swallowing clicks at z-50 over the page's own
-          // top-right controls.
-          exit={{
-            opacity: 0,
-            y: -8,
-            scale: 0.97,
-            pointerEvents: "none",
-            transition: { type: "tween", duration: 0.18, ease: "easeOut" },
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 360,
-            damping: 30,
-          }}
-          onMouseEnter={engage}
-          style={{ top: "calc(var(--header-height, 2.5rem) + 0.5rem)" }}
-          className="fixed left-3 right-3 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:left-auto sm:w-72"
-          role="status"
-        >
-          {/* Auto-dismiss progress bar — hidden once the user engages */}
-          {!engaged && !pickerOpen && (
-            <div className="absolute left-0 right-0 top-0 h-0.5 overflow-hidden bg-muted">
-              <div
-                className="h-full origin-left bg-red-500"
-                style={{
-                  animation: `shrink ${AUTO_HIDE_MS}ms linear forwards`,
-                }}
-              />
-              <style>{`@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }`}</style>
-            </div>
-          )}
+  // Hard unmount, independent of the animation. This card is fixed at z-50 in
+  // the header strip — directly over the top-right controls of most pages — so
+  // it must NEVER outlive its own visibility. It used to exit through
+  // AnimatePresence, which keeps the node mounted until motion reports the exit
+  // complete; whenever motion's frame loop is not advancing (backgrounded tab,
+  // throttled rAF, reduced motion) that never happens, leaving an invisible
+  // click-eater parked over the page. Now it renders only while `show` is true
+  // plus a fixed exit window, and pointer-events is driven by `show` on every
+  // render — so it stops intercepting the moment it hides, animation or not.
+  const [inExitWindow, setInExitWindow] = useState(false);
+  useEffect(() => {
+    if (show) {
+      setInExitWindow(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => setInExitWindow(false), EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [show]);
 
-          {/* Header row */}
-          <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-1">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/10">
-              <Building2
-                size={13}
-                strokeWidth={2}
-                className="text-red-500 dark:text-red-400"
-              />
-            </span>
-            <span className="flex-1 text-xs font-semibold leading-none text-foreground">
-              Choose an organization
-            </span>
+  if (!show && !inExitWindow) return null;
+
+  return (
+    <motion.div
+      key="org-reminder"
+      initial={{ opacity: 0, y: -12, scale: 0.97 }}
+      animate={
+        show
+          ? { opacity: 1, y: 0, scale: 1 }
+          : { opacity: 0, y: -8, scale: 0.97 }
+      }
+      transition={{ type: "spring", stiffness: 360, damping: 30 }}
+      onMouseEnter={engage}
+      style={{
+        top: "calc(var(--header-height, 2.5rem) + 0.5rem)",
+        pointerEvents: show ? "auto" : "none",
+      }}
+      className="fixed left-3 right-3 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:left-auto sm:w-72"
+      role="status"
+      aria-hidden={!show}
+    >
+      {/* Auto-dismiss progress bar — hidden once the user engages */}
+      {!engaged && !pickerOpen && (
+        <div className="absolute left-0 right-0 top-0 h-0.5 overflow-hidden bg-muted">
+          <div
+            className="h-full origin-left bg-red-500"
+            style={{
+              animation: `shrink ${AUTO_HIDE_MS}ms linear forwards`,
+            }}
+          />
+          <style>{`@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }`}</style>
+        </div>
+      )}
+
+      {/* Header row */}
+      <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-1">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/10">
+          <Building2
+            size={13}
+            strokeWidth={2}
+            className="text-red-500 dark:text-red-400"
+          />
+        </span>
+        <span className="flex-1 text-xs font-semibold leading-none text-foreground">
+          Choose an organization
+        </span>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
+          aria-label="Dismiss reminder"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Body */}
+      <p className="px-3 pb-2.5 text-[11px] leading-relaxed text-muted-foreground">
+        Pick an organization for this workspace.
+      </p>
+
+      {/* CTA → org picker popover */}
+      <div className="px-2 pb-2">
+        <Popover
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            setPickerOpen(open);
+            if (open) engage();
+          }}
+        >
+          <PopoverTrigger asChild>
             <button
               type="button"
-              onClick={dismiss}
-              className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
-              aria-label="Dismiss reminder"
+              className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:h-8"
             >
-              <X className="h-3.5 w-3.5" />
+              <Building2 size={13} strokeWidth={2} />
+              Choose
             </button>
-          </div>
-
-          {/* Body */}
-          <p className="px-3 pb-2.5 text-[11px] leading-relaxed text-muted-foreground">
-            Pick an organization for this workspace.
-          </p>
-
-          {/* CTA → org picker popover */}
-          <div className="px-2 pb-2">
-            <Popover
-              open={pickerOpen}
-              onOpenChange={(open) => {
-                setPickerOpen(open);
-                if (open) engage();
-              }}
-            >
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:h-8"
-                >
-                  <Building2 size={13} strokeWidth={2} />
-                  Choose
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={8} className="w-72 p-1">
-                {/* No auto-close on select — the user may still toggle "Set as
-                    default" (enabled only once an org is active). They close
-                    the popover (outside-click / Esc) when done. */}
-                <OrganizationPickerPanel />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </PopoverTrigger>
+          <PopoverContent align="end" sideOffset={8} className="w-72 p-1">
+            {/* No auto-close on select — the user may still toggle "Set as
+                default" (enabled only once an org is active). They close
+                the popover (outside-click / Esc) when done. */}
+            <OrganizationPickerPanel />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </motion.div>
   );
 }
