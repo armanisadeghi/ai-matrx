@@ -5,7 +5,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-19`
+**Last updated:** `2026-08-20`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -242,6 +242,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-08-20` — codex: **double-submit is refused at admission, not merely after the stream opens.** `smartExecute` previously crossed async surface/sandbox/scope gates before `markInputSubmitted` or `status="running"`; two click/Enter events in that window both saw idle state and could launch the same draft. A synchronous per-conversation `submit-claims` boundary now admits exactly one pre-send transaction and releases on every cancel/error path or immediately after the execution thunk synchronously creates its request row. Once running, the exact `submissionPhase="pending"` + `text===lastSubmittedText` draft is recognized and dropped rather than misclassified as an intentional queued follow-up; a genuinely newly typed draft flips back to `idle` and still obeys Flow 6 Queue/Steer. `executeInstance` now treats Redux `running`/`streaming` as a concurrent boundary in addition to the later abort-controller registration, closing the same race for direct callers. The existing server turn lock remains the cross-tab/process backstop. Guard: `thunks/__tests__/submit-claims.test.ts`.
 
 - `2026-08-20` — claude: **the chat conversation no longer adopts ITS OWN surface as context — the self-referential loop is closed.** Declaring `matrx-user/chat` (the manifest + `ChatRoomClient`'s `SurfaceRuntimeProvider`) had a side effect nobody chose: `launchAgentExecution`'s surface auto-adoption saw the mounted provider on the chat's OWN launch (`useAgentLauncher` passes no scope), adopted the chat scope — full transcript, conversation id, composer draft — INTO the very conversation those values describe, then stamped `surfaceName` onto the conversation so `refreshSurfaceScope` re-injected the live self-scope on every subsequent send. The agent was literally handed "surface context" pointing at the conversation it was currently having. Fix: `AgentExecutionRuntime.surfaceName` now accepts `null` as an EXPLICIT surface opt-out (skip adoption, stamp nothing), and `ChatRoomClient`'s launcher passes it. The provider stays mounted for its real consumers — context-menu / header-Agents-panel launches (which get the chat scope as the PAGE they act on, correctly) and the two write targets. **Do not remove the `runtime: { surfaceName: null }` from the chat launcher** — restoring auto-adoption there recreates the loop.
 

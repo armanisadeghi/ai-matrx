@@ -27,6 +27,11 @@ import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
 import { getManifest } from "@/features/surfaces/manifests/registry";
+import {
+  claimSubmit,
+  isDuplicateSubmittedInput,
+  releaseSubmitClaim,
+} from "./submit-claims";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -68,248 +73,293 @@ export const smartExecute = createAsyncThunk<
     { conversationId, surfaceKey, whileRunning = "queue" },
     { getState, dispatch },
   ) => {
-    let state = getState();
-
-    // Organization is a hard execution boundary. A personal organization is
-    // not an implicit substitute for an empty picker: keep the draft intact,
-    // show the person the one-click corrective action, and make no request.
-    try {
-      requireExecutionOrganizationId(state, conversationId);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Select an organization before sending this message.";
-      console.error(`[smart-execute] ${message}`, { conversationId });
-      toast.error("Organization required", { description: message });
-      return;
-    }
-
-    // A pending resource has only a local preview; it has no durable file_id
-    // and is intentionally excluded from selectResourcePayloads. Sending now
-    // would persist a text-only turn while the upload continued in the
-    // background. This thunk-level guard protects every submit surface,
-    // including callers that bypass the disabled composer controls.
-    if (!selectAllResourcesResolved(conversationId)(state)) {
+    // Take admission synchronously, before the first pre-send await. Redux
+    // cannot expose `running` while surface/sandbox/scope gates are resolving,
+    // so two UI events could otherwise both admit the same draft.
+    if (!claimSubmit(conversationId)) {
       console.error(
-        `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
-          `sending now would silently omit them.`,
+        `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
+          "the same submission is already passing the pre-send boundary.",
       );
-      toast.info("Attachment is still uploading", {
-        description:
-          "Your message will be ready to send when the upload finishes.",
-      });
       return;
     }
 
-    // On-deck delegated tool guard. If the agent has delegated one or more
-    // client tools that are still awaiting the user (pending asks), a chat
-    // submit must NOT start a colliding new turn — the outstanding tool calls
-    // would dangle (see CLIENT_TOOL_SUSPEND_RESUME.md). Deliver the composer
-    // text as the answer to those asks instead; that resolves the tool calls
-    // and the normal `continuation_needed → resumeInstance` flow continues the
-    // conversation with the user's message embedded. No separate turn is run.
-    const composerText = selectUserInputText(conversationId)(state) ?? "";
-    const consumedByPendingAsks = dispatch(
-      resolvePendingAsksWithInput(conversationId, composerText),
-    );
-    if (consumedByPendingAsks) {
-      // Mirror the normal submit lifecycle so the composer clears cleanly:
-      // markInputSubmitted snapshots the text as lastSubmittedText, which lets
-      // clearUserInput wipe it (draft-protection only blocks clearing text that
-      // diverged from the just-submitted message).
-      const userValuesForClear =
-        state.instanceVariableValues?.byConversationId[conversationId]
-          ?.userValues ?? {};
-      dispatch(
-        markInputSubmitted({ conversationId, userValues: userValuesForClear }),
-      );
-      dispatch(clearUserInput(conversationId));
-      return;
-    }
+    let claimReleased = false;
+    const releaseClaim = () => {
+      if (claimReleased) return;
+      claimReleased = true;
+      releaseSubmitClaim(conversationId);
+    };
 
-    // ── Send while a run is live — the three send modes ─────────────────────
-    // (Arman's ruling — docs/TURN_BOUNDARY_INBOX.md.) A send into a
-    // conversation whose run is STILL LIVE must never start a second
-    // concurrent turn (double stream, abort-registry eviction, interleaved
-    // history; the server's turn lock now refuses it too). Both modes hand
-    // the message to the SERVER inbox — QUEUE (delivery turn_end, default)
-    // waits for the run to be completely done and then delivers one message
-    // per turn; STEER (next_boundary) delivers at the agent's next pause.
-    // Either way the running agent answers on the already-open stream and
-    // the message survives reloads. The client is the judge of "run active"
-    // — we opened the stream. This keys on THIS conversation being live, so
-    // the autoclear split (input focus already moved to a fresh, idle
-    // conversation) keeps its parallel-iteration behavior untouched.
-    if (selectIsExecuting(conversationId)(state)) {
-      const sendText = composerText.trim();
-      if (!sendText) return; // nothing to queue
-      const surfaceName =
-        state.conversations.byConversationId[conversationId]?.surfaceName;
-      if (
-        surfaceName &&
-        getManifest(surfaceName)?.requiresBeforeExecute === true
-      ) {
-        toast.info("Wait for this tutor turn to finish", {
+    try {
+      let state = getState();
+
+      // Organization is a hard execution boundary. A personal organization is
+      // not an implicit substitute for an empty picker: keep the draft intact,
+      // show the person the one-click corrective action, and make no request.
+      try {
+        requireExecutionOrganizationId(state, conversationId);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Select an organization before sending this message.";
+        console.error(`[smart-execute] ${message}`, { conversationId });
+        toast.error("Organization required", { description: message });
+        return;
+      }
+
+      // A pending resource has only a local preview; it has no durable file_id
+      // and is intentionally excluded from selectResourcePayloads. Sending now
+      // would persist a text-only turn while the upload continued in the
+      // background. This thunk-level guard protects every submit surface,
+      // including callers that bypass the disabled composer controls.
+      if (!selectAllResourcesResolved(conversationId)(state)) {
+        console.error(
+          `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
+            `sending now would silently omit them.`,
+        );
+        toast.info("Attachment is still uploading", {
           description:
-            "Each tutor question searches your material before it sends, so it can't be queued into an already-running answer.",
+            "Your message will be ready to send when the upload finishes.",
         });
         return;
       }
-      if (selectResourcePayloads(conversationId)(state).length > 0) {
-        // Queued/steered sends are text-only; silently dropping attachments
-        // would be the classic lost-file bug. Keep everything in the composer
-        // and tell the user how to proceed.
-        toast.info("Attachments can't be sent while the agent is running", {
-          description:
-            "Stop the agent first, or remove the attachment to queue this message.",
-        });
-        return;
-      }
-      const userValuesForClear =
-        state.instanceVariableValues?.byConversationId[conversationId]
-          ?.userValues ?? {};
-      dispatch(
-        markInputSubmitted({ conversationId, userValues: userValuesForClear }),
+
+      // On-deck delegated tool guard. If the agent has delegated one or more
+      // client tools that are still awaiting the user (pending asks), a chat
+      // submit must NOT start a colliding new turn — the outstanding tool calls
+      // would dangle (see CLIENT_TOOL_SUSPEND_RESUME.md). Deliver the composer
+      // text as the answer to those asks instead; that resolves the tool calls
+      // and the normal `continuation_needed → resumeInstance` flow continues the
+      // conversation with the user's message embedded. No separate turn is run.
+      const composerText = selectUserInputText(conversationId)(state) ?? "";
+      const consumedByPendingAsks = dispatch(
+        resolvePendingAsksWithInput(conversationId, composerText),
       );
-      dispatch(clearUserInput(conversationId));
-      await dispatch(
-        enqueueInboxMessage({
-          conversationId,
-          text: sendText,
-          mode: whileRunning,
-        }),
-      );
-      return;
-    }
-
-    // A managed surface may have created this conversation at MOUNT, before
-    // the person filled its form. Refresh its stamped provider NOW, on submit,
-    // and re-apply the canonical value_mappings before any execution gate or
-    // request snapshot reads the instance. Conversation/focus/gate lifecycle
-    // stays exactly where the launcher established it.
-    await dispatch(
-      refreshSurfaceScope({ conversationId, composerText }),
-    ).unwrap();
-    state = getState();
-
-    // Sandbox hard-gate. A conversation BOUND to a sandbox must never silently
-    // run this turn on the global backend — that burns tokens on tool calls that
-    // fail against the wrong filesystem and poisons the agent's context. If the
-    // bound box can't be resolved, block the send and let the user decide
-    // (attach & retry / detach & send without it / cancel). Gating HERE — before
-    // markInputSubmitted and any optimistic user bubble — means a cancel leaves
-    // the composer text exactly as typed, with nothing to restore.
-    const gate = await dispatch(
-      ensureSandboxOrDecide({ conversationId }),
-    ).unwrap();
-    if (gate === "blocked") return;
-
-    // Route mode — read once; also reused for the execute dispatch below.
-    const apiEndpointMode =
-      state.messages.byConversationId[conversationId]?.apiEndpointMode ??
-      "agent";
-
-    // Chat↔scope "ask on mismatch" gate. A chat carries its scopes durably;
-    // when the sidebar's active selection differs from the chat's tags we
-    // ALWAYS ask (switch / combine / keep) — never silently retag, never
-    // silently drop. Same placement contract as the sandbox gate: BEFORE
-    // markInputSubmitted, so a cancel leaves the composer text as typed.
-    // Skipped for ephemeral chats (no persisted rows by design) and manual
-    // mode (Agent Builder — sends no scope_ids and stamps no tags).
-    const isEphemeral =
-      state.conversations.byConversationId[conversationId]?.isEphemeral ===
-      true;
-    let scopeIdsOverride: string[] | undefined;
-    if (!isEphemeral && apiEndpointMode !== "manual") {
-      const scopeGate = await dispatch(
-        ensureConversationScopesOrAsk(conversationId),
-      );
-      if (scopeGate.blocked) return;
-      scopeIdsOverride = scopeGate.scopeIdsOverride;
-    }
-
-    const autoClear = selectAutoClearConversation(conversationId)(state);
-
-    // Phase 1 — capture the current text + userValues so we can pre-populate
-    // the post-split conversation (and so the "re-apply" snapshot is available
-    // after phase 2 clears the textarea on `conversationId`).
-    const userValues =
-      state.instanceVariableValues?.byConversationId[conversationId]
-        ?.userValues ?? {};
-    dispatch(markInputSubmitted({ conversationId, userValues }));
-
-    // Fire the execute on the CURRENT conversation — do NOT await yet.
-    // We want to split the input focus before the stream lands so the user
-    // sees the fresh input view as quickly as possible.
-    //
-    // Route by `apiEndpointMode`: the Agent Builder declares "manual" on
-    // every instance it creates (AgentBuilderRightPanel) and MUST hit
-    // /ai/manual — never /ai/agents/* or /ai/conversations/*. Manual mode
-    // sends the live agent definition in the request body; the server reads
-    // nothing from the agent record. Any non-manual surface keeps the
-    // existing agent-mode path.
-    // initiation:"user" — every send smartExecute routes originates from a
-    // person hitting send/submit (chat inputs, builder run, agent apps). This
-    // per-send override beats an "auto" launch default: a user typing into an
-    // auto-launched conversation is still a user-initiated request.
-    const executePromise =
-      apiEndpointMode === "manual"
-        ? dispatch(
-            executeManualInstance({ conversationId, initiation: "user" }),
-          )
-        : dispatch(
-            executeInstance({
-              conversationId,
-              scopeIdsOverride,
-              initiation: "user",
-            }),
-          );
-
-    // The split (auto-clear "iterate") mints a NEW, historyless conversation and
-    // repoints the input focus at it. That is ONLY valid for a conversation
-    // explicitly created as "iterate" (builder / tester / orchestrator generator
-    // / programmatic extraction). Splitting a durable ("continuous"/undefined)
-    // conversation would ORPHAN it — the exact class of failure this gate makes
-    // structurally impossible: split ONLY when the stamped lifecycle says
-    // iterate; otherwise refuse and scream (loud recovery). Reaching the else
-    // means auto-clear got turned on for a non-iterate conversation — a rogue
-    // path that bypassed the `showAutoClearToggle`-gated toggle.
-    if (autoClear && surfaceKey) {
-      const lifecycle =
-        state.conversations.byConversationId[conversationId]
-          ?.conversationLifecycle;
-      if (lifecycle === "iterate") {
-        await dispatch(
-          splitInputIntoNewConversation({
-            currentConversationId: conversationId,
-            surfaceKey,
+      if (consumedByPendingAsks) {
+        // Mirror the normal submit lifecycle so the composer clears cleanly:
+        // markInputSubmitted snapshots the text as lastSubmittedText, which lets
+        // clearUserInput wipe it (draft-protection only blocks clearing text that
+        // diverged from the just-submitted message).
+        const userValuesForClear =
+          state.instanceVariableValues?.byConversationId[conversationId]
+            ?.userValues ?? {};
+        dispatch(
+          markInputSubmitted({
+            conversationId,
+            userValues: userValuesForClear,
           }),
         );
-      } else {
-        console.error(
-          `[smart-input] refused to split a non-iterate conversation ` +
-            `"${conversationId}" (lifecycle=${lifecycle ?? "continuous"}) — ` +
-            `would orphan it; treating as continuous. Auto-clear/split is an ` +
-            `iterate-surface affordance only — see ConversationLifecycle.`,
-        );
+        dispatch(clearUserInput(conversationId));
+        return;
       }
-    }
 
-    const executeResult = await executePromise;
-    // Surface a failed child to OUR caller (the queue-drain watcher marks its
-    // card failed off this). createAsyncThunk children resolve their action
-    // even on rejection, so without this smartExecute would report success
-    // over a dead send.
-    if (
-      executeInstance.rejected.match(executeResult) ||
-      executeManualInstance.rejected.match(executeResult)
-    ) {
-      const reason =
-        typeof executeResult.payload === "string"
-          ? executeResult.payload
-          : (executeResult.error?.message ?? "Send failed");
-      throw new Error(reason);
+      // ── Send while a run is live — the three send modes ─────────────────────
+      // (Arman's ruling — docs/TURN_BOUNDARY_INBOX.md.) A send into a
+      // conversation whose run is STILL LIVE must never start a second
+      // concurrent turn (double stream, abort-registry eviction, interleaved
+      // history; the server's turn lock now refuses it too). Both modes hand
+      // the message to the SERVER inbox — QUEUE (delivery turn_end, default)
+      // waits for the run to be completely done and then delivers one message
+      // per turn; STEER (next_boundary) delivers at the agent's next pause.
+      // Either way the running agent answers on the already-open stream and
+      // the message survives reloads. The client is the judge of "run active"
+      // — we opened the stream. This keys on THIS conversation being live, so
+      // the autoclear split (input focus already moved to a fresh, idle
+      // conversation) keeps its parallel-iteration behavior untouched.
+      if (selectIsExecuting(conversationId)(state)) {
+        const inputEntry =
+          state.instanceUserInput.byConversationId[conversationId];
+        if (isDuplicateSubmittedInput(inputEntry)) {
+          console.error(
+            `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
+              "this exact draft is already the live turn. A newly typed draft remains eligible for Queue or Steer.",
+          );
+          return;
+        }
+        const sendText = composerText.trim();
+        if (!sendText) return; // nothing to queue
+        const surfaceName =
+          state.conversations.byConversationId[conversationId]?.surfaceName;
+        if (
+          surfaceName &&
+          getManifest(surfaceName)?.requiresBeforeExecute === true
+        ) {
+          toast.info("Wait for this tutor turn to finish", {
+            description:
+              "Each tutor question searches your material before it sends, so it can't be queued into an already-running answer.",
+          });
+          return;
+        }
+        if (selectResourcePayloads(conversationId)(state).length > 0) {
+          // Queued/steered sends are text-only; silently dropping attachments
+          // would be the classic lost-file bug. Keep everything in the composer
+          // and tell the user how to proceed.
+          toast.info("Attachments can't be sent while the agent is running", {
+            description:
+              "Stop the agent first, or remove the attachment to queue this message.",
+          });
+          return;
+        }
+        const userValuesForClear =
+          state.instanceVariableValues?.byConversationId[conversationId]
+            ?.userValues ?? {};
+        dispatch(
+          markInputSubmitted({
+            conversationId,
+            userValues: userValuesForClear,
+          }),
+        );
+        dispatch(clearUserInput(conversationId));
+        await dispatch(
+          enqueueInboxMessage({
+            conversationId,
+            text: sendText,
+            mode: whileRunning,
+          }),
+        );
+        return;
+      }
+
+      // A managed surface may have created this conversation at MOUNT, before
+      // the person filled its form. Refresh its stamped provider NOW, on submit,
+      // and re-apply the canonical value_mappings before any execution gate or
+      // request snapshot reads the instance. Conversation/focus/gate lifecycle
+      // stays exactly where the launcher established it.
+      await dispatch(
+        refreshSurfaceScope({ conversationId, composerText }),
+      ).unwrap();
+      state = getState();
+
+      // Sandbox hard-gate. A conversation BOUND to a sandbox must never silently
+      // run this turn on the global backend — that burns tokens on tool calls that
+      // fail against the wrong filesystem and poisons the agent's context. If the
+      // bound box can't be resolved, block the send and let the user decide
+      // (attach & retry / detach & send without it / cancel). Gating HERE — before
+      // markInputSubmitted and any optimistic user bubble — means a cancel leaves
+      // the composer text exactly as typed, with nothing to restore.
+      const gate = await dispatch(
+        ensureSandboxOrDecide({ conversationId }),
+      ).unwrap();
+      if (gate === "blocked") return;
+
+      // Route mode — read once; also reused for the execute dispatch below.
+      const apiEndpointMode =
+        state.messages.byConversationId[conversationId]?.apiEndpointMode ??
+        "agent";
+
+      // Chat↔scope "ask on mismatch" gate. A chat carries its scopes durably;
+      // when the sidebar's active selection differs from the chat's tags we
+      // ALWAYS ask (switch / combine / keep) — never silently retag, never
+      // silently drop. Same placement contract as the sandbox gate: BEFORE
+      // markInputSubmitted, so a cancel leaves the composer text as typed.
+      // Skipped for ephemeral chats (no persisted rows by design) and manual
+      // mode (Agent Builder — sends no scope_ids and stamps no tags).
+      const isEphemeral =
+        state.conversations.byConversationId[conversationId]?.isEphemeral ===
+        true;
+      let scopeIdsOverride: string[] | undefined;
+      if (!isEphemeral && apiEndpointMode !== "manual") {
+        const scopeGate = await dispatch(
+          ensureConversationScopesOrAsk(conversationId),
+        );
+        if (scopeGate.blocked) return;
+        scopeIdsOverride = scopeGate.scopeIdsOverride;
+      }
+
+      const autoClear = selectAutoClearConversation(conversationId)(state);
+
+      // Phase 1 — capture the current text + userValues so we can pre-populate
+      // the post-split conversation (and so the "re-apply" snapshot is available
+      // after phase 2 clears the textarea on `conversationId`).
+      const userValues =
+        state.instanceVariableValues?.byConversationId[conversationId]
+          ?.userValues ?? {};
+      dispatch(markInputSubmitted({ conversationId, userValues }));
+
+      // Fire the execute on the CURRENT conversation — do NOT await yet.
+      // We want to split the input focus before the stream lands so the user
+      // sees the fresh input view as quickly as possible.
+      //
+      // Route by `apiEndpointMode`: the Agent Builder declares "manual" on
+      // every instance it creates (AgentBuilderRightPanel) and MUST hit
+      // /ai/manual — never /ai/agents/* or /ai/conversations/*. Manual mode
+      // sends the live agent definition in the request body; the server reads
+      // nothing from the agent record. Any non-manual surface keeps the
+      // existing agent-mode path.
+      // initiation:"user" — every send smartExecute routes originates from a
+      // person hitting send/submit (chat inputs, builder run, agent apps). This
+      // per-send override beats an "auto" launch default: a user typing into an
+      // auto-launched conversation is still a user-initiated request.
+      const executePromise =
+        apiEndpointMode === "manual"
+          ? dispatch(
+              executeManualInstance({ conversationId, initiation: "user" }),
+            )
+          : dispatch(
+              executeInstance({
+                conversationId,
+                scopeIdsOverride,
+                initiation: "user",
+              }),
+            );
+
+      // Both execution thunks synchronously create their request row and set
+      // status="running" before their first await. Redux is now the admission
+      // record, so release the short pre-send claim; a genuinely new draft may
+      // use the intentional live-run queue.
+      releaseClaim();
+
+      // The split (auto-clear "iterate") mints a NEW, historyless conversation and
+      // repoints the input focus at it. That is ONLY valid for a conversation
+      // explicitly created as "iterate" (builder / tester / orchestrator generator
+      // / programmatic extraction). Splitting a durable ("continuous"/undefined)
+      // conversation would ORPHAN it — the exact class of failure this gate makes
+      // structurally impossible: split ONLY when the stamped lifecycle says
+      // iterate; otherwise refuse and scream (loud recovery). Reaching the else
+      // means auto-clear got turned on for a non-iterate conversation — a rogue
+      // path that bypassed the `showAutoClearToggle`-gated toggle.
+      if (autoClear && surfaceKey) {
+        const lifecycle =
+          state.conversations.byConversationId[conversationId]
+            ?.conversationLifecycle;
+        if (lifecycle === "iterate") {
+          await dispatch(
+            splitInputIntoNewConversation({
+              currentConversationId: conversationId,
+              surfaceKey,
+            }),
+          );
+        } else {
+          console.error(
+            `[smart-input] refused to split a non-iterate conversation ` +
+              `"${conversationId}" (lifecycle=${lifecycle ?? "continuous"}) — ` +
+              `would orphan it; treating as continuous. Auto-clear/split is an ` +
+              `iterate-surface affordance only — see ConversationLifecycle.`,
+          );
+        }
+      }
+
+      const executeResult = await executePromise;
+      // Surface a failed child to OUR caller (the queue-drain watcher marks its
+      // card failed off this). createAsyncThunk children resolve their action
+      // even on rejection, so without this smartExecute would report success
+      // over a dead send.
+      if (
+        executeInstance.rejected.match(executeResult) ||
+        executeManualInstance.rejected.match(executeResult)
+      ) {
+        const reason =
+          typeof executeResult.payload === "string"
+            ? executeResult.payload
+            : (executeResult.error?.message ?? "Send failed");
+        throw new Error(reason);
+      }
+    } finally {
+      // Covers every gate cancellation, validation failure, and thrown error.
+      // A claim can never strand the composer.
+      releaseClaim();
     }
   },
 );

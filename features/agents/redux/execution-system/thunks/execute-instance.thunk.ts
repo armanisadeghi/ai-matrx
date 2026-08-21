@@ -102,6 +102,7 @@ import {
   clearUserInput,
 } from "../instance-user-input/instance-user-input.slice";
 import { hasAbortController } from "./abort-registry";
+import { isDuplicateSubmittedInput } from "./submit-claims";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 import {
   selectIsBlockMode,
@@ -459,18 +460,26 @@ export const executeInstance = createAsyncThunk<
       // claim). The server supports exactly this case via the Turn-Boundary
       // Inbox — reconcile there instead of killing the request, and scream:
       // reaching this line means a caller bypassed smartExecute's routing.
-      if (hasAbortController(conversationId)) {
-        const pendingText =
-          state.instanceUserInput.byConversationId[conversationId]?.text ?? "";
+      if (
+        hasAbortController(conversationId) ||
+        instance.status === "running" ||
+        instance.status === "streaming"
+      ) {
+        const pendingInput =
+          state.instanceUserInput.byConversationId[conversationId];
+        const pendingText = pendingInput?.text ?? "";
+        const duplicateDispatch = isDuplicateSubmittedInput(pendingInput);
         console.error(
           `[execute-instance] refused a concurrent turn on conversation ` +
             `"${conversationId}" — a stream is already open. ` +
-            (pendingText.trim()
-              ? "Reconciled: the message was QUEUED and delivers when the run finishes."
-              : "No message text to queue; the duplicate dispatch was dropped.") +
+            (duplicateDispatch
+              ? "The exact already-submitted draft was dropped as a duplicate."
+              : pendingText.trim()
+                ? "Reconciled: the message was QUEUED and delivers when the run finishes."
+                : "No message text to queue; the duplicate dispatch was dropped.") +
             " Callers must route sends through smartExecute.",
         );
-        if (pendingText.trim()) {
+        if (!duplicateDispatch && pendingText.trim()) {
           const { enqueueInboxMessage } = await import("../inbox/inbox.thunks");
           dispatch(
             enqueueInboxMessage({
@@ -482,7 +491,9 @@ export const executeInstance = createAsyncThunk<
           dispatch(clearUserInput(conversationId));
         }
         return rejectWithValue(
-          "Concurrent turn refused — message queued until the run finishes",
+          duplicateDispatch
+            ? "Duplicate submit refused — the message is already running"
+            : "Concurrent turn refused — message queued until the run finishes",
         );
       }
 
