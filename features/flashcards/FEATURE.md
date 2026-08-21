@@ -132,6 +132,18 @@ own fresh conversation):
 
 ## Change log
 
+- **2026-08-21 — Collapse-on-mastery (Q15 #4b, spec 26a).** The other half of
+  `expands_into`: ONE pure resolver ([data/collapse.ts](./data/collapse.ts), pinned by
+  8 tests) folds mastered sub-cards out of a queue and steps a parent aside while its
+  sub-cards are still active — when every child folds, the concept collapses back into
+  the parent. Durable per-learner decision on `education.item_mastery.collapse_state`
+  (`auto` derives from streak≥3 + mastery≥0.8; `collapsed`/`expanded` overrides win —
+  writer: `studyService.setCollapseState`, owner-scoped RLS update). The expansion
+  edge gained its first reader (`fcService.getExpansionEdges`). Wired into the
+  FastFire launcher (best-effort, never folds a deck to nothing) with a
+  "N mastered sub-cards folded in" receipt on card 1. Classic-study wiring is the
+  named next step (interacts with D-WP3-2's fixed-pass ruling).
+
 - **2026-08-21 — Review modes + play-all (Q15 #4a, spec 26b).** The scoreboard's
   filter pills gained **Best** (top-5 scored answers WITH audio — a rank, not a
   predicate, in `selectReviewRows`) and a **Play all** transport
