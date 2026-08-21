@@ -38,7 +38,6 @@ function artifact(
     updated_by: null,
     valid_to: options.superseded ? "2026-08-16T00:00:00.000Z" : null,
     version: 1,
-    visibility: "internal",
   };
 }
 

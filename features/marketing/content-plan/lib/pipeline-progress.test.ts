@@ -28,7 +28,6 @@ function stepRow(
     updated_at: "2026-08-13T00:00:00.000Z",
     updated_by: null,
     version: 1,
-    visibility: "internal",
   };
 }
 

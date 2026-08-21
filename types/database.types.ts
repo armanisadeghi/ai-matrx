@@ -26332,7 +26332,6 @@ export type Database = {
           updated_by: string | null
           valid_to: string | null
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content: Json
@@ -26352,7 +26351,6 @@ export type Database = {
           updated_by?: string | null
           valid_to?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content?: Json
@@ -26372,7 +26370,6 @@ export type Database = {
           updated_by?: string | null
           valid_to?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -26404,7 +26401,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           artifact_id?: string | null
@@ -26425,7 +26421,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           artifact_id?: string | null
@@ -26446,7 +26441,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -27336,7 +27330,9 @@ export type Database = {
       }
       ddl_guard_log: {
         Row: {
+          ack_reason: string | null
           acknowledged_at: string | null
+          acknowledged_by: string | null
           command_tag: string | null
           detail: string
           id: number
@@ -27346,7 +27342,9 @@ export type Database = {
           severity: string
         }
         Insert: {
+          ack_reason?: string | null
           acknowledged_at?: string | null
+          acknowledged_by?: string | null
           command_tag?: string | null
           detail: string
           id?: never
@@ -27356,7 +27354,9 @@ export type Database = {
           severity: string
         }
         Update: {
+          ack_reason?: string | null
           acknowledged_at?: string | null
+          acknowledged_by?: string | null
           command_tag?: string | null
           detail?: string
           id?: never
@@ -27594,7 +27594,6 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
-          feature_key: string | null
           governed_columns: string[] | null
           has_soft_delete: boolean
           is_active: boolean
@@ -27634,7 +27633,6 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
-          feature_key?: string | null
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           is_active?: boolean
@@ -27674,7 +27672,6 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
-          feature_key?: string | null
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           is_active?: boolean
@@ -29033,7 +29030,6 @@ export type Database = {
           description: string | null
           enabled: boolean
           entity_token: string | null
-          feature_key: string | null
           id: string
           label: string
           legal_hold: boolean
@@ -29044,6 +29040,7 @@ export type Database = {
           review_due: string | null
           scope: string
           set_by: string
+          taxonomy_node_id: string | null
           trigger_kind: string
           updated_at: string
           updated_by: string | null
@@ -29059,7 +29056,6 @@ export type Database = {
           description?: string | null
           enabled?: boolean
           entity_token?: string | null
-          feature_key?: string | null
           id?: string
           label: string
           legal_hold?: boolean
@@ -29070,6 +29066,7 @@ export type Database = {
           review_due?: string | null
           scope: string
           set_by?: string
+          taxonomy_node_id?: string | null
           trigger_kind?: string
           updated_at?: string
           updated_by?: string | null
@@ -29085,7 +29082,6 @@ export type Database = {
           description?: string | null
           enabled?: boolean
           entity_token?: string | null
-          feature_key?: string | null
           id?: string
           label?: string
           legal_hold?: boolean
@@ -29096,6 +29092,7 @@ export type Database = {
           review_due?: string | null
           scope?: string
           set_by?: string
+          taxonomy_node_id?: string | null
           trigger_kind?: string
           updated_at?: string
           updated_by?: string | null
@@ -29117,6 +29114,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "retention_policy_taxonomy_node_id_fkey"
+            columns: ["taxonomy_node_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomy_node"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -29518,6 +29522,18 @@ export type Database = {
         }
         Relationships: []
       }
+      ddl_guard_unacked: {
+        Row: {
+          first_seen: string | null
+          last_seen: string | null
+          rule: string | null
+          sample_objects: string[] | null
+          severity: string | null
+          unacked_objects: number | null
+          unacked_rows: number | null
+        }
+        Relationships: []
+      }
       v_deprecated_table_access: {
         Row: {
           calls: number | null
@@ -29583,35 +29599,13 @@ export type Database = {
         Row: {
           drift: string | null
           entity_ref: string | null
-          feature_key: string | null
           has_deleted_at: boolean | null
           has_owner_column: boolean | null
           has_soft_delete: boolean | null
           owner_column: string | null
           table_exists: boolean | null
+          taxonomy_node: string | null
           token: string | null
-        }
-        Insert: {
-          drift?: never
-          entity_ref?: never
-          feature_key?: never
-          has_deleted_at?: never
-          has_owner_column?: never
-          has_soft_delete?: boolean | null
-          owner_column?: never
-          table_exists?: never
-          token?: string | null
-        }
-        Update: {
-          drift?: never
-          entity_ref?: never
-          feature_key?: never
-          has_deleted_at?: never
-          has_owner_column?: never
-          has_soft_delete?: boolean | null
-          owner_column?: never
-          table_exists?: never
-          token?: string | null
         }
         Relationships: []
       }
@@ -29748,6 +29742,17 @@ export type Database = {
         }
         Returns: string
       }
+      ddl_guard_ack: {
+        Args: {
+          p_before?: string
+          p_by?: string
+          p_ids?: number[]
+          p_object_ref?: string
+          p_reason: string
+          p_rule?: string
+        }
+        Returns: number
+      }
       dead_relation_read: {
         Args: { p_new: string; p_old: string }
         Returns: boolean
@@ -29828,6 +29833,10 @@ export type Database = {
         Returns: Json
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
+      lifecycle_close_run: {
+        Args: { p_entities_acted?: number; p_run_id: string; p_status?: string }
+        Returns: Json
+      }
       lifecycle_execute: {
         Args: {
           p_dry_run?: boolean
@@ -29839,6 +29848,7 @@ export type Database = {
         Returns: Json
       }
       lifecycle_map_is_fresh: { Args: never; Returns: boolean }
+      lifecycle_open_run: { Args: { p_dry_run?: boolean }; Returns: string }
       lifecycle_schema_fingerprint: { Args: never; Returns: string }
       lifecycle_sweep_plan: {
         Args: {
@@ -29968,6 +29978,26 @@ export type Database = {
         Returns: {
           container_id: string
           container_type: string
+        }[]
+      }
+      reachability_definition_parity: {
+        Args: never
+        Returns: {
+          missing_column: string
+        }[]
+      }
+      reachability_drift: {
+        Args: never
+        Returns: {
+          cached_depth: number
+          cached_max_level: Database["public"]["Enums"]["permission_level"]
+          container_id: string
+          container_type: string
+          derived_depth: number
+          derived_max_level: Database["public"]["Enums"]["permission_level"]
+          disagreement: string
+          item_id: string
+          item_type: string
         }[]
       }
       reachability_touch: {
@@ -31539,6 +31569,18 @@ export type Database = {
       }
     }
     Functions: {
+      __ddl_guard_unacked: {
+        Args: never
+        Returns: {
+          first_seen: string
+          last_seen: string
+          rule: string
+          sample_objects: string[]
+          severity: string
+          unacked_objects: number
+          unacked_rows: number
+        }[]
+      }
       __dump_schema_ddl: { Args: { p_schema: string }; Returns: string }
       __dump_schema_routines: { Args: { p_schema: string }; Returns: string }
       __plpgsql_show_dependency_tb:
@@ -32121,6 +32163,7 @@ export type Database = {
           max_level: Database["public"]["Enums"]["permission_level"]
         }[]
       }
+      admin_reachability_guard_report: { Args: never; Returns: Json }
       admin_rebuild_reachability: { Args: never; Returns: number }
       admin_recent_activity: {
         Args: { p_action_prefix?: string; p_limit?: number }
@@ -33435,6 +33478,11 @@ export type Database = {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
       }
+      canonical_ratchet_refresh: { Args: never; Returns: string }
+      canonical_ratchet_snapshot: {
+        Args: { p_cutoff?: string; p_min_score?: number }
+        Returns: Json
+      }
       cat_create: {
         Args: {
           p_color?: string
@@ -33587,6 +33635,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      component_created_by_report: { Args: never; Returns: Json }
       container_resource_counts: {
         Args: { p_column: string; p_container_id: string }
         Returns: {
@@ -37078,6 +37127,7 @@ export type Database = {
         Returns: boolean
       }
       rag_user_can_see_note: { Args: { p_note_id: string }; Returns: boolean }
+      reachability_guard_report: { Args: never; Returns: Json }
       readable_extraction_job_ids: { Args: never; Returns: string[] }
       readable_processed_doc_for_file: {
         Args: { p_file: string }
@@ -47064,6 +47114,8 @@ export type Database = {
           target_page_id: string | null
           updated_at: string
           updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -47085,6 +47137,8 @@ export type Database = {
           target_page_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -47106,6 +47160,8 @@ export type Database = {
           target_page_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
