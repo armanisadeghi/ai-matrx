@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **83**
 - **Missing a route: 128** — 45 individual + 83 in the `web_*_v1` audit-check family
-- Claimed: **83** (1 family row) · Done: **0** · Blocked: **0**
+- Claimed: **91** (1 family row + 8 individual) · Done: **0** · Blocked: **0**
 
 > Contract artifacts (`is_contract_artifact = true`, 774 active) are quarantined per §7.8 and
 > are OUT of scope for this mission. Do not register routes for them.
@@ -157,38 +157,38 @@ A family is one shape ⇒ one component ⇒ one claim.
 | Kind | Label | Maturity | Ex | Component | Status | Claim | Notes |
 |---|---|---|---|---|---|---|---|
 | `boolean` | Boolean | — | 1 | | unclaimed | | |
-| `branch_result` | Branch Result | — | 1 | | unclaimed | | |
-| `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | | unclaimed | | |
+| `branch_result` | Branch Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 201 live node_completed events in 30d |
+| `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
 | `claim_evidence` | Claim Evidence | — | 0 | | unclaimed | | |
 | `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | unclaimed | | |
 | `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | unclaimed | | |
-| `criteria_gate_result` | Criteria Gate Result | — | 1 | | unclaimed | | |
+| `criteria_gate_result` | Criteria Gate Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
 | `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | unclaimed | | |
 | `entity_mention` | Entity Mention | — | 0 | | unclaimed | | |
 | `evidence_source` | Evidence Source | — | 0 | | unclaimed | | |
-| `gather_result` | Gather Result | — | 1 | | unclaimed | | |
+| `gather_result` | Gather Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 51 live events |
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
 | `http_response` | HTTP Response | — | 1 | | unclaimed | | |
 | `items` | Items (list result) | — | 1 | | unclaimed | | |
 | `json` | JSON (any value) | — | 1 | | unclaimed | | |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | unclaimed | | |
-| `map_result` | Map Result | — | 1 | | unclaimed | | |
+| `map_result` | Map Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 43 live events |
 | `notable_timestamp` | Notable Timestamp | — | 0 | | unclaimed | | |
 | `number` | Number | — | 1 | | unclaimed | | |
 | `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
-| `operation_result` | Operation Result (action receipt) | — | 1 | | unclaimed | | |
+| `operation_result` | Operation Result (action receipt) | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
 | `page` | Page (paginated window) | — | 1 | | unclaimed | | |
 | `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | unclaimed | | |
 | `page_keyword_map_v1` | Page Keyword Map | — | 1 | | unclaimed | | |
 | `regex_extract_result` | Regex Extract Result | — | 1 | | unclaimed | | |
-| `rendered_text` | Rendered Text | — | 1 | | unclaimed | | |
+| `rendered_text` | Rendered Text | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 16 live events |
 | `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | | unclaimed | | |
 | `research_page_analysis` | Research Page Analysis | — | 1 | | unclaimed | | |
 | `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | unclaimed | | |
 | `research_tag_suggestions` | Research Tag Suggestions | — | 1 | | unclaimed | | |
-| `saved_row` | Saved Row | — | 1 | | unclaimed | | |
+| `saved_row` | Saved Row | — | 1 | | claimed | copy-B | |
 | `scraped_page` | Scraped Page | — | 1 | | unclaimed | | |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | unclaimed | | |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
@@ -200,10 +200,18 @@ A family is one shape ⇒ one component ⇒ one claim.
 | `topic_relevance` | Topic Relevance | — | 0 | | unclaimed | | |
 | `transcript_usage` | Transcript Usage | — | 0 | | unclaimed | | |
 | `value` | Value (single result) | — | 1 | | unclaimed | | |
-| `workflow_run_result` | Workflow Run Result | — | 1 | | unclaimed | | |
+| `workflow_run_result` | Workflow Run Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 65 live events |
 
 ## Change log
 
 - 2026-08-20 — Ledger generated from the live registry (project `brsgrqvjdzwihsvnfqkf`).
   128 kinds missing a `(kind, 'web', 'output')` row. copy-D claims the `web_*_v1` family
   (83 kinds, one proven shared shape ⇒ one component).
+- 2026-08-20 — copy-E claims the 8 engine-result kinds (`branch_result`, `bulk_result`,
+  `criteria_gate_result`, `gather_result`, `map_result`, `operation_result`, `rendered_text`,
+  `workflow_run_result`) — chosen by LIVE traffic: they are the top unrouted kinds in
+  `workflow.node_events` over the last 30 days. copy-E also owns the runtime-impact slice
+  (wire-is-block consumer sweep + the workflow run page readout).
+- 2026-08-20 — copy-B claims 8 runtime result-wrapper rows: `branch_result`,
+  `bulk_result`, `criteria_gate_result`, `gather_result`, `map_result`, `operation_result`,
+  `workflow_run_result`, `saved_row`.
