@@ -135,8 +135,8 @@ function VisibilityBadge({
 
   const spec: Record<string, { label: string; title: string; className: string }> = {
     personal: {
-      label: "Only you",
-      title: "Only you can open this table.",
+      label: "Personal",
+      title: "Visibility is set to Personal.",
       className: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400",
     },
     internal: {

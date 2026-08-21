@@ -28005,6 +28005,71 @@ export type Database = {
         }
         Relationships: []
       }
+      lifecycle_audit: {
+        Row: {
+          created_at: string
+          cutoff: string
+          detail: Json
+          dry_run: boolean
+          entity_ref: string
+          entity_token: string
+          id: string
+          mode: string
+          owner_id: string | null
+          policy_id: string | null
+          policy_scope: string | null
+          retention_days: number | null
+          rows_blocked: number
+          rows_deleted: number
+          run_id: string
+          trigger_kind: string
+        }
+        Insert: {
+          created_at?: string
+          cutoff: string
+          detail?: Json
+          dry_run?: boolean
+          entity_ref: string
+          entity_token: string
+          id?: string
+          mode: string
+          owner_id?: string | null
+          policy_id?: string | null
+          policy_scope?: string | null
+          retention_days?: number | null
+          rows_blocked?: number
+          rows_deleted?: number
+          run_id: string
+          trigger_kind: string
+        }
+        Update: {
+          created_at?: string
+          cutoff?: string
+          detail?: Json
+          dry_run?: boolean
+          entity_ref?: string
+          entity_token?: string
+          id?: string
+          mode?: string
+          owner_id?: string | null
+          policy_id?: string | null
+          policy_scope?: string | null
+          retention_days?: number | null
+          rows_blocked?: number
+          rows_deleted?: number
+          run_id?: string
+          trigger_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifecycle_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifecycle_entity_plan: {
         Row: {
           blocking_edges: number
@@ -28143,6 +28208,45 @@ export type Database = {
           parent_token?: string
           self_reference?: boolean
           source?: string
+        }
+        Relationships: []
+      }
+      lifecycle_run: {
+        Row: {
+          detail: Json
+          dry_run: boolean
+          entities_acted: number
+          finished_at: string | null
+          id: string
+          map_fingerprint: string
+          rows_blocked: number
+          rows_deleted: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          detail?: Json
+          dry_run?: boolean
+          entities_acted?: number
+          finished_at?: string | null
+          id?: string
+          map_fingerprint: string
+          rows_blocked?: number
+          rows_deleted?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          detail?: Json
+          dry_run?: boolean
+          entities_acted?: number
+          finished_at?: string | null
+          id?: string
+          map_fingerprint?: string
+          rows_blocked?: number
+          rows_deleted?: number
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }
@@ -29724,6 +29828,16 @@ export type Database = {
         Returns: Json
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
+      lifecycle_execute: {
+        Args: {
+          p_dry_run?: boolean
+          p_entity_token: string
+          p_max_rows: number
+          p_owner_id: string
+          p_run_id: string
+        }
+        Returns: Json
+      }
       lifecycle_map_is_fresh: { Args: never; Returns: boolean }
       lifecycle_schema_fingerprint: { Args: never; Returns: string }
       lifecycle_sweep_plan: {
