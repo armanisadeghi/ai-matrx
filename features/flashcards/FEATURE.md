@@ -132,6 +132,16 @@ own fresh conversation):
 
 ## Change log
 
+- **2026-08-21 — Session-level transcript review (Q15 #3, spec 26c).** FastFire now
+  assembles the SEGMENTED full-session transcript (per card, in presented order, with
+  question + grade — `fast-fire/session-transcript.ts`, capped at 20k chars) and the
+  end-of-session professor review receives it as `transcript` instead of the old
+  unlabeled per-attempt join; it persists to `study_session.session_transcript`
+  (column existed, never written) and renders collapsed on the session detail page.
+  The DB-held "Flashcard Batch Reviewer" agent (v4) is instructed to use the sequence
+  for cross-card confusion, consistency, and in-session improvement — the three
+  payoffs the spec named.
+
 - **2026-08-21 — Pre-generated "I'm confused" helper audio (Q15 lane #1).** The
   FastFire spec's zero-wait help headline shipped by composing live primitives:
   `flashcards.enrich_card` writes the spoken-friendly helper text (kind
