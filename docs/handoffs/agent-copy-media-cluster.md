@@ -70,7 +70,7 @@ whole page · **SKIP** non-record tool.
 
 | Surface | Element | Class | Current | Planned control |
 |---|---|---|---|---|
-| `components/admin/PodcastsTable.tsx` | show + episode rows (2 tabs) | L | **DONE** | per-tab toolbar triple + "Key fields" variant + ExportMenu (JSON+CSV) + per-row `xs` pair; view copy follows the **filtered** rows and echoes the search query |
+| `components/admin/PodcastsTable.tsx` | show + episode rows (2 tabs) | L | **DONE** | per-tab `CopyButtons` group with JSON, "Key fields", and JSON/CSV export + per-row `xs` pair; view copy follows the **filtered** rows and echoes the search query |
 | `components/admin/ShowsClient.tsx` | show list | L | none | row pair + view copy |
 | `components/admin/EpisodeDetailClient.tsx` | episode record | R | none | header `sm` pair |
 | `studio/components/RunsManageView.tsx` | generation runs | L | none | row pair + ExportMenu |

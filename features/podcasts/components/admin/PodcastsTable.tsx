@@ -23,7 +23,6 @@ import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import {
@@ -201,13 +200,12 @@ export function PodcastsTable({
                                         attributes: { rows: filteredShows.length },
                                     }),
                                 ]}
-                            />
-                            <ExportMenu
-                                label="podcast-shows"
-                                items={[
-                                    jsonExportItem(() => filteredShows.map(showProjection)),
-                                    csvExportItem(() => showsExportRows(filteredShows)),
-                                ]}
+                                export={{
+                                    items: [
+                                        jsonExportItem(() => filteredShows.map(showProjection)),
+                                        csvExportItem(() => showsExportRows(filteredShows)),
+                                    ],
+                                }}
                             />
                         </>
                     )
@@ -246,13 +244,12 @@ export function PodcastsTable({
                                         attributes: { rows: filteredEpisodes.length },
                                     }),
                                 ]}
-                            />
-                            <ExportMenu
-                                label="podcast-episodes"
-                                items={[
-                                    jsonExportItem(() => filteredEpisodes.map(episodeProjection)),
-                                    csvExportItem(() => episodesExportRows(filteredEpisodes)),
-                                ]}
+                                export={{
+                                    items: [
+                                        jsonExportItem(() => filteredEpisodes.map(episodeProjection)),
+                                        csvExportItem(() => episodesExportRows(filteredEpisodes)),
+                                    ],
+                                }}
                             />
                         </>
                     )

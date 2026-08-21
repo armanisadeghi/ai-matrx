@@ -107,8 +107,8 @@ is easy to fill in.
 ## Change log
 
 - 2026-08-21 — **Shows and episodes admin tables are copyable and exportable.**
-  `PodcastsTable` gains, per tab, a toolbar `CopyButtons` triple (human / JSON /
-  Copy-for-AI) with a "Key fields" variant, an `ExportMenu` (JSON + CSV), and a
+  `PodcastsTable` gains, per tab, one toolbar `CopyButtons` group (human /
+  Copy-for-AI / export) with JSON and a "Key fields" AI variant, and a
   hover-revealed per-row `xs` pair. Kinds: `podcast-shows` / `podcast-show` and
   `podcast-episodes` / `podcast-episode`. The view copy reflects the **filtered**
   rows — what the user is actually looking at — and echoes the live search query
