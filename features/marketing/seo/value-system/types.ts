@@ -121,3 +121,57 @@ export const NON_OFFERING_ROOT_TYPES = [
   "reputation",
   "partner",
 ] as const;
+
+// ── Vocabulary governance ───────────────────────────────────────────────────
+
+export type VocabKind = "value_band" | "geo_band";
+
+/**
+ * One row of a vocabulary being edited. `value` is the IDENTITY — it is what
+ * seo.site_keyword_value.value_tier and seo.site_geo_area.geo_band store — and
+ * is fixed once created. `label` is free text; renaming it re-labels every
+ * keyword instantly, which is the point of owning your own vocabulary.
+ */
+export interface VocabularyDraftRow {
+  value: string;
+  label: string;
+  description: string | null;
+  sort: number;
+  config: Record<string, unknown>;
+}
+
+/** What a PROPOSED band set does to this site's real keywords (server-banded). */
+export interface BandPreviewRow {
+  value_band: string;
+  keywords: number;
+  clicks: number;
+  impressions: number;
+  moved_in: number;
+  moved_out: number;
+}
+
+/** One entry of a platform-governed vocabulary (platform.categories). */
+export interface RegistryEntry {
+  parent_id: string | null;
+  parent_slug: string;
+  parent_label: string | null;
+  parent_description: string | null;
+  value_id: string;
+  value_slug: string;
+  /** The bare value the classifier writes ('consumer'), not the namespaced slug. */
+  value_key: string;
+  value_label: string;
+  value_description: string | null;
+  value_config: Record<string, unknown>;
+  /** True when seo.keyword's CHECK constraint actually accepts this value. */
+  enforced: boolean;
+  sort_order: number;
+}
+
+export interface FacetUsageRow {
+  facet: string;
+  value_key: string;
+  keywords: number;
+}
+
+export type RegistryDimension = "seo_facet" | "seo_value_band" | "seo_geo_band";

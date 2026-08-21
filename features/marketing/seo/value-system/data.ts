@@ -11,7 +11,12 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData } from "@/utils/errors";
+import type { Json } from "@/types/database.types";
 import type {
+  BandPreviewRow,
+  FacetUsageRow,
+  RegistryDimension,
+  RegistryEntry,
   SiteGeoArea,
   SiteTopicValue,
   TopicNode,
@@ -20,6 +25,8 @@ import type {
   ValueReviewRow,
   ValueRule,
   ValueSummaryRow,
+  VocabKind,
+  VocabularyDraftRow,
 } from "./types";
 
 async function seoDb() {
@@ -160,4 +167,142 @@ export async function listSiteTopicValues(
     .is("deleted_at", null);
   const topics = assertData(topicsRes.data, topicsRes.error) as TopicNode[];
   return { values, topics };
+}
+
+// ── Vocabulary governance ───────────────────────────────────────────────────
+//
+// THE SITE PLANE. A site starts on the platform starter template and ADOPTS it
+// the first time it wants its own meaning; from then on its rows REPLACE the
+// template set entirely. Coherence (unique names, distinct thresholds, a band
+// that starts at 0, the reserved slugs) is enforced in the DB by
+// seo.gsc_assert_vocabulary_coherent — never re-implemented here, because a
+// UI-only check is not a rule.
+
+/** Copy the platform template into this site so it can be edited. Idempotent. */
+export async function adoptValueVocabulary(
+  siteId: string,
+  kind: VocabKind,
+): Promise<ValueBandDef[]> {
+  const response = await (await seoDb()).rpc("gsc_adopt_value_vocabulary", {
+    p_site_id: siteId,
+    p_kind: kind,
+  });
+  return assertData(response.data, response.error) as ValueBandDef[];
+}
+
+/**
+ * Replace the WHOLE vocabulary. `reassign` maps an identity being removed to a
+ * surviving one — without it the DB refuses to drop a band that still carries
+ * expert rulings, which is the behaviour we want.
+ */
+export async function saveValueVocabulary(
+  siteId: string,
+  kind: VocabKind,
+  rows: VocabularyDraftRow[],
+  reassign: Record<string, string> = {},
+): Promise<ValueBandDef[]> {
+  const response = await (await seoDb()).rpc("gsc_save_value_vocabulary", {
+    p_site_id: siteId,
+    p_kind: kind,
+    p_rows: rows as unknown as Json,
+    p_reassign: reassign as unknown as Json,
+  });
+  return assertData(response.data, response.error) as ValueBandDef[];
+}
+
+/** Hand the vocabulary back to the platform template. */
+export async function resetValueVocabulary(
+  siteId: string,
+  kind: VocabKind,
+  reassign: Record<string, string> = {},
+): Promise<ValueBandDef[]> {
+  const response = await (await seoDb()).rpc("gsc_reset_value_vocabulary", {
+    p_site_id: siteId,
+    p_kind: kind,
+    p_reassign: reassign as unknown as Json,
+  });
+  return assertData(response.data, response.error) as ValueBandDef[];
+}
+
+/**
+ * What a PROPOSED band set does to this site's real keywords, before anything
+ * is saved. Banded server-side on purpose — a band is never re-derived on the
+ * client (value-system.md, law 3).
+ */
+export async function previewValueBands(
+  siteId: string,
+  rows: VocabularyDraftRow[],
+  start: string,
+  end: string,
+  signal?: AbortSignal,
+): Promise<BandPreviewRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_value_band_preview", {
+      p_site_id: siteId,
+      p_rows: rows as unknown as Json,
+      p_start: start,
+      p_end: end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as BandPreviewRow[];
+}
+
+// ── Platform plane (platform.categories) ────────────────────────────────────
+//
+// The universal facet registry and the band starter templates. Readable by any
+// authenticated user — the labels agents apply must be visible to the humans
+// they are applied to. Writable by super admins only, through the same RPCs.
+
+export async function listVocabularyRegistry(
+  dimension: RegistryDimension,
+  signal?: AbortSignal,
+): Promise<RegistryEntry[]> {
+  const response = await (await seoDb())
+    .rpc("vocabulary_registry_list", { p_dimension: dimension })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as RegistryEntry[];
+}
+
+/** How many keywords carry each facet value — why a value is never just deleted. */
+export async function getFacetRegistryUsage(
+  signal?: AbortSignal,
+): Promise<FacetUsageRow[]> {
+  const response = await (await seoDb())
+    .rpc("facet_registry_usage")
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as FacetUsageRow[];
+}
+
+/** Rename / re-describe one registry entry. Label and description only. */
+export async function updateVocabularyRegistryEntry(
+  id: string,
+  label: string,
+  description: string | null,
+) {
+  const response = await (await seoDb()).rpc("vocabulary_registry_update", {
+    p_id: id,
+    p_label: label,
+    p_description: description ?? undefined,
+  });
+  return assertData(response.data, response.error);
+}
+
+/**
+ * Add a facet VALUE. The DB refuses until seo.keyword's CHECK constraint
+ * accepts it: a registry label for a value the classifier can never write is
+ * a lie, so the constraint widening ships in the same change.
+ */
+export async function addFacetRegistryValue(
+  facet: string,
+  value: string,
+  label: string,
+  description: string | null,
+) {
+  const response = await (await seoDb()).rpc("facet_registry_add_value", {
+    p_facet: facet,
+    p_value: value,
+    p_label: label,
+    p_description: description ?? undefined,
+  });
+  return assertData(response.data, response.error);
 }
