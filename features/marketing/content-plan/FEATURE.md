@@ -380,22 +380,22 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    (`STEP_CHIP_CLASS` / `STEP_RUN_BUTTON_CLASS` in `NodeStepRail.tsx`) — the
    NodePanel's "Page" chip consumes it so the strip cannot drift.
 
-3. **Pillar map — RULED FOR REBUILD (Arman, 2026-08-20, Q14): "this entire UI
-   is completely garbage and has to be rebuilt."** Do not polish or extend the
-   current implementation; the rebuild happens in a focused session WITH Arman.
-   Evidence pass + session agenda: `docs/handoffs/content-plan-map-rebuild.md`.
-   What exists today (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
-   behind the view switch with `ssr:false`): three user-switchable pure
-   layouts (radial orbit / tidy tree / pillar columns — `pillar-map/layouts.ts`,
-   unit-tested; choice persists in localStorage). Every dimension encoded
-   (legend toggle): color = status, shape = node_type, size = priority,
-   dashed outline = needs_reviewer, corner dot = primary keyword. Scale:
-   double-click a pillar/cluster collapses its subtree into a count-badged
-   super-node; semantic zoom hides article/cluster labels far out; filters
-   (status/type/pillar/keyword coverage/reviewer/technical depth) keep
-   ancestors visible but dimmed. Click = open node panel; drag a node onto
-   another = real reparent; box-select (shift-drag) = bulk status change.
-   Positions are a projection, never persisted.
+3. **Site map** (`SiteMap.tsx`, `?view=map`, code-split behind the view
+   switch) — the plan drawn the way a WEBSITE is shaped, rebuilt 2026-08-20 to
+   Arman's live direction after he ruled the React Flow dot graph garbage
+   (Q14): home at the top, pages branching below on visible connector lines,
+   every page a rectangular card whose TITLE WRAPS AND READS (never
+   middle-truncated) with its route beneath. Plain DOM + CSS — native
+   two-axis scroll, no canvas zoom. Left accent = status color (legend strip
+   under the toolbar), dots = live-on-site / missing keyword. Click a card →
+   the canonical NodePanel; per-branch chevron collapse (+N count) and a
+   Collapse-branches overview; search + status/keyword filters share the
+   tree's ancestor-keeping math (`filterWithAncestors` / `collapseVisible`,
+   now in `lib/tree-view.ts`); while a search/filter is active the collapse
+   set is bypassed so every match is visible. Stray parentless roots render
+   as extra columns — a page is never hidden by a missing parent link.
+   **Reparenting and bulk status edits belong to the TREE view** — the map is
+   for seeing the site and going places, and carries no unguarded writes.
    3b. **Site Setup** (`setup/`, `?view=setup`): go from nothing (or half a plan)
    to a structured site plan in minutes, never writing a page the user has not
    seen first. Three columns left to right — **Shape** (the archetype library:
@@ -835,10 +835,13 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   header collapses to a back-only chevron instead of a "Pick a site" picker
   over a record the user DID pick. Was map-rebuild evidence finding 1: a
   no-membership admin saw a silent blank canvas.
-- 2026-08-20 — **Pillar map ruled for REBUILD** (Arman, Q14 — "completely
-  garbage… no agent has ever actually used it"). Evidence pass driven at 295
-  real nodes; findings + session agenda in
-  `docs/handoffs/content-plan-map-rebuild.md`; flow 3 flagged do-not-polish.
+- 2026-08-20 — **Map view REBUILT as the site map** (Arman's Q14 ruling +
+  live direction the same day). React Flow dot graph deleted wholesale
+  (`PillarMap.tsx` + `pillar-map/`); new `SiteMap.tsx` draws home → branches
+  as readable wrapped-title cards on visible connectors, DOM-only. Shared
+  visibility math moved to `lib/tree-view.ts`; reparent/bulk-status remain
+  tree-only. Verified live at 295 nodes. Evidence pass:
+  `docs/handoffs/content-plan-map-rebuild.md`.
 - 2026-08-19 — **Page-hub UI polish tail.** One shared `StepEmptyState` for every
   step tab's absence (prerequisite + door/run, never gray text); Build/Publish
   split by `NodeRealityCard variant` instead of rendering the same card twice;
