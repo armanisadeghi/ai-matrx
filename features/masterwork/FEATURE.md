@@ -687,6 +687,59 @@ keep their shape.
 with zero code. A genuinely new lane implementation (new surface, new server
 pipeline) is what still takes code. Never hardcode an Approach list again.
 
+### The whole catalog, three surfaces, ONE card (2026-08-20)
+
+> Arman, looking at a Rulebook: *"there were about twenty of these that I had
+> named. Where are those ones? I wanna see all of them here. I wanna see cards
+> for them. And if they're not available yet, then it needs to say coming
+> soon."* He was right twice over: the registry rendered only inside the
+> CREATION funnel, and six Approaches he personally approved on 2026-08-17 had
+> no row at all — so the picker he was looking at showed the nine weakest of
+> the fifteen. The catalog with its provenance is
+> `common-docs/projects/masterwork/STATE.md` § 3b.
+
+**Two orthogonal flags, and they must never be conflated:**
+
+| field | question it answers |
+|---|---|
+| `enabled` | May this Approach **START** a new Rulebook? Only `/masterwork/new` and the module home filter on it (`startableApproaches()`). |
+| `metadata.availability` | Does this lane **exist in the product at all**? `available` · `partial` · `coming_soon`. |
+| `metadata.launch_href` | For a lane that is not a `/masterwork/[id]` query param, the page that IS its door (`/vision-interview/new`, `/chat`). |
+| `metadata.catalog_number` | The number Arman approved it under in § 3b. |
+
+`fetchDistillationApproaches()` returns the **whole** catalog — a filtered
+query is exactly how six approved Approaches went invisible. Consumers filter.
+
+**ONE card component, three consumers** — [`browse/ApproachCard.tsx`](./browse/ApproachCard.tsx):
+
+1. `intake/NewRulebookFlow.tsx` step 2 — startable cards selectable, every
+   other named Approach rendered below as `inert` (clicking away would throw
+   the Expert's unsaved answers on the floor).
+2. `home/MasterworkHomePage.tsx` "Start here" — startable, as links.
+3. **`browse/ApproachPickerDialog.tsx` on `/masterwork/[id]`** — the surface
+   that did not exist. Every row: available ones launch their lane, coming-soon
+   ones render under "On the way" as named cards that **cannot be clicked**
+   (THE DOOR LAW, inverted — no door, no click).
+
+**The hardcoded `Add ▾` three-item menu is DELETED.** It named three of the
+nine lanes and hid the rest, standing exactly where the picker belongs.
+
+**Launching in-page:** `RulebookDetailPage.launchApproach` is the ONE map from
+a row to a lane, keyed on the same `intake_query` shape the deep links use, so
+the picker and a pasted URL can never drift. Two dialogs (`IngestSourceDialog`,
+`ChatImportDialog`) read their lane into state at MOUNT, so the page **keys**
+them on the requested lane — without that, picking "From examples of your best
+work" landed on the instructional default, and `matrx_conversations` silently
+opened `chat_import`'s tab.
+
+**`matrx_conversations` was enabled here** — its lane (the `matrx` tab, posting
+to `/masterworks/ingest-conversations`) was finished; only the flag was left.
+
+**The assist launch contract** (`assists.ts`) gained `open: "approaches"` and
+`open: "approach:<key>"`. It supported only `interview | ingest`, so
+`masterwork.approach_selector` — the Mandate whose entire job is to name the
+next Approach — could not have opened a picker even if it had ever run.
+
 ## The Oracle tap — `oracle/` (2026-08-17, Approach #10's in-app half)
 
 Colleagues (and the Expert themself) already ask the AI questions all day; an answer worth keeping
@@ -711,8 +764,9 @@ line, word-boundary-truncated at 60 chars; statement = the turn content capped a
 `source_ref = { approach: "oracle_tap", conversation_id, note: "Saved from a conversation" }`. It
 consumes the canonical `saveRules` CAS from `service.ts` (never a second write path) with a bounded
 re-read retry, since appending is commutative. Rule ids minted via the shared `nextRuleId`.
-`oracle_tap` is not (yet) a `platform.approach` row — it has no intake entry point; register it
-when the email/SMS halves of Approach #10 land.
+`oracle_tap` **is** a `platform.approach` row as of 2026-08-20 (`availability: "partial"`,
+`launch_href: "/chat"`) — it appears on every Approach surface as "The Oracle tap", badged
+*Partly here*, because the in-app half is real and the email-in and SMS halves are not.
 
 The interview-variant Approaches ride the same session: `ScoutInterviewPanel`'s
 `ELICITATION_CHIPS` now include **"Walk me through a hard case"** (#11 Hardest-Case Debrief — the
