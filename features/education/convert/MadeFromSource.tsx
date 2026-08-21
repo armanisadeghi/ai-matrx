@@ -55,8 +55,15 @@ export function MadeFromSource({
       if (!found) return;
       const all = await listGeneratedFrom(found.entityType, found.entityId);
       if (!active) return;
-      // Everything else the same source produced: the rest of the kit.
-      setSiblings(all.filter((a) => a.artifactId !== entityId));
+      // The rest of the KIT — the artifacts, not their parts. Every generated
+      // flashcard also writes its own card-level lineage edge to the anchor
+      // file, so an unfiltered read of a source's incoming edges returns the
+      // whole deck one card at a time. A converter artifact is exactly the edge
+      // `recordSourceLineage` stamped with a `targetKind`; a card-level edge has
+      // none, which is the honest discriminator rather than a type blocklist.
+      setSiblings(
+        all.filter((a) => a.targetKind !== null && a.artifactId !== entityId),
+      );
     })();
     return () => {
       active = false;
