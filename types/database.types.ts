@@ -13501,7 +13501,6 @@ export type Database = {
           verification_status: string
           verified_at: string | null
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           channel?: string
@@ -13543,7 +13542,6 @@ export type Database = {
           verification_status?: string
           verified_at?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           channel?: string
@@ -13585,7 +13583,6 @@ export type Database = {
           verification_status?: string
           verified_at?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -44269,7 +44266,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           alerted_at?: string | null
@@ -44296,7 +44292,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           alerted_at?: string | null
@@ -44323,7 +44318,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
