@@ -237,3 +237,42 @@ export type CxPaginatedResponse<T> = {
   per_page: number;
   total_pages: number;
 };
+
+// ─── Fetch results — every service fetcher surfaces failure ──────────────────
+// A tab renders its empty state ONLY when a query succeeded with zero rows;
+// any query error travels to the page as { ok: false } and renders CxErrorPanel.
+
+export type CxFetchResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
+// ─── Usage analytics (chat.cx_usage_analytics RPC shape) ─────────────────────
+
+export type CxUsageAnalytics = {
+  by_model: {
+    model_name: string;
+    provider: string;
+    count: number;
+    total_cost: number;
+    total_input_tokens: number;
+    total_output_tokens: number;
+    total_cached_tokens: number;
+    total_tokens: number;
+    avg_duration_ms: number;
+  }[];
+  by_day: {
+    date: string;
+    count: number;
+    cost: number;
+    input_tokens: number;
+    output_tokens: number;
+    cached_tokens: number;
+  }[];
+  by_provider: {
+    provider: string;
+    count: number;
+    total_cost: number;
+    total_tokens: number;
+  }[];
+  total_requests: number;
+};

@@ -21,6 +21,7 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+import type { CxUsageAnalytics } from "@/features/cx-dashboard/types/cxDashboardTypes";
 
 const COLORS = [
   "hsl(215, 70%, 55%)", "hsl(160, 60%, 45%)", "hsl(280, 60%, 55%)",
@@ -28,31 +29,7 @@ const COLORS = [
   "hsl(330, 60%, 50%)", "hsl(100, 50%, 45%)",
 ];
 
-type Analytics = {
-  by_model: {
-    model_name: string;
-    provider: string;
-    count: number;
-    total_cost: number;
-    total_input_tokens: number;
-    total_output_tokens: number;
-    total_cached_tokens: number;
-    total_tokens: number;
-    avg_duration_ms: number;
-  }[];
-  by_day: {
-    date: string;
-    count: number;
-    cost: number;
-    input_tokens: number;
-    output_tokens: number;
-    cached_tokens: number;
-  }[];
-  by_provider: { provider: string; count: number; total_cost: number; total_tokens: number }[];
-  total_requests: number;
-};
-
-export function UsageContent({ analytics }: { analytics: Analytics }) {
+export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
   const router = useRouter();
 
   const totalCost = analytics.by_model.reduce((sum, m) => sum + m.total_cost, 0);

@@ -1,29 +1,25 @@
 import { Suspense } from "react";
 import { fetchOverviewKpis } from "@/features/cx-dashboard/service";
+import { CxErrorPanel } from "@/features/cx-dashboard/components/CxErrorPanel";
+import { CxOverviewSkeleton } from "@/features/cx-dashboard/components/CxTabSkeletons";
 import { OverviewContent } from "./overview-content";
 
-export default async function CxDashboardOverviewPage() {
-  const kpis = await fetchOverviewKpis({ timeframe: "all" });
-
+// The page itself is sync — the await lives in the Suspense-wrapped child (plus
+// loading.tsx for the route transition), so tab clicks paint instantly.
+export default function CxDashboardOverviewPage() {
   return (
-    <Suspense fallback={<OverviewSkeleton />}>
-      <OverviewContent kpis={kpis} />
+    <Suspense fallback={<CxOverviewSkeleton />}>
+      <OverviewData />
     </Suspense>
   );
 }
 
-function OverviewSkeleton() {
-  return (
-    <div className="p-4 space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-20 bg-muted/50 rounded-md animate-pulse" />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="h-64 bg-muted/50 rounded-md animate-pulse" />
-        <div className="h-64 bg-muted/50 rounded-md animate-pulse" />
-      </div>
-    </div>
-  );
+async function OverviewData() {
+  const result = await fetchOverviewKpis({ timeframe: "all" });
+
+  if (!result.ok) {
+    return <CxErrorPanel what="overview metrics" message={result.error} />;
+  }
+
+  return <OverviewContent kpis={result.data} />;
 }

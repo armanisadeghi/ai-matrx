@@ -1,18 +1,36 @@
-import { fetchUserRequestDetail } from "@/features/cx-dashboard/service";
-import { RequestDetailContent } from "./request-detail-content";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { fetchUserRequestDetail } from "@/features/cx-dashboard/service";
+import { CxErrorPanel } from "@/features/cx-dashboard/components/CxErrorPanel";
+import { CxDetailSkeleton } from "@/features/cx-dashboard/components/CxTabSkeletons";
+import { RequestDetailContent } from "./request-detail-content";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
-export default async function RequestDetailPage({ params }: Props) {
-  const { id } = await params;
-  const detail = await fetchUserRequestDetail(id);
+// The page itself is sync — the await lives in the Suspense-wrapped child (plus
+// loading.tsx for the route transition), so navigation paints instantly.
+export default function RequestDetailPage({ params }: Props) {
+  return (
+    <Suspense fallback={<CxDetailSkeleton />}>
+      <RequestDetailData params={params} />
+    </Suspense>
+  );
+}
 
-  if (!detail.user_request) {
+async function RequestDetailData({ params }: Props) {
+  const { id } = await params;
+  const result = await fetchUserRequestDetail(id);
+
+  if (!result.ok) {
+    return <CxErrorPanel what="request detail" message={result.error} />;
+  }
+
+  const { user_request, ...rest } = result.data;
+  if (!user_request) {
     notFound();
   }
 
-  return <RequestDetailContent detail={detail} />;
+  return <RequestDetailContent detail={{ user_request, ...rest }} />;
 }

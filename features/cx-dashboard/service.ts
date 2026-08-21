@@ -1,6 +1,15 @@
 // CX Dashboard Server-Side Data Service
-// All functions use the server-side Supabase client
+// All functions use the server-side Supabase client.
+//
+// ERROR CONTRACT: every exported fetcher returns CxFetchResult<T> — a query
+// failure is NEVER swallowed into zeros/empty arrays. The `const { data } =
+// await query` pattern (error silently discarded) caused the "Usage shows $0"
+// production bug: an unbounded chat.request scan hit the 8s statement timeout,
+// PostgREST returned 500, and the page rendered "No usage data".
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
+import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 import type {
   CxConversation,
   CxUserRequest,
@@ -11,22 +20,41 @@ import type {
   CxFilters,
   CxPaginatedResponse,
   CxCostVerification,
+  CxFetchResult,
+  CxUsageAnalytics,
 } from "./types/cxDashboardTypes";
 import { getTimeframeRange } from "./utils/filters";
 import { buildSearchOr } from "@/utils/supabase-search";
 
-function buildTimeframeCondition(filters: CxFilters, col: string): string {
-  if (filters.timeframe === "all") return "";
-  if (
-    filters.timeframe === "custom" &&
-    filters.start_date &&
-    filters.end_date
-  ) {
-    return `AND ${col} >= '${filters.start_date}' AND ${col} <= '${filters.end_date}'`;
+function fetchError<T>(context: string, e: unknown): CxFetchResult<T> {
+  const message = e instanceof Error ? e.message : String(e);
+  console.error(`[cx-dashboard] ${context} failed:`, e);
+  return { ok: false, error: `${context}: ${message}` };
+}
+
+/** Throw when a supabase query returned an error — never discard it. */
+function must<T>(
+  result: { data: T | null; error: { message: string } | null },
+  label: string,
+): T {
+  if (result.error) throw new Error(`${label}: ${result.error.message}`);
+  if (result.data === null) throw new Error(`${label}: returned no data`);
+  return result.data;
+}
+
+/** Resolve a CxFilters timeframe to an inclusive [start, end] range (nulls = all time). */
+function timeframeBounds(filters: CxFilters): {
+  start: string | null;
+  end: string | null;
+} {
+  if (filters.timeframe === "custom" && filters.start_date && filters.end_date) {
+    return { start: filters.start_date, end: filters.end_date };
   }
-  const range = getTimeframeRange(filters.timeframe as any);
-  if (!range) return "";
-  return `AND ${col} >= '${range.start}' AND ${col} <= '${range.end}'`;
+  if (filters.timeframe !== "all" && filters.timeframe !== "custom") {
+    const range = getTimeframeRange(filters.timeframe);
+    if (range) return { start: range.start, end: range.end };
+  }
+  return { start: null, end: null };
 }
 
 // ─── Conversation resolution via the cx_request m2m ──────────────────────────
@@ -63,7 +91,7 @@ async function resolveAiModels(
     .select("id, common_name, name, provider_id")
     .in("id", ids);
   if (error) {
-    console.error("[cx-dashboard] resolveAiModels: model_definition fetch failed", error);
+    throw new Error(`ai.model_definition: ${error.message}`);
   }
   const rows = data || [];
   const providerIds = [...new Set(rows.map((m) => m.provider_id).filter((v): v is string => !!v))];
@@ -75,7 +103,7 @@ async function resolveAiModels(
       .select("id, name")
       .in("id", providerIds);
     if (provErr) {
-      console.error("[cx-dashboard] resolveAiModels: provider fetch failed", provErr);
+      throw new Error(`ai.provider: ${provErr.message}`);
     }
     for (const p of provs || []) providerNames.set(p.id, p.name ?? null);
   }
@@ -99,11 +127,14 @@ async function resolveUserRequestConversations(
 
   // user_request_id → conversation_id. Any cx_request row is an accurate ref;
   // take the first one we encounter per user_request_id.
-  const { data: links } = await supabase
-    .schema("chat").from("request")
-    .select("user_request_id, conversation_id")
-    .in("user_request_id", userRequestIds)
-    .is("deleted_at", null);
+  const links = must(
+    await supabase
+      .schema("chat").from("request")
+      .select("user_request_id, conversation_id")
+      .in("user_request_id", userRequestIds)
+      .is("deleted_at", null),
+    "chat.request (conversation links)",
+  );
 
   const urToConv = new Map<string, string>();
   for (const link of (links || []) as {
@@ -122,10 +153,13 @@ async function resolveUserRequestConversations(
   const conversationIds = Array.from(new Set(urToConv.values()));
   const convMap = new Map<string, any>();
   if (conversationIds.length > 0) {
-    const { data: convs } = await supabase
-      .schema("chat").from("conversation")
-      .select("id, title, last_model_id")
-      .in("id", conversationIds);
+    const convs = must(
+      await supabase
+        .schema("chat").from("conversation")
+        .select("id, title, last_model_id")
+        .in("id", conversationIds),
+      "chat.conversation (titles)",
+    );
     const modelMap = await resolveAiModels(supabase, (convs || []).map((c: any) => c.last_model_id));
     for (const c of convs || []) {
       const m = c.last_model_id ? modelMap.get(c.last_model_id) : null;
@@ -150,61 +184,112 @@ async function resolveUserRequestConversations(
 
 export async function fetchOverviewKpis(
   filters: CxFilters,
+): Promise<CxFetchResult<CxOverviewKpis>> {
+  try {
+    return { ok: true, data: await fetchOverviewKpisInner(filters) };
+  } catch (e) {
+    return fetchError("Overview KPIs", e);
+  }
+}
+
+type UrStatRow = {
+  id: string;
+  total_input_tokens: number | null;
+  total_output_tokens: number | null;
+  total_cached_tokens: number | null;
+  total_tokens: number | null;
+  total_cost: number | string | null;
+  total_duration_ms: number | null;
+  status: string | null;
+  finish_reason: string | null;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+type ToolUsageRow = {
+  tool_name: string;
+  duration_ms: number | null;
+  is_error: boolean | null;
+  cost_usd: number | string | null;
+};
+
+async function fetchOverviewKpisInner(
+  filters: CxFilters,
 ): Promise<CxOverviewKpis> {
   const supabase = await createClient();
-  const timeWhere = buildTimeframeCondition(filters, "ur.created_at");
-  const userWhere = filters.user_id
-    ? `AND ur.created_by = '${filters.user_id}'`
-    : "";
+  const { start, end } = timeframeBounds(filters);
 
-  // KPIs are aggregated from direct queries below — the prior
-  // `cx_dashboard_kpis` RPC was removed in the post-0023 schema and its
-  // result was never consumed by the rest of this function.
-  const { data: urStats } = await supabase
-    .schema("chat").from("user_request")
-    .select(
-      "id, total_input_tokens, total_output_tokens, total_cached_tokens, total_tokens, total_cost, total_duration_ms, status, finish_reason, error, created_at, completed_at, iterations, total_tool_calls",
-    )
-    .is("deleted_at", null);
+  // Pure counts never fetch rows — head:true returns only the exact count.
+  const headCount = async (
+    table: "conversation" | "message" | "tool_call" | "request",
+  ): Promise<number> => {
+    let q = supabase
+      .schema("chat")
+      .from(table)
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null);
+    if (start && end) q = q.gte("created_at", start).lte("created_at", end);
+    const { count, error } = await q;
+    if (error) throw new Error(`chat.${table} count: ${error.message}`);
+    return count ?? 0;
+  };
 
-  const { data: convStats } = await supabase
-    .schema("chat").from("conversation")
-    .select("id")
-    .is("deleted_at", null);
+  // Aggregate scans page through readAllRows: PostgREST caps every response at
+  // 1000 rows, so a bare .select() silently under-reports every total here.
+  const readUrStats = () =>
+    readAllRows<UrStatRow>(
+      ({ from, to }) => {
+        let q = supabase
+          .schema("chat")
+          .from("user_request")
+          .select(
+            "id, total_input_tokens, total_output_tokens, total_cached_tokens, total_tokens, total_cost, total_duration_ms, status, finish_reason, error, created_at, completed_at",
+            { count: "exact" },
+          )
+          .is("deleted_at", null);
+        if (start && end) q = q.gte("created_at", start).lte("created_at", end);
+        if (filters.user_id) q = q.eq("created_by", filters.user_id);
+        return q.order("id", { ascending: true }).range(from, to);
+      },
+      { label: "chat.user_request (overview KPIs)" },
+    );
 
-  const { data: msgStats } = await supabase
-    .schema("chat").from("message")
-    .select("id")
-    .is("deleted_at", null);
+  const readToolUsage = () =>
+    readAllRows<ToolUsageRow>(
+      ({ from, to }) => {
+        let q = supabase
+          .schema("chat")
+          .from("tool_call")
+          .select("id, tool_name, duration_ms, is_error, cost_usd", {
+            count: "exact",
+          })
+          .is("deleted_at", null);
+        if (start && end) q = q.gte("created_at", start).lte("created_at", end);
+        return q.order("id", { ascending: true }).range(from, to);
+      },
+      { label: "chat.tool_call (overview KPIs)" },
+    );
 
-  const { data: toolStats } = await supabase
-    .schema("chat").from("tool_call")
-    .select("id, is_error")
-    .is("deleted_at", null);
-
-  const { data: reqStats } = await supabase
-    .schema("chat").from("request")
-    .select("id")
-    .is("deleted_at", null);
-
-  // Model usage — cross-schema FK (chat→ai), fetch model info separately.
-  const { data: modelUsageRaw } = await supabase
-    .schema("chat").from("request")
-    .select("ai_model_id, cost")
-    .is("deleted_at", null);
-  const modelUsageModelMap = await resolveAiModels(supabase, (modelUsageRaw || []).map((r: any) => r.ai_model_id));
-  const modelUsage = (modelUsageRaw || []).map((r: any) => ({
-    ...r,
-    ai_model: r.ai_model_id ? (modelUsageModelMap.get(r.ai_model_id) ?? null) : null,
-  })) as any[];
-
-  // Tool usage
-  const { data: toolUsage } = await supabase
-    .schema("chat").from("tool_call")
-    .select("tool_name, duration_ms, is_error, cost_usd")
-    .is("deleted_at", null);
-
-  const requests = urStats || [];
+  const [
+    requests,
+    toolUsage,
+    conversationCount,
+    messageCount,
+    toolCallCount,
+    apiRequestCount,
+    // Per-model request counts/costs come from the same service-role aggregate
+    // the usage tab uses — never an all-time chat.request row scan.
+    usageAggregate,
+  ] = await Promise.all([
+    readUrStats(),
+    readToolUsage(),
+    headCount("conversation"),
+    headCount("message"),
+    headCount("tool_call"),
+    headCount("request"),
+    fetchCxUsageAnalyticsRange(start, end),
+  ]);
   const totalCost = requests.reduce(
     (sum, r) => sum + (Number(r.total_cost) || 0),
     0,
@@ -248,25 +333,13 @@ export async function fetchOverviewKpis(
         }, 0) / completedRequests.length
       : 0;
 
-  // Aggregate model usage
-  const modelMap = new Map<
-    string,
-    { model_name: string; provider: string; count: number; total_cost: number }
-  >();
-  (modelUsage || []).forEach((r: any) => {
-    const name = r.ai_model?.common_name || "Unknown";
-    const provider = r.ai_model?.provider || "Unknown";
-    const key = `${name}|${provider}`;
-    const existing = modelMap.get(key) || {
-      model_name: name,
-      provider,
-      count: 0,
-      total_cost: 0,
-    };
-    existing.count++;
-    existing.total_cost += Number(r.cost) || 0;
-    modelMap.set(key, existing);
-  });
+  // Model usage — straight from the Postgres aggregate (already cost-sorted).
+  const modelsUsed = usageAggregate.by_model.map((m) => ({
+    model_name: m.model_name,
+    provider: m.provider,
+    count: m.count,
+    total_cost: m.total_cost,
+  }));
 
   // Aggregate tool usage
   const toolMap = new Map<
@@ -280,7 +353,7 @@ export async function fetchOverviewKpis(
       total_dur: number;
     }
   >();
-  (toolUsage || []).forEach((t: any) => {
+  toolUsage.forEach((t) => {
     const key = t.tool_name;
     const existing = toolMap.get(key) || {
       tool_name: key,
@@ -325,11 +398,11 @@ export async function fetchOverviewKpis(
   });
 
   return {
-    total_conversations: convStats?.length || 0,
+    total_conversations: conversationCount,
     total_user_requests: requests.length,
-    total_api_requests: reqStats?.length || 0,
-    total_tool_calls: toolStats?.length || 0,
-    total_messages: msgStats?.length || 0,
+    total_api_requests: apiRequestCount,
+    total_tool_calls: toolCallCount,
+    total_messages: messageCount,
     total_cost: totalCost,
     total_input_tokens: totalInputTokens,
     total_output_tokens: totalOutputTokens,
@@ -343,9 +416,7 @@ export async function fetchOverviewKpis(
     error_rate: requests.length > 0 ? errorCount / requests.length : 0,
     pending_count: pendingCount,
     max_tokens_count: maxTokensCount,
-    models_used: Array.from(modelMap.values()).sort(
-      (a, b) => b.total_cost - a.total_cost,
-    ),
+    models_used: modelsUsed,
     tool_usage: Array.from(toolMap.values())
       .map((t) => ({
         ...t,
@@ -361,6 +432,16 @@ export async function fetchOverviewKpis(
 // ─── Conversations ──────────────────────────────────────────────────────────
 
 export async function fetchConversations(
+  filters: CxFilters,
+): Promise<CxFetchResult<CxPaginatedResponse<CxConversation>>> {
+  try {
+    return { ok: true, data: await fetchConversationsInner(filters) };
+  } catch (e) {
+    return fetchError("Conversations", e);
+  }
+}
+
+async function fetchConversationsInner(
   filters: CxFilters,
 ): Promise<CxPaginatedResponse<CxConversation>> {
   const supabase = await createClient();
@@ -420,7 +501,26 @@ export async function fetchConversations(
 
 // ─── Single Conversation Detail ─────────────────────────────────────────────
 
-export async function fetchConversationDetail(id: string) {
+export type CxConversationDetail = {
+  conversation: (CxConversation & { model_name: string | null; provider: string | null }) | null;
+  messages: CxMessage[];
+  user_requests: CxUserRequest[];
+  child_conversations: CxConversation[];
+};
+
+export async function fetchConversationDetail(
+  id: string,
+): Promise<CxFetchResult<CxConversationDetail>> {
+  try {
+    return { ok: true, data: await fetchConversationDetailInner(id) };
+  } catch (e) {
+    return fetchError("Conversation detail", e);
+  }
+}
+
+async function fetchConversationDetailInner(
+  id: string,
+): Promise<CxConversationDetail> {
   const supabase = await createClient();
 
   // cross-schema FK (chat→ai): fetch conversations without embed, resolve models separately.
@@ -453,6 +553,22 @@ export async function fetchConversationDetail(id: string) {
         .order("created_at", { ascending: true }),
     ]);
 
+  // .single() with no row is PGRST116 — that's "not found", not a failure.
+  if (convResult.error && convResult.error.code !== "PGRST116") {
+    throw new Error(`chat.conversation: ${convResult.error.message}`);
+  }
+  if (messagesResult.error) {
+    throw new Error(`chat.message: ${messagesResult.error.message}`);
+  }
+  if (reqLinksResult.error) {
+    throw new Error(`chat.request links: ${reqLinksResult.error.message}`);
+  }
+  if (childConvsResult.error) {
+    throw new Error(
+      `chat.conversation children: ${childConvsResult.error.message}`,
+    );
+  }
+
   const conv = convResult.data as any;
   const childConvs = childConvsResult.data || [];
 
@@ -470,12 +586,15 @@ export async function fetchConversationDetail(id: string) {
 
   let userRequests: CxUserRequest[] = [];
   if (userRequestIds.length > 0) {
-    const { data: urData } = await supabase
-      .schema("chat").from("user_request")
-      .select("*")
-      .in("id", userRequestIds)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true });
+    const urData = must(
+      await supabase
+        .schema("chat").from("user_request")
+        .select("*")
+        .in("id", userRequestIds)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true }),
+      "chat.user_request",
+    );
     userRequests = (urData ?? []).map((row) => ({
       ...row,
       conversation_id: id,
@@ -504,6 +623,16 @@ export async function fetchConversationDetail(id: string) {
 // ─── User Requests ──────────────────────────────────────────────────────────
 
 export async function fetchUserRequests(
+  filters: CxFilters,
+): Promise<CxFetchResult<CxPaginatedResponse<CxUserRequest>>> {
+  try {
+    return { ok: true, data: await fetchUserRequestsInner(filters) };
+  } catch (e) {
+    return fetchError("User requests", e);
+  }
+}
+
+async function fetchUserRequestsInner(
   filters: CxFilters,
 ): Promise<CxPaginatedResponse<CxUserRequest>> {
   const supabase = await createClient();
@@ -576,7 +705,21 @@ export async function fetchUserRequests(
 
 // ─── Single User Request Detail ─────────────────────────────────────────────
 
-export async function fetchUserRequestDetail(id: string) {
+export type CxUserRequestDetail = Awaited<
+  ReturnType<typeof fetchUserRequestDetailInner>
+>;
+
+export async function fetchUserRequestDetail(
+  id: string,
+): Promise<CxFetchResult<CxUserRequestDetail>> {
+  try {
+    return { ok: true, data: await fetchUserRequestDetailInner(id) };
+  } catch (e) {
+    return fetchError("Request detail", e);
+  }
+}
+
+async function fetchUserRequestDetailInner(id: string) {
   const supabase = await createClient();
 
   // cross-schema FK (chat→ai): fetch request rows without embed, resolve models separately.
@@ -596,6 +739,17 @@ export async function fetchUserRequestDetail(id: string) {
       .order("iteration", { ascending: true })
       .order("started_at", { ascending: true }),
   ]);
+
+  // .single() with no row is PGRST116 — that's "not found", not a failure.
+  if (urResult.error && urResult.error.code !== "PGRST116") {
+    throw new Error(`chat.user_request: ${urResult.error.message}`);
+  }
+  if (requestsResult.error) {
+    throw new Error(`chat.request: ${requestsResult.error.message}`);
+  }
+  if (toolCallsResult.error) {
+    throw new Error(`chat.tool_call: ${toolCallsResult.error.message}`);
+  }
 
   const ur = urResult.data as any;
   const [urConvInfo, requestModelMap] = await Promise.all([
@@ -668,26 +822,46 @@ export async function fetchMessages(
 
 // ─── Errors list ────────────────────────────────────────────────────────────
 
-export async function fetchErrors(filters: CxFilters) {
-  const supabase = await createClient();
+export type CxErrorsData = {
+  error_requests: CxUserRequest[];
+  error_tool_calls: CxToolCall[];
+};
 
-  // User requests with errors
-  const { data: errorRequests } = await supabase
+export async function fetchErrors(
+  filters: CxFilters,
+): Promise<CxFetchResult<CxErrorsData>> {
+  try {
+    return { ok: true, data: await fetchErrorsInner(filters) };
+  } catch (e) {
+    return fetchError("Errors", e);
+  }
+}
+
+async function fetchErrorsInner(filters: CxFilters): Promise<CxErrorsData> {
+  const supabase = await createClient();
+  const { start, end } = timeframeBounds(filters);
+
+  // User requests with errors (newest 200 in range)
+  let urQuery = supabase
     .schema("chat").from("user_request")
     .select("*")
     .is("deleted_at", null)
     .or("error.neq.null,status.eq.error,finish_reason.eq.max_tokens")
     .order("created_at", { ascending: false })
     .limit(200);
+  if (start && end) urQuery = urQuery.gte("created_at", start).lte("created_at", end);
+  const errorRequests = must(await urQuery, "chat.user_request (errors)");
 
-  // Tool calls with errors
-  const { data: errorToolCalls } = await supabase
+  // Tool calls with errors (newest 200 in range)
+  let tcQuery = supabase
     .schema("chat").from("tool_call")
     .select("*")
     .is("deleted_at", null)
     .or("is_error.eq.true,success.eq.false")
     .order("created_at", { ascending: false })
     .limit(200);
+  if (start && end) tcQuery = tcQuery.gte("created_at", start).lte("created_at", end);
+  const errorToolCalls = must(await tcQuery, "chat.tool_call (errors)");
 
   const errConvInfo = await resolveUserRequestConversations(
     supabase,
@@ -708,157 +882,80 @@ export async function fetchErrors(filters: CxFilters) {
 }
 
 // ─── Usage analytics ────────────────────────────────────────────────────────
+// The old implementation pulled EVERY chat.request row (26.8k rows / 34MB)
+// through PostgREST and aggregated in JS — it exceeded the 8s statement
+// timeout under RLS and the discarded error rendered as "$0 / No usage data".
+// Aggregation now happens in Postgres via chat.cx_usage_analytics(p_start,
+// p_end): SECURITY DEFINER, EXECUTE granted ONLY to service_role. It MUST be
+// called with the admin (service-role) client — the user client is refused by
+// design — so the call is gated here by requireSuperAdmin(), the same pattern
+// as app/api/admin/users/usage/route.ts.
 
-export async function fetchUsageAnalytics(filters: CxFilters) {
-  const supabase = await createClient();
+const num = (v: unknown): number => Number(v) || 0;
 
-  // All requests with model info for usage analytics.
-  // cross-schema FK (chat→ai): fetch without embed, resolve models separately.
-  let query = supabase
-    .schema("chat").from("request")
-    .select("*")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: true });
+/**
+ * Super-admin-gated aggregate over chat.request for [start, end] (nulls =
+ * all time). Shared by the usage tab (server component, direct call) and the
+ * GET /api/admin/chat/cx-usage route. Throws on auth failure or query error.
+ */
+export async function fetchCxUsageAnalyticsRange(
+  start: string | null,
+  end: string | null,
+): Promise<CxUsageAnalytics> {
+  await requireSuperAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .schema("chat")
+    .rpc("cx_usage_analytics", {
+      p_start: start ?? undefined,
+      p_end: end ?? undefined,
+    });
+  if (error) throw new Error(`chat.cx_usage_analytics: ${error.message}`);
 
-  if (filters.timeframe !== "all" && filters.timeframe !== "custom") {
-    const range = getTimeframeRange(filters.timeframe as any);
-    if (range) {
-      query = query.gte("created_at", range.start).lte("created_at", range.end);
-    }
-  } else if (
-    filters.timeframe === "custom" &&
-    filters.start_date &&
-    filters.end_date
-  ) {
-    query = query
-      .gte("created_at", filters.start_date)
-      .lte("created_at", filters.end_date);
-  }
-
-  const { data: rawRequests } = await query;
-  const analyticsModelMap = await resolveAiModels(supabase, (rawRequests || []).map((r: any) => r.ai_model_id));
-  const requests = (rawRequests || []).map((r: any) => ({
-    ...r,
-    ai_model: r.ai_model_id ? (analyticsModelMap.get(r.ai_model_id) ?? null) : null,
-  }));
-
-  // Aggregate by model
-  const byModel = new Map<
-    string,
-    {
-      model_name: string;
-      provider: string;
-      count: number;
-      total_cost: number;
-      total_input_tokens: number;
-      total_output_tokens: number;
-      total_cached_tokens: number;
-      total_tokens: number;
-      avg_duration_ms: number;
-      total_dur: number;
-    }
-  >();
-
-  // Aggregate by day
-  const byDay = new Map<
-    string,
-    {
-      date: string;
-      count: number;
-      cost: number;
-      input_tokens: number;
-      output_tokens: number;
-      cached_tokens: number;
-    }
-  >();
-
-  // Aggregate by provider
-  const byProvider = new Map<
-    string,
-    {
-      provider: string;
-      count: number;
-      total_cost: number;
-      total_tokens: number;
-    }
-  >();
-
-  (requests || []).forEach((r: any) => {
-    const modelName = r.ai_model?.common_name || "Unknown";
-    const provider = r.ai_model?.provider || "Unknown";
-    const cost = Number(r.cost) || 0;
-    const inputTokens = r.input_tokens || 0;
-    const outputTokens = r.output_tokens || 0;
-    const cachedTokens = r.cached_tokens || 0;
-    const totalTokens = r.total_tokens || 0;
-    const dur = r.api_duration_ms || 0;
-    const date = r.created_at.slice(0, 10);
-
-    // By model
-    const mKey = `${modelName}|${provider}`;
-    const m = byModel.get(mKey) || {
-      model_name: modelName,
-      provider,
-      count: 0,
-      total_cost: 0,
-      total_input_tokens: 0,
-      total_output_tokens: 0,
-      total_cached_tokens: 0,
-      total_tokens: 0,
-      avg_duration_ms: 0,
-      total_dur: 0,
-    };
-    m.count++;
-    m.total_cost += cost;
-    m.total_input_tokens += inputTokens;
-    m.total_output_tokens += outputTokens;
-    m.total_cached_tokens += cachedTokens;
-    m.total_tokens += totalTokens;
-    m.total_dur += dur;
-    byModel.set(mKey, m);
-
-    // By day
-    const d = byDay.get(date) || {
-      date,
-      count: 0,
-      cost: 0,
-      input_tokens: 0,
-      output_tokens: 0,
-      cached_tokens: 0,
-    };
-    d.count++;
-    d.cost += cost;
-    d.input_tokens += inputTokens;
-    d.output_tokens += outputTokens;
-    d.cached_tokens += cachedTokens;
-    byDay.set(date, d);
-
-    // By provider
-    const p = byProvider.get(provider) || {
-      provider,
-      count: 0,
-      total_cost: 0,
-      total_tokens: 0,
-    };
-    p.count++;
-    p.total_cost += cost;
-    p.total_tokens += totalTokens;
-    byProvider.set(provider, p);
-  });
-
-  return {
-    by_model: Array.from(byModel.values())
-      .map((m) => ({
-        ...m,
-        avg_duration_ms: m.count > 0 ? m.total_dur / m.count : 0,
-      }))
-      .sort((a, b) => b.total_cost - a.total_cost),
-    by_day: Array.from(byDay.values()).sort((a, b) =>
-      a.date.localeCompare(b.date),
-    ),
-    by_provider: Array.from(byProvider.values()).sort(
-      (a, b) => b.total_cost - a.total_cost,
-    ),
-    total_requests: requests?.length || 0,
+  // jsonb → typed shape. Numeric aggregates can arrive as strings — coerce.
+  const raw = (data ?? {}) as {
+    by_model?: Record<string, unknown>[];
+    by_day?: Record<string, unknown>[];
+    by_provider?: Record<string, unknown>[];
+    total_requests?: unknown;
   };
+  return {
+    by_model: (raw.by_model ?? []).map((m) => ({
+      model_name: String(m.model_name ?? "Unknown"),
+      provider: String(m.provider ?? "Unknown"),
+      count: num(m.count),
+      total_cost: num(m.total_cost),
+      total_input_tokens: num(m.total_input_tokens),
+      total_output_tokens: num(m.total_output_tokens),
+      total_cached_tokens: num(m.total_cached_tokens),
+      total_tokens: num(m.total_tokens),
+      avg_duration_ms: num(m.avg_duration_ms),
+    })),
+    by_day: (raw.by_day ?? []).map((d) => ({
+      date: String(d.date ?? ""),
+      count: num(d.count),
+      cost: num(d.cost),
+      input_tokens: num(d.input_tokens),
+      output_tokens: num(d.output_tokens),
+      cached_tokens: num(d.cached_tokens),
+    })),
+    by_provider: (raw.by_provider ?? []).map((p) => ({
+      provider: String(p.provider ?? "Unknown"),
+      count: num(p.count),
+      total_cost: num(p.total_cost),
+      total_tokens: num(p.total_tokens),
+    })),
+    total_requests: num(raw.total_requests),
+  };
+}
+
+export async function fetchUsageAnalytics(
+  filters: CxFilters,
+): Promise<CxFetchResult<CxUsageAnalytics>> {
+  try {
+    const { start, end } = timeframeBounds(filters);
+    return { ok: true, data: await fetchCxUsageAnalyticsRange(start, end) };
+  } catch (e) {
+    return fetchError("Usage analytics", e);
+  }
 }

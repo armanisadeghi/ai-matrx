@@ -9662,6 +9662,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      cx_usage_analytics: {
+        Args: { p_end?: string; p_start?: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
