@@ -130,6 +130,8 @@ export default function BakeoffPickerPage() {
                           <Link
                             key={v.slug}
                             href={`/workflows/bakeoff/${v.slug}/${row.id}`}
+                            target="_blank"
+                            rel="noopener"
                             className="rounded border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground"
                           >
                             {v.label}
