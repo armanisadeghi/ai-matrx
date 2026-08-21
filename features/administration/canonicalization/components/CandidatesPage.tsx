@@ -3,10 +3,25 @@
 /**
  * features/administration/canonicalization/components/CandidatesPage.tsx
  *
- * Migration backlog: `audit.m2m_candidates`, `audit.unregistered_candidates`,
- * `audit.stale_registry`. Rendered as a single full-height table at a time
- * behind a button-group switcher (not a shadcn <Tabs>) so mobile keeps one
- * scroll area per view while desktop still gets full vertical space per table.
+ * Two WORK QUEUES and one REGISTER, behind a button-group switcher (not a
+ * shadcn <Tabs>) so mobile keeps one scroll area per view while desktop still
+ * gets full vertical space per table.
+ *
+ *   - `audit.m2m_candidates`          work queue  -> collapse into associations
+ *   - `audit.unregistered_candidates` work queue  -> register them
+ *   - `audit.stale_registry`          REGISTER    -> nothing to do; see below
+ *
+ * `audit.stale_registry` is NOT backlog and must never be presented as such.
+ * A row there is a RETIRED TOKEN: db-rules §1 defines `table_ref IS NULL` as
+ * the retire signal, `platform.flag_entity_types_on_drop()` deliberately keeps
+ * the row (it sets is_active=false, table_ref=NULL and does not delete), and
+ * `platform._enforce_entity_is_table()` calls this "the stale-registry lane,
+ * not this guard's job". The row is load-bearing: `history.row_versions` keys
+ * on TOKEN while `platform.deprecated_relations` keys on schema.table text, so
+ * the registry row is the only surviving token->meaning binding once the table
+ * is gone. This view is therefore expected to sit at a nonzero count forever;
+ * it was previously labelled "Stale registry" under a "Migration backlog"
+ * header, which read as permanently unworked work (owner-ruled 2026-08-21).
  */
 
 import { useMemo, useCallback } from "react";
@@ -168,14 +183,14 @@ export function CandidatesPage() {
       },
       {
         key: "schema_name",
-        label: "Registered schema",
+        label: "Last known schema",
         type: "text",
         getValue: (r) => r.schema_name,
         width: "200px",
       },
       {
         key: "table_name",
-        label: "Registered table",
+        label: "Last known table",
         type: "text",
         getValue: (r) => r.table_name,
         width: "220px",
@@ -191,7 +206,7 @@ export function CandidatesPage() {
       label: "Unregistered",
       count: unregistered.rows.length,
     },
-    { id: "stale", label: "Stale registry", count: stale.rows.length },
+    { id: "stale", label: "Retired tokens", count: stale.rows.length },
   ];
 
   const active =
@@ -227,6 +242,14 @@ export function CandidatesPage() {
         ))}
       </div>
 
+      {view === "stale" ? (
+        <p className="shrink-0 px-4 pb-2 text-xs text-muted-foreground">
+          A register, not a queue. Each row is a retired token whose table is
+          gone; the row is kept on purpose so history keyed on that token stays
+          resolvable. Nonzero is the expected steady state.
+        </p>
+      ) : null}
+
       <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
         {view === "m2m" ? (
           <AdminAuditTable
@@ -257,7 +280,7 @@ export function CandidatesPage() {
             loading={stale.loading}
             csvFilename="canonicalization-stale-registry.csv"
             defaultSort={{ key: "token", dir: "asc" }}
-            emptyMessage="No stale registry rows found."
+            emptyMessage="No retired tokens." 
             copyForAi={STALE_REGISTRY_TABLE_COPY}
             urlStateKey="stale"
           />

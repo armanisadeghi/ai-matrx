@@ -281,21 +281,23 @@ export const UNREGISTERED_CANDIDATES_TABLE_COPY: AuditTableCopyForAi<Unregistere
 export function staleRegistryToHuman(row: StaleRegistryRow): string {
   return [
     `Token: ${row.token ?? "?"}`,
-    `Registered as: ${row.schema_name ?? "?"}.${row.table_name ?? "?"}`,
+    `Last known location: ${row.schema_name ?? "?"}.${row.table_name ?? "?"} (gone)`,
   ].join("\n");
 }
 
 export const STALE_REGISTRY_TABLE_COPY: AuditTableCopyForAi<StaleRegistryRow> =
   {
-    label: "Stale registry row",
-    listLabel: "Stale registry",
+    label: "Retired token",
+    listLabel: "Retired tokens",
     location: canonicalRouteLocation(
       "/administration/database/canonicalization/candidates",
     ),
     rowKind: "canonicalization-stale-registry-row",
     listKind: "canonicalization-stale-registry-rows",
-    rowDescription: "One stale platform.entity_types registry row.",
-    listDescription: "Stale registry rows visible after filters.",
+    rowDescription:
+      "One RETIRED TOKEN: a platform.entity_types row whose table is gone. Kept on purpose (db-rules §1) so history keyed on the token stays resolvable — not an action item.",
+    listDescription:
+      "Retired tokens visible after filters. A register, not a work queue; a nonzero count is the expected steady state.",
     humanRow: staleRegistryToHuman,
     rowAttributes: (r) => ({
       token: r.token,
