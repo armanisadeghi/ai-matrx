@@ -157,7 +157,15 @@ export const fetchNoteContent = createAsyncThunk<Note | null, string>(
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) throw new Error("Note not found");
+    if (!data) {
+      throw recordUnavailable({
+        entity: "note",
+        reason: "unknown",
+        recordId: noteId,
+        token: "note",
+        relation: "workbench.notes",
+      });
+    }
 
     const [note] = await hydrateNoteContextLinks([data]);
     dispatch(
@@ -203,7 +211,15 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) throw new Error("Note not found");
+    if (!data) {
+      throw recordUnavailable({
+        entity: "note",
+        reason: "unknown",
+        recordId: noteId,
+        token: "note",
+        relation: "workbench.notes",
+      });
+    }
 
     const [note] = await hydrateNoteContextLinks([data]);
     dispatch(
@@ -317,9 +333,11 @@ export const saveNote = createAsyncThunk<void, string>(
           .maybeSingle();
 
         if (!stillThere) {
-          const friendly = "You don't have permission to save this note.";
-          failNoteSave(dispatch, getState, noteId, friendly);
-          throw new Error(friendly);
+          const failed = operationFailed(
+            "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
+          );
+          failNoteSave(dispatch, getState, noteId, failed.message);
+          throw failed;
         }
 
         // Check the ACTUAL server row before crying conflict: if it already
@@ -511,8 +529,11 @@ export const deleteNote = createAsyncThunk<void, string>(
     // note would vanish from the UI while surviving in the DB. Detect and
     // scream. (Editor sharees pass RLS; they're blocked by the gate above.)
     if (!data || data.length === 0) {
-      toastNoteWriteBlocked(noteId, NOTE_READONLY_DELETE_MESSAGE);
-      throw new Error(NOTE_READONLY_DELETE_MESSAGE);
+      const failed = operationFailed(
+        "delete this note — nothing was changed. It may need owner access you don't have, or the note may already be gone",
+      );
+      toastNoteWriteBlocked(noteId, failed.message);
+      throw failed;
     }
 
     dispatch(removeNote(noteId));
@@ -535,7 +556,7 @@ export const copyNote = createAsyncThunk<Note, string>(
     const record = state.notes.notes[noteId] as NoteRecord | undefined;
     const userId = getUserId(getState);
 
-    if (!record) throw new Error("Note not found in state");
+    if (!record) throw new Error("Note not found in state"); // access-errors: ok — in-memory Redux store lookup; the record is verifiably absent locally
 
     const copyLabel =
       record.label.toLowerCase() === "new note"

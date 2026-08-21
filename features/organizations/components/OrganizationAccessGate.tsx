@@ -12,17 +12,21 @@
  * one-click way to say yes.
  *
  * THE SLUG CASE. `[orgId]` accepts a uuid or a slug, and the access gate is
- * keyed on the record's uuid. When the param is a slug we could not resolve, we
- * have no record to ask about — so we say exactly that ("this address doesn't
- * match an organization you can open") and stop. We do NOT upgrade it to
- * "doesn't exist" or "no permission": that is the hedge this whole feature
- * deletes.
+ * keyed on the record's uuid. The client cannot resolve a slug for an org RLS
+ * hides from it, so `access_gate_resolve_slug` (signed-in only, existence-level
+ * disclosure — see migrations/access_gate_slug_resolver.sql) asks the platform.
+ * A slug it resolves gets the full gate; one it does not gets exactly the truth
+ * we hold — "this address doesn't match an organization you can open" — never
+ * upgraded to "doesn't exist" or "no permission": that is the hedge this whole
+ * feature deletes.
  */
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { resolveAccessGateSlug } from "@/features/access-gate/service/accessDeniedContext";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -48,8 +52,33 @@ export function OrganizationAccessGate({
   fallbackHref = "/organizations",
   fallbackLabel = "Your organizations",
 }: OrganizationAccessGateProps) {
-  const id =
+  const directId =
     organizationId ?? (UUID_RE.test(orgSlugOrId) ? orgSlugOrId : null);
+
+  // Slug case: ask the platform. `null` = still asking (or nothing to ask),
+  // and the answer is keyed to the param so a navigation can't apply a stale
+  // resolution to the wrong org.
+  const [slugResolved, setSlugResolved] = useState<{
+    slug: string;
+    id: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (directId) return;
+    let active = true;
+    void resolveAccessGateSlug("organization", orgSlugOrId).then((resolved) => {
+      if (active) setSlugResolved({ slug: orgSlugOrId, id: resolved });
+    });
+    return () => {
+      active = false;
+    };
+  }, [directId, orgSlugOrId]);
+
+  const id =
+    directId ??
+    (slugResolved && slugResolved.slug === orgSlugOrId
+      ? slugResolved.id
+      : null);
 
   if (id) {
     return (
@@ -62,6 +91,12 @@ export function OrganizationAccessGate({
         fallbackLabel={fallbackLabel}
       />
     );
+  }
+
+  // Still asking the platform about the slug — render nothing rather than
+  // flash a "didn't match" claim that may be about to become the full gate.
+  if (!slugResolved || slugResolved.slug !== orgSlugOrId) {
+    return null;
   }
 
   return (

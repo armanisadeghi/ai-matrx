@@ -31,6 +31,7 @@ export const NOTE_READONLY_SAVE_MESSAGE =
   "This note is read-only for you — your changes are NOT being saved. Duplicate the note to keep your work.";
 
 export const NOTE_READONLY_DELETE_MESSAGE =
+  // access-errors: ok — rendered only after the client checked _sharedMeta.permissionLevel, so the permission verdict is verified, not guessed
   "You don't have permission to delete this note.";
 
 /** Friendly, actionable message for a failed note save. */

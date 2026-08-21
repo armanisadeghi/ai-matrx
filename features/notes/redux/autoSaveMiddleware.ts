@@ -13,6 +13,7 @@ import type { Note } from "../types";
 // imports this middleware), breaking the type-level circular dependency.
 type StateWithNotes = { notes: NotesSliceState; userAuth: UserAuthState };
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   markNoteSaving,
@@ -279,7 +280,9 @@ export const autoSaveMiddleware: Middleware =
               failSave(
                 storeApi,
                 noteId,
-                "You don't have permission to save this note.",
+                operationFailed(
+                  "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
+                ).message,
               );
               return;
             }

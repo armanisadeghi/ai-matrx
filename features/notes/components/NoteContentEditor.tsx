@@ -629,6 +629,7 @@ export function NoteContentEditor({
         // the user's sidebar. Creating folders stays a human decision.
         if (!allFolders.includes(folder))
           throw new Error(
+            // access-errors: ok — AI tool-call validation against the loaded folder list; the name is verifiably absent from it
             `note_folder expects an existing folder. "${folder}" does not exist — choose one of: ${allFolders.join(" | ")}.`,
           );
         await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();

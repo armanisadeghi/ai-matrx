@@ -50,10 +50,12 @@ export function SharedCanvasView({ shareToken, className = "h-[calc(100dvh-3.5re
                         <AlertCircle className="w-8 h-8 text-zinc-600 dark:text-zinc-400" />
                     </div>
                     <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                        Canvas Not Found
+                        We couldn&apos;t open this canvas
                     </h1>
                     <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                        This canvas doesn't exist or has been made private.
+                        This share link didn&apos;t match a shared canvas. The
+                        link may be incorrect, or the canvas may no longer be
+                        shared.
                     </p>
                     <Button asChild className="w-full max-w-xs bg-blue-600 hover:bg-blue-700 text-white">
                         <Link href="/">Go Home</Link>

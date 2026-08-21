@@ -251,5 +251,29 @@ export async function fetchAccessDeniedContext(
   }
 }
 
+/**
+ * Resolve a slug-addressed record to its uuid so the gate can ask the real
+ * question. Server-side disclosure: signed-in only; anonymous callers (and
+ * unregistered types) get null, and the surface keeps its honest
+ * "address didn't match" answer. Never throws — same contract as above.
+ */
+export async function resolveAccessGateSlug(
+  token: string,
+  slug: string,
+): Promise<string | null> {
+  if (!token || !slug) return null;
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("access_gate_resolve_slug", {
+      p_type: token,
+      p_slug: slug,
+    });
+    if (error) return null;
+    return typeof data === "string" && isUuid(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The level a "Request access" click asks for by default. */
 export const DEFAULT_REQUEST_LEVEL: RequestedLevel = "viewer";

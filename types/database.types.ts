@@ -31763,6 +31763,10 @@ export type Database = {
         Returns: Json
       }
       access_drift_report: { Args: never; Returns: Json }
+      access_gate_resolve_slug: {
+        Args: { p_slug: string; p_type: string }
+        Returns: string
+      }
       access_matrix_tree: { Args: { p_store: string }; Returns: Json }
       access_request_create: {
         Args: {
