@@ -43,6 +43,7 @@ import type { GradeResult } from "@/features/education/trust/types";
 import { CoachReviewPanel } from "@/features/education/study/components/CoachReviewPanel";
 import { parsedSessionReviewFromSummary } from "@/features/education/study/utils/parseSessionReview";
 import { FastFireReviewPlayer } from "./FastFireReviewPlayer";
+import { FastFireReviewPlaylist } from "./FastFireReviewPlaylist";
 
 const RESULT_META: Record<
   GradeResult,
@@ -72,6 +73,7 @@ const FILTERS: { id: ReviewFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "correct", label: "Correct" },
   { id: "incorrect", label: "Needs work" },
+  { id: "best", label: "Best" },
 ];
 
 export function FastFireScoreboard({
@@ -133,6 +135,11 @@ export function FastFireScoreboard({
 
         {/* Professor review (optional lane) */}
         <CoachReviewPanel review={coachReview} />
+
+        {/* Play-all transport (26b) — plays the current filter sequentially.
+            Keyed on the filter so switching filters resets the chain instead
+            of playing stale indices. */}
+        <FastFireReviewPlaylist key={filter} />
 
         {/* Filter tabs */}
         <div className="mb-3 flex items-center gap-1.5">

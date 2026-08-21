@@ -151,6 +151,10 @@ export interface ReviewRow {
   grade: CardGrade | undefined;
 }
 
+/** "Review Best" size (spec 26b) — enough to feel like a highlight reel,
+ *  short enough to replay in a minute. Product constant, not a quota. */
+const BEST_COUNT = 5;
+
 export const selectReviewRows = createSelector(
   selectFastFireCards,
   selectGradesByCard,
@@ -158,6 +162,16 @@ export const selectReviewRows = createSelector(
   (cards, byCard, filter): ReviewRow[] => {
     const rows = cards.map((card) => ({ card, grade: byCard[card.id] }));
     if (filter === "all") return rows;
+    if (filter === "best") {
+      // The learner's strongest ANSWERS — needs a rank, not a predicate:
+      // top-scored resolved answers that actually have a clip to replay.
+      return rows
+        .filter(
+          (r) => r.grade?.score != null && !!r.grade.responseAudioFileId,
+        )
+        .sort((a, b) => (b.grade?.score ?? 0) - (a.grade?.score ?? 0))
+        .slice(0, BEST_COUNT);
+    }
     return rows.filter((r) => {
       const result = r.grade?.result;
       if (filter === "correct") return result === "correct";

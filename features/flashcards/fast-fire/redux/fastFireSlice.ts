@@ -136,8 +136,9 @@ export interface AdaptationState {
  */
 export type AdvanceReason = "timeout" | "skip";
 
-/** Which subset of cards the review-playback scoreboard is showing. */
-export type ReviewFilter = "all" | "correct" | "incorrect";
+/** Which subset of cards the review-playback scoreboard is showing.
+ *  `best` = the top-scored answers WITH audio (spec 26b's "Review Best"). */
+export type ReviewFilter = "all" | "correct" | "incorrect" | "best";
 
 /**
  * Review playback state. STATE, not a ref (hard-requirement #5). `playingCardId`

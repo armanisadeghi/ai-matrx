@@ -132,6 +132,14 @@ own fresh conversation):
 
 ## Change log
 
+- **2026-08-21 — Review modes + play-all (Q15 #4a, spec 26b).** The scoreboard's
+  filter pills gained **Best** (top-5 scored answers WITH audio — a rank, not a
+  predicate, in `selectReviewRows`) and a **Play all** transport
+  (`fast-fire/components/FastFireReviewPlaylist.tsx`): one persistent `<audio>`
+  element whose src swaps inside `ended` with a lookahead-of-1 URL resolve, so the
+  chain honors the iOS unlock rule the per-row player documents. Keyed on the
+  filter so switching resets the chain.
+
 - **2026-08-21 — Session-level transcript review (Q15 #3, spec 26c).** FastFire now
   assembles the SEGMENTED full-session transcript (per card, in presented order, with
   question + grade — `fast-fire/session-transcript.ts`, capped at 20k chars) and the
