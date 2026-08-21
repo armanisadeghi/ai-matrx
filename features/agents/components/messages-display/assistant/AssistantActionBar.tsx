@@ -37,6 +37,7 @@ import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeak
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openAssistantMessageEditor } from "../message-options/openAssistantMessageEditor";
+import { resolveAssistantEditTarget } from "../message-options/resolveAssistantEditTarget";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
@@ -252,6 +253,16 @@ export function AssistantActionBar({
   // aggregated `turnContent` (consumption actions — copy/save/export/task —
   // match what the user reads on screen).
   const copySpeakContent = aggregatedContent ?? content;
+  const editTarget = useMemo(
+    () =>
+      resolveAssistantEditTarget(
+        groupMessageIds,
+        byId,
+        messageId,
+        content,
+      ),
+    [groupMessageIds, byId, messageId, content],
+  );
 
   // Selection-aware Speak: when the user has highlighted a part of THIS
   // message (or any message in this turn group), Speak reads just the
@@ -363,9 +374,9 @@ export function AssistantActionBar({
   // uses) — one save contract, no closure stored in Redux.
   const handleEdit = () => {
     openAssistantMessageEditor(dispatch, {
-      content,
+      content: editTarget.content,
       conversationId,
-      messageId,
+      messageId: editTarget.messageId,
       metadata,
     });
   };
@@ -475,6 +486,7 @@ export function AssistantActionBar({
             content={content}
             turnContent={aggregatedContent}
             messageId={messageId}
+            editTarget={editTarget}
             conversationId={conversationId}
             metadata={metadata}
             anchorElement={moreOptionsButtonRef.current}

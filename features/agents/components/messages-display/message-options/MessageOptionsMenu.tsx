@@ -28,6 +28,7 @@ import {
   type MessageActionContext,
 } from "./messageActionRegistry";
 import type { PrimingMessageRole } from "@/features/agents/types/agent-message-types";
+import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 
 export interface MessageOptionsMenuProps {
   isOpen: boolean;
@@ -42,6 +43,8 @@ export interface MessageOptionsMenuProps {
   turnContent?: string | null;
   /** Server-assigned `cx_message.id`. Null hides mutation actions. */
   messageId: string | null;
+  /** Text-bearing row to edit when a grouped turn ends in a tool-only row. */
+  editTarget?: AssistantEditTarget;
   /** Server-assigned `cx_conversation.id`. Null hides mutation actions. */
   conversationId: string | null;
   /** Optional JSON metadata to include in saves/exports. */
@@ -83,6 +86,7 @@ export function MessageOptionsMenu({
   content,
   turnContent = null,
   messageId,
+  editTarget,
   conversationId,
   metadata = null,
   anchorElement,
@@ -139,6 +143,7 @@ export function MessageOptionsMenu({
     turnContent,
     isAuthenticated,
     messageId,
+    editTarget,
     conversationId,
     metadata,
     dispatch,

@@ -74,6 +74,7 @@ import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import { buildTaskSeedFromMessage } from "./buildTaskSeedFromMessage";
 import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
+import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -101,6 +102,8 @@ export interface MessageActionContext {
   isAuthenticated: boolean;
   /** Server `cx_message.id`. Required for any mutation path; null hides those items. */
   messageId: string | null;
+  /** Actual text-bearing row for assistant edit actions in a grouped turn. */
+  editTarget?: AssistantEditTarget;
   /** Server `cx_conversation.id`. Required for any mutation path; null hides those items. */
   conversationId: string | null;
   /** `cx_message.metadata` — arbitrary JSON; included in saves and exports. */
@@ -1055,8 +1058,9 @@ function appItems(ctx: MessageActionContext): MenuItem[] {
  *     turn sees the updated content.
  */
 function editContentItem(ctx: MessageActionContext): MenuItem {
-  const { content, conversationId, messageId, metadata, dispatch, onClose } =
-    ctx;
+  const { content, conversationId, messageId, metadata, dispatch, onClose } = ctx;
+  const editContent = ctx.editTarget?.content ?? content;
+  const editMessageId = ctx.editTarget?.messageId ?? messageId;
   return {
     key: "edit-content",
     icon: Edit,
@@ -1066,16 +1070,16 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
       // Shared opener — identical contract (mode, instance, save path) to the
       // action-bar pencil, so the two edit entry points can never drift.
       openAssistantMessageEditor(dispatch, {
-        content,
+        content: editContent,
         conversationId,
-        messageId,
+        messageId: editMessageId,
         metadata,
       });
       onClose();
     },
     category: "Edit",
     showToast: false,
-    hidden: !conversationId || !messageId,
+    hidden: !conversationId || !editMessageId,
   };
 }
 
