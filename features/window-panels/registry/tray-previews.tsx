@@ -14,10 +14,10 @@
  */
 
 import type { ReactNode } from "react";
-import { Sparkles } from "lucide-react";
+import { Activity } from "lucide-react";
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspectorTrayChip";
-import { useLiveRunStatus } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { TrayStatusChip } from "../WindowTray/TrayStatusChip";
 
@@ -38,7 +38,7 @@ function LiveRunTrayPreview({ data }: { data: Record<string, unknown> }) {
   useRetainRequestForViewer(status.requestId, "live-run-tray-preview");
   return (
     <TrayStatusChip
-      icon={Sparkles}
+      icon={Activity}
       tone={status.errorMessage ? "critical" : status.isActive ? "info" : "neutral"}
       caption={
         status.errorMessage

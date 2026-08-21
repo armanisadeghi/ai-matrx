@@ -17,7 +17,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { callApi } from "@/lib/api/call-api";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { siteConfig } from "@/config/extras/site";
@@ -82,6 +81,13 @@ export function useAssistRunner(): AssistRunnerApi {
       userId: userId ?? null,
       openAgentRun,
       runMandate: async (options) => {
+        // AssistsDock is mounted from the application shell. A static import of
+        // the execution thunk here pulls the entire agent execution graph into
+        // every route and has repeatedly exhausted Vercel's 60 GB build worker.
+        // The machinery is only needed after the user accepts this action.
+        const { launchAgentExecution } = await import(
+          "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk"
+        );
         const instanceId = `assist:${options.assistId || crypto.randomUUID()}`;
         dispatch(
           openLiveRunWindowAction({

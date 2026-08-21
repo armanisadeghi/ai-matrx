@@ -25,10 +25,8 @@
 
 import React from "react";
 
-import {
-  LiveRunDisplay,
-  useLiveRunStatus,
-} from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
 import { RunSetDisplay } from "@/features/agents/components/live-run/RunSetDisplay";
 import { selectRunSetEntries } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
 import {
