@@ -9,7 +9,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { readAllRows } from "@/lib/supabase/readAllRows";
 import type {
   CxConversation,
   CxUserRequest,
@@ -59,6 +58,8 @@ function must<T>(
 }
 
 /** Resolve a CxFilters timeframe to an inclusive [start, end] range (nulls = all time). */
+const num = (v: unknown): number => Number(v) || 0;
+
 function timeframeBounds(filters: CxFilters): {
   start: string | null;
   end: string | null;
@@ -208,266 +209,77 @@ export async function fetchOverviewKpis(
   }
 }
 
-type UrStatRow = {
-  id: string;
-  total_input_tokens: number | null;
-  total_output_tokens: number | null;
-  total_cached_tokens: number | null;
-  total_tokens: number | null;
-  total_cost: number | string | null;
-  total_duration_ms: number | null;
-  status: string | null;
-  finish_reason: string | null;
-  error: string | null;
-  created_at: string;
-  completed_at: string | null;
-};
-
-type ToolUsageRow = {
-  tool_name: string;
-  duration_ms: number | null;
-  is_error: boolean | null;
-  cost_usd: number | string | null;
-};
-
 async function fetchOverviewKpisInner(
   filters: CxFilters,
 ): Promise<CxOverviewKpis> {
-  // Whole-corpus aggregates over chat.* under per-row RLS evaluation blow the
-  // 8s statement timeout (measured: chat.message count alone). This is a
-  // super-admin-only dashboard, so — same pattern as the usage RPC and
-  // app/api/admin/users/usage/route.ts — gate here and read on the admin
-  // (service-role) client, where the same aggregates are index scans.
+  // Every KPI on this tab is a SUM/COUNT over whole chat.* tables. Postgres does
+  // that in one indexed pass (measured 0.71s all-time); pulling the rows out to
+  // count them in JS meant 111 paginated PostgREST reads (~10s) and, under RLS,
+  // a statement timeout. Aggregation lives in chat.cx_overview_kpis — SECURITY
+  // DEFINER, service_role only — so gate first, then read on the admin client.
+  // Same contract as the usage tab (migrations 0432 / 0437).
   await requireSuperAdmin();
-  const supabase = createAdminClient();
+  const admin = createAdminClient();
   const { start, end } = timeframeBounds(filters);
 
-  // Pure counts never fetch rows — head:true returns only the exact count.
-  const headCount = async (
-    table: "conversation" | "message" | "tool_call" | "request",
-  ): Promise<number> => {
-    let q = supabase
-      .schema("chat")
-      .from(table)
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null);
-    if (start && end) q = q.gte("created_at", start).lte("created_at", end);
-    const { count, error } = await q;
-    if (error) throw new Error(`chat.${table} count: ${dbErr(error)}`);
-    return count ?? 0;
-  };
-
-  // Aggregate scans page through readAllRows: PostgREST caps every response at
-  // 1000 rows, so a bare .select() silently under-reports every total here.
-  const readUrStats = () =>
-    readAllRows<UrStatRow>(
-      ({ from, to }) => {
-        let q = supabase
-          .schema("chat")
-          .from("user_request")
-          .select(
-            "id, total_input_tokens, total_output_tokens, total_cached_tokens, total_tokens, total_cost, total_duration_ms, status, finish_reason, error, created_at, completed_at",
-            { count: "exact" },
-          )
-          .is("deleted_at", null);
-        if (start && end) q = q.gte("created_at", start).lte("created_at", end);
-        if (filters.user_id) q = q.eq("created_by", filters.user_id);
-        // created_at first: appends land past the tail, so parallel pages
-        // stay stable under concurrent inserts; id breaks ties.
-        return q
-          .order("created_at", { ascending: true })
-          .order("id", { ascending: true })
-          .range(from, to);
-      },
-      {
-        label: "chat.user_request (overview KPIs)",
-        concurrency: 10,
-        // Aggregate-only read on an actively-written table (see rowKey docs).
-        rowKey: (row) => (row as UrStatRow).id,
-      },
-    );
-
-  const readToolUsage = () =>
-    readAllRows<ToolUsageRow>(
-      ({ from, to }) => {
-        let q = supabase
-          .schema("chat")
-          .from("tool_call")
-          .select("id, tool_name, duration_ms, is_error, cost_usd", {
-            count: "exact",
-          })
-          .is("deleted_at", null);
-        if (start && end) q = q.gte("created_at", start).lte("created_at", end);
-        // created_at first: appends land past the tail, so parallel pages
-        // stay stable under concurrent inserts; id breaks ties.
-        return q
-          .order("created_at", { ascending: true })
-          .order("id", { ascending: true })
-          .range(from, to);
-      },
-      {
-        label: "chat.tool_call (overview KPIs)",
-        concurrency: 10,
-        // Aggregate-only read on an actively-written table (see rowKey docs).
-        rowKey: (row) => (row as ToolUsageRow & { id: string }).id,
-      },
-    );
-
-  const [
-    requests,
-    toolUsage,
-    conversationCount,
-    messageCount,
-    toolCallCount,
-    apiRequestCount,
-    // Per-model request counts/costs come from the same service-role aggregate
-    // the usage tab uses — never an all-time chat.request row scan.
-    usageAggregate,
-  ] = await Promise.all([
-    readUrStats(),
-    readToolUsage(),
-    headCount("conversation"),
-    headCount("message"),
-    headCount("tool_call"),
-    headCount("request"),
+  const [kpiResult, usageAggregate] = await Promise.all([
+    admin.schema("chat").rpc("cx_overview_kpis", {
+      p_start: start ?? undefined,
+      p_end: end ?? undefined,
+      p_user_id: filters.user_id ?? undefined,
+    }),
+    // Per-model counts/costs come from the same aggregate the usage tab uses.
     fetchCxUsageAnalyticsRange(start, end),
   ]);
-  const totalCost = requests.reduce(
-    (sum, r) => sum + (Number(r.total_cost) || 0),
-    0,
-  );
-  const totalInputTokens = requests.reduce(
-    (sum, r) => sum + (r.total_input_tokens || 0),
-    0,
-  );
-  const totalOutputTokens = requests.reduce(
-    (sum, r) => sum + (r.total_output_tokens || 0),
-    0,
-  );
-  const totalCachedTokens = requests.reduce(
-    (sum, r) => sum + (r.total_cached_tokens || 0),
-    0,
-  );
-  const totalTokens = requests.reduce(
-    (sum, r) => sum + (r.total_tokens || 0),
-    0,
-  );
-  const errorCount = requests.filter(
-    (r) => r.error || r.status === "error",
-  ).length;
-  const pendingCount = requests.filter((r) => r.status === "pending").length;
-  const maxTokensCount = requests.filter(
-    (r) => r.finish_reason === "max_tokens",
-  ).length;
 
-  const completedRequests = requests.filter((r) => r.status === "completed");
-  const avgDuration =
-    completedRequests.length > 0
-      ? completedRequests.reduce((sum, r) => {
-          const dur =
-            r.total_duration_ms && r.total_duration_ms > 0
-              ? r.total_duration_ms
-              : r.completed_at && r.created_at
-                ? new Date(r.completed_at).getTime() -
-                  new Date(r.created_at).getTime()
-                : 0;
-          return sum + dur;
-        }, 0) / completedRequests.length
-      : 0;
+  if (kpiResult.error) {
+    throw new Error(`chat.cx_overview_kpis: ${dbErr(kpiResult.error)}`);
+  }
 
-  // Model usage — straight from the Postgres aggregate (already cost-sorted).
-  const modelsUsed = usageAggregate.by_model.map((m) => ({
-    model_name: m.model_name,
-    provider: m.provider,
-    count: m.count,
-    total_cost: m.total_cost,
-  }));
-
-  // Aggregate tool usage
-  const toolMap = new Map<
-    string,
-    {
-      tool_name: string;
-      count: number;
-      error_count: number;
-      avg_duration_ms: number;
-      total_cost: number;
-      total_dur: number;
-    }
-  >();
-  toolUsage.forEach((t) => {
-    const key = t.tool_name;
-    const existing = toolMap.get(key) || {
-      tool_name: key,
-      count: 0,
-      error_count: 0,
-      avg_duration_ms: 0,
-      total_cost: 0,
-      total_dur: 0,
-    };
-    existing.count++;
-    if (t.is_error) existing.error_count++;
-    existing.total_dur += t.duration_ms || 0;
-    existing.total_cost += Number(t.cost_usd) || 0;
-    toolMap.set(key, existing);
-  });
-
-  // Daily stats
-  const dailyMap = new Map<
-    string,
-    {
-      date: string;
-      requests: number;
-      cost: number;
-      tokens: number;
-      errors: number;
-    }
-  >();
-  requests.forEach((r) => {
-    const date = r.created_at.slice(0, 10);
-    const existing = dailyMap.get(date) || {
-      date,
-      requests: 0,
-      cost: 0,
-      tokens: 0,
-      errors: 0,
-    };
-    existing.requests++;
-    existing.cost += Number(r.total_cost) || 0;
-    existing.tokens += r.total_tokens || 0;
-    if (r.error || r.status === "error") existing.errors++;
-    dailyMap.set(date, existing);
-  });
+  // jsonb → typed shape. Numeric aggregates can arrive as strings — coerce.
+  const raw = (kpiResult.data ?? {}) as Record<string, unknown> & {
+    tool_usage?: Record<string, unknown>[];
+    daily_stats?: Record<string, unknown>[];
+  };
 
   return {
-    total_conversations: conversationCount,
-    total_user_requests: requests.length,
-    total_api_requests: apiRequestCount,
-    total_tool_calls: toolCallCount,
-    total_messages: messageCount,
-    total_cost: totalCost,
-    total_input_tokens: totalInputTokens,
-    total_output_tokens: totalOutputTokens,
-    total_cached_tokens: totalCachedTokens,
-    total_tokens: totalTokens,
-    avg_cost_per_request: requests.length > 0 ? totalCost / requests.length : 0,
-    avg_tokens_per_request:
-      requests.length > 0 ? totalTokens / requests.length : 0,
-    avg_duration_ms: avgDuration,
-    error_count: errorCount,
-    error_rate: requests.length > 0 ? errorCount / requests.length : 0,
-    pending_count: pendingCount,
-    max_tokens_count: maxTokensCount,
-    models_used: modelsUsed,
-    tool_usage: Array.from(toolMap.values())
-      .map((t) => ({
-        ...t,
-        avg_duration_ms: t.count > 0 ? t.total_dur / t.count : 0,
-      }))
-      .sort((a, b) => b.count - a.count),
-    daily_stats: Array.from(dailyMap.values()).sort((a, b) =>
-      a.date.localeCompare(b.date),
-    ),
+    total_conversations: num(raw.total_conversations),
+    total_user_requests: num(raw.total_user_requests),
+    total_api_requests: num(raw.total_api_requests),
+    total_tool_calls: num(raw.total_tool_calls),
+    total_messages: num(raw.total_messages),
+    total_cost: num(raw.total_cost),
+    total_input_tokens: num(raw.total_input_tokens),
+    total_output_tokens: num(raw.total_output_tokens),
+    total_cached_tokens: num(raw.total_cached_tokens),
+    total_tokens: num(raw.total_tokens),
+    avg_cost_per_request: num(raw.avg_cost_per_request),
+    avg_tokens_per_request: num(raw.avg_tokens_per_request),
+    avg_duration_ms: num(raw.avg_duration_ms),
+    error_count: num(raw.error_count),
+    error_rate: num(raw.error_rate),
+    pending_count: num(raw.pending_count),
+    max_tokens_count: num(raw.max_tokens_count),
+    models_used: usageAggregate.by_model.map((m) => ({
+      model_name: m.model_name,
+      provider: m.provider,
+      count: m.count,
+      total_cost: m.total_cost,
+    })),
+    tool_usage: (raw.tool_usage ?? []).map((t) => ({
+      tool_name: String(t.tool_name ?? "unknown"),
+      count: num(t.count),
+      error_count: num(t.error_count),
+      avg_duration_ms: num(t.avg_duration_ms),
+      total_cost: num(t.total_cost),
+    })),
+    daily_stats: (raw.daily_stats ?? []).map((d) => ({
+      date: String(d.date ?? ""),
+      requests: num(d.requests),
+      cost: num(d.cost),
+      tokens: num(d.tokens),
+      errors: num(d.errors),
+    })),
   };
 }
 
@@ -933,7 +745,6 @@ async function fetchErrorsInner(filters: CxFilters): Promise<CxErrorsData> {
 // design — so the call is gated here by requireSuperAdmin(), the same pattern
 // as app/api/admin/users/usage/route.ts.
 
-const num = (v: unknown): number => Number(v) || 0;
 
 /**
  * Super-admin-gated aggregate over chat.request for [start, end] (nulls =
