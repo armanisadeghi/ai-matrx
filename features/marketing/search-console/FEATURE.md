@@ -358,6 +358,53 @@ class into it (`Classify →` / `Review →`,
   truth layer beside it. Never fork a second write path for classes —
   extend `gsc_set_keyword_class`.
 
+## KW business guidelines — the doctrine the AI classifies under (2026-08-21)
+
+D35, ratified by Arman 2026-08-21: *"the agent wouldn't know CRT is a horrible
+keyword unless there's some document that guides it and we keep these things up
+to date."* ONE per-site prose document, versioned, read by every AI
+classification and valuation run for that site.
+
+- **Storage:** `web.site.settings.kw_guidelines`
+  (`{text, version, updated_at, updated_by}`) — NOT a new table: one document
+  per site, no lifecycle of its own, and the site row is already where durable
+  per-site business truth lands. Migration:
+  [`migrations/seo_kw_business_guidelines.sql`](../../../migrations/seo_kw_business_guidelines.sql).
+- **Read:** `seo.gsc_site_kw_guidelines` (viewer-level — whoever can see the
+  keywords can read the doctrine they were ruled under). **Write:**
+  `seo.gsc_set_site_kw_guidelines` is THE one path, gated by the same
+  `gsc_assert_site_editor` predicate as every other keyword-truth write. It
+  merges the SINGLE key server-side and stamps `updated_at`/`updated_by` inside
+  the payload, so a save can never clobber a concurrent `cms` / `content_plan` /
+  `media_standards` settings write and provenance can never be faked by a
+  client. Blank text CLEARS the document rather than storing an empty string.
+- **Client:** `data-kw-guidelines.ts` (shared query key, so a save in one
+  workbench refreshes the other). **Editor:**
+  `components/classification/KwGuidelinesPanel.tsx` — beside Brand and Rules.
+  It always shows provenance (who/when/version) and calls out a document that
+  has gone 90 days without an edit; the toolbar button carries a warning dot
+  when the site has none, and the post-sweep toast says plainly when a batch
+  ran with no business context. **Read-only surfacing:** the value workbench's
+  "How value is computed" panel
+  (`features/marketing/seo/value-system/variants/c/MeaningPanel.tsx`), with a
+  door back to the one place it is authored.
+- **Server:** aidream `services/seo/kw_guidelines.py` is the ONE loader. The
+  text reaches the agent as the NAMED variable `business_guidelines` — never
+  appended to `user_input` (THE USER-INPUT LAW) — and the value is ALWAYS
+  supplied (explicit no-doctrine sentinel when absent), because a code value
+  the agent does not consume is silently dropped. `business_guidelines` is a
+  bind-time `required_variables` entry on `seo.keyword_classifier`, so a rebind
+  cannot drop the doctrine.
+- **The line that keeps Law 1 intact:** for the UNIVERSAL classifier the
+  document is TERMINOLOGY context only. That agent's own contract is "you are
+  describing the searcher, never any business — two rival companies must be
+  able to use your output unchanged", and the injected block says so: resolve
+  what a trade-specific term means and who realistically types it; never change
+  the verdict to suit the business, never judge worth. Worth belongs to the
+  value plane. On the VALUATION side (`interview_site_strategy`) there is no
+  such limit — the standing guidelines lead the business context, because what
+  the expert wrote about who they serve is exactly what topic worth encodes.
+
 ## Brand identity — the system and what remains
 
 Deterministic matching covers the derivable identity; everything else
@@ -539,6 +586,11 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-21 — **KW business guidelines** (§ above): per-site prose document on
+  `web.site.settings.kw_guidelines` behind one read + one write RPC, an editor
+  panel in the classification workbench, read-only surfacing in the value
+  workbench, and named-variable injection into the keyword classifier and the
+  site-strategy interviewer. Verified end-to-end against datadestruction.com.
 - 2026-08-11 — Classification layered search + complete table controls: kept
   the fast keyword search, added compact ordered AND rules with removable
   chips/reorder/clear, wired whole-word exclusions and numeric ranges through
