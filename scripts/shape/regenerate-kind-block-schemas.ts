@@ -11,6 +11,16 @@
  * the migration-parity tests exist to catch, so it gets reconciled rather than
  * tolerated.
  *
+ * SCOPE BOUND — WIRE IS BLOCK (measured 2026-08-20). This script is about
+ * TS-OWNED kinds and must stay that way. Kinds published by the aidream kind
+ * SDK (`metadata.source = 'kind_sdk'`) carry `__kind` as a declared model field
+ * inside `emitted_json_schema` and have NO `emitted_block_schema` at all — 96
+ * of 96 on the live registry. For them the wire form IS the block form, so
+ * there is no second export to reconcile and nothing here to re-emit. The
+ * narrow gate below already refuses them (the client cannot reconstruct a
+ * python-authored contract from `data[]`), and that refusal is the CORRECT
+ * outcome, not a coverage gap to close later.
+ *
  * THE GATE IS SELF-VERIFYING, and deliberately narrow. A row is rewritten ONLY
  * when the freshly emitted schema is canonically identical to the stored one
  * once BOTH sides' `__kind` discriminators are normalized (a single-value

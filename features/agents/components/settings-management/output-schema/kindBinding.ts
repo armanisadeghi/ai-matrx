@@ -133,10 +133,42 @@ export interface KindBoundOutputSchema {
  *
  * The stored schema is passed through UNTOUCHED. It is deliberately NOT
  * converted to fields and re-exported: that round trip drops exactly the
- * nesting these 133 kinds are made of. The consequence is that this form
- * carries no `__kind` discriminator (`planKindMigration` emits
- * `emitted_json_schema` with `injectKind: false`), so the model emits none and
- * the caller stamps the kind — which is what `topic_ideas` does today.
+ * nesting these 133 kinds are made of.
+ *
+ * 🚨 WIRE-IS-BLOCK — THIS PATH IS NO LONGER UNIFORM (measured 2026-08-20).
+ *
+ * It used to be safe to say "this form carries no `__kind` discriminator
+ * (`planKindMigration` emits `emitted_json_schema` with `injectKind: false`),
+ * so the model emits none and the caller stamps the kind" — which is what
+ * `topic_ideas` does today. That is now true only for TS-owned kinds.
+ *
+ * New-world kinds published by the aidream kind SDK
+ * (`metadata.source = 'kind_sdk'`) are the one-shape doctrine arriving in the
+ * registry: `__kind` is a DECLARED MODEL FIELD, so it is in
+ * `emitted_json_schema.properties` and there is no `emitted_block_schema` at
+ * all. Counted live on project brsgrqvjdzwihsvnfqkf: **96 of 96** such kinds
+ * have a NULL `emitted_block_schema` AND declare `__kind` in
+ * `emitted_json_schema.properties`. So `emitted_json_schema` is the
+ * authoritative contract whenever it declares `__kind`, and any consumer still
+ * reaching for `emitted_block_schema` gets NULL for every one of them.
+ *
+ * TWO places behavior can therefore differ for a kind_sdk binding, both left
+ * DELIBERATELY unchanged here because each is a contract decision, not a
+ * frontend cleanup:
+ *
+ *  1. **The model may now emit `__kind` itself.** The caller-stamps-the-kind
+ *     step becomes redundant rather than load-bearing; it is only a conflict if
+ *     the model emits a DIFFERENT slug than the one being stamped.
+ *  2. **`strict: true` + an optional `__kind`.** All 96 declare `__kind` in
+ *     `properties` but NONE list it in `required`. Strict structured-output
+ *     modes generally require every declared property to be required, so a
+ *     strict binding to one of these can be rejected by the provider on a
+ *     schema that is perfectly valid JSON Schema. The fix belongs on the
+ *     EMITTING side (the kind SDK should mark the discriminator required), not
+ *     in a frontend patch that would quietly rewrite a python-owned contract.
+ *
+ * Anyone binding a kind_sdk kind and seeing a provider schema rejection: this
+ * note is the explanation, and (2) is the thing to fix upstream.
  *
  * Null when neither source yields a schema.
  */
