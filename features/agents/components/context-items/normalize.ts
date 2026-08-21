@@ -391,6 +391,25 @@ export function isAttachmentMessagePart(part: MessagePart): boolean {
   return !!part.type && !NON_ATTACHMENT_PART_TYPES.has(part.type);
 }
 
+/** Media kinds that an assistant turn renders INLINE (player / lightbox), not
+ * as an attachment chip. Documents and YouTube refs stay on the chip strip —
+ * they have no inline renderer of their own. */
+const INLINE_ASSISTANT_MEDIA_KINDS = new Set(["image", "audio", "video"]);
+
+/**
+ * True for a generated media part that belongs in the message body rather than
+ * the attachment strip. See `AgentAssistantMessage` — an assistant's own
+ * image / audio / video is content, and routing it to a chip left the user
+ * with an "Unknown file" pill and no player.
+ */
+export function isInlineAssistantMedia(part: MessagePart): boolean {
+  return (
+    part.type === "media" &&
+    !!part.kind &&
+    INLINE_ASSISTANT_MEDIA_KINDS.has(part.kind)
+  );
+}
+
 /** Normalize one persisted part without erasing its generated field types. */
 export function normalizeMessagePart(
   part: MessagePart,

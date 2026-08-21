@@ -53,7 +53,10 @@ import {
   extractRecordError,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
-import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import {
+  isAttachmentMessagePart,
+  isInlineAssistantMedia,
+} from "@/features/agents/components/context-items/normalize";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import {
   buildMessageCitationIndex,
@@ -214,8 +217,15 @@ export function AgentAssistantMessage({
     ? extractFlatText(record, { withCitationMarkers: true })
     : flatText;
 
+  // An ASSISTANT turn's generated media is CONTENT, not an attachment: an
+  // image, an audio clip, or a video the model produced renders inline with
+  // its player / lightbox / action bar (UnifiedImageBlockRenderer,
+  // AudioOutputBlockRenderer, UnifiedVideoBlockRenderer). Only the remaining
+  // attachment kinds (documents, YouTube refs, resource parts) belong on the
+  // chip strip. Routing generated media to the strip turned a produced
+  // podcast into an "Unknown file" pill with no way to play it.
   const attachmentParts = extractContentBlocks(record).filter(
-    isAttachmentMessagePart,
+    (b) => isAttachmentMessagePart(b) && !isInlineAssistantMedia(b),
   );
 
   // Live-stream citations: while this turn renders from the streaming source
@@ -254,7 +264,9 @@ export function AgentAssistantMessage({
       "tool_result",
     ]);
     const mediaBlocks = extractContentBlocks(record).filter(
-      (b) => !EXCLUDED.has(b.type ?? "") && !isAttachmentMessagePart(b),
+      (b) =>
+        !EXCLUDED.has(b.type ?? "") &&
+        (!isAttachmentMessagePart(b) || isInlineAssistantMedia(b)),
     );
     if (mediaBlocks.length === 0) return undefined;
     return normalizeContentBlocks(mediaBlocks);
