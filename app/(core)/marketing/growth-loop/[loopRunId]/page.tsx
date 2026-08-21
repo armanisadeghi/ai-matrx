@@ -30,6 +30,7 @@ export default function GrowthLoopRunRedirect({
 
   const loop = useLoopState(loopRunId);
   const siteId = loop.data?.site_id ?? null;
+  // access-errors: ok — redirect resolver only; a failed site read still redirects to the flat site route, where MarketingSiteLayoutClient gates the web_site read
   const site = useSite(siteId ?? "");
   const brandId = site.data?.brand_id ?? null;
 

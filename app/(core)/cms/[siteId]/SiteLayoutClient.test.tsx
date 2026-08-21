@@ -87,6 +87,7 @@ describe("SiteLayoutClient cache lifecycle", () => {
   });
 
   it("does not request dependent caches when the site cannot be loaded", async () => {
+    // access-errors: ok — test fixture string fed to a mock, compared not shown
     getSite.mockRejectedValue(new Error("Site not found or access denied"));
 
     await act(async () => {

@@ -570,6 +570,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       name: "StatusPill",
       filePath: "features/education/components/sections/StatusPill.tsx",
       description:
+        // access-errors: ok — admin map note stating a verified code-history fact, not record-read copy
         "Live/Coming-soon build-status pill. The Free/Trial/Pro funnel badge was deleted 2026-08-19 — no paywall existed behind it.",
       tier: "internal",
     },
@@ -756,6 +757,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "Pricing / Entitlements",
       description:
+        // access-errors: ok — admin map note stating a verified code-history fact, not record-read copy
         "No paywall today: education capabilities are all `enforced: false`, and the free/trial/premium badges were deleted 2026-08-19 rather than advertise a gate that does not exist. Tier badges return only when a gate actually reads `accessTier`.",
     },
     {

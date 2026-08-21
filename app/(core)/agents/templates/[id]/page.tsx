@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { UseTemplateButton } from "@/features/agents/agent-creators/templates/UseTemplateButton";
 
 export default async function AgentTemplateDetailPage({
@@ -28,10 +29,10 @@ export default async function AgentTemplateDetailPage({
         <div className="p-8 md:p-12">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Template Not Found
+              We couldn&apos;t open this template
             </h1>
             <p className="text-muted-foreground mb-4">
-              The template you&apos;re looking for doesn&apos;t exist.
+              {recordUnavailableMessage("template", "unknown")}
             </p>
             <Link href="/agents/templates">
               <Button>Back to Templates</Button>

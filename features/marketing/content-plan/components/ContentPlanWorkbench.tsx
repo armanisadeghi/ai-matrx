@@ -72,6 +72,8 @@ import {
 } from "../setup/draft";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
+import { useSitePipeline } from "../hooks/useSitePipeline";
+import { SitePipelineStrip } from "./SitePipelineStrip";
 import { usePlanMeasureOverlay } from "../hooks/usePlanMeasureOverlay";
 import {
   PLAN_VIEWS,
@@ -221,6 +223,22 @@ export function ContentPlanWorkbench({
   // doing in Search Console, keyed by the `web.page` the CMS row is joined to.
   // Nothing joined yet (today's production state) = no read at all.
   const measure = usePlanMeasureOverlay(cmsPages.pagesByNodeId);
+  // The SITE-level pipeline (Arman, 2026-08-21: the page rail's steps, at the
+  // top level) — server-derived from live rows, rendered in the toolbar's KPI
+  // zone. Each stage chip jumps to the view where that stage's work happens.
+  const sitePipeline = useSitePipeline(siteId);
+  const handlePipelineStage = useCallback(
+    (key: string) => {
+      const target: PlanView =
+        key === "plan"
+          ? "tree"
+          : key === "content" || key === "draft"
+            ? "table"
+            : "setup";
+      setView(target);
+    },
+    [setView],
+  );
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -808,6 +826,13 @@ export function ContentPlanWorkbench({
             allPages={cmsPages.map?.pages ?? []}
             siteDomain={site?.domain ?? null}
             onOpenSetup={() => setView("setup")}
+            pipelineSlot={
+              <SitePipelineStrip
+                stages={sitePipeline.pipeline?.stages ?? null}
+                isLoading={sitePipeline.isLoading}
+                onSelectStage={handlePipelineStage}
+              />
+            }
             copySlot={
               <>
                 <CopyButtons

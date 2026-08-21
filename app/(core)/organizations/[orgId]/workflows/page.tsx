@@ -6,6 +6,7 @@ import { Workflow, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 /**
@@ -47,7 +48,7 @@ const fetchOwned = async (orgId: string) => {
   if (error) {
     // Loud, never silent: an empty list and a failed query look identical.
     console.error("[org/workflows] owned query failed:", error);
-    throw new Error(error.message);
+    throw operationFailed("load this organization's workflows", error);
   }
   return (data ?? []) as unknown as Array<Record<string, unknown>>;
 };

@@ -129,7 +129,7 @@ function HtmlPageEditBody() {
               ariaLabel="Back to published pages"
             />
             <h1 className="ml-2 text-sm font-medium text-foreground truncate">
-              Page not found
+              Couldn&apos;t open this page
             </h1>
           </div>
         </PageHeader>

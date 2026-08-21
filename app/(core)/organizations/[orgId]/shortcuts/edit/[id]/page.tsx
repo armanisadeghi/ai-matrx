@@ -17,6 +17,7 @@ import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShor
 import type { AgentShortcut } from "@/features/agent-shortcuts/types";
 import { useOrgShortcutsContext } from "../../OrgShortcutsContext";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 const SCOPE = "organization" as const;
 
 export default function OrgEditShortcutPage({
@@ -93,30 +94,12 @@ export default function OrgEditShortcutPage({
 
   if (!resolved) {
     return (
-      <div className="h-full flex items-center justify-center p-6 bg-textured">
-        <Card className="max-w-md w-full border-destructive/30">
-          <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-            <div className="p-3 bg-destructive/10 rounded-full">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">
-                Shortcut not found
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                This shortcut doesn&apos;t exist or isn&apos;t visible in this
-                organization&apos;s scope.
-              </p>
-            </div>
-            <Link href={listHref}>
-              <Button size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1.5" />
-                Back to shortcuts
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <AccessGate
+        token="agent_shortcut"
+        id={id}
+        fallbackHref={listHref}
+        fallbackLabel="Back to shortcuts"
+      />
     );
   }
 

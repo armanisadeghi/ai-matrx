@@ -7,11 +7,10 @@ export default function NotesV2NotFound() {
       <div className="text-center max-w-md px-6">
         <FileQuestion className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
         <h2 className="text-lg font-semibold text-foreground mb-2">
-          Note Not Found
+          We couldn&apos;t find this page
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          The note you&apos;re looking for doesn&apos;t exist or has been
-          deleted.
+          The link may be wrong, or point somewhere that has moved.
         </p>
         <Link
           href="/notes"

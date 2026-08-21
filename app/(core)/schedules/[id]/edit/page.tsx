@@ -10,6 +10,7 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { useTaskDetail } from "@/features/scheduling/hooks/useTaskDetail";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";
 import { ScheduleForm } from "@/features/scheduling/components/form/ScheduleForm";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -44,14 +45,12 @@ export default function EditSchedulePage({ params }: Props) {
               Loading schedule…
             </div>
           ) : status === "not-found" ? (
-            <Alert>
-              <AlertTitle>Schedule not found</AlertTitle>
-              <AlertDescription>
-                <Link href="/schedules" className="underline">
-                  Back to schedules
-                </Link>
-              </AlertDescription>
-            </Alert>
+            <AccessGate
+              token="sch_task"
+              id={id}
+              fallbackHref="/schedules"
+              fallbackLabel="Back to schedules"
+            />
           ) : status === "error" || !task ? (
             <Alert variant="destructive">
               <AlertTitle>Couldn&apos;t load schedule</AlertTitle>
