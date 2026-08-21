@@ -14,6 +14,35 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D233 — `agent_card` is a registered ACTIVE entity pointing at a VIEW, and the conformance check can't see it (2026-08-21)
+
+Found clearing the versioned-without-capture backlog (`migrations/platform_versioned_without_capture_adjudication.sql`).
+
+`platform.entity_types.agent_card` → `agent.card`, which is **`relkind='v'`** — a security view over
+`agent.definition` (`WHERE deleted_at IS NULL AND (auth.uid() = created_by OR card_visibility='public'
+OR … OR has_permission('agent_card', id, 'viewer'))`). Three consequences:
+
+1. **Its registry row says `is_versioned=true, version_store='history'`, which is unsatisfiable.** A view
+   cannot carry a row trigger, and agent definitions are *already* versioned by the certified custom store
+   `agent.definition_version` — so the flag is duplicate versioning aimed at a non-table.
+2. **The gate is blind to it.** `audit.canonical_findings`' `trg_version_capture` check only scans
+   `relkind='r'`, so it reported **46** FAILs while the live registry-joined-to-`pg_trigger` query found
+   **47**. Any count taken from `canonical_findings` under-reports view-backed tokens. (db-rules §7.)
+3. **The obvious repair is blocked.** `platform.entity_types` carries a CHECK that refuses *any* update to
+   an active row whose relation is a view — "only base/partitioned tables may be registered as active
+   entities … register the underlying table instead, or leave the view out of the registry". So
+   `is_versioned=false` cannot be set without also setting `is_active=false`.
+
+**Why it was not fixed here — this is Arman's call, not an agent's.** Deregistering is not free:
+`agent_card` is a **live sharing surface** — 2 rows in `iam.permissions` with `resource_type='agent_card'`,
+1 row in `platform.shareable_resource_registry`, and the view's own `WHERE` clause calls
+`has_permission('agent_card', …)`. Flipping `is_active=false` may break agent-card sharing.
+
+**The decision:** either (a) repoint the token at `agent.definition` and let the view stay an unregistered
+read surface, or (b) let `entity_types` permit a view-backed token that exists purely as a permission
+surface (and teach the conformance checks to skip such rows rather than silently omit them).
+Either way the `trg_version_capture` check should count view-backed tokens as SKIP, not as absent.
+
 ### D231 — SECURITY: `authenticated` can read `storage_uri` on `files.files` and `files.file_versions` — the column revoke was a no-op (2026-08-21)
 
 Found while building the §6d-2 column-grant guard (D182/D184 family); **not fixed here** — the adjudication that surfaced it was scoped to pure guards and forbade changing live grants, and re-closing this channel is a real grant change that needs an explicit decision.
