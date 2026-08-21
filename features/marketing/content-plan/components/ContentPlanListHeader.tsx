@@ -6,6 +6,7 @@
  * and actions in-body (canonical entry-list shape) — the header stays quiet.
  */
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 export function ContentPlanListHeader() {
   return (
@@ -21,6 +22,11 @@ export function ContentPlanListHeader() {
       <span className="hidden text-xs text-muted-foreground sm:inline">
         Every URL a site should have — pick a site to plan it.
       </span>
+      <MandateDoorLink
+        feature="content_plan"
+        label="Content Plan agents"
+        className="ml-auto"
+      />
     </div>
   );
 }

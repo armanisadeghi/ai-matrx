@@ -8,6 +8,7 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MarketingHub } from "@/features/marketing/components/MarketingHub";
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 export default function MarketingPage() {
   return (
@@ -17,6 +18,11 @@ export default function MarketingPage() {
           <h1 className="truncate text-sm font-medium text-foreground">
             Marketing
           </h1>
+          <MandateDoorLink
+            feature="seo"
+            label="Marketing & SEO agents"
+            className="ml-auto"
+          />
         </div>
       </PageHeader>
       <div className="h-full overflow-hidden">

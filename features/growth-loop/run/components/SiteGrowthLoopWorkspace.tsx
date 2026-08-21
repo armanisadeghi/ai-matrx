@@ -42,6 +42,7 @@ import type { RefSubject } from "../stage-doors";
 import { LoopBlockerCard } from "./LoopBlockerCard";
 import { LoopHistoryFeed } from "./LoopHistoryFeed";
 import { LoopStageRail } from "./LoopStageRail";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 function stageTitle(stageId: string): string {
   const stage = STAGES.find((s) => s.id === stageId);
@@ -171,6 +172,13 @@ export function SiteGrowthLoopWorkspace() {
             title="Growth loop"
             headerExtra={
               <div className="flex items-center gap-1.5">
+                {/* THE DOOR LAW — every judge and writer in the loop is a
+                    Mandate the user may re-point at their own agent, no
+                    deploy. Deep-linked to the `growth_loop` domain. */}
+                <MandateDoorLink
+                  feature="growth_loop"
+                  label="Growth Loop agents"
+                />
                 {live.status === "paused" ? (
                   <Button
                     size="sm"
