@@ -13,5 +13,5 @@ export default async function ValueWorkbenchDefault({
   params: Promise<{ brandId: string; siteId: string }>;
 }) {
   const { brandId, siteId } = await params;
-  redirect(`/marketing/brands/${brandId}/sites/${siteId}/value/a`);
+  redirect(`/marketing/brands/${brandId}/sites/${siteId}/value/c`);
 }
