@@ -379,19 +379,13 @@ export const SEO_COMPUTE_CONNECT_TIMEOUT_MS = 95_000;
  * "AI intent" provenance, overridable like any machine signal. Server-gated
  * to admins today.
  *
- * `site_id` carries this site's KW business guidelines (D35) into the agent
- * call — the server loads the document and passes it as a named variable, so
- * the model knows which terms are wrong for THIS business. The guidelines are
- * never smuggled into `user_input` (THE USER-INPUT LAW).
+ * The live API contract currently accepts keyword ids and a limit only. Site
+ * guidelines remain stored and reviewable in the frontend until the producer
+ * adds an explicit named-variable contract for them.
  */
 export async function classifyKeywordsWithAi(
   dispatch: AppDispatch,
   keywordIds: string[],
-  /** The site whose KW business guidelines (D35) the server injects into the
-   *  classifier call as a NAMED agent variable. Required — a classification
-   *  sweep launched from a site workbench must carry that site's doctrine, and
-   *  making it optional is how it silently stops being sent. */
-  siteId: string,
   onProgress?: (done: number, total: number) => void,
 ): Promise<AiClassifyResult> {
   const totals: AiClassifyResult = {
@@ -407,7 +401,7 @@ export async function classifyKeywordsWithAi(
       callApi({
         path: "/seo/keywords/classify",
         method: "POST",
-        body: { keyword_ids: chunk, limit: chunk.length, site_id: siteId },
+        body: { keyword_ids: chunk, limit: chunk.length },
         connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
         totalTimeoutMs: null,
       }),

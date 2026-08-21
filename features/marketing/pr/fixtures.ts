@@ -645,6 +645,7 @@ function buildAngles(now: number): StoryAngle[] {
       deleted_at: null,
       version: 1,
       metadata: {} as unknown as Json,
+      visibility: "internal",
     } satisfies StoryAngle;
   });
 }
@@ -822,6 +823,7 @@ function buildRequests(now: number, angles: readonly StoryAngle[]): SourceReques
     deleted_at: null,
     version: 1,
     metadata: {} as unknown as Json,
+    visibility: "internal",
   })) satisfies SourceRequest[];
 }
 
@@ -923,6 +925,7 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
       source_capture: {} as unknown as Json,
       created_at: publishedAt,
       updated_at: publishedAt,
+      deleted_at: null,
       version: 1,
       // The ONLY tie back to the angle that produced this coverage. There is no
       // FK from coverage_mention to story_angle, so it lives in metadata under
