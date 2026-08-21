@@ -135,6 +135,23 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-21 — **ui-reimagine wave-2 bake-off entry: The Commission** at
+  `/workflows/bakeoff/reimagine-2/[id]` (`bakeoff/reimagine-2/**`) — a
+  candidate PRESENTATION only, consuming the canonical data layer unchanged
+  (adoption, selectors, `InvocationBody`, `DbEmitRenderer`,
+  `RunFormFieldControl`, `activity-copy`, `run-status`). The run page as a
+  commissioned-work dossier: manifest rail (deliverable promises from frame
+  zero + a route that progressively condenses finished stretches into
+  "n steps done"), ONE aimed focus window auto-following the freshest work
+  (only the focused single-invocation step is promoted to a lane), delivered
+  chapters pre-declared and filled by real kind components, and the wire
+  (activity truth-feed + engine-start clock + quiet-stretch honesty line).
+  Deleted or promoted when the bake-off is judged. Found while verifying
+  (server-side, not fixed here): the free test workflow
+  31318fb7-5e1a-4554-b174-ca3960d72961 now errors on EVERY run — its
+  `data.transform` expressions are refused by the engine sandbox
+  ("Disallowed call target"), across all wave-2 designers' runs.
+
 - 2026-08-20 — **ui-reimagine bake-off entry: the Courier run page** at
   `/workflows/bakeoff/reimagine/[id]` (`bakeoff/reimagine/**`) — a candidate
   PRESENTATION only, consuming the canonical data layer unchanged (adoption,
