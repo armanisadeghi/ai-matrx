@@ -15,4 +15,33 @@ describe("buildMediaSource", () => {
       mime: "video/mp4",
     });
   });
+
+  it("prefers an explicit file_id over any URL on the block", () => {
+    expect(
+      buildMediaSource(
+        {
+          file_id: "11111111-2222-3333-4444-555555555555",
+          url: "https://cdn.example.com/whatever.mp3",
+        },
+        "audio/mpeg",
+      ),
+    ).toEqual({
+      kind: "file_id",
+      fileId: "11111111-2222-3333-4444-555555555555",
+      mime: "audio/mpeg",
+    });
+  });
+
+  it("does NOT invent a file_id from a durable public URL that merely ends in a uuid", () => {
+    // Pre-2026-05 audio rows are public-bucket URLs whose last segment is the
+    // STORAGE object id, not a cld_files id. Minting from it produces a dead
+    // player; the durable URL plays fine as-is.
+    const url =
+      "https://example.supabase.co/storage/v1/object/public/any-file/4cf62e4e-2679-484f-b652-034e697418df/becf5fda-bc01-4e1c-b676-8f011a1c7b40.wav";
+    expect(buildMediaSource({ url }, "audio/wav")).toEqual({
+      kind: "external_url",
+      url,
+      mime: "audio/wav",
+    });
+  });
 });

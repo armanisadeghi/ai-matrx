@@ -29,23 +29,6 @@ export function pickStr(v: unknown): string | undefined {
 }
 
 /**
- * Best-effort recovery of a `file_id` from any URL shape so the handler can
- * re-mint a durable URL instead of echoing a raw S3 link:
- *   - our user-files signed S3 URL (`…/{user_id}/{file_id}?…`)
- *   - any path that ends in a `{uuid}.{ext}` segment
- */
-export function fileIdFromAnyUri(uri: string): string | null {
-  const fromUrl = fileIdFromUserFilesUrl(uri);
-  if (fromUrl) return fromUrl;
-  const segs = uri.split(/[/?#]/).filter(Boolean);
-  for (let i = segs.length - 1; i >= 0; i--) {
-    const bare = segs[i].split(".")[0];
-    if (UUID_RE.test(bare)) return bare;
-  }
-  return null;
-}
-
-/**
  * Build the strongest `FileSource` from a media block's `serverData`.
  * Identity (`file_id`) beats opaque URLs so the handler always picks the
  * durable lane when possible. Returns null when nothing resolvable — a part
@@ -68,9 +51,17 @@ export function buildMediaSource(
     pickStr(sd.externalUrl) ?? pickStr(sd.external_url),
   ].filter((u): u is string => !!u);
 
-  // 1. Recover a file_id from any URL → handler mints durable.
+  // 1. Last-resort identity recovery, scoped to OUR OWN user-files S3 host
+  //    (`…/{user_id}/{file_id}?…`). Producers now carry `file_id` explicitly
+  //    (server `AudioOutputData`/`VideoOutputData`, and both DB walkers via
+  //    `fromCxAudioPart`/`fromCxVideoPart`), so this only covers a URL that
+  //    reached us with no identity at all — an aidream fallback path that
+  //    leaves `file_id` None, or a pre-2026-05 persisted row. The recovery is
+  //    deliberately NOT generic: guessing a file_id off any trailing
+  //    `{uuid}.{ext}` segment turned durable third-party/public-bucket URLs
+  //    into mints for ids that do not exist, i.e. a dead player.
   for (const cand of urlish) {
-    const id = fileIdFromAnyUri(cand);
+    const id = fileIdFromUserFilesUrl(cand);
     if (id) return { kind: "file_id", fileId: id, mime };
   }
 

@@ -33,6 +33,10 @@ import {
   parsePersistedMessageContent,
 } from "./persisted-content-boundary";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
+import {
+  fromCxAudioPart,
+  fromCxVideoPart,
+} from "@/features/files/blocks/adapters/from-cx-av-part";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
@@ -455,28 +459,24 @@ function mediaPartToSegment(
       };
     }
     case "audio":
+      // `fromCxAudioPart` lifts the `file_id` (and the cdn/signed/download URL
+      // flavors) back out of the persisted part. Identity is the file_id — the
+      // stored `url` is an expired save-time snapshot, so without it the player
+      // has nothing durable to re-mint from.
       return {
         type: "render_block",
         blockType: "audio_output",
         content: null,
-        data: {
-          type: "audio_output",
-          url: raw.url ?? null,
-          mime_type: raw.mime_type ?? null,
-          transcription_result: raw.transcription_result ?? null,
-        },
+        data: fromCxAudioPart(raw) as unknown as Record<string, unknown>,
         metadata: raw.metadata as Record<string, unknown> | undefined,
       };
     case "video":
+      // Same as audio — see `fromCxVideoPart`.
       return {
         type: "render_block",
         blockType: "video_output",
         content: null,
-        data: {
-          type: "video_output",
-          url: raw.url ?? null,
-          mime_type: raw.mime_type ?? null,
-        },
+        data: fromCxVideoPart(raw) as unknown as Record<string, unknown>,
         metadata: raw.metadata as Record<string, unknown> | undefined,
       };
     case "document":

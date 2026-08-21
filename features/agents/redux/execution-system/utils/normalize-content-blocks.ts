@@ -9,6 +9,10 @@ import type {
   YouTubeMediaPart,
 } from "@/types/python-generated/stream-events";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
+import {
+  fromCxAudioPart,
+  fromCxVideoPart,
+} from "@/features/files/blocks/adapters/from-cx-av-part";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 
 /**
@@ -394,36 +398,29 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
     }
 
     case "audio":
-      // Matches `AudioOutputData` (url + mime_type), with transcription
-      // preserved alongside.
+      // Matches `AudioOutputData`. `fromCxAudioPart` lifts the `file_id` (and
+      // the cdn/signed/download URL flavors) back out of the persisted part —
+      // identity is the file_id, and the stored `url` is an expired save-time
+      // snapshot the player can never re-mint from on its own.
       return {
         blockId: newId("db_audio_output"),
         blockIndex: index,
         type: "audio_output",
         status: "complete",
         content: null,
-        data: {
-          type: "audio_output",
-          url: raw.url ?? null,
-          mime_type: raw.mime_type ?? null,
-          transcription_result: raw.transcription_result ?? null,
-        },
+        data: fromCxAudioPart(raw) as unknown as Record<string, unknown>,
         metadata: raw.metadata,
       };
 
     case "video":
-      // Matches `VideoOutputData` (url + mime_type).
+      // Matches `VideoOutputData` — same file_id lift as audio.
       return {
         blockId: newId("db_video_output"),
         blockIndex: index,
         type: "video_output",
         status: "complete",
         content: null,
-        data: {
-          type: "video_output",
-          url: raw.url ?? null,
-          mime_type: raw.mime_type ?? null,
-        },
+        data: fromCxVideoPart(raw) as unknown as Record<string, unknown>,
         metadata: raw.metadata,
       };
 

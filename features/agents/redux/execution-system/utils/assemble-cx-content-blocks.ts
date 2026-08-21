@@ -616,15 +616,20 @@ function renderBlockToMediaBlock(block: {
 
   const kind = renderBlockTypeToMediaKind(block.type);
   if (url) {
+    // Identity travels WITH the url, never instead of it: `file_id` is what
+    // the reader (`fromCxAudioPart` / `fromCxVideoPart` /
+    // `fromCxMediaPart`) re-mints a durable URL from. A url-only part is a
+    // dead player the moment the signature expires.
+    const withId = { ...common, ...(fileId ? { file_id: fileId } : {}) };
     switch (kind) {
       case "image":
-        return { ...common, kind: "image", url };
+        return { ...withId, kind: "image", url };
       case "audio":
-        return { ...common, kind: "audio", url };
+        return { ...withId, kind: "audio", url };
       case "video":
-        return { ...common, kind: "video", url };
+        return { ...withId, kind: "video", url };
       case "document":
-        return { ...common, kind: "document", url };
+        return { ...withId, kind: "document", url };
     }
   }
 
