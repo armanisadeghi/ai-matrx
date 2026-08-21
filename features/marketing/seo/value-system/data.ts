@@ -10,7 +10,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { makeAssertData } from "@/utils/errors";
+import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import type {
   BandPreviewRow,
@@ -113,7 +113,7 @@ export async function setKeywordValue(
     p_value_tier: tier ?? undefined,
     p_notes: notes ?? undefined,
   });
-  return assertData(response.data, response.error);
+  return assertGoverned(response.data, response.error, "save the ruling");
 }
 
 // ── Site meaning tables (small, site-scoped, direct under RLS) ──────────────
@@ -173,6 +173,33 @@ export async function listSiteTopicValues(
   return { values, topics };
 }
 
+/**
+ * Governance rules speak for themselves.
+ *
+ * `assertData` deliberately replaces PostgREST prose with one calm sentence,
+ * because RLS codes and planner errors are noise to a person. But the
+ * vocabulary RPCs raise sentences WRITTEN for the person reading them — "3
+ * keyword rulings are set to Bronze, choose where they move before removing
+ * it", "widen keyword_audience_type_check in the same change". Swallowing
+ * those turns the rule into a mystery, which is the exact failure this whole
+ * feature exists to prevent.
+ *
+ * So: a raise whose message starts with one of OUR governance codes is passed
+ * through verbatim; everything else still gets the generic sentence.
+ */
+const GOVERNANCE_CODE = /^(gsc_vocab_[a-z_]+|gsc_bad_vocab_kind|gsc_unknown_value_band|gsc_no_keywords|seo_registry_[a-z_]+):\s*/;
+
+function assertGoverned<T>(data: T | null, error: unknown, action: string): T {
+  if (error) {
+    const message = extractErrorMessage(error).split(" · ")[0];
+    const governed = message.match(GOVERNANCE_CODE);
+    if (governed) {
+      throw new Error(message.slice(governed[0].length), { cause: error });
+    }
+  }
+  return assertData(data, error, action) as T;
+}
+
 // ── Vocabulary governance ───────────────────────────────────────────────────
 //
 // THE SITE PLANE. A site starts on the platform starter template and ADOPTS it
@@ -191,7 +218,7 @@ export async function adoptValueVocabulary(
     p_site_id: siteId,
     p_kind: kind,
   });
-  return assertData(response.data, response.error) as ValueBandDef[];
+  return assertGoverned(response.data, response.error, "adopt the starter set") as ValueBandDef[];
 }
 
 /**
@@ -211,7 +238,7 @@ export async function saveValueVocabulary(
     p_rows: rows as unknown as Json,
     p_reassign: reassign as unknown as Json,
   });
-  return assertData(response.data, response.error) as ValueBandDef[];
+  return assertGoverned(response.data, response.error, "save that vocabulary") as ValueBandDef[];
 }
 
 /** Hand the vocabulary back to the platform template. */
@@ -225,7 +252,7 @@ export async function resetValueVocabulary(
     p_kind: kind,
     p_reassign: reassign as unknown as Json,
   });
-  return assertData(response.data, response.error) as ValueBandDef[];
+  return assertGoverned(response.data, response.error, "restore the platform defaults") as ValueBandDef[];
 }
 
 /**
@@ -248,7 +275,7 @@ export async function previewValueBands(
       p_end: end,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error) as BandPreviewRow[];
+  return assertGoverned(response.data, response.error, "preview those bands") as BandPreviewRow[];
 }
 
 // ── Platform plane (platform.categories) ────────────────────────────────────
@@ -288,7 +315,7 @@ export async function updateVocabularyRegistryEntry(
     p_label: label,
     p_description: description ?? undefined,
   });
-  return assertData(response.data, response.error);
+  return assertGoverned(response.data, response.error, "update the vocabulary");
 }
 
 /**
@@ -308,7 +335,7 @@ export async function addFacetRegistryValue(
     p_label: label,
     p_description: description ?? undefined,
   });
-  return assertData(response.data, response.error);
+  return assertGoverned(response.data, response.error, "add that value");
 }
 
 // ── Industry starter packs (D36) ────────────────────────────────────────────
