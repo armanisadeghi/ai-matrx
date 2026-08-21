@@ -244,7 +244,7 @@ creates workbook UI and duplicate internal editor documents.
 
 ## Data model
 
-**Database tables** (Supabase, project `txzxabzwovsujtloxrus`)
+**Database tables** (Supabase, project `brsgrqvjdzwihsvnfqkf`)
 - `udt_datasets` — one row per dataset. Owner `user_id`; `is_public`; optional `organization_id` /
   `project_id` / `task_id` scoping. **New (P1):** `workbook_id` (FK → `udt_workbooks`,
   ON DELETE SET NULL), `sheet_index`, `validation_mode` (`'permissive'` default | `'strict'`).

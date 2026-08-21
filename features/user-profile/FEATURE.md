@@ -69,7 +69,7 @@ All five children render the same `UserProfilePage` with a different
 
 ## Data model
 
-**Database tables** (Supabase, project `txzxabzwovsujtloxrus`)
+**Database tables** (Supabase, project `brsgrqvjdzwihsvnfqkf`)
 
 - `auth.users.user_metadata` — owner: Supabase Auth. Fields edited here:
   `full_name`, `name`, `preferred_username`, `avatar_url`, `picture`. Updated

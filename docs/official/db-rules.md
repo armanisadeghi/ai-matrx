@@ -1,7 +1,7 @@
 # Canonical Data Model — Rules & Conformance
 
 **This doc moved.** The canonical-data-model rulebook (entities, associations, access, versioning,
-conformance) for Supabase project `txzxabzwovsujtloxrus` is now maintained in one place, shared
+conformance) for Supabase project `brsgrqvjdzwihsvnfqkf` is now maintained in one place, shared
 with `aidream`: [`/Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md)
 (also reachable as `common-docs/systems/platform/db-rules/FEATURE.md`). Read it before touching any table's
 structure, RLS, versioning, or associations.

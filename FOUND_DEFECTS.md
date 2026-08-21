@@ -215,7 +215,7 @@ reads "Nobody attached yet" with no way to fix it from the dialog.
 "We couldn't find this item". Either make it a real door (the import run, the form, the connector)
 or render it as plain text — a link that cannot go anywhere is worse than no link.
 
-### D217 — the Supabase MCP project is NOT the database the app and server use (2026-08-20)
+### D217 — ✅ RESOLVED — the Supabase MCP was pointed at the RETIRED database (2026-08-20, closed 2026-08-21)
 
 🚨 **Every agent that reads state or applies a migration through the Supabase MCP with
 `project_id: "txzxabzwovsujtloxrus"` is working on a different database from the running
@@ -245,10 +245,33 @@ which was true of the MCP database and told us nothing about the real one.
 `curl "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/<table>?select=…" -H "apikey: $SUPABASE_SECRET_KEY"
 -H "Authorization: Bearer $SUPABASE_SECRET_KEY" -H "Accept-Profile: <schema>"`.
 
-**Not fixed here — Arman's call**, and it is infrastructure, not code: which of the two is
-canonical, whether the MCP should be repointed at the self-hosted instance (or the hosted
-project retired), and what to do about anything already applied to the wrong one. Until it is
-settled, treat every Supabase-MCP-derived fact in every doc and handoff as unverified.
+**RESOLVED 2026-08-21 — `txzxabzwovsujtloxrus` is RETIRED.** The Supabase project list now
+names it `⛔ DO NOT USE — RETIRED (old Matrx Main; live DB is AI Matrx / db.matrxserver.com)`.
+The live database is **`brsgrqvjdzwihsvnfqkf`** ("AI Matrx"), which is what `db.matrxserver.com`
+serves. The two were never "two live databases" — one is the pre-move original, still healthy,
+still writable, holding a stale COPY with the same table and row ids.
+
+That copy is what makes this the nastiest wrong-target bug we have: writing there SUCCEEDS and
+reading it back CONFIRMS whatever you expected. There is no error to notice; the only symptom is
+that the running app never sees the change.
+
+**It bit again on 2026-08-21**, and — as every time — not because anyone invented the id, but
+because the repo handed it over. Three sources were feeding it to agents:
+- `package.json`'s `db-types` script generated `types/database.types.ts` from the retired
+  project (fixed 2026-08-19 in `e632312ec`);
+- the `db-change` skill's own description said "any DDL on project `txzxabzwovsujtloxrus`";
+- `docs/official/db-rules.md` — the security canon CLAUDE.md links to — named it as *the*
+  project, as did 10 `FEATURE.md` files.
+
+All are now repointed, and **`pnpm check:retired-db-ref`** (in the release gates) fails loudly
+if the retired id reappears anywhere an agent reads as an instruction. It deliberately ignores
+migration files and archived handoffs — those record where a change was applied at the time, and
+rewriting them would falsify a record — and ignores any line that marks the id as retired, so
+the documentation teaching this trap is not reported as the trap.
+
+**Still true and still worth doing:** when it matters, confirm what the app actually talks to
+rather than trusting a DB read that agrees with you — intercept `fetch` in the browser and read
+the `/rest/v1/` origin.
 
 ### D216 — the admin AI-Tasks page reads a shim that never queries Postgres; no 1:1 live replacement exists (2026-08-20)
 

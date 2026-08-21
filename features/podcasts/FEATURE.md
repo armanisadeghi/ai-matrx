@@ -59,7 +59,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
    for the canonical file; it never re-runs paid TTS.
 6. Public pages render via `<InlineMediaRef>` (durable) + `PodcastAudioPlayer`.
 
-## Tables (`pc_*`, project `txzxabzwovsujtloxrus`)
+## Tables (`pc_*`, project `brsgrqvjdzwihsvnfqkf`)
 
 - **`pc_shows`** — series (slug, title, description, image_url, og/thumbnail, author, is_published, **`rss_settings` jsonb**). No owner column → "my shows" is derived from episodes. `rss_settings` (Apple category, owner name/email, language, explicit) is read by the feed builder + manage UI; always guard with `?? {}` (migration `pc_shows_rss_settings.sql`).
 - **`pc_episodes`** — episode (slug, show_id, user_id, title, description, audio_url, image_url, video_url, og_image_url, thumbnail_url, display_mode, episode_number, duration_seconds, is_published, **`host_count` int, `speakers` jsonb** `[{name, voice}]` — migration `pc_episode_speakers.sql`).

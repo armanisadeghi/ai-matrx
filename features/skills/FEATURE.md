@@ -94,7 +94,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 
 ## Data model
 
-**Database tables** (Supabase, project `txzxabzwovsujtloxrus`)
+**Database tables** (Supabase, project `brsgrqvjdzwihsvnfqkf`)
 
 - `public.skl_definitions` — one row per skill. Composite-unique on
   `(skill_id, user_id, organization_id, project_id)` so the same business

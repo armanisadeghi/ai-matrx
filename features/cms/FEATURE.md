@@ -179,7 +179,7 @@ of the five surfaces: `features/cms/SKILL.md`.
 ## Data model
 
 **Database:** Supabase project **`viyklljfdhtidwecakwx`** — a completely separate project from the
-main AI Matrx DB (`txzxabzwovsujtloxrus`), separate Auth domain, separate RLS. Never point the
+main AI Matrx DB (`brsgrqvjdzwihsvnfqkf`), separate Auth domain, separate RLS. Never point the
 Supabase MCP at the wrong project for this feature.
 
 **Tables**
@@ -301,7 +301,7 @@ cascade: the log outlives the rows it describes.
 `ClientActivityChanges`, `ContentException`, `SiteCollection`, `SiteCollectionSummary`,
 `SiteCollectionItem`, `CollectionFieldDef`, `CollectionFieldType`, `SiteCollectionSettings`,
 `CollectionItemFilter`. No generated types exist for this project (it's not
-`txzxabzwovsujtloxrus`) — these are hand-maintained; keep them in sync with live schema by hand.
+`brsgrqvjdzwihsvnfqkf`) — these are hand-maintained; keep them in sync with live schema by hand.
 
 **C4 URL builder:** `features/cms/utils/pageUrls.ts` — TS twin of my-matrx's routing rules. The
 drift guard has landed: `features/cms/utils/__tests__/url-rules.json` is a byte-identical copy of

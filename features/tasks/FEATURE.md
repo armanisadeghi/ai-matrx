@@ -48,7 +48,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Data model
 
-**DB tables** (Supabase, project `txzxabzwovsujtloxrus`):
+**DB tables** (Supabase, project `brsgrqvjdzwihsvnfqkf`):
 
 - `ctx_projects` — `id`, `organization_id` (FK → organizations; non-null after the personal-org backfill), `name`, `slug`, `description`, `created_by`, `settings`, timestamps. **No `is_personal` column** — a project is "personal" iff its owning org's `organizations.is_personal` is true (derive via the org, or read RPC-derived `NavProject.is_personal`).
 - `workspace.tasks` (formerly `ctx_tasks`; reached via `workspaceDb(supabase)`) — `id`, `title`, `description`, `project_id`, `parent_task_id` (subtasks), `status`, `priority` (enum), `due_date`, `assignee_id`, `organization_id`, `visibility`, `settings`, plus the 2026-08 upgrade columns below.

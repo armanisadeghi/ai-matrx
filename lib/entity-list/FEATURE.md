@@ -154,7 +154,7 @@ pnpm type-check
 npx jest features/agents/search/score.parity.test.ts --no-coverage
 pnpm check:migrations
 ```
-Live DB (Supabase MCP, project `txzxabzwovsujtloxrus`), after setting the JWT
+Live DB (Supabase MCP, project `brsgrqvjdzwihsvnfqkf`), after setting the JWT
 claim to a real user:
 ```sql
 select kind, count(*) from public.trx_list_scoped('mine',null,null,false,'updated','desc','{}'::jsonb,200,0) group by kind;

@@ -946,7 +946,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 - **2026-05-20** — **System-generated content no longer clutters the workspace or Recents (cross-repo).** Provenance rule: only user-uploaded/added files belong in the user's tree + Recents; everything the system creates (scraper captures, variants, AI generations, temp staging) stays hidden and reachable only by digging in.
 
-  **Backend (aidream `matrx-utils` cloud_sync, Supabase `txzxabzwovsujtloxrus`).**
+  **Backend (aidream `matrx-utils` cloud_sync, Supabase `brsgrqvjdzwihsvnfqkf`).**
   - Migration `015_hide_system_namespace_from_user_tree.sql` — `cld_is_system_path()` (canonical roots `system-files/` + `generations/`), a `BEFORE INSERT/UPDATE` trigger auto-stamping `cld_folders.is_system` (the structural chokepoint — no folder-create path can leave a system folder unflagged), an `is_system` backfill, and a `cld_get_user_file_tree` rebuild that excludes BOTH roots from BOTH the file leg AND the folder leg. Previously only `system-files/` _files_ were hidden, so ~1,682 system folders + all of `generations/` leaked into the tree.
   - Migration `016_relocate_legacy_system_output_and_drop_scars.sql` — relocated pre-registry bare roots (`crawls/` 4,486 files, `sites/`, `tool-images/`, `ai-media/`, `browser-agent/`, `system/`) under `system-files/` (logical path only — `storage_uri`/S3 untouched) and deleted 6 empty `__dedup_` duplicate-folder scars from a one-time manual de-dup.
 

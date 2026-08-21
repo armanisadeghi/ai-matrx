@@ -121,6 +121,7 @@ if $STRICT; then
         # repo instead of the DB (Arman, 2026-08-16: the codebase is the
         # CONNECTION, never the definition). Advisory in both modes; the
         # allowlist is a reason-required ratchet whose count only goes down.
+        "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # TYPE-ESCAPE RATCHET stays ADVISORY even in strict mode (no --strict on
         # the command), per Arman's standing rule: scream, never block the build.
@@ -198,6 +199,7 @@ else
         # repo instead of the DB (Arman, 2026-08-16: the codebase is the
         # CONNECTION, never the definition). Advisory in both modes; the
         # allowlist is a reason-required ratchet whose count only goes down.
+        "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # New escape hatches vs the frozen baseline — advisory, loud. See the
         # strict list above for why this gate exists here at all (D136).

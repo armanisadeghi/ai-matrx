@@ -836,7 +836,9 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
   `/crm/parties/resolve-batch`, which run the governed resolver under
   `acting_as_user`. Emails/phones travel with the party so they can participate in
   the match; `source` is stamped on every create; matched parties are reported as
-  matches instead of creates. Verified live against `txzxabzwovsujtloxrus`:
+  matches instead of creates. Verified live against the then-current Matrx Main
+  (`txzxabzwovsujtloxrus`, since RETIRED — the live DB is now
+  `brsgrqvjdzwihsvnfqkf` / db.matrxserver.com):
   a create lands with `source`/`source_detail`/`name_key` stamped, and importing
   "Gumloop" matches the existing `record_class='discovered'` organization that the
   old matcher could not see (it returned zero and would have duplicated). RULE 3

@@ -528,7 +528,8 @@ real (F6, 2026-07-13).
   whose success is swallowed internally now return a `boolean` so the callsite commits only on
   real success (failed generation burns no quota). Tutor meters per user message via a
   count-delta effect (composer is agents-owned, no submit hook). Verified live against
-  `txzxabzwovsujtloxrus`. Flashcards consumers' `commit()` landed since (verified wired
+  the then-current Matrx Main (`txzxabzwovsujtloxrus`, since RETIRED; the live DB
+is now `brsgrqvjdzwihsvnfqkf`). Flashcards consumers' `commit()` landed since (verified wired
   2026-08-17, WP12 — see capability table above).
 - **2026-07-07** — Day-1 contract shipped: `features/entitlements/` (types, registry, hook,
   service, slice, selectors), registered `entitlements` reducer, permissive stub for all 10
