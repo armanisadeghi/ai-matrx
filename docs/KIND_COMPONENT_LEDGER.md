@@ -165,28 +165,28 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | Kind | Label | Maturity | Ex | Component | Status | Claim | Notes |
 |---|---|---|---|---|---|---|---|
 | `boolean` | Boolean | — | 1 | | claimed | copy-D | primitive-kinds set |
-| `branch_result` | Branch Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 201 live node_completed events in 30d |
-| `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
+| `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
+| `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `claim_evidence` | Claim Evidence | — | 0 | | unclaimed | | |
 | `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | unclaimed | | |
 | `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | unclaimed | | |
-| `criteria_gate_result` | Criteria Gate Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
+| `criteria_gate_result` | Criteria Gate Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | unclaimed | | |
 | `entity_mention` | Entity Mention | — | 0 | | unclaimed | | |
 | `evidence_source` | Evidence Source | — | 0 | | unclaimed | | |
-| `gather_result` | Gather Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 51 live events |
+| `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
 | `http_response` | HTTP Response | — | 1 | | unclaimed | | |
 | `items` | Items (list result) | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `json` | JSON (any value) | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | unclaimed | | |
-| `map_result` | Map Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 43 live events |
+| `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `notable_timestamp` | Notable Timestamp | — | 0 | | unclaimed | | |
 | `number` | Number | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
-| `operation_result` | Operation Result (action receipt) | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); engine result family |
+| `operation_result` | Operation Result (action receipt) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `page` | Page (paginated window) | — | 1 | | unclaimed | | |
 | `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | unclaimed | | |
 | `page_keyword_map_v1` | Page Keyword Map | — | 1 | | unclaimed | | |
@@ -196,7 +196,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `research_page_analysis` | Research Page Analysis | — | 1 | | unclaimed | | |
 | `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | unclaimed | | |
 | `research_tag_suggestions` | Research Tag Suggestions | — | 1 | | unclaimed | | |
-| `saved_row` | Saved Row | — | 1 | | claimed | copy-B | |
+| `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | | unclaimed | | |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | unclaimed | | |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
@@ -208,7 +208,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `topic_relevance` | Topic Relevance | — | 0 | | unclaimed | | |
 | `transcript_usage` | Transcript Usage | — | 0 | | unclaimed | | |
 | `value` | Value (single result) | — | 1 | | claimed | copy-D | primitive-kinds set |
-| `workflow_run_result` | Workflow Run Result | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 65 live events |
+| `workflow_run_result` | Workflow Run Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 
 ## Change log
 
@@ -227,3 +227,14 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 - 2026-08-20 — copy-B claims 8 runtime result-wrapper rows: `branch_result`,
   `bulk_result`, `criteria_gate_result`, `gather_result`, `map_result`, `operation_result`,
   `workflow_run_result`, `saved_row`.
+- 2026-08-20 — copy-B **done**: all 8 runtime result-wrapper kinds (`branch_result`,
+  `bulk_result`, `criteria_gate_result`, `gather_result`, `map_result`, `operation_result`,
+  `saved_row`, `workflow_run_result`) now carry a REGISTERED `(kind,'web','output')` row →
+  `generic_structured`, applied live and ledgered in `public._schema_migrations`. Verified by
+  rendering each kind's LIVE canonical `kind_example` through the render seam
+  (`features/content-ir/__tests__/kind-workflow-result-routes.test.tsx`, 9 tests). Reuse search
+  found no component for a workflow runtime result and NO bespoke display of any of the eight,
+  so nothing legacy was retired. No maturity promoted.
+  ⚠ Shared-checkout note: copy-E re-claimed 7 of these rows in the working tree after the claim
+  was pushed. The rows are registered either way — a bespoke engine-result component would
+  update `component_key` on the SAME rows.
