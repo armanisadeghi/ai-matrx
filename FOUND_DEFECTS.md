@@ -17,6 +17,16 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D229 — the FE mirrors aidream's contract inventory to serve one always-null lookup (2026-08-20)
+Fallout from the contract-artifact eviction (`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
+
+What's left: `scripts/shape/content-ir-contract-manifest.json` (~776 stale contract slugs) plus `scripts/shape/refresh-contract-manifest.ts`, `scripts/shape/contract-manifest-format.ts` and the `check:shapes:manifest:refresh` script. Its **only** remaining consumer is `familyByKind` in `features/content-ir/admin/shape-doctor-server.ts:442`, which now resolves `null` for every live kind because the map is built exclusively from contract slugs — so the admin board's Family column is dead (it was always null for real shapes; now it is null for everything).
+
+Fix, either way: (a) point `familyByKind` at `metadata.family` — where a live kind's family actually lives — and delete the mirror, since inventory parity is now owned by aidream's `sync_content_ir_contracts.py --check`; or (b) keep the mirror only if a reader is found. `GENERATED_CONTRACT_FAMILIES` (`features/content-ir/registry/shape-doctor.ts`) retires with it — its last use aggregates report rows in `scripts/shape/check-shapes.ts` and now aggregates nothing.
+
+Related decision, NOT this repo's alone: `is_contract_artifact` is now permanently false everywhere but still plumbed through `types/database.types.ts`, the `KindDescriptor` API wire shape, the FE registry sources, and two DB functions that read it by name. The exclusion filters were kept as deliberate re-drift backstops; retiring the column is a cross-repo call (see §10b 5a).
+
+
 ### D219 — five ACTIVE kinds have an uncompilable `emitted_json_schema` (dangling `$defs` ref) (2026-08-20)
 
 `content_ir.kind_definition.emitted_json_schema` for **`claim_evidence`, `plan_page_draft`,
