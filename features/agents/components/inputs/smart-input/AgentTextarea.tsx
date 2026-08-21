@@ -57,6 +57,10 @@ interface AgentTextareaProps {
   surfaceKey?: string;
   disableSend?: boolean;
   initiallyExpanded?: boolean;
+  /** Preserve the existing eager focus everywhere except ambient launchers. */
+  autoFocus?: boolean;
+  /** Ambient chat launchers need a human message; variables-only runs do not. */
+  requireTextForSubmit?: boolean;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -76,6 +80,8 @@ export function AgentTextarea({
   surfaceKey,
   disableSend = false,
   initiallyExpanded = false,
+  autoFocus = true,
+  requireTextForSubmit = false,
 }: AgentTextareaProps) {
   const dispatch = useAppDispatch();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -149,8 +155,16 @@ export function AgentTextarea({
   // Stopping without sending is the action bar's explicit Stop button.
   const handleSend = useCallback(() => {
     if (disableSend) return;
+    if (requireTextForSubmit && charCount === 0) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
-  }, [disableSend, conversationId, surfaceKey, dispatch]);
+  }, [
+    disableSend,
+    requireTextForSubmit,
+    charCount,
+    conversationId,
+    surfaceKey,
+    dispatch,
+  ]);
 
   const handleSteerSend = useCallback(() => {
     if (disableSend) return;
@@ -259,9 +273,10 @@ export function AgentTextarea({
 
   // ── Auto-focus ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!autoFocus) return undefined;
     const t = setTimeout(() => textareaRef.current?.focus(), 100);
     return () => clearTimeout(t);
-  }, [conversationId]);
+  }, [autoFocus, conversationId]);
 
   const placeholderText =
     reduxPlaceholder ??

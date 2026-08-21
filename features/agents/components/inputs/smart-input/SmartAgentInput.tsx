@@ -24,6 +24,13 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 
 interface SmartAgentInputProps {
   conversationId: string | null | undefined;
+  /**
+   * `ambient` is the quiet, single-line launcher used by scroll-revealed page
+   * assistants. It keeps the canonical composer/execution path while hiding
+   * context, variable, resource, voice, and connector chrome until the full
+   * conversation surface opens.
+   */
+  presentation?: "default" | "ambient";
   singleRowTextarea?: boolean;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
@@ -47,6 +54,7 @@ interface SmartAgentInputProps {
 
 export function SmartAgentInput({
   conversationId,
+  presentation = "default",
   singleRowTextarea = false,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
@@ -62,10 +70,11 @@ export function SmartAgentInput({
   extraRightControls,
   showConnectors = true,
 }: SmartAgentInputProps) {
+  const isAmbient = presentation === "ambient";
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
   // (docs/TURN_BOUNDARY_INBOX.md). Renders null when the queue is empty.
-  const queueStrip = conversationId ? (
+  const queueStrip = conversationId && !isAmbient ? (
     <InboxQueueStrip conversationId={conversationId} />
   ) : null;
 
@@ -73,11 +82,11 @@ export function SmartAgentInput({
   // reach if the user connected it. Mounted here rather than in each host so a
   // new composer surface cannot forget it. Renders nothing once everything is
   // connected — it is a reminder, never a nag.
-  const connectorStrip = showConnectors ? (
+  const connectorStrip = showConnectors && !isAmbient ? (
     <ChatConnectorStrip className="mt-1.5" />
   ) : null;
 
-  if (singleRowTextarea) {
+  if (singleRowTextarea || isAmbient) {
     return (
       <>
         {queueStrip}
@@ -93,6 +102,7 @@ export function SmartAgentInput({
           disableSend={disableSend}
           variablesPanelStyle={variablesPanelStyle}
           extraRightControls={extraRightControls}
+          presentation={presentation}
         />
         {connectorStrip}
       </>

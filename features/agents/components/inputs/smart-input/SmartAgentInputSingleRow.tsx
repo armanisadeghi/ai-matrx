@@ -28,6 +28,7 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 
 interface SmartAgentInputSingleRowProps {
   conversationId: string | null | undefined;
+  presentation?: "default" | "ambient";
   sendButtonVariant?: "default" | "blue";
   uploadRoot?: string;
   uploadPath?: string;
@@ -42,6 +43,7 @@ interface SmartAgentInputSingleRowProps {
 
 export function SmartAgentInputSingleRow({
   conversationId,
+  presentation = "default",
   sendButtonVariant = "default",
   uploadRoot = "userContent",
   uploadPath = "agent-attachments",
@@ -62,6 +64,7 @@ export function SmartAgentInputSingleRow({
     selectAllResourcesResolved(conversationId ?? ""),
   );
   const sendBlocked = disableSend || voiceBusy || !allResourcesResolved;
+  const isAmbient = presentation === "ambient";
 
   const sendBtnClass =
     sendButtonVariant === "blue"
@@ -83,24 +86,39 @@ export function SmartAgentInputSingleRow({
       uploadPath={uploadPath}
       className="flex w-full flex-col gap-1"
     >
-      {/* Conversation context rail (working doc, scratchpad, lists, context) */}
-      <ConversationContextRail conversationId={conversationId} />
+      {/* Ambient launchers carry context through the instance but defer all
+          context UI to the full conversation panel. */}
+      {!isAmbient ? (
+        <ConversationContextRail conversationId={conversationId} />
+      ) : null}
 
       {/* Variable inputs (stacked above the row when present) */}
-      <SmartAgentVariables
-        conversationId={conversationId}
-        compact
-        onSubmit={handleSubmit}
-        styleOverride={variablesPanelStyle}
-      />
+      {!isAmbient ? (
+        <SmartAgentVariables
+          conversationId={conversationId}
+          compact
+          onSubmit={handleSubmit}
+          styleOverride={variablesPanelStyle}
+        />
+      ) : null}
 
       {/* Resource chips (stacked above the row when present) */}
-      <SmartAgentResourceChips conversationId={conversationId} />
+      {!isAmbient ? (
+        <SmartAgentResourceChips conversationId={conversationId} />
+      ) : null}
       {/* Durable document attachments (association edges) — persist across turns/reloads */}
-      <AttachedDocumentChips conversationId={conversationId} />
+      {!isAmbient ? (
+        <AttachedDocumentChips conversationId={conversationId} />
+      ) : null}
 
       {/* Single horizontal row */}
-      <div className="flex items-center gap-1 bg-card rounded-none border border-border px-2 py-1 w-full min-w-0">
+      <div
+        className={
+          isAmbient
+            ? "flex min-h-9 w-full min-w-0 items-center gap-1 rounded-xl border border-transparent bg-card/80 px-2 py-1 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.45)] backdrop-blur-md transition-[border-color,background-color,box-shadow] focus-within:border-ring/45 focus-within:bg-card focus-within:shadow-[0_10px_32px_-14px_rgba(0,0,0,0.5)]"
+            : "flex w-full min-w-0 items-center gap-1 rounded-none border border-border bg-card px-2 py-1"
+        }
+      >
         {/* Textarea — flex-1 so it fills available width */}
         <div className="flex-1 min-w-0">
           <AgentTextarea
@@ -112,6 +130,8 @@ export function SmartAgentInputSingleRow({
             surfaceKey={surfaceKey}
             disableSend={sendBlocked}
             singleRow
+            autoFocus={!isAmbient}
+            requireTextForSubmit={isAmbient}
           />
         </div>
 
@@ -127,6 +147,7 @@ export function SmartAgentInputSingleRow({
           disableSend={sendBlocked}
           onVoiceBusyChange={setVoiceBusy}
           extraRightControls={extraRightControls}
+          minimal={isAmbient}
         />
       </div>
     </SmartInputFileDropTarget>

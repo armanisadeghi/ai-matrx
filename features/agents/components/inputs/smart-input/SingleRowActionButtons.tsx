@@ -47,6 +47,8 @@ interface SingleRowActionButtonsProps {
   /** Fired when mic recording or final transcription is in flight. */
   onVoiceBusyChange?: (busy: boolean) => void;
   extraRightControls?: React.ReactNode;
+  /** Keep only caller controls + Send for quiet ambient launchers. */
+  minimal?: boolean;
 }
 
 export function SingleRowActionButtons({
@@ -58,6 +60,7 @@ export function SingleRowActionButtons({
   disableSend = false,
   onVoiceBusyChange,
   extraRightControls,
+  minimal = false,
 }: SingleRowActionButtonsProps) {
   const dispatch = useAppDispatch();
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -83,7 +86,7 @@ export function SingleRowActionButtons({
   // via the Turn-Boundary Inbox (needs text) and Stop is its own button.
   const isSendDisabled = isExecuting
     ? charCount === 0 || disableSend || voiceBusy
-    : disableSend || voiceBusy;
+    : disableSend || voiceBusy || (minimal && charCount === 0);
 
   const handleVoiceBusyChange = useCallback(
     (state: { isRecording: boolean; isTranscribing: boolean }) => {
@@ -95,9 +98,17 @@ export function SingleRowActionButtons({
   );
 
   const handleSend = useCallback(() => {
-    if (disableSend || voiceBusy) return;
+    if (disableSend || voiceBusy || (minimal && charCount === 0)) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
-  }, [disableSend, voiceBusy, conversationId, surfaceKey, dispatch]);
+  }, [
+    disableSend,
+    voiceBusy,
+    minimal,
+    charCount,
+    conversationId,
+    surfaceKey,
+    dispatch,
+  ]);
 
   const handleStop = useCallback(() => {
     dispatch(cancelExecution(executingConversationId ?? conversationId));
@@ -110,17 +121,21 @@ export function SingleRowActionButtons({
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
-      <RunControlsMenu
-        conversationId={conversationId}
-        variant="plus"
-        includeAttach={showAttachments}
-        foldToolbarExtras
-      />
+      {!minimal ? (
+        <RunControlsMenu
+          conversationId={conversationId}
+          variant="plus"
+          includeAttach={showAttachments}
+          foldToolbarExtras
+        />
+      ) : null}
 
       {/* Bound sandbox / local PC only — connect via `+` → ComputeLensBar. */}
-      <DesktopPresenceIndicator conversationId={conversationId} />
+      {!minimal ? (
+        <DesktopPresenceIndicator conversationId={conversationId} />
+      ) : null}
 
-      {shouldShowVariables && showVariableIcon && (
+      {!minimal && shouldShowVariables && showVariableIcon && (
         <InputButton
           icon={Braces}
           tooltip={showVariablePanel ? "Hide Form Inputs" : "Show Form Inputs"}
@@ -129,9 +144,9 @@ export function SingleRowActionButtons({
         />
       )}
 
-      {extraRightControls}
+      {!minimal ? extraRightControls : null}
 
-      {showMicrophone && (
+      {!minimal && showMicrophone && (
         <AgentMicrophoneButton
           conversationId={conversationId}
           size="xs"
@@ -140,7 +155,7 @@ export function SingleRowActionButtons({
         />
       )}
 
-      {showSendButton && isExecuting && (
+      {!minimal && showSendButton && isExecuting && (
         <Button
           onClick={handleStop}
           className="h-6 w-6 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
@@ -169,7 +184,9 @@ export function SingleRowActionButtons({
         </Button>
       )}
 
-      {showSendButton && (
+      {minimal ? extraRightControls : null}
+
+      {!minimal && showSendButton && (
         <button
           type="button"
           tabIndex={-1}
