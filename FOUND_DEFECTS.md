@@ -5,10 +5,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
-- **Claim the next free ID by grepping `^### D-new: No guard catches "schema referenced by `.schema(\"X\")` but not PostgREST-exposed" (2026-08-16)
-First live test of /vision-interview failed with PGRST106: the `interview` schema existed, was granted, had RLS — but was missing from `pgrst.db_schemas` on `authenticator`, a list nothing in code or checks knows about. Fixed live for `interview`. The CLASS fix: `pnpm check:schema` (scripts/schema-check/) should compare every schema used in `.schema("…")` calls against the exposed list (readable via `pg_roles.rolconfig` for `authenticator` — needs the snapshot RPC to include it). Until then, every new browser-read schema will 406 on its first live call with zero build-time signal.
-
-### D` first.** Duplicate IDs have collided four times (two D138s, two D150s, two D167s, two D183s, two D184s) — an entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered.
+- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Known past collisions: two D138s, D150s, D167s, D183s, D184s. 🚨 **Renumbering has itself collided** — `D193`, `D194`, `D195` and `D219` each name two live entries today (the D184→D193 and D183→D194 renumbers landed on numbers that were already taken). Do not add to it: the next free ID is **above D229**.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
@@ -16,6 +13,12 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 ---
 
 ## OPEN
+
+### D230 — no guard catches "schema referenced by `.schema()` but not PostgREST-exposed" (2026-08-16)
+
+First live test of /vision-interview failed with PGRST106: the `interview` schema existed, was granted, had RLS — but was missing from `pgrst.db_schemas` on `authenticator`, a list nothing in code or checks knows about. Fixed live for `interview`. The CLASS fix: `pnpm check:schema` (scripts/schema-check/) should compare every schema used in `.schema("…")` calls against the exposed list (readable via `pg_roles.rolconfig` for `authenticator` — needs the snapshot RPC to include it). Until then, every new browser-read schema will 406 on its first live call with zero build-time signal.
+
+*(Filed 2026-08-16; recovered 2026-08-21 from inside the "claim the next free ID" rule bullet, where it had been spliced and invisible.)*
 
 ### D229 — the FE mirrors aidream's contract inventory to serve one always-null lookup (2026-08-20)
 Fallout from the contract-artifact eviction (`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
@@ -770,22 +773,22 @@ select policy first, verified as a non-owner, then the schema exposure — and n
 writing a bad schema name into `pgrst.db_schemas` takes the WHOLE API down (project memory
 `project_postgrest_schema_cache_outage`).
 
-### D184 — 6 registered tables are protected only by a MISSING GRANT, not by RLS (2026-08-14)
+### D184 — 6 registered tables are protected only by a MISSING GRANT, not by RLS (2026-08-14; **partially FIXED 2026-08-14, ops-sink residue OPEN**)
 
-Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls` (see D182). These are holes, **not closed doors** — a table with RLS off or zero policies is one migration (or one grant) away from wide open, and two of them are already open.
+Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls` (see D182). These are holes, **not closed doors** — a table with RLS off or zero policies is one migration (or one grant) away from wide open. **Of the original 6: `ui.ui_surface` (the one live hole) is fixed, `agent.card` was never a defect (a VIEW), and the four ops sinks remain OPEN.**
 
 | Table | Variant | State | `authenticated` grants |
 |---|---|---|---|
-| **`ui.ui_surface`** | entity | **RLS DISABLED**, 0 policies | **`SIUD`** — ⚠️ **live hole**: any logged-in user can insert/update/delete the surface registry |
-| **`agent.card`** | component | **RLS DISABLED**, 0 policies | `S---` — every agent card readable regardless of visibility |
+| ~~**`ui.ui_surface`**~~ | entity | ✅ **FIXED 2026-08-14** — RLS ON, policied | closed by `migrations/ui_surface_registry_rls_d184.sql` (read broadly, write admin-only, `service_role` bypass — the pattern its siblings `ui.ui_surface_value` / `ui.ui_surface_agent_role` / `tool.executor` already use). `anon` held the same four privileges and is closed by the absence of an anon write policy. Grants deliberately untouched: the fix is RLS, never grants |
+| ~~**`agent.card`**~~ | — | ✅ **NOT A DEFECT** — it is a **VIEW**, not a table | **views have no RLS**; `agent.card` is the platform's one registered view, a deliberate public sharing surface with explicit `security_invoker=false` that **self-filters** (anon 138 rows vs authenticated 515). `security_invoker=true` would give anon **0** and kill public agent-card discovery. See `../aidream/docs/security/SUPABASE_ADVISOR_2026-08-13.md` + `../common-docs/systems/platform/db-rules/FEATURE.md` §1 |
 | `batch.cost_event` | entity | RLS on, **0 policies** | `SIUD` |
 | `public.system_error` | entity | RLS on, **0 policies** | `SIUD` |
 | `public.system_write_failure` | entity | RLS on, **0 policies** | `SIUD` |
 | `runtime.global_origin` | entity | RLS on, **0 policies** | `----` |
 
-The four "RLS on, 0 policies" tables are currently closed (no policy = no rows for `authenticated`) but grant-wide, so the first policy anyone adds opens them fully.
+**STILL OPEN — the four ops sinks** (`batch.cost_event`, `public.system_error`, `public.system_write_failure`, `runtime.global_origin`). They are currently closed (no policy = no rows for `authenticated`) but grant-wide, so **the first policy anyone adds opens them fully**.
 
-**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about *intended* openness — `ui.ui_surface` is a registry that probably should be broadly readable but never client-writable; `agent.card` is a deliberate sharing surface. That is an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
+**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about *intended* openness — an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
 
 ### D182 — Component-RLS remainder (2026-08-13; **re-measured live + largely fixed 2026-08-14**)
 

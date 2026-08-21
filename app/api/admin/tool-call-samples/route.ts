@@ -2,11 +2,10 @@
  * Admin: tool-call sample loader (super-admin only).
  *
  * Lets the tool-renderer gallery / "in action" page pull REAL persisted tool
- * calls (`cx_tool_call`) for ANY tool, across ALL users — so a renderer can be
+ * calls (`chat.tool_call`) for ANY tool, across ALL users — so a renderer can be
  * previewed against genuine data even when we have no hand-written fixture.
  *
- * `cx_tool_call` RLS is per-user (`created_by = auth.uid()` or a shared-conversation
- * viewer), so the browser client only ever sees the signed-in user's own calls.
+ * `chat.tool_call` RLS scopes a browser client to its own accessible conversations.
  * This route bypasses that with the admin client AFTER a hard super-admin gate —
  * read-only, never mutating, gated by `requireSuperAdmin()`.
  *
