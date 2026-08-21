@@ -41,6 +41,21 @@
 -- CREATE raises, a NOT NULL CREATE passes, an ALTER on a non-grandfathered
 -- nullable-org table logs 'error', and an ALTER on a grandfathered one stays
 -- silent.
+--
+-- ── RE-APPLIED 2026-08-21 (this file is the guard's ONE definition; edit and
+--    re-run it rather than forking a second copy of a 260-line function) ─────
+--   (a) `rag.library_docs` LEAVES the grandfather array -- aidream migration
+--       0167 flipped it NOT NULL, moved its 6 global docs onto the system org,
+--       and attached the backstop. A table leaves this list by being fixed.
+--   (b) THE BACKSTOP CHECK IN LANE (f) WAS BROKEN AND ALWAYS HAD BEEN. It
+--       compared `tgfoid::regproc::text` against 'public._stamp_org_default',
+--       but regproc renders unqualified for anything on the search_path, and
+--       `public` always is -- so it matched ZERO of the 299 live tables that
+--       carry the backstop. Every correct NO-NULL-ORG migration (this ruling's
+--       own migrations included) was warned at for a trigger it had attached
+--       four statements earlier. Now compared by OID. Found while executing
+--       0167; db-rules doctrine §4 -- when the gate and a correctly-built table
+--       disagree, suspect the gate.
 
 BEGIN;
 
@@ -66,11 +81,15 @@ DECLARE
     'public.message_template','public.sandbox_instances','skill.definition',
     'skill.render_definition','workbench.udt_datasets','workspace.tasks'];
   -- NO NULL ORG (owner ruling, 2026-08-21). Grandfathered nullable-org tables:
-  -- the live census at apply time, MINUS the three this ruling's migrations fix
-  -- (seo.gsc_dig_rule, seo.keyword_class_rule, users.profiles). These 36 are the
+  -- the live census at apply time, MINUS the tables this ruling's migrations
+  -- have fixed (seo.gsc_dig_rule, seo.keyword_class_rule, users.profiles, and
+  -- as of 2026-08-21 rag.library_docs -- aidream migration 0167, and the ops
+  -- capture lane ops.system_error + ops.system_write_failure -- aidream
+  -- migration 0443). These are the
   -- legacy backlog, and the backlog is the RATCHET's business, not this guard's
   -- -- hard-failing every unrelated ALTER on them would block releases that have
-  -- nothing to do with organization_id. A table leaves this list by being fixed.
+  -- nothing to do with organization_id. A table leaves this list by being fixed,
+  -- never by being excused.
   c_nullorg_grandfather CONSTANT text[] := ARRAY[
     'dictionary.dict_entries', 'docproc.processed_documents',
     'education.study_structured_section',
@@ -78,7 +97,7 @@ DECLARE
     'platform.assists', 'platform.associations', 'platform.retention_policy',
     'platform.share_links', 'rag.context_item_suggestions', 'rag.data_stores',
     'rag.kg_alerts', 'rag.kg_chunks', 'rag.kg_suggestion_ack',
-    'rag.kg_value_matches', 'rag.library_docs',
+    'rag.kg_value_matches',
     'rag.ner_canonicalizer_shadow', 'rag.scope_association_suggestions',
     'rag.scope_item_value_suggestions', 'rag.scope_suggestions',
     'research.rs_context_bundle', 'transcripts.studio_documents',
@@ -221,10 +240,21 @@ BEGIN
       IF EXISTS (SELECT 1 FROM pg_attribute a
                  WHERE a.attrelid = cmd.objid AND a.attname = 'organization_id'
                    AND a.attnotnull AND NOT a.atthasdef AND NOT a.attisdropped)
+         -- 🚨 COMPARED BY OID, NEVER BY RENDERED TEXT (fixed 2026-08-21).
+         -- `tgfoid::regproc::text` renders a function UNQUALIFIED when its
+         -- schema is on the session search_path -- and `public` always is. So
+         -- the canonical backstop `public._stamp_org_default` rendered as the
+         -- bare `_stamp_org_default` and matched NEITHER literal: measured
+         -- live, 299 tables that DO carry the backstop were invisible to this
+         -- check, so every correct NO-NULL-ORG migration got scolded for a
+         -- trigger it had just attached. A guard that cries wolf on the right
+         -- answer trains agents to ignore it, which is worse than no guard.
+         -- `'public._stamp_org_default'::regproc` resolves to an OID once, at
+         -- parse time, and is search_path-proof.
          AND NOT EXISTS (SELECT 1 FROM pg_trigger t
                          WHERE t.tgrelid = cmd.objid AND NOT t.tgisinternal
-                           AND t.tgfoid::regproc::text IN
-                               ('public._stamp_org_default','platform.inherit_org_from_parent')) THEN
+                           AND t.tgfoid IN ('public._stamp_org_default'::regproc,
+                                            'platform.inherit_org_from_parent'::regproc)) THEN
         INSERT INTO platform.ddl_guard_log(severity, rule, object_ref, command_tag, detail)
         VALUES ('warn','org_not_null_no_backstop', v_schema||'.'||v_rel, cmd.command_tag,
                 'organization_id NOT NULL with no default and no backstop trigger yet. Attach _stamp_org_default or inherit_org_from_parent in this same migration or org-forgetting writes 500. (db-rules §2.)');
