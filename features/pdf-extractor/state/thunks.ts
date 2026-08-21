@@ -2,6 +2,7 @@ import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
+import { operationFailed } from "@/utils/errors";
 import type { ApiChunksResponse } from "./types";
 import {
   chunksFetchError,
@@ -70,7 +71,7 @@ export function fetchChunksForPage(
             );
             return;
           }
-          throw new Error(rpcError.message);
+          throw operationFailed("load this document's extracted text", rpcError);
         }
         const resp = data as unknown as ApiChunksResponse | null;
         dispatch(

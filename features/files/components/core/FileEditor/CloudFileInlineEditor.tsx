@@ -26,6 +26,7 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { uploadFiles as uploadFilesThunk } from "@/features/files/redux/thunks";
 import { extractErrorMessage } from "@/utils/errors";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
 import type { StandaloneCodeEditor } from "@/features/code/editor/MonacoEditor";
 
@@ -216,16 +217,7 @@ export function CloudFileInlineEditor({
     savedAt !== null && Date.now() - savedAt < 2000 && !isDirty;
 
   if (!file) {
-    return (
-      <div
-        className={cn(
-          "flex h-full w-full items-center justify-center text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        File not found.
-      </div>
-    );
+    return <AccessGate token="file" id={fileId} />;
   }
 
   if (loadError) {

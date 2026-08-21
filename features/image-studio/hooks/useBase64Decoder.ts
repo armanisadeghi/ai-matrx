@@ -224,6 +224,7 @@ export function useBase64Decoder(
       const text = await navigator.clipboard.readText();
       if (text) setInputState(text);
     } catch (err) {
+      // access-errors: ok — browser clipboard permission, verified by the browser API, not a record access state
       const detail = err instanceof Error ? err.message : "permission denied";
       setDecodeError(`Could not read from clipboard: ${detail}`);
     }

@@ -965,6 +965,7 @@ function AuditBody({
             <p className="flex items-start gap-2 border-b border-border px-3 py-2 text-[11px] text-muted-foreground">
               <OctagonAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
               <span>
+                {/* access-errors: ok — crawler-observed HTTP absence on the user's own site, a verified external fact */}
                 The crawler no longer finds these URLs. Their last-known metrics
                 are excluded from the findings above — editing them would change
                 a page that no longer exists. Restore the page or redirect the

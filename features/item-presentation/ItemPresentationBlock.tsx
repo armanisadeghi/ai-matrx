@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 import { getItemConfig } from "./registry";
 import { parseItemPresentation } from "./parseItemPresentation";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useEnrichItem } from "./useEnrichItem";
 import { useOpenItemPresentation } from "./useOpenItemPresentation";
 
@@ -170,7 +171,7 @@ const ItemPresentationBlock: React.FC<ItemPresentationBlockProps> = ({
               ) : notFound ? (
                 <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                   <AlertCircle className="h-3 w-3" />
-                  Not found — it may have been moved or deleted.
+                  {recordUnavailableMessage(config.label.toLowerCase(), "unknown")}
                 </span>
               ) : !recognized ? (
                 <span>A {config.label.toLowerCase()} reference.</span>

@@ -75,7 +75,12 @@ export async function cloneJobWithName(
   newName: string,
 ): Promise<PageExtractionJob> {
   const src = await getJob(jobId);
-  if (!src) throw new Error("Template not found");
+  if (!src)
+    throw recordUnavailable({
+      entity: "template",
+      reason: "unknown",
+      recordId: jobId,
+    });
   const clone = { ...(src as unknown as Record<string, unknown>) };
   delete clone.id;
   delete clone.created_at;

@@ -18,6 +18,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { getJob } from "@/features/page-extraction/api/jobs";
 import { listResults } from "@/features/page-extraction/api/runs";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   cellValueFor,
   humanizeKey,
@@ -241,7 +242,12 @@ export async function loadDatasetExportView(jobId: string): Promise<{
   rows: Array<Record<string, unknown>>;
 }> {
   const job = await getJob(jobId);
-  if (!job) throw new Error("Dataset not found");
+  if (!job)
+    throw recordUnavailable({
+      entity: "dataset",
+      reason: "unknown",
+      recordId: jobId,
+    });
   const results = await listResults({ jobId });
   const { rows: normalized } = normalizeResultRows(results);
   const tpl = parseTemplateColumns(job.output_schema);

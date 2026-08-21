@@ -1040,6 +1040,7 @@ export function useImageStudio(
           (f) => !knownIds.has(f.id) && f.fileName === preview.name,
         );
         if (!fresh) {
+          // access-errors: ok — in-memory store match after our own verified upload; internal invariant, not a record read
           throw new Error("Preview uploaded but its file id was not found");
         }
         const previewFileId = fresh.id;

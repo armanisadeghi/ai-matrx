@@ -28,6 +28,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   useDocumentLineage,
@@ -152,7 +153,7 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
           </div>
         ) : !lineage?.currentBinary ? (
           <p className="text-[10px] text-muted-foreground italic px-1">
-            Source <code>cld_files</code> row not found.
+            {recordUnavailableMessage("source file", "unknown")}
           </p>
         ) : (
           <>
