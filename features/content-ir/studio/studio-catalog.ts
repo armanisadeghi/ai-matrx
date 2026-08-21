@@ -73,6 +73,16 @@ function familyOf(metadata: Json): string | null {
  * browses, previews, or tests. Human-named kinds in the workflow_io family
  * (agent_result, scraped_page, json, …) ARE browsable shapes — the old
  * family-based heuristic wrongly hid them and is gone.
+ *
+ * POST-EVICTION (2026-08-20): the ~986 contract rows this filter was written
+ * for were moved to `content_ir.io_contract` and soft-deleted out of the
+ * registry, and auto-minting is deleted, so on live data this predicate now
+ * matches nothing. It is KEPT as a backstop — an empty quarantine is cheap,
+ * re-drift is not. The server-side catalog (aidream
+ * `services/runtime/kind_catalog.py`) loads rows UNFILTERED and logs an error
+ * if it ever finds one, so the detection lives there rather than costing this
+ * UI path an extra round trip.
+ * Authority: common-docs KINDS_EVERYWHERE_PLAN.md §10b item 5.
  */
 export function buildShapeStudioList(
   defs: ShapeDefinitionRowLite[],
@@ -132,6 +142,8 @@ export async function listShapesForUser(): Promise<ShapeListEntry[]> {
       .is("deleted_at", null)
       // Machine-minted I/O contract bookkeeping rows (tool_io_*_<hash8>_*)
       // never reach the shape gallery — real, human-named shapes only.
+      // Since the 2026-08-20 eviction this excludes ZERO live rows; kept as a
+      // backstop against re-drift.
       .eq("is_contract_artifact", false),
     supabase
       .schema("content_ir")

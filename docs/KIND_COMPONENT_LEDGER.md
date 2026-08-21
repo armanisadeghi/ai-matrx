@@ -30,8 +30,10 @@ kinds, so a DB-registered kind's `/shapes/<kind>/test` refuses, and for a kind w
 canonical example that is the only way to verify its route. Check `role='input'` when you
 claim rows; do not blanket-insert (verify the kind is not a machine contract first).
 
-> Contract artifacts (`is_contract_artifact = true`, 774 active) are quarantined per §7.8 and
-> are OUT of scope for this mission. Do not register routes for them.
+> Contract artifacts are **EVICTED, not merely quarantined** (2026-08-20). All 986 rows moved
+> to `content_ir.io_contract` and were soft-deleted out of `content_ir.kind_definition`
+> (KINDS_EVERYWHERE_PLAN.md §10b item 5), so they no longer appear in any count here and
+> cannot be claimed. Do not register routes for them — a type signature has no renderer.
 
 ## Rules for every agent working this ledger
 
