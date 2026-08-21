@@ -1,7 +1,7 @@
 # Marketing Site Platform — Decision Register
 
 > **Still authoritative for the decisions it records.** Its "Already settled — not being
-> re-asked" list and its approved service boundary are merged into [`common-docs/systems/seo/DECISIONS.md`](/Users/armanisadeghi/code/common-docs/systems/seo/DECISIONS.md), which is
+> re-asked" list and its approved service boundary are merged into [`common-docs/systems/marketing/seo/DECISIONS.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/DECISIONS.md), which is
 > the one place to read every settled ruling for this cluster.
 
 

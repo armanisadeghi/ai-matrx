@@ -7,7 +7,7 @@
  * else touches `supabase.schema("plan")`. Reads/writes go DIRECT to Supabase
  * under RLS (CLAUDE.md data-flow rule) — aidream is only for AI work.
  *
- * THE TRIGGER CONTRACT (common-docs/systems/content-planning/FEATURE.md §1):
+ * THE TRIGGER CONTRACT (common-docs/systems/marketing/content-planning/FEATURE.md §1):
  * `route` / `depth` / `pillar_label` / `cluster_label` are computed by
  * `plan._node_shape` and cascaded by `_z_node_cascade`. They are NEVER sent
  * in a write; after any node write the site's node list is refetched so the

@@ -1,4 +1,4 @@
--- Medical aesthetics / med spa niche (common-docs/systems/local-listings/PLAN.md WS7).
+-- Medical aesthetics / med spa niche (common-docs/systems/marketing/local-listings/PLAN.md WS7).
 -- The beauty<->health border: board-certification directories (plastic surgery,
 -- dermatology, bariatric/obesity medicine), manufacturer loyalty/provider-locator
 -- programs (Botox/Juvederm/CoolSculpting, Dysport/Restylane, Xeomin/Radiesse, SculpSure),

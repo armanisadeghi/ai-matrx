@@ -1,4 +1,4 @@
--- Wide expansion of the AI/ML/automation niche (common-docs/systems/local-listings/PLAN.md WS7).
+-- Wide expansion of the AI/ML/automation niche (common-docs/systems/marketing/local-listings/PLAN.md WS7).
 -- Follow-on from web_listing_publisher_ai_ml_automation_niche.sql: the finding was that building
 -- APIs, MCP servers, agent skills, prompts, and even open-weight fine-tunes each unlock their own
 -- artifact-specific directory ecosystem, distinct from business-listing directories. Covers: MCP

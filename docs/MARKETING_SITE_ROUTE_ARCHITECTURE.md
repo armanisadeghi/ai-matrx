@@ -18,7 +18,7 @@
 > `features/marketing/lib/route-sections.ts`, test-enforced against the filesystem by
 > `route-sections.test.ts` and `marketing-route-navigation.test.ts`.
 >
-> Kept for the approved decisions it records. Current state: [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md).
+> Kept for the approved decisions it records. Current state: [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md).
 
 
 **Status:** Approved route contract

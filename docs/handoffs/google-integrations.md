@@ -94,7 +94,7 @@ once the scope is approved. **Opening that campaign is Arman's call.** `FOUND_DE
 - **`aidream/seo/utils/google_suggest_keyword_tool.py`** — VERDICT DELIVERED 2026-08-19, awaiting
   Arman. Orphan status confirmed (no importer, router, tool registration, ORM entry or scheduler
   handler anywhere). The capability is superseded by written design:
-  `common-docs/systems/seo-keywords/seo-keyword-agent-guide.md:60` names DataForSEO Labs Keyword
+  `common-docs/systems/marketing/seo/seo-keywords/seo-keyword-agent-guide.md:60` names DataForSEO Labs Keyword
   Ideas / Suggestions / Related as the supplier, and those operations are already declared in
   `packages/matrx-seo/matrx_seo/providers/dataforseo/`. Separately it is not compliant to run —
   Google's terms bar automated queries, and the file's own TODO proposes proxy/UA rotation and

@@ -60,7 +60,7 @@ export async function GET() {
   // /marketing/tools, so a tool is crawlable the moment it ships and a
   // reserved ("coming-soon") route can never leak into the sitemap. These are
   // the flagship utility-tool growth surfaces — see
-  // common-docs/systems/ai-matrx-internal-seo/VISION.md.
+  // common-docs/systems/marketing/ai-matrx-internal-seo/VISION.md.
   const seoToolUrls = MARKETING_PUBLIC_TOOLS.filter((tool) =>
     tool.href.startsWith('/seo/')
   ).map((tool) => ({

@@ -2,7 +2,7 @@
  * The CODE pipe of `suggest → writeback` (Growth Loop gap `G-FINDING-FIX`):
  * turn one SEO finding into a DRAFTED fix with no model call at all.
  *
- * THE BAR (common-docs/systems/growth-loop/FEATURE.md, THE THREE PIPES): the
+ * THE BAR (common-docs/systems/marketing/growth-loop/FEATURE.md, THE THREE PIPES): the
  * code pipe must be deterministic, unattended, and free per run. So this
  * module only claims a finding when the fix is genuinely derivable from
  * evidence the crawler already stored — never a guess dressed up as a fix:

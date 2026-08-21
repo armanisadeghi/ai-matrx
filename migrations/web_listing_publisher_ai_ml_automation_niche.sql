@@ -1,4 +1,4 @@
--- AI/ML/automation industry niche (common-docs/systems/local-listings/PLAN.md WS7).
+-- AI/ML/automation industry niche (common-docs/systems/marketing/local-listings/PLAN.md WS7).
 -- The niche that supports AI Matrx itself: AI tool discovery directories, startup/product
 -- launch platforms, developer & model/API marketplaces, AI agent/bot marketplaces, B2B
 -- software review sites, AI/dev agency directories, and startup/company directories.

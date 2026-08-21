@@ -6,7 +6,7 @@
  * Everything before it turned a crawl into a finding and offered the finding to
  * the user. Nothing turned an accepted finding into a changed page. This card
  * is that step, and it carries all THREE PIPES for `suggest → writeback` in one
- * place (common-docs/systems/growth-loop/VISION.md):
+ * place (common-docs/systems/marketing/growth-loop/VISION.md):
  *
  *   CODE  — `planDeterministicFix` drafts instantly and for free when the fix
  *           is genuinely derivable (a too-long title is a trimming problem, a

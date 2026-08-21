@@ -2,7 +2,7 @@
  * Effort TIERS for the per-page content pipeline — the FE mirror of aidream's
  * `services/content_plan/effort.py`. Change one and you must change the other.
  *
- * Arman's ruling (canonical: common-docs/systems/content-planning/FEATURE.md §
+ * Arman's ruling (canonical: common-docs/systems/marketing/content-planning/FEATURE.md §
  * EFFORT TIERS AND PRE-ESTIMATION): effort is a PATHWAY, not a cap. The cheap
  * tier MERGES steps into fewer calls — the one-shot authoring call IS the
  * cheapest tier and keeps working — the tier is set per SITE with a per-PAGE

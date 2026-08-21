@@ -1,6 +1,6 @@
 /**
  * Items for the `plan_tree` and `plan_node_patch` output_directive envelopes
- * (Content Planning — cross-repo SoR common-docs/systems/content-planning/
+ * (Content Planning — cross-repo SoR common-docs/systems/marketing/content-planning/
  * FEATURE.md). Mirrors aidream's PlanTreeItem / PlanNodePatchItem
  * (services/content_plan/directives.py; the generated manifest in
  * docs/protocol/matrx_envelope_registry.generated.json is canonical).

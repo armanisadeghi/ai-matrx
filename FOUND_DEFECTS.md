@@ -460,7 +460,7 @@ deciding urgency; rotate the key if it is set.**
 **Fix:** delete both routes and the `@deepgram/sdk` dependency (nothing consumes
 either). If Deepgram is ever revived, the platform already has the right pattern
 for this — the **token broker** (`lib/api/broker/`, cross-repo SoR
-`common-docs/systems/token-broker/FEATURE.md`), which exists precisely so a
+`common-docs/systems/platform/token-broker/FEATURE.md`), which exists precisely so a
 client gets a scoped short-lived credential instead of a hand-rolled mint route.
 
 ### D205 — the committed `openapi.json` is AHEAD of the committed `api-types.ts`; regenerating breaks 48 files (2026-08-16)
@@ -586,7 +586,7 @@ resolvers must end up saying the same thing.
 
 Fix site: `migrations/access_gate_get_resource_access.sql` (the `-- Owner → full
 control.` block). Context: common-docs
-`systems/access-architecture/FEATURE.md` §7 G16b.
+`systems/platform/access/FEATURE.md` §7 G16b.
 
 ### D201 — `useNodeReality` takes non-null ids that two callers fake with `""` (2026-08-15)
 
@@ -855,7 +855,7 @@ verified live; `docs/db_changes/DB_REGRESSION_SWEEP.md` was deleted rather than 
 an archive. Both durable lessons moved to their permanent homes: "a migration file on
 disk changes nothing" is §Database migrations in [CLAUDE.md](CLAUDE.md), and the
 conformance checker's contract — **act on `audit.broken_functions.severity`, NEVER on
-`level`** — is `common-docs/systems/db-rules/FEATURE.md` §11.
+`level`** — is `common-docs/systems/platform/db-rules/FEATURE.md` §11.
 
 ⚠️ **The old "`audit.broken_functions` is ~97% false positives" warning is obsolete —
 do not act on it.** That was true of the *broken* checker: 101 rows for 3 genuinely
@@ -1008,7 +1008,7 @@ before realize applies it, that is a ruling, not an agent's call — see the not
 <details><summary>Original entry</summary>
 
 🚨 **Read the scope correction first: TEMPLATES ARE AN OPTION AND ARE NEVER REQUIRED**
-(Arman, 2026-08-16 — `common-docs/systems/content-planning/STATE.md` § TEMPLATES ARE AN
+(Arman, 2026-08-16 — `common-docs/systems/marketing/content-planning/STATE.md` § TEMPLATES ARE AN
 OPTION). This entry originally read as "a required capability is switched off." It is not:
 a site with no template library is a **correct, fully supported site**, realize writing an
 empty body is the **free-form path working**, and the site's THEME is what makes its pages
@@ -1037,7 +1037,7 @@ Arman: "there are other UI issues with this page as well" (`/marketing/keyword-r
 
 ### D171 — `content_role` has two writable authorities and 13 live disagreements (2026-08-11)
 
-System-of-record: `common-docs/systems/entity-content-role/FEATURE.md` — read it before changing either role field or its consumers in any repo.
+System-of-record: `common-docs/systems/platform/entity-content-role/FEATURE.md` — read it before changing either role field or its consumers in any repo.
 
 ### D170 — ~~A live run whose payload is JSON or an XML wrapper shows an EMPTY window until it finishes~~ **CLOSED 2026-08-18** (2026-08-11)
 
@@ -1189,7 +1189,7 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 ### D135 — RESOLVED 2026-08-14: soft delete now TOMBSTONES association edges and restore revives them
 
-Per Arman's ruling, `platform._gc_entity_associations` tombstones (`deleted_at` + `deleted_via_*` stamp) instead of purging, restore un-tombstones exactly what that entity's trashing removed, and only a hard DELETE purges; conveyance is cut at `platform.containment_edges` and every reader reads `platform.associations_live`. Contract + live proof: `common-docs/systems/access-architecture/FEATURE.md` §2.4c. Edges destroyed before this migration are unrecoverable.
+Per Arman's ruling, `platform._gc_entity_associations` tombstones (`deleted_at` + `deleted_via_*` stamp) instead of purging, restore un-tombstones exactly what that entity's trashing removed, and only a hard DELETE purges; conveyance is cut at `platform.containment_edges` and every reader reads `platform.associations_live`. Contract + live proof: `common-docs/systems/platform/access/FEATURE.md` §2.4c. Edges destroyed before this migration are unrecoverable.
 
 ### D132 (remainder) — session-identity drift under long-lived tabs (2026-08-08 incident)
 
@@ -1244,7 +1244,7 @@ deleted; the sole survivor WF-10 (site→vertical binding) shipped 2026-08-19 as
 ### D119 — RESOLVED 2026-08-14: the EDIT/FULL boundary is now enforced on columns, not just statements
 
 **The share levels are view / edit / FULL** — canonical statement, in Arman's words:
-`common-docs/systems/access-architecture/SHARE_LEVELS.md`. **Read it before touching anything about
+`common-docs/systems/platform/access/SHARE_LEVELS.md`. **Read it before touching anything about
 what an editor may do.** It also carries the naming warning: the level the enum spells `admin` is a
 personal delegation on ONE item and is NOT the org-admin role — that collision is what made agents
 re-ask these questions for months.

@@ -15,7 +15,7 @@
 //   • RFC 8058 one-click headers for bulk marketing   Gmail + Yahoo + Microsoft
 //   • where we got their details, at first contact    GDPR art. 14 (EEA/UK)
 //
-// Register: /Users/armanisadeghi/code/common-docs/systems/outreach-compliance/
+// Register: /Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/
 
 import type { ConsentBasis } from "./types";
 

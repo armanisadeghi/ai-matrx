@@ -7,7 +7,7 @@ owner: unassigned — ONE code task left (T7) plus one human step only Arman can
 
 # Competitor link gap + competitor classification
 
-**Cluster state:** [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md) — verified 2026-08-19; every pending item in this doc was re-confirmed still pending.
+**Cluster state:** [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md) — verified 2026-08-19; every pending item in this doc was re-confirmed still pending.
 
 **Arman, 2026-08-14:**
 
@@ -19,7 +19,7 @@ owner: unassigned — ONE code task left (T7) plus one human step only Arman can
 > *"These things rise up out of SEO and into marketing... who your competitors are is not
 > just the web question. It's a company question."*
 
-**📖 Read `common-docs/systems/competitor-classification/FEATURE.md` FIRST.** It is the
+**📖 Read `common-docs/systems/marketing/competitor-classification/FEATURE.md` FIRST.** It is the
 system of record for the taxonomy, the three-layer classification rule, and the link-gap
 seed rule. This file is only the work order.
 
@@ -42,7 +42,7 @@ seed rule. This file is only the work order.
 
 | Piece | State | Where |
 |---|---|---|
-| Taxonomy + link-gap seed rule | **Done**, committed | `common-docs/systems/competitor-classification/FEATURE.md` |
+| Taxonomy + link-gap seed rule | **Done**, committed | `common-docs/systems/marketing/competitor-classification/FEATURE.md` |
 | `seo.competitor` classification axes | **LIVE in Supabase** — `business_overlap`, `market_overlap`, `search_overlap_band`, `entity_role`, `posture`, `classification_status`, `use_for_link_gap`, `custom_labels`, `classification_confirmed_at/_by` + CHECKs + 2 indexes | migration `seo_competitor_classification_axes` |
 | `seo.link_gap_domain` + `seo.link_gap_match` | **LIVE in Supabase**, `iam.verify_canonical` all PASS, components under `web.site` / `seo.competitor` | migration `seo_link_gap_tables` |
 | ORM models regenerated | Done (`LinkGapDomain`, `LinkGapMatch`, new competitor columns) | `packages/matrx-seo/matrx_seo/db/models_seo.py` |
@@ -242,7 +242,7 @@ A footprint belongs to a service line, not to a location. Do not build the locat
 ### T5 — Platform-wide setting doors + admin-gated access requests ✅ DONE 2026-08-15
 Shipped: `features/settings/doors/` (`SettingDoor`, `SettingAnchor`, `settingDoorTarget`),
 `features/access-gate/SettingAccessGate.tsx` + `SettingRequestActionButtons.tsx`, and the
-internal-DM request action. SoR: `common-docs/systems/setting-doors/FEATURE.md`. Org-level
+internal-DM request action. SoR: `common-docs/systems/platform/setting-doors/FEATURE.md`. Org-level
 competitor `custom_labels` is its first consumer.
 
 ### T6 — Wire the domain registry ✅ DONE 2026-08-15
@@ -260,7 +260,7 @@ fallback (SERP-derived candidates) or honest copy pointing at the typed-name add
 
 ## Evidence base — real SERPs, 5 industries (2026-08-15)
 
-Committed at `common-docs/systems/competitor-classification/serp-evidence-2026-08-15.json`
+Committed at `common-docs/systems/marketing/competitor-classification/serp-evidence-2026-08-15.json`
 with the script beside it. 176 results, $0.0035. **Re-run it before changing any threshold.**
 Headlines: the deterministic layer settles only **15%**; a national SERP for a local query is
 almost entirely out-of-market peers (19 medspas in 19 cities); money vs informational queries
@@ -290,7 +290,7 @@ return different KINDS of entity, so a set built from one query type is biased.
 
 ## Related
 
-- `common-docs/systems/competitor-classification/FEATURE.md` — the taxonomy (SoR)
+- `common-docs/systems/marketing/competitor-classification/FEATURE.md` — the taxonomy (SoR)
 - `docs/handoffs/outreach-system.md` — the outreach engine this feeds
 - `aidream/aidream/services/crm/FEATURE.md` — the bridge and its provenance contract
 - `docs/handoffs/crm-record-classification.md` — where these records land

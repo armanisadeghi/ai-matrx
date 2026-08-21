@@ -326,7 +326,7 @@ export interface PlannedPagesResult {
 /**
  * Ensure the `web.page` record that carries each route's SEO plan.
  *
- * Arman's ruling, 2026-08-16 (`common-docs/systems/content-planning/FEATURE.md`
+ * Arman's ruling, 2026-08-16 (`common-docs/systems/marketing/content-planning/FEATURE.md`
  * invariant 9): one SEO plan per page, on `web.page`. This is the ONE way the
  * client gets such a row, and it is deliberately a server call rather than a
  * direct insert: the table's unique arbiter is `(site_id, url_hash)`, and

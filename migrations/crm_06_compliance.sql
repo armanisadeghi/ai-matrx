@@ -6,7 +6,7 @@
 -- ONE idempotent record of the change that already landed. Re-applying is a no-op.
 --
 -- System-of-record — READ IT BEFORE TOUCHING ANY OF THIS:
---   /Users/armanisadeghi/code/common-docs/systems/outreach-compliance/
+--   /Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/
 --     FEATURE.md              verified sources + dates
 --     REQUIREMENTS_MATRIX.md  obligation -> jurisdiction -> lane -> enforcement point
 --     ENGINEERING_GAPS.md     what this closes, and what it does not

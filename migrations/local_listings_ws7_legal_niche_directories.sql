@@ -2,7 +2,7 @@
 -- (personal injury/criminal defense, family law, immigration, estate/elder, bankruptcy, disability,
 -- workers' comp, IP), bar-association/trade-association directories that allow member profiles,
 -- and legal review/ranking sites. Beyond existing legal rows (avvo, findlaw, justia, lawyers-com,
--- superlawyers, martindale, nolo). Upsert-by-slug per common-docs/systems/local-listings/PLAN.md WS7.
+-- superlawyers, martindale, nolo). Upsert-by-slug per common-docs/systems/marketing/local-listings/PLAN.md WS7.
 insert into web.listing_publisher
   (slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, organization_id, visibility)
 values

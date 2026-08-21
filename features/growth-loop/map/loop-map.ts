@@ -4,7 +4,7 @@
  * Research -> Plan -> Brief -> Realize -> Fill -> Publish -> Serve -> Crawl ->
  * Measure -> Analyze -> Suggest -> Write-back -> (back to Plan/Fill).
  *
- * Vision + doctrine: common-docs/systems/growth-loop/VISION.md + FEATURE.md.
+ * Vision + doctrine: common-docs/systems/marketing/growth-loop/VISION.md + FEATURE.md.
  * Campaign + lanes:  common-docs/projects/growth-loop-gaps/PLAN.md.
  *
  * THE THREE PIPES: every edge must be runnable by CODE (deterministic, free),

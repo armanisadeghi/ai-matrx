@@ -2,7 +2,7 @@
  * features/marketing/content-plan/types.ts
  *
  * Row types for the `plan` schema (Content Planning — see
- * common-docs/systems/content-planning/FEATURE.md, the cross-repo system of
+ * common-docs/systems/marketing/content-planning/FEATURE.md, the cross-repo system of
  * record) plus the client-side view models. Everything derives from the
  * generated `Database["plan"]` types — never hand-mirrored.
  */

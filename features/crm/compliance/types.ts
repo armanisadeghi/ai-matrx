@@ -4,7 +4,7 @@
 // crm.check_send_eligibility — the ONE send authority — so a caller never has to
 // guess at the verdict's structure.
 //
-// System-of-record: /Users/armanisadeghi/code/common-docs/systems/outreach-compliance/
+// System-of-record: /Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/
 
 /** Which lane a campaign is in. Enforced in the DB; never a boolean on a send(). */
 export type OutreachLane = "cold_outreach" | "opt_in_marketing";

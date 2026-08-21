@@ -3,7 +3,7 @@
 > 🚨 **HISTORICAL — the 2026-07 approved implementation plan, delivered.** Kept as the record of
 > what was approved and why. It predates the brand-first routing that shipped, so read its route
 > and product-model sections alongside the live contract in `features/marketing/lib/routes.ts`.
-> Current state: [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md).
+> Current state: [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md).
 
 
 **Status:** Approved for implementation  

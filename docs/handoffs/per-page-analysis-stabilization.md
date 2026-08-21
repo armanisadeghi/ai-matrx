@@ -19,10 +19,10 @@ repos: [matrx-frontend, aidream]
 > 500-page site in low single-digit minutes. **Bug 4 (FE progress/failure invisibility) is still
 > open.** The check count below should read **68**, not ~63 — 42 catalogued page + 17 cross-page +
 > 5 site + 4 crawlability.
-> Cluster state: [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md).
+> Cluster state: [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md).
 
 The `web.analysis_result` audit workers (commissioned by Arman's 2026-08-08
-ruling; parent doc: [common-docs/systems/websites/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md))
+ruling; parent doc: [common-docs/systems/marketing/websites-and-brands/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md))
 are BUILT, MERGED, and DEPLOYED — and they genuinely work on small/medium
 sites. They are NOT done: on large-evidence sites the run silently dies, which
 is exactly what Arman hit in the UI ("Analyze spins forever, then nothing").

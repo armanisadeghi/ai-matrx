@@ -20,8 +20,8 @@ every open gap registered.
 It exists because the pipeline spans three repos and two Supabase projects, so no single
 `FEATURE.md` could show whether it actually connects end to end.
 
-- **Vision (Arman's words, 2026-08-09):** `common-docs/systems/growth-loop/VISION.md`
-- **System of record:** `common-docs/systems/growth-loop/FEATURE.md`
+- **Vision (Arman's words, 2026-08-09):** `common-docs/systems/marketing/growth-loop/VISION.md`
+- **System of record:** `common-docs/systems/marketing/growth-loop/FEATURE.md`
 - **Gap campaign + lanes:** `common-docs/projects/growth-loop-gaps/PLAN.md`
 
 ## 🚨 `map/loop-map.ts` is the single source of truth
@@ -37,7 +37,7 @@ Rules (also stated at the top of the file):
 2. **Filling a gap = flipping its pipe state in `loop-map.ts` in the same change as the code.**
 3. Never delete a gap id — close it with `status: "closed"` and an `evidence` path.
 4. A scheduled Codex auditor re-derives this from live code and will re-open a gap whose
-   evidence doesn't hold (`common-docs/systems/growth-loop/CODEX_OPERATOR.md`).
+   evidence doesn't hold (`common-docs/systems/marketing/growth-loop/CODEX_OPERATOR.md`).
 
 ## Structure
 

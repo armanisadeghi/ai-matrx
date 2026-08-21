@@ -1,4 +1,4 @@
--- Registry expansion 29 -> 91 (common-docs/systems/local-listings/PLAN.md WS2).
+-- Registry expansion 29 -> 91 (common-docs/systems/marketing/local-listings/PLAN.md WS2).
 -- APPLIED LIVE 2026-08-18 via Supabase MCP. Idempotent upsert by slug; system org.
 insert into web.listing_publisher (organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility)
 select '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, v.* from (values

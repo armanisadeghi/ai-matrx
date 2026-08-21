@@ -9,7 +9,7 @@
 // that disagrees with the gate is worse than no preview, and the gate is what
 // actually refuses the send.
 //
-// System-of-record: /Users/armanisadeghi/code/common-docs/systems/outreach-compliance/
+// System-of-record: /Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/
 
 import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";

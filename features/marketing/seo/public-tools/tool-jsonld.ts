@@ -10,7 +10,7 @@ import { MARKETING_PUBLIC_TOOLS } from "@/features/marketing/lib/marketing-nav";
  * links actually say. A tool that is not a LIVE public tool in that registry
  * gets NO structured data rather than invented data.
  *
- * THE HONESTY RULE (common-docs/systems/ai-matrx-internal-seo/VISION.md and
+ * THE HONESTY RULE (common-docs/systems/marketing/ai-matrx-internal-seo/VISION.md and
  * the robots-tester plan's search-surface checklist): emit only properties the
  * visible page genuinely supports. These tools really are free, browser-based,
  * and require no account, so `offers` at price 0 and `isAccessibleForFree` are

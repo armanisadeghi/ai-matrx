@@ -1,5 +1,5 @@
 -- WS7 intake: HOME SERVICES sub-verticals (HVAC/plumbing/roofing/electrical/landscaping/moving/cleaning-adjacent)
--- + DENTAL-specific directories. Upsert-by-slug per common-docs/systems/local-listings/PLAN.md WS7 contract.
+-- + DENTAL-specific directories. Upsert-by-slug per common-docs/systems/marketing/local-listings/PLAN.md WS7 contract.
 insert into web.listing_publisher
   (slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, organization_id, visibility)
 values

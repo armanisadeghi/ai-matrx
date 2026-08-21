@@ -43,7 +43,7 @@ table editor uses the same writer. Paid work may consume only confirmed rows.
 
 ## Ground truth — the Review tab
 
-**System of record: `common-docs/systems/competitor-classification/FEATURE.md` §8d + §10.**
+**System of record: `common-docs/systems/marketing/competitor-classification/FEATURE.md` §8d + §10.**
 Read it before touching the brief, the ruling record, or the axes.
 
 `/marketing/competitors` → **Review** is where a human's judgment becomes ground truth, and it

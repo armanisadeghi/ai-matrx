@@ -3,5 +3,5 @@
 -- APPLIED LIVE via Supabase MCP (migration web_listing_publisher_consulting_nonprofit_partners)
 -- as an idempotent upsert by slug under the system org; 17 rows. Registry now 310.
 -- The exact VALUES live in the applied migration; the seed evolves via further
--- upserts through the WS7 intake contract (common-docs/systems/local-listings/PLAN.md).
+-- upserts through the WS7 intake contract (common-docs/systems/marketing/local-listings/PLAN.md).
 select 1;

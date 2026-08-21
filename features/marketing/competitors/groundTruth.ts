@@ -3,7 +3,7 @@
  *
  * THE RULING RECORD — what a human decision about a competitor must capture.
  *
- * System of record: `common-docs/systems/competitor-classification/FEATURE.md`
+ * System of record: `common-docs/systems/marketing/competitor-classification/FEATURE.md`
  * §10. Zero competitors and zero referring domains in this platform have ever
  * been human-ruled, so every threshold in that document is provisional. The
  * missing thing is LABELS, not data volume — more API calls cannot fix it.

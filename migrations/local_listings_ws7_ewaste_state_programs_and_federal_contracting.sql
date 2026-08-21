@@ -5,9 +5,9 @@
 -- Recycling + Data Destruction Inc, both nationwide, R2 + NAID certified (not e-Stewards).
 -- California's CalRecycle CEW directory already exists (calrecycle-cew-directory). Remaining
 -- ~13 states with e-waste laws (DC, HI, IN, ME, MO, OK, RI, SC, UT, VT, VA, WV, plus 2026
--- additions CO/NV) are tracked as backlog in common-docs/systems/local-listings/RESEARCH.md —
+-- additions CO/NV) are tracked as backlog in common-docs/systems/marketing/local-listings/RESEARCH.md —
 -- see the sub-national research methodology section added there in this same batch.
--- Upsert-by-slug per common-docs/systems/local-listings/PLAN.md WS7. Verified against live
+-- Upsert-by-slug per common-docs/systems/marketing/local-listings/PLAN.md WS7. Verified against live
 -- table by slug and domain before insert.
 insert into web.listing_publisher
   (slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, organization_id, visibility)

@@ -1,4 +1,4 @@
--- Seed web.listing_publisher from the founder research (common-docs/systems/local-listings/RESEARCH.md).
+-- Seed web.listing_publisher from the founder research (common-docs/systems/marketing/local-listings/RESEARCH.md).
 -- APPLIED LIVE 2026-08-18 via Supabase MCP.
 -- Rows are platform-global reference data → system org (same as web.provider). Idempotent upsert by slug.
 insert into web.listing_publisher (organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility)

@@ -12,7 +12,7 @@
  * so the applied record keeps it, not just the primary keyword string.
  *
  * 🚨 WHERE IT LANDS — Arman's ruling, 2026-08-16
- * (`common-docs/systems/content-planning/FEATURE.md` invariant 9): **one SEO
+ * (`common-docs/systems/marketing/content-planning/FEATURE.md` invariant 9): **one SEO
  * plan per page, and it lives on `web.page`.** Everything below writes there
  * and nowhere else:
  *

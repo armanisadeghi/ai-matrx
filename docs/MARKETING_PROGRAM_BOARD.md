@@ -1,6 +1,6 @@
 # Marketing Program Board — start here
 
-One page that tells any agent (or Arman) what this program is, what's in motion, and where to pick up work. **Rules:** when you start something, add/claim a line in **In motion** (1–2 sentences, your name/session); when you finish, move it to Shipped in the [handoff](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md) and delete your line here; found a bug or something you won't fix yourself → add it to **Parking lot** at the bottom so it's never lost. Keep everything to a sentence or two — detail lives in the linked docs, not here.
+One page that tells any agent (or Arman) what this program is, what's in motion, and where to pick up work. **Rules:** when you start something, add/claim a line in **In motion** (1–2 sentences, your name/session); when you finish, move it to Shipped in the [handoff](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md) and delete your line here; found a bug or something you won't fix yourself → add it to **Parking lot** at the bottom so it's never lost. Keep everything to a sentence or two — detail lives in the linked docs, not here.
 
 ## The vision (Arman's words)
 
@@ -15,8 +15,8 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 | Need                                               | Go to                                                                                                                            |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Access model, RLS, visibility — read before touching any of it** | [common-docs/systems/websites/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md) (Access model section — the former access-and-rls handoff is merged there) |
-| Full work order, remaining items, decisions needed | [common-docs/systems/websites/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md)                                |
+| **Access model, RLS, visibility — read before touching any of it** | [common-docs/systems/marketing/websites-and-brands/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md) (Access model section — the former access-and-rls handoff is merged there) |
+| Full work order, remaining items, decisions needed | [common-docs/systems/marketing/websites-and-brands/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md)                                |
 | Module shape: pillars, reserved routes, nav, landing | [docs/handoffs/marketing-module.md](handoffs/marketing-module.md)                                                                |
 | Page workspace authoring layer | [docs/handoffs/marketing-page-workspace-evolution.md](handoffs/marketing-page-workspace-evolution.md)                            |
 | Feature truth (invariants, CRUD map, data model)   | [features/marketing/FEATURE.md](../features/marketing/FEATURE.md)                                                                |

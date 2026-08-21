@@ -11,7 +11,7 @@
  *
  * The text below is the plain-language floor the send authority actually
  * enforces. The formal Acceptable Use Policy draft
- * (common-docs/systems/outreach-compliance/ACCEPTABLE_USE_POLICY.md) is not
+ * (common-docs/systems/marketing/outreach-compliance/ACCEPTABLE_USE_POLICY.md) is not
  * ratified by counsel yet; when it is, it replaces SENDING_RULES_TEXT here and
  * OUTREACH_POLICY_VERSION bumps — old acceptances stay, per version.
  */

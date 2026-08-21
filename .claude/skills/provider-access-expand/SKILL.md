@@ -17,7 +17,7 @@ permissions, or claim that a provider is easy before scouting.
 
 **Keep Local Listings separate.** This queue is for integrations a user connects to AI Matrx.
 Listing claims, location publishers, and data aggregators belong to
-`common-docs/systems/local-listings/PLAN.md` and its own project. Never add Data Axle, Localeze,
+`common-docs/systems/marketing/local-listings/PLAN.md` and its own project. Never add Data Axle, Localeze,
 Foursquare listing distribution, Yelp Listing Management, Apple business listings, or Google
 Business Profile here. If a listings-only seed already exists, mark it `superseded` and point to the
 Local Listings work; preserve its history.
@@ -34,7 +34,7 @@ Local Listings work; preserve its history.
 
 ## Workflow
 
-1. Read `common-docs/systems/provider-access/FEATURE.md` when the workspace contains it.
+1. Read `common-docs/systems/integrations/provider-access/FEATURE.md` when the workspace contains it.
 2. Open the live `Provider Access Launch` Project and inventory all existing campaign keys.
 3. Search the platform inventory before the public web:
    - installed/recommended plugins;

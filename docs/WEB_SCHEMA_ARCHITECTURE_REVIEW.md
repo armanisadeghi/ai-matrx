@@ -3,7 +3,7 @@
 > 🚨 **HISTORICAL — the 2026-07 route crosswalk.** Its route half is superseded for the same
 > reason as `MARKETING_SITE_ROUTE_ARCHITECTURE.md` (site-first vs the brand-first reality). The
 > living schema contract is `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md`; the living route contract is
-> `features/marketing/lib/routes.ts`. Current state: [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md).
+> `features/marketing/lib/routes.ts`. Current state: [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md).
 
 
 **Status:** Approved architecture; database foundation and first frontend

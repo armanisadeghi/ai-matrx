@@ -5,7 +5,7 @@ repos: [matrx-frontend, aidream]
 scope: program
 feature: Growth Loop
 vision:
-  - /Users/armanisadeghi/code/common-docs/systems/growth-loop/VISION.md
+  - /Users/armanisadeghi/code/common-docs/systems/marketing/growth-loop/VISION.md
   - /Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md
 ---
 
@@ -16,7 +16,7 @@ suggests improvements, and writes those improvements back into the CMS — resea
 realize → fill → publish → serve → crawl → measure → analyze → suggest → **write-back**.
 **Scope:** Program (spans Research, SEO, CMS, Content Planning)
 **Feature:** Growth Loop
-**Vision:** [`common-docs/systems/growth-loop/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/growth-loop/VISION.md) — Arman's words, 2026-08-09. **"Click one thing and have the whole thing done" is the acceptance test.**
+**Vision:** [`common-docs/systems/marketing/growth-loop/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/growth-loop/VISION.md) — Arman's words, 2026-08-09. **"Click one thing and have the whole thing done" is the acceptance test.**
 
 **Sister program: Website Factory** ([website-factory-vision.md](./website-factory-vision.md)).
 Factory is idea → a website; this loop is that site, then measure → improve.
@@ -82,7 +82,7 @@ Full detail and evidence in **STATE.md §4.4**. In priority order:
   and no stage state; a new stage store is ONE row in `stage_ref_kind`, never a new column.
 - **Method:** THE REACHABILITY LADDER — exists → reachable → deployed → exercised → produced
   (`common-docs/policies/unfinished-work-alarm.md`). **If you cannot name the caller, it is not done.**
-- **Auditor:** `common-docs/systems/growth-loop/CODEX_OPERATOR.md`.
+- **Auditor:** `common-docs/systems/marketing/growth-loop/CODEX_OPERATOR.md`.
 - Test login: `admin@admin.com` / `Password1234#`. Dev server: `pnpm preview:start` (port 3001).
 
 ## Done

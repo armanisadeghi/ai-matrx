@@ -6653,7 +6653,7 @@ export interface paths {
          * Planned Pages Route
          * @description Ensure the `web.page` record that carries each route's SEO plan.
          *
-         *     Invariant 9 (`common-docs/systems/content-planning/FEATURE.md`): the plan
+         *     Invariant 9 (`common-docs/systems/marketing/content-planning/FEATURE.md`): the plan
          *     lives on `web.page` and only there. The browser cannot mint these rows
          *     itself — `url_hash` is the platform's ONE stored-identity digest and it
          *     lives in `matrx_scraper.utils.url`; a TypeScript copy would be a second

@@ -1,4 +1,4 @@
--- Medical/healthcare niche expansion (common-docs/systems/local-listings/PLAN.md WS7).
+-- Medical/healthcare niche expansion (common-docs/systems/marketing/local-listings/PLAN.md WS7).
 -- Sub-verticals: mental health, physicians, dentists, chiropractic, physical therapy,
 -- veterinary, med spas, urgent care, senior care. Deduped against the live 91-row registry
 -- (healthgrades, zocdoc, vitals, webmd-care, ratemds, realself, wellness-com, sharecare,

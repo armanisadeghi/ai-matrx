@@ -16236,7 +16236,7 @@
           "Content Plan"
         ],
         "summary": "Planned Pages Route",
-        "description": "Ensure the `web.page` record that carries each route's SEO plan.\n\nInvariant 9 (`common-docs/systems/content-planning/FEATURE.md`): the plan\nlives on `web.page` and only there. The browser cannot mint these rows\nitself — `url_hash` is the platform's ONE stored-identity digest and it\nlives in `matrx_scraper.utils.url`; a TypeScript copy would be a second\nidentity rule for the table's unique arbiter. So this is real server work,\nnot a DB read the client could do (the client still reads and WRITES\n`desired_values` directly against Supabase, as it always has).\n\nIdempotent: a route whose page already exists comes back unchanged, at\nwhatever status reality gave it.",
+        "description": "Ensure the `web.page` record that carries each route's SEO plan.\n\nInvariant 9 (`common-docs/systems/marketing/content-planning/FEATURE.md`): the plan\nlives on `web.page` and only there. The browser cannot mint these rows\nitself — `url_hash` is the platform's ONE stored-identity digest and it\nlives in `matrx_scraper.utils.url`; a TypeScript copy would be a second\nidentity rule for the table's unique arbiter. So this is real server work,\nnot a DB read the client could do (the client still reads and WRITES\n`desired_values` directly against Supabase, as it always has).\n\nIdempotent: a route whose page already exists comes back unchanged, at\nwhatever status reality gave it.",
         "operationId": "planned_pages_route_content_plan_sites__site_id__planned_pages_post",
         "parameters": [
           {

@@ -24,7 +24,7 @@ into `seo.search_performance_daily` (**14,194,333 rows, 7 sites, 2025-04-06 →
 > "409" is stale — the current symptoms are **403** ("the Google connection belongs to neither the
 > requesting user nor the given organization") and **404** ("Google connection not found").
 >
-> Cluster state: [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md).
+> Cluster state: [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md).
 
 ## Resources
 

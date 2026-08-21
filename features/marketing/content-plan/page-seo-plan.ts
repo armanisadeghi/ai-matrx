@@ -16,7 +16,7 @@
  * `page_route_key` in aidream's twin `services/content_plan/page_seo_plan.py`.
  * Never a hand-rolled trailing-slash strip.
  *
- * Invariant 9 (`common-docs/systems/content-planning/FEATURE.md`, Arman
+ * Invariant 9 (`common-docs/systems/marketing/content-planning/FEATURE.md`, Arman
  * 2026-08-16): the plan lives on `web.page` and only there. A plan node no
  * longer carries one, so a plan surface reads it from here.
  */

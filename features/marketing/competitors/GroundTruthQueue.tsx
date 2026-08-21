@@ -5,7 +5,7 @@
  *
  * THE RULING QUEUE — where a human's judgment becomes ground truth.
  *
- * System of record: `common-docs/systems/competitor-classification/FEATURE.md`
+ * System of record: `common-docs/systems/marketing/competitor-classification/FEATURE.md`
  * §8d step 6 and §10. Zero competitors in this platform have ever been
  * human-ruled, so every threshold is provisional; the missing thing is labels.
  *

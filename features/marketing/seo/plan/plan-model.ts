@@ -2,7 +2,7 @@
  * THE ONE per-page SEO plan model.
  *
  * Invariant 9 of the content-planning system of record
- * (`common-docs/systems/content-planning/FEATURE.md`): **one SEO plan per page,
+ * (`common-docs/systems/marketing/content-planning/FEATURE.md`): **one SEO plan per page,
  * and it lives on `web.page`** — the `keyword_plan` slice of `desired_values`
  * plus the `meta_*_desired` columns. This module is the normalized read/write
  * boundary over that slice; every surface that edits an SEO plan goes through

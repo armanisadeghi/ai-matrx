@@ -40,10 +40,10 @@
 > clearance.
 >
 > Findings, residual risk, and what the procedure cannot do:
-> [`common-docs/systems/outreach-compliance/REVIEW_FINDINGS_2026-08-20.md`](/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/REVIEW_FINDINGS_2026-08-20.md).
+> [`common-docs/systems/marketing/outreach-compliance/REVIEW_FINDINGS_2026-08-20.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/REVIEW_FINDINGS_2026-08-20.md).
 > **Re-review with counsel: 2026-11-18.**
 
-🚨 **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/`
+🚨 **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/`
 — read it before touching anything here, in ANY repo. It carries the verified sources and dates,
 the obligation→enforcement-point matrix, the draft AUP, the user-facing guidance, and the
 attorney brief.

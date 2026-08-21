@@ -74,7 +74,7 @@ ruling/opinion layer. Remaining work is the chips `TASK-BL-*` in
 
 Chips in `.matrx/AGENT_TASKS.md`, priority order. Arman's 2026-08-11 ask —
 a clean UI — is the first two. *(TASK-BL-UI-A shipped; struck from this list 2026-08-19.)*
-Cluster state: [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md).
+Cluster state: [`common-docs/systems/marketing/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/STATE.md).
 
 1. **TASK-BL-UI-B** — verdict-first Overview + coherent tab set (14 tiles and
    no health answer; Anchors appears twice; three levels of nav before a row).

@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
+Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
 
 **Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-20`
@@ -35,7 +35,7 @@ first-class. "Company" here means **our users' clients**, never `iam.organizatio
   subscriber kind), which blocks Canada/EU/Australia sends and all of Lane A, and
   which cannot be retrofitted without re-contacting everyone. **Before adding any
   consent, unsubscribe, or send-eligibility field here, read
-  `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/` —**
+  `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/` —**
   `ENGINEERING_GAPS.md` GAP-4 specifies the exact columns, and the vocabulary must be
   the one `communication.sms_consent` folds into. One authority, one vocabulary.
 - **`crm.party_contact_point`** — says _who_ uses that medium, _how_ (purpose),

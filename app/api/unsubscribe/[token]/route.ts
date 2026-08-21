@@ -19,7 +19,7 @@
 // Idempotent by construction — providers retry, and a retry must look like
 // success, never an error.
 //
-// Full obligations: common-docs/systems/outreach-compliance/REQUIREMENTS_MATRIX.md
+// Full obligations: common-docs/systems/marketing/outreach-compliance/REQUIREMENTS_MATRIX.md
 // (rows US-3/US-4, CA-5, AU-3, OP-4, OP-5).
 
 import { NextRequest, NextResponse } from "next/server";

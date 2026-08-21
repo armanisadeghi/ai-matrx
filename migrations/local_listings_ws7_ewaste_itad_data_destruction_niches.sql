@@ -5,7 +5,7 @@
 -- on third-party CERTIFICATION-BODY directories (R2/SERI, e-Stewards/BAN, NAID AAA & PRISM
 -- Privacy+/i-SIGMA) rather than open consumer directories — the "listing" IS the certification
 -- for the top-tier ones. No pre-existing rows in this niche; verified against live table by
--- slug and domain before insert. Upsert-by-slug per common-docs/systems/local-listings/PLAN.md WS7.
+-- slug and domain before insert. Upsert-by-slug per common-docs/systems/marketing/local-listings/PLAN.md WS7.
 insert into web.listing_publisher
   (slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, organization_id, visibility)
 values
