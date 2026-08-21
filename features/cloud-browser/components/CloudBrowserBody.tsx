@@ -318,6 +318,7 @@ export function CloudBrowserBody({
                 to their vault, not to this browser. */}
             {captureRequest && cb.run ? (
               <CredentialCaptureCard
+                key={captureRequest.handoffId}
                 runId={cb.run.id}
                 profileId={cb.run.profileId}
                 request={captureRequest}

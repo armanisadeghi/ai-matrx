@@ -48,7 +48,12 @@ export function CredentialCaptureCard({
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expired, setExpired] = useState(false);
+  // Already dead at mount (a page re-open long after the agent moved on) is
+  // initial state, not an effect — the timer below only handles the deadline
+  // passing while the card is on screen. One card per handoff (`key`).
+  const [expired, setExpired] = useState(
+    () => Date.now() >= new Date(request.expiresAt).getTime(),
+  );
   // Live mirror of `busy` for the expiry timer, whose closure would read a
   // stale value. A write already in flight OWNS the outcome.
   const busyRef = useRef(false);
@@ -60,11 +65,7 @@ export function CredentialCaptureCard({
   // credential the agent has already given up on. Expire the card instead.
   useEffect(() => {
     const ms = new Date(request.expiresAt).getTime() - Date.now();
-    if (ms <= 0) {
-      setExpired(true);
-      setValues({});
-      return;
-    }
+    if (ms <= 0) return;
     const timer = setTimeout(() => {
       setExpired(true);
       if (busyRef.current) return; // the in-flight write owns the outcome
