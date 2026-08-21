@@ -579,7 +579,7 @@ export const getFileDetailsByUrl = (url: string, metadata?: StorageMetadata, loc
             // For URLs containing render/image/sign
             const signIndex = urlParts.indexOf("sign");
             if (signIndex !== -1 && signIndex + 1 < urlParts.length) {
-                bucket = urlParts[signIndex - 3]; // Gets the bucket (e.g., txzxabzwovsujtloxrus)
+                bucket = urlParts[signIndex - 3]; // Gets the bucket
                 const pathParts = urlParts.slice(signIndex + 1, urlParts.length);
                 path = pathParts.join("/").split("?")[0]; // Remove query params
             }
