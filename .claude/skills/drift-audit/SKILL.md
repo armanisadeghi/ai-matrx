@@ -55,11 +55,12 @@ apples to apples:
 
 Sources, in order: the standing report artifact (update it in place — ask Arman for the link
 or use the artifact list; 2026-08-21 baseline:
-`https://claude.ai/code/artifact/bcf51fa4-8fbc-4650-9f04-ca8460f01ff5`), the archived
-08-15 adjudication, `matrx-frontend/FOUND_DEFECTS.md` (D146/D182/D184 family), and the
+`https://claude.ai/code/artifact/15a5737b-075a-4307-81a0-2e26c2e3cbc0`), the archived
+08-15 adjudication, `matrx-frontend/FOUND_DEFECTS.md` (D146/D182/D184/D232 family), and the
 session-memory note `project_drift_audit_adjudication`. For every worsened number, find the
 cause (new tables? a lost trigger? a restore?) before reporting it. **Republish the same
-artifact** — never a new URL.
+artifact** — never a new URL (if it was deleted, publish fresh and repoint this line + the
+memory note in the same session).
 
 ## 3. Act — this is the point
 
@@ -85,16 +86,24 @@ fired (titles), decisions awaiting Arman. Update the artifact, update the
 
 ## Known standing items (groom this list each run — remove what's done)
 
-As of 2026-08-21: enforcement chips fired for — birth-gate ERROR flip, ddl_guard_log
-reader + triage, generator safety layers (column-grant guard + created_by check), canon
-residue trio (plan.node_* visibility / pdf.redaction_mapping policy / seo.rank_target),
-versioned-without-capture sweep, pg_cron restoration, instruction reach + ledger grooming,
-blocking ratchets, reachability guards. Awaiting Arman: seo NULL-org lane vs §6e ·
-`users.profiles` ruling · `batch.*` access model · machinery ratification (seo
-observations, runtime internals) · recurring reachability-drift schedule.
+As of 2026-08-21 evening: the first enforcement wave is DONE and verified live (birth-gate
+ERROR + provisioner marker, ddl_guard_log ack contract + readers + full triage → D232,
+blocking ratchets + strict org-backstop gate, column-grant guard, component-created_by
+blocking check, canon residue trio fixed, 10/11 pg_cron jobs restored,
+`reachability_drift()` built, four rules in both CLAUDE.mds). All six Arman rulings are
+DECIDED — NO NULL ORG ever (platform-wide, enforced at every layer) · no machinery
+exemptions, fix classification instead (per-variant column contract) · batch.* is
+user-visible (canonical model) · reachability check daily + self-heal. Second-wave chips in
+flight: seo backstop pair + ack, last 9 versioned-without-capture, D232 residue,
+component created_by neutralization, NULL-org annihilation + screamers, variant-contract
+reclassification, batch access, drift schedule. Next run: verify those landed, then groom
+this list down.
 
 ## Changelog
 
+- **2026-08-21 (evening)** — First wave verified; all six rulings recorded (NO NULL ORG ·
+  variants-not-exemptions · batch user-visible · daily drift check); baseline artifact
+  republished at a fresh URL after the original was deleted.
 - **2026-08-21** — Created from Arman's directive after the 08-15 brief was re-issued
   cold: refreshing the numbers must always end in chips fired + a decision list, and the
   standing artifact is updated in place, never recreated.
