@@ -19,8 +19,11 @@
  *  3. the honest "no custom view yet" footer SURVIVES the explicit route —
  *     naming the generic viewer is not the same as having a renderer;
  *  4. the SCALAR primitives are recorded for what they are: a bare boolean /
- *     number / string / array cannot carry `__kind`, so no block-level route
- *     can ever claim one. Their registered row is what makes
+ *     number cannot carry `__kind`, so no block-level route can ever claim one
+ *     (`text`/`string_list` left this bucket with the 2026-08-21 object
+ *     re-seed — v4 `{"text": str}` / `{"items": [str]}` — and now take the
+ *     block path like every other object primitive). Their registered row is
+ *     what makes
  *     `KindInstanceRender` treat them as routable; the value still renders on
  *     the platform floor. This is the honest ceiling of a basic route, and it
  *     is asserted rather than papered over.
@@ -121,14 +124,28 @@ const OBJECT_PRIMITIVES: ReadonlyArray<{
     example: { nested: [1, "two"], anything: true },
     expected: ["two"],
   },
+  {
+    // Object since the 2026-08-21 re-seed (v4, `{"text": str}` mirroring
+    // `markdown`) — the scalar `{"type":"string"}` registration was why no
+    // node could ever declare it (audit break #4, closed).
+    kind: "text",
+    example: { text: "hello world" },
+    expected: ["hello world"],
+  },
+  {
+    // Object since the 2026-08-21 re-seed (v4, `{"items": [str]}`).
+    kind: "string_list",
+    example: { items: ["alpha", "beta"] },
+    expected: ["alpha", "beta"],
+  },
 ];
 
-/** The bare scalars/arrays: no `__kind` carrier, therefore no block path. */
+/** The bare scalars: no `__kind` carrier, therefore no block path.
+ * (`text`/`string_list` graduated to OBJECT_PRIMITIVES with the 2026-08-21
+ * object re-seed — only the true scalars remain at this ceiling.) */
 const SCALAR_PRIMITIVES: ReadonlyArray<{ kind: string; example: unknown }> = [
   { kind: "boolean", example: true },
   { kind: "number", example: 42.5 },
-  { kind: "text", example: "hello world" },
-  { kind: "string_list", example: ["alpha", "beta"] },
 ];
 
 function registerWarmDefinition(kind: string): void {

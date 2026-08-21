@@ -20,6 +20,9 @@
  *
  * Fixture: __tests__/fixtures/python-blocked-kinds.json — schemas captured
  * VERBATIM from live content_ir.kind_definition. Twinned to aidream.
+ * (`text`/`string_list` entries pin the pre-2026-08-21 SCALAR captures — the
+ * live rows went object at v4 in the re-seed; the scalar fixtures stay because
+ * non-object-root representability is what this suite proves.)
  */
 
 import Ajv from "ajv";
