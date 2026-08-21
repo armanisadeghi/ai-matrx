@@ -29466,6 +29466,42 @@ export interface components {
              * @default []
              */
             deprecated_keys_found?: string[][];
+            /**
+             * Quality
+             * @deprecated
+             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             */
+            quality?: ("low" | "medium" | "high" | "auto") | null;
+            /**
+             * Seconds
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            seconds?: number | null;
+            /**
+             * Number Of Images
+             * @deprecated
+             * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
+             */
+            number_of_images?: number | null;
+            /**
+             * Num Outputs
+             * @deprecated
+             * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
+             */
+            num_outputs?: number | null;
+            /**
+             * Duration
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            duration?: number | null;
+            /**
+             * Output Quality
+             * @deprecated
+             * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
+             */
+            output_quality?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -43791,6 +43827,42 @@ export interface components {
             dictionary?: components["schemas"]["DictionaryConfig"] | null;
             /** Tts Quality */
             tts_quality?: ("high_quality" | "fast") | null;
+            /**
+             * Quality
+             * @deprecated
+             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             */
+            quality?: ("low" | "medium" | "high" | "auto") | null;
+            /**
+             * Seconds
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            seconds?: number | null;
+            /**
+             * Number Of Images
+             * @deprecated
+             * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
+             */
+            number_of_images?: number | null;
+            /**
+             * Num Outputs
+             * @deprecated
+             * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
+             */
+            num_outputs?: number | null;
+            /**
+             * Duration
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            duration?: number | null;
+            /**
+             * Output Quality
+             * @deprecated
+             * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
+             */
+            output_quality?: number | null;
         };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {

@@ -74,6 +74,7 @@ import {
   setRoleSelection,
   deleteRolePref,
   setNamespaceConfig,
+  tierOf,
   type SurfaceConfigBundle,
 } from "@/features/surfaces/services/surface-config.service";
 import {
@@ -1821,14 +1822,16 @@ function RolesSection({
   const [busyRole, setBusyRole] = useState<string | null>(null);
   const roles = configBundle?.dbRoles ?? [];
 
+  // NO NULL ORG: the platform-global tier is the system org, not an all-NULL
+  // row (db-rules §2/§6e). `tierOf` is the ONE place that knows that — this
+  // page used to re-derive the tier inline, which is exactly how a rule like
+  // this rots out of sync.
   const globalSelectionFor = (roleName: string) =>
     (configBundle?.prefs ?? []).filter(
       (p) =>
         p.roleName === roleName &&
         p.kind === "selection" &&
-        !p.userId &&
-        !p.organizationId &&
-        !p.scopeId,
+        tierOf(p) === "global",
     );
 
   const nameFor = (agentId: string) =>
@@ -2014,17 +2017,15 @@ function ConfigNamespacesSection({
   // namespace → tier → count (RLS-visible rows only).
   const counts = new Map<string, Record<string, number>>();
   for (const row of rows) {
-    const tier = row.userId
-      ? "user"
-      : row.organizationId
-        ? "org"
-        : row.scopeId
-          ? "scope"
-          : "global";
+    const tier = tierOf(row);
     const entry = counts.get(row.namespace) ?? {};
     entry[tier] = (entry[tier] ?? 0) + 1;
     counts.set(row.namespace, entry);
   }
+
+  /** The platform-global config row for a namespace — system-org owned. */
+  const globalRowFor = (ns: string) =>
+    rows.find((row) => row.namespace === ns && tierOf(row) === "global");
   const allNamespaces = [
     ...new Set([...declared.map((d) => d.namespace), ...counts.keys()]),
   ].sort((a, b) => a.localeCompare(b));
@@ -2046,29 +2047,13 @@ function ConfigNamespacesSection({
             const tierCounts = counts.get(ns) ?? {};
             return (
               <NamespaceConfigEditorRow
-                key={`${ns}:${JSON.stringify(
-                  rows.find(
-                    (row) =>
-                      row.namespace === ns &&
-                      !row.userId &&
-                      !row.organizationId &&
-                      !row.scopeId,
-                  )?.config ?? {},
-                )}`}
+                key={`${ns}:${JSON.stringify(globalRowFor(ns)?.config ?? {})}`}
                 surfaceName={surfaceName}
                 namespace={ns}
                 label={decl?.label ?? null}
                 description={decl?.description ?? null}
                 tierCounts={tierCounts}
-                globalConfig={
-                  rows.find(
-                    (row) =>
-                      row.namespace === ns &&
-                      !row.userId &&
-                      !row.organizationId &&
-                      !row.scopeId,
-                  )?.config
-                }
+                globalConfig={globalRowFor(ns)?.config}
                 canEdit={decl != null}
                 onChanged={onChanged}
               />

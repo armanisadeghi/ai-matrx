@@ -4009,7 +4009,7 @@ export type Database = {
           source: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -4023,7 +4023,7 @@ export type Database = {
           source?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -4037,7 +4037,7 @@ export type Database = {
           source?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: []
@@ -4073,7 +4073,7 @@ export type Database = {
           tokens_out: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -4106,7 +4106,7 @@ export type Database = {
           tokens_out?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -4139,7 +4139,7 @@ export type Database = {
           tokens_out?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: []
@@ -4184,7 +4184,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           urgency: string
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -4226,7 +4226,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           urgency?: string
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -4268,7 +4268,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           urgency?: string
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -25711,7 +25711,7 @@ export type Database = {
           kind: string
           metadata: Json
           occurred_at: string
-          organization_id: string | null
+          organization_id: string
           payload: Json | null
           request_id: string | null
           resolution_note: string | null
@@ -25734,7 +25734,7 @@ export type Database = {
           kind: string
           metadata?: Json
           occurred_at?: string
-          organization_id?: string | null
+          organization_id: string
           payload?: Json | null
           request_id?: string | null
           resolution_note?: string | null
@@ -25757,7 +25757,7 @@ export type Database = {
           kind?: string
           metadata?: Json
           occurred_at?: string
-          organization_id?: string | null
+          organization_id?: string
           payload?: Json | null
           request_id?: string | null
           resolution_note?: string | null
@@ -25782,7 +25782,7 @@ export type Database = {
           metadata: Json
           op_id: string
           op_type: string
-          organization_id: string | null
+          organization_id: string
           payload: Json
           primary_key: Json
           recovered_at: string | null
@@ -25805,7 +25805,7 @@ export type Database = {
           metadata?: Json
           op_id: string
           op_type: string
-          organization_id?: string | null
+          organization_id: string
           payload: Json
           primary_key: Json
           recovered_at?: string | null
@@ -25828,7 +25828,7 @@ export type Database = {
           metadata?: Json
           op_id?: string
           op_type?: string
-          organization_id?: string | null
+          organization_id?: string
           payload?: Json
           primary_key?: Json
           recovered_at?: string | null
@@ -52029,7 +52029,7 @@ export type Database = {
           id: string
           kind: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           session_id: string
           title: string
           updated_at: string
@@ -52044,7 +52044,7 @@ export type Database = {
           id?: string
           kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           session_id: string
           title?: string
           updated_at?: string
@@ -52059,7 +52059,7 @@ export type Database = {
           id?: string
           kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           session_id?: string
           title?: string
           updated_at?: string
@@ -52194,7 +52194,7 @@ export type Database = {
           id: string
           metadata: Json
           mime_type: string
-          organization_id: string | null
+          organization_id: string
           safety_id: string
           size_bytes: number
         }
@@ -52207,7 +52207,7 @@ export type Database = {
           id?: string
           metadata?: Json
           mime_type?: string
-          organization_id?: string | null
+          organization_id: string
           safety_id: string
           size_bytes?: number
         }
@@ -52220,7 +52220,7 @@ export type Database = {
           id?: string
           metadata?: Json
           mime_type?: string
-          organization_id?: string | null
+          organization_id?: string
           safety_id?: string
           size_bytes?: number
         }
@@ -52237,7 +52237,7 @@ export type Database = {
           ended_at: string | null
           id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           safety_id: string | null
           segment_index: number
           session_id: string
@@ -52259,7 +52259,7 @@ export type Database = {
           ended_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           safety_id?: string | null
           segment_index: number
           session_id: string
@@ -52281,7 +52281,7 @@ export type Database = {
           ended_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           safety_id?: string | null
           segment_index?: number
           session_id?: string
@@ -52399,7 +52399,7 @@ export type Database = {
           module_id: string
           module_interval_ms: number | null
           module_shortcut_id: string | null
-          organization_id: string | null
+          organization_id: string
           session_id: string
           show_prior_modules: boolean
           updated_at: string
@@ -52421,7 +52421,7 @@ export type Database = {
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
-          organization_id?: string | null
+          organization_id: string
           session_id: string
           show_prior_modules?: boolean
           updated_at?: string
@@ -52443,7 +52443,7 @@ export type Database = {
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
-          organization_id?: string | null
+          organization_id?: string
           session_id?: string
           show_prior_modules?: boolean
           updated_at?: string
@@ -52754,7 +52754,7 @@ export type Database = {
           id: string
           kind: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           position: number
           role_name: string
           scope_id: string | null
@@ -52764,6 +52764,7 @@ export type Database = {
           updated_by: string | null
           user_id: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           agent_id: string
@@ -52773,7 +52774,7 @@ export type Database = {
           id?: string
           kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           position?: number
           role_name: string
           scope_id?: string | null
@@ -52783,6 +52784,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           agent_id?: string
@@ -52792,7 +52794,7 @@ export type Database = {
           id?: string
           kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           position?: number
           role_name?: string
           scope_id?: string | null
@@ -52802,6 +52804,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -52919,13 +52922,14 @@ export type Database = {
           id: string
           metadata: Json
           namespace: string
-          organization_id: string | null
+          organization_id: string
           scope_id: string | null
           surface_name: string
           updated_at: string
           updated_by: string | null
           user_id: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           config?: Json
@@ -52935,13 +52939,14 @@ export type Database = {
           id?: string
           metadata?: Json
           namespace: string
-          organization_id?: string | null
+          organization_id: string
           scope_id?: string | null
           surface_name: string
           updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           config?: Json
@@ -52951,13 +52956,14 @@ export type Database = {
           id?: string
           metadata?: Json
           namespace?: string
-          organization_id?: string | null
+          organization_id?: string
           scope_id?: string | null
           surface_name?: string
           updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -54628,7 +54634,7 @@ export type Database = {
           created_at: string
           id: number
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           user_id: string | null
           user_secret_id: string | null
         }
@@ -54638,7 +54644,7 @@ export type Database = {
           created_at?: string
           id?: number
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           user_id?: string | null
           user_secret_id?: string | null
         }
@@ -54648,7 +54654,7 @@ export type Database = {
           created_at?: string
           id?: number
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           user_id?: string | null
           user_secret_id?: string | null
         }

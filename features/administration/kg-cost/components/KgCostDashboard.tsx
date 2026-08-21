@@ -894,7 +894,7 @@ function BatchDetailDialog({
                     users console. */}
                 <dt className="text-muted-foreground">User</dt>
                 <dd className="break-all font-mono text-xs">
-                  {detail.user_id ?? "—"}
+                  {detail.created_by ?? "—"}
                 </dd>
 
                 {/* THE most valuable door on a cost dashboard: `source_kind` IS

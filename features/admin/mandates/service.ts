@@ -26,9 +26,10 @@ import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
-
 /** Mandate/exemplar rows are platform rows owned by the system org. */
-const SYSTEM_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+
+
 const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;
 
 export type MandateDefinitionRow =

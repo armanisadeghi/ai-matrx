@@ -34,6 +34,7 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { getUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   normalizeAudioContentType,
   audioExtensionForType,
@@ -114,6 +115,16 @@ async function uploadAndJournalOnce(
   // Journal row — the durable pointer recovery reads. Idempotent: a retry
   // that re-uploads after a failed insert lands on the unique
   // (safety_id, chunk_index) and is ignored.
+  //
+  // `organization_id` is stamped HERE, from the user's active org, because
+  // NO NULL ORG (db-rules §2) — the column is NOT NULL as of
+  // `migrations/org_null_ban_transcripts_studio_lane.sql`. The journal has no
+  // session FK by design (chunk 0 can land before the segments row exists),
+  // so there is no parent to inherit from; the `_stamp_org_default`
+  // BEFORE-INSERT backstop would fall back to the creator's PERSONAL org,
+  // which is the wrong org for a recording made inside a team org. Stamping
+  // the active org here is what keeps the journal in the same org as the
+  // recording it belongs to.
   const { error } = await supabase
     .schema("transcripts")
     .from("studio_recording_chunks")
@@ -124,6 +135,7 @@ async function uploadAndJournalOnce(
         file_id: normalized.fileId,
         mime_type: contentType,
         size_bytes: blob.size,
+        organization_id: await ensureOrgId(null),
       },
       { onConflict: "safety_id,chunk_index", ignoreDuplicates: true },
     );

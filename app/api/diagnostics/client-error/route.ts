@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { resolveOrgIdForUserServer } from "@/lib/organizations/personalOrg";
 
 const PayloadSchema = z.object({
   fingerprint: z.string().regex(/^[a-zA-Z0-9]{16,200}$/),
@@ -30,6 +31,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown guest identity" }, { status: 404 });
   }
 
+  const organizationId = await resolveOrgIdForUserServer(
+    admin,
+    guest.auth_user_id,
+  );
   const { error } = await admin.schema("ops").from("system_error").insert({
     kind: `client:${parsed.data.source}`,
     error_text: parsed.data.message,
@@ -47,6 +52,7 @@ export async function POST(request: NextRequest) {
     },
     source_app: "matrx-frontend",
     user_id: guest.auth_user_id,
+    organization_id: organizationId,
   });
   if (error) {
     return NextResponse.json({ error: "Failed to persist client error" }, { status: 500 });

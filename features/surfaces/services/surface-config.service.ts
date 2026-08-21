@@ -28,6 +28,8 @@ import {
   getNamespaceHandler,
   listRegisteredNamespaces,
 } from "@/features/surfaces/config/namespace-registry";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 const sb = () => createClient();
 
@@ -101,15 +103,26 @@ export interface SurfaceConfigRow {
   updatedAt: string;
 }
 
-function tierOf(row: {
+/**
+ * Which scope tier a row belongs to.
+ *
+ * NO NULL ORG (db-rules §2/§6e): `organization_id` is the row's OWNING org on
+ * every tier, never a tier flag — a user-tier row carries the user's personal
+ * org, a scope-tier row carries the scope's org. So the tier is read off the
+ * tier columns first, and "global" is the org tier for the system org.
+ *
+ * ORDER IS LOAD-BEARING. `organizationId` is now non-null on every row, so
+ * testing it before `scopeId` would classify every scope-tier row as "org" and
+ * silently move it down the precedence ladder.
+ */
+export function tierOf(row: {
   userId: string | null;
   organizationId: string | null;
   scopeId: string | null;
 }): PrefTier {
   if (row.userId) return "user";
-  if (row.organizationId) return "org";
   if (row.scopeId) return "scope";
-  return "global";
+  return row.organizationId === SYSTEM_ORGANIZATION_ID ? "global" : "org";
 }
 
 /** Layer order for merge: global < org < scope(reserved) < user. */
@@ -391,18 +404,60 @@ export function resolveSurfaceConfig(
 // ---------------------------------------------------------------------------
 
 export interface PrefScopeInput {
-  /** Exactly one set, or none = global (platform admins only). */
+  /** Exactly one set, or none = global (super admins only). */
   userId?: string | null;
   organizationId?: string | null;
   scopeId?: string | null;
 }
 
-function scopeColumns(scope: PrefScopeInput) {
+/**
+ * Columns to WRITE for a scope tier.
+ *
+ * NO NULL ORG (db-rules §2/§6e): there is no all-NULL "global" row any more.
+ * Global is the system org, so an empty scope writes `matrx-system` explicitly.
+ *
+ * Every insert sends the required owning organization explicitly. User and
+ * ctx-scope callers may provide the known owner; otherwise the canonical
+ * active/personal-org resolver supplies it. The DB backstops remain the final
+ * integrity layer for older clients and direct writes.
+ */
+async function scopeInsertColumns(scope: PrefScopeInput) {
+  const organizationId =
+    !scope.userId && !scope.scopeId && !scope.organizationId
+      ? SYSTEM_ORGANIZATION_ID
+      : await ensureOrgId(scope.organizationId);
+  if (scope.userId) {
+    return { user_id: scope.userId, scope_id: null, organization_id: organizationId };
+  }
+  if (scope.scopeId) {
+    return { user_id: null, scope_id: scope.scopeId, organization_id: organizationId };
+  }
   return {
-    user_id: scope.userId ?? null,
-    organization_id: scope.organizationId ?? null,
-    scope_id: scope.scopeId ?? null,
+    user_id: null,
+    scope_id: null,
+    organization_id: organizationId,
   };
+}
+
+/**
+ * Narrow a query to the ONE row that owns a scope tier.
+ *
+ * The org tier is now `user_id IS NULL AND scope_id IS NULL AND
+ * organization_id = <org>` — matching the partial unique indexes the migration
+ * rebuilt. The user and scope tiers do NOT constrain `organization_id`: it is
+ * the row's owning org, not part of its identity, and their own unique indexes
+ * are keyed on the tier column alone.
+ */
+function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(
+  q: T,
+  scope: PrefScopeInput,
+): T {
+  if (scope.userId) return q.eq("user_id", scope.userId).is("scope_id", null);
+  if (scope.scopeId) return q.is("user_id", null).eq("scope_id", scope.scopeId);
+  return q
+    .is("user_id", null)
+    .is("scope_id", null)
+    .eq("organization_id", scope.organizationId ?? SYSTEM_ORGANIZATION_ID);
 }
 
 /** Set the agent filling (surface, role, position) at a scope tier. */
@@ -430,11 +485,7 @@ export async function setRoleSelection(args: {
     .eq("role_name", roleName)
     .eq("kind", "selection")
     .eq("position", position);
-  q = scope.userId ? q.eq("user_id", scope.userId) : q.is("user_id", null);
-  q = scope.organizationId
-    ? q.eq("organization_id", scope.organizationId)
-    : q.is("organization_id", null);
-  q = scope.scopeId ? q.eq("scope_id", scope.scopeId) : q.is("scope_id", null);
+  q = matchScope(q, scope);
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
@@ -453,7 +504,7 @@ export async function setRoleSelection(args: {
     kind: "selection",
     position,
     settings: settings ?? {},
-    ...scopeColumns(scope),
+    ...(await scopeInsertColumns(scope)),
   });
   if (error) throw error;
 }
@@ -482,7 +533,7 @@ export async function addRosterItem(args: {
       kind: "roster_item",
       position: 0,
       settings: args.settings ?? {},
-      ...scopeColumns(args.scope),
+      ...(await scopeInsertColumns(args.scope)),
     });
   if (error) throw error;
 }
@@ -515,11 +566,7 @@ export async function setNamespaceConfig(args: {
     .select("id")
     .eq("surface_name", surfaceName)
     .eq("namespace", namespace);
-  q = scope.userId ? q.eq("user_id", scope.userId) : q.is("user_id", null);
-  q = scope.organizationId
-    ? q.eq("organization_id", scope.organizationId)
-    : q.is("organization_id", null);
-  q = scope.scopeId ? q.eq("scope_id", scope.scopeId) : q.is("scope_id", null);
+  q = matchScope(q, scope);
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
@@ -535,7 +582,7 @@ export async function setNamespaceConfig(args: {
     surface_name: surfaceName,
     namespace,
     config,
-    ...scopeColumns(scope),
+    ...(await scopeInsertColumns(scope)),
   });
   if (error) throw error;
 }

@@ -1756,6 +1756,102 @@
       ],
       "default": null,
       "title": "Tts Quality"
+    },
+    "quality": {
+      "anyOf": [
+        {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "auto"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.",
+      "title": "Quality",
+      "x-canonical-name": "render_quality"
+    },
+    "seconds": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.",
+      "title": "Seconds",
+      "x-canonical-name": "duration_seconds"
+    },
+    "number_of_images": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
+      "title": "Number Of Images",
+      "x-canonical-name": "count"
+    },
+    "num_outputs": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
+      "title": "Num Outputs",
+      "x-canonical-name": "count"
+    },
+    "duration": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.",
+      "title": "Duration",
+      "x-canonical-name": "duration_seconds"
+    },
+    "output_quality": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.",
+      "title": "Output Quality",
+      "x-canonical-name": "encode_quality"
     }
   },
   "title": "LLMParams",

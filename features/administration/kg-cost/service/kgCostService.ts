@@ -79,7 +79,7 @@ export interface BatchRow {
   provider: string;
   batch_id: string | null;
   kind: string;
-  user_id: string | null;
+  created_by: string | null;
   organization_id: string | null;
   organization_name: string | null;
   source_kind: string | null;

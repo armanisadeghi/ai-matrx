@@ -96,9 +96,11 @@ const key = (t: { schema: string; table: string }) => `${t.schema}.${t.table}`;
  * THE KNOWN-WRITER ALLOWLIST, and why a ratchet needs one.
  *
  * A row count taken at an instant is only a stable baseline if nothing is
- * appending. Two tables ARE: `ops.system_error` and `users.user_secret_audit`
- * were both writing NULL-org rows minutes before this gate was seeded. Left
- * alone they would fail EVERY release forever — which is precisely the failure
+ * appending. Three tables WERE at seeding; two of them —
+ * `users.user_secret_audit` and `transcripts.studio_recording_chunks` — were
+ * fixed on 2026-08-21 and left the list the only way a table may (by being
+ * fixed), leaving `ops.system_error`. Left alone a live writer would fail
+ * EVERY release forever — which is precisely the failure
  * mode the ruling's own constraint forbids, a gate that blocks on the legacy
  * backlog instead of on new defects.
  *

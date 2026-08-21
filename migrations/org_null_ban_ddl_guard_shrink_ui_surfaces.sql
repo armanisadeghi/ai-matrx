@@ -1,52 +1,27 @@
--- NO NULL ORG — the DDL sentinel learns the rule (lane e)
+-- NO NULL ORG — the two ui surface scope-tier tables LEAVE the grandfather list
 -- =====================================================================
--- Owner ruling, 2026-08-21 (db-rules FEATURE.md §2 / §6e):
+-- db-rules §2 "NO NULL ORG" (owner ruling 2026-08-21).
 --
---   "The answer must be documented as a platform-wide decision that NEVER
---    comes to me again because I've now clarified this 10 times! If something
---    belongs to the system, that CANNOT EVER be represented by a NULL org!
---    Write checks that will scream and paint everything RED if anyone does
---    that, make the migrations scream and fail, make the db/generate scream,
---    make the release script scream... NO NULL ORG. the system has an org and
---    this is well-established."
+-- "A table leaves this list by being FIXED, never by being excused."
 --
--- This is the DATABASE layer of that ruling — the one that fires at creation
--- time, before a single row exists to be wrong.
+-- Both were fixed by `migrations/org_null_ban_ui_surface_scope_tiers.sql`,
+-- which re-founded their scope-tier model so `organization_id` is the row's
+-- owning org on every tier (global = the matrx-system org) rather than a tier
+-- flag whose NULL meant "global", then flipped the column NOT NULL with the
+-- org backstops attached in the same transaction:
 --
--- TWO HALVES, DELIBERATELY ASYMMETRIC:
---   * CREATE TABLE with a nullable organization_id on an entity-looking or
---     registered table -> RAISE EXCEPTION. A hard block costs nothing here:
---     `platform.create_entity_table` has never emitted a nullable
---     organization_id, so no legitimate creation path can trip it. Lane (d)
---     already blocks UNPROVISIONED entity-looking CREATEs; this closes the
---     remaining hole where a provisioner-marked or pre-registered CREATE
---     smuggles one through.
---   * ALTER TABLE that LEAVES organization_id nullable -> a severity='error'
---     row in platform.ddl_guard_log plus a RAISE WARNING. It screams RED; it
---     never aborts. 38 legacy tables still carry a nullable organization_id
---     and they are grandfathered by name in the guard. Hard-failing their
---     unrelated ALTERs would block releases that have nothing to do with this
---     ruling, and the backlog already has an owner: the blocking
---     nullable-org-columns ratchet in matrx-frontend/scripts/canonical-ratchets.
---     A table leaves the grandfather array by being FIXED, never by being
---     excused.
+--   ui.ui_surface_agent_pref    nullable -> NOT NULL  (4 rows, all owned)
+--   ui.ui_surface_config        nullable -> NOT NULL  (0 rows)
 --
--- `severity` gains 'error'. Until today platform.ddl_guard_log could only say
--- 'warn' or 'notice' — there was no way for the sentinel to paint anything RED,
--- which is precisely what the ruling asks for. `pnpm check:ddl-guard-log`
--- surfaces unacknowledged rows at every severity, so the new tier needs no
--- separate reader.
+-- so lane (e)'s ALTER-TABLE grandfather has nothing left to forgive on them.
 --
--- Smoke-tested live per db-rules §1 in rolled-back transactions: a nullable-org
--- CREATE raises, a NOT NULL CREATE passes, an ALTER on a non-grandfathered
--- nullable-org table logs 'error', and an ALTER on a grandfathered one stays
--- silent.
-
-BEGIN;
-
-ALTER TABLE platform.ddl_guard_log DROP CONSTRAINT IF EXISTS ddl_guard_log_severity_check;
-ALTER TABLE platform.ddl_guard_log ADD CONSTRAINT ddl_guard_log_severity_check
-  CHECK (severity = ANY (ARRAY['error'::text, 'warn'::text, 'notice'::text]));
+-- Grandfather list: 34 -> 32. Nothing else in the function changes — the body
+-- below is the LIVE definition read back from the database at authoring time
+-- (post `org_null_ban_ddl_guard_grandfather_shrink.sql`, which shrank 38 -> 34
+-- earlier the same day), with the two names dropped. Taken from the live
+-- function rather than from any migration FILE on purpose: several lanes are
+-- shrinking this same array today, and rebuilding from a stale file would
+-- silently re-grandfather whatever another lane had just fixed.
 
 CREATE OR REPLACE FUNCTION platform._ddl_guard()
  RETURNS event_trigger
@@ -67,30 +42,31 @@ DECLARE
     'skill.render_definition','workbench.udt_datasets','workspace.tasks'];
   -- NO NULL ORG (owner ruling, 2026-08-21). Grandfathered nullable-org tables:
   -- the live census at apply time, MINUS the three this ruling's migrations fix
-  -- (seo.gsc_dig_rule, seo.keyword_class_rule, users.profiles). These 36 are the
+  -- (seo.gsc_dig_rule, seo.keyword_class_rule, users.profiles), MINUS the four the
+  -- transcripts studio lane fixed 2026-08-21, MINUS the two ui surface scope-tier
+  -- tables fixed by org_null_ban_ui_surface_scope_tiers.sql. These 32 are the
   -- legacy backlog, and the backlog is the RATCHET's business, not this guard's
   -- -- hard-failing every unrelated ALTER on them would block releases that have
   -- nothing to do with organization_id. A table leaves this list by being fixed.
   c_nullorg_grandfather CONSTANT text[] := ARRAY[
     'dictionary.dict_entries', 'docproc.processed_documents',
-    'education.study_structured_section',
+    'education.study_structured_section', 'ops.system_error',
+    'ops.system_write_failure',
     'platform._bak_assoc_file_processed_document_20260812',
-    'platform.assists', 'platform.associations', 'platform.retention_policy',
-    'platform.share_links', 'rag.context_item_suggestions', 'rag.data_stores',
-    'rag.kg_alerts', 'rag.kg_chunks', 'rag.kg_suggestion_ack',
-    'rag.kg_value_matches', 'rag.library_docs',
-    'rag.ner_canonicalizer_shadow', 'rag.scope_association_suggestions',
+    'platform.assists', 'platform.associations',
+    'platform.retention_policy', 'platform.share_links',
+    'rag.context_item_suggestions', 'rag.data_stores', 'rag.kg_alerts',
+    'rag.kg_chunks', 'rag.kg_suggestion_ack', 'rag.kg_value_matches',
+    'rag.library_docs', 'rag.ner_canonicalizer_shadow',
+    'rag.scope_association_suggestions',
     'rag.scope_item_value_suggestions', 'rag.scope_suggestions',
-    'research.rs_context_bundle', 'transcripts.studio_documents',
-    'transcripts.studio_recording_chunks',
-    'transcripts.studio_recording_segments',
-    'transcripts.studio_session_settings', 'ui.ui_surface_agent_pref',
-    'ui.ui_surface_config', 'users.credential_items',
+    'research.rs_context_bundle', 'users.credential_items',
     'users.integration_connections', 'users.invitation_codes',
     'users.invitation_requests', 'users.user_secrets',
     'workbench.udt_dataset_fields', 'workbench.udt_dataset_rows',
     'workbench.udt_documents', 'workbench.udt_structured_list_items',
-    'workbench.udt_structured_lists'];
+    'workbench.udt_structured_lists'
+  ];
   c_exempt_schemas CONSTANT text[] := ARRAY[
     'graveyard','auth','storage','realtime','vault','extensions','supabase_functions',
     'supabase_migrations','cron','net','pgsodium','_analytics','_realtime'];
@@ -218,13 +194,31 @@ BEGIN
         RAISE WARNING 'ddl_guard[junction_table]: %.% looks like a junction table — use platform.associations instead.', v_schema, v_rel;
       END IF;
 
+      -- D241 (2026-08-21): compare the trigger function by OID, NEVER by
+      -- rendered text. `tgfoid::regproc::text` omits the schema for anything on
+      -- the search_path, so every one of the 282 live public._stamp_org_default
+      -- triggers rendered as the bare `_stamp_org_default`, the IN never
+      -- matched, and this rule warned on every qualifying table whether or not
+      -- it was correctly backstopped. to_regproc() (not ::regproc) keeps a
+      -- future rename of either function in the LOUD direction instead of
+      -- throwing inside the warn lane. Same class as db-rules §1's
+      -- regclass::text warning.
+      --
+      -- THREE legal backstops, not two (db-rules §2): the original rule listed
+      -- only two, but aidream's BLOCKING gate (matrx_orm.catalog
+      -- .org_backstop_coverage, validate_org_backstop_coverage.py) matches
+      -- _stamp_org_default / inherit_org_from_parent / _stamp_from_node. The
+      -- guard now matches the same three, so the advisory rule and the blocking
+      -- gate cannot disagree -- plan.node_artifact and plan.node_step carry
+      -- plan._stamp_from_node and are correctly backstopped.
       IF EXISTS (SELECT 1 FROM pg_attribute a
                  WHERE a.attrelid = cmd.objid AND a.attname = 'organization_id'
                    AND a.attnotnull AND NOT a.atthasdef AND NOT a.attisdropped)
          AND NOT EXISTS (SELECT 1 FROM pg_trigger t
                          WHERE t.tgrelid = cmd.objid AND NOT t.tgisinternal
-                           AND t.tgfoid::regproc::text IN
-                               ('public._stamp_org_default','platform.inherit_org_from_parent')) THEN
+                           AND t.tgfoid IN (to_regproc('public._stamp_org_default'),
+                                            to_regproc('platform.inherit_org_from_parent'),
+                                            to_regproc('plan._stamp_from_node'))) THEN
         INSERT INTO platform.ddl_guard_log(severity, rule, object_ref, command_tag, detail)
         VALUES ('warn','org_not_null_no_backstop', v_schema||'.'||v_rel, cmd.command_tag,
                 'organization_id NOT NULL with no default and no backstop trigger yet. Attach _stamp_org_default or inherit_org_from_parent in this same migration or org-forgetting writes 500. (db-rules §2.)');
@@ -257,20 +251,26 @@ BEGIN
     END;
   END LOOP;
 END;
-$function$
-;
+$function$;
 
 -- ── Assertions ──────────────────────────────────────────────────────────────
 DO $$
+DECLARE v_def text;
 BEGIN
-  -- The guard must still be BOUND. A function body proves nothing (db-rules §1).
   IF NOT EXISTS (SELECT 1 FROM pg_event_trigger
                   WHERE evtname = 'ddl_guard' AND evtenabled <> 'D') THEN
     RAISE EXCEPTION 'ddl_guard event trigger is missing or disabled after this migration';
   END IF;
-  IF position('nullable_org' in pg_get_functiondef('platform._ddl_guard()'::regprocedure)) = 0 THEN
-    RAISE EXCEPTION 'lane (e) did not land in platform._ddl_guard()';
+  v_def := pg_get_functiondef('platform._ddl_guard()'::regprocedure);
+  IF position('nullable_org' in v_def) = 0 THEN
+    RAISE EXCEPTION 'lane (e) did not survive this replacement';
+  END IF;
+  IF position('ui.ui_surface_agent_pref' in v_def) > 0
+     OR position('ui.ui_surface_config' in v_def) > 0 THEN
+    RAISE EXCEPTION 'a ui surface table is still grandfathered — it is fixed, not excused';
+  END IF;
+  -- Do not let this migration quietly re-grandfather another lane's fix.
+  IF position('transcripts.studio_documents' in v_def) > 0 THEN
+    RAISE EXCEPTION 'transcripts studio tables reappeared in the grandfather list';
   END IF;
 END $$;
-
-COMMIT;

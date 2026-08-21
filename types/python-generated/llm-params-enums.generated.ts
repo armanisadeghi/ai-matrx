@@ -16,6 +16,8 @@ export type LLMParamModeration = "auto" | "low";
 
 export type LLMParamOutputFormat = "jpeg" | "png" | "webp" | "base64" | "url" | "text" | "json_object" | "json_schema";
 
+export type LLMParamQuality = "low" | "medium" | "high" | "auto";
+
 export type LLMParamReasoningEffort = "auto" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 export type LLMParamReasoningSummary = "concise" | "detailed" | "never" | "auto" | "always";
