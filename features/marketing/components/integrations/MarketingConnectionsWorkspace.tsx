@@ -47,6 +47,10 @@ import {
   diagnoseGoogleConnection,
   googleConnectionDiagnostics,
 } from "@/features/marketing/google/health";
+import {
+  googleConnectionLabel,
+  summarizeGoogleResourcesByConnection,
+} from "@/features/marketing/google/presentation";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
@@ -93,30 +97,9 @@ function MarketingConnectionsContent() {
     (site) =>
       parseSiteIntegrations(site.integrations).pageSpeedInsights.enabled,
   ).length;
-  const searchResourcesByConnection = new Map<string, number>();
-  const analyticsResourcesByConnection = new Map<string, number>();
-  const youtubeChannelsByConnection = new Map<
-    string,
-    GoogleConnectionResource[]
-  >();
-  for (const resource of inventory.data?.resources ?? []) {
-    if (resource.resource_type === "search_console_property") {
-      searchResourcesByConnection.set(
-        resource.connection_id,
-        (searchResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
-      );
-    } else if (resource.resource_type === "analytics_property") {
-      analyticsResourcesByConnection.set(
-        resource.connection_id,
-        (analyticsResourcesByConnection.get(resource.connection_id) ?? 0) + 1,
-      );
-    } else {
-      youtubeChannelsByConnection.set(resource.connection_id, [
-        ...(youtubeChannelsByConnection.get(resource.connection_id) ?? []),
-        resource,
-      ]);
-    }
-  }
+  const resourcesByConnection = summarizeGoogleResourcesByConnection(
+    inventory.data?.resources ?? [],
+  );
 
   const connectionsCopy = webCopy({
     kind: "web-google-connections",
@@ -132,8 +115,8 @@ function MarketingConnectionsContent() {
       ["YouTube channels", youtubeChannels?.length ?? 0],
       ["PageSpeed-enabled sites", pageSpeedEnabledCount],
       ...(availableGoogleAccounts ?? []).map((connection): [string, string] => [
-        connection.account_name || connection.account_email || "Google account",
-        `${connection.status} · ${connection.owner_type} · ${searchResourcesByConnection.get(connection.id) ?? 0} Search Console · ${analyticsResourcesByConnection.get(connection.id) ?? 0} Analytics · ${youtubeChannelsByConnection.get(connection.id)?.length ?? 0} YouTube`,
+        googleConnectionLabel(connection),
+        `${connection.status} · ${connection.owner_type} · ${resourcesByConnection.get(connection.id)?.searchConsoleCount ?? 0} Search Console · ${resourcesByConnection.get(connection.id)?.analyticsCount ?? 0} Analytics · ${resourcesByConnection.get(connection.id)?.youtubeChannels.length ?? 0} YouTube`,
       ]),
     ],
     attributes: { count: availableGoogleAccounts?.length ?? 0 },
@@ -317,13 +300,16 @@ function MarketingConnectionsContent() {
                     key={connection.id}
                     connection={connection}
                     searchConsoleCount={
-                      searchResourcesByConnection.get(connection.id) ?? 0
+                      resourcesByConnection.get(connection.id)
+                        ?.searchConsoleCount ?? 0
                     }
                     analyticsCount={
-                      analyticsResourcesByConnection.get(connection.id) ?? 0
+                      resourcesByConnection.get(connection.id)
+                        ?.analyticsCount ?? 0
                     }
                     youtubeChannels={
-                      youtubeChannelsByConnection.get(connection.id) ?? []
+                      resourcesByConnection.get(connection.id)
+                        ?.youtubeChannels ?? []
                     }
                     busy={disconnect.isPending}
                     onDisconnect={async () => {
@@ -521,9 +507,7 @@ function ConnectionRow({
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-xs font-semibold">
-            {connection.account_name ||
-              connection.account_email ||
-              "Google account"}
+            {googleConnectionLabel(connection)}
           </span>
           <Badge
             variant={

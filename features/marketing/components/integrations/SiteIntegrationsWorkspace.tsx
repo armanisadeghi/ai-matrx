@@ -83,6 +83,7 @@ import {
   diagnoseGoogleResourceBinding,
   type GoogleResourceBindingDiagnosis,
 } from "@/features/marketing/google/health";
+import { googleConnectionLabel } from "@/features/marketing/google/presentation";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { siteSetupChecklist } from "@/features/marketing/search-console/setup/siteSetupChecklist";
@@ -787,10 +788,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           google_connections: googleInventory.data?.connections.map(
             (connection) => ({
               id: connection.id,
-              account:
-                connection.account_name ||
-                connection.account_email ||
-                "Google account",
+              account: googleConnectionLabel(connection),
               owner_type: connection.owner_type,
               health: connection.health,
               diagnosis:
@@ -1765,9 +1763,7 @@ function ProviderReferenceFields({
           <SelectContent>
             {pickerConnections.map((connection) => (
               <SelectItem key={connection.id} value={connection.id}>
-                {connection.account_name ||
-                  connection.account_email ||
-                  "Google account"}
+                {googleConnectionLabel(connection)}
                 {connection.health === "connected"
                   ? ""
                   : ` · ${diagnoseGoogleConnection(connection).label}`}
