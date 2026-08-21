@@ -263,6 +263,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Workflow",
         destinations: [destination("/administration/knowledge/growth-loop")],
       },
+      {
+        name: "Marketing & SEO",
+        iconName: "BookOpenText",
+        destinations: [destination("/administration/knowledge/seo-facets")],
+      },
     ],
   },
   {

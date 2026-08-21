@@ -693,6 +693,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "SEO Vocabulary Registry",
+        description:
+          "The universal keyword facets every classifier applies, plus the value-band and geo-band starter templates sites adopt from. Rename and describe them; adding a facet value requires widening seo.keyword's matching CHECK in the same change.",
+        iconName: "BookOpenText",
+        link: "/administration/knowledge/seo-facets",
+        isNew: true,
+      },
+      {
         title: "Growth Loop Map",
         description:
           "The end-to-end loop — research to plan to pages to live site to crawl to findings to fixes — with every connection scored on the three pipes (code / human / AI) and every open gap.",
