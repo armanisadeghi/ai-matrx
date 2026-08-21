@@ -43,9 +43,10 @@ export interface FilePickerWindowProps {
     selection: FileSelection,
   ) => void | "close" | Promise<void | "close">;
   /**
-   * When provided, the canonical picker also offers local upload. Uploaded
-   * files are durable before this callback fires, so association/resource
-   * hosts can write their edges immediately and keep the window open.
+   * Optional specialized post-upload action. The canonical picker ALWAYS
+   * offers local upload. Without this override, each durable upload flows
+   * through `onPick`, exactly like choosing an existing file. Association
+   * hosts can override that default when they need batch-specific wiring.
    */
   onUpload?: (files: UploadedFile[]) => void | Promise<void>;
   /** Header title. Default "Choose a file". */
@@ -81,6 +82,27 @@ export function FilePickerWindow({
     if (outcome === "close") onClose();
   };
 
+  const handleUpload = async (files: UploadedFile[]) => {
+    if (onUpload) {
+      await onUpload(files);
+      return;
+    }
+
+    for (const file of files) {
+      const outcome = await onPick({
+        fileId: file.fileId,
+        url: file.url,
+        type: file.mime_type ?? file.type,
+        mime_type: file.mime_type ?? "application/octet-stream",
+        details: file.details,
+      });
+      if (outcome === "close") {
+        onClose();
+        break;
+      }
+    }
+  };
+
   return (
     <WindowPanel
       id={`file-picker:${scopeId}:${instanceId}`}
@@ -114,9 +136,7 @@ export function FilePickerWindow({
         onSelect={(selection) => void handleSelect(selection)}
         initialFilter={initialFilter}
         fillHost
-        topSlot={
-          onUpload ? <InlineUploadArea onSelect={onUpload} /> : undefined
-        }
+        topSlot={<InlineUploadArea onSelect={handleUpload} />}
       />
     </WindowPanel>
   );

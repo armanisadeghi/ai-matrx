@@ -54,7 +54,8 @@ export interface UploadedFile {
     type: string;
     /** Real RFC MIME type from the source File / upload result. */
     mime_type?: string;
-    details?: EnhancedFileDetails;
+    /** Canonical file metadata, built for every successful upload. */
+    details: EnhancedFileDetails;
 }
 
 interface InlineUploadAreaProps {

@@ -5,7 +5,8 @@
  * FolderPicker, and SaveAsDialog and registers the imperative openers
  * with `cloudFilesPickerOpeners.ts` so the public API
  * (`openFilePicker` / `openFolderPicker` / `openSaveAs`) can resolve to
- * a real dialog.
+ * a real surface. File selection and local upload intentionally share the
+ * same `FilePickerWindow`, so every imperative consumer gets both paths.
  *
  * Lazy-loaded by `CloudFilesPickerHost.tsx`. Until the chunk loads and
  * the host mounts, the imperative API short-circuits to `null` /
@@ -40,7 +41,9 @@ function filterFromExtensions(
   extensions: string[] | undefined,
 ): FilesResourcePickerFilter {
   if (!extensions || extensions.length === 0) return "all";
-  const set = new Set(extensions.map((e) => e.toLowerCase().replace(/^\./, "")));
+  const set = new Set(
+    extensions.map((e) => e.toLowerCase().replace(/^\./, "")),
+  );
   if ([...set].every((e) => e === "pdf")) return "pdfs";
   const imageExts = ["jpg", "jpeg", "png", "webp", "avif", "gif", "svg"];
   if ([...set].every((e) => imageExts.includes(e))) return "photos";
