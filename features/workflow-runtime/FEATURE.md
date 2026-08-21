@@ -3,11 +3,12 @@
 **Status:** Phases 1–5 SHIPPED and production-proven — plumbing, Run Surfaces, the run stage, the
 designer, actions/HITL. 263 runs in the last 14 days across 92 definitions. Remaining work is
 doors that were never built, not plumbing (cluster state:
-`common-docs/projects/workflow-runtime/STATE.md`; this repo's slice:
-`docs/handoffs/workflow-runtime-ui.md`). AI-authored surfaces (PLAN R6 step 3+) are still ahead.
-**Cross-repo system-of-record:** `common-docs/projects/workflow-runtime/PLAN.md` — the rulings
-(R1–R12), the scale target (20–100 nodes, nested runs), and the phase plan live THERE; this doc is
-the code contract for what exists in this repo. Read the plan before extending this feature.
+`common-docs/systems/workflows/workflow-runtime/STATE.md`; cross-repo work order:
+`common-docs/systems/workflows/workflow-runtime/HANDOFF.md`). AI-authored surfaces are still ahead.
+**Cross-repo system-of-record:** `common-docs/systems/workflows/workflow-runtime/STATE.md` — the
+rulings (R1–R12, now §2.8/§2.10 there), the scale target (20–100 nodes, nested runs), and the
+phase plan live THERE; this doc is the code contract for what exists in this repo. Read STATE.md
+before extending this feature.
 
 ## What Phase 1 is
 
@@ -165,6 +166,21 @@ that is the exit-test surface.
   31318fb7-5e1a-4554-b174-ca3960d72961 now errors on EVERY run — its
   `data.transform` expressions are refused by the engine sandbox
   ("Disallowed call target"), across all wave-2 designers' runs.
+
+- 2026-08-20 — **ui-refine wave-2 bake-off entry** at
+  `/workflows/bakeoff/refine-2/[id]` (`bakeoff/refine-2/**`) — a candidate
+  PRESENTATION only, consuming the canonical data layer unchanged (adoption,
+  selectors, `InvocationBody`, `DbEmitRenderer`, `RunFormFieldControl`,
+  `activity-copy`, `deriveRunForm`). Parcel-tracking-with-Linear-craft: promise
+  strip from frame zero, condensing plan rail ("n steps done" folds), ONE aimed
+  focus panel (the only streamed lane; auto-follows, aimable, "Back to live"),
+  activity feed, delivered section. `[id]` accepts a definition OR run id; dead
+  ids fail fast with a plain card. Verified live: Bakeoff Test Run full
+  lifecycle incl. errored runs, Hopkins Copy Desk 21 steps live with mid-run
+  refresh, 21-step replay. Deleted or promoted when the bake-off is judged.
+  Found on the way (fixed in DATA, not the page): the shared Bakeoff Test Run
+  fixture had a half-finished repair — edge `e3` still mapped `words` after the
+  `measure` expression dropped it, so every run died at "Write the summary".
 
 - 2026-08-20 — **ui-reimagine bake-off entry: the Courier run page** at
   `/workflows/bakeoff/reimagine/[id]` (`bakeoff/reimagine/**`) — a candidate
