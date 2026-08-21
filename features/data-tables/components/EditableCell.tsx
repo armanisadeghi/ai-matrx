@@ -1,13 +1,30 @@
 /**
- * EditableCell — inline cell editor for a single udt_dataset_rows cell.
+ * EditableCell — one cell of a user data table, in all three grid states.
  *
- * Double-click to enter edit mode; the input shape adapts to the field's
- * `data_type` (text, number, checkbox, date, datetime, textarea). Commits
- * via `udt_upsert_cell` (surgical jsonb_set — cannot drop other fields).
- * Enter / blur commits; Escape cancels.
+ * SELECTION IS OWNED BY THE GRID, NOT BY THE CELL. `selected` and `editing`
+ * arrive as props from `useGridSelection` because only the grid can know that
+ * selecting THIS cell must deselect the previous one, and only the grid can
+ * move the selection on Enter or Tab. A cell that owned its own edit flag could
+ * never hand off to its neighbour, which is why arrow-key navigation was
+ * impossible before this.
  *
- * Defensive: if the cell is read-only (e.g. caller passes `editable={false}`
- * because the user lacks editor permission), renders the display content only.
+ * 🚨 THE CLICK LAW (stated in full in `grid-selection.ts`): a single click may
+ * SELECT, TOGGLE a two-state value, or OPEN a chooser — never drop the user
+ * into a free-text buffer. So a checkbox, a rating and a choice column are
+ * operable with one click, while text, numbers, dates and JSON still require a
+ * deliberate double-click, Enter, or just typing. Select-and-copy must never
+ * become an accidental edit.
+ *
+ * Writes go through `udt_upsert_cell` (surgical jsonb_set — cannot touch
+ * another field). A declared format owns the coercion; without one the storage
+ * type does, so an unformatted column behaves exactly as it always has.
+ *
+ * Every successful write is reported to `onRecordEdit` with the value from
+ * BEFORE it, which is what makes Cmd-Z possible. Capturing the prior value here
+ * rather than re-reading the cell afterwards is deliberate: a re-read races
+ * with realtime and with agent writes.
+ *
+ * Read-only mounts (`editable={false}`) render display content and nothing else.
  */
 "use client";
 
@@ -25,12 +42,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 import { parseFieldInput } from "@/lib/field-formats/format";
 import { getFieldFormat } from "@/lib/field-formats/registry";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 import { ChoiceInput } from "./ChoiceInput";
+import { RatingInput } from "./RatingInput";
+import { isDirectClickEditor, type GridMove } from "../grid-selection";
 import { upsertCell } from "../service";
 import { isServiceFailure, type FieldDataType } from "../types";
 
@@ -58,6 +78,22 @@ type Props = {
   editable?: boolean;
   /** Notify parent so it can refresh its row cache. */
   onSaved?: (newValue: unknown) => void;
+
+  // ─── grid-owned state ────────────────────────────────────────────────────
+  /** This cell is the current one. Renders the ring; nothing has changed. */
+  selected?: boolean;
+  /** This cell is being edited. Controlled by the grid, never by the cell. */
+  editing?: boolean;
+  /** Character that started the edit, so typing replaces rather than appends. */
+  seed?: string | null;
+  /** Single click landed — the grid makes this the current cell. */
+  onSelect?: () => void;
+  /** The user asked to edit (double-click, or a direct-click widget). */
+  onBeginEdit?: () => void;
+  /** Editing finished; `move` carries Enter/Tab's follow-on navigation. */
+  onEndEdit?: (move?: GridMove) => void;
+  /** A write landed. Carries the prior value so the grid can offer undo. */
+  onRecordEdit?: (priorValue: unknown, nextValue: unknown) => void;
 };
 
 export function EditableCell({
@@ -72,8 +108,14 @@ export function EditableCell({
   display,
   editable = true,
   onSaved,
+  selected = false,
+  editing = false,
+  seed = null,
+  onSelect,
+  onBeginEdit,
+  onEndEdit,
+  onRecordEdit,
 }: Props) {
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<unknown>(value);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
@@ -91,16 +133,19 @@ export function EditableCell({
     }
   }, [editing]);
 
-  const enterEdit = useCallback(() => {
-    if (!editable || saving) return;
-    setDraft(value);
-    setEditing(true);
-  }, [editable, saving, value]);
+  // Entering edit mode seeds the draft: from the typed character when the user
+  // just started typing (the spreadsheet reflex of "type to replace"), and from
+  // the stored value otherwise.
+  const wasEditing = useRef(false);
+  useEffect(() => {
+    if (editing && !wasEditing.current) setDraft(seed ?? value);
+    wasEditing.current = editing;
+  }, [editing, seed, value]);
 
   const cancelEdit = useCallback(() => {
     setDraft(value);
-    setEditing(false);
-  }, [value]);
+    onEndEdit?.();
+  }, [onEndEdit, value]);
 
   /**
    * `explicit` exists for editors that pick a value and finish in the SAME
@@ -109,10 +154,10 @@ export function EditableCell({
    * user just replaced. Typed inputs commit on blur a tick later and pass
    * nothing.
    */
-  const commitEdit = useCallback(async (explicit?: { value: unknown }) => {
+  const commitEdit = useCallback(async (opts?: { value?: unknown; move?: GridMove }) => {
     if (saving) return;
 
-    const source = explicit ? explicit.value : draft;
+    const source = opts && "value" in opts ? opts.value : draft;
 
     // A declared format owns the coercion (currency strips "$", tags split on
     // commas); without one this falls back to the storage-type normalizer.
@@ -120,9 +165,10 @@ export function EditableCell({
       ? parseFieldInput(source, format, dataType)
       : normalizeCellValue(source, dataType);
 
-    // Skip the write if nothing actually changed.
+    // Skip the write if nothing actually changed. Still counts as finishing,
+    // so Enter still moves down on a cell the user only looked at.
     if (valuesEqual(normalized, value)) {
-      setEditing(false);
+      onEndEdit?.(opts?.move);
       return;
     }
 
@@ -145,7 +191,9 @@ export function EditableCell({
       return;
     }
 
-    setEditing(false);
+    // Prior value FIRST — this is the whole basis of undo.
+    onRecordEdit?.(value, normalized);
+    onEndEdit?.(opts?.move);
     onSaved?.(normalized);
   }, [
     dataType,
@@ -153,6 +201,8 @@ export function EditableCell({
     draft,
     fieldDisplayName,
     fieldName,
+    onEndEdit,
+    onRecordEdit,
     onSaved,
     rowId,
     saving,
@@ -160,27 +210,108 @@ export function EditableCell({
     value,
   ]);
 
+  /**
+   * Keys while an editor is OPEN. The grid's own handler stands down for these,
+   * so committing and moving on has to happen here — that is what makes Enter
+   * and Tab feel like a spreadsheet instead of like a form.
+   */
   const handleKey = (e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       cancelEdit();
-    } else if (e.key === "Enter" && !e.shiftKey && dataType !== "json") {
-      e.preventDefault();
-      void commitEdit();
+      return;
     }
+    if (e.key === "Enter" && !e.shiftKey && dataType !== "json") {
+      e.preventDefault();
+      e.stopPropagation();
+      void commitEdit({ move: "down" });
+      return;
+    }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      e.stopPropagation();
+      void commitEdit({ move: e.shiftKey ? "prevCell" : "nextCell" });
+    }
+  };
+
+  const editorKindForRead = format ? getFieldFormat(format.id)?.editor : undefined;
+  // Booleans have no format of their own, but they are the original two-state
+  // value and behave as a checkbox whether or not one was ever declared.
+  const readEditorKind =
+    editorKindForRead ?? (dataType === "boolean" ? "checkbox" : undefined);
+  const directClickable =
+    editable && !saving && isDirectClickEditor(readEditorKind);
+
+  /** Persist straight from the read view — no edit mode was ever entered. */
+  const commitDirect = (next: unknown) => {
+    onSelect?.();
+    void commitEdit({ value: next });
   };
 
   if (!editing) {
     return (
       <div
-        className={`relative ${editable ? "cursor-text" : ""}`}
-        onDoubleClick={(e) => {
+        data-selected={selected || undefined}
+        className={cn(
+          "relative rounded-sm px-1 -mx-1 py-0.5",
+          // The ring IS the selected state. It must read as "this is the
+          // current cell", never as "this cell is being edited".
+          selected && "ring-2 ring-primary/70 ring-inset bg-primary/5",
+          editable && !directClickable && "cursor-text",
+        )}
+        onClick={(e) => {
           e.stopPropagation();
-          enterEdit();
+          onSelect?.();
         }}
-        title={editable ? `Double-click to edit ${fieldDisplayName}` : undefined}
+        onDoubleClick={(e) => {
+          // A direct-click widget has already handled the interaction; a second
+          // click must not then drop the user into an editor they did not ask
+          // for.
+          if (directClickable) return;
+          e.stopPropagation();
+          if (editable && !saving) onBeginEdit?.();
+        }}
+        title={
+          editable && !directClickable
+            ? `Double-click or press Enter to edit ${fieldDisplayName}`
+            : undefined
+        }
       >
-        {display}
+        {/* THE CLICK LAW in practice — closed sets and two-state values are
+            operable in one click; everything else renders as plain display. */}
+        {directClickable && readEditorKind === "checkbox" ? (
+          <Checkbox
+            checked={value === true}
+            onClick={(e) => e.stopPropagation()}
+            onCheckedChange={(checked) => commitDirect(checked === true)}
+            aria-label={fieldDisplayName}
+          />
+        ) : directClickable && readEditorKind === "rating" ? (
+          <RatingInput
+            value={value}
+            max={format?.options?.ratingMax ?? 5}
+            onChange={() => undefined}
+            onDone={(next) => commitDirect(next)}
+          />
+        ) : directClickable ? (
+          // A choice column: one click opens the option list. Opening a menu is
+          // not a mutation, so this is safe under THE CLICK LAW.
+          <button
+            type="button"
+            className="w-full min-w-0 text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.();
+              onBeginEdit?.();
+            }}
+            title={`Choose ${fieldDisplayName}`}
+          >
+            {display}
+          </button>
+        ) : (
+          display
+        )}
         {saving && (
           <div className="absolute inset-y-0 right-0 flex items-center">
             <Loader2 className="size-3 animate-spin text-muted-foreground" />
@@ -263,17 +394,26 @@ export function EditableCell({
     );
   }
 
-  if (editorKind === "number" || editorKind === "rating") {
+  // A rating edits as STARS. It used to open a number spinner, so the user saw
+  // ★★★☆☆, double-clicked, and was asked to type "3".
+  if (editorKind === "rating") {
+    return (
+      <RatingInput
+        value={draft}
+        max={format?.options?.ratingMax ?? 5}
+        onChange={(next) => setDraft(next)}
+        onDone={(final) => void commitEdit({ value: final })}
+        className="py-1"
+      />
+    );
+  }
+
+  if (editorKind === "number") {
     return (
       <Input
         ref={inputRef as React.RefObject<HTMLInputElement>}
         type="number"
-        step={
-          editorKind === "rating" || dataType === "integer" ? 1 : "any"
-        }
-        {...(editorKind === "rating"
-          ? { min: 0, max: format?.options?.ratingMax ?? 5 }
-          : {})}
+        step={dataType === "integer" ? 1 : "any"}
         value={draft === null || draft === undefined ? "" : String(draft)}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKey}

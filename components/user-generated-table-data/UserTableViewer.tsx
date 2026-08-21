@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -37,6 +37,8 @@ import {
   Eye,
   AlertCircle,
   History,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -51,6 +53,9 @@ import {
 } from "@/lib/field-formats/choices";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
 import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
+import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection";
+import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
+import { cellDomKey, type CellAddress } from "@/features/data-tables/grid-selection";
 import {
   bulkWrite,
   deleteField,
@@ -1674,6 +1679,107 @@ const UserTableViewer = ({
   const showLoadingRow = loading || filteringInProgress;
 
   const selectedRowIdSet = new Set(selectedRowIds);
+  // ─── Cell selection, keyboard navigation and undo ────────────────────────
+  //
+  // Three states, not two: nothing selected / one cell selected / one cell
+  // being edited. The middle state is what makes arrow keys, Tab, copy and
+  // Delete mean anything — see `features/data-tables/grid-selection.ts`.
+
+  const refreshAfterWrite = useCallback(() => {
+    setAllSortedData(null);
+    setFullDatasetCache(null);
+    void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, limit, sortField, sortDirection, searchTerm]);
+
+  const cellUndo = useCellUndo({
+    onApplied: refreshAfterWrite,
+    readOnly: isReadOnly,
+  });
+
+  // An undo stack must never outlive its table: restoring a value into a table
+  // the user has navigated away from would be a write they never asked for.
+  useEffect(() => {
+    cellUndo.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableId]);
+
+  const rowIdsOnPage = displayRows.map((row) => row.id);
+  const fieldNamesInOrder = fields.map((f) => f.field_name);
+
+  const readCell = useCallback(
+    (address: CellAddress): unknown =>
+      displayRows.find((r) => r.id === address.rowId)?.data?.[address.fieldName],
+    [displayRows],
+  );
+
+  const handleCopyCell = useCallback(
+    (address: CellAddress) => {
+      const raw = readCell(address);
+      const text =
+        raw === null || raw === undefined
+          ? ""
+          : typeof raw === "object"
+            ? JSON.stringify(raw)
+            : String(raw);
+      void navigator.clipboard.writeText(text).then(
+        () => toast({ title: "Copied", description: text.slice(0, 80) || "Empty cell" }),
+        () =>
+          toast({
+            title: "Could not copy",
+            description: "The browser refused clipboard access.",
+            variant: "destructive",
+          }),
+      );
+    },
+    [readCell],
+  );
+
+  /** Delete / Backspace on a selected cell. A write, so it is undoable. */
+  const handleClearCell = useCallback(
+    async (address: CellAddress) => {
+      if (isReadOnly) return;
+      const prior = readCell(address);
+      if (prior === null || prior === undefined || prior === "") return;
+
+      const field = fields.find((f) => f.field_name === address.fieldName);
+      const result = await upsertCell({
+        tableId,
+        rowId: address.rowId,
+        fieldName: address.fieldName,
+        value: null,
+      });
+      if (isServiceFailure(result)) {
+        toast({
+          title: "Could not clear that cell",
+          description: result.error,
+          variant: "destructive",
+        });
+        return;
+      }
+      cellUndo.record({
+        tableId,
+        rowId: address.rowId,
+        fieldName: address.fieldName,
+        fieldDisplayName: field?.display_name ?? address.fieldName,
+        priorValue: prior,
+        nextValue: null,
+      });
+      refreshAfterWrite();
+    },
+    [cellUndo, fields, isReadOnly, readCell, refreshAfterWrite, tableId],
+  );
+
+  const grid = useGridSelection({
+    rowIds: rowIdsOnPage,
+    fieldNames: fieldNamesInOrder,
+    editable: !isReadOnly,
+    onCopyCell: handleCopyCell,
+    onClearCell: (address) => void handleClearCell(address),
+    onUndo: () => void cellUndo.undo(),
+    onRedo: () => void cellUndo.redo(),
+  });
+
   const selectedOnPageCount = displayRows.filter((row) =>
     selectedRowIdSet.has(row.id),
   ).length;
@@ -2007,6 +2113,42 @@ const UserTableViewer = ({
         </div>
       )}
 
+      {/* Undo lives beside the grid, not only on Cmd-Z: a shortcut nobody can
+          see is not a safety net for a non-technical user. */}
+      {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) && (
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            disabled={!cellUndo.canUndo || cellUndo.busy}
+            onClick={() => void cellUndo.undo()}
+            title="Undo last cell change (⌘Z)"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            Undo
+            {cellUndo.undoDepth > 1 && (
+              <span className="tabular-nums text-muted-foreground">
+                {cellUndo.undoDepth}
+              </span>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            disabled={!cellUndo.canRedo || cellUndo.busy}
+            onClick={() => void cellUndo.redo()}
+            title="Redo (⇧⌘Z)"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+            Redo
+          </Button>
+        </div>
+      )}
+
       {selectedRowIds.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
           <span className="text-xs font-medium">
@@ -2043,10 +2185,19 @@ const UserTableViewer = ({
           the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
           keeps the legacy content-sized cap. */}
       <div
+        ref={grid.containerRef}
+        // tabIndex makes the grid a focus target so arrow keys, Tab, Enter,
+        // Delete and Cmd-Z actually arrive. `outline-none` because the SELECTED
+        // CELL's ring is the real focus indicator — a second ring around the
+        // whole grid would be noise, and the cell ring is never absent while
+        // the grid has focus and a selection.
+        tabIndex={0}
+        role="grid"
+        onKeyDown={grid.onKeyDown}
         className={
           fillHeight
-            ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm [&>div]:min-h-0 [&>div]:flex-1 [&>div]:overflow-auto"
-            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm [&>div]:max-h-[70dvh] [&>div]:overflow-auto"
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm outline-none [&>div]:min-h-0 [&>div]:flex-1 [&>div]:overflow-auto"
+            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm outline-none [&>div]:max-h-[70dvh] [&>div]:overflow-auto"
         }
       >
         <Table className="table-fixed w-full">
@@ -2185,15 +2336,8 @@ const UserTableViewer = ({
                   className={`
                     ${index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-900"}
                     ${selectedRowIdSet.has(row.id) ? "bg-primary/5" : ""}
-                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isReadOnly ? "cursor-default" : "cursor-pointer"}
+                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
                   `}
-                  onClick={() => {
-                    if (isReadOnly) {
-                      // In read-only mode, don't open edit modal
-                      return;
-                    }
-                    handleEditRow(row.id, row.data);
-                  }}
                 >
                   <TableCell
                     className="sticky left-0 z-10 w-10 bg-inherit px-3"
@@ -2281,6 +2425,10 @@ const UserTableViewer = ({
                     return (
                       <TableCell
                         key={`${row.id}-${field.id}`}
+                        data-cell={cellDomKey({
+                          rowId: row.id,
+                          fieldName: field.field_name,
+                        })}
                         className="py-3 max-w-0 group"
                       >
                         <div className="flex items-center justify-between gap-2 min-w-0">
@@ -2296,16 +2444,43 @@ const UserTableViewer = ({
                               value={rawValue}
                               display={display}
                               editable={!isReadOnly}
-                              onSaved={() => {
-                                setAllSortedData(null);
-                                void loadTableData(
-                                  currentPage,
-                                  limit,
-                                  sortField,
-                                  sortDirection,
-                                  searchTerm,
-                                );
+                              selected={grid.isSelected(
+                                row.id,
+                                field.field_name,
+                              )}
+                              editing={grid.isEditing(
+                                row.id,
+                                field.field_name,
+                              )}
+                              seed={grid.editSeed}
+                              onSelect={() => {
+                                grid.select({
+                                  rowId: row.id,
+                                  fieldName: field.field_name,
+                                });
+                                // Clicking a cell must hand focus back to the
+                                // grid, or the very next arrow key goes
+                                // nowhere and the grid reads as broken.
+                                grid.refocusGrid();
                               }}
+                              onBeginEdit={() =>
+                                grid.beginEdit({
+                                  rowId: row.id,
+                                  fieldName: field.field_name,
+                                })
+                              }
+                              onEndEdit={(move) => grid.endEdit(move)}
+                              onRecordEdit={(priorValue, nextValue) =>
+                                cellUndo.record({
+                                  tableId,
+                                  rowId: row.id,
+                                  fieldName: field.field_name,
+                                  fieldDisplayName: field.display_name,
+                                  priorValue,
+                                  nextValue,
+                                })
+                              }
+                              onSaved={refreshAfterWrite}
                             />
                           </div>
                           {cellData && (
