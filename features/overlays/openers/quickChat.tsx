@@ -21,6 +21,10 @@ const OVERLAY_ID = "quickChat" as const;
 
 export interface OpenQuickChatSheetOptions {
   className?: string;
+  /** Reuse a conversation already started by an in-page launcher. */
+  initialConversationId?: string;
+  /** Visible panel title; accessible identity stays a plain string. */
+  title?: string;
 }
 
 export interface QuickChatSheetHandle {
@@ -36,6 +40,8 @@ export function useOpenQuickChatSheet() {
           overlayId: OVERLAY_ID,
           data: {
             className: opts.className,
+            initialConversationId: opts.initialConversationId,
+            title: opts.title,
           },
         }),
       );
@@ -52,11 +58,13 @@ export function useOpenQuickChatSheet() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function QuickChatSheetController(props: OpenQuickChatSheetOptions): null {
+export function QuickChatSheetController(
+  props: OpenQuickChatSheetOptions,
+): null {
   const open = useOpenQuickChatSheet();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.className]);
+  }, [open, props.className, props.initialConversationId, props.title]);
   return null;
 }

@@ -4,6 +4,7 @@ import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import TablesLanding from "@/features/auth/components/module-landing/landings/TablesLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
 // Generate metadata with automatic favicon for the Data/Tables route
 export const metadata = createRouteMetadata("/data", {
@@ -25,8 +26,11 @@ export default async function DataLayout({
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return <TablesLanding />;
   return (
-    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-muted/40 text-foreground scrollbar-none">
-      {children}
-    </div>
+    <>
+      <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-muted/40 text-foreground scrollbar-none">
+        {children}
+      </div>
+      <ScrollAssistantLauncher />
+    </>
   );
 }

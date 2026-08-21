@@ -74,17 +74,19 @@ export function SmartAgentInput({
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
   // (docs/TURN_BOUNDARY_INBOX.md). Renders null when the queue is empty.
-  const queueStrip = conversationId && !isAmbient ? (
-    <InboxQueueStrip conversationId={conversationId} />
-  ) : null;
+  const queueStrip =
+    conversationId && !isAmbient ? (
+      <InboxQueueStrip conversationId={conversationId} />
+    ) : null;
 
   // One quiet line under EVERY composer variation: what this conversation could
   // reach if the user connected it. Mounted here rather than in each host so a
   // new composer surface cannot forget it. Renders nothing once everything is
   // connected — it is a reminder, never a nag.
-  const connectorStrip = showConnectors && !isAmbient ? (
-    <ChatConnectorStrip className="mt-1.5" />
-  ) : null;
+  const connectorStrip =
+    showConnectors && !isAmbient ? (
+      <ChatConnectorStrip className="mt-1.5" />
+    ) : null;
 
   if (singleRowTextarea || isAmbient) {
     return (

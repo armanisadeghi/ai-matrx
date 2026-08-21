@@ -14,6 +14,7 @@ import { NotesRouteBody } from "@/features/notes/components/NotesRouteBody";
 import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
 /** Read the persisted notes sidebar/main split so the first paint matches the
  *  user's last layout (no resize flash). Written client-side by NotesView. */
@@ -67,12 +68,17 @@ export default async function NotesV2Layout({
   const sidebarLayout = await readSidebarLayout();
 
   return (
-    <div
-      className="notes-root relative z-0 h-full overflow-y-auto overflow-x-hidden"
-      style={{ paddingTop: "var(--shell-header-h)" }}
-    >
-      <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
-      <NotesRouteBody sidebarLayout={sidebarLayout}>{children}</NotesRouteBody>
-    </div>
+    <>
+      <div
+        className="notes-root relative z-0 h-full overflow-y-auto overflow-x-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
+        <NotesRouteBody sidebarLayout={sidebarLayout}>
+          {children}
+        </NotesRouteBody>
+      </div>
+      <ScrollAssistantLauncher />
+    </>
   );
 }

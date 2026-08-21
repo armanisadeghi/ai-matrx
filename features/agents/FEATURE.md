@@ -342,6 +342,7 @@ model overrides.
 - **Drift between a usage and the live agent is surfaced (Find Usages window + weekly scan + severity-tinted AgentsListHeader link), never auto-resolved.** Remediation is one-click, opt-in, permission-gated. See **Find Usages & Drift** above.
 - **Agent/project linkage is association-only.** `agent.definition` has no `project_id`; creation/duplication RPCs must not write one, and list/search/access RPCs must not read or expose one. Resolve project context through `platform.associations`.
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. Gate send (button + Enter) on `isRecording || isTranscribing` via `AgentMicrophoneButton.onRecordingStateChange` — wired in `SmartAgentInput*` and sibling composers.
+- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` to suppress context/resources/run controls without changing the execution contract; `components/ambient-assistant/ScrollAssistantLauncher` owns desktop scroll reveal, per-page dismissal, and the same-conversation Quick Chat handoff.
 
 ---
 
@@ -353,6 +354,13 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-21` — **Added the opt-in ambient Smart Agent Input.** The desktop-only
+  `ScrollAssistantLauncher` waits for meaningful page scroll before loading the
+  agent graph, renders `SmartAgentInput presentation="ambient"` with no visible
+  context/resource/run controls, and hands the accepted first turn plus live
+  surface context into the existing Quick Chat side panel. Notes, Data, and the
+  shared `ModuleLanding` template mount the launcher; dismiss lasts until the
+  page reloads.
 - `2026-08-21` — **"Runs on" runtime badges in the tool pickers.** `AgentToolsManager`
   tool cards and `AgentBundlesPanel` bundle cards now label where each tool
   executes — Server / Web app / Chrome extension / Desktop app / MCP — sourced

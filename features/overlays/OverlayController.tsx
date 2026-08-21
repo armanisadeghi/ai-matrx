@@ -5056,7 +5056,7 @@ export default function OverlayController() {
         if (!isOpen) return null;
         return (
           <SidePanelSurface
-            title="Quick Chat"
+            title={typeof data?.title === "string" ? data.title : "Quick Chat"}
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
             storageKey="quick-chat"
             defaultWidth={520}
@@ -5064,6 +5064,11 @@ export default function OverlayController() {
             <QuickChatSheet
               className={
                 typeof data?.className === "string" ? data.className : undefined
+              }
+              initialConversationId={
+                typeof data?.initialConversationId === "string"
+                  ? data.initialConversationId
+                  : undefined
               }
             />
           </SidePanelSurface>

@@ -32,6 +32,8 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 
 interface QuickChatSheetProps {
   className?: string;
+  /** A live conversation handed off by another canonical composer. */
+  initialConversationId?: string;
 }
 
 const SOURCE_FEATURE = "chat";
@@ -70,7 +72,10 @@ function loadedSurfaceKey(conversationId: string): string {
  * body mounts. Loud on failure — a skeleton while resolving, an error panel if
  * the mandate can't resolve; never a hardcoded fallback agent.
  */
-export function QuickChatSheet({ className }: QuickChatSheetProps) {
+export function QuickChatSheet({
+  className,
+  initialConversationId,
+}: QuickChatSheetProps) {
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) {
     return (
@@ -98,12 +103,19 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
       </div>
     );
   }
-  return <QuickChatSheetBody className={className} initialAgentId={mandate.agentId} />;
+  return (
+    <QuickChatSheetBody
+      className={className}
+      initialAgentId={mandate.agentId}
+      initialConversationId={initialConversationId}
+    />
+  );
 }
 
 function QuickChatSheetBody({
   className,
   initialAgentId,
+  initialConversationId,
 }: QuickChatSheetProps & { initialAgentId: string }) {
   const dispatch = useAppDispatch();
 
@@ -111,7 +123,7 @@ function QuickChatSheetBody({
   const [session, setSession] = useState(0);
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
-  >(null);
+  >(initialConversationId ?? null);
   const [showHistory, setShowHistory] = useState(false);
 
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));

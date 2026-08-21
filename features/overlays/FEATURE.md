@@ -338,6 +338,11 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-08-21** — **Quick Chat can adopt an existing conversation.**
+  `useOpenQuickChatSheet({ initialConversationId, title })` threads both values
+  explicitly through `OverlayController` into `QuickChatSheet`, so a compact
+  launcher can submit first and open the canonical side panel without creating
+  a second conversation or losing surface context.
 - **2026-08-18** — **Dialogs can coexist safely with floating windows without changing WindowPanel.**
   The shared `Dialog modal={false}` path now omits the scrim and fixes its layer at `z=900`, below
   the window manager's `z=1000` base; true modals remain inert and scrimmed at `z=10000`. Audited

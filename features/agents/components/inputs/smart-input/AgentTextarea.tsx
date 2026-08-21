@@ -137,9 +137,9 @@ export function AgentTextarea({
   // sense — glide it back down smoothly. Triggered when the submission enters
   // its in-flight ("pending") phase while the box is expanded.
   useEffect(() => {
-    if (isSubmitting && isExpanded) {
-      collapseSmoothly();
-    }
+    if (!isSubmitting || !isExpanded) return undefined;
+    const frame = window.requestAnimationFrame(collapseSmoothly);
+    return () => window.cancelAnimationFrame(frame);
   }, [isSubmitting, isExpanded, collapseSmoothly]);
 
   // Expand icon: show whenever expanded OR text is long enough to need it (hidden in singleRow)
