@@ -19233,7 +19233,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/browser-manager/runs/{run_id}/claim-control": {
+    "/browser-manager/runs/{run_id}/takeover": {
         parameters: {
             query?: never;
             header?: never;
@@ -19242,8 +19242,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Claim Control */
-        post: operations["claim_control_browser_manager_runs__run_id__claim_control_post"];
+        /**
+         * Take Over
+         * @description A person takes the wheel. Available whenever the run is live — the manager
+         *     raises the ``user_requested`` handoff itself when the agent has not paused for a
+         *     person (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,
+         *     which could only be called inside an agent-initiated handoff window.
+         */
+        post: operations["take_over_browser_manager_runs__run_id__takeover_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -29691,15 +29697,6 @@ export interface components {
             }[] | null;
         } & {
             [key: string]: unknown;
-        };
-        /** ClaimControlResponse */
-        ClaimControlResponse: {
-            /** Run Id */
-            run_id: string;
-            /** Controller Kind */
-            controller_kind: string;
-            /** Controller Revision */
-            controller_revision: number;
         };
         /** ClaimCreate */
         ClaimCreate: {
@@ -60287,6 +60284,15 @@ export interface components {
             description?: string | null;
             /** Sort Order */
             sort_order?: number | null;
+        };
+        /** TakeoverResponse */
+        TakeoverResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Controller Kind */
+            controller_kind: string;
+            /** Controller Revision */
+            controller_revision: number;
         };
         /**
          * TaskCreateRequest
@@ -100308,7 +100314,7 @@ export interface operations {
             };
         };
     };
-    claim_control_browser_manager_runs__run_id__claim_control_post: {
+    take_over_browser_manager_runs__run_id__takeover_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -100325,7 +100331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ClaimControlResponse"];
+                    "application/json": components["schemas"]["TakeoverResponse"];
                 };
             };
             /** @description Validation Error */

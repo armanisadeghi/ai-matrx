@@ -50321,13 +50321,14 @@
         }
       }
     },
-    "/browser-manager/runs/{run_id}/claim-control": {
+    "/browser-manager/runs/{run_id}/takeover": {
       "post": {
         "tags": [
           "cloud-browser"
         ],
-        "summary": "Claim Control",
-        "operationId": "claim_control_browser_manager_runs__run_id__claim_control_post",
+        "summary": "Take Over",
+        "description": "A person takes the wheel. Available whenever the run is live — the manager\nraises the ``user_requested`` handoff itself when the agent has not paused for a\nperson (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,\nwhich could only be called inside an agent-initiated handoff window.",
+        "operationId": "take_over_browser_manager_runs__run_id__takeover_post",
         "parameters": [
           {
             "name": "run_id",
@@ -50345,7 +50346,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClaimControlResponse"
+                  "$ref": "#/components/schemas/TakeoverResponse"
                 }
               }
             }
@@ -78117,30 +78118,6 @@
         "type": "object",
         "title": "CitationLookupResult",
         "description": "A single resolved citation from a citation-lookup request."
-      },
-      "ClaimControlResponse": {
-        "properties": {
-          "run_id": {
-            "type": "string",
-            "title": "Run Id"
-          },
-          "controller_kind": {
-            "type": "string",
-            "title": "Controller Kind"
-          },
-          "controller_revision": {
-            "type": "integer",
-            "title": "Controller Revision"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "run_id",
-          "controller_kind",
-          "controller_revision"
-        ],
-        "title": "ClaimControlResponse"
       },
       "ClaimCreate": {
         "properties": {
@@ -156662,6 +156639,30 @@
         },
         "type": "object",
         "title": "TagUpdate"
+      },
+      "TakeoverResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "controller_kind": {
+            "type": "string",
+            "title": "Controller Kind"
+          },
+          "controller_revision": {
+            "type": "integer",
+            "title": "Controller Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "controller_kind",
+          "controller_revision"
+        ],
+        "title": "TakeoverResponse"
       },
       "TaskCreateRequest": {
         "properties": {
