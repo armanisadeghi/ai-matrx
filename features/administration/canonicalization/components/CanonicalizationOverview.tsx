@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldQuestion,
+  Siren,
   XCircle,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type {
   CanonicalizationOverview as OverviewData,
+  DdlGuardUnackedRow,
   RefreshLogRow,
 } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
@@ -59,8 +61,13 @@ function isOverviewData(v: unknown): v is OverviewData {
     typeof r.brokenFunctionRowCount === "number" &&
     typeof r.brokenFunctionBySeverity === "object" &&
     r.brokenFunctionBySeverity !== null &&
+    Array.isArray(r.ddlGuardUnacked) &&
     (r.lastRefresh === null || isRefreshLogRow(r.lastRefresh))
   );
+}
+
+function ddlGuardTotal(rows: readonly DdlGuardUnackedRow[]): number {
+  return rows.reduce((n, r) => n + Number(r.unacked_rows ?? 0), 0);
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -290,7 +297,54 @@ export function CanonicalizationOverview() {
               value={overview.staleRegistryCount}
               href="/administration/database/canonicalization/candidates"
             />
+            {/* The DDL sentinel's OWN backlog. Until 2026-08-21 nothing on the
+                platform read platform.ddl_guard_log and all 865 firings sat
+                unacknowledged — a guard nobody reads is a log file (2026-08-15
+                drift audit §1). Zero here means every firing was reviewed and
+                carries a reason, not that the guard is quiet. */}
+            <KpiTile
+              icon={Siren}
+              label="Unacked DDL guard firings"
+              value={ddlGuardTotal(overview.ddlGuardUnacked)}
+              tone={ddlGuardTotal(overview.ddlGuardUnacked) > 0 ? "warn" : "good"}
+            />
           </div>
+
+          {overview.ddlGuardUnacked.length > 0 ? (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                <Siren className="h-3.5 w-3.5" />
+                Unacknowledged DDL guard firings by rule
+              </div>
+              <div className="mt-1.5 space-y-1">
+                {overview.ddlGuardUnacked.map((r) => (
+                  <div
+                    key={r.rule}
+                    className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground"
+                  >
+                    <code className="font-medium text-foreground">{r.rule}</code>
+                    <span className="tabular-nums">
+                      {r.unacked_rows} row{r.unacked_rows === 1 ? "" : "s"} ·{" "}
+                      {r.unacked_objects} object
+                      {r.unacked_objects === 1 ? "" : "s"}
+                    </span>
+                    {r.sample_objects ? (
+                      <span className="truncate">{r.sample_objects}</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Acknowledge with{" "}
+                <code>
+                  platform.ddl_guard_ack(p_reason =&gt; &apos;…&apos;, p_by =&gt;
+                  &apos;…&apos;, p_rule =&gt; &apos;…&apos;)
+                </code>{" "}
+                — the reason is mandatory. Triage runs as the docs-steward daily
+                step; the release gate is <code>pnpm check:ddl-guard-log</code>.
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
             <span>

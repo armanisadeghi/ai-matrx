@@ -28,3 +28,17 @@ export const selectInboxWaitingCount =
     }
     return n;
   };
+
+/**
+ * Status of ONE queued item, or `null` once it is gone. An item leaves the
+ * slice exactly when the stream's `injection_consumed` names it — so `null` is
+ * the delivery ack a caller can wait on (the Cloud Browser takeover uses it to
+ * know the agent has been told, at its own turn boundary).
+ * Primitive result — no memo needed.
+ */
+export const selectInboxItemStatus =
+  (conversationId: string, injectionId: string) =>
+  (state: RootState): ConversationInboxItem["status"] | null =>
+    state.conversationInbox?.byConversationId[conversationId]?.find(
+      (i) => i.injectionId === injectionId,
+    )?.status ?? null;

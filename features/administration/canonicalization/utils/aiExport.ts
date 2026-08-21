@@ -535,6 +535,16 @@ export function overviewToHuman(data: CanonicalizationOverview): string {
     `M2M candidates: ${data.m2mCandidateCount}`,
     `Unregistered candidates: ${data.unregisteredCandidateCount}`,
     `Stale registry: ${data.staleRegistryCount}`,
+    `Unacknowledged DDL guard firings: ${data.ddlGuardUnacked.reduce(
+      (n, r) => n + Number(r.unacked_rows ?? 0),
+      0,
+    )}${
+      data.ddlGuardUnacked.length
+        ? ` (${data.ddlGuardUnacked
+            .map((r) => `${r.rule}=${r.unacked_rows}`)
+            .join(" · ")})`
+        : ""
+    }`,
     `Last audit refresh: ${last}`,
   ].join("\n");
 }
@@ -554,6 +564,10 @@ export function overviewToAgentInput(
       totalWarns: data.totalWarns,
       brokenFunctionsReal: data.brokenFunctionCount,
       brokenFunctionRows: data.brokenFunctionRowCount,
+      ddlGuardUnackedRows: data.ddlGuardUnacked.reduce(
+        (n, r) => n + Number(r.unacked_rows ?? 0),
+        0,
+      ),
     },
     context: {
       "docs-ref": "docs/db_changes/CANONICAL_DATABASE_SYSTEM.md",

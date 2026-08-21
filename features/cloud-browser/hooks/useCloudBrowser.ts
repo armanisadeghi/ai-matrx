@@ -37,7 +37,11 @@ import {
   selectTelemetry,
 } from "../redux/selectors";
 
-export function useCloudBrowser(initialProfileId?: string) {
+export function useCloudBrowser(
+  initialProfileId?: string,
+  /** The exact run to show, when the opener knows it (see `loadSnapshot`). */
+  initialRunId?: string | null,
+) {
   const dispatch = useAppDispatch();
   const { userId, activeUserName } = useUser();
   const me = useMemo(
@@ -61,10 +65,10 @@ export function useCloudBrowser(initialProfileId?: string) {
   const error = useAppSelector(selectCloudBrowserError);
 
   const load = useCallback(
-    async (profileId: string) => {
+    async (profileId: string, runId?: string | null) => {
       dispatch(setLoading(true));
       try {
-        const snap = await service.loadSnapshot(profileId);
+        const snap = await service.loadSnapshot(profileId, runId);
         dispatch(hydrateSnapshot(snap));
       } catch (e) {
         dispatch(
@@ -78,8 +82,8 @@ export function useCloudBrowser(initialProfileId?: string) {
   );
 
   useEffect(() => {
-    void load(initialProfileId ?? "");
-  }, [initialProfileId, load]);
+    void load(initialProfileId ?? "", initialRunId);
+  }, [initialProfileId, initialRunId, load]);
 
   const selectProfile = useCallback(
     (profileId: string) => {
@@ -94,6 +98,13 @@ export function useCloudBrowser(initialProfileId?: string) {
     const next = await service.takeControl(run.id, me);
     dispatch(setController(next));
   }, [dispatch, me, run]);
+
+  /** Ask the CURRENT human controller for the wheel — a real durable queue row,
+   *  never a disguised claim (the claim fails closed against another human). */
+  const requestControl = useCallback(async () => {
+    if (!run) return;
+    await service.requestControl(run.id);
+  }, [run]);
 
   const returnControl = useCallback(async () => {
     if (!run) return;
@@ -144,8 +155,12 @@ export function useCloudBrowser(initialProfileId?: string) {
     loading,
     error,
     selectProfile,
-    reload: () => (activeProfileId ? load(activeProfileId) : Promise.resolve()),
+    reload: () =>
+      activeProfileId
+        ? load(activeProfileId, initialRunId)
+        : Promise.resolve(),
     takeControl,
+    requestControl,
     returnControl,
     refreshTelemetry,
     updateConsent,

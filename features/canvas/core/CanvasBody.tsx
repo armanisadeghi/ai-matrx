@@ -251,8 +251,11 @@ function renderContent(content: CanvasContent): React.ReactNode {
       );
 
     case "cloud_browser":
-      // `data` is a pointer { initialProfileId?, runId? }. The body owns all
-      // live run/screenshot/handoff state; the pane draws the frame + title.
+      // `data` is a pointer { initialProfileId?, runId? } and the metadata
+      // carries the chat binding. The body owns all live run/screenshot/handoff
+      // state; the pane draws the frame + title. All three are load-bearing:
+      // `runId` pins the exact browser, `conversationId` is what lets taking
+      // control steer the running agent instead of yanking the wheel.
       return (
         <CloudBrowserBody
           initialProfileId={
@@ -260,6 +263,8 @@ function renderContent(content: CanvasContent): React.ReactNode {
               ? data.initialProfileId
               : undefined
           }
+          runId={typeof data?.runId === "string" ? data.runId : undefined}
+          conversationId={content.metadata?.conversationId}
           className="h-full"
         />
       );

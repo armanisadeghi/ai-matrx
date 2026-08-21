@@ -19,9 +19,16 @@ export interface CloudBrowserWindowProps {
   onClose: () => void;
   overlayId?: OverlayId;
   initialProfileId?: string;
+  /** The chat this browser belongs to, when the opener knows one. Without it a
+   *  takeover has nothing to steer and transfers immediately. */
+  conversationId?: string;
 }
 
-export function CloudBrowserWindow({ onClose, initialProfileId }: CloudBrowserWindowProps) {
+export function CloudBrowserWindow({
+  onClose,
+  initialProfileId,
+  conversationId,
+}: CloudBrowserWindowProps) {
   // The body owns ALL Cloud Browser state (one `useCloudBrowser` per surface —
   // never a second instance for the title, which would open a second session).
   // The active profile is named by the body's ProfileSelector.
@@ -35,7 +42,10 @@ export function CloudBrowserWindow({ onClose, initialProfileId }: CloudBrowserWi
       minWidth={420}
       minHeight={360}
     >
-      <CloudBrowserBody initialProfileId={initialProfileId} />
+      <CloudBrowserBody
+        initialProfileId={initialProfileId}
+        conversationId={conversationId}
+      />
     </WindowPanel>
   );
 }

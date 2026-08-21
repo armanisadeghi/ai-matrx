@@ -40,3 +40,22 @@ export type MediaTier = "written" | "screenshots" | "takeover";
 /** Honest walkthrough — the AWS session-expiry caveat is stated, not hidden. */
 export const AWS_SESSION_CAVEAT =
   "Some sites (AWS most of all) expire a signed-in session on their own hard clock. When that happens the Cloud Browser will ask a person to sign in again — we cannot keep those sessions alive forever, and we will always tell you when one needs you.";
+
+/**
+ * What the agent is told when a person takes the wheel. These ride the
+ * Turn-Boundary Inbox as `system_message` notes (see
+ * `hooks/useCloudBrowserTakeover.ts`) — the STEER note at the agent's own next
+ * boundary, the INTERRUPT note held for its next turn after being stopped.
+ * Written to the agent, plainly, with the one instruction that matters.
+ */
+export const TAKEOVER_STEER_NOTE =
+  "The person you are working with is taking control of the cloud browser. " +
+  "Stop issuing browser actions now and acknowledge — they are driving it " +
+  "themselves. Continue with anything that does not need the browser, and " +
+  "wait for them to hand control back before using it again.";
+
+export const TAKEOVER_INTERRUPT_NOTE =
+  "You were stopped mid-run because the person you are working with took " +
+  "immediate control of the cloud browser. Nothing went wrong — they are " +
+  "driving it themselves now. Do not resume browser actions; wait until they " +
+  "hand control back, then pick up from what the browser actually shows.";

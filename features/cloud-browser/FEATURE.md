@@ -29,6 +29,34 @@ The **controller banner** always names who is driving (agent / me / another pers
 system) and carries the accessible non-canvas controls (Take / Return / Request /
 Reconnect).
 
+## Taking control — the same duality the composer has (D-25)
+
+**Take control is available whenever the browser is live**, never only when the agent
+asked for a person. The server owns that: `POST /browser-manager/runs/{id}/takeover`
+raises the `user_requested` handoff itself when the run is not already paused, then
+runs the ordinary one-controller CAS (it superseded the bare `claim-control` route,
+which 400'd outside an agent-initiated handoff window).
+
+Clicking it notifies the agent through the **exact mechanisms a mid-run chat message
+already uses** — never a second signalling path (`hooks/useCloudBrowserTakeover.ts`):
+
+| Path | Mechanism | When |
+|---|---|---|
+| **Steer (default)** | `enqueueInboxMessage({mode:"steer", kind:"system_message"})` — the Turn-Boundary Inbox | An agent request is in flight. The banner becomes "Please wait while we tell your agent you're taking over" + **Take over immediately**. Control moves on the delivery ack (`injection_consumed` retires the card), or when the run ends first. |
+| **Interrupt (escape)** | `cancelExecution` + a `turn_end` system note | The user clicks **Take over immediately**. The run stops, the pending steer note is withdrawn, and because `cancelExecution` carries no reason of its own, the WHY rides the inbox to the agent's next turn. |
+| **Immediate** | claim, no notice | Nothing to steer: no bound conversation, the agent is idle, **or the agent itself raised the handoff** — steering a parked agent is a deadlock, it never reaches another boundary. |
+
+**The chat binding is load-bearing.** `useOpenCloudBrowserCanvas({conversationId, runId})`
+carries it into the canvas metadata and `CanvasBody` hands both to `CloudBrowserBody`;
+without the conversation the surface can only take control immediately, and without the
+run id a profile with more than one live browser shows the wrong one. Every opener that
+knows them passes them.
+
+**Request control is real.** When another *person* is driving, it writes a durable
+`browser.control_request` row through `POST …/control-requests` — the current
+controller sees "X asked to take over" in their own banner and grants it by returning
+control. It never wrests the wheel away, and it is no longer an alias for Take.
+
 ## Entry points
 
 - **First composer:** the globe beside the `/chat/new` composer opens the same
@@ -84,6 +112,20 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-21 — takeover steer/interrupt (D-25), both halves:** Take control is no
+  longer gated on `handoff.state === "requested"` — aidream gained
+  `BrowserManager.request_takeover` + `POST /runs/{id}/takeover` (composes
+  `open_handoff(user_requested, actor=human)` with the existing CAS claim; the bare
+  `claim-control` route was deleted, not kept as a twin). The client reuses the
+  Turn-Boundary Inbox for STEER and `cancelExecution` for INTERRUPT rather than
+  inventing a takeover channel (`useCloudBrowserTakeover` + its test suite).
+  Closed three seams in the same pass: the conversation⇄run binding now flows
+  opener → canvas metadata → body (the composer rail routes through the ONE opener
+  instead of its own `openCanvas`, and `loadSnapshot` honours a pinned `runId`);
+  "Request control" became the real `control-requests` queue instead of an alias for
+  Take; and `ControllerState.pendingRequestFrom` is read from `browser.control_request`
+  instead of hardcoded `null`, so a queued request is visible to the one person who
+  can grant it. **aidream deploy pending** — the client calls `/takeover` today.
 - **2026-08-21 — event-driven screenshots + entry-point relocation (D-24/D-26):**
   the chat stream processor stamps `noteBrowserActivity` on every
   `cloud_browser*` / `credential_login` tool start/completion, and an open
@@ -92,9 +134,8 @@ The frontend never receives a password, seed, or generated code from that path.
   mode (`useScreenshotSession(runId, rapid)`, ScreenshotFace Rapid toggle).
   The browser's entry point moved to the chat `+` attach menu (direct-action
   row); the context-rail pill shows only while a run is live or the canvas is
-  open (`selectCloudBrowserRunLive`). Takeover steer/interrupt (D-25) is
-  ruled and dispatched to a focused build — the seams named in "Known gaps"
-  below still stand until it lands.
+  open (`selectCloudBrowserRunLive`). Takeover steer/interrupt (D-25) was
+  ruled here and shipped in the entry above.
 - **2026-08-21 — consent-driven automatic login:** connected the existing profile
   settings to the shared server-side `credential_login` executor. Password entry
   and delegated TOTP remain separate explicit choices, and all value-bearing work

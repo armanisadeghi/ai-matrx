@@ -176,6 +176,22 @@ export const CANONICALIZATION_DATASETS = [
 
 export type CanonicalizationDataset = (typeof CANONICALIZATION_DATASETS)[number];
 
+/**
+ * One rule's unacknowledged backlog in `platform.ddl_guard_log`. Acknowledging a
+ * firing REQUIRES a reason (CHECK ddl_guard_log_ack_needs_reason) — that reason is
+ * the "reviewed, deliberate" record the 2026-08-15 drift audit found missing.
+ */
+export interface DdlGuardUnackedRow {
+  rule: string;
+  severity: string;
+  unacked_rows: number;
+  unacked_objects: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  /** Up to 6 object refs, already comma-joined by the query. */
+  sample_objects: string | null;
+}
+
 export interface CanonicalizationOverview {
   totalTables: number;
   certifiedTables: number;
@@ -204,6 +220,8 @@ export interface CanonicalizationOverview {
   m2mCandidateCount: number;
   unregisteredCandidateCount: number;
   staleRegistryCount: number;
+  /** Per-rule unacknowledged DDL-sentinel firings; empty when the log is clean. */
+  ddlGuardUnacked: DdlGuardUnackedRow[];
   lastRefresh: RefreshLogRow | null;
 }
 

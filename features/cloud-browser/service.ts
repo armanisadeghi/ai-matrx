@@ -364,6 +364,16 @@ async function userId(): Promise<string> {
     throw error ?? new Error("Sign in to use Cloud Browser.");
   return data.user.id;
 }
+/** One name for another person, via the canonical directory RPC. Never a raw
+ *  uuid in the banner — "Someone" is the honest fallback. */
+async function displayNameFor(userId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("get_dm_user_info", {
+    p_user_id: userId,
+  });
+  if (error) return "Someone";
+  return data?.[0]?.display_name?.trim() || "Someone";
+}
+
 async function startRun(profileId?: string): Promise<string> {
   const { data } = await postJson<unknown>("/browser-manager/runs", {
     profile_id: profileId || null,
@@ -399,10 +409,29 @@ export async function listProfiles(): Promise<CloudBrowserProfile[]> {
 
 export async function loadSnapshot(
   requestedProfileId = "",
+  /**
+   * The EXACT run to show, when the opener knows it (an agent-raised handoff
+   * names its run). Without it we fall back to the profile's newest live run —
+   * which is the wrong browser as soon as a profile has more than one.
+   */
+  requestedRunId?: string | null,
 ): Promise<CloudBrowserSnapshot> {
   const me = await userId();
+  const pinnedRun = requestedRunId
+    ? (
+        await supabase
+          .schema("browser")
+          .from("run")
+          .select("*")
+          .eq("id", requestedRunId)
+          .in("state", [...LIVE_STATES])
+          .is("deleted_at", null)
+          .maybeSingle()
+      ).data
+    : null;
   let profiles = await listProfiles();
   let selected =
+    profiles.find((item) => item.id === pinnedRun?.profile_id) ??
     profiles.find((item) => item.id === requestedProfileId) ??
     profiles.find((item) => item.isPersonalDefault) ??
     profiles[0];
@@ -413,15 +442,17 @@ export async function loadSnapshot(
   }
   if (!selected)
     throw new Error("Cloud Browser could not create your browser profile.");
-  const runQuery = await supabase
-    .schema("browser")
-    .from("run")
-    .select("*")
-    .eq("profile_id", selected.id)
-    .in("state", [...LIVE_STATES])
-    .is("deleted_at", null)
-    .order("started_at", { ascending: false })
-    .limit(1);
+  const runQuery = pinnedRun
+    ? { data: [pinnedRun], error: null }
+    : await supabase
+        .schema("browser")
+        .from("run")
+        .select("*")
+        .eq("profile_id", selected.id)
+        .in("state", [...LIVE_STATES])
+        .is("deleted_at", null)
+        .order("started_at", { ascending: false })
+        .limit(1);
   if (runQuery.error) throw runQuery.error;
   let activeRow = runQuery.data[0] ?? null;
   if (!runQuery.data.length) {
@@ -455,7 +486,24 @@ export async function loadSnapshot(
         .order("requested_at", { ascending: false })
         .limit(1)
     : Promise.resolve({ data: [] as HandoffRow[], error: null });
-  const [events, handoffs, bindings, allRuns, profileMetadata] =
+  // A person waiting on the CURRENT controller (S1 §3.4). Read for real — the
+  // banner used to hardcode `pendingRequestFrom: null`, so an actual queued
+  // request was invisible to the one person who can grant it.
+  const controlRequestPromise = activeRun
+    ? supabase
+        .schema("browser")
+        .from("control_request")
+        .select("requested_by_user_id, requested_at")
+        .eq("run_id", activeRun.id)
+        .eq("state", "pending")
+        .gt("expires_at", new Date().toISOString())
+        .order("requested_at", { ascending: true })
+        .limit(1)
+    : Promise.resolve({
+        data: [] as { requested_by_user_id: string | null }[],
+        error: null,
+      });
+  const [events, handoffs, bindings, allRuns, profileMetadata, controlRequests] =
     await Promise.all([
       eventsPromise,
       handoffPromise,
@@ -477,12 +525,24 @@ export async function loadSnapshot(
         .select("metadata")
         .eq("id", selected.id)
         .single(),
+      controlRequestPromise,
     ]);
   if (events.error) throw events.error;
   if (handoffs.error) throw handoffs.error;
   if (bindings.error) throw bindings.error;
   if (allRuns.error) throw allRuns.error;
   if (profileMetadata.error) throw profileMetadata.error;
+  if (controlRequests.error) throw controlRequests.error;
+  const requesterId = controlRequests.data[0]?.requested_by_user_id ?? null;
+  // Never show a request to the requester themselves — they have the waiting
+  // state in their own banner already.
+  const pendingRequestFrom =
+    requesterId && requesterId !== me
+      ? {
+          userId: requesterId,
+          displayName: await displayNameFor(requesterId),
+        }
+      : null;
   const metadata = jsonObject(profileMetadata.data.metadata);
   const consent = cloudBrowserConsent(metadata.cloud_browser_consent);
   const savedNotificationConsent = notificationConsent(
@@ -506,7 +566,7 @@ export async function loadSnapshot(
         isMe: activeRun.controllerUserId === me,
         controlRevision: activeRun.controllerRevision,
         streamActive: activeRun.state === "human_control",
-        pendingRequestFrom: null,
+        pendingRequestFrom,
       }
     : {
         kind: "none",
@@ -630,12 +690,19 @@ export async function renewStreamTicket(
 ): Promise<void> {
   await streamRequest(ticket, "renew");
 }
+/**
+ * THE human takeover. Available whenever the run is live — the server raises the
+ * `user_requested` handoff itself when the agent has not paused for a person
+ * (Arman 2026-08-21), so this is never gated on `handoff.state === "requested"`.
+ * Superseded the bare `claim-control` call, which only worked inside an
+ * agent-initiated handoff window.
+ */
 export async function takeControl(
   runId: string,
   me: { userId: string; displayName: string },
 ): Promise<ControllerState> {
   const { data } = await postJson<unknown>(
-    `/browser-manager/runs/${runId}/claim-control`,
+    `/browser-manager/runs/${runId}/takeover`,
     {},
   );
   const value = record(data);
@@ -651,6 +718,19 @@ export async function takeControl(
     pendingRequestFrom: null,
   };
 }
+/**
+ * "Request control" when ANOTHER PERSON is driving. A real durable queue row
+ * (`browser.control_request`), not a disguised claim: the server keeps one
+ * pending request per (run, requester) and the current controller grants it by
+ * returning control. Fails closed rather than wresting the wheel away.
+ */
+export async function requestControl(runId: string): Promise<void> {
+  await postJson<unknown>(
+    `/browser-manager/runs/${runId}/control-requests`,
+    {},
+  );
+}
+
 export async function returnControl(runId: string): Promise<ControllerState> {
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/release-control`,

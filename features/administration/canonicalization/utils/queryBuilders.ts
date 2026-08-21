@@ -46,6 +46,15 @@ export const DATASET_QUERIES: Record<
     order by run_at desc;`,
 };
 
+// The DDL sentinel's own backlog. `platform.ddl_guard_log` collected 865 firings
+// between 2026-08-13 and 2026-08-21 with every acknowledged_at NULL, because
+// nothing read the table — the gap the 2026-08-15 drift audit §1 named. Sample
+// objects are joined in SQL (not returned as text[]) so the JSON shape stays flat.
+export const DDL_GUARD_UNACKED_QUERY = `select rule, severity, unacked_rows, unacked_objects,
+    first_seen, last_seen, array_to_string(sample_objects, ', ') as sample_objects
+  from platform.ddl_guard_unacked
+  order by unacked_rows desc, rule;`;
+
 export const REFRESH_QUERY = `select audit.refresh() as note;`;
 
 export const DISTINCT_TABLES_QUERY = `select distinct schema_name, table_name

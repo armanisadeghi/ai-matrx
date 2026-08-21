@@ -443,7 +443,7 @@ export function ResourcePickerMenu({
                   // "Cloud browser" is a direct action (give the agent a
                   // browser → open the canvas), not a drill-in picker view.
                   if (resource.id === "cloud_browser") {
-                    openCloudBrowser();
+                    openCloudBrowser({ conversationId });
                     onClose();
                     return;
                   }

@@ -26,7 +26,13 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectHandoff, selectRun } from "../redux/selectors";
 import { useOpenCloudBrowserCanvas } from "../hooks/useOpenCloudBrowserCanvas";
 
-export function CloudBrowserHandoffCanvasOpener(): null {
+export function CloudBrowserHandoffCanvasOpener({
+  conversationId,
+}: {
+  /** The chat this watcher lives in — carried into the canvas so taking control
+   *  can steer the running agent (`useCloudBrowserTakeover`). */
+  conversationId?: string;
+} = {}): null {
   const handoff = useAppSelector(selectHandoff);
   const run = useAppSelector(selectRun);
   const openCanvas = useOpenCloudBrowserCanvas();
@@ -36,8 +42,12 @@ export function CloudBrowserHandoffCanvasOpener(): null {
     if (!handoff || handoff.state !== "requested") return;
     if (openedFor.current === handoff.id) return;
     openedFor.current = handoff.id;
-    openCanvas({ initialProfileId: run?.profileId ?? undefined, runId: run?.id ?? undefined });
-  }, [handoff, run?.id, run?.profileId, openCanvas]);
+    openCanvas({
+      initialProfileId: run?.profileId ?? undefined,
+      runId: run?.id ?? undefined,
+      conversationId,
+    });
+  }, [handoff, run?.id, run?.profileId, openCanvas, conversationId]);
 
   return null;
 }

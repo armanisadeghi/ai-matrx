@@ -10,6 +10,7 @@ import { operationFailed } from "@/utils/errors";
 import { unwrapRows } from "@/lib/integrity/unwrap";
 import {
   DATASET_QUERIES,
+  DDL_GUARD_UNACKED_QUERY,
   DISTINCT_TABLES_QUERY,
   REFRESH_QUERY,
   buildCanonicalCertifyOkQuery,
@@ -27,6 +28,7 @@ import type {
   CanonicalFindingRow,
   CanonicalizationDataset,
   CanonicalizationOverview,
+  DdlGuardUnackedRow,
   FunctionDepRow,
   KnownTableRef,
   M2mCandidateRow,
@@ -65,13 +67,14 @@ export async function fetchDatasetRows<D extends Exclude<CanonicalizationDataset
 }
 
 export async function fetchOverview(): Promise<CanonicalizationOverview> {
-  const [summary, brokenFns, m2m, unregistered, stale, refreshLog] = await Promise.all([
+  const [summary, brokenFns, m2m, unregistered, stale, refreshLog, ddlGuard] = await Promise.all([
     runQuery<AuditSummaryRow>(DATASET_QUERIES.summary),
     runQuery<BrokenFunctionRow>(DATASET_QUERIES["broken-functions"]),
     runQuery<M2mCandidateRow>(DATASET_QUERIES["m2m-candidates"]),
     runQuery<UnregisteredCandidateRow>(DATASET_QUERIES["unregistered-candidates"]),
     runQuery<StaleRegistryRow>(DATASET_QUERIES["stale-registry"]),
     runQuery<RefreshLogRow>(DATASET_QUERIES["refresh-log"]),
+    runQuery<DdlGuardUnackedRow>(DDL_GUARD_UNACKED_QUERY),
   ]);
 
   // The broken-function headline is the REAL count, not the row count. Showing
@@ -121,6 +124,9 @@ export async function fetchOverview(): Promise<CanonicalizationOverview> {
     m2mCandidateCount: m2m.length,
     unregisteredCandidateCount: unregistered.length,
     staleRegistryCount: stale.length,
+    // The DDL sentinel's own unread backlog — the reader the guard never had
+    // (2026-08-15 drift audit §1; contract shipped 2026-08-21).
+    ddlGuardUnacked: ddlGuard,
     lastRefresh: refreshLog[0] ?? null,
   };
 }

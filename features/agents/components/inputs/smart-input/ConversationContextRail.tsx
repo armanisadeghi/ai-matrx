@@ -79,6 +79,10 @@ import {
 } from "@/features/agents/components/context-policies-display/contextPolicyIcons";
 import { ContextPolicyDetailSheet } from "@/features/agents/components/context-policies-display/ContextPolicyDetailSheet";
 import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
+import {
+  cloudBrowserCanvasSourceId,
+  useOpenCloudBrowserCanvas,
+} from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import {
   isCanvasItemContextKey,
@@ -311,27 +315,19 @@ export function ConversationContextRail({
    * (NON_PERSISTABLE); this pill is the show/hide + "give the agent a browser"
    * control.
    */
-  const cloudBrowserSourceId = `cloud-browser:${conversationId}`;
+  const cloudBrowserSourceId = cloudBrowserCanvasSourceId(conversationId);
   const cloudBrowserRunLive = useAppSelector(selectCloudBrowserRunLive);
   const cloudBrowserActive =
     cloudBrowserRunLive ||
     (canvasOpen && currentCanvasSourceId === cloudBrowserSourceId);
+  const openCloudBrowser = useOpenCloudBrowserCanvas();
   const toggleCloudBrowser = () => {
     if (canvasOpen && currentCanvasSourceId === cloudBrowserSourceId) {
       dispatch(closeCanvas());
       return;
     }
-    dispatch(
-      openCanvas({
-        type: "cloud_browser",
-        data: {},
-        metadata: {
-          title: "Cloud Browser",
-          conversationId,
-          sourceMessageId: cloudBrowserSourceId,
-        },
-      }),
-    );
+    // The ONE opener — it carries the chat binding the takeover flow needs.
+    openCloudBrowser({ conversationId });
   };
 
   // ── Working context (Scopes) lives in PlusAttachMenu's ContextLensBar row.
@@ -737,7 +733,7 @@ function DetailSurfaces({
     <>
       {/* Agent-initiated Cloud Browser open: when a run raises a human-handoff,
           the Cloud Browser opens in the canvas (same surface the pill opens). */}
-      <CloudBrowserHandoffCanvasOpener />
+      <CloudBrowserHandoffCanvasOpener conversationId={conversationId} />
       {activeEntry && (
         <ContextPolicyDetailSheet
           open={detailOpen}

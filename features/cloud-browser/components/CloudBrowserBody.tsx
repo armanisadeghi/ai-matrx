@@ -26,6 +26,7 @@ import { Globe, FileText, Camera, MonitorPlay, BellRing } from "lucide-react";
 
 import { CLOUD_BROWSER_ASSIST_SURFACE } from "../constants";
 import { useCloudBrowser } from "../hooks/useCloudBrowser";
+import { useCloudBrowserTakeover } from "../hooks/useCloudBrowserTakeover";
 import { useScreenshotSession } from "../hooks/useScreenshotSession";
 import { mintStreamTicket } from "../service";
 import type { StreamTicketEnvelope } from "../types";
@@ -50,6 +51,15 @@ type FaceTab = "written" | "screenshots" | "takeover";
 
 export interface CloudBrowserBodyProps {
   initialProfileId?: string;
+  /** The exact run to show, when the opener knows it (agent-raised handoff). */
+  runId?: string;
+  /**
+   * The chat this browser belongs to. Carried from the opener through the
+   * canvas so taking control can be STEERED into the running agent's turn
+   * instead of yanked out from under it. Absent (standalone window, no chat) =
+   * every takeover is immediate, because there is nothing to steer.
+   */
+  conversationId?: string;
   className?: string;
 }
 
@@ -57,9 +67,11 @@ export interface CloudBrowserBodyProps {
  *  owns the frame + title. */
 export function CloudBrowserBody({
   initialProfileId,
+  runId,
+  conversationId,
   className,
 }: CloudBrowserBodyProps) {
-  const cb = useCloudBrowser(initialProfileId);
+  const cb = useCloudBrowser(initialProfileId, runId);
   // Rapid = per-session opt-in for visually busy pages; captures are otherwise
   // event-driven (browser tool activity) with a slow idle heartbeat.
   const [rapidShots, setRapidShots] = useState(false);
@@ -95,7 +107,9 @@ export function CloudBrowserBody({
     }
   }, [cb.run]);
 
-  const onTake = useCallback(async () => {
+  /** The claim itself — control plane + control stream. WHEN it runs is the
+   *  takeover controller's business, not this component's. */
+  const claimControl = useCallback(async () => {
     setBusy(true);
     try {
       await cb.takeControl();
@@ -109,6 +123,31 @@ export function CloudBrowserBody({
       setBusy(false);
     }
   }, [cb, openStream]);
+
+  // Steer by default, interrupt on demand — the composer's duality, reused.
+  const takeover = useCloudBrowserTakeover({
+    conversationId,
+    agentAwaitingHuman: cb.handoff?.state === "requested",
+    claim: claimControl,
+  });
+
+  const onRequest = useCallback(async () => {
+    setBusy(true);
+    try {
+      await cb.requestControl();
+      toast.success("We asked for control.", {
+        description: "You will get the browser when they hand it back.",
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not ask for control of this browser.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [cb]);
 
   const onReturn = useCallback(async () => {
     setBusy(true);
@@ -162,11 +201,16 @@ export function CloudBrowserBody({
       {controller ? (
         <ControllerBanner
           controller={controller}
-          onTake={onTake}
+          onTake={takeover.begin}
           onReturn={onReturn}
-          onRequest={onTake}
-          canTake={cb.handoff?.state === "requested"}
-          busy={busy}
+          onRequest={onRequest}
+          // A person may always take the wheel of a LIVE browser — the server
+          // raises the `user_requested` handoff itself. Never gated on the
+          // agent having asked for a person.
+          canTake={!!cb.run}
+          waitingForAgent={takeover.waiting}
+          onTakeImmediately={takeover.takeOverImmediately}
+          busy={busy || takeover.phase === "claiming"}
         />
       ) : null}
 
@@ -249,7 +293,11 @@ export function CloudBrowserBody({
                 <div className="flex-1">
                   <p className="text-foreground">{cb.handoff.message}</p>
                   <div className="mt-1.5">
-                    <Button size="sm" onClick={onTake} disabled={busy}>
+                    <Button
+                      size="sm"
+                      onClick={takeover.begin}
+                      disabled={busy || takeover.phase === "claiming"}
+                    >
                       Step in and help
                     </Button>
                   </div>
