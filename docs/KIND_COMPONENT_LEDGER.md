@@ -177,27 +177,27 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
-| `http_response` | HTTP Response | — | 1 | | unclaimed | | |
+| `http_response` | HTTP Response | — | 1 | | claimed | copy-B | batch 3 |
 | `items` | Items (list result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `notable_timestamp` | Notable Timestamp | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
-| `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
-| `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
+| `office_extraction_result` | Office Extraction Result | — | 1 | | claimed | copy-B | batch 3 |
+| `office_file_result` | Office File Result | — | 1 | | claimed | copy-B | batch 3 |
 | `operation_result` | Operation Result (action receipt) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `page` | Page (paginated window) | — | 1 | | unclaimed | | |
+| `page` | Page (paginated window) | — | 1 | | claimed | copy-B | batch 3 |
 | `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `page_keyword_map_v1` | Page Keyword Map | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `regex_extract_result` | Regex Extract Result | — | 1 | | unclaimed | | |
+| `regex_extract_result` | Regex Extract Result | — | 1 | | claimed | copy-B | batch 3 |
 | `rendered_text` | Rendered Text | — | 1 | `generic_structured` | done | copy-E | explicit basic route LIVE — migrations/content_ir_rendered_text_output_route.sql, applied + verified in the DB. Reuse-first: nothing in the compiled bootstrap or the block dispatch registry renders `{text, rendered, truncated}`. UPGRADE PATH: `text` IS markdown, so a component streaming it through MarkdownStream (with rendered/truncated as chrome) beats the JSON tree view — a one-line component_key swap on this same row. Route case belongs in features/content-ir/__tests__/kind-explicit-basic-routes.test.tsx (copy-B's file, in flight at the time). |
 | `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
-| `research_page_analysis` | Research Page Analysis | — | 1 | | unclaimed | | |
-| `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | unclaimed | | |
+| `research_page_analysis` | Research Page Analysis | — | 1 | | claimed | copy-B | batch 3 |
+| `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | claimed | copy-B | batch 3 |
 | `research_tag_suggestions` | Research Tag Suggestions | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
-| `scraped_page` | Scraped Page | — | 1 | | unclaimed | | |
+| `scraped_page` | Scraped Page | — | 1 | | claimed | copy-B | batch 3 |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
 | `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | unclaimed | | |
@@ -290,3 +290,4 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
   `action_io_action_ai_util_parse_llm_json_98c46b15_output` fired 12 times in 30 days against no
   registered kind. That is declaration drift, not a missing component.
 - 2026-08-20 — copy-B **batch 2 done**: the research/evidence cluster is routed (`migrations/content_ir_research_evidence_kind_routes.sql`, applied live + ledgered). Five missing canonical examples authored and validated against the LIVE schemas with negative controls. `claim_evidence` is **blocked on its example only** — its schema carries a dangling `#/$defs/EvidenceSource` with no `$defs` and cannot compile (FOUND_DEFECTS **D219**, a class of 5 active kinds incl. all four `plan_page_*`); its route is live and verified.
+- 2026-08-20 — copy-B claims batch 3: `http_response`, `office_extraction_result`, `office_file_result`, `page`, `regex_extract_result`, `scraped_page`, `research_page_analysis`, `research_setup_suggestion`.
