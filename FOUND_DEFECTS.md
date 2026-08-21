@@ -14,9 +14,23 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D238 — `legal.wc_claim.is_public` is bivalent and both repos are repointed; the DROP is gated on the deployed aidream SHA (2026-08-21)
+### D238 — two `is_public` cuts are code-complete and DEPLOY-GATED: `legal.wc_claim` and `canvas.canvas_items` (2026-08-21)
 
-Split out of D232 §D. State 1 and state 2 of the §8a-1 sequence are DONE; only state 3 remains.
+Split out of D232 §D. For both columns, states 1 and 2 of the §8a-1 sequence are DONE; only state 3
+(the DROP) remains, and it must not happen before the running code no longer names the column.
+
+**`canvas.canvas_items.is_public` — the simpler of the two.** 632 rows, **0** with `is_public=true`,
+`visibility` present and agreeing; nothing writes it. All three readers now read `visibility`:
+`features/canvas/services/canvasItemsService.ts`, `features/canvas/core/SavedCanvasItems.tsx`, and
+the `/maps` feature (`features/canvas/maps/{service,types,columns}`) — commits `181f56eae` and
+`43f806b3c`, both on `origin/main`. The blocker is purely that the maps list SELECTS the column by
+name, so a drop ahead of the deploy 42703s that page. **It was not dropped in the D232 pass because
+no production deploy could be proven live** — Vercel was cancelling every production build behind a
+rapid push storm from parallel sessions, so `latestDeployment.readyState` never left `CANCELED`.
+The drop is one line once a READY production deployment contains `181f56eae`:
+`alter table canvas.canvas_items drop column is_public;` then `pnpm db-types`.
+
+**`legal.wc_claim.is_public` — the one with a bridge.**
 
 - **State 1 (live):** `migrations/d232_wc_claim_visibility_bivalent.sql` — `is_public` lost its
   `NOT NULL` (§8d step 2, so each repo cuts over independently) and
@@ -176,16 +190,16 @@ never real**. It now matches the trigger FUNCTION against all three legal backst
 `scripts/org_backstop_exemptions.json` is pruned 78 → 6, and
 `validate_org_backstop_coverage.py --strict` is green.
 
-**D. Kill-list columns — 4 of 9 cut, 1 dispositioned, 4 split out.** Disagreement was measured per
+**D. Kill-list columns — 2 cut, 2 code-complete and deploy-gated, 1 dispositioned, 4 split out.** Disagreement was measured per
 column first (db-rules §6a: three different correct outcomes), then acted on:
 - **Cut, pure dead weight** (`migrations/d232_kill_list_dead_weight_drops.sql`):
   `canvas.canvas_comments.deleted` (0 rows) and `public.sandbox_instances.is_public`
   (283 rows / 0 true / zero consumers anywhere).
-- **Cut, code repointed first**: `canvas.canvas_items.is_public` (632 rows, 0 true, `visibility`
-  agrees). Its three readers now read `visibility` — `features/canvas/services/canvasItemsService.ts`,
-  `features/canvas/core/SavedCanvasItems.tsx`, and the `/maps` feature. The DROP follows the
-  deployed SHA (doctrine §8a-1 state 3).
-- **Bivalent, drop filed**: `legal.wc_claim.is_public` — written by aidream's WC router.
+- **Code repointed, DROP deploy-gated — D238**: `canvas.canvas_items.is_public` (632 rows, 0 true,
+  `visibility` agrees). Its three readers now read `visibility` — `features/canvas/services/canvasItemsService.ts`,
+  `features/canvas/core/SavedCanvasItems.tsx`, and the `/maps` feature. The maps list SELECTs the
+  column by name, so the DROP waits for a READY production deployment (doctrine §8a-1 state 3).
+- **Bivalent, drop filed as D238**: `legal.wc_claim.is_public` — written by aidream's WC router.
   `migrations/d232_wc_claim_visibility_bivalent.sql` installs the is_public ↔ visibility mirror and
   drops the column's `NOT NULL` (§8d step 2) so each repo cuts over independently; both repos are
   repointed. The DROP is gated on the **deployed** aidream SHA — **D238**.
