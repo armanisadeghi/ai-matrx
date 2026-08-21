@@ -1151,9 +1151,18 @@ function DocumentCard({
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
   const Icon = docIcon(item);
-  const name = (item.alt_text || "").trim() || fileNameFromUrl(item.url);
-  const host = hostLabel(item.url);
-  const ext = fileExt(item.url) || resourceKind(item) || "";
+  const owned = isOwnedMedia(item);
+  // An owned row's `url` is a durable pointer (CDN URL or the bare file_id),
+  // never a file path — so the name/host/extension come from what we actually
+  // know about the artifact, and "Save to library" is hidden: it is already
+  // there.
+  const name =
+    (item.alt_text || "").trim() ||
+    (owned ? item.caption || "Uploaded document" : fileNameFromUrl(item.url));
+  const host = owned ? "Your library" : hostLabel(item.url);
+  const ext = owned
+    ? (mediaMimeType(item) || "").split("/").pop() || ""
+    : fileExt(item.url) || resourceKind(item) || "";
   const [saving, setSaving] = useState(false);
 
   const handleSave = useCallback(async () => {
@@ -1216,31 +1225,32 @@ function DocumentCard({
         </div>
       </div>
       <div className="mt-auto flex items-center gap-3 border-t border-border/40 px-2.5 py-1.5">
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <ResearchMediaOpen
+          item={item}
           className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
         >
           <ExternalLink className="h-3 w-3" /> Open
-        </a>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60 disabled:cursor-default"
-          title="Save a copy to your cloud library"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-            </>
-          ) : (
-            <>
-              <Download className="h-3 w-3" /> Save to library
-            </>
-          )}
-        </button>
+        </ResearchMediaOpen>
+        {/* Owned artifacts are already in the library — nothing to save. */}
+        {!owned && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60 disabled:cursor-default"
+            title="Save a copy to your cloud library"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+              </>
+            ) : (
+              <>
+                <Download className="h-3 w-3" /> Save to library
+              </>
+            )}
+          </button>
+        )}
       </div>
       <Button
         variant={item.is_relevant ? "default" : "outline"}
