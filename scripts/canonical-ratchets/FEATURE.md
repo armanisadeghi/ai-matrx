@@ -180,9 +180,35 @@ touching old data rather than for creating a new defect. A ratchet that punishes
 cleanup is a broken ratchet. (It was also 50s of a 64s scan; excluding it took
 the snapshot to ~1s.)
 
+### The known-writer allowlist — why a ratchet needs one
+
+A row count taken at an instant is a stable baseline only if nothing is
+appending. **Three tables were appending NULL-org rows while this gate was being
+built** — `ops.system_error` and `users.user_secret_audit` (minutes old) and
+`transcripts.studio_recording_chunks` (seconds old, mid-recording). Left alone
+they would have failed EVERY release forever, which is precisely the failure the
+ruling's own constraint forbids: a gate that blocks on the legacy backlog
+instead of on new defects.
+
+So growth splits in two:
+
+- a table in **`known_null_org_writers`** prints its growth **RED**, names the
+  table, and **does not block**;
+- growth anywhere else is `UNEXPLAINED` and **blocks**.
+
+**A reason is REQUIRED per entry** — both gates exit 2 on an entry without one.
+Same contract as `unregistered-entities-allowlist.json`, and for the same
+reason: the list is the record that the exception was *reviewed*, never the
+exception itself. Each of the three has a chipped fix; an entry is removed when
+that write path is fixed, never to quiet the gate.
+
+Growth is judged **per table** (`null_org_rows_by_table`), so one table
+shrinking can never silently buy headroom for another that grew — and
+`--update-baseline` tightens per table for the same reason.
+
 ### Seeded 2026-08-21, from live
 
-**21,800 NULL-org rows across 29 tables · 38 tables still nullable.** Seeded from
+**~21,800 NULL-org rows across 29 tables · 38 tables still nullable · 3 known live writers.** Seeded from
 live, not from zero, for the same reason as ratchets 1 and 2: the gate's job is
 preventing growth, and it must never be able to block a release on the legacy
 backlog. Both numbers may only shrink; raising either is an Arman decision.
