@@ -74,6 +74,18 @@ if $STRICT; then
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
+        # CONTENT IR / KINDS — the two halves of the kinds program's frontend
+        # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
+        # the compiled detector table from live content_ir.kind_surface and
+        # diffs it against BOTH committed twins (this repo's .generated.ts and
+        # aidream's kind_surfaces_generated.py), so it catches registry drift
+        # and cross-runtime drift in one run; it needs the live DB and fails
+        # loudly rather than falling back, by design. The aidream half is
+        # enforced by that repo's `kinds-parity` / `kinds-registry-drift` CI
+        # jobs; this is where the frontend half is enforced, because this repo
+        # deliberately has no commit-time hook and no CI (CLAUDE.md).
+        "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        "Content IR / kinds test suite|pnpm test:content-ir"
         # Docs guards went STRICT 2026-08-15 (guards-advisory-to-strict): both
         # repos reached zero violations, so a finding here is new drift, not
         # backlog. Allowlist additions go through scripts/docs-guards/ via PR.
@@ -150,6 +162,18 @@ else
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
+        # CONTENT IR / KINDS — the two halves of the kinds program's frontend
+        # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
+        # the compiled detector table from live content_ir.kind_surface and
+        # diffs it against BOTH committed twins (this repo's .generated.ts and
+        # aidream's kind_surfaces_generated.py), so it catches registry drift
+        # and cross-runtime drift in one run; it needs the live DB and fails
+        # loudly rather than falling back, by design. The aidream half is
+        # enforced by that repo's `kinds-parity` / `kinds-registry-drift` CI
+        # jobs; this is where the frontend half is enforced, because this repo
+        # deliberately has no commit-time hook and no CI (CLAUDE.md).
+        "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        "Content IR / kinds test suite|pnpm test:content-ir"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         # STRICT since 2026-08-15 (also in the strict list above): the Wave-5
         # backlog is cleared, so a failure in a --strict run hard-fails it.
