@@ -169,13 +169,20 @@ function mediaDataUrl(base64Data: string, mimeType?: string): string {
   return `data:${mimeType ?? "application/octet-stream"};base64,${base64Data}`;
 }
 
+/**
+ * The server's `MediaRef` accepts EXACTLY ONE of `file_id` / `url` /
+ * `file_uri` — sending two raises the boundary normaliser's
+ * `media_resolution_failed` and kills the whole turn. Identity wins: a
+ * `file_id` is the durable locator, a stored `url` is a save-time snapshot
+ * whose signature is usually long expired.
+ */
 function requestMediaLocator(
   url: string | null | undefined,
   fileId: string | null | undefined,
   base64Data: string | null | undefined,
 ) {
-  if (url) return { url };
   if (fileId) return { file_id: fileId };
+  if (url) return { url };
   if (base64Data) return { base64_data: base64Data };
   throw new TypeError(
     "Cannot send media attachment without a URL, file id, or inline bytes",
@@ -187,15 +194,26 @@ function messageMediaPartToUserInputPart(
 ): RequestMediaPart {
   if (part.kind === "youtube") return part;
   const locator = requestMediaLocator(part.url, part.file_id, undefined);
+  // Spreading `part` re-introduces every locator key it carries — a persisted
+  // part written by the server routinely holds BOTH `file_id` and `url`, so
+  // `{...part, ...locator}` shipped two and the server refused the request.
+  // Drop them all first, then apply the ONE the locator chose.
+  const {
+    url: _url,
+    file_id: _fileId,
+    ...rest
+  } = part as PersistedMediaPart & { url?: unknown; file_id?: unknown };
+  void _url;
+  void _fileId;
   switch (part.kind) {
     case "image":
-      return { ...part, ...locator, type: "media", kind: "image" };
+      return { ...rest, ...locator, type: "media", kind: "image" };
     case "audio":
-      return { ...part, ...locator, type: "media", kind: "audio" };
+      return { ...rest, ...locator, type: "media", kind: "audio" };
     case "video":
-      return { ...part, ...locator, type: "media", kind: "video" };
+      return { ...rest, ...locator, type: "media", kind: "video" };
     case "document":
-      return { ...part, ...locator, type: "media", kind: "document" };
+      return { ...rest, ...locator, type: "media", kind: "document" };
   }
 }
 
