@@ -143834,6 +143834,18 @@
               }
             ],
             "title": "Shared"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
           }
         },
         "additionalProperties": true,

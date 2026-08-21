@@ -55140,6 +55140,10 @@ export interface components {
             created_by?: string | null;
             /** Shared */
             shared?: boolean | null;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
         } & {
             [key: string]: unknown;
         };
