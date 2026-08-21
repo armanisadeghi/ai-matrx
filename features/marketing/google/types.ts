@@ -67,3 +67,27 @@ export interface GoogleConnectionInventory {
 export interface GoogleConnectionResult {
   connectionId: string;
 }
+
+export interface YouTubeVideoPreview {
+  video_id: string;
+  title: string;
+  published_at: string | null;
+  description: string | null;
+  thumbnail_url: string | null;
+  view_count: number | null;
+  like_count: number | null;
+  comment_count: number | null;
+  privacy_status: string | null;
+}
+
+export interface YouTubeChannelPreview {
+  channel_id: string;
+  title: string;
+  description: string | null;
+  custom_url: string | null;
+  thumbnail_url: string | null;
+  subscriber_count: number | null;
+  view_count: number | null;
+  video_count: number | null;
+  recent_videos: YouTubeVideoPreview[];
+}

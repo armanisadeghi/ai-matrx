@@ -56,6 +56,12 @@ export const GOOGLE_ANALYTICS_SCOPES = [
   GOOGLE_SCOPE.analyticsReadonly,
 ] as const;
 
+/** Focused owned-channel read; never bundled into Search Console or Workspace. */
+export const GOOGLE_YOUTUBE_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.youtubeReadonly,
+] as const;
+
 /**
  * First verification campaign target in Google Cloud Data Access. Identity
  * aliases are listed as the URLs Google Cloud displays, not GIS shorthand.

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   connectGoogle,
   disconnectGoogle,
+  getYouTubeChannelPreview,
   listGoogleConnectionInventory,
 } from "@/features/marketing/google/service";
 import type { GoogleConnectionOwner } from "@/features/marketing/google/types";
@@ -45,5 +46,19 @@ export function useDisconnectGoogle() {
       queryClient.invalidateQueries({
         queryKey: googleConnectionKeys.inventory,
       }),
+  });
+}
+
+export function useYouTubeChannelPreview() {
+  return useMutation({
+    mutationFn: ({
+      connectionId,
+      channelId,
+      organizationId,
+    }: {
+      connectionId: string;
+      channelId: string;
+      organizationId?: string | null;
+    }) => getYouTubeChannelPreview(connectionId, channelId, organizationId),
   });
 }

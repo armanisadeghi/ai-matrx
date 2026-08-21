@@ -6,6 +6,7 @@ import type {
   GoogleConnectionInventory,
   GoogleConnectionOwner,
   GoogleConnectionResult,
+  YouTubeChannelPreview,
 } from "@/features/marketing/google/types";
 
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
@@ -207,4 +208,21 @@ export async function disconnectGoogle(connectionId: string): Promise<void> {
     { connection_id: connectionId },
     "Unable to disconnect Google.",
   );
+}
+
+export async function getYouTubeChannelPreview(
+  connectionId: string,
+  channelId: string,
+  organizationId?: string | null,
+): Promise<YouTubeChannelPreview> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/youtube/preview",
+    {
+      connection_id: connectionId,
+      channel_id: channelId,
+      organization_id: organizationId ?? null,
+    },
+    "Unable to read the selected YouTube channel.",
+  );
+  return (await response.json()) as YouTubeChannelPreview;
 }
