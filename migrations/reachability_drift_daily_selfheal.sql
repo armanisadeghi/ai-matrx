@@ -109,9 +109,18 @@ BEGIN
   ORDER BY e.occurred_at DESC
   LIMIT 1;
 
+  -- `kind` is the ONLY thing the triage ranker reads: aidream's
+  -- admin_persistence `_patrol_priority()` buckets by kind string alone, and
+  -- 'reachability_drift_detected' is registered there in the `urgent` set. It
+  -- is not decorative — an unregistered kind falls to the `other` bucket, sorts
+  -- last, and is filtered OUT of any priority-scoped triage query. Neither
+  -- `metadata` nor `source_app` is loaded by the collapsed list, and `metadata`
+  -- is not loaded by the detail view either, so every fact a human needs goes
+  -- in `error_text` (always shown, and part of the grouping signature) and
+  -- `context` (shown on detail).
   IF v_open_id IS NULL THEN
     INSERT INTO ops.system_error (
-      kind, error_type, source_app, route, error_text, context, metadata
+      kind, error_type, source_app, route, error_text, context
     ) VALUES (
       'reachability_drift_detected',
       'ReachabilityCacheDrift',
@@ -140,16 +149,18 @@ BEGIN
         'heal_confirmed', (v_after = 0),
         'containers',     v_containers,
         'first_seen_at',  now(),
-        'occurrences',    1
-      ),
-      jsonb_build_object(
-        'severity',   CASE WHEN v_after = 0 THEN 'high' ELSE 'critical' END,
-        'guard',      'reachability',
-        'self_healed', true
+        'occurrences',    1,
+        'guard',          'reachability',
+        'self_healed',    true,
+        'severity',       CASE WHEN v_after = 0 THEN 'high' ELSE 'critical' END
       )
     );
   ELSE
     -- Already open: fold this firing into it rather than duplicating the ticket.
+    -- `occurred_at` is deliberately NOT bumped. It stays at first-seen so the
+    -- incident visibly AGES in the triage burn-down buckets; refreshing it every
+    -- night would make a defect that has been open for three weeks read as
+    -- brand new. Recurrence is recorded as context.occurrences / last_seen_at.
     UPDATE ops.system_error e
     SET context = e.context
                 || jsonb_build_object(
@@ -160,11 +171,8 @@ BEGIN
                      'drift_sample',  v_sample,
                      'rebuilt_rows',  v_rebuilt,
                      'drift_after',   v_after,
-                     'heal_confirmed', (v_after = 0)
-                   ),
-        metadata = e.metadata
-                || jsonb_build_object(
-                     'severity', CASE WHEN v_after = 0 THEN 'high' ELSE 'critical' END
+                     'heal_confirmed', (v_after = 0),
+                     'severity',      CASE WHEN v_after = 0 THEN 'high' ELSE 'critical' END
                    )
     WHERE e.id = v_open_id;
   END IF;
@@ -212,6 +220,13 @@ COMMENT ON FUNCTION public.admin_heal_reachability_drift() IS
   'Super-admin on-demand run of the daily reachability self-heal (platform.heal_reachability_drift), mirroring admin_rebuild_reachability / admin_reachability_guard_report.';
 
 REVOKE ALL ON FUNCTION public.admin_heal_reachability_drift() FROM PUBLIC;
+-- `REVOKE ... FROM PUBLIC` does NOT remove the explicit `anon` grant that
+-- Supabase's default privileges on `public` attach at CREATE time — that is how
+-- `anon` ended up holding EXECUTE on reachability_guard_report and
+-- admin_reachability_guard_report. Revoke it by name, matching
+-- admin_rebuild_reachability (the admin mutation path this mirrors), which has
+-- no anon grant.
+REVOKE ALL ON FUNCTION public.admin_heal_reachability_drift() FROM anon;
 GRANT EXECUTE ON FUNCTION public.admin_heal_reachability_drift() TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------

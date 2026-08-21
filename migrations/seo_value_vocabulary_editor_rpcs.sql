@@ -305,6 +305,9 @@ RETURNS TABLE (value text, label text, description text, sort int, config jsonb,
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path = seo, platform, web, pg_temp
 AS $fn$
+-- The OUT parameter `value` shadows seo.site_vocabulary.value in the ON
+-- CONFLICT target; state the resolution rule for the whole body (42702).
+#variable_conflict use_column
 DECLARE
   v_org uuid;
   v_uid uuid := auth.uid();
@@ -320,7 +323,7 @@ BEGIN
     WHERE sv.site_id = p_site_id AND sv.vocab_kind = p_kind
       AND sv.active AND sv.deleted_at IS NULL
   ) THEN
-    INSERT INTO seo.site_vocabulary
+    INSERT INTO seo.site_vocabulary AS sv
       (organization_id, site_id, vocab_kind, value, label, description, sort, config, active, created_by, updated_by, metadata)
     SELECT v_org, p_site_id, p_kind, c.slug, c.name, c.metadata->>'description',
            COALESCE(c.position, 0), c.metadata - 'description', true, v_uid, v_uid,
@@ -331,11 +334,11 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT sv.value, sv.label, sv.description, sv.sort, sv.config, false
-  FROM seo.site_vocabulary sv
-  WHERE sv.site_id = p_site_id AND sv.vocab_kind = p_kind
-    AND sv.active AND sv.deleted_at IS NULL
-  ORDER BY sv.sort;
+  SELECT sv2.value, sv2.label, sv2.description, sv2.sort, sv2.config, false
+  FROM seo.site_vocabulary sv2
+  WHERE sv2.site_id = p_site_id AND sv2.vocab_kind = p_kind
+    AND sv2.active AND sv2.deleted_at IS NULL
+  ORDER BY sv2.sort;
 END;
 $fn$;
 
@@ -352,6 +355,8 @@ RETURNS TABLE (value text, label text, description text, sort int, config jsonb,
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path = seo, platform, web, pg_temp
 AS $fn$
+-- Same 42702 class as adopt: the OUT parameter `value` shadows the column.
+#variable_conflict use_column
 DECLARE
   v_org uuid;
   v_uid uuid := auth.uid();
@@ -366,10 +371,10 @@ BEGIN
 
   -- identities that exist today (site rows, or the template when adopting now)
   -- and are absent from the incoming set
-  SELECT COALESCE(array_agg(DISTINCT cur.value), '{}')
+  SELECT COALESCE(array_agg(DISTINCT cur.slug), '{}')
     INTO v_removed
   FROM (
-    SELECT sv.value FROM seo.site_vocabulary sv
+    SELECT sv.value AS slug FROM seo.site_vocabulary sv
     WHERE sv.site_id = p_site_id AND sv.vocab_kind = p_kind
       AND sv.active AND sv.deleted_at IS NULL
     UNION
@@ -380,7 +385,7 @@ BEGIN
           AND sv2.active AND sv2.deleted_at IS NULL)
   ) cur
   WHERE NOT EXISTS (
-    SELECT 1 FROM jsonb_array_elements(p_rows) e WHERE e->>'value' = cur.value);
+    SELECT 1 FROM jsonb_array_elements(p_rows) e WHERE e->>'value' = cur.slug);
 
   -- Nothing that carries data disappears without the expert saying where it goes.
   FOREACH v_slug IN ARRAY v_removed LOOP
@@ -397,8 +402,8 @@ BEGIN
         RAISE EXCEPTION 'gsc_vocab_band_in_use: % keyword ruling(s) are set to "%" — choose where they move before removing it', v_refs, v_slug;
       END IF;
       IF v_refs > 0 THEN
-        UPDATE seo.site_keyword_value SET value_tier = v_target, updated_at = now()
-        WHERE site_id = p_site_id AND deleted_at IS NULL AND value_tier = v_slug;
+        UPDATE seo.site_keyword_value skv SET value_tier = v_target, updated_at = now()
+        WHERE skv.site_id = p_site_id AND skv.deleted_at IS NULL AND skv.value_tier = v_slug;
       END IF;
     ELSE
       SELECT count(*) INTO v_refs FROM seo.site_geo_area g
@@ -407,8 +412,8 @@ BEGIN
         RAISE EXCEPTION 'gsc_vocab_geo_band_in_use: % geo area(s) are banded "%" — choose where they move before removing it', v_refs, v_slug;
       END IF;
       IF v_refs > 0 THEN
-        UPDATE seo.site_geo_area SET geo_band = v_target, updated_at = now()
-        WHERE site_id = p_site_id AND deleted_at IS NULL AND geo_band = v_slug;
+        UPDATE seo.site_geo_area g SET geo_band = v_target, updated_at = now()
+        WHERE g.site_id = p_site_id AND g.deleted_at IS NULL AND g.geo_band = v_slug;
       END IF;
     END IF;
   END LOOP;
@@ -429,17 +434,17 @@ BEGIN
     updated_by = EXCLUDED.updated_by,
     updated_at = now();
 
-  UPDATE seo.site_vocabulary
+  UPDATE seo.site_vocabulary sv2
   SET deleted_at = now(), updated_by = v_uid, updated_at = now()
-  WHERE site_id = p_site_id AND vocab_kind = p_kind AND deleted_at IS NULL
-    AND NOT (value = ANY (SELECT btrim(e->>'value') FROM jsonb_array_elements(p_rows) e));
+  WHERE sv2.site_id = p_site_id AND sv2.vocab_kind = p_kind AND sv2.deleted_at IS NULL
+    AND NOT (sv2.value = ANY (SELECT btrim(e->>'value') FROM jsonb_array_elements(p_rows) e));
 
   RETURN QUERY
-  SELECT sv2.value, sv2.label, sv2.description, sv2.sort, sv2.config, false
-  FROM seo.site_vocabulary sv2
-  WHERE sv2.site_id = p_site_id AND sv2.vocab_kind = p_kind
-    AND sv2.active AND sv2.deleted_at IS NULL
-  ORDER BY sv2.sort;
+  SELECT sv3.value, sv3.label, sv3.description, sv3.sort, sv3.config, false
+  FROM seo.site_vocabulary sv3
+  WHERE sv3.site_id = p_site_id AND sv3.vocab_kind = p_kind
+    AND sv3.active AND sv3.deleted_at IS NULL
+  ORDER BY sv3.sort;
 END;
 $fn$;
 
