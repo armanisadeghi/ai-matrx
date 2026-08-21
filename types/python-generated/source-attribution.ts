@@ -183,6 +183,7 @@ export const SOURCE_FEATURES = [
   "workflow_worker",
   "vision_interview",
   "vision_interview_tracker",
+  "youtube_research_processing",
   "youtube_transcription",
 ] as const;
 
