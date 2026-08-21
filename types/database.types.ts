@@ -4002,34 +4002,43 @@ export type Database = {
           cost_usd: number
           created_at: string
           created_by: string | null
+          id: string
           idempotency_key: string
           metadata: Json
           organization_id: string
           source: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           cost_usd: number
           created_at?: string
           created_by?: string | null
+          id?: string
           idempotency_key: string
           metadata?: Json
           organization_id: string
           source?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           cost_usd?: number
           created_at?: string
           created_by?: string | null
+          id?: string
           idempotency_key?: string
           metadata?: Json
           organization_id?: string
           source?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -19401,6 +19410,7 @@ export type Database = {
           owner_id: string
           source_annotation_id: string | null
           updated_at: string
+          version: number
         }
         Insert: {
           canonical_value: string
@@ -19416,6 +19426,7 @@ export type Database = {
           owner_id: string
           source_annotation_id?: string | null
           updated_at?: string
+          version?: number
         }
         Update: {
           canonical_value?: string
@@ -19431,6 +19442,7 @@ export type Database = {
           owner_id?: string
           source_annotation_id?: string | null
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -19773,6 +19785,7 @@ export type Database = {
           owner_id: string
           page_id: string | null
           updated_at: string
+          version: number
         }
         Insert: {
           created_at?: string
@@ -19787,6 +19800,7 @@ export type Database = {
           owner_id: string
           page_id?: string | null
           updated_at?: string
+          version?: number
         }
         Update: {
           created_at?: string
@@ -19801,6 +19815,7 @@ export type Database = {
           owner_id?: string
           page_id?: string | null
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -19846,6 +19861,7 @@ export type Database = {
           source: string
           status: string
           updated_at: string
+          version: number
         }
         Insert: {
           bbox: Json
@@ -19873,6 +19889,7 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
+          version?: number
         }
         Update: {
           bbox?: Json
@@ -19900,6 +19917,7 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -45969,6 +45987,7 @@ export type Database = {
           traffic_class: string | null
           updated_at: string
           updated_by: string | null
+          version: number
         }
         Insert: {
           base_filters?: Json
@@ -45990,6 +46009,7 @@ export type Database = {
           traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Update: {
           base_filters?: Json
@@ -46011,6 +46031,7 @@ export type Database = {
           traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -46137,6 +46158,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           value_multiplier: number | null
+          version: number
         }
         Insert: {
           auto_apply?: boolean
@@ -46161,6 +46183,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value_multiplier?: number | null
+          version?: number
         }
         Update: {
           auto_apply?: boolean
@@ -46185,6 +46208,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value_multiplier?: number | null
+          version?: number
         }
         Relationships: [
           {
