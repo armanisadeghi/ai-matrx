@@ -7,6 +7,7 @@ describe("microphone permission error classification", () => {
   it.each(["NotAllowedError", "PermissionDeniedError"])(
     "treats %s as an expected permission denial",
     (name) => {
+      // access-errors: ok — test fixture reproducing the browser's own getUserMedia denial message
       const error = Object.assign(new Error("Permission denied"), { name });
 
       expect(isMicrophonePermissionDenial(error)).toBe(true);
@@ -25,6 +26,7 @@ describe("microphone permission error classification", () => {
   );
 
   it("is safe for non-error rejection values", () => {
+    // access-errors: ok — test fixture reproducing the browser's own getUserMedia denial message
     expect(isMicrophonePermissionDenial("Permission denied")).toBe(false);
     expect(getErrorSolution(null)).toMatchObject({
       code: "UNKNOWN_ERROR",

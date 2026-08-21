@@ -8,10 +8,13 @@ import {
   MessageTemplateUpdate,
 } from "@/features/message-templates/types/message-templates-db";
 import { createClient } from "@/utils/supabase/client";
+import { makeAssertData, operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
+
+const assertData = makeAssertData("load your message templates");
 
 // Helper to get the right client based on context
 function getClient() {
@@ -79,9 +82,7 @@ export async function fetchMessageTemplates(
 
   const { data, error } = await query;
 
-  if (error) throw new Error(error.message || "Failed to fetch templates");
-
-  return data;
+  return assertData(data, error);
 }
 
 // Fetch message templates by role
@@ -105,8 +106,7 @@ export async function fetchOrganizationMessageTemplates(
     .select("*")
     .or(`organization_id.eq.${organizationId},visibility.eq.public`)
     .order("updated_at", { ascending: false });
-  if (error) throw new Error(error.message || "Failed to fetch templates");
-  return data;
+  return assertData(data, error);
 }
 
 // Fetch templates grouped by role
@@ -142,8 +142,8 @@ export async function getTemplateById(
     .single();
 
   if (error) {
-    if (error.code === "PGRST116") return null; // Not found
-    throw new Error(error.message || "Failed to fetch template");
+    if (error.code === "PGRST116") return null; // Zero rows — caller decides
+    throw operationFailed("load this template", error);
   }
 
   return data;
@@ -176,9 +176,7 @@ export async function createTemplate(
     .select()
     .single();
 
-  if (error) throw new Error(error.message || "Failed to create template");
-
-  return data;
+  return assertData(data, error, "create this template");
 }
 
 // Update an existing template
@@ -204,9 +202,7 @@ export async function updateTemplate(
     .select()
     .single();
 
-  if (error) throw new Error(error.message || "Failed to update template");
-
-  return data;
+  return assertData(data, error, "save this template");
 }
 
 // Delete a template
@@ -219,7 +215,7 @@ export async function deleteTemplate(id: string): Promise<void> {
     .delete()
     .eq("id", id);
 
-  if (error) throw new Error(error.message || "Failed to delete template");
+  if (error) throw operationFailed("delete this template", error);
 }
 
 // Toggle public status of a template
@@ -239,11 +235,11 @@ export async function getAllTags(): Promise<string[]> {
     .from("message_template")
     .select("tags");
 
-  if (error) throw new Error(error.message || "Failed to fetch tags");
+  const rows = assertData(data, error, "load your template tags");
 
   // Flatten and deduplicate tags
   const allTags = new Set<string>();
-  data.forEach((template) => {
+  rows.forEach((template) => {
     if (template.tags && Array.isArray(template.tags)) {
       template.tags.forEach((tag) => allTags.add(tag));
     }

@@ -114,6 +114,7 @@ export function MediaDevicesPanel() {
     try {
       const result = await requestPermission();
       if (result === "denied") {
+        // access-errors: ok — the browser's own getUserMedia permission verdict, not a record read
         toast.error("Microphone access denied", {
           description:
             "Enable microphone access for this site in your browser settings, then try again.",
@@ -129,6 +130,7 @@ export function MediaDevicesPanel() {
     try {
       const result = await requestCameraPermission();
       if (result === "denied") {
+        // access-errors: ok — the browser's own getUserMedia permission verdict, not a record read
         toast.error("Camera access denied", {
           description:
             "Enable camera access for this site in your browser settings, then try again.",

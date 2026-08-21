@@ -22,6 +22,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { OctagonX, Pause, Play, RotateCcw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -75,7 +76,7 @@ import { IntakePanel } from "./IntakePanel";
 type DefinitionLoad =
   | { state: "loading" }
   | { state: "missing" }
-  | { state: "error" }
+  | { state: "error"; error: unknown }
   | {
       state: "ready";
       name: string;
@@ -91,6 +92,7 @@ export function DenseRunConsole({ definitionId }: { definitionId: string }) {
 
   // ── Definition — probe, don't spin ─────────────────────────────────────
   const [load, setLoad] = useState<DefinitionLoad>({ state: "loading" });
+  const [loadAttempt, setLoadAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setLoad({ state: "loading" });
@@ -103,34 +105,41 @@ export function DenseRunConsole({ definitionId }: { definitionId: string }) {
             : { state: "missing" },
         );
       })
-      .catch(() => {
-        if (!cancelled) setLoad({ state: "error" });
+      .catch((error: unknown) => {
+        if (!cancelled) setLoad({ state: "error", error });
       });
     return () => {
       cancelled = true;
     };
-  }, [definitionId]);
+  }, [definitionId, loadAttempt]);
 
   // ── Run probe — a bad ?run= fails fast with a plain answer ─────────────
   const [runProbe, setRunProbe] = useState<"ok" | "checking" | "missing">("ok");
+  const [runProbeError, setRunProbeError] = useState<unknown>(null);
+  const [runProbeAttempt, setRunProbeAttempt] = useState(0);
   useEffect(() => {
     if (!runId) {
       setRunProbe("ok");
+      setRunProbeError(null);
       return;
     }
     let cancelled = false;
     setRunProbe("checking");
+    setRunProbeError(null);
     fetchRunDefinitionId(runId)
       .then((defId) => {
         if (!cancelled) setRunProbe(defId ? "ok" : "missing");
       })
-      .catch(() => {
-        if (!cancelled) setRunProbe("missing");
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setRunProbeError(error);
+          setRunProbe("missing");
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [runId]);
+  }, [runId, runProbeAttempt]);
 
   const adoptedRunId = runProbe === "ok" ? runId : null;
   const { ensureLane } = useWorkflowRun(adoptedRunId);
@@ -170,21 +179,31 @@ export function DenseRunConsole({ definitionId }: { definitionId: string }) {
               <CardLoading />
             </div>
           ) : load.state !== "ready" ? (
-            <EdgeCard
-              headline={
-                load.state === "missing"
-                  ? "This workflow doesn't exist, or you don't have access to it."
-                  : "We couldn't open this workflow right now."
-              }
-              actionLabel="See all workflows"
-              onAction={() => router.push("/workflows/all")}
-            />
+            <div className="flex flex-1 items-start justify-center p-6">
+              <div className="w-full max-w-md">
+                <AccessGate
+                  token="workflow"
+                  id={definitionId}
+                  error={load.state === "error" ? load.error : null}
+                  onRetry={() => setLoadAttempt((n) => n + 1)}
+                  fallbackHref="/workflows/all"
+                  fallbackLabel="All workflows"
+                />
+              </div>
+            </div>
           ) : runId && runProbe === "missing" ? (
-            <EdgeCard
-              headline="This run doesn't exist, or you don't have access to it."
-              actionLabel="Set up a new run"
-              onAction={clearRun}
-            />
+            <div className="flex flex-1 items-start justify-center p-6">
+              <div className="w-full max-w-md">
+                <AccessGate
+                  token="workflow_run"
+                  id={runId}
+                  error={runProbeError}
+                  onRetry={() => setRunProbeAttempt((n) => n + 1)}
+                  fallbackHref={pathname}
+                  fallbackLabel="Set up a new run"
+                />
+              </div>
+            </div>
           ) : (
             <Desk
               definitionId={definitionId}
@@ -201,31 +220,6 @@ export function DenseRunConsole({ definitionId }: { definitionId: string }) {
         </div>
       </div>
     </>
-  );
-}
-
-function EdgeCard({
-  headline,
-  actionLabel,
-  onAction,
-}: {
-  headline: string;
-  actionLabel: string;
-  onAction: () => void;
-}) {
-  return (
-    <div className="flex flex-1 items-start justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-4">
-        <p className="text-sm text-foreground">{headline}</p>
-        <button
-          type="button"
-          onClick={onAction}
-          className="mt-3 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-        >
-          {actionLabel}
-        </button>
-      </div>
-    </div>
   );
 }
 

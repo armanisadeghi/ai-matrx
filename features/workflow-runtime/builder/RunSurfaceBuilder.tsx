@@ -20,6 +20,7 @@ import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
@@ -332,14 +333,14 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
             ? "Someone else saved this view"
             : saveProblem === "refused"
               ? "This account can't change this view"
-              : "This view is no longer there"
+              : "This view is no longer reachable"
         }
         description={
           saveProblem === "conflict"
             ? "Your changes weren't saved, because they'd have overwritten theirs. Load their version to see what changed — your unsaved edits will be lost."
             : saveProblem === "refused"
               ? "Nothing was saved. This view belongs to another workspace, and you're signed in with an account that can read it but not change it. Ask its owner for edit access — or copy anything you need out of your edits before you leave this page."
-              : "Nothing was saved, because this view has been deleted since you opened it. Copy anything you need out of your edits before you leave this page."
+              : `Nothing was saved. ${recordUnavailableMessage("view", "unknown")} Copy anything you need out of your edits before you leave this page.`
         }
         confirmLabel={
           saveProblem === "conflict" ? "Load their version" : "Reload the page"

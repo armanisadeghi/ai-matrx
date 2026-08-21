@@ -23,7 +23,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  AlertTriangle,
   ChevronLeft,
   Feather,
   Play,
@@ -33,6 +32,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
@@ -81,36 +81,6 @@ interface LoadedWorkflow {
   definition: WorkflowDefinitionLike;
 }
 
-/** A plain, fast answer — never a spinner over a dead id. */
-function HonestEdge({
-  title,
-  body,
-  action,
-}: {
-  title: string;
-  body: string;
-  action?: { label: string; onClick: () => void };
-}) {
-  return (
-    <div className="flex h-full items-center justify-center p-6">
-      <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
-        <AlertTriangle className="mx-auto h-6 w-6 text-amber-600 dark:text-amber-400" />
-        <h2 className="mt-2 text-base font-semibold text-foreground">{title}</h2>
-        <p className="mt-1.5 text-sm text-muted-foreground">{body}</p>
-        {action ? (
-          <button
-            type="button"
-            onClick={action.onClick}
-            className="mt-4 rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground"
-          >
-            {action.label}
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 export function CommissionPage({ definitionId }: { definitionId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -121,9 +91,12 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
   const [defState, setDefState] = useState<"loading" | "ok" | "missing" | "error">(
     "loading",
   );
+  const [defError, setDefError] = useState<unknown>(null);
+  const [defAttempt, setDefAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setDefState("loading");
+    setDefError(null);
     fetchWorkflowDefinition(definitionId)
       .then((row) => {
         if (cancelled) return;
@@ -134,36 +107,46 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
           setDefState("ok");
         }
       })
-      .catch(() => {
-        if (!cancelled) setDefState("error");
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setDefError(error);
+          setDefState("error");
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [definitionId]);
+  }, [definitionId, defAttempt]);
 
   // ── Probe the run id before believing it ───────────────────────────────
   const [runProbe, setRunProbe] = useState<"idle" | "probing" | "ok" | "missing">(
     "idle",
   );
+  const [runProbeError, setRunProbeError] = useState<unknown>(null);
+  const [runProbeAttempt, setRunProbeAttempt] = useState(0);
   useEffect(() => {
     if (!runParam) {
       setRunProbe("idle");
+      setRunProbeError(null);
       return;
     }
     let cancelled = false;
     setRunProbe("probing");
+    setRunProbeError(null);
     fetchRunDefinitionId(runParam)
       .then((defId) => {
         if (!cancelled) setRunProbe(defId ? "ok" : "missing");
       })
-      .catch(() => {
-        if (!cancelled) setRunProbe("missing");
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setRunProbeError(error);
+          setRunProbe("missing");
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [runParam]);
+  }, [runParam, runProbeAttempt]);
 
   const runId = runParam && runProbe === "ok" ? runParam : null;
   const { ensureLane } = useWorkflowRun(runId);
@@ -204,8 +187,6 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
   // ── Controls ───────────────────────────────────────────────────────────
   const { startRun, cancel, starting } = useWorkflowRunControls();
 
-  const back = () => router.back();
-
   if (defState === "loading" || (runParam && runProbe === "probing")) {
     return (
       <div className="h-full overflow-hidden p-6">
@@ -220,19 +201,18 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
           left={<HeaderIdentity name="Workflow" />}
           fallback={false}
         />
-        <HonestEdge
-          title={
-            defState === "missing"
-              ? "This workflow doesn't exist"
-              : "Couldn't reach this workflow"
-          }
-          body={
-            defState === "missing"
-              ? "It may have been removed, or this link may not be yours to open."
-              : "The check itself failed — your connection or sign-in may have lapsed. Try again in a moment."
-          }
-          action={{ label: "Go back", onClick: back }}
-        />
+        <div className="flex h-full items-center justify-center p-6">
+          <div className="w-full max-w-md">
+            <AccessGate
+              token="workflow"
+              id={definitionId}
+              error={defState === "error" ? defError : null}
+              onRetry={() => setDefAttempt((n) => n + 1)}
+              fallbackHref="/workflows/all"
+              fallbackLabel="All workflows"
+            />
+          </div>
+        </div>
       </>
     );
   }
@@ -243,14 +223,18 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
           left={<HeaderIdentity name={workflow?.name ?? "Workflow"} />}
           fallback={false}
         />
-        <HonestEdge
-          title="That run can't be opened"
-          body="It doesn't exist, or it isn't yours to see. You can start a fresh run of this workflow instead."
-          action={{
-            label: "Start fresh",
-            onClick: () => router.replace(`${BASE}/${definitionId}`),
-          }}
-        />
+        <div className="flex h-full items-center justify-center p-6">
+          <div className="w-full max-w-md">
+            <AccessGate
+              token="workflow_run"
+              id={runParam}
+              error={runProbeError}
+              onRetry={() => setRunProbeAttempt((n) => n + 1)}
+              fallbackHref={`${BASE}/${definitionId}`}
+              fallbackLabel="Start fresh"
+            />
+          </div>
+        </div>
       </>
     );
   }

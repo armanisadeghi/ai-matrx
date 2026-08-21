@@ -32,6 +32,7 @@
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { getUserId } from "@/utils/auth/getUserId";
 import {
   normalizeAudioContentType,
@@ -276,7 +277,7 @@ export async function discardChunkJournal(safetyId: string): Promise<void> {
       .from("studio_recording_chunks")
       .delete()
       .eq("safety_id", safetyId);
-    if (error) throw new Error(error.message);
+    if (error) throw operationFailed("discard this recording's staged chunks", error);
   } catch (err) {
     console.warn(`${LOG_PREFIX} discard for ${safetyId} failed:`, err);
   }

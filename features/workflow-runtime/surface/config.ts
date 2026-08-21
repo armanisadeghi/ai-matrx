@@ -432,6 +432,7 @@ export function validateSurfaceConfig(config: RunSurfaceConfig): string[] {
       problems.push(`Readout "${r.id}" has a zero-size box.`);
     }
     if (r.pageId && !pageIds.has(r.pageId)) {
+      // access-errors: ok — author-facing config validation; "page" is a page id inside this in-memory surface config, not a record read
       problems.push(`Readout "${r.id}" names a page that doesn't exist ("${r.pageId}").`);
     }
   }

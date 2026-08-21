@@ -13,6 +13,7 @@
  * (`service.ts` / `organization-service.ts`).
  */
 import { createClient } from "@/utils/supabase/client";
+import { makeAssertData } from "@/utils/errors";
 import {
   downloadVaultAttachment as downloadVaultAttachmentBytes,
   replaceVaultAttachment as replaceVaultAttachmentBytes,
@@ -57,6 +58,8 @@ import {
   type VaultScope,
   type VaultTransferResponse,
 } from "./types";
+
+const assertVaultData = makeAssertData("load your vault");
 
 // ── aidream /api/vault client ─────────────────────────────────────────────
 
@@ -513,7 +516,7 @@ export async function fetchVaultItems(
       .select("credential_item_id, can_use")
       .eq("user_id", user.id)
       .not("credential_item_id", "is", null);
-    if (myGrantsError) throw new Error(myGrantsError.message);
+    assertVaultData(myGrants, myGrantsError);
     sharedItemIds = Array.from(
       new Set(
         (myGrants ?? [])
@@ -543,7 +546,7 @@ export async function fetchVaultItems(
   }
 
   const { data: itemRows, error: itemsError } = await itemsQuery;
-  if (itemsError) throw new Error(itemsError.message);
+  assertVaultData(itemRows, itemsError);
   const items = (itemRows ?? []) as CredentialItemMaskedRow[];
   if (items.length === 0) return [];
 
@@ -556,7 +559,7 @@ export async function fetchVaultItems(
     .in("credential_item_id", itemIds)
     .is("deleted_at", null)
     .order("field_key", { ascending: true });
-  if (fieldsError) throw new Error(fieldsError.message);
+  assertVaultData(fieldRows, fieldsError);
 
   const { data: attachmentRows, error: attachmentsError } = await supabase
     .schema("users")
@@ -565,7 +568,7 @@ export async function fetchVaultItems(
     .in("credential_item_id", itemIds)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
-  if (attachmentsError) throw new Error(attachmentsError.message);
+  assertVaultData(attachmentRows, attachmentsError);
 
   // My own grants refine capabilities for rows I don't own (self-read policy).
   let manageGrantItemIds = new Set<string>();
@@ -579,7 +582,7 @@ export async function fetchVaultItems(
       .select("credential_item_id, can_manage")
       .eq("user_id", user.id)
       .in("credential_item_id", itemIds);
-    if (grantsError) throw new Error(grantsError.message);
+    assertVaultData(grantRows, grantsError);
     manageGrantItemIds = new Set(
       (grantRows ?? [])
         .filter((g) => g.can_manage && g.credential_item_id)
@@ -651,7 +654,7 @@ export async function fetchCredentialDefinitions(): Promise<
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
-  if (error) throw new Error(error.message);
+  assertVaultData(data, error, "load the credential catalog");
 
   const defs: CredentialDefinition[] = [];
   for (const row of data ?? []) {
