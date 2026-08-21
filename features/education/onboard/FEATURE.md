@@ -70,6 +70,15 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 ## Invariants
 
+- 🚨 **The kit is sized by the MATERIAL, and the student can say how much they want.**
+  `StartHero` passes `depth` (`quick | standard | thorough`, `KitDepthPicker`) plus an optional
+  exact `count`; the converter's coverage planner spreads whatever number results across the WHOLE
+  document. The law and the knobs live in [`convert/FEATURE.md`](../convert/FEATURE.md) §THE
+  COVERAGE LAW — read it before touching kit sizing.
+- **A document we could not read all of is a WARNING, not a footnote.** The source ceiling is the
+  knob `education.study_kit.max_source_chars` (was a hardcoded 48,000 that silently cut a 90-page
+  PDF to its first third); `KitBoard` renders an amber banner naming how much was read and what to
+  do about the rest.
 - **The board is up from the first millisecond, and every stage says what it is doing.** `KitBoard`
   mounts for `ingesting` too (not just `generating`), reads byte-accurate upload progress and
   per-page extraction from `IngestProgress.ratio/detail`, keeps an elapsed clock on the run and on
@@ -82,6 +91,10 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   required by the type). Execution refuses an org-less launch, so without it every target failed
   with the opaque "The generation agent failed before returning a result" for anyone who had not
   picked an org in the sidebar.
+- **A segmented target reports SECTIONS, not a spinner.** A big artifact is deliberately many
+  agent calls; `KitTargetState.coverage` carries the live count and `KitBoard` renders a measured
+  bar plus "section 3 of 8 · Measurements · 24 so far". An indeterminate bar for a run we can
+  measure is a lie of omission.
 - **A target that creates a run must RUN it.** The audio generator only creates the run row and
   stashes the request; `KitAudioRunner` hosts the same `useStudioRun` the audio-study page uses, so
   the work actually happens (and persists through the shared `useAudioStudyRunPersistence`) while
@@ -193,6 +206,14 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Change log
 
+- **2026-08-21** — **The size fix.** A 77-slide upload produced 10 flashcards, a half-page summary,
+  a 16-node map and empty notes. (a) Generation is now coverage-planned per section — the law and
+  the engine live in [`convert/FEATURE.md`](../convert/FEATURE.md); this feature is the consumer.
+  (b) `KitDepthPicker` gives the student quick/standard/thorough plus an exact count, which nothing
+  previously offered. (c) `KitBoard` reports measured coverage per target. (d) `useIngest`'s
+  hardcoded 48,000-character clamp became the knob `education.study_kit.max_source_chars` (400,000)
+  and truncation is now an amber warning instead of the words "trimmed to fit". Verified live on
+  the reported source: 58 cards, 44 key points, 99 nodes, full-length notes.
 - **2026-08-20** — **The silent-flow fix.** A large PDF took minutes with no feedback and the second
   page was a grey board of spinners. (a) `KitBoard` replaces the old results block and mounts from
   the first moment of the run — staged, timed, coloured (`convert/targetPresentation.ts`, one

@@ -31,7 +31,7 @@ const { convert, convertMany } = useContentConverter();
 const deck = await convert({
   source,
   targetKind: "deck",
-  options: { count: 15 },
+  options: { depth: "thorough" }, // count optional — omit and it sizes to the source
 });
 
 // the kit fan-out — parallel, never throws; each target succeeds/fails on its own
@@ -51,6 +51,53 @@ ingest pipeline normalizes EVERY input to a durable file.
 
 **`TargetKind`** — `deck | summary | mind_map | audio | quiz | practice_test | notes`.
 `isTargetAvailable(kind)` / `listGenerators()` drive the kit picker (available vs coming-soon).
+
+## THE COVERAGE LAW
+
+**An artifact is sized by the MATERIAL, never by a constant.** Every generator used to send the
+whole source in one agent call with a hardcoded count; a 77-slide PDF came back as 10 flashcards,
+5 key points, 16 mind-map nodes and 10 quiz questions, all drawn from the front of the document
+(2026-08-21).
+
+Two rules, both load-bearing:
+
+1. **Generate PER SECTION.** `coverage.ts#planCoverage` splits the source at its own boundaries
+   (slides, headings, pages) and gives each section its own share of the total. This is what buys
+   coverage — section 7 gets its own call, so slide 62 cannot be skipped because the model already
+   had enough by slide 12.
+2. **Scale the count to the source**, bounded by knobs, multiplied by the student's `depth`
+   (`quick | standard | thorough`). An explicit `options.count` wins but is still spread across the
+   WHOLE document.
+
+**Every list-shaped generator goes through `segmentedGenerate`** (deck · quiz · practice_test ·
+memory_aid · summary key points · notes key terms). Never hand-roll a second fan-out: the dedupe
+rule, the gap reporting, the single-pass fast path and the background rule below have to stay
+identical across targets. Prose targets (`notes`, `summary`) write one section per coverage section
+and stitch them in document order; `mind_map` namespaces each sub-map's node ids before grafting it
+under one root (two sub-maps both call a node `n1`).
+
+🚨 **A multi-section run is BACKGROUND** (`runAgentExtraction`'s `live: false`). N sections mean N
+conversations, and a kept instance is a render block the canvas materializer turns into its OWN
+artifact — one deck would land as eight. It reports through `ctx.onProgress` instead, which is what
+lets the kit board say "section 3 of 8 · Measurements · 24 so far". A single-pass run keeps the old
+live-stream behaviour and its `conversationId` for the single-writer dedupe path.
+
+**A missed section is never swallowed.** A failed section drops to `null` rather than sinking the
+artifact; `describeGaps` puts the honest line in `ConvertResult.detail`.
+
+**Every ceiling is a knob** (`platform.feature_knob`, feature `education.study_kit`, read via
+`lib/knobs/featureKnobs.ts`) — segment size, max segments, concurrency, min/max items, and
+items-per-section per kind. Never a constant:
+`common-docs/policies/limits-are-knobs-agents-set-them.md`.
+
+## Making MORE from the same material
+
+A generated artifact is not a dead end at whatever size the generator chose.
+**`reopenSource(fileId)`** recovers a kit's original text from nothing but its lineage anchor —
+`docproc.processed_documents` first, then the stored bytes, then a PDF re-extract by file id — with
+no re-upload and no new anchor, so the whole kit stays one family. `AddMoreCardsButton`
+(flashcards set detail) is the worked example: reopen → `segmentedGenerate` at thorough depth →
+drop what the deck already has → `fcService.addCards` onto the SAME set.
 
 ## Live generators
 
@@ -107,7 +154,15 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 - `types.ts` — the contract types (`ConvertSource`, `ConvertResult`, `ConvertGenerator`, …)
 - `registry.ts` — `registerGenerator` / `runConvert` (aka `convertContent`) / `isTargetAvailable`
 - `useContentConverter.ts` — the React entry (`convert` + `convertMany`)
+- `coverage.ts` — **THE coverage engine**: `planCoverage` (segment + scale), `runOverSegments`
+  (bounded fan-out), `markForGrounding` (the ONE chunk-marker writer), `describeGaps`
+- `segmentedGenerate.ts` — **the ONE fan-out** every list-shaped generator uses (plan → per-section
+  run → merge → de-duplicate → report gaps)
+- `reopenSource.ts` — recover a kit's original text from its lineage anchor (powers "add more")
+- `MadeFromSource.tsx` — the BACKWARD lineage strip: the material an artifact was made from, plus
+  its kit siblings. Twin of `GeneratedFromChips`; do not grow a third lineage renderer
 - `runAgentExtraction.ts` — shared "launch JSON-extraction agent → get object" primitive
+  (`live: false` runs a segment in the background — see THE COVERAGE LAW)
 - `recordSourceLineage.ts` — **the ONE canonical writer** of the artifact→origin `source` edge
   (resolves the anchor: the durable ingest `file` OR the origin entity via `ref.entityType`/
   `entityId`). Every generator calls it; none hand-rolls the edge.
@@ -142,9 +197,20 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
   except `mind_map`/`audio`, whose agents emit no citations, so the generator derives a grounded
   envelope from the source (`sourceTrust.ts`). No generator persists `trust: null`.
 - Ingest owns raw-input → text; generators own text → artifact. Never mix the two.
+- **No generator sends the whole source in one call with a fixed count.** See THE COVERAGE LAW.
+- Lineage is visible BOTH ways: `MadeFromSource` (what this came from + its kit siblings) and
+  `GeneratedFromChips` (what was made from this). An artifact that cannot name its source reads as
+  something the system invented.
 
 ## Change log
 
+- **2026-08-21** — **THE COVERAGE LAW.** Artifacts are sized by the material, not by a constant:
+  new `coverage.ts` + `segmentedGenerate.ts`, and every generator rewired onto them (deck, summary,
+  mind_map, memory_aid, notes, quiz, practice_test). Verified live on the reported 77-slide source:
+  10 → 58 cards, 5 → 44 key points, 16 → 99 nodes, and notes that cover the whole deck. Ceilings
+  moved to `platform.feature_knob` (`education.study_kit`) behind the repo's first runtime knob
+  reader, `lib/knobs/featureKnobs.ts`. Added `MadeFromSource` (backward lineage, mounted on every
+  artifact surface) and `reopenSource` + "Add more cards" (58 → 118 verified live).
 - **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
   (`agents.ts` → `mandates.ts`; `runAgentExtraction` takes `mandateKey`, never an agent id;
   the duplicate deck agent collapsed into `flashcards.generate_from_source`).
