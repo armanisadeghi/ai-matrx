@@ -5,7 +5,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
-- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Known past collisions: two D138s, D150s, D167s, D183s, D184s. 🚨 **Renumbering has itself collided** — `D193`, `D194`, `D195` and `D219` each name two live entries today (the D184→D193 and D183→D194 renumbers landed on numbers that were already taken). Do not add to it: the next free ID is **above D229**.
+- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Known past collisions: two D138s, D150s, D167s, D183s, D184s. 🚨 **Renumbering has itself collided** — `D193`, `D194`, `D195` and `D219` each name two live entries today (the D184→D193 and D183→D194 renumbers landed on numbers that were already taken). Do not add to it: the next free ID is **above D241**.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
@@ -13,6 +13,48 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 ---
 
 ## OPEN
+
+### D241 — the `org_not_null_no_backstop` DDL-guard rule can NEVER pass: it compares a schema-qualified name against `regproc::text` (2026-08-21)
+
+**This is the single largest source of noise in `platform.ddl_guard_log`, and every row it has ever
+written is a FALSE POSITIVE.** The rule fires whenever `organization_id` is `NOT NULL` with no
+default and the table has no org-backstop trigger. Its detection:
+
+```sql
+AND NOT EXISTS (SELECT 1 FROM pg_trigger t
+                WHERE t.tgrelid = cmd.objid AND NOT t.tgisinternal
+                  AND t.tgfoid::regproc::text IN
+                      ('public._stamp_org_default','platform.inherit_org_from_parent'))
+```
+
+`regproc::text` **omits the schema for anything on the `search_path`**, so a trigger on
+`public._stamp_org_default` renders as the bare string `_stamp_org_default` and the `IN` never
+matches. Measured live 2026-08-21: **281 of 281** live triggers on that function render bare —
+i.e. the `NOT EXISTS` is unconditionally true and the rule warns on every qualifying table
+regardless of whether it is correctly backstopped.
+
+This is the exact class db-rules §1 already warns about for `regclass::text` (*"a `public` table
+prints as a bare `contact_submissions`"*), reappearing inside the guard itself.
+
+**Found** while applying the batch access model (aidream `0438`/`0439`): all five tables involved —
+`batch.cost_event`, `batch.provider_batch`, `batch.work_item`, `platform.activity_log`,
+`platform.judge_verdict` — carry `_stamp_org_default` and were warned about anyway. Those 12 log
+rows are acknowledged with this evidence via `platform.ddl_guard_ack`.
+
+**Fix (known, not applied here — it is a platform-guard change and this was a batch chip):**
+compare by OID, never by rendered text —
+
+```sql
+AND t.tgfoid IN ('public._stamp_org_default'::regproc,
+                 'platform.inherit_org_from_parent'::regproc)
+```
+
+**Why it matters beyond tidiness.** A rule that cannot pass trains every reader to ack this rule
+without looking, which is how a *genuine* missing backstop — the failure that turns an
+org-forgetting write into a 500 — gets acked along with the noise. It also inflates the advisory
+`pnpm check:ddl-guard-log` gate and the daily `docs-steward` triage load. Note the aidream release
+gate `scripts/validate_org_backstop_coverage.py` measures the same property correctly and is
+blocking, so **coverage itself is not at risk** — only the guard's signal is.
 
 ### D239 — 48,493 `scheduler.sch_run` rows are un-updatable by anyone (NOT VALID check constraint) (2026-08-21)
 
@@ -1065,12 +1107,14 @@ Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls
 |---|---|---|---|
 | ~~**`ui.ui_surface`**~~ | entity | ✅ **FIXED 2026-08-14** — RLS ON, policied | closed by `migrations/ui_surface_registry_rls_d184.sql` (read broadly, write admin-only, `service_role` bypass — the pattern its siblings `ui.ui_surface_value` / `ui.ui_surface_agent_role` / `tool.executor` already use). `anon` held the same four privileges and is closed by the absence of an anon write policy. Grants deliberately untouched: the fix is RLS, never grants |
 | ~~**`agent.card`**~~ | — | ✅ **NOT A DEFECT** — it is a **VIEW**, not a table | **views have no RLS**; `agent.card` is the platform's one registered view, a deliberate public sharing surface with explicit `security_invoker=false` that **self-filters** (anon 138 rows vs authenticated 515). `security_invoker=true` would give anon **0** and kill public agent-card discovery. See `../aidream/docs/security/SUPABASE_ADVISOR_2026-08-13.md` + `../common-docs/systems/platform/db-rules/FEATURE.md` §1 |
-| `batch.cost_event` | entity | RLS on, **0 policies** | `SIUD` |
+| ~~**`batch.cost_event`**~~ | ledger | ✅ **FIXED 2026-08-21** — RLS ON with generated policies (`svc_all` + `std_select`) | closed the RIGHT way: real policies first, then variant grants. `authenticated` is now `SELECT` only via `iam.apply_table_grants(...,'ledger')`; **`anon` — which held the same `SIUD` and is deliberately never touched by the generator — was revoked by hand** in the same migration, along with `provider_batch` and `work_item`. aidream `db/migrations/0438_batch_schema_canonical_access_model.sql` |
 | `public.system_error` | entity | RLS on, **0 policies** | `SIUD` |
 | `public.system_write_failure` | entity | RLS on, **0 policies** | `SIUD` |
 | `runtime.global_origin` | entity | RLS on, **0 policies** | `----` |
 
-**STILL OPEN — the four ops sinks** (`batch.cost_event`, `public.system_error`, `public.system_write_failure`, `runtime.global_origin`). They are currently closed (no policy = no rows for `authenticated`) but grant-wide, so **the first policy anyone adds opens them fully**.
+**STILL OPEN — three ops sinks** (`public.system_error`, `public.system_write_failure`, `runtime.global_origin`). They are currently closed (no policy = no rows for `authenticated`) but grant-wide, so **the first policy anyone adds opens them fully**.
+
+**`batch.cost_event` is closed (2026-08-21) and its answer is the template for the other three.** The openness call this entry says is Arman's was *made* by Arman for batch — *"Absolutely users need to be able to see their batch jobs. Fix it please."* — and the resolution needed no new judgement once the table was classified: it is an append-only org-scoped cost log, so it is a **`ledger`**, and the `ledger` variant already encodes exactly "users read their own org, the server writes." The whole fix was `update platform.entity_types set rls_variant='ledger'` + `iam.apply_rls(...)`; the generator then issued `SELECT`-only grants and the pre-existing `SIUD` disappeared as a side effect of being done properly. **The `anon` grant was the part the generator could NOT fix** (§6d-2: `anon` is deliberately untouched), and it was worse than this entry recorded — `anon` held the same four privileges as `authenticated`, not none. Check `anon` explicitly on the remaining three. Sibling migrations: aidream `0438`/`0439`/`0440`; live proof `aidream/scripts/_verify_batch_access_model.py`.
 
 **Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about *intended* openness — an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
 
