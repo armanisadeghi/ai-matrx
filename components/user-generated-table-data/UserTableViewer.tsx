@@ -1605,49 +1605,13 @@ const UserTableViewer = ({
     [tableId],
   );
 
-  if (loading && !tableInfo)
-    return (
-      <div className="space-y-4 p-2">
-        {/* Title placeholder */}
-        <div className="space-y-2">
-          <div className="h-7 w-56 rounded bg-muted/40 animate-pulse" />
-          <div className="h-4 w-80 rounded bg-muted/30 animate-pulse" />
-        </div>
-        {/* Toolbar placeholder — mirrors the dense action row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-1">
-            <div className="h-7 w-20 rounded-md bg-muted/40 animate-pulse" />
-            <div className="h-7 w-16 rounded-md bg-muted/40 animate-pulse" />
-            <div className="h-7 w-16 rounded-md bg-muted/40 animate-pulse" />
-          </div>
-          <div className="h-7 w-full max-w-sm rounded-md bg-muted/40 animate-pulse" />
-          <div className="flex gap-1">
-            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
-            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
-            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
-          </div>
-        </div>
-        <TableSkeleton rows={5} />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="py-6 text-center text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-        <p className="font-medium">Error: {error}</p>
-        <p className="text-sm mt-1 text-red-400 dark:text-red-300">
-          Please try again or contact support if the issue persists.
-        </p>
-      </div>
-    );
-  if (!tableInfo)
-    return (
-      <div className="py-6 text-center bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800">
-        <p className="font-medium">No table found</p>
-        <p className="text-muted-foreground mt-2">
-          The requested table could not be found or accessed.
-        </p>
-      </div>
-    );
+  // ─── Derivation + grid hooks — MUST STAY ABOVE THE EARLY RETURNS ─────────
+  //
+  // The three `return`s just below are conditional, so every hook has to be
+  // called before them or React sees a different hook count between a loading
+  // render and a loaded one ("rendered more hooks than during the previous
+  // render") and the whole viewer drops into its error boundary. The row
+  // derivation moves up with them because the selection hook needs the row ids.
 
   // Derive the rows actually shown. When column filters are active we filter
   // (and sort) the full dataset client-side, then paginate the result. With no
@@ -1779,6 +1743,50 @@ const UserTableViewer = ({
     onUndo: () => void cellUndo.undo(),
     onRedo: () => void cellUndo.redo(),
   });
+
+  if (loading && !tableInfo)
+    return (
+      <div className="space-y-4 p-2">
+        {/* Title placeholder */}
+        <div className="space-y-2">
+          <div className="h-7 w-56 rounded bg-muted/40 animate-pulse" />
+          <div className="h-4 w-80 rounded bg-muted/30 animate-pulse" />
+        </div>
+        {/* Toolbar placeholder — mirrors the dense action row */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1">
+            <div className="h-7 w-20 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-16 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-16 rounded-md bg-muted/40 animate-pulse" />
+          </div>
+          <div className="h-7 w-full max-w-sm rounded-md bg-muted/40 animate-pulse" />
+          <div className="flex gap-1">
+            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
+          </div>
+        </div>
+        <TableSkeleton rows={5} />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="py-6 text-center text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <p className="font-medium">Error: {error}</p>
+        <p className="text-sm mt-1 text-red-400 dark:text-red-300">
+          Please try again or contact support if the issue persists.
+        </p>
+      </div>
+    );
+  if (!tableInfo)
+    return (
+      <div className="py-6 text-center bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800">
+        <p className="font-medium">No table found</p>
+        <p className="text-muted-foreground mt-2">
+          The requested table could not be found or accessed.
+        </p>
+      </div>
+    );
 
   const selectedOnPageCount = displayRows.filter((row) =>
     selectedRowIdSet.has(row.id),
