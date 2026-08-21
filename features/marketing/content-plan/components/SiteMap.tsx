@@ -6,20 +6,37 @@
  * its pages branching below it, every page a real rectangular card whose
  * TITLE IS READABLE (wraps, centered — never truncated) with its route under
  * it, and visible connector lines showing exactly how pages branch. Plain
- * DOM + CSS: native two-axis scroll, no canvas zoom to fight, text at text
- * size.
+ * DOM + CSS: native two-axis scroll, text at text size.
  *
- *   · click a card            → opens that page in the node panel;
+ *   · click a card            → selects it (edges to its parent and children
+ *                               light up, the full URL un-truncates) and
+ *                               opens it in the node panel;
+ *   · drag a card onto another → real reparent (same dnd-kit pattern and
+ *                               cycle pre-check as the tree; DB authority);
+ *   · zoom (toolbar or ctrl+scroll) → semantic: routes/dots hide as you zoom
+ *                               out, and far out deep branches auto-collapse
+ *                               into counts unless clicked open;
  *   · chevron on a card       → collapse/expand its branch (+N badge);
- *   · search + status/keyword → filter (ancestors of matches stay, dimmed);
- *   · left accent + dots      → status color, live-on-site, missing keyword.
+ *   · search + status/keyword → filter (ancestors of matches stay, dimmed;
+ *                               collapse is bypassed so matches show).
  *
- * Reparenting and bulk edits live in the TREE view, which does them with
- * full labels and drop targets — this view is for seeing the site and going
- * places. Visibility math is shared with the tree (lib/tree-view.ts).
+ * Bulk status edits stay in the TREE view. Visibility math is shared with
+ * the tree (lib/tree-view.ts).
  */
-import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { ChevronDown, ChevronUp, ZoomIn, ZoomOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,9 +65,26 @@ interface SiteMapProps {
   /** Reality overlay: node_id → crawl match (present = live on the site). */
   liveById?: Map<string, { url: string }>;
   onSelect: (id: string) => void;
+  onReparent: (id: string, parentId: string) => void;
 }
 
-/** One page card. Title wraps (2 lines) and is never middle-truncated. */
+const ZOOM_MIN = 0.4;
+const ZOOM_MAX = 1.25;
+const ZOOM_STEP = 0.1;
+/** Below this, routes and indicator dots hide (semantic zoom). */
+const ZOOM_DETAIL = 0.75;
+/** Below this, branches deeper than the clusters auto-collapse. */
+const ZOOM_FAR = 0.55;
+
+function clampZoom(value: number): number {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100));
+}
+
+/**
+ * One page card. Title wraps (2 lines) and is never middle-truncated; the
+ * SELECTED card un-truncates its full URL. Draggable onto another card =
+ * reparent; the drop target glows while hovered.
+ */
 function PageCard({
   item,
   statusSlug,
@@ -58,6 +92,8 @@ function PageCard({
   dimmed,
   hiddenCount,
   collapsed,
+  selected,
+  showDetail,
   onSelect,
   onToggle,
 }: {
@@ -67,27 +103,46 @@ function PageCard({
   dimmed: boolean;
   hiddenCount: number;
   collapsed: boolean;
+  selected: boolean;
+  showDetail: boolean;
   onSelect: (id: string) => void;
   onToggle: (id: string) => void;
 }) {
   const node = item.node;
   const isTopLevel = node.node_type === "home" || node.node_type === "pillar";
   const hasBranch = item.children.length > 0 || hiddenCount > 0;
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+    isDragging,
+  } = useDraggable({ id: node.id });
+  const { isOver, setNodeRef: setDropRef } = useDroppable({ id: node.id });
+
   return (
     <div
-      role="button"
-      tabIndex={0}
+      ref={(element) => {
+        setDragRef(element);
+        setDropRef(element);
+      }}
+      {...attributes}
+      {...listeners}
       onClick={() => onSelect(node.id)}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
+        if (event.key === "Enter") {
           event.preventDefault();
           onSelect(node.id);
         }
       }}
       className={cn(
-        "group/card flex w-60 cursor-pointer items-stretch overflow-hidden rounded-md border border-border bg-card shadow-sm transition-colors hover:border-primary/60",
-        node.node_type === "home" && "ring-2 ring-primary/50 ring-offset-1 ring-offset-background",
+        "group/card flex cursor-pointer items-stretch overflow-hidden rounded-md border border-border bg-card shadow-sm transition-colors hover:border-primary/60",
+        selected ? "w-72 ring-2 ring-primary" : "w-60",
+        node.node_type === "home" &&
+          !selected &&
+          "ring-2 ring-primary/50 ring-offset-1 ring-offset-background",
         dimmed && "opacity-40",
+        isDragging && "opacity-30",
+        isOver && !isDragging && "border-primary ring-2 ring-primary/60",
       )}
     >
       <span
@@ -103,70 +158,101 @@ function PageCard({
         >
           {node.label}
         </span>
-        {node.route ? (
-          <span className="w-full truncate text-center font-mono text-[10px] text-muted-foreground">
+        {node.route && (showDetail || selected) ? (
+          <span
+            className={cn(
+              "w-full text-center font-mono text-[10px] text-muted-foreground",
+              // The selected card shows its WHOLE url — that is the one place
+              // a route may wrap (Arman: routes were "almost always cut off").
+              selected ? "break-all" : "truncate",
+            )}
+          >
             {node.route}
           </span>
         ) : null}
-        <span className="flex items-center gap-1.5">
-          {isLive ? (
-            <span
-              className="h-1.5 w-1.5 rounded-full bg-emerald-500"
-              aria-label="Live on the site"
-            />
-          ) : null}
-          {node.primary_keyword_id == null && node.node_type !== "home" ? (
-            <span
-              className="h-1.5 w-1.5 rounded-full border border-amber-500"
-              aria-label="No target keyword yet"
-            />
-          ) : null}
-          {hasBranch ? (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggle(node.id);
-              }}
-              className="inline-flex items-center gap-0.5 rounded px-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-              aria-label={collapsed ? "Expand this branch" : "Collapse this branch"}
-            >
-              {collapsed ? (
-                <>
-                  <ChevronDown className="h-3 w-3" />
-                  {hiddenCount}
-                </>
-              ) : (
-                <ChevronUp className="h-3 w-3" />
-              )}
-            </button>
-          ) : null}
-        </span>
+        {showDetail || hasBranch ? (
+          <span className="flex items-center gap-1.5">
+            {showDetail && isLive ? (
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                aria-label="Live on the site"
+              />
+            ) : null}
+            {showDetail &&
+            node.primary_keyword_id == null &&
+            node.node_type !== "home" ? (
+              <span
+                className="h-1.5 w-1.5 rounded-full border border-amber-500"
+                aria-label="No target keyword yet"
+              />
+            ) : null}
+            {hasBranch ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggle(node.id);
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                className="inline-flex items-center gap-0.5 rounded px-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label={
+                  collapsed ? "Expand this branch" : "Collapse this branch"
+                }
+              >
+                {collapsed ? (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    {hiddenCount}
+                  </>
+                ) : (
+                  <ChevronUp className="h-3 w-3" />
+                )}
+              </button>
+            ) : null}
+          </span>
+        ) : null}
       </span>
     </div>
   );
 }
 
-/** A card plus its children as a connected vertical stack (recursive). */
+/**
+ * A card plus its children as a connected vertical stack (recursive). When a
+ * card is SELECTED its edges light up: the rail and ticks to its children,
+ * and the tick that joins it to its parent.
+ */
 function Branch({
   item,
+  selectedId,
   render,
 }: {
   item: PlanNodeTreeItem;
+  selectedId: string | null;
   render: (item: PlanNodeTreeItem) => React.ReactNode;
 }) {
+  const isSelected = item.node.id === selectedId;
   return (
     <div className="flex flex-col">
       {render(item)}
       {item.children.length > 0 ? (
-        <div className="relative ml-5 mt-1.5 flex flex-col gap-1.5 border-l border-border pl-3">
+        <div
+          className={cn(
+            "relative ml-5 mt-1.5 flex flex-col gap-1.5 border-l pl-3",
+            isSelected ? "border-primary" : "border-border",
+          )}
+        >
           {item.children.map((child) => (
             <div key={child.node.id} className="relative">
               <span
-                className="absolute -left-3 top-4 h-px w-3 bg-border"
+                className={cn(
+                  "absolute -left-3 top-4 h-px w-3",
+                  isSelected || child.node.id === selectedId
+                    ? "bg-primary"
+                    : "bg-border",
+                )}
                 aria-hidden
               />
-              <Branch item={child} render={render} />
+              <Branch item={child} selectedId={selectedId} render={render} />
             </div>
           ))}
         </div>
@@ -179,17 +265,36 @@ function Branch({
  * The ┬ connector above each top-level column. The vertical stub drops onto
  * the CARD's center (cards are w-60 → center at 7.5rem, at the column's
  * left edge); the horizontal segments join the continuous spine under the
- * home card, spanning the inter-column gap.
+ * home card. Lights up when home (whole spine) or this column (stub) is
+ * selected.
  */
-function ColumnConnector({ first, last }: { first: boolean; last: boolean }) {
+function ColumnConnector({
+  first,
+  last,
+  spineLit,
+  stubLit,
+}: {
+  first: boolean;
+  last: boolean;
+  spineLit: boolean;
+  stubLit: boolean;
+}) {
+  const spine = spineLit ? "bg-primary" : "bg-border";
   return (
     <div className="relative h-5" aria-hidden>
-      <span className="absolute left-[7.5rem] top-0 h-full w-px bg-border" />
+      <span
+        className={cn(
+          "absolute left-[7.5rem] top-0 h-full w-px",
+          spineLit || stubLit ? "bg-primary" : "bg-border",
+        )}
+      />
       {!first ? (
-        <span className="absolute left-0 top-0 h-px w-[7.5rem] bg-border" />
+        <span className={cn("absolute left-0 top-0 h-px w-[7.5rem]", spine)} />
       ) : null}
       {!last ? (
-        <span className="absolute left-[7.5rem] right-0 top-0 h-px bg-border" />
+        <span
+          className={cn("absolute left-[7.5rem] right-0 top-0 h-px", spine)}
+        />
       ) : null}
     </div>
   );
@@ -200,14 +305,88 @@ export function SiteMap({
   statusSlugById,
   liveById,
   onSelect,
+  onReparent,
 }: SiteMapProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [keywordFilter, setKeywordFilter] = useState<string>("all");
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const [userCollapsed, setUserCollapsed] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const [userOpened, setUserOpened] = useState<ReadonlySet<string>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
   });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  // Ctrl/⌘ + wheel zooms (native listener — React's wheel is passive, and
+  // zoom must preventDefault so the browser doesn't page-zoom).
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom((current) =>
+        clampZoom(current + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP)),
+      );
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const showDetail = zoom >= ZOOM_DETAIL;
+  const farOut = zoom < ZOOM_FAR;
+
+  const byId = useMemo(() => {
+    const map = new Map<string, PlanNodeRow>();
+    for (const node of nodes) map.set(node.id, node);
+    return map;
+  }, [nodes]);
+
+  const expandableIds = useMemo(() => {
+    const parents = new Set<string>();
+    for (const node of nodes) {
+      if (node.parent_id) parents.add(node.parent_id);
+    }
+    return parents;
+  }, [nodes]);
+
+  /** Visual depth per node (root = 0), for the far-zoom auto-collapse. */
+  const depthById = useMemo(() => {
+    const depths = new Map<string, number>();
+    const resolve = (id: string): number => {
+      const known = depths.get(id);
+      if (known !== undefined) return known;
+      const parentId = byId.get(id)?.parent_id;
+      const depth =
+        parentId && byId.has(parentId) ? resolve(parentId) + 1 : 0;
+      depths.set(id, depth);
+      return depth;
+    };
+    for (const node of nodes) resolve(node.id);
+    return depths;
+  }, [nodes, byId]);
+
+  // Far out, deep branches auto-collapse into counts unless the user clicked
+  // them open (semantic zoom, Arman 2026-08-20). Depth ≥ 2 = below the
+  // pillar tier on a home-rooted plan.
+  const collapsed = useMemo(() => {
+    const set = new Set(userCollapsed);
+    if (farOut) {
+      for (const id of expandableIds) {
+        if ((depthById.get(id) ?? 0) >= 2) set.add(id);
+      }
+    }
+    for (const id of userOpened) set.delete(id);
+    return set as ReadonlySet<string>;
+  }, [userCollapsed, userOpened, farOut, expandableIds, depthById]);
 
   // Filter (keeping ancestors, dimmed) then collapse — both pure and shared
   // with the tree view.
@@ -245,36 +424,73 @@ export function SiteMap({
 
   const roots = useMemo(() => buildPlanTree(visible), [visible]);
 
-  const expandableIds = useMemo(() => {
-    const parents = new Set<string>();
-    for (const node of nodes) {
-      if (node.parent_id) parents.add(node.parent_id);
-    }
-    return parents;
-  }, [nodes]);
-
   const toggleBranch = (id: string) => {
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    if (collapsed.has(id)) {
+      setUserCollapsed((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      setUserOpened((current) => new Set(current).add(id));
+    } else {
+      setUserOpened((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      setUserCollapsed((current) => new Set(current).add(id));
+    }
   };
 
   const collapseBranches = () => {
     // Collapse every top-level branch (home stays open so the first tier is
     // always on screen — the site overview).
-    const homeChildren = nodes.filter((node) => {
-      if (!node.parent_id) return false;
-      const parent = nodes.find((candidate) => candidate.id === node.parent_id);
-      return parent != null && parent.parent_id == null;
-    });
-    const rootIds = nodes.filter((node) => node.parent_id == null);
-    const targets = [...homeChildren, ...rootIds.filter((node) => node.node_type !== "home")]
-      .filter((node) => expandableIds.has(node.id))
+    const targets = nodes
+      .filter((node) => {
+        if (!expandableIds.has(node.id)) return false;
+        const depth = depthById.get(node.id) ?? 0;
+        return depth === 1 || (depth === 0 && node.node_type !== "home");
+      })
       .map((node) => node.id);
-    setCollapsed(new Set(targets));
+    setUserOpened(new Set());
+    setUserCollapsed(new Set(targets));
+  };
+
+  const expandAll = () => {
+    setUserCollapsed(new Set());
+    // Far out, "expand all" means "open everything the zoom auto-collapsed".
+    setUserOpened(farOut ? new Set(expandableIds) : new Set());
+  };
+
+  const anyCollapsed = collapsed.size > 0;
+
+  const handleSelect = (id: string) => {
+    setSelectedId(id);
+    onSelect(id);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDragId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDragId(null);
+    const { active, over } = event;
+    if (!over) return;
+    const draggedId = String(active.id);
+    const targetId = String(over.id);
+    if (targetId === draggedId) return;
+    const dragged = byId.get(draggedId);
+    if (!dragged || dragged.parent_id === targetId) return;
+    // Client-side guard for the obvious cycle (dropping onto own descendant)
+    // so the common case never round-trips; the DB trigger remains the
+    // authority and still rejects anything this walk misses.
+    let cursor: string | null = targetId;
+    while (cursor) {
+      if (cursor === draggedId) return;
+      cursor = byId.get(cursor)?.parent_id ?? null;
+    }
+    onReparent(draggedId, targetId);
   };
 
   // The home page crowns the map; its children are the connected columns.
@@ -287,6 +503,9 @@ export function SiteMap({
     ? [...homeRoot.children, ...roots.filter((root) => root !== homeRoot)]
     : roots;
 
+  const homeSelected = homeRoot != null && homeRoot.node.id === selectedId;
+  const dragNode = dragId ? byId.get(dragId) : null;
+
   const renderCard = (item: PlanNodeTreeItem) => (
     <PageCard
       item={item}
@@ -295,7 +514,9 @@ export function SiteMap({
       dimmed={dimmed.has(item.node.id)}
       hiddenCount={hiddenCounts.get(item.node.id) ?? 0}
       collapsed={collapsed.has(item.node.id)}
-      onSelect={onSelect}
+      selected={item.node.id === selectedId}
+      showDetail={showDetail}
+      onSelect={handleSelect}
       onToggle={toggleBranch}
     />
   );
@@ -336,12 +557,40 @@ export function SiteMap({
           variant="outline"
           size="sm"
           className="h-7 text-xs"
-          onClick={
-            collapsed.size > 0 ? () => setCollapsed(new Set()) : collapseBranches
-          }
+          onClick={anyCollapsed ? expandAll : collapseBranches}
         >
-          {collapsed.size > 0 ? "Expand all" : "Collapse branches"}
+          {anyCollapsed ? "Expand all" : "Collapse branches"}
         </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            aria-label="Zoom out"
+            disabled={zoom <= ZOOM_MIN}
+            onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
+          >
+            <ZoomOut className="h-3.5 w-3.5" />
+          </Button>
+          <button
+            type="button"
+            className="w-10 rounded text-center text-[11px] tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Reset zoom"
+            onClick={() => setZoom(1)}
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            aria-label="Zoom in"
+            disabled={zoom >= ZOOM_MAX}
+            onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
+          >
+            <ZoomIn className="h-3.5 w-3.5" />
+          </Button>
+        </div>
         <CopyButtons
           size="icon"
           label="Site map"
@@ -368,11 +617,13 @@ export function SiteMap({
                 ...planNodeKeyFields(node),
                 dimmed: dimmed.has(node.id),
                 collapsed_descendants: hiddenCounts.get(node.id) ?? 0,
+                selected: node.id === selectedId,
               })),
             },
             attributes: {
               rows: visible.length,
               pages_planned: nodes.length,
+              zoom,
             },
             context: {
               search,
@@ -406,6 +657,9 @@ export function SiteMap({
               ? `${nodes.length} pages`
               : `${visible.length} of ${nodes.length} pages`}
           </span>
+          <span className="hidden lg:inline">
+            drag a card onto another to move it
+          </span>
           <span className="hidden items-center gap-1 sm:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> live
           </span>
@@ -430,7 +684,7 @@ export function SiteMap({
           ))}
         </div>
       ) : null}
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
         {nodes.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">
             No pages planned yet — use Setup or Generate to plan this site.
@@ -454,58 +708,84 @@ export function SiteMap({
             </Button>
           </div>
         ) : (
-          <div className="min-w-max p-6">
-            {homeRoot ? (
-              // Home sits above the FIRST column (not centered over the whole
-              // row — a 300-page row is wider than any screen, and a centered
-              // home would live off-screen). Its stub drops onto the spine at
-              // the first column's connector.
-              <div className="flex flex-col items-start">
-                {renderCard(homeRoot)}
-                {columns.length > 0 ? (
-                  <>
-                    <div
-                      className="ml-[7.5rem] h-5 w-px bg-border"
-                      aria-hidden
+          <DndContext
+            sensors={sensors}
+            collisionDetection={pointerWithin}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            {/* CSS zoom (not transform) so layout size shrinks with the
+              content and the scrollbars stay honest. */}
+            <div className="min-w-max p-6" style={{ zoom }}>
+              {homeRoot ? (
+                // Home sits above the FIRST column (not centered over the
+                // whole row — a 300-page row is wider than any screen, and a
+                // centered home would live off-screen). Its stub drops onto
+                // the spine at the first column's connector.
+                <div className="flex flex-col items-start">
+                  {renderCard(homeRoot)}
+                  {columns.length > 0 ? (
+                    <>
+                      <div
+                        className={cn(
+                          "ml-[7.5rem] h-5 w-px",
+                          homeSelected ? "bg-primary" : "bg-border",
+                        )}
+                        aria-hidden
+                      />
+                      <div className="flex items-start">
+                        {columns.map((column, index) => (
+                          <div
+                            key={column.node.id}
+                            className={cn(
+                              "flex flex-col",
+                              index < columns.length - 1 && "pr-5",
+                            )}
+                          >
+                            <ColumnConnector
+                              first={index === 0}
+                              last={index === columns.length - 1}
+                              spineLit={homeSelected}
+                              stubLit={column.node.id === selectedId}
+                            />
+                            <Branch
+                              item={column}
+                              selectedId={selectedId}
+                              render={renderCard}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex items-start gap-4">
+                  {columns.map((column) => (
+                    <Branch
+                      key={column.node.id}
+                      item={column}
+                      selectedId={selectedId}
+                      render={renderCard}
                     />
-                    <div className="flex items-start">
-                      {columns.map((column, index) => (
-                        <div
-                          key={column.node.id}
-                          className={cn(
-                            "flex flex-col",
-                            index < columns.length - 1 && "pr-5",
-                          )}
-                        >
-                          <ColumnConnector
-                            first={index === 0}
-                            last={index === columns.length - 1}
-                          />
-                          <Branch item={column} render={renderCard} />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            ) : (
-              <div className="flex items-start gap-4">
-                {columns.map((column) => (
-                  <Branch
-                    key={column.node.id}
-                    item={column}
-                    render={renderCard}
-                  />
-                ))}
-              </div>
-            )}
-            {filtersActive ? (
-              <p className="mt-4 text-[11px] text-muted-foreground">
-                Faded pages don&apos;t match the search or filters — they stay so
-                the site never loses its shape.
-              </p>
-            ) : null}
-          </div>
+                  ))}
+                </div>
+              )}
+              {filtersActive ? (
+                <p className="mt-4 text-[11px] text-muted-foreground">
+                  Faded pages don&apos;t match the search or filters — they stay
+                  so the site never loses its shape.
+                </p>
+              ) : null}
+            </div>
+            <DragOverlay dropAnimation={null}>
+              {dragNode ? (
+                <div className="w-60 rounded-md border border-primary bg-card px-2.5 py-1.5 text-center text-xs font-medium shadow-lg">
+                  {dragNode.label}
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
     </div>

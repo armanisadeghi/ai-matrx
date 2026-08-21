@@ -927,6 +927,7 @@ export function ContentPlanWorkbench({
               statusSlugById={statusSlugById}
               liveById={liveById}
               onSelect={setSelectedNodeId}
+              onReparent={handleReparent}
             />
           ) : nodes.isLoading ? (
             <TreeViewSkeleton />
