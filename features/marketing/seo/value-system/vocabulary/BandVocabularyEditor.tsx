@@ -27,7 +27,12 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   ArrowRight,
   Landmark,
@@ -160,8 +165,18 @@ export function BandVocabularyEditor({
     JSON.stringify(toDraftRows(saved)) !== JSON.stringify(draft);
 
   // The live impact: this site's real keywords re-banded by the PROPOSED
-  // thresholds, server-side. Only asked for when the draft is coherent —
-  // the DB would (correctly) reject anything else.
+  // thresholds, server-side. Only asked for when the draft is coherent — the
+  // DB would (correctly) reject anything else.
+  //
+  // The key is the BANDING, not the draft. Re-banding scans the whole keyword
+  // corpus, so keying it on the draft would fire a corpus-wide query on every
+  // keystroke of a name that cannot move a single keyword. Names are joined in
+  // for display after the fact.
+  const bandingKey = JSON.stringify(
+    draft
+      .map((row) => [row.value, minScoreOf(row)] as const)
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1)),
+  );
   const preview = useQuery({
     queryKey: [
       "marketing",
@@ -170,12 +185,21 @@ export function BandVocabularyEditor({
       siteId,
       window.start,
       window.end,
-      JSON.stringify(draft),
+      bandingKey,
     ],
     queryFn: ({ signal }) =>
-      previewValueBands(siteId, draft, window.start, window.end, signal),
+      previewValueBands(
+        siteId,
+        // Labels are irrelevant to banding but the DB checks coherence, so send
+        // the identity as the name: this payload is never persisted.
+        draft.map((row) => ({ ...row, label: row.value, description: null })),
+        window.start,
+        window.end,
+        signal,
+      ),
     enabled: kind === "value_band" && !blockingIssue,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
   });
 
   const previewByBand = new Map(
