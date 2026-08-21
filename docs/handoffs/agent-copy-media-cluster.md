@@ -70,7 +70,7 @@ whole page · **SKIP** non-record tool.
 
 | Surface | Element | Class | Current | Planned control |
 |---|---|---|---|---|
-| `components/admin/PodcastsTable.tsx` | episode/podcast rows | L | none | row pair + view copy + ExportMenu |
+| `components/admin/PodcastsTable.tsx` | show + episode rows (2 tabs) | L | **DONE** | per-tab toolbar triple + "Key fields" variant + ExportMenu (JSON+CSV) + per-row `xs` pair; view copy follows the **filtered** rows and echoes the search query |
 | `components/admin/ShowsClient.tsx` | show list | L | none | row pair + view copy |
 | `components/admin/EpisodeDetailClient.tsx` | episode record | R | none | header `sm` pair |
 | `studio/components/RunsManageView.tsx` | generation runs | L | none | row pair + ExportMenu |
@@ -111,7 +111,8 @@ whole page · **SKIP** non-record tool.
 | 3 | `features/audio` diagnostics record (+ repair-prompt variant) | **done** — `b2cf198` |
 | 4a | `features/files` version history (list copy + ExportMenu + row pairs) | **done** |
 | 4b | `features/files` remaining: `FileList` rows/grid, `PermissionsDialog`, `FileShareTab` record pair, `FileTree` | not started — see the `FileList` note below |
-| 5 | `features/podcasts` (PodcastsTable, runs, episode record, dashboard groomer) | not started |
+| 5a | `features/podcasts` shows/episodes admin tables | **done** |
+| 5b | `features/podcasts` remaining: `RunsManageView`, `EpisodeDetailClient` record, `StudioDashboard` groomer, `TranscriptPanel` | not started |
 | 6 | `features/pdf-extractor` `aiCustom` extraction levers + scanner review list | not started |
 | 7 | `components/image/cloud/CloudFilesTab.tsx` grid copy (serves every cloud-file grid) | not started |
 | 8 | `features/audio` `VoicesList` + `MediaDevicesPanel` lists | not started |

@@ -106,6 +106,28 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-21 — **Shows and episodes admin tables are copyable and exportable.**
+  `PodcastsTable` gains, per tab, a toolbar `CopyButtons` triple (human / JSON /
+  Copy-for-AI) with a "Key fields" variant, an `ExportMenu` (JSON + CSV), and a
+  hover-revealed per-row `xs` pair. Kinds: `podcast-shows` / `podcast-show` and
+  `podcast-episodes` / `podcast-episode`. The view copy reflects the **filtered**
+  rows — what the user is actually looking at — and echoes the live search query
+  plus the unfiltered total as context, so a narrowed list is never mistaken for
+  the whole table. Rows are clickable, so each pair is wrapped in a
+  `stopPropagation` span; the existing per-row "Copy share link" button is
+  untouched. Two shaping rules live in the shared builders
+  ([`utils/copy-format.ts`](utils/copy-format.ts)), never at the callsite:
+  **(1)** `PcEpisode.script` is the full generated dialogue and can run to tens
+  of thousands of characters, so list projections drop it and leave an honest
+  `script_omitted` stub naming the exact size — an agent then knows to copy the
+  single episode rather than assuming the field was empty; the single-episode
+  payload keeps the script. **(2)** episodes carry `audio_url`, `video_url` and
+  three image URLs, so every agent shape runs through `mediaSafe` — those columns
+  are supposed to hold durable public URLs, but "supposed to" is not a guarantee
+  and an agent reading the payload days later must not get a dead signed link.
+  The "Key fields" variant reuses `keyFieldsAiVariant` from
+  `features/marketing/lib/copy-payloads.ts` rather than forking it.
+
 - 2026-08-20 — **THE GENDER CHAIN: a host is never voiced against their own
   gender.** Reported symptom: an episode where one host addressed the other as
   "Sarah" while that voice was audibly male. The gender was KNOWN and then

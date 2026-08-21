@@ -22,6 +22,22 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import {
+    episodeAgentData,
+    episodeProjection,
+    episodeRowSummary,
+    episodesExportRows,
+    episodesHumanSummary,
+    showAgentData,
+    showProjection,
+    showRowSummary,
+    showsExportRows,
+    showsHumanSummary,
+} from "@/features/podcasts/utils/copy-format";
 
 interface PodcastsTableProps {
     activeTab: 'shows' | 'episodes';
@@ -150,6 +166,97 @@ export function PodcastsTable({
                         className="pl-8 h-8 text-sm"
                     />
                 </div>
+                {activeTab === 'shows' ? (
+                    filteredShows.length > 0 && (
+                        <>
+                            <CopyButtons
+                                size="icon"
+                                label="Podcast shows (this view)"
+                                human={() => showsHumanSummary(filteredShows)}
+                                json={() => filteredShows.map(showProjection)}
+                                agent={() => ({
+                                    kind: 'podcast-shows',
+                                    location: 'AI Matrx Admin — Knowledge — Podcasts — Shows',
+                                    description:
+                                        'The podcast shows currently listed, after the active search filter.',
+                                    data: {
+                                        query: { search, total: shows.length },
+                                        shows: filteredShows.map(showProjection),
+                                    },
+                                    summary: showsHumanSummary(filteredShows),
+                                    attributes: {
+                                        rows: filteredShows.length,
+                                        total: shows.length,
+                                        published: filteredShows.filter((s) => s.is_published).length,
+                                    },
+                                })}
+                                aiVariants={[
+                                    keyFieldsAiVariant({
+                                        kind: 'podcast-shows',
+                                        location: 'AI Matrx Admin — Knowledge — Podcasts — Shows',
+                                        description: 'Listed shows projected to their core fields.',
+                                        visible: filteredShows,
+                                        project: showProjection,
+                                        query: { search, total: shows.length },
+                                        attributes: { rows: filteredShows.length },
+                                    }),
+                                ]}
+                            />
+                            <ExportMenu
+                                label="podcast-shows"
+                                items={[
+                                    jsonExportItem(() => filteredShows.map(showProjection)),
+                                    csvExportItem(() => showsExportRows(filteredShows)),
+                                ]}
+                            />
+                        </>
+                    )
+                ) : (
+                    filteredEpisodes.length > 0 && (
+                        <>
+                            <CopyButtons
+                                size="icon"
+                                label="Podcast episodes (this view)"
+                                human={() => episodesHumanSummary(filteredEpisodes)}
+                                json={() => filteredEpisodes.map(episodeProjection)}
+                                agent={() => ({
+                                    kind: 'podcast-episodes',
+                                    location: 'AI Matrx Admin — Knowledge — Podcasts — Episodes',
+                                    description:
+                                        'The episodes currently listed, after the active search filter. Dialogue scripts are omitted per row — copy a single episode to get one.',
+                                    data: {
+                                        query: { search, total: episodes.length },
+                                        episodes: filteredEpisodes.map(episodeProjection),
+                                    },
+                                    summary: episodesHumanSummary(filteredEpisodes),
+                                    attributes: {
+                                        rows: filteredEpisodes.length,
+                                        total: episodes.length,
+                                        published: filteredEpisodes.filter((e) => e.is_published).length,
+                                    },
+                                })}
+                                aiVariants={[
+                                    keyFieldsAiVariant({
+                                        kind: 'podcast-episodes',
+                                        location: 'AI Matrx Admin — Knowledge — Podcasts — Episodes',
+                                        description: 'Listed episodes projected to their core fields.',
+                                        visible: filteredEpisodes,
+                                        project: episodeProjection,
+                                        query: { search, total: episodes.length },
+                                        attributes: { rows: filteredEpisodes.length },
+                                    }),
+                                ]}
+                            />
+                            <ExportMenu
+                                label="podcast-episodes"
+                                items={[
+                                    jsonExportItem(() => filteredEpisodes.map(episodeProjection)),
+                                    csvExportItem(() => episodesExportRows(filteredEpisodes)),
+                                ]}
+                            />
+                        </>
+                    )
+                )}
                 <Button variant="outline" size="sm" onClick={onRefresh} className="h-8 px-2" title="Refresh">
                     <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
@@ -225,6 +332,29 @@ export function PodcastsTable({
                                         </td>
                                         <td className="px-4 py-2.5">
                                             <div className="flex items-center justify-end gap-0.5">
+                                                <span
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                                                >
+                                                    <CopyButtons
+                                                        size="xs"
+                                                        label={show.title}
+                                                        human={() => showRowSummary(show)}
+                                                        json={() => showProjection(show)}
+                                                        agent={() => ({
+                                                            kind: 'podcast-show',
+                                                            location: 'AI Matrx Admin — Knowledge — Podcasts — Shows',
+                                                            description: 'A single podcast show row.',
+                                                            data: showAgentData(show),
+                                                            summary: showRowSummary(show),
+                                                            attributes: {
+                                                                id: show.id,
+                                                                slug: show.slug,
+                                                                published: show.is_published,
+                                                            },
+                                                        })}
+                                                    />
+                                                </span>
                                                 <CopyLinkButton slug={show.slug} />
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); onSelectShow(show); }}
@@ -292,6 +422,32 @@ export function PodcastsTable({
                                     </td>
                                     <td className="px-4 py-2.5">
                                         <div className="flex items-center justify-end gap-0.5">
+                                            <span
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                                            >
+                                                <CopyButtons
+                                                    size="xs"
+                                                    label={ep.title}
+                                                    human={() => episodeRowSummary(ep)}
+                                                    json={() => episodeProjection(ep)}
+                                                    agent={() => ({
+                                                        kind: 'podcast-episode',
+                                                        location: 'AI Matrx Admin — Knowledge — Podcasts — Episodes',
+                                                        description:
+                                                            'A single podcast episode, including its full dialogue script when one exists.',
+                                                        data: episodeAgentData(ep),
+                                                        summary: episodeRowSummary(ep),
+                                                        attributes: {
+                                                            id: ep.id,
+                                                            slug: ep.slug,
+                                                            show: ep.show?.title ?? '',
+                                                            published: ep.is_published,
+                                                            'script-chars': ep.script?.length ?? 0,
+                                                        },
+                                                    })}
+                                                />
+                                            </span>
                                             <CopyLinkButton slug={ep.slug} />
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onSelectEpisode(ep); }}
