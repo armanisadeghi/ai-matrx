@@ -51,7 +51,9 @@ export default function SitePeekWindow({
   onClose: () => void;
 }) {
   const [metric, setMetric] = useState<GscPeekMetric>("clicks");
+  // access-errors: ok — decorative GSC trend peek; the tiles render from the already-loaded list row and a failed series only flattens the chart
   const daily = useSiteGscDaily(site.id, 90);
+  // access-errors: ok — decorative top-pages peek under the same list-row data
   const topPages = useSiteGscTopPages(site.id, 90, 10);
 
   const clicksDelta = trendPercent(

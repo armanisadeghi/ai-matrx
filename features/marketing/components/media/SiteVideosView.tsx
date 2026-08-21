@@ -114,6 +114,7 @@ export function SiteVideosView({
    *  title/description/keywords/schema.org had no surface at all). */
   const [detailAssetId, setDetailAssetId] = useState<string | null>(null);
   const videosQuery = useSiteVideos(site.id);
+  // access-errors: ok — brand-library overlay for promoted/duplicate badges; the crawled-video list is this surface's own read and renders regardless
   const assetsQuery = useBrandAssets(brandId);
   const createAsset = useCreateBrandAsset();
   const updateAsset = useUpdateBrandAsset();

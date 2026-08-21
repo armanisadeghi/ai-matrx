@@ -66,6 +66,7 @@ export function useCmsPageSeoPlan(args: {
 
   // The owning org comes from the paired `web.site` — the row that actually
   // owns the page registry — never from the CMS site's mirrored copy.
+  // access-errors: ok — read only at create time, which throws a clear sentence when the paired site could not be read; plan errors surface via location/workspace state below
   const marketingSite = useSite(site.web_site_id ?? "");
   const webPageId = page?.web_page_id ?? null;
   const location = usePageLocation(webPageId);

@@ -184,6 +184,7 @@ export function PushToCmsCard({
 }) {
   const queryClient = useQueryClient();
   const facts = useCmsPushFacts(site, page);
+  // access-errors: ok — fails closed: an unreadable content read leaves the payload empty, which disables the push instead of ever pushing blanks
   const contentQuery = usePageContent(page.site_id, page.id);
 
   const [confirmOpen, setConfirmOpen] = useState(false);

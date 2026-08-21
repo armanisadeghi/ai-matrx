@@ -58,7 +58,7 @@ interface Props {
 }
 
 export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
-  const { pages, loading, refetch } = usePages(fileId);
+  const { pages, loading, error: pagesError, refetch } = usePages(fileId);
   const pdfApi = usePdfDemoApi();
   const downloadBlob = useDownloadBlob();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -289,6 +289,22 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
       {error ? (
         <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive">
           <AlertCircle className="h-3 w-3" /> {error}
+        </div>
+      ) : null}
+
+      {/* A failed page-list read must say so — an empty grid with working
+          bulk buttons would silently claim the file has no pages. */}
+      {pagesError ? (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive">
+          <AlertCircle className="h-3 w-3" /> The page list could not be
+          loaded.
+          <button
+            type="button"
+            onClick={refetch}
+            className="ml-auto inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-foreground hover:bg-muted"
+          >
+            Retry
+          </button>
         </div>
       ) : null}
 

@@ -72,6 +72,7 @@ export function useMarketingSiteSurfaceBase(): {
   // row. Reading `useParams()` here would have broken every host outside
   // `/marketing/brands/[brandId]/...` — e.g. the CMS editor's Measure tab.
   const { site, brandId } = useMarketingSite();
+  // access-errors: ok — MarketingSiteLayoutClient gates web_brand for this same brandId (the 2026-08-12 swallowed-brand fix); embedded hosts use this read only as opportunistic scope enrichment
   const brand = useBrand(brandId);
   const brandRow = brand.data ?? null;
   const queryClient = useQueryClient();

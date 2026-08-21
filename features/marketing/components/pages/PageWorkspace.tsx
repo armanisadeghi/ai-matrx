@@ -305,14 +305,18 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const workspace = usePageWorkspace(site.id, pageId);
   // Everything the page loads is emitted as a surface value (completeness
   // law) — these share react-query caches with the cards below.
+  // access-errors: ok — decorative screenshot strip under the gated web_page primary below; a failed read only leaves the strip empty
   const screenshots = usePageScreenshots(site.id, pageId);
+  // access-errors: ok — supplementary membership chips under the gated web_page primary below
   const sitemapMemberships = usePageSitemapMemberships(site.id, pageId);
   const pagePerformance = usePagePerformance(site.id, pageId);
+  // access-errors: ok — surface-scope emission; PageAnalyticsCard binds the same query cache and renders its error with retry
   const analyticsRows = usePageWebAnalytics(site.id, pageId);
   // Lifted so the surface scope emits the same artifact the card renders.
   const analyzer = usePageAnalyzer(pageId, site.organization_id);
   // COMPLETENESS LAW: every card-rendered dataset is also emitted as a
   // surface value. These share react-query caches with the cards (same keys).
+  // access-errors: ok — surface-scope emission under the gated web_page primary; the content card and push card consume the same cache and fail closed
   const draftContent = usePageContent(site.id, pageId);
   const findingsRows = usePageOpenFindings(site.id, pageId, 10);
   // Complete per-query GSC breakdown at the pane's default range (28d)

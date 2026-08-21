@@ -69,6 +69,7 @@ export function BrandAssetDetail({
   onEdit?: () => void;
 }) {
   const metadata = readVideoMetadata(asset.data);
+  // access-errors: ok — name enrichment for the brand door; the asset row this surface is about arrives as a prop, and the door falls back to the id-resolved ref
   const brand = useBrand(asset.brand_id);
   const resolveActor = useRecordActors(asset.organization_id, [
     asset.created_by,

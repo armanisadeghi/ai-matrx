@@ -81,6 +81,7 @@ function SiteSections({
 }) {
   // Shares React Query's cache with the site layout, which has already asked
   // for this row — the name costs no extra request.
+  // access-errors: ok — MarketingSiteLayoutClient gates web_site for this same siteId; this menu shares its query cache and only reads the name
   const site = useSite(siteId);
   const base = marketingRoutes.site(brandId, siteId);
   const groups = listMarketingSiteModeGroups(base);

@@ -366,10 +366,15 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const [expandedFactKinds, setExpandedFactKinds] = useState<
     Record<string, boolean>
   >({});
+  // access-errors: ok — cockpit section list; the brand read below is the gated primary and a failed section shows as empty, editable via its own card
   const sites = useBrandSites(brandId);
+  // access-errors: ok — cockpit section list under the gated brand primary
   const properties = useBrandProperties(brandId);
+  // access-errors: ok — cockpit section list under the gated brand primary
   const assets = useBrandAssets(brandId);
+  // access-errors: ok — cockpit section list under the gated brand primary
   const facts = useBusinessFacts(brandId);
+  // access-errors: ok — inbox count badge; absence only hides the badge
   const pending = usePendingDiscoveredCount(brandId);
 
   if (brand.isLoading) {

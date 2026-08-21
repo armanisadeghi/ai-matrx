@@ -87,6 +87,7 @@ export function GenerateMediaView({
 }) {
   const dispatch = useAppDispatch();
   const createAsset = useCreateBrandAsset();
+  // access-errors: ok — recent-generations strip; a failed read hides history, and generation itself reports its own errors
   const assetsQuery = useBrandAssets(brandId);
 
   const [generating, setGenerating] = useState(false);

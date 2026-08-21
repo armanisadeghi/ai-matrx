@@ -975,6 +975,7 @@ export function CrawlReportWorkspace({
     defaultPageSize: 50,
   });
   const crawl = useCrawl(site.id, crawlId);
+  // access-errors: ok — read through the `query` alias below; query.isError renders QueryError whenever this report is the active one
   const urls = useCrawlUrls(
     site.id,
     crawlId,

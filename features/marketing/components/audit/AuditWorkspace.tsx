@@ -1018,6 +1018,7 @@ export function AuditWorkspace() {
   const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const rollup = useSiteAuditRollup(site.id);
+  // access-errors: ok — decorative score-trend series; the rollup read below is the gated primary and the trend chart simply stays empty
   const trend = useSiteAuditTrend(site.id);
   if (rollup.isLoading)
     return <LoadingSurface label="Aggregating site audit…" />;

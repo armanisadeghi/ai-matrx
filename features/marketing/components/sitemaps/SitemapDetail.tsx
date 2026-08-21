@@ -24,6 +24,7 @@ import {
 import {
   formatCompactDate,
   LoadingSurface,
+  QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,13 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
         fallbackHref={`${sitePath}/sitemaps`}
         fallbackLabel="All sitemaps"
       />
+    );
+  }
+  // The page listing is the point of this detail — a failed read rendering an
+  // empty table would claim the sitemap lists nothing.
+  if (pages.isError) {
+    return (
+      <QueryError error={pages.error} onRetry={() => void pages.refetch()} />
     );
   }
 

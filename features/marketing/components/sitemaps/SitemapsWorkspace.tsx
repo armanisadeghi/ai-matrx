@@ -63,6 +63,7 @@ export function SitemapsWorkspace() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const sitemaps = useSitemaps(site.id);
+  // access-errors: ok — coverage metric tiles; the sitemap list below is the gated primary and a failed coverage read only blanks the tiles
   const coverage = useSitemapCoverage(site.id);
   const setActiveMutation = useSetSitemapActive(site.id);
   const dismissMutation = useDismissSitemap(site.id);

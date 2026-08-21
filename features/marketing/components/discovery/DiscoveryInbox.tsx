@@ -162,9 +162,13 @@ function itemContextSnippet(item: DiscoveredItem): string | null {
 
 export function DiscoveryInbox({ brandId }: { brandId: string }) {
   const brand = useBrand(brandId);
+  // access-errors: ok — dedupe/context data for classifying items; the brand and items reads below are the gated primaries
   const brandSites = useBrandSites(brandId);
+  // access-errors: ok — classification context under the gated brand + items primaries
   const properties = useBrandProperties(brandId);
+  // access-errors: ok — classification context under the gated brand + items primaries
   const assets = useBrandAssets(brandId);
+  // access-errors: ok — classification context under the gated brand + items primaries
   const facts = useBusinessFacts(brandId);
   const [status, setStatusState] = useState<DiscoveredItemStatus>("pending");
   const [page, setPage] = useState(1);
@@ -181,6 +185,7 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
     {},
   );
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
+  // access-errors: ok — tab count badge; absence only hides the number
   const pendingCount = usePendingDiscoveredCount(brandId);
   const bulkConfirm = useBulkConfirmDiscoveredItems();
   const bulkDismiss = useBulkDismissDiscoveredItems();

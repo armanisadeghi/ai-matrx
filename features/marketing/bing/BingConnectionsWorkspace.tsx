@@ -75,6 +75,7 @@ function findMatchingProperty(
 }
 
 export function BingConnectionsWorkspace() {
+  // access-errors: ok — site options for the binding picker; the connection inventory is this surface's primary and a failed options read only empties the picker
   const sites = useSiteOptions();
   const organizations = useActiveOrganizationPicker();
   const inventory = useBingConnectionInventory();

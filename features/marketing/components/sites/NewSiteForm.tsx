@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { useBrand, useCreateSite } from "@/features/marketing/data/hooks";
@@ -70,6 +71,22 @@ export function NewSiteForm() {
       // can never silently fall back to name matching.
       (!targetBrandId || targetBrand.data),
   );
+
+  // A `?brand=` the viewer cannot read must not leave the form waiting on a
+  // resolve that will never come (submit stays disabled until the brand
+  // loads) — ask the platform why and say so.
+  if (targetBrandId && targetBrand.isError) {
+    return (
+      <AccessGate
+        token="web_brand"
+        id={targetBrandId}
+        error={targetBrand.error}
+        onRetry={() => void targetBrand.refetch()}
+        fallbackHref={marketingRoutes.brands()}
+        fallbackLabel="All brands"
+      />
+    );
+  }
 
   const normalizeVisibleUrl = () => {
     setUrlTouched(true);

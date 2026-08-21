@@ -48,6 +48,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
     update: updateAnnotation,
     remove: removeAnnotation,
   } = useAnnotations(fileId);
+  // access-errors: ok — page-id resolution from the shared cache; ThumbnailStrip binds the same store and surfaces the read failure with retry
   const { pages, active: activePages } = usePages(fileId);
   // The label/category vocabulary the write handlers validate against — the
   // same module-cached catalog the label picker and annotations panel read,

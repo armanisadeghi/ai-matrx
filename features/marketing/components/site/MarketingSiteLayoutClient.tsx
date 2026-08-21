@@ -94,6 +94,7 @@ export function MarketingSiteLayoutClient({
   // site whose brand silently didn't exist, and the Error Inspector filled
   // with red nobody acted on. Same gate pattern as the site read below.
   const brand = useBrand(brandId);
+  // access-errors: ok — site-switcher options in the header; a failed read only shrinks the dropdown, and the site + brand primaries are gated below
   const options = useSiteOptions();
   const crawlActivity = useSiteCrawlActivity(siteId);
   // Computed from the URL alone, so it can sit above the loading/access gates

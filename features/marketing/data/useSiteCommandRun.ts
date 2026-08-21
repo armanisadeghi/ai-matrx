@@ -159,6 +159,7 @@ export function useSiteCommandRun(
   // the feed states plainly rather than pretending to have a stream.
   const rejoinedSessionId =
     state?.reattached && !state.finishedAt ? state.sessionId : null;
+  // access-errors: ok — best-effort durable-event backfill for a rejoined run; the feed states plainly when it has no stream rather than pretending
   const durableEvents = useRecentLiveCrawlEvents(
     siteId,
     rejoinedSessionId,

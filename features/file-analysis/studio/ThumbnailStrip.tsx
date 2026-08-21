@@ -37,7 +37,7 @@ export function ThumbnailStrip({
   onSelectPage,
   annotationCounts,
 }: Props) {
-  const { pages, loading } = usePages(fileId);
+  const { pages, loading, error, refetch } = usePages(fileId);
 
   if (loading && !pages.length) {
     return (
@@ -47,6 +47,22 @@ export function ThumbnailStrip({
     );
   }
   if (!pages.length) {
+    // A failed pages read must never masquerade as "no pages yet" — that
+    // empty-state copy asserts an absence this component did not verify.
+    if (error) {
+      return (
+        <div className="space-y-2 px-2 py-4 text-center text-[11px] text-muted-foreground">
+          <p>The page list could not be loaded.</p>
+          <button
+            type="button"
+            onClick={refetch}
+            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-foreground hover:bg-muted"
+          >
+            <RotateCw className="h-3 w-3" /> Retry
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="px-2 py-4 text-center text-[11px] text-muted-foreground">
         No pages yet — analysis runs at upload.

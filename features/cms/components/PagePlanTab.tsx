@@ -131,8 +131,10 @@ function EditablePlanNode({
 }) {
   const node = usePlanNode(planNodeId);
   const planSiteId = node.data?.site_id ?? cmsSite.web_site_id ?? null;
+  // access-errors: ok — org lookup for profile options; the plan node above is the primary and renders its own failure branch below
   const marketingSite = useSite(planSiteId ?? "");
   const entities = usePlanEntities(planSiteId);
+  // access-errors: ok — party options for the NodePanel pickers; a failed read only trims options
   const parties = useSiteParties(planSiteId);
   const profiles = usePlanProfiles(
     marketingSite.data?.organization_id ?? null,

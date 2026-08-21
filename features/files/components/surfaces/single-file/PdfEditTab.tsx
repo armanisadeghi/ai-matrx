@@ -89,6 +89,7 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
     update: updateAnnotation,
     remove: removeAnnotation,
   } = useAnnotations(fileId);
+  // access-errors: ok — page-id resolution from the shared cache; the ThumbnailStrip and PagesPanel this tab renders surface the read failure with retry
   const { pages } = usePages(fileId);
   // Warm the analysis cache so the inspector's Findings / Redact panels
   // have data the moment the user clicks them.

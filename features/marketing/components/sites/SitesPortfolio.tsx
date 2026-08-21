@@ -104,6 +104,7 @@ export function SitesPortfolio() {
     defaultSort: { id: "gsc_clicks_28d", direction: "desc" },
   });
   const sites = useSites(table.queryState);
+  // access-errors: ok — header count chip; the sites table is the primary read and absence only hides the number
   const siteCount = useSiteCount();
   const deleteMutation = useDeleteSite();
   const [editing, setEditing] = useState<MarketingSite | null>(null);

@@ -22,6 +22,7 @@ export function BrandPicker({
   allowAll?: boolean;
   label?: string;
 }) {
+  // access-errors: ok — picker options; a failed read leaves the select empty and the host surface owns its own record errors
   const options = useBrandOptions(organizationId);
   return (
     <div className="space-y-1">

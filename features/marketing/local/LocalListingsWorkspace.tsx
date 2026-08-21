@@ -285,7 +285,9 @@ function BrandLocations({
 function LocationWorkspace({ location }: { location: BusinessLocation }) {
   const publishersQuery = useListingPublishers();
   const listingsQuery = useLocationListings(location.id);
+  // access-errors: ok — confirmed-facts enrichment for profile suggestions; suggestions simply have less evidence without it
   const factsQuery = useBusinessFacts(location.brand_id);
+  // access-errors: ok — homepage-evidence lookup; OnSiteSchemaCard states plainly when no site evidence exists
   const sitesQuery = useBrandSites(location.brand_id);
   const site = (sitesQuery.data ?? [])[0] ?? null;
   const evidenceQuery = useSiteRootStructuredData(site?.id ?? "");
@@ -324,6 +326,24 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
   }, [matrix, location]);
   const napAverage =
     napScores.length === 0 ? null : Math.round(napScores.reduce((sum, score) => sum + score, 0) / napScores.length);
+
+  // The listing matrix and its KPI tiles are the point of this workspace — a
+  // failed read rendering "0% coverage" would assert a gap nobody verified.
+  if (publishersQuery.isError || listingsQuery.isError) {
+    const failed = publishersQuery.isError ? publishersQuery : listingsQuery;
+    return (
+      <div className="flex min-w-0 flex-1 flex-col">
+        <InlineQueryError
+          what="directory listings"
+          error={failed.error}
+          onRetry={() => {
+            void publishersQuery.refetch();
+            void listingsQuery.refetch();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -809,6 +829,7 @@ function ListingsMatrix({
  * the canonical profile.
  */
 function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
+  // access-errors: ok — resolves which site to read evidence from; the evidence read below surfaces its own InlineQueryError
   const sitesQuery = useBrandSites(location.brand_id);
   const site = (sitesQuery.data ?? [])[0] ?? null;
   const evidenceQuery = useSiteRootStructuredData(site?.id ?? "");

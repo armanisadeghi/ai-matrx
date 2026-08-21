@@ -114,11 +114,13 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 export function SiteOverview() {
   const { site, sitePath, brandId } = useMarketingSite();
   const overview = useSiteOverview(site.id);
+  // access-errors: ok — decorative hero screenshot; a failed read leaves the placeholder frame, and the site primary is gated by the layout above
   const hero = useSiteHeroScreenshot(
     site.id,
     site.root_url,
     site.homepage_screenshot_id,
   );
+  // access-errors: ok — discovery-inbox count chip; absence only hides the number
   const pendingDiscovered = usePendingDiscoveredCount(site.brand_id);
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();

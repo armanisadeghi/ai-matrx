@@ -263,7 +263,9 @@ export function GscPeekBody({
   metric: GscPeekMetric;
 }) {
   const [days, setDays] = useState<WindowDays>(90);
+  // access-errors: ok — decorative GSC trend peek; the tiles render from the already-loaded list row and a failed series only flattens the chart
   const daily = useSiteGscDaily(site.id, days);
+  // access-errors: ok — decorative top-pages peek under the same list-row data
   const topPages = useSiteGscTopPages(site.id, days, 10);
 
   const windowTotal = useMemo(() => {

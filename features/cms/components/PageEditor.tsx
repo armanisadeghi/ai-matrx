@@ -270,6 +270,7 @@ export default function PageEditor({
   // THE DOOR LAW: when this page is joined to its measured page, the marketing
   // workspace for that page is one click away (new tab — the editor's unsaved
   // buffers must survive). Disabled query until the join exists.
+  // access-errors: ok — optional door to the measured page (new tab); a failed read only hides the link, the CMS page itself is this surface's record
   const measuredPage = usePageLocation(page?.web_page_id ?? null);
   const measuredPageHref = measuredPage.data
     ? marketingRoutes.sitePage(

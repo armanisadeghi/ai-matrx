@@ -42,6 +42,7 @@ export function SnapshotDetail({
     snapshot.data?.created_by,
     snapshot.data?.updated_by,
   ]);
+  // access-errors: ok — door ref to the crawl session; the snapshot primary is gated below and a failed ref only weakens the door label
   const crawl = useCrawlSessionRef(site.id, snapshot.data?.session_id);
   if (snapshot.isLoading) return <LoadingSurface label="Loading snapshot…" />;
   if (snapshot.isError || !snapshot.data) {

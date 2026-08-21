@@ -135,6 +135,7 @@ function SiteEditorDialogBody({
 }) {
   const updateMutation = useUpdateSiteIdentity();
   const moveMutation = useMoveSiteBrand();
+  // access-errors: ok — move-brand picker options; a failed read only empties the picker, the site row being edited arrives as a prop
   const brandOptions = useBrandOptions(site.organization_id);
   const [draft, setDraft] = useState<SiteDraft>(() => draftFrom(site));
   const [brandId, setBrandId] = useState<string | null>(site.brand_id);

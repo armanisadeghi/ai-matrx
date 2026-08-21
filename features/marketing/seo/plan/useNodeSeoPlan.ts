@@ -79,6 +79,7 @@ export function useNodeSeoPlan(args: {
 
   const webPageId =
     cmsJoinedWebPageId ?? planForRoute(sitePlans, route)?.webPageId ?? null;
+  // access-errors: ok — brandId door metadata only; the workspace read below drives the plan's error state
   const location = usePageLocation(webPageId);
   const workspace = usePageWorkspace(siteId, webPageId ?? "");
 

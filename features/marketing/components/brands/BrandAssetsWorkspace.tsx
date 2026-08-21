@@ -80,6 +80,7 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
   const params = useSearchParams();
 
   const brand = useBrand(brandId);
+  // access-errors: ok — sibling-site enrichment (media standards + scope); the brand and asset reads below are the gated primaries
   const sites = useBrandSites(brandId);
   const assets = useBrandAssets(brandId);
 
@@ -166,6 +167,7 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
   );
 
   const organizationId = brand.data?.organization_id ?? null;
+  // access-errors: ok — optional research-image inspiration strip; its absence only trims the Generate view's references
   const research = useResearchImages(organizationId);
 
   const getScope = () => {
@@ -200,6 +202,13 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
   if (brand.isPending) return <LoadingSurface label="Loading brand assets…" />;
   if (brand.isError || !brand.data) {
     return <QueryError error={brand.error} onRetry={() => void brand.refetch()} />;
+  }
+  // The asset library IS this surface — a failed read rendering an empty
+  // library would assert an absence nobody verified.
+  if (assets.isError) {
+    return (
+      <QueryError error={assets.error} onRetry={() => void assets.refetch()} />
+    );
   }
 
   const current = brand.data;

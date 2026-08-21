@@ -59,6 +59,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   // Shared query cache — the PageWorkspace surface scope (ga4_metrics) reads
   // the exact same rows this card renders.
   const analytics = usePageWebAnalytics(site.id, page.id);
+  // access-errors: ok — diagnostic enrichment explaining a failed sync run; its own failure just hides the explainer, the analytics read above renders loadError
   const latestRunFailure = useLatestAnalyticsFailure(site.id);
   const googleInventory = useGoogleConnectionInventory();
   const rows = analytics.data ?? null;

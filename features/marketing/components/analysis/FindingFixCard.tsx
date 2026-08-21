@@ -127,6 +127,7 @@ export function FindingFixCard({
   pageWorkspaceHref,
 }: FindingFixCardProps) {
   const fixable = FIXABLE_ITEM_KEYS.has(itemKey) && Boolean(pageId);
+  // access-errors: ok — evidence enrichment for the fix card; the finding row is the surface's record, and without page evidence the card degrades to the AI pipe instead of drafting from nothing
   const workspace = usePageWorkspace(site.id, fixable ? (pageId as string) : "");
   const fixer = useFindingFixer(findingId, site.organization_id);
   const [applying, setApplying] = useState(false);
