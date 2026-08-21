@@ -39,8 +39,14 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipelines: DealPipeline[];
-  /** The org the deal is stamped into. */
+  /** The org the deal is stamped into (when no party picks one). */
   orgId: string | null;
+  /**
+   * Every org the party search may look in (D227): with no active org chosen
+   * in the workspace there is no single right org to search, and the deal
+   * follows the picked party's org. Defaults to `[orgId]`.
+   */
+  searchOrgIds?: string[];
   /** Defaults the owner to the caller. */
   userId: string | null;
   /** Preselects the pipeline the board/list is narrowed to. */
@@ -55,6 +61,7 @@ export function DealCreateDialog({
   onOpenChange,
   pipelines,
   orgId,
+  searchOrgIds,
   userId,
   defaultPipelineId,
   defaultParty,
@@ -66,9 +73,13 @@ export function DealCreateDialog({
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [expectedClose, setExpectedClose] = useState("");
-  const [party, setParty] = useState<PartyRef | null>(null);
+  const [party, setParty] = useState<
+    (PartyRef & { organization_id?: string }) | null
+  >(null);
   const [partySearch, setPartySearch] = useState("");
-  const [partyResults, setPartyResults] = useState<PartyRef[]>([]);
+  const [partyResults, setPartyResults] = useState<
+    Array<PartyRef & { organization_id: string }>
+  >([]);
   const [searching, setSearching] = useState(false);
   // A completed empty search must SAY so — without this flag the dropdown
   // unmounted on zero results and the "No contacts match" branch was
@@ -98,9 +109,13 @@ export function DealCreateDialog({
     [pipelines, pipelineId],
   );
 
-  // Debounced contact-only party search in the deal's org.
+  // Debounced contact-only party search across the reachable orgs (D227).
+  const searchOrgs = useMemo(
+    () => (searchOrgIds?.length ? searchOrgIds : orgId ? [orgId] : []),
+    [searchOrgIds, orgId],
+  );
   useEffect(() => {
-    if (!open || !orgId || party || !partySearch.trim()) {
+    if (!open || searchOrgs.length === 0 || party || !partySearch.trim()) {
       setPartyResults([]);
       setSearched(false);
       return;
@@ -109,7 +124,10 @@ export function DealCreateDialog({
     setSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const rows = await searchPartiesByName({ orgId, search: partySearch });
+        const rows = await searchPartiesByName({
+          orgId: searchOrgs,
+          search: partySearch,
+        });
         if (!cancelled) {
           setPartyResults(rows);
           setSearched(true);
@@ -124,10 +142,13 @@ export function DealCreateDialog({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, orgId, party, partySearch]);
+  }, [open, searchOrgs, party, partySearch]);
 
   const submit = async () => {
-    if (!orgId) {
+    // The deal follows the picked party's org; `orgId` covers a party-less
+    // deal (and the record-page door, whose default party carries no org).
+    const dealOrgId = party?.organization_id ?? orgId;
+    if (!dealOrgId) {
       toast.error("No organization to create the deal in");
       return;
     }
@@ -150,7 +171,7 @@ export function DealCreateDialog({
         name,
         pipelineId,
         stageId,
-        orgId,
+        orgId: dealOrgId,
         amount: parsedAmount,
         currency,
         expectedCloseDate: expectedClose || null,

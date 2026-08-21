@@ -622,7 +622,12 @@ export function ImportWizard() {
                   size="sm"
                   className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
                   onClick={() => void runImport()}
-                  disabled={plan.counts.create === 0 || progress !== null}
+                  // Matched rows commit too (D220) — a file of pure updates
+                  // is a real import, not a disabled button.
+                  disabled={
+                    plan.counts.create + plan.counts.exists === 0 ||
+                    progress !== null
+                  }
                 >
                   {progress ? (
                     <>
@@ -632,8 +637,8 @@ export function ImportWizard() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Import {plan.counts.create} record
-                      {plan.counts.create === 1 ? "" : "s"}
+                      Import {plan.counts.create + plan.counts.exists} record
+                      {plan.counts.create + plan.counts.exists === 1 ? "" : "s"}
                     </>
                   )}
                 </Button>

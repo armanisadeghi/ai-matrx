@@ -1215,6 +1215,35 @@ export async function addAffiliation(args: {
   if (error) throw pgError(error);
 }
 
+/**
+ * The party's live, current employment state, for idempotent import commits
+ * (D220): matched rows go through commit now, and a bare re-insert of a
+ * primary employment would trip the one-primary exclusion constraint instead
+ * of being the no-op (same employer) or secondary stint (new employer while
+ * one exists) it means.
+ */
+export async function fetchCurrentEmploymentState(partyId: string): Promise<{
+  employerIds: Set<string>;
+  hasPrimary: boolean;
+}> {
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("affiliation")
+    .select("employer_party_id, is_primary")
+    .eq("party_id", partyId)
+    .eq("is_current", true)
+    .is("deleted_at", null);
+  if (error) throw pgError(error);
+  return {
+    employerIds: new Set(
+      (data ?? [])
+        .map((a) => a.employer_party_id)
+        .filter((id): id is string => !!id),
+    ),
+    hasPrimary: (data ?? []).some((a) => a.is_primary),
+  };
+}
+
 /** "They left": end the stint — history stays, nothing is erased. */
 export async function endAffiliation(id: string): Promise<void> {
   const { error } = await supabase
@@ -1230,19 +1259,22 @@ export async function endAffiliation(id: string): Promise<void> {
 }
 
 /**
- * Name-search live parties (any kind) in one org workspace — the generic
- * "link an existing person/company" picker read. Small page, canonical rows
- * only (merged losers excluded).
+ * Name-search live parties (any kind) in one or more org workspaces — the
+ * generic "link an existing person/company" picker read. Small page, canonical
+ * rows only (merged losers excluded). An array of orgs is for pickers with no
+ * single active org (the deal dialog, D227) — each row carries its
+ * `organization_id` so the caller can stamp the record into the right org.
  */
 export async function searchPartiesByName(args: {
-  orgId: string;
+  orgId: string | string[];
   search: string;
-}): Promise<PartyRef[]> {
+}): Promise<Array<PartyRef & { organization_id: string }>> {
+  const orgIds = Array.isArray(args.orgId) ? args.orgId : [args.orgId];
   let q = supabase
     .schema("crm")
     .from("party")
-    .select("id,display_name,party_kind")
-    .eq("organization_id", args.orgId)
+    .select("id,display_name,party_kind,organization_id")
+    .in("organization_id", orgIds)
     .is("deleted_at", null)
     .is("canonical_id", null)
     .eq("record_class", CRM_PRIMARY_RECORD_CLASS)

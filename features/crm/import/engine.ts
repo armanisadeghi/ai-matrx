@@ -20,6 +20,7 @@ import type { PartyKind, PartyRef } from "../types";
 import {
   addAffiliation,
   ensurePrimaryContactPoints,
+  fetchCurrentEmploymentState,
   findExistingMediumOwners,
   findPartiesByDomains,
   findPartiesByNames,
@@ -966,14 +967,23 @@ export async function commitImport(
           ? employerCache.get(companyKey(p.companyName))
           : undefined;
         if (employer) {
-          await addAffiliation({
-            partyId: resolvedPartyId,
-            employerPartyId: employer.id,
-            orgId: plan.orgId,
-            title: p.jobTitle,
-            isCurrent: true,
-            isPrimary: true,
-          });
+          // Idempotent for matched rows (D220): the same employer again is a
+          // no-op, and a NEW employer for someone already primarily employed
+          // lands as a secondary stint — a bare primary insert would trip the
+          // one-primary exclusion constraint and fail the row.
+          const employment = await fetchCurrentEmploymentState(
+            resolvedPartyId,
+          );
+          if (!employment.employerIds.has(employer.id)) {
+            await addAffiliation({
+              partyId: resolvedPartyId,
+              employerPartyId: employer.id,
+              orgId: plan.orgId,
+              title: p.jobTitle,
+              isCurrent: true,
+              isPrimary: !employment.hasPrimary,
+            });
+          }
         }
 
         created.push({
