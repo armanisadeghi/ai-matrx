@@ -265,7 +265,12 @@ function Desk({
   const cost = useAppSelector(selectRunCostTotal(selectorRunId));
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
 
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  // `errored` is not in TERMINAL_RUN_STATUSES, but for THIS page's clock and
+  // controls it is over: the engine won't advance it, so a ticking elapsed
+  // time and a Stop button would both be lies.
+  const runOver =
+    status !== null &&
+    (TERMINAL_RUN_STATUSES.has(status) || status === "errored");
   const rows = deriveLedgerRows(steps, runState);
   const doneCount = rows.filter(
     (r) => r.phase === "settled" || r.phase === "skipped",

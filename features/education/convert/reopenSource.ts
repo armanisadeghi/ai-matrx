@@ -16,6 +16,7 @@
 // original file, so the whole kit stays one family.
 
 import { fileHandler } from "@/features/files/handler/handler";
+import { downloadFile } from "@/features/files/api/files";
 import { createClient } from "@/utils/supabase/client";
 import { streamPdfExtractTextRemote } from "@/features/pdf-extractor/service/streamPdf";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
@@ -87,10 +88,23 @@ export async function reopenSource(
     };
   }
 
-  // 2) A text/markdown anchor (paste, transcript, scrape) IS its own text.
-  if (INLINE_TEXT_EXT.test(filename) && resolved.url) {
-    const res = await fetch(resolved.url);
-    const text = res.ok ? (await res.text()).trim() : "";
+  // 2) A text/markdown anchor (paste, transcript, scrape, a .md upload) IS its
+  //    own text. Read the bytes through the handler's `blob` target rather than
+  //    a bare fetch of `resolved.url`: a plain resolve does not mint a signed
+  //    URL (only `needsUrl` does), so reading `.url` here silently found nothing
+  //    and every top-up said the material could not be re-read.
+  const isTextual =
+    INLINE_TEXT_EXT.test(filename) ||
+    (resolved.meta.mime ?? "").startsWith("text/") ||
+    resolved.meta.mime === "application/json";
+  if (isTextual) {
+    // `downloadFile` is the AUTHENTICATED byte read. The handler's `blob` target
+    // cannot be used here: it does a bare `fetch` of the file's URL, and for an
+    // owned private file that URL is the files service's authenticated
+    // `/files/{id}/download` endpoint rather than a pre-signed one, so it 401s
+    // with no Authorization header (logged in FOUND_DEFECTS.md).
+    const { blob } = await downloadFile(fileId, { inline: true });
+    const text = (await blob.text()).trim();
     if (text) {
       return { text, title, ref: { kind: "file", fileId }, method: "inline" };
     }
