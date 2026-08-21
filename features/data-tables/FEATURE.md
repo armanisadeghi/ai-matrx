@@ -593,6 +593,45 @@ into:
 - A `keep_versions` setting per dataset.
 Decide before agent-heavy workloads land.
 
+## The grid interaction model — three states, and THE CLICK LAW
+
+`features/data-tables/grid-selection.ts` is the source of truth; read it before
+touching how a cell responds to a click or a key.
+
+A grid has **three** states, not two: nothing selected / one cell **selected** /
+one cell **editing**. The middle one is load-bearing — arrow keys, Tab, copy,
+Delete and fill-down are all meaningless without a current cell, which is why
+none of them existed while the grid only had "idle" and "editing".
+
+🚨 **THE CLICK LAW.** A single click may **select** a cell, **toggle** a
+two-state value, or **open** a chooser. It may **never** drop the user into a
+free-text buffer. Opening a menu is not a mutation and a checkbox is instantly
+reversible, but landing in a text buffer turns every attempt to select-and-copy
+into an accidental edit. `directClickKinds()` is the entire allowed list
+(`checkbox`, `rating`, `select`, `multiselect`); adding a free-text editor to it
+is a defect, and a test asserts every free-text kind is refused.
+
+**Addresses are `(rowId, fieldName)`, never indices.** The grid reloads after
+every write and realtime reorders rows underneath the user; an index-based
+selection silently points at a DIFFERENT row and the next keystroke edits the
+wrong one.
+
+**Selection state is owned by the grid, not the cell** (`useGridSelection`).
+A cell that owned its own edit flag could never hand off to its neighbour, so
+Enter-moves-down and Tab-moves-right would be impossible.
+
+**Hooks live ABOVE the viewer's early returns.** `UserTableViewer` returns early
+for loading / error / no-table; a hook added below them changes the hook count
+between renders and drops the whole viewer into its error boundary.
+
+🚨 **Easier editing ships WITH undo, never before it.** A click that toggles, a
+keystroke that edits, and a Delete that empties are good affordances only over a
+recoverable floor. `useCellUndo` captures the inverse **before** the write —
+re-reading the cell afterwards races with realtime and with agent writes and can
+"undo" to a value someone else just set — and applies it through the same
+`upsertCell` path as a hand edit, so it validates, versions, and is refused on a
+read-only table. A second write path is always the one that corrupts something.
+
 ## Change log
 
 - 2026-08-18 — **Document editor satisfies global sheets Facade dependencies without starting sheets UI.**
