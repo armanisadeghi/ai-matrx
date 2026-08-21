@@ -14,6 +14,43 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D239 — 48,493 `scheduler.sch_run` rows are un-updatable by anyone (NOT VALID check constraint) (2026-08-21)
+
+`scheduler.sch_run_claim_protocol_by_claimed_at_chk` is
+`CHECK (claimed_at IS NULL OR (metadata->>'claim_protocol') IS NOT DISTINCT FROM '2') NOT VALID`.
+`NOT VALID` grandfathers the rows that already violate it, but Postgres **re-checks the constraint on
+any UPDATE of such a row**, so those rows are frozen: every write fails `23514`. Live count
+2026-08-21: **48,493** of 144,744 rows violate it (`claimed_at IS NOT NULL` with no
+`metadata.claim_protocol='2'` — i.e. every run claimed under protocol v1).
+
+Found because the §6d-1 `created_by` neutralization backfill hit it; **27,816** of those rows also
+carry the wrong `created_by` and stay wrong until this is adjudicated (they are explicitly excluded
+in `migrations/component_created_by_backfill_from_parent.sql`).
+
+**Decision needed, then one migration.** Either backfill `metadata.claim_protocol='2'` onto the
+legacy rows and `VALIDATE CONSTRAINT` (asserts they were protocol-v2 claims, which they were not),
+or narrow the constraint so it only governs rows written after the protocol-v2 cutover, or drop it
+and enforce the claim protocol in the writer. Whichever: an un-updatable row class is not a
+migration detail — it silently fails any future repair pass over this table.
+
+### D240 — `files.files.created_by` is NOT NULL under an `ON DELETE SET NULL` FK that can therefore never fire (2026-08-21)
+
+`files_created_by_fkey` is `FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+NOT VALID` — but `files.files.created_by` is **NOT NULL**. The declared cleanup action is
+unexecutable: deleting a user cannot set the column to NULL, so the delete would error instead, and
+because the constraint was never validated the rows simply persist pointing at users who are gone.
+Live: **21** `files.files` rows reference **5** deleted `auth.users` ids.
+
+Surfaced by the §6d-1 neutralization: `files.file_versions` (a component) now correctly mirrors its
+parent, so those same 21 ghost ids are now present on the child too — which is the *right* answer per
+§6d-1 (child agrees with parent) and must not be "fixed" by desynchronising the child. The real fix
+is at the parent. `files.file_versions.created_by` is nullable and carries the same
+`ON DELETE SET NULL NOT VALID` FK, so the child half is already consistent.
+
+**Fix (needs a decision on ownership semantics):** either make `files.files.created_by` nullable so
+`ON DELETE SET NULL` is executable and then `VALIDATE`, or re-point the 21 rows at a surviving owner
+(the org's admin) and validate. Do not validate as-is — it will fail on those 21 rows.
+
 ### D238 — two `is_public` cuts are code-complete and DEPLOY-GATED: `legal.wc_claim` and `canvas.canvas_items` (2026-08-21)
 
 Split out of D232 §D. For both columns, states 1 and 2 of the §8a-1 sequence are DONE; only state 3
@@ -1054,8 +1091,8 @@ Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls
 **FIXED — (3) the created_by conveyance hole. Arman's ruling: THE COMPONENT OWNERSHIP LAW.** `created_by` does two different jobs and they only coincide on an **entity** (creator = owner). On a **component** the actor and the owner come apart — the owner is the parent — so the column cannot be an access key. The component `std_insert` parent-editor arm never constrained `created_by` while `std_select` led with `created_by = auth.uid()`, so a parent-editor could stamp another user as creator and hand that user owner-read; **56** component tables carried both halves (`chat.message`, `chat.request`, `chat.tool_call`, all `research.rs_*`, `workflow.*`, `content_ir.kind_*`). The fix is **not** to force `auth.uid()` (that is the entity fix) — it is that `apply_rls(…,'component')` **never emits a `created_by` clause at all**. Nothing is lost: `history.row_versions` already records the real actor. Verified live: **0** component policies reference `created_by`. Canon: db-rules §6d-1.
 
 **OPEN — follow-ups to the ownership law** (safe, non-urgent — the column now grants nothing):
-1. **Neutralize the surviving `created_by` values** on component tables with a parent-derived trigger (a component's `created_by` derived from its *parent's*, re-derived on reparent) so any code still reading the column gets a correct, non-spoofable value. **Not** `auth.uid()`.
-2. **Then clean up:** drop `created_by` where it carries no domain meaning; where "who acted" is genuinely meaningful (a message sender) rename it to an explicit `sender_id`/`author_role` that never appears in a policy.
+1. ~~**Neutralize the surviving `created_by` values**~~ — **DONE 2026-08-21.** `platform.component_created_by_from_parent()` derives a component row's `created_by` from its composition parent's, on INSERT and on reparent. Attached as `zzz_component_created_by` to all **169** active component tables carrying `created_by` — full coverage, zero skips (`agent.card`, the one registered component that was a VIEW and could not take a row trigger, was deregistered the same day by the entity-registry pass, commit `c0806b236`). **The `zzz_` prefix is the mechanism, not decoration:** BEFORE triggers fire in alphabetical name order (db-rules §10) and `_stamp_actor` runs `created_by := coalesce(created_by, uid)`, so the neutralizer must sort after every live stamp-trigger name (`_stamp_actor` ×140, `trg_stamp_actor` ×4, `coding_session_entry_stamp_actor` ×1) to overwrite both the actor stamp *and* a value a writer supplied explicitly. Chosen over editing `_stamp_actor` because that one function backs **279** triggers and skipping `created_by` there would leave the column NULL rather than correct. TG_ARGV is `(parent_schema, parent_table, fk_column)` triples generated from `platform.entity_relationships`; a multi-parent component derives from the **first non-null parent FK** (a CASE chain, never a `coalesce` over values). NULL parent FK → value left as-is; parent's own `created_by` NULL on a `NOT NULL` child column → left as-is rather than 23502. **Backfill: 497,090 rows across 72 of 169 tables** re-derived; residual **27,816**, all `scheduler.sch_run`, blocked by a pre-existing defect (**D239**). The backfill had to **iterate to a fixed point** — a component's parent is usually itself a component, so one pass left 298,623 rows still wrong including `web.crawl_url`, which had *zero* drift until its parents were corrected. Verified live end-to-end (rolled-back transaction): user B inserting under user A's parent while explicitly passing `created_by=B` lands **A**; `history.row_versions` still records **B** as `actor_id`; reparenting to C's parent re-derives to **C**; a non-FK UPDATE leaves the column alone. Migrations: `migrations/component_created_by_neutralize_from_parent.sql` (trigger + attach) and `migrations/component_created_by_backfill_from_parent.sql` (idempotent fixed-point backfill + FK re-check).
+2. **Then clean up:** drop `created_by` where it carries no domain meaning; where "who acted" is genuinely meaningful (a message sender) rename it to an explicit `sender_id`/`author_role` that never appears in a policy. **Swept 2026-08-21 and NOTHING was dropped — the "zero consumers" precondition is met by none of the 151 nullable-`created_by` component tables.** Every one is named by generated artifacts that also carry `created_by`: `types/database.types.ts`, `types/generated/entity-types.generated.ts`, and the Matrx ORM models (`aidream/**/db/models_*.py`, where `created_by` is a declared `ForeignKey`). Lowest hit count of all 151 was **9** files (`seo.site_geo_area`); highest 21,097 (`interview.turn`). So each drop is a real full-change contract (regen ORM + regen types + per-table consumer read), not a sweep — and the neutralizer makes the column *correct* meanwhile, which is what removes the urgency.
 3. ~~**Conformance check** that fails any component policy referencing `created_by`~~ — **DONE 2026-08-21.** `public.component_created_by_report()` (`migrations/component_created_by_conformance_report.sql`) is one query over `pg_policies` joined to `platform.entity_types` (`rls_variant='component'`, `is_active`); `scripts/access-matrix/check-component-created-by.ts` reads it and is wired **BLOCKING** into `run-release-gates.sh --strict` — no advisory carve-out, because there is no backlog to grandfather. Live at adoption: 191 component tables, 945 policies scanned, **0** offenders; the same regex over `entity`-variant tables matches **599**, so the zero is measured, not vacuous. Negative-tested by temporarily mislabeling `workbench.working_documents` as a component inside a rolled-back transaction — the gate reported 4 offenders, then returned to 0. **A failure here is never allowlisted**: regenerate the policy, or fix the variant. *Still OPEN, second half:* no check yet that an active table's GRANTs match its variant.
 4. **`platform.create_entity_table` should call `iam.apply_table_grants`** so the create path and the repair path agree. Not yet wired.
 
