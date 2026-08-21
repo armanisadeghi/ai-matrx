@@ -422,3 +422,122 @@ export async function classifyKeywordsWithAi(
   }
   return totals;
 }
+
+// ── Universal facet backfill (the 13-facet plane, not site traffic class) ───
+
+const facetBackfillStatusSchema = z.object({
+  keywords_total: z.number(),
+  keywords_classified: z.number(),
+  demand_keywords: z.number(),
+  demand_keywords_classified: z.number(),
+  demand_clicks: z.number(),
+  demand_clicks_classified: z.number(),
+  demand_impressions: z.number(),
+  demand_impressions_classified: z.number(),
+  queue_pending: z.number(),
+  queue_running: z.number(),
+  queue_failed: z.number(),
+  queue_deferred: z.number(),
+  pending_clicks: z.number(),
+  pending_impressions: z.number(),
+  next_phrase: z.string().nullable(),
+  last_error: z.string().nullable(),
+  demand_window_days: z.number().nullable(),
+  demand_as_of: z.string().nullable(),
+  queue_refreshed_at: z.string().nullable(),
+  last_classified_at: z.string().nullable(),
+  site_keywords: z.number().nullable(),
+  site_keywords_classified: z.number().nullable(),
+  site_clicks: z.number().nullable(),
+  site_clicks_classified: z.number().nullable(),
+});
+
+export type FacetBackfillStatus = z.infer<typeof facetBackfillStatusSchema>;
+
+/**
+ * Where the universal-facet backfill actually stands — read from SERVER state
+ * (`seo.keyword_classification_status`), never from anything this browser
+ * remembers. A tab that was closed while a pass ran comes back to the true
+ * number; a second tab sees the same number as the first.
+ *
+ * The facet plane is GLOBAL (one classification per phrase, shared by every
+ * tenant — P3), so the headline counts are platform-wide. `p_site_id` adds
+ * this site's own slice of it, which is the number a site owner cares about.
+ *
+ * `p_min_impressions` must match the `seo.keyword_classification.min_impressions`
+ * knob for `queue_deferred` to mean anything; the caller passes what the knob
+ * says, so the demand floor is reported instead of quietly shrinking the work.
+ */
+export async function getFacetBackfillStatus(
+  siteId: string | null,
+  minImpressions: number,
+  signal?: AbortSignal,
+): Promise<FacetBackfillStatus> {
+  const response = await (
+    await seoDb()
+  )
+    .rpc("keyword_classification_status", {
+      p_site_id: siteId,
+      p_min_impressions: minImpressions,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const data = assertData(
+    response.data,
+    response.error,
+    "read the facet classification status",
+  );
+  const row = Array.isArray(data) ? data[0] : data;
+  return facetBackfillStatusSchema.parse(row);
+}
+
+export interface FacetBackfillPassResult {
+  claimed: number;
+  classified: number;
+  returned_to_queue: number;
+  quarantined: number;
+  classified_today: number;
+  daily_ceiling: number;
+  ceiling_reached: boolean;
+  queue_pending: number;
+  queue_deferred: number;
+  pending_clicks: number;
+  error: string | null;
+  top_phrases: string[];
+}
+
+/**
+ * Advance the backfill by ONE bounded, demand-ordered pass (aidream
+ * `POST /seo/keywords/classification/backfill`).
+ *
+ * Unlike `classifyKeywordsWithAi`, this owns no loop and remembers nothing:
+ * the server ledger decides which keywords are next and records what landed,
+ * so closing the tab costs the current pass and nothing else. The strip's
+ * numbers come from `getFacetBackfillStatus`, not from this response — this
+ * call's job is to make the work happen, not to be the progress bar.
+ *
+ * `refresh` re-measures the Search Console demand rollup first (~1.2M rows).
+ * Skip it on back-to-back presses: it would measure the same day twice.
+ */
+export async function runFacetBackfillPass(
+  dispatch: AppDispatch,
+  options: { refresh?: boolean; limit?: number } = {},
+): Promise<FacetBackfillPassResult> {
+  const result = await dispatch(
+    callApi({
+      path: "/seo/keywords/classification/backfill",
+      method: "POST",
+      body: {
+        refresh: options.refresh ?? true,
+        // The endpoint caps at 200 and the knob caps it again server-side; the
+        // client asks for a pass that fits inside the CDN's ~100s severance.
+        limit: options.limit ?? AI_CLASSIFY_CHUNK,
+      },
+      connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
+      totalTimeoutMs: null,
+    }),
+  );
+  if (result.error || !result.data) {
+    throw new Error(result.error?.message ?? "Facet backfill pass failed");
+  }
+  return result.data as FacetBackfillPassResult;
+}
