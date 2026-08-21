@@ -68,6 +68,27 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   `AgeBandPrivacyCard` (`features/education/compliance`). Migration
   `migrations/edu_data_rights_export_delete.sql`.
 
+## The cleaned document — what every path produces before anything is generated
+
+**Ingest's product is ONE clean markdown/text blob**, and the whole kit is generated from it.
+Where that cleaned text is DURABLE differs by path, and the difference is load-bearing:
+
+| Path | Durable clean copy |
+|---|---|
+| PDF · Office (docx/pptx/xlsx) | `docproc.processed_documents` (the platform extracts on upload) |
+| Paste · URL · YouTube transcript | the `.md` anchor IS the clean copy |
+| Image OCR · audio/video transcript | a sibling `<title> (extracted).md` written by `keepCleanCopy` |
+
+🚨 **Extraction output is never thrown away.** Image OCR and transcription used to keep only the
+original bytes, so the readable version existed solely in the tab that ran the ingest — nothing
+could show it to the student or re-read it. `keepCleanCopy` writes the sibling and edges it back to
+the anchor (`file -> file`, `role='source'`, `metadata.targetKind='clean_copy'`), so it travels with
+the original, appears as a chip under `MadeFromSource`, and
+[`convert/reopenSource.ts`](../convert/reopenSource.ts) finds it from the anchor id alone.
+
+Because the material is already clean before any model runs, **`notes` is ON by default** —
+organizing material we already hold is the last artifact that should need opting into.
+
 ## Invariants
 
 - 🚨 **The kit is sized by the MATERIAL, and the student can say how much they want.**
@@ -75,6 +96,7 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   exact `count`; the converter's coverage planner spreads whatever number results across the WHOLE
   document. The law and the knobs live in [`convert/FEATURE.md`](../convert/FEATURE.md) §THE
   COVERAGE LAW — read it before touching kit sizing.
+- **Extraction output is never discarded** — see "The cleaned document" above.
 - **A document we could not read all of is a WARNING, not a footnote.** The source ceiling is the
   knob `education.study_kit.max_source_chars` (was a hardcoded 48,000 that silently cut a 90-page
   PDF to its first third); `KitBoard` renders an amber banner naming how much was read and what to
@@ -206,6 +228,10 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Change log
 
+- **2026-08-21** — Cleaned-document guarantee + `notes` default-on. Image OCR and audio/video
+  transcription now keep a durable `(extracted).md` sibling edged to the anchor (`keepCleanCopy`),
+  closing the two paths whose extraction existed only in the browser tab; `reopenSource` reads it.
+  Verified live on an OCR'd image.
 - **2026-08-21** — **The size fix.** A 77-slide upload produced 10 flashcards, a half-page summary,
   a 16-node map and empty notes. (a) Generation is now coverage-planned per section — the law and
   the engine live in [`convert/FEATURE.md`](../convert/FEATURE.md); this feature is the consumer.
