@@ -14,6 +14,87 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D238 — `legal.wc_claim.is_public` is bivalent and both repos are repointed; the DROP is gated on the deployed aidream SHA (2026-08-21)
+
+Split out of D232 §D. State 1 and state 2 of the §8a-1 sequence are DONE; only state 3 remains.
+
+- **State 1 (live):** `migrations/d232_wc_claim_visibility_bivalent.sql` — `is_public` lost its
+  `NOT NULL` (§8d step 2, so each repo cuts over independently) and
+  `legal._bridge_wc_claim_is_public()` mirrors `is_public` ↔ `visibility` in both directions, so
+  pre- and post-repoint code are simultaneously correct. `organization_id` is NOT NULL on this
+  table, so the not-public case always lands on `internal`, never demoting a row to `personal`.
+- **State 2 (committed, NOT yet deployed):** aidream
+  `knowledgebase/experts/ama_expert/pd_ratings/registered_functions.py` — `create_claim` /
+  `edit_claim` keep the wire field `is_public` (a column rename is not a client contract change)
+  and write `visibility`. matrx-frontend `features/legal/wc/pd-ratings/api/claims.ts` selects
+  `visibility` instead of `is_public`.
+- **State 3 (open):** `alter table legal.wc_claim drop column is_public;` **plus**
+  `drop function legal._bridge_wc_claim_is_public()` and its `_bridge_is_public` trigger — the
+  bridge is deliberately temporary and must not outlive the column. Then `python db/generate.py`,
+  `pnpm db-types`.
+
+🚨 **Gate: the DEPLOYED aidream SHA, not the pushed one** (§8a-1 corollary). Compare
+`/health/version` against the commit that carries the `visibility` mapping. Dropping ahead of the
+deploy makes every running WC claim create/patch write a column that no longer exists.
+
+### D237 — `crm.outreach_acceptance` is the one real entity in D232 §A, and canonicalizing it removes the client INSERT the live AUP gate needs (2026-08-21)
+
+Split out of D232 §A. Allowlisted in `scripts/canonical-ratchets/unregistered-entities-allowlist.json`
+as deliberately-unregistered-for-now, with this entry named as the reason — **not** as a settled
+non-entity.
+
+It is append-only legal evidence (one row per org + lane + policy version: who accepted the AUP,
+when, with what text and user agent — `migrations/crm_06_compliance.sql`, "Evidence, therefore
+append-only"). It carries `id` + `organization_id` + `accepted_by`, so the ratchet correctly reads
+it as entity-shaped.
+
+**Why it was not registered here.** The natural variant is `ledger`, whose generated policies are
+`svc_all` + `std_select` — **no client INSERT**. Live today the FE inserts DIRECTLY with the user's
+session (`features/crm/compliance/service.ts` `acceptOutreachPolicy`), under a bespoke policy gated
+on `is_org_member(organization_id) AND accepted_by = auth.uid()`. Running `iam.apply_rls(…,'ledger')`
+would drop that policy and break the AUP gate on `/crm/sending-identities` — a live compliance
+surface (5 human gates).
+
+**The fix, in this order:** (1) add a SECURITY DEFINER `crm.accept_outreach_policy(org, lane,
+version, text, user_agent)` RPC carrying the same two authorization checks; (2) repoint
+`acceptOutreachPolicy` to it and ship; (3) prove the deploy is live; (4) only then register the
+token and run `apply_rls('ledger')` (doctrine §8a-2 — the old path must keep working until the new
+code is running). Base columns (`created_by`, `updated_by`, `version`) are additive and can go in
+step 1.
+
+### D236 — the seven `workbench.udt_*` `is_public` columns: additive half done, breaking half is one 20-consumer unit (2026-08-21)
+
+Split out of D232 §D. `is_public` is live on `workbench.udt_datasets`, `udt_dataset_fields`,
+`udt_dataset_rows`, `udt_documents`, `udt_structured_lists`, `udt_structured_list_items`,
+`udt_workbooks`.
+
+**The additive half is already in place and needs nothing:** `workbench._bridge_legacy_owner()`
+(BEFORE INSERT OR UPDATE on the four parent tables) keeps `is_public` and `visibility` in agreement
+in both directions, the FE services already write ONLY `visibility`
+(`features/data-tables/document-service.ts`, `workbook-service.ts`), and measured live 2026-08-21
+the two columns **disagree on zero rows** across all four parents (140/35/29/19 rows; 8 and 1 public
+respectively, `visibility='public'` on exactly those).
+
+**The breaking half is why it is one item and not seven.** Cutting the column requires, together:
+- **15 RPCs** naming it — `public._d31_impl_get_user_table_complete`, `_d31_impl_update_user_table_config`,
+  `_d31_impl_update_user_table_metadata`, `create_new_user_table_dynamic`, `create_user_table_with_fields`,
+  `delete_user_table`, `get_user_table_complete`, `get_user_tables`, `inherit_table_security_on_insert`,
+  `update_user_table_row_ordering`, `_d31_impl_get_user_list_with_items`, `_d31_impl_update_user_list`,
+  `create_user_list`, `get_structured_list_for_selection`, `get_user_list_with_items` (several take a
+  `p_is_public` parameter, so the signature changes and every caller moves with it);
+- **3 child RLS policies** that read the parent's flag — `udt_dataset_fields_select`,
+  `udt_dataset_rows_select`, `udt_row_versions_select` (`ut.is_public = true` / `d.is_public = true`);
+- **the shared bridge function itself**, which references `NEW.is_public` for all four tables, so a
+  partial drop breaks the tables that still have the column;
+- the aidream ORM (`db/models/workbench.py`, `db/expected_schema.json`) and the FE
+  (`features/data-tables/service.ts`, `agent-context/buildDocumentsContextData.ts`,
+  `app/(core)/workbooks/**`).
+
+Note the same bridge also carries the legacy `user_id` → `created_by` half, which those child
+policies ALSO read — so the natural scope is "retire the workbench UDT legacy owner + visibility
+bridge", not "drop is_public". `workbench.udt_datasets` is the one table where this is the only
+thing left between it and certification.
+
 ### D234 — `sandbox_instance` is 91.6% of the entire version store: 4.83M of 5.28M rows over 375 rows (2026-08-21)
 
 Found while verifying the versioned-without-capture migration (D233's sibling; measured live).
@@ -41,51 +122,87 @@ capture, so it was never in the 47) and because pruning the 4.8M existing rows i
 `version_prune(token, id, keep)` exists, but whether sandbox history is worth keeping at all is
 Arman's call — the honest options are prune-to-N, or set `is_versioned=false` and drop the corpus.
 
-### D232 — the DDL-guard backlog, triaged; §A and §D remain (2026-08-21)
+### D232 — the DDL-guard backlog, triaged; §A/§B/§C closed, §D's hard remainder split out (2026-08-21)
 
 Product of giving `platform.ddl_guard_log` a reader (`migrations/ddl_guard_log_ack_contract.sql`,
-`scripts/check-ddl-guard-log.ts`, docs-steward daily step). All firings are now acknowledged **with a
-reason**; this entry is the residue that no ack should hide. Live-verified against
-`iam.canonical_certify_ok` / `iam.verify_canonical` / `pg_trigger` / `pg_attribute`.
+`scripts/check-ddl-guard-log.ts`, docs-steward daily step). All firings are acknowledged **with a
+reason**; this entry is the residue no ack should hide. Every line below was re-verified live
+against `iam.verify_canonical` / `iam.canonical_certify_ok` / `pg_trigger` / `pg_attribute`
+immediately before it was acted on.
 
 **The `hand_rolled_entity` class is closed at the source** — `d2b8e526b` flipped that rule from WARN
-to ERROR the same day, so no *new* rows of this class can accrue. A fresh `hand_rolled_entity` row
-appearing after 2026-08-21 means the event trigger was disabled.
+to ERROR the same day. A fresh `hand_rolled_entity` row appearing after 2026-08-21 means the event
+trigger was disabled.
 
-**§B and §C are RESOLVED; §A and §D are open.** Full status:
+**Ratchets moved, which is the proof:** unregistered entity-like tables **48 → 41**
+(`scripts/canonical-ratchets/unregistered-entities-baseline.json`), post-doctrine FAIL findings
+**22 → 1** (`post-doctrine-baseline.json`), org-backstop exemptions **78 → 6**
+(aidream `scripts/org_backstop_exemptions.json`).
 
-**A. Unregistered entity-looking tables (9) — OPEN.** Each needs one decision: register via the token
-registry, or record why it is deliberately not an entity. Not an agent's call to make silently.
-`billing.plan`, `billing.org_plan`, `billing.user_plan` (`migrations/billing_*.sql`),
-`crm.jurisdiction_policy`, `crm.outreach_acceptance`, `crm.unsubscribe_token`
-(`migrations/crm_06_compliance.sql`), `platform.org_change_policy`
-(`migrations/change_type_policy_c18.sql`), `content_ir.io_contract`, `platform.retention_policy`
-(aidream — see that repo's twin entry). Most of the `billing`/`crm`/`platform` ones are per-org or
-per-user CONFIG rows keyed on `organization_id`/`user_id`/`country_code` with no `id` PK — a
-"declare non-entity" answer is very plausible; it just has to be written down.
+**A. Unregistered entity-looking tables (9) — CLOSED as dispositioned.** Judged by purpose
+(changeover doctrine §5) and recorded, with a required reason each, in
+`scripts/canonical-ratchets/unregistered-entities-allowlist.json` — that file IS the "reviewed,
+deliberately unregistered" record the 08-15 audit found missing. Five are structurally not entities
+(PK is `organization_id` / `user_id` / `country_code` / `token` / a composite, so there is no `id`
+identity to register): `billing.org_plan`, `billing.user_plan`, `crm.jurisdiction_policy`,
+`crm.unsubscribe_token`, `platform.org_change_policy`. `billing.plan` has an `id TEXT` PK
+(`'personal-pro'`) and no org/owner/visibility — a global price list. Two were declared non-entities
+in their own creating migrations and the allowlist quotes them: `platform.retention_policy`
+("deliberately NOT a canonical entity table: a configuration registry with no owner and nothing
+shareable") and `content_ir.io_contract` ("a TYPE SIGNATURE, never a Shape"). The ninth,
+`crm.outreach_acceptance`, is a genuine entity candidate and is the one that needs a decision —
+split out as **D237**.
 
-**B. Registered but failing certify — RESOLVED 2026-08-21.** The 3 hard-FAIL tables
-(`seo.source_request`, `seo.story_angle`, `seo.landscape_brief`) are all
-`iam.canonical_certify_ok` = true: the first two were repaired by the parallel canonicalization
-session, the third by the soft-delete pass below. The 16 tables that failed on the `soft_delete`
-WARN alone are certified — see `migrations/soft_delete_and_visibility_positive_adds.sql`.
+**B. Registered but failing certify — CLOSED.** `migrations/d232_seo_canonical_repair.sql`:
+`seo.source_request` and `seo.story_angle` are now `canonical_certify_ok = true` (org FK +
+`NOT NULL` + backstop, `created_by`/`updated_by` FKs, `_stamp_actor`, `visibility` at `internal`
+with the §6a-1 justification written into the migration, and `iam.apply_rls` re-run to restore the
+`created_by` short-circuit `std_select` was missing — a live 42501 risk for a row's own owner).
+`seo.landscape_brief` and `seo.page_measurement_health` (the 4th post-doctrine table, 7 FAILs) are
+at **zero FAIL**, holding only the `soft_delete` WARN. **That WARN is the one open question here and
+it is Arman's: does a ledger/event table need `deleted_at`, or should `iam.verify_canonical` stop
+WARNing when `has_soft_delete=false` is deliberate?** One WARN is all that stands between those two
+and certification.
 
-**C. `organization_id NOT NULL` with no backstop — RESOLVED for the original 11.** All eleven have
-since gained `_stamp_org_default` / `_inherit_parent_org` / `_stamp_from_node`. Two NEW laggards
-appeared 2026-08-21 from parallel work and are open: **`seo.starter_pack`** and
-**`seo.starter_pack_item`** — `organization_id` is NOT NULL with no default and no backstop trigger,
-so an org-forgetting write 500s. Fix = attach the backstop trigger, one migration.
+**C. `organization_id NOT NULL` with no backstop — CLOSED (13 tables), and the CHECKER was wrong.**
+`migrations/d232_org_backstop_11_laggards.sql` (the original 11: `_stamp_org_default` on the seven
+roots, `platform.inherit_org_from_parent` on the four children) plus
+`migrations/d232_org_backstop_seo_starter_pack.sql` (`seo.starter_pack` /
+`seo.starter_pack_item`, which appeared the same day from parallel work).
+**The bigger win was the gate:** aidream's `matrx_orm.catalog.org_backstop_coverage` matched on the
+TRIGGER NAME `_stamp_org_default`, so every child entity carrying the documented
+`inherit_org_from_parent` backstop read as drift — **72 of the 78 grandfathered exemptions were
+never real**. It now matches the trigger FUNCTION against all three legal backstops (db-rules §2),
+`scripts/org_backstop_exemptions.json` is pruned 78 → 6, and
+`validate_org_backstop_coverage.py --strict` is green.
 
-**D. Kill-list columns still live on 10 tables — OPEN.** All ten are `is_public`, where the
-canonical access driver is the `visibility` enum: `billing.plan`, `canvas.canvas_items`,
-`legal.wc_claim`, and the seven `workbench.udt_*` tables (`datasets`, `dataset_fields`,
-`dataset_rows`, `documents`, `structured_lists`, `structured_list_items`, `workbooks`). This is a
-**removal**, not an add — every one has live cross-repo consumers reading `is_public`, so it is
-deliberately excluded from the 2026-08-21 positive-adds rule (`migrations/soft_delete_*.sql`) and
-needs its own migration per consumer. `canvas.canvas_comments` (`deleted`) and `public.sandbox_instances` (`is_public`) were
-cleaned by parallel sessions the same day; the other 7 flagged objects were already remediated.
-`workbench.udt_datasets` is the one table where this is now the ONLY thing between it and
-certification.
+**D. Kill-list columns — 4 of 9 cut, 1 dispositioned, 4 split out.** Disagreement was measured per
+column first (db-rules §6a: three different correct outcomes), then acted on:
+- **Cut, pure dead weight** (`migrations/d232_kill_list_dead_weight_drops.sql`):
+  `canvas.canvas_comments.deleted` (0 rows) and `public.sandbox_instances.is_public`
+  (283 rows / 0 true / zero consumers anywhere).
+- **Cut, code repointed first**: `canvas.canvas_items.is_public` (632 rows, 0 true, `visibility`
+  agrees). Its three readers now read `visibility` — `features/canvas/services/canvasItemsService.ts`,
+  `features/canvas/core/SavedCanvasItems.tsx`, and the `/maps` feature. The DROP follows the
+  deployed SHA (doctrine §8a-1 state 3).
+- **Bivalent, drop filed**: `legal.wc_claim.is_public` — written by aidream's WC router.
+  `migrations/d232_wc_claim_visibility_bivalent.sql` installs the is_public ↔ visibility mirror and
+  drops the column's `NOT NULL` (§8d step 2) so each repo cuts over independently; both repos are
+  repointed. The DROP is gated on the **deployed** aidream SHA — **D238**.
+- **NOT a kill-list violation, no cut**: `billing.plan.is_public` means "shows on /pricing" on a
+  text-PK global price list with no owner, no org and no `visibility` column. It is a merchandising
+  flag, not an access driver, so there is nothing to map (db-rules §2 kills `is_public` *as the
+  access driver*). Dispositioned; leave it.
+- **Split out as D236**: the seven `workbench.udt_*` `is_public` columns. Their additive half is
+  already live (a `_bridge_legacy_owner` trigger keeps `is_public` and `visibility` in agreement and
+  the FE already writes only `visibility`), but the breaking half is 15 RPCs, three child RLS
+  policies, a shared bridge function and the aidream ORM — one coherent unit of work, not nine.
+
+**Observed, out of scope:** `browser.profile_checkpoint` is the single remaining post-doctrine FAIL
+(`policies_canonical: missing={pub_read}`). Every other `restricted`-variant table has `pub_read`, so
+the table — not the checker — is the outlier and one `iam.apply_rls` call fixes it; left alone
+because it was born 2026-08-18 in another session's work (doctrine §8c). Note db-rules §5's
+"`restricted` … No `pub_read`" line has drifted from what `iam.apply_rls` actually generates.
 
 Re-run the census any time: `pnpm check:ddl-guard-log`, or `select * from platform.ddl_guard_unacked;`.
 Acknowledging is `platform.ddl_guard_ack(p_reason => '…', p_by => '…', p_rule => '…' | p_object_ref => '…' | p_ids => '{…}')`
