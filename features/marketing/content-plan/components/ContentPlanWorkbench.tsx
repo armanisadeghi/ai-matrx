@@ -1051,7 +1051,7 @@ export function ContentPlanWorkbench({
           <SidePanelSurface
             title={selectedNode.label}
             description={selectedNode.route ?? "No route yet"}
-            defaultWidth={620}
+            defaultWidth={760}
             onClose={() => setSelectedNodeId(null)}
           >
             {/* The mobile presentation is a portaled Drawer, so it sits

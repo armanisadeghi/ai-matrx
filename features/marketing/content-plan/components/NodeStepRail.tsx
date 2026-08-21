@@ -83,7 +83,7 @@ const EMPTY_STEPS: ReadonlyMap<string, never> = new Map<string, never>();
  * exactly how the strip drifted into mismatched heights.
  */
 export const STEP_CHIP_CLASS =
-  "h-7 shrink-0 gap-1 rounded-full px-2.5 text-[11px] font-medium md:h-6";
+  "h-7 shrink-0 gap-1 rounded-full px-2 text-[11px] font-medium md:h-6";
 /** Same height as a chip, square — the run arrow sits flush beside it. */
 export const STEP_RUN_BUTTON_CLASS = "h-7 w-7 shrink-0 p-0 md:h-6 md:w-6";
 
@@ -415,8 +415,16 @@ export function NodeStepRail({
 
   return (
     <TooltipProvider delayDuration={200}>
-    <div className="space-y-1.5">
-      <div className="flex flex-wrap items-center gap-1">
+    <div className={cn("space-y-1.5", tabMode && "min-w-max")}>
+      {/* Tab mode is ONE left-to-right row — the panel's strip container
+          scrolls horizontally instead of wrapping chips onto extra lines
+          (Arman, 2026-08-20). Non-tab hosts (context panel) still wrap. */}
+      <div
+        className={cn(
+          "flex items-center gap-1",
+          tabMode ? "flex-nowrap" : "flex-wrap",
+        )}
+      >
         {PIPELINE_STEPS.map(({ step, label, what }) => {
           const state = byStep.get(step);
           const stepArtifacts = artifactsByStep.get(step) ?? [];

@@ -876,7 +876,9 @@ export function NodePanel({
           content, so the page flows keyword → research → write → review →
           build → publish instead of a pile of sections. "Page" holds the
           non-step identity fields. */}
-            <div className="flex flex-wrap items-center gap-1">
+            {/* ONE horizontal strip: never wraps — it scrolls sideways when
+                the panel is narrow (chips on three lines was the defect). */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
               <Button
                 type="button"
                 variant={activeTab === "page" ? "secondary" : "outline"}
