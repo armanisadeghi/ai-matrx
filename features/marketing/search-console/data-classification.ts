@@ -521,25 +521,10 @@ export interface FacetBackfillPassResult {
  * Skip it on back-to-back presses: it would measure the same day twice.
  */
 export async function runFacetBackfillPass(
-  dispatch: AppDispatch,
-  options: { refresh?: boolean; limit?: number } = {},
+  _dispatch: AppDispatch,
+  _options: { refresh?: boolean; limit?: number } = {},
 ): Promise<FacetBackfillPassResult> {
-  const result = await dispatch(
-    callApi({
-      path: "/seo/keywords/classification/backfill",
-      method: "POST",
-      body: {
-        refresh: options.refresh ?? true,
-        // The endpoint caps at 200 and the knob caps it again server-side; the
-        // client asks for a pass that fits inside the CDN's ~100s severance.
-        limit: options.limit ?? AI_CLASSIFY_CHUNK,
-      },
-      connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
-      totalTimeoutMs: null,
-    }),
+  throw new Error(
+    "Facet backfill is not available in the live API contract yet. Refresh after the server endpoint is released.",
   );
-  if (result.error || !result.data) {
-    throw new Error(result.error?.message ?? "Facet backfill pass failed");
-  }
-  return result.data as FacetBackfillPassResult;
 }

@@ -29891,6 +29891,7 @@ export type Database = {
         Returns: Json
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
+      heal_reachability_drift: { Args: never; Returns: Json }
       lifecycle_close_run: {
         Args: { p_entities_acted?: number; p_run_id: string; p_status?: string }
         Returns: Json
@@ -32076,6 +32077,7 @@ export type Database = {
           name: string
         }[]
       }
+      admin_heal_reachability_drift: { Args: never; Returns: Json }
       admin_list: {
         Args: never
         Returns: {
