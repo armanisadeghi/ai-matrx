@@ -1757,6 +1757,66 @@
       "default": null,
       "title": "Tts Quality"
     },
+    "max_tokens": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `max_output_tokens`. The server normalizes this name before validation and dispatch; new callers should send `max_output_tokens`.",
+      "title": "Max Tokens",
+      "x-canonical-name": "max_output_tokens"
+    },
+    "n": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
+      "title": "N",
+      "x-canonical-name": "count"
+    },
+    "num_outputs": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
+      "title": "Num Outputs",
+      "x-canonical-name": "count"
+    },
+    "number_of_images": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
+      "title": "Number Of Images",
+      "x-canonical-name": "count"
+    },
     "quality": {
       "anyOf": [
         {
@@ -1778,6 +1838,21 @@
       "title": "Quality",
       "x-canonical-name": "render_quality"
     },
+    "output_quality": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "deprecated": true,
+      "description": "Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.",
+      "title": "Output Quality",
+      "x-canonical-name": "encode_quality"
+    },
     "seconds": {
       "anyOf": [
         {
@@ -1793,36 +1868,6 @@
       "title": "Seconds",
       "x-canonical-name": "duration_seconds"
     },
-    "number_of_images": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "deprecated": true,
-      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
-      "title": "Number Of Images",
-      "x-canonical-name": "count"
-    },
-    "num_outputs": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "deprecated": true,
-      "description": "Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.",
-      "title": "Num Outputs",
-      "x-canonical-name": "count"
-    },
     "duration": {
       "anyOf": [
         {
@@ -1837,21 +1882,6 @@
       "description": "Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.",
       "title": "Duration",
       "x-canonical-name": "duration_seconds"
-    },
-    "output_quality": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "deprecated": true,
-      "description": "Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.",
-      "title": "Output Quality",
-      "x-canonical-name": "encode_quality"
     }
   },
   "title": "LLMParams",

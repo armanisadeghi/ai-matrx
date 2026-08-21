@@ -29467,23 +29467,17 @@ export interface components {
              */
             deprecated_keys_found?: string[][];
             /**
-             * Quality
+             * Max Tokens
              * @deprecated
-             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             * @description Deprecated input alias for `max_output_tokens`. The server normalizes this name before validation and dispatch; new callers should send `max_output_tokens`.
              */
-            quality?: ("low" | "medium" | "high" | "auto") | null;
+            max_tokens?: number | null;
             /**
-             * Seconds
-             * @deprecated
-             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
-             */
-            seconds?: number | null;
-            /**
-             * Number Of Images
+             * N
              * @deprecated
              * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
              */
-            number_of_images?: number | null;
+            n?: number | null;
             /**
              * Num Outputs
              * @deprecated
@@ -29491,17 +29485,35 @@ export interface components {
              */
             num_outputs?: number | null;
             /**
-             * Duration
+             * Number Of Images
              * @deprecated
-             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
              */
-            duration?: number | null;
+            number_of_images?: number | null;
+            /**
+             * Quality
+             * @deprecated
+             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             */
+            quality?: ("low" | "medium" | "high" | "auto") | null;
             /**
              * Output Quality
              * @deprecated
              * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
              */
             output_quality?: number | null;
+            /**
+             * Seconds
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            seconds?: number | null;
+            /**
+             * Duration
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            duration?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -43828,23 +43840,17 @@ export interface components {
             /** Tts Quality */
             tts_quality?: ("high_quality" | "fast") | null;
             /**
-             * Quality
+             * Max Tokens
              * @deprecated
-             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             * @description Deprecated input alias for `max_output_tokens`. The server normalizes this name before validation and dispatch; new callers should send `max_output_tokens`.
              */
-            quality?: ("low" | "medium" | "high" | "auto") | null;
+            max_tokens?: number | null;
             /**
-             * Seconds
-             * @deprecated
-             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
-             */
-            seconds?: number | null;
-            /**
-             * Number Of Images
+             * N
              * @deprecated
              * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
              */
-            number_of_images?: number | null;
+            n?: number | null;
             /**
              * Num Outputs
              * @deprecated
@@ -43852,17 +43858,35 @@ export interface components {
              */
             num_outputs?: number | null;
             /**
-             * Duration
+             * Number Of Images
              * @deprecated
-             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             * @description Deprecated input alias for `count`. The server normalizes this name before validation and dispatch; new callers should send `count`.
              */
-            duration?: number | null;
+            number_of_images?: number | null;
+            /**
+             * Quality
+             * @deprecated
+             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             */
+            quality?: ("low" | "medium" | "high" | "auto") | null;
             /**
              * Output Quality
              * @deprecated
              * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
              */
             output_quality?: number | null;
+            /**
+             * Seconds
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            seconds?: number | null;
+            /**
+             * Duration
+             * @deprecated
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             */
+            duration?: number | null;
         };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {
