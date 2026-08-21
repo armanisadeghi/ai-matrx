@@ -73,6 +73,14 @@ if $STRICT; then
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live --strict"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
+        # THE COMPONENT OWNERSHIP LAW is BLOCKING in strict mode, unlike most
+        # drift gates here. Its live count is 0 today (191 component tables, 945
+        # policies) and must STAY 0 — a single regenerated component policy that
+        # mentions created_by re-opens D182(3), where a parent-editor stamps
+        # another user as creator and hands them owner-read. There is no backlog
+        # to grandfather and no legitimate exception, so it never earns an
+        # advisory carve-out. (db-rules FEATURE.md §6d-1.)
+        "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend
         # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
@@ -162,6 +170,7 @@ else
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
+        "Component ownership law (no created_by)|pnpm check:component-created-by"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend
         # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates

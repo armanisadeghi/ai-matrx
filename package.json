@@ -189,6 +189,8 @@
     "check:access-drift:strict": "tsx scripts/access-matrix/check-access-drift.ts --strict",
     "check:governance-tier": "tsx scripts/access-matrix/check-governance-tier.ts",
     "check:governance-tier:strict": "tsx scripts/access-matrix/check-governance-tier.ts --strict",
+    "check:component-created-by": "tsx scripts/access-matrix/check-component-created-by.ts",
+    "check:component-created-by:strict": "tsx scripts/access-matrix/check-component-created-by.ts --strict",
     "check:guided-setup-rls": "tsx scripts/access-matrix/check-guided-checklist-run.ts",
     "check:guided-setup-rls:strict": "tsx scripts/access-matrix/check-guided-checklist-run.ts --strict",
     "clean:next": "bash -c 'shopt -s nullglob; removed=0; for d in .next-*; do rm -rf \"$d\"; removed=1; done; if [[ \"$removed\" -eq 1 ]]; then echo \"removed alternate NEXT_DISTDIR build dirs (.next left intact)\"; else echo \"no alternate .next-* dirs to remove\"; fi' && pnpm -s fix:tsconfig",
