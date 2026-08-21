@@ -17,7 +17,10 @@
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
+import { readCardSourceRefs } from "@/features/flashcards/data/cardSource";
 import { getFaceImageDetail } from "@/features/flashcards/components/study/cardImages";
+import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { sourceRefFromTrust } from "@/features/education/trust/sourceRef";
 import { studyService } from "@/features/education/study/service/studyService";
 import { startContinuousCapture } from "../audio/continuousCapture";
 import { startDrill, setError } from "../redux/fastFireSlice";
@@ -72,6 +75,12 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
       //    pre-step (see FastFireSetup) so the mic-warm below stays in-gesture.
       const limited =
         config.cardLimit > 0 ? loaded.slice(0, config.cardLimit) : loaded;
+      // Card-level "See source" (spec 26e): trust envelope first (persisted
+      // with durable refs), the lineage edge as the fallback for cards whose
+      // envelope lacks them. One batch RPC, best-effort — never blocks a start.
+      const edgeRefs = await readCardSourceRefs(limited.map((c) => c.id)).catch(
+        () => ({}) as Awaited<ReturnType<typeof readCardSourceRefs>>,
+      );
       const drillCards: DrillCard[] = limited.map((c, i) => {
         const spoken = c.details.find(
           (d) => d.kind === "spoken_front" && !!d.audio_file_id,
@@ -89,6 +98,10 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
           spokenFrontFileId: spoken?.audio_file_id ?? null,
           helperFileId: helper?.audio_file_id ?? null,
           helperText: helper?.text ?? null,
+          sourceRef:
+            sourceRefFromTrust(coerceTrustEnvelope(c.metadata)) ??
+            edgeRefs[c.id] ??
+            null,
           // The axis live adaptation reorders on (VISION §3).
           topic: c.topic ?? null,
           frontImageFileId: frontImage?.image_file_id ?? null,

@@ -116,6 +116,16 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 
 ## Change log
 
+- **2026-08-21** — Card-level "See source" (FastFire spec 26e). New `sourceRef.ts` owns the ONE
+  citation→inspector mapping (`inspectorArgsForSourceRef`, hoisted out of `SourceCitations` so
+  chips and buttons share it) plus `CardSourceRef` — a card's provenance resolvable from either
+  channel: the trust envelope (`sourceRefFromTrust`) or the `fc_card --source--> file` lineage
+  edge (first-ever reader: `features/flashcards/data/cardSource.ts:readCardSourceRefs`, one batch
+  RPC). `SeeSourceButton` is the shared door — thin over `useOpenCitation`, renders nothing
+  without an openable ref. FastFire threads `sourceRef` onto `DrillCard` (trust first, edge
+  fallback) and mounts the button in the live-card action row. Classic study/editor already had
+  the door via the citation chips.
+
 - **2026-08-18** — IC-3 RAG chunk citations now open the canonical Source Inspector with their
   durable chunk, file/document and page coordinates. `citationIsOpenable` includes
   `documentId`; the existing preview/web fallbacks remain unchanged for non-RAG citations. Tutor

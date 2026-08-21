@@ -24,6 +24,10 @@ import CitationChip from "@/components/official/citation-chip/CitationChip";
 import type { SourceCitation, TrustEnvelope } from "../types";
 import { citationIsOpenable, openCitationSource } from "../open-source";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import {
+  inspectorArgsForSourceRef,
+  sourceRefFromCitation,
+} from "../sourceRef";
 
 const KIND_ICON = {
   url: LinkIcon,
@@ -60,25 +64,14 @@ export function SourceCitations({
   if (citations.length === 0) return null;
 
   const open = (c: SourceCitation) => {
-    if (onOpenSource) onOpenSource(c);
-    else if (c.sourceKind === "chunk" && (c.fileId || c.documentId)) {
-      const sourceKind = c.fileId ? "cld_file" : "library_doc";
-      const sourceId = c.fileId ?? c.documentId;
-      if (!sourceId) return;
-      const page = c.page !== undefined ? `&page=${c.page}` : "";
-      const href = c.fileId
-        ? `/files/f/${encodeURIComponent(sourceId)}?tab=document&chunk=${encodeURIComponent(c.sourceId)}${page}`
-        : `/knowledge/viewer/${encodeURIComponent(sourceId)}?chunk=${encodeURIComponent(c.sourceId)}${page}`;
-      openRetrievedCitation({
-        sourceKind,
-        sourceId,
-        href,
-        chunkId: c.sourceId,
-        pageNumber: c.page ?? null,
-        snippet: c.excerpt ?? null,
-        fileName: c.title ?? null,
-      });
-    } else openCitationSource(c);
+    if (onOpenSource) {
+      onOpenSource(c);
+      return;
+    }
+    // The ONE citation→inspector mapping (shared with SeeSourceButton).
+    const args = inspectorArgsForSourceRef(sourceRefFromCitation(c));
+    if (args) openRetrievedCitation(args);
+    else openCitationSource(c);
   };
 
   return (

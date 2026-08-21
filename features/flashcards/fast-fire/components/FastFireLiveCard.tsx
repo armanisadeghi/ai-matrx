@@ -42,6 +42,7 @@ import CardFaceContent from "@/components/mardown-display/blocks/flashcards/Card
 import { FastFireTimerBar } from "./FastFireTimerBar";
 import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
+import { SeeSourceButton } from "@/features/education/trust/components/SeeSourceButton";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
@@ -237,22 +238,28 @@ export function FastFireLiveCard({
           </div>
         </div>
 
-        {/* Help + skip */}
+        {/* Help + see-source + skip */}
         <div className="flex items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => void askForHelp()}
-            disabled={helpLoading || betweenCards}
-          >
-            {helpLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <HelpCircle className="h-4 w-4" />
-            )}
-            I&apos;m confused
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => void askForHelp()}
+              disabled={helpLoading || betweenCards}
+            >
+              {helpLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <HelpCircle className="h-4 w-4" />
+              )}
+              I&apos;m confused
+            </Button>
+            {/* Spec 26e — "See source": open the exact cited passage in the
+                Source Inspector overlay. Renders only when the card carries
+                provenance (trust refs or the lineage edge). */}
+            <SeeSourceButton source={card.sourceRef} label="Source" />
+          </div>
           {/* Answer early → advance NOW. Mechanically this closes the card's
               window at the current sample (PCM slice start→now +pad, with the
               trailing pad captured during the advance), grades it, and moves on —

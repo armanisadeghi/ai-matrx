@@ -104,6 +104,8 @@ export interface DrillCard {
   helperFileId?: string | null;
   /** The helper explanation text behind that audio (shown while it plays). */
   helperText?: string | null;
+  /** Card-level source provenance — powers the "See source" door (spec 26e). */
+  sourceRef?: import("@/features/education/trust/sourceRef").CardSourceRef | null;
   /** The card's topic — the axis live adaptation reorders on. */
   topic?: string | null;
   /** Front-face image (fc_detail kind='front_image'): stored file_id or hotlinked URL + alt. */
