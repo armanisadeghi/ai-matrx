@@ -195,8 +195,11 @@ individually "works". Verified ground truth below is from a three-way full-featu
 
 ## Decisions needed (each self-contained)
 
-- **Hosted lane (item 5):** AI Matrx can run Claude sessions in OUR cloud sandbox (certified,
-  costs our API key) — but nobody has asked for it since the local runtime shipped. Build the UI,
-  or park it explicitly?
+- ~~Hosted lane (item 5)~~ **RULED 2026-08-20 (Arman): BUILD IT — "really no question that we want
+  the hosted lanes as well… that was never a question."** The new dev sandbox is the proving
+  ground: prove the cloud environment can run managed sessions there, then wire the hosted
+  destination into the product. Not everything needs a cloud lane, but the path is to build this
+  out completely — **any missing capability must be a VERY LOUD missing thing** (explicit
+  "not available because X" in the UI and docs), never silently absent.
 - **Quarantined events (item 1):** after the v1.4.35 update, 88 quarantined envelopes represent
   events that will never reach the platform unless individually repaired. Repair or accept loss?
