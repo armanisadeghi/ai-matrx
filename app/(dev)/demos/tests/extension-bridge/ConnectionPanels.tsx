@@ -26,7 +26,7 @@ import {
   detectExtensionId,
   isChromeRpcAvailable,
   sendChromeRpc,
-} from "./chrome-rpc";
+} from "@/lib/extension-bridge/chrome-rpc";
 import { KNOWN_EXTENSION_IDS, APPEND_MESSAGE_ENDPOINT } from "./constants";
 import { supabase } from "@/utils/supabase/client";
 

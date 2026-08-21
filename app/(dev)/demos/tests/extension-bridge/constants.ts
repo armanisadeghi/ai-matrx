@@ -12,14 +12,15 @@ import {
   KNOWN_FRONTEND_RPC_ACTIONS,
   type KnownFrontendRpcAction,
 } from "@/lib/types/bridge-envelope";
+import { MATRX_EXTEND_EXTENSION_IDS } from "@/lib/extension-bridge/chrome-rpc";
 
 export const KNOWN_EXTENSION_IDS = [
   {
-    id: "cihdmkcdjjckfhjpgoedmgfpoljebaml",
+    id: MATRX_EXTEND_EXTENSION_IDS[0],
     label: "Dev (unpacked)",
   },
   {
-    id: "hnfolienncfklkgmdjjmhhegglimlamg",
+    id: MATRX_EXTEND_EXTENSION_IDS[1],
     label: "Web Store (v0.1.x)",
   },
 ] as const;

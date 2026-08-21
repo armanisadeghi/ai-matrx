@@ -9,7 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
-import { sendChromeRpc, isChromeRpcAvailable } from "./chrome-rpc";
+import {
+  sendChromeRpc,
+  isChromeRpcAvailable,
+} from "@/lib/extension-bridge/chrome-rpc";
 import { DEFAULT_PAYLOADS, RPC_ACTIONS, type RpcAction } from "./constants";
 import { JsonViewer } from "./JsonViewer";
 
