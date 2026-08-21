@@ -28,12 +28,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
@@ -1325,129 +1319,184 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </Badge>
                 </div>
               </div>
-              {/* ONE primary action, everything else behind a labelled
-                  menu. Arman, 2026-08-18: the old row was "Activate / Final
-                  checkup / Build a Masterwork / Your words / [icon] /
-                  Masterworks" with no tooltips and an implied order that was
-                  nonsense. The one thing the Expert is here to reach is
-                  BUILD — 28 approved rules and he had never got past them. */}
+              {/* THE ACTION CLASSES (Arman, 2026-08-21). His verdict on the
+                  previous row — one primary plus a `More` menu — was that
+                  hiding actions under `More` was an agent's fix for "ugly",
+                  which is a styling problem, applied to findability, which is
+                  not: "These are primary actions. They need to be out, but they
+                  just can't be big and ugly." And: "we have all these different
+                  actions, and they're different classes of actions… yet we've
+                  stuffed them all together."
+
+                  So the actions are split by WHEN THEY HAPPEN, not by how much
+                  room they need:
+                    • MAKE (here, top-right) — the two ways to turn rules into a
+                      working system, named so the difference is legible without
+                      opening anything.
+                    • CHECK & FINISH (the strip under the KPIs) — what you do
+                      once something exists.
+                  Every control carries a tooltip that says what it does AND
+                  which agent it invokes, because he cannot debug an agent he
+                  cannot name (USABILITY-VERDICT-2026-08-21 §7). Menus get
+                  tooltips too — the old `More` menu had none. */}
               <div className="flex shrink-0 items-center gap-1.5">
                 {/* CANONICAL SHARING, NEVER A BESPOKE ONE (Arman, 2026-08-20):
                     a Rulebook is a registered shareable resource
                     (`platform.shareable_resource_registry` token `rulebook`,
-                    RLS via `iam.has_access`) and had no share surface at all —
-                    a violation of the platform-wide sharing rule, not a
-                    missing feature. This is THE component every other entity
-                    uses; it resolves ownership itself, so no `isOwner` is
-                    passed. Contribution modes (co-creator · contribute-only
-                    link · co-contributor) are a separate design —
-                    common-docs/systems/masterwork/rulebook-sharing.md. */}
+                    RLS via `iam.has_access`). ICON ONLY since 2026-08-21 — "this
+                    is a share icon. The icon is all we need. We don't need the
+                    word Share, and it doesn't need to be up there taking prime
+                    real estate." */}
                 <ShareButton
                   resourceType="rulebook"
                   resourceId={rulebook.id}
                   resourceName={rulebook.name}
-                  size="sm"
-                  variant="outline"
+                  size="icon"
+                  variant="ghost"
                   showStatus={false}
                 />
                 {/* THE ONE CANONICAL MASTERWORK SYSTEM (Arman, 2026-08-18):
                     "the only thing that ever makes a Masterwork is our one
-                    single canonical Masterwork system. And all we do is we go
-                    to that system and we attach what we already have." So the
-                    primary action opens the CONDUCTOR — a real streaming
-                    conversation with the Rulebook attached — not a form that
-                    fills a template. The template Build survives in the menu
-                    below as the older shortcut until the Conductor supersedes
-                    it outright; it is deliberately named for what it is. */}
+                    single canonical Masterwork system." The Conductor is the
+                    NEW path; the template Build is the OLD one and says so on
+                    its face rather than hiding in a menu. */}
                 {approvedCount > 0 ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="sm" onClick={() => setConductorOpen(true)}>
-                        <BrainCircuit className="h-4 w-4" />
-                        Make a Masterwork
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Talk it through: it reads your {approvedCount} approved
-                      rules, finds what the system would still be missing, and
-                      builds it with you
-                    </TooltipContent>
-                  </Tooltip>
-                ) : null}
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          More
-                          <ChevronDown className="h-4 w-4 opacity-60" />
+                  <>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={openBuildWindow}
+                        >
+                          <Hammer className="h-4 w-4" />
+                          Quick build
                         </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Everything else you can do with this Rulebook
-                    </TooltipContent>
-                  </Tooltip>
-                  {/* A dropdown row is an icon plus ONE TO THREE WORDS, every
-                      row the same shape. Arman, 2026-08-18, on the first
-                      attempt: "look at how horrible and ugly the text and icon
-                      combination is that you're putting in the dropdown."
-                      Explanations belong on the destination, never as
-                      paragraph subtext inside a menu item. */}
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem asChild className="gap-2">
-                      <Link href={`/masterwork/${rulebook.id}/masterworks`} className="flex items-center gap-2">
-                        <Workflow className="h-4 w-4" />
-                        <span className="flex-1">Systems</span>
-                        {builtCount > 0 ? (
-                          <span className="text-xs text-muted-foreground">
-                            {builtCount}
-                          </span>
-                        ) : null}
-                      </Link>
-                    </DropdownMenuItem>
-                    {/* The older TEMPLATE Build (aidream services/masterworks
-                        build.py): fills one of two fixed shapes with no
-                        questions asked. Kept reachable until the Conductor
-                        supersedes it outright — and named honestly, so nobody
-                        confuses it with making a Masterwork. */}
-                    {approvedCount > 0 ? (
-                      <DropdownMenuItem className="gap-2" onSelect={openBuildWindow}>
-                        <Hammer className="h-4 w-4" />
-                        Build from template
-                      </DropdownMenuItem>
-                    ) : null}
-                    {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the
-                        finish line: we read everything you ever told us back
-                        against every rule you have. This is its only entry
-                        point. */}
-                    {canEdit && approvedCount > 0 ? (
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onSelect={() => openCheckup({ rulebookId: rulebook.id })}
-                      >
-                        <Stethoscope className="h-4 w-4" />
-                        Final checkup
-                      </DropdownMenuItem>
-                    ) : null}
-                    {/* Status is a LABEL, not a gate — nothing reads `active`
-                        except the badge and the browse list, and Build works
-                        in either state. The confirm dialog says exactly that. */}
-                    {canEdit && rulebook.status === "draft" ? (
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onSelect={() => setConfirmActivate(true)}
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Mark as ready
-                      </DropdownMenuItem>
-                    ) : null}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          Builds a system straight from your{" "}
+                          {approvedCount} approved rules, no questions asked.
+                          Fast, and it can only make the two shapes we ship.
+                        </p>
+                        <p className="mt-1 text-[11px] opacity-70">
+                          Agents: masterwork_template_maker ·
+                          masterwork_rulebook_auditor ·
+                          masterwork_template_chief_generate
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="h-8"
+                          onClick={() => setConductorOpen(true)}
+                        >
+                          <BrainCircuit className="h-4 w-4" />
+                          Build it with me
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          A conversation. It reads your {approvedCount} approved
+                          rules, asks about what is still missing, then builds
+                          the system with you. Slower, and it can make anything.
+                        </p>
+                        <p className="mt-1 text-[11px] opacity-70">
+                          Agent: masterwork_conductor
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </>
+                ) : null}
               </div>
             </div>
             <div className="mt-3">
               <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
+            </div>
+            {/* CHECK & FINISH — the second action class (Arman, 2026-08-21).
+                These are what you do once something EXISTS, so they sit under
+                the KPIs rather than beside the build actions. Every one of them
+                used to be a row inside `More`, where none of them had a tooltip
+                and none of them said what it was. */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="h-7"
+                  >
+                    <Link href={`/masterwork/${rulebook.id}/masterworks`}>
+                      <Workflow className="h-3.5 w-3.5" />
+                      What you&apos;ve built
+                      {builtCount > 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          {builtCount}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    Every system built from this Rulebook — try one on real
+                    work, judge it against your own, or release it.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              {canEdit && approvedCount > 0 ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7"
+                      onClick={() => openCheckup({ rulebookId: rulebook.id })}
+                    >
+                      <Stethoscope className="h-3.5 w-3.5" />
+                      Check for what&apos;s missing
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>
+                      Reads back everything you have ever told us and finds what
+                      your {approvedCount} rules still do not say.
+                    </p>
+                    <p className="mt-1 text-[11px] opacity-70">
+                      Agent: masterwork_checkup_auditor
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+              {/* Status is a LABEL, not a gate — nothing reads `active` except
+                  the badge and the browse list, and building works in either
+                  state. The confirm dialog says exactly that. */}
+              {canEdit && rulebook.status === "draft" ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7"
+                      onClick={() => setConfirmActivate(true)}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Mark as ready
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>
+                      A label for other people, nothing more — it changes the
+                      badge and where this shows up in lists. Nothing here waits
+                      on it.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
             </div>
             {draftCount > 0 && canEdit ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
