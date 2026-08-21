@@ -15,10 +15,16 @@
  *    until confirmed.
  *  - CSV / workbook export-import (`ImportExportMenu`) with a server diff
  *    before anything applies.
- *  - "Classify with AI" — the existing universal classifier
- *    (`seo.keyword_classifier` slot via aidream `/seo/keywords/classify`);
- *    results land as "AI intent" provenance, overridable like any machine
- *    signal. The Site Intake Wizard (`../intake/`) remains the full-site
+ *  - KW business guidelines (`KwGuidelinesPanel`): the per-site prose
+ *    document (D35) every AI run for this site reads before it judges a
+ *    keyword — "the agent wouldn't know CRT is a horrible keyword unless
+ *    there's some document that guides it" (Arman, 2026-08-21). Written here,
+ *    surfaced read-only in the value workbench, injected server-side as a
+ *    named agent variable (never user_input).
+ *  - "Classify with AI" — the universal classifier
+ *    (`seo.keyword_classifier` slot via aidream `/seo/keywords/classify`),
+ *    now carrying this site's guidelines; results land as "AI intent"
+ *    provenance, overridable like any machine signal. The Site Intake Wizard (`../intake/`) remains the full-site
  *    AI interview; this button is the surgical batch complement.
  *
  * Reusable ANYWHERE: props-based (siteId/siteDomain/organizationId), with
@@ -36,6 +42,7 @@ import {
 import {
   BrainCircuit,
   Check,
+  BookOpenCheck,
   Fingerprint,
   ListFilter,
   Loader2,
@@ -82,6 +89,11 @@ import { ClassCell } from "@/features/marketing/search-console/components/classi
 import { ClassStatsBand } from "@/features/marketing/search-console/components/classification/ClassStatsBand";
 import { ClassRulesPanel } from "@/features/marketing/search-console/components/classification/ClassRulesPanel";
 import { BrandIdentityPanel } from "@/features/marketing/search-console/components/classification/BrandIdentityPanel";
+import { KwGuidelinesPanel } from "@/features/marketing/search-console/components/classification/KwGuidelinesPanel";
+import {
+  getKwGuidelines,
+  kwGuidelinesQueryKey,
+} from "@/features/marketing/search-console/data-kw-guidelines";
 import { ImportExportMenu } from "@/features/marketing/search-console/components/classification/ImportExportMenu";
 import {
   classifyKeywordsWithAi,
@@ -272,6 +284,17 @@ export function KeywordClassificationWorkspace({
   const [brandAliasFilter, setBrandAliasFilter] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
+  const [guidelinesOpen, setGuidelinesOpen] = useState(false);
+
+  // The doctrine the AI classifies under (D35). Read here so the AI button can
+  // say whether this site has one — a sweep run with no guidelines is a
+  // knowable, avoidable quality loss, never a silent one.
+  const guidelines = useQuery({
+    queryKey: kwGuidelinesQueryKey(siteId),
+    queryFn: ({ signal }) => getKwGuidelines(siteId, signal),
+    staleTime: 60_000,
+  });
+  const hasGuidelines = Boolean(guidelines.data?.guidelines);
   const [dialog, setDialog] = useState<{
     ruling: GscClassRuling;
     keywordIds: string[];
@@ -591,6 +614,7 @@ export function KeywordClassificationWorkspace({
       const result = await classifyKeywordsWithAi(
         dispatch,
         ids,
+        siteId,
         (done, all) => {
           if (all > 200) {
             toast.message(`AI classifying… ${done}/${all}`, {
@@ -603,8 +627,9 @@ export function KeywordClassificationWorkspace({
         `AI classified ${result.updated.toLocaleString()} keywords`,
         {
           id: "ai-classify",
-          description:
-            "Results carry “AI intent” provenance — filter Why = AI intent to review, and override anything it got wrong. Your rulings always win.",
+          description: hasGuidelines
+            ? "Ruled under this site's keyword guidelines. Results carry “AI intent” provenance — filter Why = AI intent to review, and override anything it got wrong. Your rulings always win."
+            : "This site has no keyword guidelines, so the AI had no business context. Results carry “AI intent” provenance — review them, and write the guidelines before the next sweep.",
         },
       );
       setSelected(new Set());
@@ -984,11 +1009,14 @@ export function KeywordClassificationWorkspace({
                 variant="outline"
                 className="h-7 gap-1.5 px-2 text-xs"
                 disabled={aiBusy}
-                title={
+                title={[
                   selected.size > 0
-                    ? `Run the universal AI classifier on the ${selected.size} selected keywords`
-                    : "Run the universal AI classifier on the filtered unclassified keywords (up to 1,000)"
-                }
+                    ? `Run the AI classifier on the ${selected.size} selected keywords`
+                    : "Run the AI classifier on the filtered unclassified keywords (up to 1,000)",
+                  hasGuidelines
+                    ? "This site's keyword guidelines are sent with every batch."
+                    : "This site has no keyword guidelines — the AI will classify with no business context. Open Guidelines first.",
+                ].join(" ")}
                 onClick={() => void runAiClassify()}
               >
                 {aiBusy ? (
@@ -1004,9 +1032,30 @@ export function KeywordClassificationWorkspace({
               size="sm"
               variant="outline"
               className="h-7 gap-1.5 px-2 text-xs"
+              title="What the AI must know about this business before it judges a keyword — read by every AI classification and valuation run for this site"
+              onClick={() => {
+                setGuidelinesOpen((open) => !open);
+                setBrandOpen(false);
+                setRulesOpen(false);
+              }}
+            >
+              <BookOpenCheck className="h-3.5 w-3.5" /> Guidelines
+              {!guidelines.isLoading && !hasGuidelines ? (
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-warning"
+                  aria-label="No guidelines written yet"
+                />
+              ) : null}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2 text-xs"
               title="The site's brand identity — every alias the brand rung matches, plus custom aliases (people, legal names, misspellings)"
               onClick={() => {
                 setBrandOpen((open) => !open);
+                setGuidelinesOpen(false);
                 setRulesOpen(false);
               }}
             >
@@ -1020,6 +1069,7 @@ export function KeywordClassificationWorkspace({
               onClick={() => {
                 setRulesOpen((open) => !open);
                 setBrandOpen(false);
+                setGuidelinesOpen(false);
               }}
             >
               <ListFilter className="h-3.5 w-3.5" /> Rules
@@ -1118,6 +1168,20 @@ export function KeywordClassificationWorkspace({
           className="min-h-0 flex-1"
         />
       </div>
+
+      {/* KW business guidelines — the doctrine the AI classifies under */}
+      {guidelinesOpen ? (
+        <SidePanelSurface
+          title="Keyword guidelines"
+          description="What the AI must know about this business before it judges a keyword."
+          onClose={() => setGuidelinesOpen(false)}
+          storageKey="gsc-kw-guidelines-panel"
+        >
+          <div className="flex h-full min-h-0 flex-col overflow-hidden px-3 pb-3">
+            <KwGuidelinesPanel siteId={siteId} />
+          </div>
+        </SidePanelSurface>
+      ) : null}
 
       {/* Brand identity — non-blocking resizable panel; the table stays live */}
       {brandOpen ? (

@@ -9,7 +9,9 @@
  * `TypeError: Failed to fetch` (that is exactly the reported incident).
  *
  * So this pins the two things that keep a real run reachable: a chunk that
- * finishes inside the edge ceiling, and a header budget that outlives it.
+ * finishes inside the edge ceiling, and a header budget that outlives it —
+ * plus the `site_id` every batch must carry so the server can inject that
+ * site's KW business guidelines (D35) into the classifier call.
  */
 
 const callApiMock = jest.fn();
@@ -44,16 +46,22 @@ const dispatch = ((thunk: unknown) =>
     ? (thunk as () => unknown)()
     : thunk) as unknown as Parameters<typeof classifyKeywordsWithAi>[0];
 
+const SITE_ID = "38eff4c9-b021-451a-b995-7d9b3d17db5e";
+
 describe("classifyKeywordsWithAi", () => {
   it("sends a chunk that can finish inside the edge ceiling, never the 200-id cap", async () => {
     callApiMock.mockClear();
     const ids = Array.from({ length: 95 }, (_, i) => `kw-${i}`);
 
-    await classifyKeywordsWithAi(dispatch, ids);
+    await classifyKeywordsWithAi(dispatch, ids, SITE_ID);
 
     const bodies = callApiMock.mock.calls.map(
       ([config]) =>
-        (config as { body: { keyword_ids: string[]; limit: number } }).body,
+        (
+          config as {
+            body: { keyword_ids: string[]; limit: number; site_id: string };
+          }
+        ).body,
     );
     expect(bodies.map((body) => body.keyword_ids.length)).toEqual([20, 20, 20, 20, 15]);
     // Every id is sent exactly once — chunking must not drop or duplicate work.
@@ -61,13 +69,17 @@ describe("classifyKeywordsWithAi", () => {
     // `limit` always matches the chunk, so the server never widens the batch.
     for (const body of bodies) {
       expect(body.limit).toBe(body.keyword_ids.length);
+      // D35: every batch carries the site whose KW business guidelines the
+      // server injects into the agent call. A batch without it classifies
+      // blind — that is the regression this pins.
+      expect(body.site_id).toBe(SITE_ID);
     }
   });
 
   it("waits out a provider-bound route instead of the 15s default", async () => {
     callApiMock.mockClear();
 
-    await classifyKeywordsWithAi(dispatch, ["kw-1"]);
+    await classifyKeywordsWithAi(dispatch, ["kw-1"], SITE_ID);
 
     const [config] = callApiMock.mock.calls[0] as [
       { connectTimeoutMs: number; totalTimeoutMs: number | null },

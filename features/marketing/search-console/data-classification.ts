@@ -373,15 +373,25 @@ const AI_CLASSIFY_CHUNK = 20;
 export const SEO_COMPUTE_CONNECT_TIMEOUT_MS = 95_000;
 
 /**
- * Run the universal AI classifier (`seo.keyword_classifier` Mandate) over
- * a list of keyword ids, one server batch per request. Writes the
- * 13-column universal layer (incl. `intent_class`) — results surface in the
- * review table as "AI intent" provenance, overridable like any machine
- * signal. Server-gated to admins today.
+ * Run the AI classifier (`seo.keyword_classifier` Mandate) over a list of
+ * keyword ids, one server batch per request. Writes the 13-column universal
+ * layer (incl. `intent_class`) — results surface in the review table as
+ * "AI intent" provenance, overridable like any machine signal. Server-gated
+ * to admins today.
+ *
+ * `site_id` carries this site's KW business guidelines (D35) into the agent
+ * call — the server loads the document and passes it as a named variable, so
+ * the model knows which terms are wrong for THIS business. The guidelines are
+ * never smuggled into `user_input` (THE USER-INPUT LAW).
  */
 export async function classifyKeywordsWithAi(
   dispatch: AppDispatch,
   keywordIds: string[],
+  /** The site whose KW business guidelines (D35) the server injects into the
+   *  classifier call as a NAMED agent variable. Required — a classification
+   *  sweep launched from a site workbench must carry that site's doctrine, and
+   *  making it optional is how it silently stops being sent. */
+  siteId: string,
   onProgress?: (done: number, total: number) => void,
 ): Promise<AiClassifyResult> {
   const totals: AiClassifyResult = {
@@ -397,7 +407,7 @@ export async function classifyKeywordsWithAi(
       callApi({
         path: "/seo/keywords/classify",
         method: "POST",
-        body: { keyword_ids: chunk, limit: chunk.length },
+        body: { keyword_ids: chunk, limit: chunk.length, site_id: siteId },
         connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
         totalTimeoutMs: null,
       }),

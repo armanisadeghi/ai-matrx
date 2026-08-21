@@ -2,7 +2,8 @@
 
 /**
  * "How value is computed" — the meaning that drives every number on the
- * workbench: value bands, geo bands + areas, value rules, and topic worth.
+ * workbench: the site's business guidelines, value bands, geo bands + areas,
+ * value rules, and topic worth.
  * Read-only on purpose (this workbench rules keywords; the meaning tables
  * are governed elsewhere), but nothing here is a mystery: every section says
  * what it does in plain language, shows "using platform defaults" when the
@@ -12,12 +13,26 @@
 
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Landmark, ListChecks, MapPin, MapPinned, TreePine } from "lucide-react";
+import Link from "next/link";
+import {
+  BookOpenCheck,
+  Landmark,
+  ListChecks,
+  MapPin,
+  MapPinned,
+  Pencil,
+  TreePine,
+} from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  getKwGuidelines,
+  kwGuidelinesQueryKey,
+} from "@/features/marketing/search-console/data-kw-guidelines";
 import {
   getValueVocabulary,
   listGeoAreas,
@@ -105,15 +120,26 @@ function guardChips(value: SiteTopicValue) {
 
 export function MeaningPanel({
   siteId,
+  brandId,
   bandMetas,
   bandsAreTemplate,
   onClose,
 }: {
   siteId: string;
+  /** Needed only to build the door to where guidelines are edited. */
+  brandId: string | null | undefined;
   bandMetas: BandMeta[];
   bandsAreTemplate: boolean;
   onClose: () => void;
 }) {
+  // The prose doctrine every AI run for this site reads (D35). Read-only here:
+  // the document is AUTHORED in the classification workbench, and two editors
+  // for one document is how they drift.
+  const guidelines = useQuery({
+    queryKey: kwGuidelinesQueryKey(siteId),
+    queryFn: ({ signal }) => getKwGuidelines(siteId, signal),
+    staleTime: 5 * 60_000,
+  });
   const geoBands = useQuery({
     queryKey: ["marketing", "value-c", "vocab", siteId, "geo_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "geo_band", signal),
@@ -148,6 +174,55 @@ export function MeaningPanel({
       defaultWidth={480}
     >
       <div className="space-y-5 overflow-y-auto p-3 scrollbar-thin">
+        {/* KW business guidelines — the doctrine the AI reasons under */}
+        <section className="space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <SectionHeader
+              icon={BookOpenCheck}
+              title="Business guidelines"
+              hint="Prose this site's expert wrote about what it sells and who it serves. Every AI classification and valuation run for this site reads it first — it is why the model knows which terms are wrong for you."
+            />
+            <Link
+              href={`${marketingRoutes.site(brandId, siteId, "/keywords")}?view=classification`}
+              className="flex shrink-0 items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="Edit the guidelines in the classification workbench — the one place this document is authored"
+            >
+              <Pencil className="h-3 w-3" /> Edit
+            </Link>
+          </div>
+          {guidelines.isLoading ? <SectionSkeleton /> : null}
+          {guidelines.isError ? (
+            <InlineQueryError
+              what="business guidelines"
+              error={guidelines.error}
+              onRetry={() => void guidelines.refetch()}
+            />
+          ) : null}
+          {guidelines.data && !guidelines.data.guidelines ? (
+            <EmptyLine>
+              Nothing written yet — the AI values this site&apos;s keywords with
+              no idea what the business actually sells. A few plain sentences
+              here change every future classification run.
+            </EmptyLine>
+          ) : null}
+          {guidelines.data?.guidelines ? (
+            <div className="rounded-md border border-border bg-card px-2.5 py-2">
+              <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-[11px] leading-4 text-muted-foreground scrollbar-thin">
+                {guidelines.data.guidelines}
+              </p>
+              <p className="mt-1.5 border-t border-border pt-1 text-[10px] text-muted-foreground/80">
+                v{guidelines.data.guidelines_version}
+                {guidelines.data.updated_by_name
+                  ? ` · last edited by ${guidelines.data.updated_by_name}`
+                  : ""}
+                {guidelines.data.updated_at
+                  ? ` on ${new Date(guidelines.data.updated_at).toLocaleDateString()}`
+                  : ""}
+              </p>
+            </div>
+          ) : null}
+        </section>
+
         {/* Value bands */}
         <section className="space-y-2">
           <div className="flex items-start justify-between gap-2">
