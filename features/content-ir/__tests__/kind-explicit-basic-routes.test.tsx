@@ -20,6 +20,7 @@
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { Provider } from "react-redux";
 
 // GenericStructuredBlock's raw-data escape mounts through next/dynamic; stub
 // it so static markup stays about the VALUE on screen (same stub the sibling
@@ -50,6 +51,27 @@ import { envelopeFromCompleteValue } from "../core/normalize";
 import { IR_ENVELOPE_KEY } from "../core/ir-types";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
+import { makeStore } from "@/lib/redux/store";
+
+/**
+ * The floor gives a `file_id` a real door (`useFileActions`), which reads the
+ * store — so every render here goes through a Provider, exactly as the app
+ * does. Rendering these kinds WITHOUT one throws, which is the affordance
+ * working, not a defect.
+ */
+function renderRouted(block: {
+  content: string;
+  metadata?: Record<string, unknown>;
+}): string {
+  return renderToStaticMarkup(
+    <Provider store={makeStore()}>
+      <GenericStructuredBlock
+        content={block.content}
+        metadata={block.metadata}
+      />
+    </Provider>,
+  );
+}
 
 interface Fixture {
   kind: string;
@@ -227,6 +249,123 @@ const FIXTURES: Fixture[] = [
     },
     visible: ["pricing"],
   },
+  // ── the I/O + research analysis kinds (batch 3) ──────────────────────────
+  {
+    kind: "http_response",
+    data: {
+      url: "https://example.com/api",
+      body: { message: "hello" },
+      text: '{"message": "hello"}',
+      status: 200,
+      headers: { "content-type": "application/json" },
+      elapsed_ms: 123,
+      content_type: "application/json",
+    },
+    visible: ["https://example.com/api", "200"],
+  },
+  {
+    kind: "office_extraction_result",
+    data: {
+      file_id: "0f1e2d3c-4b5a-6789-abcd-ef0123456789",
+      markdown: "# Kickoff\n\n- Goals\n- Timeline",
+      portions: [
+        {
+          kind: "slide",
+          index: 0,
+          title: "Kickoff",
+          number: 1,
+          markdown: "- Goals\n- Timeline",
+        },
+      ],
+      warnings: [],
+      file_name: "kickoff-deck.pptx",
+      mime_type:
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      office_kind: "pptx",
+    },
+    visible: ["kickoff-deck.pptx", "pptx"],
+  },
+  {
+    kind: "office_file_result",
+    data: {
+      url: "https://files.example.com/f/0f1e2d3c",
+      cdn_url: null,
+      file_id: "0f1e2d3c-4b5a-6789-abcd-ef0123456789",
+      byte_size: 24576,
+      file_name: "q3-report.docx",
+      mime_type:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      signed_url: null,
+      visibility: "personal",
+      office_kind: "docx",
+      download_url: "https://files.example.com/f/0f1e2d3c?download=1",
+    },
+    visible: ["q3-report.docx", "docx"],
+  },
+  {
+    kind: "page",
+    data: {
+      page: 1,
+      items: ["alpha", "beta"],
+      limit: 2,
+      total: 12,
+      has_more: true,
+      archetype: "page",
+    },
+    visible: ["alpha", "beta"],
+  },
+  {
+    kind: "regex_extract_result",
+    data: { count: 2, first: "alpha", matches: ["alpha", "beta"] },
+    visible: ["alpha", "beta"],
+  },
+  {
+    kind: "scraped_page",
+    data: {
+      url: "https://example.com/article",
+      text: "The readable text of the page.",
+      title: "Example Article",
+      markdown: "# Example Article\n\nThe readable text of the page.",
+      scraped_at: "2026-08-09T00:00:00Z",
+      status_code: 200,
+      content_type: "text/html",
+      published_at: "2026-08-01T12:00:00Z",
+    },
+    visible: ["Example Article", "The readable text of the page."],
+  },
+  {
+    kind: "research_page_analysis",
+    data: {
+      id: "",
+      url: "https://example.com/report",
+      dates: {
+        updated_date: "Not stated",
+        published_date: "Not stated",
+        content_timeframe: "",
+      },
+      key_facts: ["The market grew 12% year over year."],
+      page_type: "news",
+      should_use: true,
+      analysis_status: "valid",
+      recommended_use: "use_as_background",
+      summary_markdown:
+        "## Summary\nA concise, well-sourced report on the topic.",
+      content_quality_score: 75,
+      topic_relevance_score: 82,
+    },
+    visible: ["The market grew 12% year over year.", "use_as_background"],
+  },
+  {
+    kind: "research_setup_suggestion",
+    data: {
+      title: "Cosmetic Injectables Market",
+      description:
+        "Landscape, providers, and safety guidance for cosmetic injectables.",
+      initial_insights: "Demand is shifting toward non-surgical procedures.",
+      suggested_keywords: ["botox market size", "dermal filler safety"],
+    },
+    visible: ["Cosmetic Injectables Market", "botox market size"],
+  },
 ];
 
 /** The row the migration created, as the warm loader projects it. */
@@ -264,7 +403,7 @@ function markerOf(block: { metadata?: Record<string, unknown> }) {
   return block.metadata?.[IR_ROUTE_KEY] as IrRouteMarker | undefined;
 }
 
-describe("workflow result kinds route through a REGISTERED component row", () => {
+describe("kinds on an explicit basic route resolve by:'db', never by silent fallback", () => {
   // ORDER-SENSITIVE, like the sibling suites: both registries are module
   // singletons, so the pre-registration assertion runs before any ingest.
   it("[before] an unregistered result kind reaches the reader only by silent fallback", () => {
@@ -308,12 +447,7 @@ describe("workflow result kinds route through a REGISTERED component row", () =>
       // The raw region annotation is poison, not data.
       expect(routed.serverData).toBeUndefined();
 
-      const markup = renderToStaticMarkup(
-        <GenericStructuredBlock
-          content={routed.content}
-          metadata={routed.metadata}
-        />,
-      );
+      const markup = renderRouted(routed);
 
       // The example is really on screen, as a document.
       for (const text of fixture.visible) {
@@ -368,12 +502,7 @@ describe("claim_evidence routes even though its schema cannot compile", () => {
       key: GENERIC_STRUCTURED_COMPONENT_KEY,
     });
 
-    const markup = renderToStaticMarkup(
-      <GenericStructuredBlock
-        content={routed.content}
-        metadata={routed.metadata}
-      />,
-    );
+    const markup = renderRouted(routed);
     expect(markup).toContain(
       "Approval times for this device class have roughly doubled since 2019.",
     );
