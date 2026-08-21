@@ -342,7 +342,7 @@ model overrides.
 - **Drift between a usage and the live agent is surfaced (Find Usages window + weekly scan + severity-tinted AgentsListHeader link), never auto-resolved.** Remediation is one-click, opt-in, permission-gated. See **Find Usages & Drift** above.
 - **Agent/project linkage is association-only.** `agent.definition` has no `project_id`; creation/duplication RPCs must not write one, and list/search/access RPCs must not read or expose one. Resolve project context through `platform.associations`.
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. Gate send (button + Enter) on `isRecording || isTranscribing` via `AgentMicrophoneButton.onRecordingStateChange` — wired in `SmartAgentInput*` and sibling composers.
-- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` plus `ambientLayout="single-line" | "multiline"`; both suppress context/resources/run controls without changing the execution contract. `ScrollAssistantLauncher inputVariant` makes that choice per page, reveals only after 72px of real content scroll or a 600ms mouse dwell in the bottom 96px, and owns the floating dismiss control plus same-conversation Quick Chat handoff. Mobile mounts neither variant.
+- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` plus `ambientLayout="single-line" | "multiline"`; both suppress context/resources/run controls without changing the execution contract. `ScrollAssistantLauncher inputVariant` chooses those text forms or `text-voice` per page, reveals only after 72px of real content scroll or a 600ms mouse dwell in the bottom 96px, and owns the floating dismiss control. `text-voice` adds the canonical Voice Communication Layer to the SAME primary conversation; it never starts a second brain. Mobile mounts no variant.
 
 ---
 
@@ -354,6 +354,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-21` — **Education gets the third ambient form: compact text ↔ realtime voice.** `inputVariant="text-voice"` preserves the 36px single-line Smart Agent input, adds a distinct Voice wing, and morphs into a 48px `VoiceOrb` rail backed by `useVoiceRelaySession`. Typed and spoken turns share one primary conversation and page context; returning to text or dismissing stops live capture. Guests reach the canonical auth gate without initializing the authenticated voice engine. The Education layout mounts it once for every `/education/*` route; mobile mounts none.
 - `2026-08-21` — **Ambient Smart Agent Input supports two page-selectable forms.**
   `inputVariant="single-line" | "multiline"` keeps the original compact launcher
   and adds a condensed 72px form built from `SmartAgentInputStacked`; both share

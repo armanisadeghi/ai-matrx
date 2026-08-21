@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-21`
 
 ---
 
@@ -216,9 +216,9 @@ carrying that agent's answer.
   the session-subscription teardown; non-relay surfaces are untouched.
 - `relay/sideChannel.ts` — THE SIDE CHANNEL (Arman ruling 6, 2026-08-17): the
   Communicator's spoken transcripts (captured from `response.*_transcript.done`)
-  + side-path user turns accumulate per brain-turn and are prepended to every
-  brain send as one `<voice_exchange>` XML block (`composeBrainMessage`) — the
-  brain always sees everything said aloud on its behalf.
+  - side-path user turns accumulate per brain-turn and are prepended to every
+    brain send as one `<voice_exchange>` XML block (`composeBrainMessage`) — the
+    brain always sees everything said aloud on its behalf.
 - `relay/types.ts` `QuestionPacing` — ruling 3: pacing is configuration
   (`one_at_a_time` | `grouped`), surface-defaulted via
   `useVoiceRelaySession({ questionPacing })`, named in every delivery cue; the
@@ -229,7 +229,8 @@ carrying that agent's answer.
   status in one compact row; mount with the surface's own `surfaceKey` so
   spoken and typed turns share the conversation. First consumer: the Masterwork
   Scout interview (`ScoutInterviewPanel` → `InterviewColumn`, pacing
-  `one_at_a_time`).
+  `one_at_a_time`). The Education ambient launcher composes the underlying
+  `useVoiceRelaySession` directly into a 48px text/voice morph control.
 - Tests: `relay/relay.test.ts` (protocol, pacing, ledger, side channel,
   controller invariants).
 - **The durable rollout checklist lives in
@@ -280,6 +281,7 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-08-21` — **The Voice Communication Layer now powers the ambient Education assistant.** `ScrollVoiceAssistantLauncherImpl` puts `useVoiceRelaySession` behind a scroll-gated dynamic boundary and switches one compact launcher between the canonical Smart Agent input and a 48px live `VoiceOrb` rail. Both modes share the primary conversation; switching back or dismissing stops capture. Anonymous visitors see the Voice affordance through `useAuthGuardedAction` but never mount the token-prefetching realtime hook.
 - `2026-08-18` — **Completed user transcripts are authoritative.** A real inline
   tutor voice run exposed an xAI delta variant that rendered
   `[undefined] undefined` even though the completion event carried the correct
