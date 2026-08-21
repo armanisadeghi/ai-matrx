@@ -63,4 +63,4 @@ sentence (and `VISION MISSING` when that is true). Extra status columns stay ban
 
 ## Mirror check
 
-Finish by diffing the aidream pointer stubs (`/Users/armanisadeghi/code/aidream/.claude/skills/handoffs/SKILL.md`, `.../handoff-cleanup/SKILL.md`) against the canonical skills here; re-sync stubs if drifted.
+Finish by running `python3 /Users/armanisadeghi/code/common-docs/meta/scripts/sync_skills.py --check` — it verifies the synced copies (`handoffs`, `handoff-cleanup`) in every consuming repo (matrx-frontend, aidream) are byte-identical to the canonical bodies here; re-run without `--check` and commit each repo if drifted.
