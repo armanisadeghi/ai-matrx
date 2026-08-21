@@ -1,6 +1,6 @@
 # FEATURE.md — `cloud-browser`
 
-**Status:** `in-progress` (live data and takeover stream; production acceptance pending)
+**Status:** `in-progress` (core production lifecycle accepted; provider-account acceptance remains)
 **Tier:** `1`
 **Last updated:** `2026-08-19`
 
@@ -69,12 +69,21 @@ Reconnect).
 
 ## Known limits (this build)
 
-- Production acceptance still must prove the complete credential, recipe,
-  two-step-code, checkpoint, and restore story against real provider accounts.
+- Production now proves start, navigation, idle persistence, same-run resume,
+  takeover/reconnect/return, clean stop, and verified encrypted checkpoint restore.
+  Credential capture, structural recipe replay, and generated two-step-code entry
+  still require acceptance against real provider accounts.
 - The in-app DM channel is offered as an opt-in but its server producer is assist-first
   in the first release (NOTIFICATIONS.md §1.4).
 
 ## Change log
+
+- **2026-08-20 — core production acceptance:** the private ECS browser worker and
+  server-owned 20-second lease task are live. After repairing the workflow worker's
+  least-privilege access to the signed control port, one exact run stayed live over
+  repeated idle cycles, resumed on the same session for a second navigation, and
+  closed into verified SSE-KMS checkpoint revision 9. The schedule remains enabled
+  and returns clean empty-work results after the browser stops.
 
 - **2026-08-20 — reconnect supersession:** reconnecting an expired live-control
   canvas now requests the server's explicit takeover path, atomically revoking the
