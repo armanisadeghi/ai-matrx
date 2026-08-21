@@ -117,6 +117,17 @@ const SURFACE_DEFAULTS = {
 
 const BUCKET_VALUES = DATE_BUCKETS.map((b) => b.value as string);
 
+/** Last element of `values` present in `allowed` (most recent selection wins). */
+function lastMatch(
+  values: string[],
+  allowed: readonly string[],
+): string | undefined {
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (allowed.includes(values[i])) return values[i];
+  }
+  return undefined;
+}
+
 /** Table `columnFilters` → the service's typed filter bag. */
 function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
   const out: PartyListFilters = {};
@@ -134,17 +145,16 @@ function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
           (v): v is PartyKind => v === "person" || v === "organization",
         );
       } else if (id === "expert_status") {
-        const value = values.find((v) =>
-          (EXPERT_STATUS_FILTERS as readonly string[]).includes(v),
-        );
+        // Single-choice columns (columns.tsx `filterSingle`) carry one value;
+        // if a stale multi-value set ever arrives, the LAST selection wins —
+        // taking the first made the facet permanently inert (D218).
+        const value = lastMatch(values, EXPERT_STATUS_FILTERS);
         if (value) out.expert_status = value as ExpertStatusFilter;
       } else if (id === "record_class") {
-        const value = values.find((v) =>
-          (RECORD_CLASS_FILTERS as readonly string[]).includes(v),
-        );
+        const value = lastMatch(values, RECORD_CLASS_FILTERS);
         if (value) out.record_class = value as RecordClassFilter;
       } else if (id === "updated_at" || id === "created_at") {
-        const bucket = values.find((v) => BUCKET_VALUES.includes(v));
+        const bucket = lastMatch(values, BUCKET_VALUES);
         if (bucket) out[id] = bucket as DateBucket;
       }
     } else if (f.kind === "boolean" && id === "do_not_contact") {

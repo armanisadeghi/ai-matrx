@@ -197,6 +197,9 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     header: "Expert",
     sortable: true,
     filter: "select",
+    // "Any expert" / one tier / "Not an expert" are exclusive predicates and
+    // the service takes exactly one — appending would make it inert (D218).
+    filterSingle: true,
     filterOptions: [
       { value: "any", label: "Any expert" },
       ...EXPERT_STATUSES.map((s) => ({
@@ -223,6 +226,9 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     header: "Record",
     sortable: false,
     filter: "select",
+    // The three options are exclusive VIEWS of the list, not OR-able tags —
+    // multi-select made this facet inert (D218).
+    filterSingle: true,
     filterOptions: RECORD_CLASS_FILTERS.map((v) => ({
       value: v,
       label: RECORD_CLASS_FILTER_LABEL[v],
@@ -246,8 +252,10 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     header: "Updated",
     sortable: true,
     // A date column's finite value set is "how recently", not a timestamp —
-    // relative buckets served as `updated_at >= now() - bucket`.
+    // relative buckets served as `updated_at >= now() - bucket`. Buckets nest
+    // (7d ⊂ 30d), so ORing them is meaningless — single-choice (D218).
     filter: "select",
+    filterSingle: true,
     filterOptions: DATE_BUCKET_OPTIONS,
     width: 110,
     cell: (row) => (
@@ -262,6 +270,7 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     header: "Created",
     sortable: true,
     filter: "select",
+    filterSingle: true,
     filterOptions: DATE_BUCKET_OPTIONS,
     width: 110,
     cell: (row) => (

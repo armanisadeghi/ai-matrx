@@ -46,6 +46,17 @@ export interface MatrxColumnDef<T> {
   /** Explicit select options (when filter is `"select"` or auto-detected). */
   filterOptions?: Array<{ value: string; label: string }>;
   /**
+   * Single-choice select filter. The default select filter is a multi-select
+   * that APPENDS (OR semantics) — correct for a status column, wrong for a
+   * column whose options are mutually exclusive VIEWS of the list (a
+   * record-class scope, a relative-date bucket). There, appending makes the
+   * filter inert: the consumer reads one value, the popover accumulates a set,
+   * and the first-selected value wins forever (D218). With `filterSingle`,
+   * choosing an option REPLACES the selection, and choosing the active option
+   * again clears it.
+   */
+  filterSingle?: boolean;
+  /**
    * Inline edit. Default false. `"string"` edits in-cell; other types open a
    * small popover (Supabase-style). Edits stay local until Save on the dirty pill.
    */

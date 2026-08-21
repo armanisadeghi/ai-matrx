@@ -52,6 +52,8 @@ interface ColumnHeaderCellProps {
   filterValue: ColumnFilterValue | undefined;
   onFilterChange: (next: ColumnFilterValue | undefined) => void;
   selectOptions?: Array<{ value: string; label: string }>;
+  /** Single-choice select semantics (MatrxColumnDef.filterSingle). */
+  selectSingle?: boolean;
   align?: "left" | "center" | "right";
   className?: string;
   /**
@@ -76,6 +78,7 @@ export function ColumnHeaderCell({
   filterValue,
   onFilterChange,
   selectOptions = [],
+  selectSingle = false,
   align = "left",
   className,
   compact = false,
@@ -135,6 +138,7 @@ export function ColumnHeaderCell({
           value={filterValue}
           onChange={onFilterChange}
           selectOptions={selectOptions}
+          selectSingle={selectSingle}
         />
       ) : null}
     </PopoverContent>
@@ -283,11 +287,13 @@ function FilterBody({
   value,
   onChange,
   selectOptions,
+  selectSingle = false,
 }: {
   kind: ResolvedFilterKind;
   value: ColumnFilterValue | undefined;
   onChange: (next: ColumnFilterValue | undefined) => void;
   selectOptions: Array<{ value: string; label: string }>;
+  selectSingle?: boolean;
 }) {
   if (kind === "text") {
     const text = value?.kind === "text" ? value.value : "";
@@ -371,6 +377,7 @@ function FilterBody({
         selected={selected}
         options={selectOptions}
         onChange={onChange}
+        single={selectSingle}
       />
     );
   }
@@ -410,10 +417,12 @@ function SearchableSelectFilter({
   selected,
   options,
   onChange,
+  single = false,
 }: {
   selected: string[];
   options: Array<{ value: string; label: string }>;
   onChange: (next: ColumnFilterValue | undefined) => void;
+  single?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
@@ -426,8 +435,17 @@ function SearchableSelectFilter({
   }, [options, query]);
 
   // Multi-select with OR semantics: toggling builds the `values` set; an
-  // empty set clears the filter entirely.
+  // empty set clears the filter entirely. Single mode (mutually exclusive
+  // options — a scope, a date bucket): choosing REPLACES, re-choosing clears.
   const toggle = (v: string) => {
+    if (single) {
+      onChange(
+        selected.length === 1 && selected[0] === v
+          ? undefined
+          : { kind: "select", value: v },
+      );
+      return;
+    }
     const next = selected.includes(v)
       ? selected.filter((x) => x !== v)
       : [...selected, v];
@@ -487,7 +505,8 @@ function SearchableSelectFilter({
                 >
                   <span
                     className={cn(
-                      "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border",
+                      "flex h-3.5 w-3.5 shrink-0 items-center justify-center border",
+                      single ? "rounded-full" : "rounded-sm",
                       active
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-muted-foreground/40",

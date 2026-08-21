@@ -1066,6 +1066,7 @@ function MatrxDataTableCore<T>({
                         filterValue={columnFilters[id]}
                         onFilterChange={(next) => setColumnFilter(id, next)}
                         selectOptions={meta?.options}
+                        selectSingle={col.filterSingle}
                         align={col.align}
                         compact={col.compact}
                       />
