@@ -30530,6 +30530,7 @@ export type Database = {
           labels: Json | null
           last_heartbeat_at: string | null
           metadata: Json
+          name: string | null
           organization_id: string
           persistence_volume: string | null
           project_id: string | null
@@ -30561,6 +30562,7 @@ export type Database = {
           labels?: Json | null
           last_heartbeat_at?: string | null
           metadata?: Json
+          name?: string | null
           organization_id: string
           persistence_volume?: string | null
           project_id?: string | null
@@ -30592,6 +30594,7 @@ export type Database = {
           labels?: Json | null
           last_heartbeat_at?: string | null
           metadata?: Json
+          name?: string | null
           organization_id?: string
           persistence_volume?: string | null
           project_id?: string | null
