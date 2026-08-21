@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-08-17
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-08-21
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -153,7 +153,9 @@ Personal and organization credentials render through the same
 - A credential has one **Edit credential** mode. Name, description, field
   replacement, runtime-key metadata, access, status, notes, URLs, and other
   details are edited inside it; independent rename/rotate/edit-note controls
-  are forbidden.
+  are forbidden. The code-first Authenticator list has one deliberate compact
+  exception: its row menu may rename the same credential directly so a person
+  does not have to leave an active six-digit-code task just to fix its label.
 - Website metadata renders only for `website_login`, an item with existing
   login URLs, or a legacy credential whose URL can be promoted. A generic API
   or environment credential must not be presented as a website login.
@@ -233,12 +235,15 @@ site's two-factor screen can act on is the code in front of them.
   6 digits · every 30s" the moment it can read the code, and refuse an
   unusable one in plain words. 🚨 Keep the two in lockstep — a preview that
   accepts what the server refuses is worse than no preview.
-- **A new login can be created inline.** "Save it on" always offers **A new
-  login** (prefilled from the code's issuer) alongside every existing vault
-  item. Before 2026-08-20 the picker listed only `website_login` items, so a
-  user whose vault held API keys saw an empty list and a permanently disabled
-  Enroll button — the surface's own dead end. A seed is one more sealed field
-  on any credential item; the server never required a login.
+- **A new login can be created inline as one complete credential.** "Save it
+  on" always offers **A new login** alongside every existing vault item. The
+  form has explicit Login name, Website, Username or email, and Password labels;
+  all four are required, the website accepts a bare host and normalizes it to
+  HTTPS, and the password is created as a Restricted encrypted field. The
+  subsequent enrollment adds the sealed `totp_seed` to that same item. A failed
+  TOTP enrollment can therefore leave only a valid complete login, never the old
+  hollow name-only item. Selecting an existing Vault item still attaches the
+  authenticator to that item instead of creating a sibling record.
 - **Consent is its own step.** Step 2 carries the plain-language explanation
   the spec requires (D-14 first capture) with the trade-off paragraph one click
   away — not stacked on the intake, in front of someone who has not decided
@@ -251,7 +256,9 @@ site's two-factor screen can act on is the code in front of them.
   period metadata do not compete with the task.
 - **Every entry is a door.** The account name and its row menu open THAT
   credential via `/vault?item=<id>` (the deep link `VaultPage` now owns); the
-  menu also offers a new-tab door without cluttering the code-first list.
+  menu also offers Rename login and a new-tab door without cluttering the
+  code-first list. Renaming updates the credential item's `display_name`, so the
+  Authenticator and Vault never diverge.
 
 ## Invariants
 
@@ -291,6 +298,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- **2026-08-21** — Made Authenticator enrollment create one usable website-login
+  bundle instead of a hollow authenticator-only item: labeled name, website,
+  username, and password are saved first, then the sealed TOTP seed is added to
+  that same item. Existing Vault items remain selectable, and the code-first row
+  menu can now rename the underlying credential directly.
 - **2026-08-20** — Replaced the oversized authenticator cards with a compact,
   code-first account list modeled on Google and Microsoft Authenticator: one
   provider/account identity, a tap-to-copy grouped code, live countdown ring,

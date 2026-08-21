@@ -16,6 +16,7 @@ import {
   EllipsisVertical,
   ExternalLink,
   Globe,
+  Pencil,
   Plus,
   Power,
   RefreshCw,
@@ -25,6 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,11 +63,13 @@ function EntryRow({
   entry,
   busy,
   onToggle,
+  onRename,
   onDelete,
 }: {
   entry: AuthenticatorEntry;
   busy: boolean;
   onToggle: (enabled: boolean) => void;
+  onRename: () => void;
   onDelete: () => void;
 }) {
   const title =
@@ -146,6 +150,10 @@ function EntryRow({
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem className="h-11 gap-2" onSelect={onRename}>
+            <Pencil className="h-4 w-4" />
+            Rename login
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="h-11 gap-2"
             onSelect={() => onToggle(!entry.enabled)}
@@ -192,6 +200,9 @@ export function AuthenticatorWorkspace() {
     useAuthenticator();
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<AuthenticatorEntry | null>(
+    null,
+  );
+  const [pendingRename, setPendingRename] = useState<AuthenticatorEntry | null>(
     null,
   );
   const [query, setQuery] = useState("");
@@ -282,6 +293,7 @@ export function AuthenticatorWorkspace() {
                   onToggle={(enabled) =>
                     actions.setEnabled(entry.credential_item_id, enabled)
                   }
+                  onRename={() => setPendingRename(entry)}
                   onDelete={() => setPendingDelete(entry)}
                 />
               ))}
@@ -312,6 +324,27 @@ export function AuthenticatorWorkspace() {
           if (!pendingDelete) return;
           await actions.remove(pendingDelete.credential_item_id);
           setPendingDelete(null);
+        }}
+      />
+
+      <TextInputDialog
+        open={pendingRename !== null}
+        onOpenChange={(open) => {
+          if (!open && !busy) setPendingRename(null);
+        }}
+        title="Rename login"
+        description="This name is shared by the Vault item and its authenticator."
+        placeholder="Login name"
+        defaultValue={pendingRename?.display_name ?? ""}
+        confirmLabel="Rename"
+        busy={busy}
+        onConfirm={async (displayName) => {
+          if (!pendingRename) return;
+          const renamed = await actions.rename(
+            pendingRename.credential_item_id,
+            displayName,
+          );
+          if (renamed) setPendingRename(null);
         }}
       />
     </div>

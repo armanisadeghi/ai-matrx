@@ -18,7 +18,11 @@ import {
   setAuthenticatorEnabled,
 } from "../authenticator-service";
 import type { AuthenticatorEntry } from "../authenticator-types";
-import { createVaultItem, fetchVaultItems } from "../vault-service";
+import {
+  createVaultItem,
+  fetchVaultItems,
+  updateVaultItem,
+} from "../vault-service";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
 import type { EnrollTarget } from "../components/authenticator/AuthenticatorEnrollDialog";
 
@@ -119,16 +123,42 @@ export function useAuthenticator() {
       run(async () => {
         let itemId = target.itemId;
         if (target.kind === "new") {
+          if (!target.loginUrl || !target.username || !target.password) {
+            throw new Error(
+              "Name, website, username, and password are required for a new login.",
+            );
+          }
           const created = await createVaultItem({
             display_name: target.displayName || "New login",
             definition_key: WEBSITE_LOGIN_DEFINITION_KEY,
-            login_urls: target.loginUrl ? [target.loginUrl] : undefined,
+            login_urls: [target.loginUrl],
+            uri_match_mode: "host",
+            browser_fill_enabled: true,
+            fields: [
+              {
+                field_key: "username",
+                value: target.username,
+                handling: "visible",
+                description: "Username or email",
+              },
+              {
+                field_key: "password",
+                value: target.password,
+                handling: "revealable",
+                description: "Password",
+              },
+            ],
           });
           itemId = created.id;
         }
         if (!itemId) throw new Error("No login chosen for this authenticator.");
         return enrollAuthenticator(itemId, secret);
       }, "Authenticator on — Matrx can now produce this account's codes."),
+    rename: (itemId: string, displayName: string) =>
+      run(
+        () => updateVaultItem(itemId, { display_name: displayName }),
+        "Login renamed.",
+      ),
     setEnabled: (itemId: string, enabled: boolean) =>
       run(
         () => setAuthenticatorEnabled(itemId, enabled),

@@ -2,7 +2,7 @@
 
 **Status:** `in-progress` (core production lifecycle accepted; provider-account acceptance remains)
 **Tier:** `1`
-**Last updated:** `2026-08-19`
+**Last updated:** `2026-08-21`
 
 > Frontend for the **Persistent Cloud Browser** program (WS-8). A real browser that
 > lives on our servers, stays signed in to a user's accounts, and lets an agent do
@@ -76,8 +76,18 @@ Reconnect).
 - The in-app DM channel is offered as an opt-in but its server producer is assist-first
   in the first release (NOTIFICATIONS.md §1.4).
 
+The profile's saved `unattendedLogin` and `totpDelegation` choices now drive the
+server-owned Playwright executor. A visible password form can invoke the shared
+`credential_login` path without another agent round trip only when unattended
+login is explicitly enabled; automatic TOTP additionally requires its own toggle.
+The frontend never receives a password, seed, or generated code from that path.
+
 ## Change log
 
+- **2026-08-21 — consent-driven automatic login:** connected the existing profile
+  settings to the shared server-side `credential_login` executor. Password entry
+  and delegated TOTP remain separate explicit choices, and all value-bearing work
+  stays inside aidream and the browser worker.
 - **2026-08-20 — core production acceptance:** the private ECS browser worker and
   server-owned 20-second lease task are live. After repairing the workflow worker's
   least-privilege access to the signed control port, one exact run stayed live over

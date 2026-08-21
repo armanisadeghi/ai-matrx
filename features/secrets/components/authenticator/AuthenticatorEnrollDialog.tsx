@@ -70,11 +70,34 @@ import { AuthenticatorCode } from "./AuthenticatorCode";
 const NEW_LOGIN = "__new__";
 
 export interface EnrollTarget {
-  /** An existing vault item, or a login to create with this display name. */
+  /** An existing Vault item, or one complete login bundle to create. */
   kind: "existing" | "new";
   itemId?: string;
   displayName?: string;
   loginUrl?: string;
+  username?: string;
+  password?: string;
+}
+
+function normalizeLoginUrl(value: string): string | null {
+  const candidate = value.trim();
+  if (!candidate) return null;
+  try {
+    const parsed = new URL(
+      /^[a-z][a-z\d+.-]*:/i.test(candidate)
+        ? candidate
+        : `https://${candidate}`,
+    );
+    const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+    if (
+      parsed.protocol !== "https:" &&
+      !(parsed.protocol === "http:" && loopbackHosts.has(parsed.hostname))
+    )
+      return null;
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return null;
+  }
 }
 
 interface Props {
@@ -126,6 +149,9 @@ export function AuthenticatorEnrollDialog({
   /** null until the person picks / types — see the derived defaults below. */
   const [chosenItemId, setChosenItemId] = useState<string | null>(null);
   const [typedName, setTypedName] = useState<string | null>(null);
+  const [loginUrl, setLoginUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const reset = () => {
     setStep("secret");
@@ -133,6 +159,9 @@ export function AuthenticatorEnrollDialog({
     setDecodeError(null);
     setChosenItemId(null);
     setTypedName(null);
+    setLoginUrl("");
+    setUsername("");
+    setPassword("");
     setEnrolled(null);
   };
 
@@ -183,13 +212,20 @@ export function AuthenticatorEnrollDialog({
 
   const itemId = chosenItemId ?? suggestedItemId ?? NEW_LOGIN;
   const newName = typedName ?? suggestedName;
+  const normalizedLoginUrl = normalizeLoginUrl(loginUrl);
 
   const target: EnrollTarget = useMemo(
     () =>
       itemId === NEW_LOGIN
-        ? { kind: "new", displayName: newName.trim(), loginUrl: undefined }
+        ? {
+            kind: "new",
+            displayName: newName.trim(),
+            loginUrl: normalizedLoginUrl ?? undefined,
+            username: username.trim(),
+            password,
+          }
         : { kind: "existing", itemId },
-    [itemId, newName],
+    [itemId, newName, normalizedLoginUrl, password, username],
   );
 
   const targetName =
@@ -199,7 +235,12 @@ export function AuthenticatorEnrollDialog({
         "this account");
 
   const canContinue =
-    !!parsed && (itemId !== NEW_LOGIN || newName.trim().length > 0);
+    !!parsed &&
+    (itemId !== NEW_LOGIN ||
+      (newName.trim().length > 0 &&
+        normalizedLoginUrl !== null &&
+        username.trim().length > 0 &&
+        password.length > 0));
 
   const submit = async () => {
     if (!parsed || !canContinue) return;
@@ -320,18 +361,71 @@ export function AuthenticatorEnrollDialog({
               </div>
 
               {itemId === NEW_LOGIN ? (
-                <div className="space-y-1.5">
-                  <Label htmlFor="auth-new-name">Name this login</Label>
-                  <Input
-                    id="auth-new-name"
-                    value={newName}
-                    onChange={(e) => setTypedName(e.target.value)}
-                    placeholder="GitHub"
-                    autoComplete="off"
-                  />
+                <div className="space-y-3 rounded-md border border-border p-3">
+                  <p className="text-sm font-medium text-foreground">
+                    New login details
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="auth-new-name">Login name</Label>
+                    <Input
+                      id="auth-new-name"
+                      value={newName}
+                      onChange={(e) => setTypedName(e.target.value)}
+                      placeholder="GitHub"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="auth-new-url">Website</Label>
+                    <Input
+                      id="auth-new-url"
+                      type="url"
+                      inputMode="url"
+                      value={loginUrl}
+                      onChange={(e) => setLoginUrl(e.target.value)}
+                      placeholder="github.com/login"
+                      autoComplete="url"
+                      aria-invalid={
+                        loginUrl.length > 0 && normalizedLoginUrl === null
+                      }
+                    />
+                    {loginUrl.length > 0 && normalizedLoginUrl === null ? (
+                      <p className="text-xs text-destructive">
+                        Enter a valid website address.
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="auth-new-username">Username or email</Label>
+                    <Input
+                      id="auth-new-username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="username"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      data-bwignore="true"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="auth-new-password">Password</Label>
+                    <Input
+                      id="auth-new-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password for this website"
+                      autoComplete="current-password"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      data-bwignore="true"
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Creates a Vault login you can add the username and password
-                    to afterwards.
+                    One Vault item will hold this login and its authenticator.
+                    The password is encrypted; the authenticator secret is
+                    sealed.
                   </p>
                 </div>
               ) : null}

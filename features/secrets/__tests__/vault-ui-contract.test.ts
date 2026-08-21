@@ -173,4 +173,42 @@ describe("shared vault UI contract", () => {
     expect(hooksSource).toContain("loadedScopeKey === scopeKey ? items : []");
     expect(hooksSource).toContain("requestId !== requestIdRef.current");
   });
+
+  test("creates one complete login and authenticator bundle", () => {
+    const enrollSource = readFileSync(
+      join(
+        process.cwd(),
+        "features/secrets/components/authenticator/AuthenticatorEnrollDialog.tsx",
+      ),
+      "utf8",
+    );
+    const hookSource = readFileSync(
+      join(process.cwd(), "features/secrets/hooks/use-authenticator.ts"),
+      "utf8",
+    );
+
+    expect(enrollSource).toContain("New login details");
+    expect(enrollSource).toContain("Username or email");
+    expect(enrollSource).toContain("Password for this website");
+    expect(enrollSource).not.toContain(
+      "add the username and password to afterwards",
+    );
+    expect(hookSource).toContain('field_key: "username"');
+    expect(hookSource).toContain('field_key: "password"');
+    expect(hookSource).toContain("browser_fill_enabled: true");
+  });
+
+  test("offers authenticator rename without leaving the manage surface", () => {
+    const workspaceSource = readFileSync(
+      join(
+        process.cwd(),
+        "features/secrets/components/authenticator/AuthenticatorWorkspace.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(workspaceSource).toContain("Rename login");
+    expect(workspaceSource).toContain("<TextInputDialog");
+    expect(workspaceSource).toContain("actions.rename");
+  });
 });
