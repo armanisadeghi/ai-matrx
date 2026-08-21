@@ -12,10 +12,14 @@
  * record it.
  *
  * What activation buys the owner (stated plainly in the UI, because it is not
- * obvious): an inactive kind still RENDERS — it falls back to the generic JSON
- * viewer — but it cannot be bound to an agent's structured output, because
- * `isKindBindable` gates the agent picker on `is_active`. "Activate" means
- * "trusted enough to render as itself, and bindable."
+ * obvious): an inactive kind still RENDERS. It is NOT true that it falls back
+ * to the generic viewer — `applyIrKindRoute` reads the COMPONENT row's
+ * `is_active`, never the definition's, so a kind with a registered component
+ * renders through that component while still inactive (proven live on
+ * `markdown`, 2026-08-21). What activation actually buys is BINDING:
+ * `isKindBindable` gates the agent picker on `is_active`. So the line keys on
+ * the verdict's render leg — the generic-viewer sentence is reserved for the
+ * kinds where it is genuinely true.
  *
  * The gate is never re-implemented here. Both calls go to
  * `content_ir.evaluate_kind_activation` / `set_kind_activation`, the same
@@ -148,7 +152,9 @@ export default function ShapeActivationControl({
             <p className="text-xs text-muted-foreground">
               {isActive
                 ? "Renders through its component and can be bound to an agent's output."
-                : "Renders through the generic JSON viewer and cannot be bound to an agent."}
+                : verdict?.renderOk
+                  ? "Already renders through its registered component — activation is what makes it bindable to an agent's output."
+                  : "Renders through the generic JSON viewer and cannot be bound to an agent."}
             </p>
           </div>
         </div>

@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **211** — live recount 2026-08-20
 - **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
-- Individual rows (46 total): unclaimed **0** · claimed **1** · done **44** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-20 by army-fe-wd1 after flipping the last 8 (the SEO cluster). Re-counted 2026-08-20 by army-fe-wd2 after folding the malformed stray `markdown` row (added by `86f3863d4`, appended after the change log and mis-columned) into this table. **Every individual row is `done` except the one `blocked` row (`claim_evidence`, blocked on its EXAMPLE, not its route) and `markdown`, claimed by army-fe-wd2.**
+- Individual rows (46 total): unclaimed **0** · claimed **0** · done **45** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-20 by army-fe-wd1 after flipping the last 8 (the SEO cluster). Re-counted 2026-08-20 by army-fe-wd2 after folding the malformed stray `markdown` row (added by `86f3863d4`, appended after the change log and mis-columned) into this table. **Every individual row is now `done` except the one `blocked` row (`claim_evidence`, blocked on its EXAMPLE, not its route).**
 
 **Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
 non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
@@ -226,7 +226,7 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | `keyword_classification_batch` | **done** | army-fe-wd1 | registry lie corrected: the row now names the REAL component the compiled bridge already renders (`KeywordClassificationBatchBlock`). LIVE + verified (migration by copy-D; verified by army-fe-wd1). `role='input'` correctly absent — `agent_io` ⇒ `dataOnly` refuses first. |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `markdown` | Markdown | distilled | ? | — | **claimed** | army-fe-wd2 | INACTIVE kind (`is_active=false`) — the generation query missed it, added by 86f3863d4. Register the STREAMING MARKDOWN RENDERER as its `(kind,'web','output')` component; the row's own claim is that this activates the kind (dual gate) and collapses the two render laws into one — to be verified against live code, not trusted. |
+| `markdown` | Markdown | distilled | 1 | `markdown_stream` | **done** | army-fe-wd2 | THE STREAMING MARKDOWN RENDERER, registered. `(markdown,'web','output') → markdown_stream` LIVE ([`content_ir_markdown_kind_route.sql`](../migrations/content_ir_markdown_kind_route.sql)); `role='input'` D1 floor row registered too (family `primitive`, not a machine contract). Verified in the browser on `/shapes/markdown/test` (2026-08-20). Kind is still `is_active=false` and that is CORRECT — see the change log; activation is a separate governed act and the route does not need it. |
 | `notable_timestamp` | Notable Timestamp | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `office_extraction_result` | Office Extraction Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
@@ -414,3 +414,72 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 - 2026-08-20 — **army-fe-wd2** claims the `markdown` row and folds it into the individual-rows
   table (it had been appended after the change log, in the wrong column schema). Counts line
   re-counted from the rows: 46 individual rows.
+- 2026-08-20 — army-fe-wd2 **done**: `markdown` routes to THE STREAMING MARKDOWN RENDERER.
+  `(markdown,'web','output') → markdown_stream`, applied live + ledgered in
+  `public._schema_migrations`
+  ([`content_ir_markdown_kind_route.sql`](../migrations/content_ir_markdown_kind_route.sql)).
+  `markdown` is `{ text: string }` — the shape the agent output contract folds prose into (99% of
+  every agent result is `content = [one markdown instance]`) — and it had NO output row, so it
+  reached the reader by silent fallback and the generic viewer printed the field label "Text"
+  above the reader's own document, markdown source unrendered.
+
+  **Reuse, not invention.** Searched: `MarkdownStream` / `StreamingMarkdown` / `markdown-stream`
+  across `components`, `features`, `app`, `lib`; the `markdown*` block directories; every
+  `SHAPE_BLOCK_DISPATCH` entry; and the vocabulary crosswalk for a `markdown` render-block row
+  (none — the name was free). Three candidates, one right answer:
+  `MarkdownPreviewBlock` is a code-fence viewer with its own Preview/Source chrome (wrong — a
+  kind instance is a document, not a fence); `BasicMarkdownContent` is an internal of the engine;
+  **`MarkdownStream` is the engine itself**, and `WORKFLOW_KINDS_DESIGN.md` §4 already named it
+  ("The `markdown` kind's active web component IS MarkdownStream"). So the new file is a 40-line
+  adapter, not a renderer:
+  [`MarkdownKindBlock.tsx`](../components/mardown-display/blocks/markdown/MarkdownKindBlock.tsx)
+  reads `text` off the envelope and hands it to MarkdownStream (the documented import for "bare
+  rendering with no actions"), wired into `block-dispatch.tsx` (`ShapeBlockType` +
+  `SHAPE_BLOCK_DISPATCH` + the FE-synthesized list in its test). Prose renders as prose, and a
+  kind payload fenced INSIDE that prose routes to its own component through the same pipeline —
+  which is the whole point of collapsing the render law.
+
+  **The row's own claim, checked against live code — it was HALF right.**
+  *Right:* the render leg was the only missing leg. `content_ir.evaluate_kind_activation` now
+  returns `would_activate: true, structural_ok: true, render_ok: true, reasons: []` (the
+  canonical example already passed the structural leg). *Wrong:* registering does NOT activate.
+  `is_active` only moves through `content_ir.set_kind_activation`, which requires `auth.uid()`
+  and an owner/super-admin — direct `is_active` writes are revoked from `authenticated` behind a
+  guard trigger — and every kind migration in this directory says the same thing in its own
+  words: *activation belongs to the dual gate.* **Not forced here.** It is now one click for the
+  owner at `/shapes/markdown` (the Activate button is live), and its consequence is beyond this
+  route: activation is what makes a kind BINDABLE to an agent's structured output
+  (`isKindBindable`), and it moves the kind into the active scope this ledger counts (211 → 212).
+  *And the route never needed it:* the FE kind registry does not filter on `is_active`
+  (`schema-source-kind-tables.ts` says so in its own contract) and `applyIrKindRoute` reads the
+  COMPONENT row's `is_active`, never the definition's — proven live below, with the kind still
+  inactive.
+
+  **`role='input'`: INSERTED, deliberately (copy-C's gap, not copy-D's exception).** `markdown`
+  carries `metadata.family = 'primitive'` — NOT one of the `GENERATED_CONTRACT_FAMILY_VALUES`
+  (`workflow_io`/`tool_io`/`action_io`/`agent_io`), so `decideKindInputPath` does not refuse it on
+  `dataOnly`. It is DB-only, so the compiled input floor never reached it and `/shapes/markdown/test`
+  refused — the exact gap copy-C fixed for the 83. A human can honestly author a block of prose,
+  so the D1 floor row is a floor, not a registry defect. It resolves `instance-json` (the kind
+  stores no field list) and the Test tab now works.
+
+  **Live verification (browser, `/shapes/markdown/test`, 2026-08-20):** the canonical example
+  submitted through the real form renders a real `<h2>Findings</h2>` and `<strong>3 warnings</strong>`
+  — no `__kind`, no JSON wrapper, no "unverified shape" note, no amber "no custom component" line.
+  Pinned by [`kind-markdown-route.test.tsx`](../features/content-ir/__tests__/kind-markdown-route.test.tsx)
+  (6 tests): the before/after (silent `by:'generic'` → registered `by:'db'`), the LIVE canonical
+  example re-validated through `validateStructuralLeg` against the LIVE `emitted_json_schema`
+  **with a negative control**, the verbatim hand-off to the streaming renderer, a partial
+  instance, and the never-swallow backstop. `pnpm type-check` clean; `features/content-ir` +
+  block-registry **903/903** green. Maturity untouched (`distilled`).
+
+  **NO LEGACY — nothing to delete.** Searched every `"markdown"` occurrence in `features/content-ir`,
+  `features/workflow-runtime` and `features/agents`: every hit is the unrelated markdown INPUT
+  widget / editor-tab vocabulary. No bespoke display of a `{__kind:'markdown', text}` instance
+  exists.
+
+  **One honesty defect fixed on the way out.** `ShapeActivationControl` told every inactive kind's
+  owner *"Renders through the generic JSON viewer and cannot be bound to an agent."* The first
+  clause is false for any kind with a registered component — `markdown` is the live counterexample
+  — so the line now keys on the verdict's render leg and reserves the generic-viewer sentence for
+  the kinds where it is genuinely true.
