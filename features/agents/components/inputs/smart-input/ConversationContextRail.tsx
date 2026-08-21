@@ -68,6 +68,7 @@ import {
   selectCanvasIsOpen,
   selectCurrentCanvasItem,
 } from "@/features/canvas/redux/canvasSlice";
+import { selectCloudBrowserRunLive } from "@/features/cloud-browser/redux/cloudBrowserSlice";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -311,6 +312,10 @@ export function ConversationContextRail({
    * control.
    */
   const cloudBrowserSourceId = `cloud-browser:${conversationId}`;
+  const cloudBrowserRunLive = useAppSelector(selectCloudBrowserRunLive);
+  const cloudBrowserActive =
+    cloudBrowserRunLive ||
+    (canvasOpen && currentCanvasSourceId === cloudBrowserSourceId);
   const toggleCloudBrowser = () => {
     if (canvasOpen && currentCanvasSourceId === cloudBrowserSourceId) {
       dispatch(closeCanvas());
@@ -399,18 +404,22 @@ export function ConversationContextRail({
       });
     }
 
-    // "Work in a cloud browser" — always offered, like an attachment. Hands the
-    // agent a persistent cloud browser and opens it as a canvas item.
-    out.push({
-      id: "cloud-browser",
-      icon: Globe,
-      label: "Cloud browser",
-      word: "Browser",
-      hint: "Click: give the agent a cloud browser · show / hide in canvas",
-      active:
-        canvasOpen && currentCanvasSourceId === cloudBrowserSourceId,
-      onOpen: toggleCloudBrowser,
-    });
+    // The cloud-browser pill appears only while a browser is actually in use
+    // (canvas open here, or a live run) — the ENTRY point is the `+` attach
+    // menu, never a standing control (Arman 2026-08-21).
+    if (cloudBrowserActive) {
+      out.push({
+        id: "cloud-browser",
+        icon: Globe,
+        label: "Cloud browser",
+        word: "Browser",
+        detail: cloudBrowserRunLive ? "Live" : undefined,
+        hint: "Click: show / hide the browser in canvas",
+        active:
+          canvasOpen && currentCanvasSourceId === cloudBrowserSourceId,
+        onOpen: toggleCloudBrowser,
+      });
+    }
 
     for (const e of valued) {
       // Doc-like keys (working doc, scratchpad, attached-scratchpad extras):
@@ -500,6 +509,8 @@ export function ConversationContextRail({
     listsOpen,
     canvasOpen,
     currentCanvasSourceId,
+    cloudBrowserActive,
+    cloudBrowserRunLive,
     currentCanvasItem?.savedItemId,
     currentCanvasItem?.content?.metadata?.canvasItemId,
     scratchScope,

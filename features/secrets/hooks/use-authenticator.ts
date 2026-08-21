@@ -58,20 +58,20 @@ export function useAuthenticator() {
       if (!mounted.current) return;
       setEntries(list);
       const enrolledIds = new Set(list.map((e) => e.credential_item_id));
-      // Eligible = ANY item the user holds that does not already carry an
-      // authenticator. A seed is one more sealed field on a credential item —
-      // the server never required a website_login, and filtering to that key
-      // is what made the surface dead-end with "no eligible logins". Website
-      // logins sort first because they are the common case.
-      const eligible = items.filter((it) => !enrolledIds.has(it.id));
-      const rank = (it: VaultItem) =>
-        it.definition_key === WEBSITE_LOGIN_DEFINITION_KEY ? 0 : 1;
+      // Eligible = website logins only (Arman's ruling, 2026-08-21: the seed
+      // lives ON the website_login it protects — one account, one item,
+      // captured together). The old any-item list let a fuzzy issuer match
+      // silently enroll a Google seed onto an unrelated oauth_client. The
+      // "no eligible logins" dead-end the old comment feared is cured by the
+      // "A new login" option, which creates the login and seed together.
+      const eligible = items.filter(
+        (it) =>
+          it.definition_key === WEBSITE_LOGIN_DEFINITION_KEY &&
+          !enrolledIds.has(it.id),
+      );
       setEnrollable(
         eligible
-          .sort(
-            (a, b) =>
-              rank(a) - rank(b) || a.display_name.localeCompare(b.display_name),
-          )
+          .sort((a, b) => a.display_name.localeCompare(b.display_name))
           .map((it) => ({
             id: it.id,
             displayName: it.display_name,

@@ -9,7 +9,7 @@
  * Revealed plaintext is component-local via `useTransientSecret` with a
  * ~30s auto-clear — never Redux, storage, or query caches.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeftRight,
   Building2,
@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  ShieldCheck,
   Trash2,
   TriangleAlert,
   Upload,
@@ -65,6 +66,13 @@ import {
   type VaultActions,
 } from "../vault-hooks";
 import { resolveVaultFields } from "../vault-service";
+import {
+  deleteAuthenticator,
+  enrollAuthenticator,
+  fetchAuthenticators,
+  setAuthenticatorEnabled,
+} from "../authenticator-service";
+import type { AuthenticatorEntry } from "../authenticator-types";
 import {
   envAliasIsRedundant,
   fieldLabelOf,
@@ -325,6 +333,9 @@ export function VaultItemDetail({
         caps={caps}
         editMode={editingCredential}
       />
+
+      {/* Two-factor — the other half of the sign-in recipe, on the same item */}
+      <AuthenticatorSection item={item} />
 
       {/* Notes and other details — deliberately plaintext, loudly labelled */}
       <NotEncryptedSection
@@ -1269,6 +1280,178 @@ function AddFieldPanel({
  * see them, and a value nobody can read cannot be matched against a page.
  * The server re-checks every match before it decrypts anything.
  */
+/**
+ * Two-factor authentication — part of the login's ONE recipe (Arman
+ * 2026-08-21): the seed lives on the website_login it protects, and the login
+ * item is where you see and manage it. Shows the enrolled authenticator (with
+ * on/off and remove), an inline setup-key enrollment when there is none, and
+ * the recorded non-app method (SMS/push) that tells Matrx to hand control
+ * back at the verification step. Website logins only.
+ */
+function AuthenticatorSection({ item }: { item: VaultItem }) {
+  const isWebsiteLogin = item.definition_key === WEBSITE_LOGIN_DEFINITION_KEY;
+  const [entry, setEntry] = useState<AuthenticatorEntry | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [setupKey, setSetupKey] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  useEffect(() => {
+    if (!isWebsiteLogin) return;
+    let mounted = true;
+    fetchAuthenticators()
+      .then((list) => {
+        if (!mounted) return;
+        setEntry(list.find((e) => e.credential_item_id === item.id) ?? null);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (mounted) setLoaded(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isWebsiteLogin, item.id]);
+
+  if (!isWebsiteLogin) return null;
+
+  const mfaMethod =
+    item.non_secret_fields?.find((f) => f.key === "mfa_method")?.value ?? null;
+
+  const enroll = async () => {
+    setWorking(true);
+    try {
+      const created = await enrollAuthenticator(item.id, setupKey.trim());
+      setEntry(created);
+      setSetupKey("");
+      toast.success(
+        "Authenticator on — Matrx signs in to this account fully automatically.",
+      );
+    } catch {
+      toast.error(
+        "That setup key could not be enrolled. Paste the otpauth:// link or the manual key from the site's authenticator step.",
+      );
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const toggle = async (enabled: boolean) => {
+    setWorking(true);
+    try {
+      const updated = await setAuthenticatorEnabled(item.id, enabled);
+      setEntry(updated);
+    } catch {
+      toast.error("Could not update the authenticator.");
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const remove = async () => {
+    setWorking(true);
+    try {
+      await deleteAuthenticator(item.id);
+      setEntry(null);
+      toast.success(
+        "Authenticator removed from Matrx. Your phone app and backup codes still work.",
+      );
+    } catch {
+      toast.error("Could not remove the authenticator.");
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+        <p className="text-xs font-semibold">Two-factor authentication</p>
+      </div>
+
+      {!loaded ? (
+        <p className="text-xs text-muted-foreground">Checking…</p>
+      ) : entry ? (
+        <div className="flex items-center justify-between gap-2 rounded border border-border bg-background px-2 py-1.5">
+          <div className="min-w-0 text-xs">
+            <p className="font-medium">
+              Authenticator app{entry.label ? ` · ${entry.label}` : ""}
+            </p>
+            <p className="text-muted-foreground">
+              {entry.enabled
+                ? "Matrx completes this account's verification automatically."
+                : "Enrolled but off — codes are not generated until you turn it on."}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Switch
+              checked={entry.enabled}
+              disabled={working}
+              onCheckedChange={toggle}
+              aria-label="Authenticator on"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-1.5 text-xs text-muted-foreground"
+              disabled={working}
+              onClick={() => setConfirmRemove(true)}
+            >
+              Remove
+            </Button>
+          </div>
+          <ConfirmDialog
+            open={confirmRemove}
+            onOpenChange={setConfirmRemove}
+            title="Remove this authenticator from Matrx?"
+            description="Matrx stops generating codes for this account immediately. Two-factor stays on at the website — your phone app and backup codes still work."
+            confirmLabel="Remove"
+            onConfirm={remove}
+          />
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {mfaMethod ? (
+            <p className="text-xs text-muted-foreground">
+              {mfaMethod === "sms"
+                ? "Verification by text message (SMS) — Matrx hands control back to you at that step."
+                : "Verification by push notification or another method — Matrx hands control back to you at that step."}{" "}
+              If this account also offers an authenticator app, enrolling it
+              below makes sign-in fully automatic.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No authenticator enrolled. Paste the setup key from the
+              site&apos;s &ldquo;authenticator app&rdquo; step and sign-in
+              becomes fully automatic.
+            </p>
+          )}
+          <div className="flex items-center gap-2">
+            <Input
+              value={setupKey}
+              onChange={(e) => setSetupKey(e.target.value)}
+              placeholder="otpauth:// link or manual setup key"
+              autoComplete="off"
+              spellCheck={false}
+              className="h-7 flex-1 font-mono text-xs"
+            />
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              disabled={working || setupKey.trim().length === 0}
+              onClick={enroll}
+            >
+              Turn on codes
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function DestinationSection({
   item,
   busy,

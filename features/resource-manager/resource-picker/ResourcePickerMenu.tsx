@@ -26,6 +26,7 @@ import {
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { toast } from "@/lib/toast";
 import { GoogleResourcePicker } from "./GoogleResourcePicker";
+import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import {
   setContextEntry,
   setContextEntries,
@@ -86,6 +87,7 @@ export function ResourcePickerMenu({
 }: ResourcePickerMenuProps) {
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
+  const openCloudBrowser = useOpenCloudBrowserCanvas();
   const dispatch = useAppDispatch();
   const store = useAppStore();
   // Run-state counts for the "This run" rows only — see useRunControlCounts.
@@ -437,7 +439,16 @@ export function ResourcePickerMenu({
                 variant="ghost"
                 size="sm"
                 className="group h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
-                onClick={() => setActiveView(resource.id)}
+                onClick={() => {
+                  // "Cloud browser" is a direct action (give the agent a
+                  // browser → open the canvas), not a drill-in picker view.
+                  if (resource.id === "cloud_browser") {
+                    openCloudBrowser();
+                    onClose();
+                    return;
+                  }
+                  setActiveView(resource.id);
+                }}
               >
                 <Icon
                   className={cn(

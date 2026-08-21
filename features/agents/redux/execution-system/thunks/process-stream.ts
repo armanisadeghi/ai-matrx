@@ -211,6 +211,7 @@ import {
   reservationBelongsToConversation,
 } from "../utils/handoff-stream-state";
 import { runToolStateEffects } from "@/features/tool-call-visualization/effects/toolStateEffects";
+import { noteBrowserActivity } from "@/features/cloud-browser/redux/cloudBrowserSlice";
 
 // =============================================================================
 // Types
@@ -1503,6 +1504,21 @@ export async function processStream({
         // is identified structurally at failure time (oldest still-pending
         // call — see HandoffRewindTracker); a specialist's own inner tool
         // events stream on this same wire and must not move the anchor.
+        // A cloud-browser tool acting means the browser page just changed —
+        // stamp it so an open screenshot session captures the moment instead
+        // of waiting for its idle timer (event-driven captures, Arman
+        // 2026-08-21). Started AND completed both stamp: the fill shows on
+        // start, the landed page on completion; the session debounces bursts.
+        if (
+          (toolData.event === "tool_started" ||
+            toolData.event === "tool_completed") &&
+          typeof toolData.tool_name === "string" &&
+          (toolData.tool_name.startsWith("cloud_browser") ||
+            toolData.tool_name === "credential_login")
+        ) {
+          dispatch(noteBrowserActivity(Date.now()));
+        }
+
         if (toolData.event === "tool_started") {
           const reqAtBoundary =
             getState().activeRequests.byRequestId[requestId];

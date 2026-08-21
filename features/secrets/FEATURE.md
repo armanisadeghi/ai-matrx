@@ -298,6 +298,20 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- **2026-08-21** — The website-login create flow is now the ONE recipe (Arman's
+  ruling: username + password + 2FA captured together; SoR
+  `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/DECISIONS.md`):
+  `VaultCreateDialog` adds a two-factor section (off / authenticator app —
+  seed enrolls on the SAME item right after create / SMS / push-other — the
+  non-app choice is written as the `mfa_method` non-secret field so agents
+  KNOW to hand control back at verification). `VaultItemDetail` gains an
+  Authenticator section on website logins (status, on/off, remove, inline
+  setup-key enrollment, recorded non-app method). Enrollment targets are
+  website logins ONLY (`use-authenticator`), and the enroll dialog's
+  suggestion matches the issuer against login-URL HOSTS only — display-name
+  substring matching enrolled a Google seed on an unrelated oauth_client
+  (root cause of the 2026-08-21 mis-attachment). `uri_match_mode` gains
+  `domain` (sister-site matching, aidream eTLD+1 matcher).
 - **2026-08-21** — Made Authenticator enrollment create one usable website-login
   bundle instead of a hollow authenticator-only item: labeled name, website,
   username, and password are saved first, then the sealed TOTP seed is added to

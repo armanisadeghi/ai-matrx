@@ -24,6 +24,8 @@ export const selectConsent = (s: RootState) => root(s).consent;
 export const selectNotificationConsent = (s: RootState) => root(s).notificationConsent;
 export const selectFace = (s: RootState) => root(s).face;
 export const selectScreenshot = (s: RootState) => root(s).screenshot;
+/** Last streamed cloud-browser tool action — the event-driven capture trigger. */
+export const selectBrowserActivityAt = (s: RootState) => root(s).browserActivityAt;
 export const selectNotificationPromptSeen = (s: RootState) => root(s).notificationPromptSeen;
 
 export const selectActiveProfile = createSelector(

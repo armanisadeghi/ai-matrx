@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  AppWindow,
   CheckSquare,
   File,
   FileText,
@@ -18,6 +19,7 @@ import {
 import { Google, Youtube } from "@/components/icons/brand-icons";
 
 export type ResourcePickerViewId =
+  | "cloud_browser"
   | "files"
   | "conversations"
   | "notes"
@@ -101,6 +103,17 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         label: "Google",
         icon: Google,
         iconClassName: "text-blue-600 dark:text-blue-400",
+        requiresCapability: null,
+      },
+      {
+        // Direct ACTION row, not a drill-in picker: hands the agent a private
+        // cloud browser (opens the canvas). Ruled by Arman 2026-08-21: the
+        // browser entry point lives HERE, never as a standing input-bar button;
+        // once a browser is live it shows as a context-rail pill above the input.
+        id: "cloud_browser",
+        label: "Cloud browser",
+        icon: AppWindow,
+        iconClassName: "text-sky-600 dark:text-sky-400",
         requiresCapability: null,
       },
       {

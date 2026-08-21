@@ -14,8 +14,17 @@ export const CLOUD_BROWSER_RESOURCE_TYPE = "browser_profile" as const;
 export const CLOUD_BROWSER_ASSIST_SURFACE = "cloud-browser/panel" as const;
 
 // ── Screenshots-on-request (D-8 tier 2, D-21 defaults) ───────────────────────
-/** Fresh capture roughly every 5s while the viewer keeps the request open. */
-export const SCREENSHOT_CADENCE_MS = 5_000;
+// Captures are EVENT-DRIVEN first (Arman 2026-08-21): every cloud-browser tool
+// action (navigate / click / fill / login) triggers a capture, so the viewer
+// never misses the moment the page changes. The timed cadence is only the
+// idle backstop for quiet pages — which is why it is slower than the old flat
+// 5s poll — and Rapid mode covers pages that animate without tool activity.
+/** Idle heartbeat between captures while no browser activity is streaming. */
+export const SCREENSHOT_IDLE_CADENCE_MS = 15_000;
+/** Rapid mode for visually busy pages (user opt-in per session). */
+export const SCREENSHOT_RAPID_CADENCE_MS = 2_000;
+/** A burst of tool actions collapses into one capture per this window. */
+export const SCREENSHOT_ACTIVITY_DEBOUNCE_MS = 600;
 /** Auto-off after 5 minutes without interaction; always re-armable. */
 export const SCREENSHOT_AUTO_OFF_MS = 5 * 60_000;
 

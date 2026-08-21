@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { ArrowUp, CircleStop, Globe } from "lucide-react";
+import { ArrowUp, CircleStop } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
@@ -35,7 +35,6 @@ import {
 } from "./agent-context/buildChatContextData";
 import { buildChatRunConfiguration } from "./agent-context/buildChatRunConfiguration";
 import { cn } from "@/lib/utils";
-import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
@@ -83,7 +82,6 @@ export function NewChatLandingInput({
 }: NewChatLandingInputProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const openCloudBrowser = useOpenCloudBrowserCanvas();
   const text = useAppSelector(selectUserInputText(conversationId));
   const charCount = useAppSelector(selectInputCharCount(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
@@ -290,22 +288,13 @@ export function NewChatLandingInput({
           className="[grid-area:leading] flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Cloud browser entry point lives in the `+` attach menu (Arman
+              2026-08-21) — never a standing input-bar button. */}
           <RunControlsMenu
             conversationId={conversationId}
             variant="plus"
             foldToolbarExtras
           />
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => openCloudBrowser()}
-            className="h-9 rounded-full px-2.5 text-muted-foreground hover:text-foreground"
-            title="Open a private cloud browser"
-            aria-label="Open a private cloud browser"
-          >
-            <Globe className="h-4 w-4" />
-            <span className="sr-only">Cloud browser</span>
-          </Button>
         </div>
 
         {/* Primary — textarea, wrapped in the chat surface's right-click agent

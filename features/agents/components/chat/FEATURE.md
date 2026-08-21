@@ -77,11 +77,15 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 
 ### Flow 0 — Open the cloud browser before the first message
 
-`NewChatLandingInput` renders a globe beside the `+` control. It calls the
-canonical `useOpenCloudBrowserCanvas` opener, so `/chat/new` can open the same
-live browser canvas that the full conversation rail and an agent handoff use.
-The affordance is available as soon as the landing conversation is initialized;
-it does not require the user to send a throwaway first message.
+The cloud browser's entry point is the **"Cloud browser" row in the `+` attach
+menu** (a direct-action row in `ResourcePickerMenu` → the canonical
+`useOpenCloudBrowserCanvas` opener) — never a standing button in the input bar
+(Arman 2026-08-21: input space is for text; ruling D-26 in
+`/Users/armanisadeghi/code/common-docs/projects/persistent-cloud-browser/DECISIONS.md`).
+While a browser is actually in use (live run, or its canvas is open) a
+"Browser" pill appears on the conversation context rail above the input
+(`selectCloudBrowserRunLive`). `/chat/new` shares the same path; no throwaway
+first message is required.
 
 ### Flow 1 — Start fresh with an agent (`/chat/a/[agentId]`)
 1. `ChatRoomClient` mounts with `agentId`, no `conversationId`. `surfaceKey = chat-route:<agentId>`.

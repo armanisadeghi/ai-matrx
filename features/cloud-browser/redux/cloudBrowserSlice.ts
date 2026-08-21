@@ -47,6 +47,9 @@ export interface CloudBrowserState {
     autoOffAt: number | null;
     frames: ScreenshotFrame[];
   };
+  /** ms epoch of the last streamed cloud-browser tool action (event-driven
+   * screenshot trigger); null until the first action streams. */
+  browserActivityAt: number | null;
   loading: boolean;
   error: string | null;
   /** True once the front-and-centre notification prompt has been answered. */
@@ -54,6 +57,7 @@ export interface CloudBrowserState {
 }
 
 const initialState: CloudBrowserState = {
+  browserActivityAt: null,
   activeProfileId: null,
   profiles: [],
   quotas: {},
@@ -130,6 +134,13 @@ const slice = createSlice({
       state.screenshot.autoOffAt = null;
       if (state.face === "screenshots") state.face = "written";
     },
+    /** Stamped by the chat stream processor whenever a cloud-browser tool
+     * (cloud_browser_* / credential_login) starts or completes — the signal
+     * that the page just changed, so the screenshot session captures NOW
+     * instead of waiting for the idle timer (Arman 2026-08-21). */
+    noteBrowserActivity(state, action: PayloadAction<number>) {
+      state.browserActivityAt = action.payload;
+    },
     pushFrame(state, action: PayloadAction<ScreenshotFrame>) {
       state.screenshot.frames.unshift(action.payload);
       if (state.screenshot.frames.length > MAX_FRAMES) {
@@ -160,6 +171,7 @@ export const {
   appendProgress,
   setController,
   setFace,
+  noteBrowserActivity,
   startScreenshotSession,
   rearmScreenshotSession,
   stopScreenshotSession,
@@ -171,3 +183,19 @@ export const {
 } = slice.actions;
 
 export default slice.reducer;
+
+/** True while the user's cloud-browser run is live (any non-terminal state).
+ * Drives "the browser is active" affordances — e.g. the context-rail pill
+ * above the chat input (Arman 2026-08-21: the pill appears only while a
+ * browser is actually in use; the entry point is the `+` attach menu). */
+export const selectCloudBrowserRunLive = (state: {
+  cloudBrowser: CloudBrowserState;
+}): boolean => {
+  const runState = state.cloudBrowser.run?.state;
+  return (
+    runState !== undefined &&
+    runState !== "stopped" &&
+    runState !== "failed" &&
+    runState !== "failed_persistence"
+  );
+};

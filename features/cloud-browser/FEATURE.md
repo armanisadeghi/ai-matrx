@@ -84,6 +84,17 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-21 — event-driven screenshots + entry-point relocation (D-24/D-26):**
+  the chat stream processor stamps `noteBrowserActivity` on every
+  `cloud_browser*` / `credential_login` tool start/completion, and an open
+  screenshot session captures the moment (debounced) instead of a flat 5s
+  poll; the timed cadence is now a 15s idle backstop with an opt-in 2s Rapid
+  mode (`useScreenshotSession(runId, rapid)`, ScreenshotFace Rapid toggle).
+  The browser's entry point moved to the chat `+` attach menu (direct-action
+  row); the context-rail pill shows only while a run is live or the canvas is
+  open (`selectCloudBrowserRunLive`). Takeover steer/interrupt (D-25) is
+  ruled and dispatched to a focused build — the seams named in "Known gaps"
+  below still stand until it lands.
 - **2026-08-21 — consent-driven automatic login:** connected the existing profile
   settings to the shared server-side `credential_login` executor. Password entry
   and delegated TOTP remain separate explicit choices, and all value-bearing work

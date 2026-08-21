@@ -199,13 +199,25 @@ export function AuthenticatorEnrollDialog({
    * deliberate choice.
    */
   const suggestedName = parsed ? (parsed.issuer ?? parsed.account ?? "") : "";
+  /**
+   * Suggest an existing login ONLY on a login-URL HOST match of the code's
+   * issuer (issuer "Google" → a login saved for accounts.google.com). Display
+   * -name substring matching is banned here: it once auto-selected an
+   * unrelated "AI Matrx Google OAuth Test Client" for a Google seed, which
+   * silently enrolled the authenticator on the wrong item (2026-08-21).
+   */
   const suggestedItemId = useMemo(() => {
-    const needle = parsed?.issuer?.toLowerCase();
+    const needle = parsed?.issuer?.toLowerCase().replace(/[^a-z0-9]/g, "");
     if (!needle) return null;
-    const match = enrollable.find(
-      (it) =>
-        it.displayName.toLowerCase().includes(needle) ||
-        it.loginUrls.some((u) => u.toLowerCase().includes(needle)),
+    const match = enrollable.find((it) =>
+      it.loginUrls.some((u) => {
+        try {
+          const host = new URL(u).hostname.toLowerCase();
+          return host.split(".").includes(needle);
+        } catch {
+          return false;
+        }
+      }),
     );
     return match?.id ?? null;
   }, [parsed, enrollable]);

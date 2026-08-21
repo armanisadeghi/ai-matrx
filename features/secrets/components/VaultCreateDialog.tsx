@@ -61,6 +61,12 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 
 import { generateVaultPassword, parseEnvAssignment } from "../utils";
+import {
+  InvalidEnrollmentInputError,
+  parseEnrollmentInput,
+} from "../authenticator-otpauth";
+import { enrollAuthenticator } from "../authenticator-service";
+import { toast } from "@/lib/toast";
 import { recommendedHandlingForFieldKey } from "../credential-identity";
 import { VaultHandlingControl } from "./VaultHandlingControl";
 import {
@@ -117,6 +123,18 @@ type CreateMode = "self" | "assign";
 
 /** Where the assigned item's password comes from. */
 type PasswordMode = "provided" | "generate";
+
+/** The 2FA half of the website-login recipe. `totp` = we hold the seed and
+ * sign in fully automatically; `sms`/`other` = recorded as a KNOWN handback
+ * point (Matrx returns control to the person at the verification step). */
+type TwoFactorChoice = "off" | "totp" | "sms" | "other";
+
+const TWO_FACTOR_LABELS: Record<TwoFactorChoice, string> = {
+  off: "Not used on this account",
+  totp: "Authenticator app — Matrx signs in fully automatically",
+  sms: "Text message (SMS) — you help at the verification step",
+  other: "Push notification / other — you help at the verification step",
+};
 
 /** The one field the server may generate. Its value never reaches this
  *  browser — the request omits it from `fields[]` entirely. */
@@ -181,8 +199,9 @@ export function VaultCreateDialog({
       handling: string;
     }[],
   ) => {
-    await onCreate(body, attachments);
+    const created = await onCreate(body, attachments);
     close(false);
+    return created;
   };
 
   const submitAssign = async (body: VaultAssignRequest) => {
@@ -754,7 +773,7 @@ function DefinitionForm({
       description?: string;
       handling: string;
     }[],
-  ) => Promise<void>;
+  ) => Promise<VaultItem>;
   onAssign: (body: VaultAssignRequest) => Promise<void>;
 }) {
   const byKey = useMemo(
@@ -798,6 +817,12 @@ function DefinitionForm({
   );
   const [uriMatchMode, setUriMatchMode] = useState<UriMatchMode>("host");
   const [browserFill, setBrowserFill] = useState(true);
+  // Two-factor is part of the ONE create recipe for a website login (Arman
+  // 2026-08-21): username + password + 2FA choice captured together. An
+  // authenticator seed enrolls on THIS item right after create; a non-app
+  // method is recorded so agents know to hand control back at verification.
+  const [twoFactor, setTwoFactor] = useState<TwoFactorChoice>("off");
+  const [totpInput, setTotpInput] = useState("");
   const [notes, setNotes] = useState("");
   const [metaValues, setMetaValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(extraMetaDefs.map((d) => [d.field_key, ""])),
@@ -841,6 +866,17 @@ function DefinitionForm({
     );
   }
   if (attachmentOnly && !attachmentFile) problems.push("Choose a file.");
+  if (isWebsiteLogin && !assigning && twoFactor === "totp") {
+    try {
+      parseEnrollmentInput(totpInput);
+    } catch (err) {
+      problems.push(
+        err instanceof InvalidEnrollmentInputError
+          ? err.message
+          : "That authenticator setup key could not be read.",
+      );
+    }
+  }
   if (attachmentOnly && !attachmentLabel.trim())
     problems.push("A file label is required.");
   for (const draft of drafts) {
@@ -904,6 +940,17 @@ function DefinitionForm({
         value: (metaValues[d.field_key] ?? "").trim(),
       }))
       .filter((entry) => entry.value.length > 0);
+    // A non-app 2FA method is plaintext account knowledge: agents read it and
+    // KNOW to hand control back at the verification step instead of failing.
+    // (The authenticator-app case writes nothing here — enrollment stamps the
+    // server-owned totp_* metadata on this same item.)
+    if (isWebsiteLogin && !assigning && (twoFactor === "sms" || twoFactor === "other")) {
+      extras.push({
+        key: "mfa_method",
+        label: "Two-factor method",
+        value: twoFactor === "sms" ? "sms" : "push_or_other",
+      });
+    }
     return {
       login_urls: urls.length > 0 ? urls : null,
       uri_match_mode: urls.length > 0 ? uriMatchMode : null,
@@ -935,7 +982,7 @@ function DefinitionForm({
       return;
     }
 
-    await onCreate(
+    const created = await onCreate(
       {
         principal: toPrincipalIn(principal),
         display_name: displayName.trim(),
@@ -958,6 +1005,20 @@ function DefinitionForm({
           ]
         : undefined,
     );
+    // The 2FA half of the recipe: the seed enrolls on the SAME item, in the
+    // same user action. The login itself was created — an enrollment failure
+    // must not roll that back, only tell the person how to finish.
+    if (isWebsiteLogin && twoFactor === "totp" && created?.id) {
+      try {
+        await enrollAuthenticator(created.id, totpInput.trim());
+        toast.success("Login saved with its authenticator — sign-in is fully automatic.");
+      } catch {
+        toast.error(
+          "The login was saved, but the authenticator could not be enrolled. " +
+            "Open the login in your Vault and add the setup key there.",
+        );
+      }
+    }
   };
 
   return (
@@ -1178,6 +1239,61 @@ function DefinitionForm({
                 </span>
               </label>
             </div>
+          )}
+        </div>
+      )}
+
+      {isWebsiteLogin && !assigning && !attachmentOnly && (
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Two-factor authentication</Label>
+            <Select
+              value={twoFactor}
+              onValueChange={(next) => setTwoFactor(next as TwoFactorChoice)}
+            >
+              <SelectTrigger
+                className="h-7 text-xs"
+                aria-label="Two-factor authentication"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(TWO_FACTOR_LABELS) as TwoFactorChoice[]).map(
+                  (choice) => (
+                    <SelectItem key={choice} value={choice}>
+                      {TWO_FACTOR_LABELS[choice]}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          {twoFactor === "totp" && (
+            <div className="space-y-1">
+              <Label htmlFor="vault-create-totp" className="text-xs">
+                Authenticator setup key
+              </Label>
+              <Input
+                id="vault-create-totp"
+                value={totpInput}
+                onChange={(e) => setTotpInput(e.target.value)}
+                placeholder="Paste the otpauth:// link or the manual setup key"
+                autoComplete="off"
+                spellCheck={false}
+                className="h-7 font-mono text-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                From the site&apos;s &ldquo;set up an authenticator app&rdquo;
+                step. The seed is sealed on this login — codes are generated
+                and typed for you; nobody, including agents, can read it back.
+              </p>
+            </div>
+          )}
+          {(twoFactor === "sms" || twoFactor === "other") && (
+            <p className="text-xs text-muted-foreground">
+              Saved with the login so Matrx knows to hand control back to you
+              at the verification step instead of getting stuck.
+            </p>
           )}
         </div>
       )}
@@ -1433,7 +1549,7 @@ function CustomBuilder({
   principal: VaultPrincipal;
   mode: CreateMode;
   busy: boolean;
-  onCreate: (body: VaultItemCreateRequest) => Promise<void>;
+  onCreate: (body: VaultItemCreateRequest) => Promise<VaultItem>;
   onAssign: (body: VaultAssignRequest) => Promise<void>;
 }) {
   const [displayName, setDisplayName] = useState("");

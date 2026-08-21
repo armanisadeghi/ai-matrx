@@ -3,15 +3,17 @@
 /**
  * ScreenshotFace — "show me what's happening" (D-8 tier 2 / D-21).
  *
- * A bounded, user-initiated request for periodic stills. Fresh ~every 5s while
- * open; auto-off after 5 minutes without interaction; always re-armable; and a
- * visible way out at all times. This is never an ambient feed.
+ * A bounded, user-initiated request for stills. Event-driven first: a fresh
+ * capture the moment the agent acts on the page, a slow idle heartbeat in
+ * between, and an opt-in Rapid mode for self-animating pages. Auto-off after
+ * 5 minutes without interaction; always re-armable; and a visible way out at
+ * all times. This is never an ambient feed.
  */
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
-import { Camera, CameraOff, RefreshCw, Eye } from "lucide-react";
+import { Camera, CameraOff, RefreshCw, Eye, Zap } from "lucide-react";
 import type { ScreenshotFrame } from "../types";
 
 function Countdown({ autoOffAt }: { autoOffAt: number | null }) {
@@ -38,6 +40,8 @@ export function ScreenshotFace({
   onStart,
   onStop,
   onRearm,
+  rapid,
+  onToggleRapid,
   disabled,
   className,
 }: {
@@ -47,6 +51,10 @@ export function ScreenshotFace({
   onStart: () => void;
   onStop: () => void;
   onRearm: () => void;
+  /** Rapid mode: frequent timed captures for pages that animate without
+   * tool activity. Normal mode is event-driven + a slow idle heartbeat. */
+  rapid?: boolean;
+  onToggleRapid?: () => void;
   disabled?: boolean;
   className?: string;
 }) {
@@ -63,6 +71,22 @@ export function ScreenshotFace({
           {active ? (
             <>
               <Countdown autoOffAt={autoOffAt} />
+              {onToggleRapid && (
+                <Button
+                  size="sm"
+                  variant={rapid ? "secondary" : "ghost"}
+                  onClick={onToggleRapid}
+                  disabled={disabled}
+                  title={
+                    rapid
+                      ? "Rapid: capturing every couple of seconds"
+                      : "Capture rapidly (for pages that change on their own)"
+                  }
+                >
+                  <Zap className="mr-1 h-3.5 w-3.5" />
+                  Rapid
+                </Button>
+              )}
               <Button size="sm" variant="ghost" onClick={onRearm} disabled={disabled}>
                 <RefreshCw className="mr-1 h-3.5 w-3.5" />
                 Keep watching
@@ -84,9 +108,10 @@ export function ScreenshotFace({
       <div className="flex-1 overflow-auto p-3">
         {!active && frames.length === 0 ? (
           <p className="mx-auto max-w-sm pt-8 text-center text-sm text-muted-foreground">
-            Press <strong>Show me what&apos;s happening</strong> to get a fresh picture of the
-            page about every 5 seconds. It stops on its own after 5 minutes so nothing runs in
-            the background — you can start it again any time.
+            Press <strong>Show me what&apos;s happening</strong> to watch the page: a fresh
+            picture the moment your agent acts, plus a refresh every few seconds in between.
+            It stops on its own after 5 minutes so nothing runs in the background — you can
+            start it again any time.
           </p>
         ) : (
           <div className="flex flex-col gap-3">

@@ -60,7 +60,10 @@ export function CloudBrowserBody({
   className,
 }: CloudBrowserBodyProps) {
   const cb = useCloudBrowser(initialProfileId);
-  const shots = useScreenshotSession(cb.run?.id ?? null);
+  // Rapid = per-session opt-in for visually busy pages; captures are otherwise
+  // event-driven (browser tool activity) with a slow idle heartbeat.
+  const [rapidShots, setRapidShots] = useState(false);
+  const shots = useScreenshotSession(cb.run?.id ?? null, rapidShots);
 
   const [busy, setBusy] = useState(false);
   const [ticket, setTicket] = useState<StreamTicketEnvelope | null>(null);
@@ -231,6 +234,8 @@ export function CloudBrowserBody({
                   onStart={shots.start}
                   onStop={shots.stop}
                   onRearm={shots.rearm}
+                  rapid={rapidShots}
+                  onToggleRapid={() => setRapidShots((r) => !r)}
                   disabled={!cb.run}
                 />
               ) : (
