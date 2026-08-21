@@ -77,6 +77,7 @@ export interface NodeCompletedEvent {
   output_kind_version: number | null;
   output_kind_degraded: string | null;
   metadata: Record<string, unknown> | null;
+  wrapper: Record<string, unknown> | null;
 }
 
 export interface NodeSkippedEvent {
