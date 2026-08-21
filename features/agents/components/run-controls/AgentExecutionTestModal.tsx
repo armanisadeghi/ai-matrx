@@ -124,6 +124,7 @@ function DirectTestMode({
           defaultVariables: variables,
         },
         runtime: {
+          surfaceName: null,
           userInput: userInput || "Hello, please respond briefly.",
         },
       });
@@ -261,6 +262,7 @@ function InlineTestMode({
           defaultVariables: { ...variables, selection: selectedText },
         },
         runtime: {
+          surfaceName: null,
           userInput: userInput || `Process this text: "${selectedText}"`,
         },
       });
@@ -439,6 +441,7 @@ function BackgroundTestMode({
           defaultVariables: variables,
         },
         runtime: {
+          surfaceName: null,
           userInput: userInput || "Respond briefly with one sentence.",
           widgetHandleId,
         },

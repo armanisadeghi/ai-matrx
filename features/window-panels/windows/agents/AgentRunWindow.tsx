@@ -294,6 +294,9 @@ function AgentRunBody({
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
+    // A floating runner can sit above any feature surface. Its agent is the
+    // primary interaction here, so the page underneath must not be adopted.
+    runtime: { surfaceName: null },
     ready: !isInitializing,
     preferFresh: hasDraft,
   });

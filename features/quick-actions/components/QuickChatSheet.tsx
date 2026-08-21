@@ -164,6 +164,9 @@ function QuickChatSheetBody({
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
     surfaceKey: currentLiveSurfaceKey,
     sourceFeature: SOURCE_FEATURE,
+    // Quick Chat mirrors /chat: it is its own primary conversation and can be
+    // opened over any page, so inheriting the page below would be accidental.
+    runtime: { surfaceName: null },
     ready: !loadedConversationId,
     config: { responseDensity: "compact" },
   });

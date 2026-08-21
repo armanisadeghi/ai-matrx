@@ -158,6 +158,10 @@ export function buildWidgetLaunchDraft(
         ...(overrides ? { llmOverrides: overrides } : {}),
       },
       runtime: {
+        // The widget lab is testing the selected agent itself. Only the
+        // explicit sample/application scope below belongs in the run; never
+        // auto-adopt the surrounding agent administration page.
+        surfaceName: null,
         ...(state.userInput ? { userInput: state.userInput } : {}),
         ...(state.includeEditorContext && state.editorSelection
           ? { originalText: state.editorSelection }

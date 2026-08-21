@@ -158,6 +158,15 @@ export interface ConversationInvocationScope {
    * invocation time from `appContextSlice`.
    */
   applicationScope?: ApplicationScope;
+  /**
+   * Controls mounted Surface Runtime adoption for this conversation.
+   *
+   * - a string: this agent acts on that surface;
+   * - `undefined`: the launcher may adopt the deepest mounted surface;
+   * - `null`: this conversation IS the primary agent experience, so it must
+   *   not inherit the surrounding page as context or stamp it for later turns.
+   */
+  surfaceName?: string | null;
 }
 
 // =============================================================================

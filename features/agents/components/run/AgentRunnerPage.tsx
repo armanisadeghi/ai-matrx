@@ -207,6 +207,10 @@ export function AgentRunnerPage({
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature,
+    // This conversation IS the run page's primary agent. Keep the mounted
+    // provider for outside assists/write targets, but never hand this agent
+    // the run page's own agent definition, transcript, or run evidence.
+    runtime: { surfaceName: null },
     ready: !isInitializing && (!preferFresh || isFreshRoute),
     preferFresh: isFreshRoute,
     freshSessionKey: isFreshRoute ? freshSessionKey : 0,

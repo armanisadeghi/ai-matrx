@@ -52,6 +52,10 @@ export function AgentBuilderRightPanel({
     engine: { kind: "agent", agentId },
     routing: { apiEndpointMode: "manual" },
     origin: { origin: "manual", sourceFeature },
+    // This test conversation IS the agent being built. The surrounding
+    // agent-builder surface remains available to outside assists, but feeding
+    // its prompts/settings back into the tested agent would be self-context.
+    scope: { surfaceName: null },
     display: {
       showAutoClearToggle: true,
       autoClearConversation: true,

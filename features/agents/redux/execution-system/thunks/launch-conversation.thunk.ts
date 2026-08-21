@@ -112,6 +112,9 @@ export function invocationToManagedOptions(
       ...(scope?.applicationScope !== undefined
         ? { applicationScope: scope.applicationScope }
         : {}),
+      ...(scope?.surfaceName !== undefined
+        ? { surfaceName: scope.surfaceName }
+        : {}),
       ...(inputs?.userInput !== undefined
         ? { userInput: inputs.userInput }
         : {}),
