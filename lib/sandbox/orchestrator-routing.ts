@@ -7,6 +7,19 @@
  * `/fs/*`, `/git/*`, `/extend`, …) reads the row, resolves the tier, and
  * forwards to the matching orchestrator URL with the matching API key.
  *
+ * 🚨 TWO KEYS IS INTENTIONAL — NEVER "SIMPLIFY" TO ONE. Each orchestrator
+ * host generates its OWN master `MATRX_API_KEY` (matrx-sandbox
+ * docs/OPERATIONS.md, secrets table). There is no shared key: presenting the
+ * hosted key to the EC2 orchestrator (or vice versa) is a guaranteed
+ * 403 `{"detail":"Invalid API key."}` — which downstream code reads as a dead
+ * sandbox even though the box is healthy. That exact confusion (a consumer
+ * assuming one shared key) hard-failed a live user session on 2026-08-21;
+ * aidream now mirrors this per-tier split as SANDBOX_ORCHESTRATOR_API_KEY
+ * (hosted) / SANDBOX_EC2_ORCHESTRATOR_API_KEY (see its
+ * services/sandboxes/FEATURE.md). If a key is rotated on an orchestrator,
+ * BOTH consumers must be updated: this repo's Vercel env AND aidream's server
+ * env.
+ *
  * This is a server-only module — never import from a Client Component.
  */
 
