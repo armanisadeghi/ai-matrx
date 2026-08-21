@@ -12,6 +12,7 @@ import { LayoutTemplate } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { PeekProps } from "../types";
 
 interface MessageTemplateRow {
@@ -84,9 +85,7 @@ export default function MessageTemplatePeek({ id, open, onClose }: PeekProps) {
           </PeekField>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Message template not found.
-        </p>
+        <AccessGate token="message_template" id={id} />
       )}
     </PeekDialog>
   );
