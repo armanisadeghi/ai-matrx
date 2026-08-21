@@ -136,6 +136,7 @@ export async function transferGuestDataAfterOAuth(
     const { data: got, error: getErr } = await admin.auth.admin.getUserById(anonId);
     if (getErr || !got?.user) {
       console.error(
+        // access-errors: ok — server-log-only diagnostic; the absence was verified via the service-role Auth Admin API (getUserById), which RLS cannot mask
         "[guest-oauth-transfer] LOUD: mapped auth_user_id not found — stale guest row:",
         getErr?.message,
       );

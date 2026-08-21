@@ -61,6 +61,7 @@ export async function resolveCloudFileUrl(
 ): Promise<ResolvedCloudUrl> {
   const file = getCloudFile(store, fileId);
   if (!file) {
+    // access-errors: ok — existence check against the browser-local cloudFiles Redux cache, not a DB read; the id is verifiably absent from the local store
     throw new Error(`Cloud file not found in store: ${fileId}`);
   }
   const url = await fileHandler
@@ -108,6 +109,7 @@ export async function resolveCloudFileToImageSource(
 ): Promise<ImageSource> {
   const file = getCloudFile(store, fileId);
   if (!file) {
+    // access-errors: ok — existence check against the browser-local cloudFiles Redux cache, not a DB read; the id is verifiably absent from the local store
     throw new Error(`Cloud file not found in store: ${fileId}`);
   }
   const resolved = await resolveCloudFileUrl(store, fileId);

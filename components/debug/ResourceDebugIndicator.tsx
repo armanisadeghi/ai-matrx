@@ -157,6 +157,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
 
   const generateMessagePreview = () => {
     if (!instance) {
+      // access-errors: ok — developer-only debug panel; console log about a browser-local Redux instance, never rendered to a user
       console.error("Instance not found");
       return;
     }

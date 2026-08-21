@@ -99,6 +99,7 @@ async function resolveAgentUserId(
     if (error || !accountId) {
       throw new Error(
         `agent feedback cannot be attributed: ${agentId ?? "no agent id"} is not a Matrx user and ` +
+          // access-errors: ok — developer/agent-facing MCP-surface error; the canonical definer resolver on the service-role client returned no user, so the absence is verified, not guessed
           `the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL} was not found`,
       );
     }
@@ -202,6 +203,7 @@ export async function getFeedbackItem(
 
     if (error) return { success: false, error: error.message };
     if (data === null) {
+      // access-errors: ok — service-role (admin) client read, so RLS cannot hide the row; zero rows is a verified absence, and the string goes to the agent MCP surface, not a user screen
       return { success: false, error: "Feedback item not found" };
     }
     return { success: true, data: mapUserFeedbackRow(data) };

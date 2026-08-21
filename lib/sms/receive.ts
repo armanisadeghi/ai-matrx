@@ -122,6 +122,7 @@ export async function claimInboundSmsReceipt(
     .single();
   if (existingError || !existing) {
     throw new Error(
+      // access-errors: ok — webhook-pipeline throw that lands in server logs only; the service-role read follows a proven 23505 duplicate insert, so RLS cannot be the cause and no user sees this text
       `Failed to load duplicate inbound SMS receipt: ${existingError?.message ?? "not found"}`,
     );
   }
@@ -802,6 +803,7 @@ export async function processInboundSms(
         .single();
     if (existingMessageError || !existingMessage) {
       throw new Error(
+        // access-errors: ok — webhook-pipeline throw that lands in server logs only; the service-role read follows a proven 23505 duplicate insert, so RLS cannot be the cause and no user sees this text
         `Failed to recover idempotent inbound SMS: ${existingMessageError?.message ?? "not found"}`,
       );
     }

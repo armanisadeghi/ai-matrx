@@ -12,6 +12,7 @@
  */
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 
 /**
@@ -50,7 +51,7 @@ export async function findOrCreateDirectConversation(
     .eq("id", conversationId as string)
     .single();
   if (convError || !conv) {
-    throw convError ?? new Error("DM conversation not found");
+    throw operationFailed("start this conversation", convError ?? undefined);
   }
 
   return {

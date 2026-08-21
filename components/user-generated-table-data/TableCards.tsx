@@ -314,6 +314,7 @@ export default function TableCards() {
       setTables(tables.filter((table) => table.id !== tableToDelete.id));
       toast({
         title: "Table deleted",
+        // access-errors: ok — success confirmation after the delete_user_table RPC returned without error; the deletion was performed here, not inferred from an empty read
         description: `"${tableToDelete.table_name}" has been deleted successfully`,
       });
     } catch (err) {

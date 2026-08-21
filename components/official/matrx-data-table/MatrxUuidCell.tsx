@@ -156,6 +156,7 @@ export function MatrxUuidCell({
     try {
       const result = await onOpen(value);
       if (result === "forbidden") {
+        // access-errors: ok — relays the onOpen contract's explicit verdict: the caller's opener returns "forbidden" only after ITS OWN access check; the cell performs no read and never guesses
         toast.error("You don't have access to open this record");
       }
     } catch (err) {

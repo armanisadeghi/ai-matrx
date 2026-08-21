@@ -105,6 +105,7 @@ const textDiffSlice = createSlice({
       const pendingIndex = state.pendingDiffs.findIndex((d) => d.id === diffId);
 
       if (pendingIndex === -1) {
+        // access-errors: ok — lookup in the reducer's own in-memory pendingDiffs array, not a DB read; absence was verified here
         state.error = `Diff ${diffId} not found in pending`;
         return;
       }
@@ -143,6 +144,7 @@ const textDiffSlice = createSlice({
       const pendingIndex = state.pendingDiffs.findIndex((d) => d.id === diffId);
 
       if (pendingIndex === -1) {
+        // access-errors: ok — lookup in the reducer's own in-memory pendingDiffs array, not a DB read; absence was verified here
         state.error = `Diff ${diffId} not found in pending`;
         return;
       }

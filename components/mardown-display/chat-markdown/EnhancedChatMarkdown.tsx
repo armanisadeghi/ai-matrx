@@ -709,6 +709,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         const idx = currentContent.indexOf(original);
         if (idx === -1) {
           console.warn(
+            // access-errors: ok — console-only diagnostic about an in-memory substring comparison performed here (indexOf === -1), no record read involved
             "[MarkdownStream] replaceBlockContent: original substring not found in content.",
             { originalLen: original.length, contentLen: currentContent.length },
           );

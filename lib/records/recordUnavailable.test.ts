@@ -46,6 +46,7 @@ describe("recordUnavailable capture reconciliation", () => {
       tier: "yellow",
       tierRuleId: "record-unavailable-resolved-denial",
       message: "Zero-row read for site site-1 (denied)",
+      // access-errors: ok — test expectation asserting the canonical resolver's own output verbatim; compared, never shown
       userMessage: "You don't have access to this site.",
       raw: { reason: "denied" },
     });

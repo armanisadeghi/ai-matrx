@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabase/client';
+import { operationFailed } from '@/utils/errors';
 import type {
   HierarchyData,
   HierarchyOrg,
@@ -25,7 +26,7 @@ export function useHierarchyFilter(): UseHierarchyFilterReturn {
     try {
       const { data: result, error: rpcError } = await supabase.rpc('get_user_hierarchy');
 
-      if (rpcError) throw new Error(rpcError.message);
+      if (rpcError) throw operationFailed('load your organizations and projects', rpcError);
 
       const typed = result as HierarchyData;
       setData({

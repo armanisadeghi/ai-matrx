@@ -253,6 +253,7 @@ export const executeIntelligentProcessor = async <T = unknown>(
     // Get processor definition
     const processorEntry = getProcessorEntry(processorId);
     if (!processorEntry) {
+        // access-errors: ok — console-only developer diagnostic about a lookup in the in-code processor registry, not a record read
         console.warn(`Processor with ID "${processorId}" not found`);
         return {} as T;
     }
@@ -310,6 +311,7 @@ export const executeIntelligentProcessor = async <T = unknown>(
         if (configId && !resolvedConfig) {
             resolvedConfig = getConfigObject(configId);
             if (!resolvedConfig) {
+                // access-errors: ok — console-only developer diagnostic about a lookup in the in-code config registry, not a record read
                 console.warn(`Config with ID "${configId}" not found for processor "${processorId}"`);
                 return {} as T;
             }

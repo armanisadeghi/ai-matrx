@@ -13,6 +13,7 @@
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   selectModelById,
   type AIModel,
@@ -228,7 +229,13 @@ export const loadAgentSettings = createAsyncThunk(
 
       if (error) throw error;
       if (!data)
-        throw new Error(`Agent ${agentId} not found (source: ${source})`);
+        throw recordUnavailable({
+          entity: "agent",
+          reason: "unknown",
+          recordId: agentId,
+          token: "agent",
+          relation: "agent.definition",
+        });
 
       const rawSettings = data.settings as AgentSettings;
       // `variable_defaults` is a JSONB column (typed `Json | null` by Supabase).
@@ -311,11 +318,13 @@ export const requestModelSwitch = createAsyncThunk(
     const newModel = selectModelById(state, newModelId);
 
     if (!newModel) {
+      // access-errors: ok — lookup in the browser-local model registry slice (Redux state), not a DB read; absence was verified here
       return rejectWithValue(`Model ${newModelId} not found in registry`);
     }
 
     const entry = state.agentSettings?.entries[agentId];
     if (!entry) {
+      // access-errors: ok — lookup in the browser-local agentSettings slice (Redux state), not a DB read; absence was verified here
       return rejectWithValue(`Agent ${agentId} not found in agentSettings`);
     }
 
@@ -385,6 +394,7 @@ export const saveAgentSettings = createAsyncThunk(
     const entry = state.agentSettings?.entries[agentId];
 
     if (!entry) {
+      // access-errors: ok — lookup in the browser-local agentSettings slice (Redux state), not a DB read; absence was verified here
       return rejectWithValue(`Agent ${agentId} not found`);
     }
 

@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { Database } from "@/types/database.types";
 import {
@@ -59,7 +60,7 @@ export async function saveOutputFeedback(
     .returns<OutputFeedbackRow>();
 
   if (error) {
-    throw new Error(error.message || "Failed to save feedback");
+    throw operationFailed("save your feedback", error);
   }
   if (!data) {
     throw new Error("upsert_output_feedback returned no row");
@@ -78,7 +79,7 @@ export async function clearOutputFeedback(
       p_subject_id: subject.subjectId,
     });
   if (error) {
-    throw new Error(error.message || "Failed to clear feedback");
+    throw operationFailed("clear your feedback", error);
   }
 }
 

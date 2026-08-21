@@ -24,6 +24,7 @@
  */
 
 import { createClient } from "@/utils/supabase/server";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { SandboxConfig, SandboxTier } from "@/types/sandbox";
 
 const LOG = "[sandbox-orchestrator-env]";
@@ -158,7 +159,17 @@ export async function lookupSandboxAndOrchestrator(
     .single();
 
   if (error || !data) {
-    return { ok: false, status: 404, error: "Sandbox instance not found" };
+    return {
+      ok: false,
+      status: 404,
+      error: recordUnavailable({
+        entity: "sandbox",
+        reason: "unknown",
+        recordId: sandboxRowId,
+        token: "sandbox_instance",
+        relation: "sandbox_instances",
+      }).message,
+    };
   }
 
   // Prefer the dedicated `tier` column; fall back to `config.tier` for rows
