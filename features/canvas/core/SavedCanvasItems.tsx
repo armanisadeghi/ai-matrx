@@ -336,7 +336,7 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
                 </div>
 
                 {/* Share indicator */}
-                {item.is_public && (
+                {item.visibility === "public" && (
                   <div className="absolute bottom-3 left-3">
                     <Badge variant="secondary" className="text-xs">
                       <ExternalLink className="w-3 h-3 mr-1" />

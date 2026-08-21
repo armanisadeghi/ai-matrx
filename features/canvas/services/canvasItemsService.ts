@@ -44,7 +44,7 @@ function mapDbRowToCanvasItemRow(row: CanvasItemDbRow): CanvasItemRow {
     session_id: row.session_id,
     source_message_id: row.source_message_id,
     task_id: row.task_id,
-    is_public: row.is_public ?? false,
+    visibility: row.visibility ?? "internal",
     content_hash: row.content_hash,
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",
@@ -65,7 +65,8 @@ export interface CanvasItemRow {
   session_id: string | null;
   source_message_id: string | null;
   task_id: string | null;
-  is_public: boolean;
+  /** Canonical access driver (db-rules §6a); replaced the legacy `is_public`. */
+  visibility: string;
   content_hash: string | null;
   created_at: string;
   updated_at: string;
