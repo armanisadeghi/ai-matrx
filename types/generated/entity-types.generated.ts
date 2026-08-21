@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 411 active entity tokens. A token here is FK-valid for
+// 413 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -333,6 +333,8 @@ export type EntityTypeToken =
   | "seo_site_topic_value"
   | "seo_site_vocabulary"
   | "seo_source_request"
+  | "seo_starter_pack"
+  | "seo_starter_pack_item"
   | "seo_story_angle"
   | "seo_topic"
   | "seo_web_analytics_daily"
@@ -1021,6 +1023,8 @@ export type ScopeableEntityToken =
   | "seo_site_topic_value"
   | "seo_site_vocabulary"
   | "seo_source_request"
+  | "seo_starter_pack"
+  | "seo_starter_pack_item"
   | "seo_story_angle"
   | "seo_topic"
   | "seo_web_analytics_daily"
@@ -1177,6 +1181,7 @@ export type ListedEntityToken =
   | "purpose"
   | "research_context_bundle"
   | "rulebook"
+  | "seo_starter_pack"
   | "structured_list"
   | "surface"
   | "workbook"
@@ -1483,6 +1488,8 @@ export const ENTITY_TYPE_METADATA = {
   "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_vocabulary": { token: "seo_site_vocabulary", schema: "seo", table: "site_vocabulary", label: "Site Vocabulary", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_source_request": { token: "seo_source_request", schema: "seo", table: "source_request", label: "SEO Source Request", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_starter_pack": { token: "seo_starter_pack", schema: "seo", table: "starter_pack", label: "SEO Industry Starter Pack", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_starter_pack_item": { token: "seo_starter_pack_item", schema: "seo", table: "starter_pack_item", label: "SEO Starter Pack Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_story_angle": { token: "seo_story_angle", schema: "seo", table: "story_angle", label: "SEO Story Angle", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_topic": { token: "seo_topic", schema: "seo", table: "topic", label: "SEO Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "seo_web_analytics_daily": { token: "seo_web_analytics_daily", schema: "seo", table: "web_analytics_daily", label: "Web Analytics Daily", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1898,6 +1905,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_site_topic_value",
   "seo_site_vocabulary",
   "seo_source_request",
+  "seo_starter_pack",
+  "seo_starter_pack_item",
   "seo_story_angle",
   "seo_topic",
   "seo_web_analytics_daily",

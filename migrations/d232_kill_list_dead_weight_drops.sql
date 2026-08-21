@@ -1,0 +1,32 @@
+-- D232 §D (part 1) — kill-list columns that are PURE DEAD WEIGHT: drop them.
+--
+-- db-rules §6a: retiring an `is_public` boolean has three correct outcomes —
+-- map it to `visibility`, map it to an access check, or drop it as dead weight —
+-- and the choice is made by MEASURING the disagreement first. Measured live
+-- 2026-08-21, immediately before this migration:
+--
+--   canvas.canvas_comments.deleted        0 rows in the table at all.
+--                                         `deleted_at` is present and canonical.
+--   public.sandbox_instances.is_public    283 rows, 0 with is_public = true.
+--                                         Zero consumers: no DB function, view or
+--                                         policy names it, and no reference exists
+--                                         in matrx-frontend or aidream (the two
+--                                         admin routes `select("*")`, which a dropped
+--                                         column does not break).
+--
+-- Both are outcome (3): nothing to map, nobody reading, the column is weight.
+--
+-- NOT in this file, and deliberately:
+--   canvas.canvas_items.is_public  — has a live reader (the /maps list). Its code
+--     repoint ships first; the drop follows the deployed SHA (doctrine §8a-1).
+--   legal.wc_claim.is_public       — written by aidream's WC router; bivalent
+--     bridge + code repoint first (d232_wc_claim_visibility_bivalent.sql).
+--   workbench.udt_*.is_public      — 15 RPCs, 3 child RLS policies and a shared
+--     bridge trigger read it; filed as its own item (D235).
+--   billing.plan.is_public         — NOT the killed concept: a merchandising flag
+--     ("shows on /pricing") on a text-PK global price list with no owner, no org
+--     and no `visibility` column. It is not an access driver, so there is nothing
+--     to migrate. Dispositioned, not cut.
+
+alter table canvas.canvas_comments drop column if exists deleted;
+alter table public.sandbox_instances drop column if exists is_public;

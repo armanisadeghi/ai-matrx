@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "schema": "billing",
+    "table": "plan",
+    "reason": "The global price list. PK is `id TEXT` ('personal-pro', 'company-pro') by design, so it structurally cannot satisfy the base contract's `id uuid`; it has no organization_id, no owner and no visibility. Nobody owns, shares or browses a plan row — repricing is an INSERT/UPDATE here. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "billing",
+    "table": "org_plan",
+    "reason": "PK is `organization_id` — the row IS the org's tier grant, not a thing with its own identity. Absence of a row means 'no org grant', which an entity id could not express. Config, not entity. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "billing",
+    "table": "user_plan",
+    "reason": "PK is `user_id` — the user-side counterpart of billing.org_plan, same shape and same reasoning: one keyed grant row per subject, no independent identity. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "crm",
+    "table": "jurisdiction_policy",
+    "reason": "PK is `country_code`. Platform-global legal reference data, explicitly following the iam.industries precedent in migrations/crm_06_compliance.sql: 'everyone reads, nobody writes directly. An org does not get its own opinion about German law.' D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "crm",
+    "table": "unsubscribe_token",
+    "reason": "PK is `token` — an opaque anon-redeemable capability, minted and read only through SECURITY DEFINER RPCs (crm_06_compliance.sql: 'A table anon can select is a table anon can enumerate'). Registering it would put a browsable identity on a secret. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "platform",
+    "table": "org_change_policy",
+    "reason": "PK is `(organization_id, change_type_key)` — a per-org override of platform.change_type_default. Keyed policy config with no independent identity; 0 rows live. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "platform",
+    "table": "retention_policy",
+    "reason": "Declared a non-entity in its own creating migration (aidream db/migrations/0415_data_lifecycle_retention_policy.sql): 'Like platform.feature_knob, this is deliberately NOT a canonical entity table: a configuration registry with no owner and nothing shareable.' Lifecycle RULES keyed by scope/entity_token, deliberately with no client write path. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "content_ir",
+    "table": "io_contract",
+    "reason": "Machine-minted ABI type signatures for node/tool/agent boundaries, 1157 of 1188 rows on the system org. Its own table comment is the ruling: 'A row here is a TYPE SIGNATURE, never a Shape: it has no component, no renderer, no activation.' Written only by aidream's sync publisher, upserted on (organization_id, slug). Plumbing. D232 §A, 2026-08-21."
+  },
+  {
+    "schema": "crm",
+    "table": "outreach_acceptance",
+    "reason": "THE ONE GENUINE ENTITY CANDIDATE IN D232 §A, deliberately left unregistered pending a decision — NOT a settled non-entity. It is append-only legal evidence (AUP acceptance per org+lane) whose RLS was designed for that purpose: authenticated INSERT gated on is_org_member AND accepted_by = auth.uid(), inserted DIRECTLY by the client (features/crm/compliance/service.ts). Canonicalizing it to the `ledger` variant replaces those policies with svc_all + std_select, which REMOVES the client INSERT and breaks the live AUP gate on /crm/sending-identities. Doing it right needs a SECURITY DEFINER accept RPC, an FE repoint, and apply_rls sequenced AFTER that deploy (doctrine §8a-2). Filed as its own item — D236. D232 §A, 2026-08-21."
+  }
+]

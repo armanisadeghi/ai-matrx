@@ -6628,7 +6628,6 @@ export type Database = {
           content: string
           created_at: string | null
           created_by: string | null
-          deleted: boolean | null
           deleted_at: string | null
           display_name: string | null
           edited: boolean | null
@@ -6652,7 +6651,6 @@ export type Database = {
           content: string
           created_at?: string | null
           created_by?: string | null
-          deleted?: boolean | null
           deleted_at?: string | null
           display_name?: string | null
           edited?: boolean | null
@@ -6676,7 +6674,6 @@ export type Database = {
           content?: string
           created_at?: string | null
           created_by?: string | null
-          deleted?: boolean | null
           deleted_at?: string | null
           display_name?: string | null
           edited?: boolean | null
@@ -9683,6 +9680,10 @@ export type Database = {
           total_tokens: number
           user_id: string
         }[]
+      }
+      cx_overview_kpis: {
+        Args: { p_end?: string; p_start?: string; p_user_id?: string }
+        Returns: Json
       }
       cx_usage_analytics: {
         Args: { p_end?: string; p_start?: string }
@@ -19253,6 +19254,7 @@ export type Database = {
           analyzer_version: string
           classification: Json | null
           completed_at: string | null
+          deleted_at: string | null
           detectors_run: Json
           file_id: string
           metadata: Json
@@ -19271,6 +19273,7 @@ export type Database = {
           analyzer_version?: string
           classification?: Json | null
           completed_at?: string | null
+          deleted_at?: string | null
           detectors_run?: Json
           file_id: string
           metadata?: Json
@@ -19289,6 +19292,7 @@ export type Database = {
           analyzer_version?: string
           classification?: Json | null
           completed_at?: string | null
+          deleted_at?: string | null
           detectors_run?: Json
           file_id?: string
           metadata?: Json
@@ -19386,6 +19390,7 @@ export type Database = {
         Row: {
           canonical_value: string
           created_at: string
+          deleted_at: string | null
           file_id: string
           id: string
           is_user_named: boolean
@@ -19400,6 +19405,7 @@ export type Database = {
         Insert: {
           canonical_value: string
           created_at?: string
+          deleted_at?: string | null
           file_id: string
           id?: string
           is_user_named?: boolean
@@ -19414,6 +19420,7 @@ export type Database = {
         Update: {
           canonical_value?: string
           created_at?: string
+          deleted_at?: string | null
           file_id?: string
           id?: string
           is_user_named?: boolean
@@ -19756,6 +19763,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           file_id: string
           id: string
           metadata: Json
@@ -19769,6 +19777,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           file_id: string
           id?: string
           metadata?: Json
@@ -19782,6 +19791,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           file_id?: string
           id?: string
           metadata?: Json
@@ -19814,6 +19824,7 @@ export type Database = {
           bbox: Json
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           entity_id: string | null
           extracted_text: string | null
           extracted_text_source: string
@@ -19840,6 +19851,7 @@ export type Database = {
           bbox: Json
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           entity_id?: string | null
           extracted_text?: string | null
           extracted_text_source?: string
@@ -19866,6 +19878,7 @@ export type Database = {
           bbox?: Json
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           entity_id?: string | null
           extracted_text?: string | null
           extracted_text_source?: string
@@ -19922,6 +19935,7 @@ export type Database = {
       pages: {
         Row: {
           created_at: string
+          deleted_at: string | null
           excluded_at: string | null
           excluded_by: string | null
           excluded_reason: string | null
@@ -19944,6 +19958,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           excluded_at?: string | null
           excluded_by?: string | null
           excluded_reason?: string | null
@@ -19966,6 +19981,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           excluded_at?: string | null
           excluded_by?: string | null
           excluded_reason?: string | null
@@ -24832,7 +24848,7 @@ export type Database = {
           evaluator_name: string | null
           gender: string | null
           id: string
-          is_public: boolean
+          is_public: boolean | null
           job_offer_date: string | null
           large_employer: boolean
           metadata: Json
@@ -24862,7 +24878,7 @@ export type Database = {
           evaluator_name?: string | null
           gender?: string | null
           id?: string
-          is_public?: boolean
+          is_public?: boolean | null
           job_offer_date?: string | null
           large_employer?: boolean
           metadata?: Json
@@ -24892,7 +24908,7 @@ export type Database = {
           evaluator_name?: string | null
           gender?: string | null
           id?: string
-          is_public?: boolean
+          is_public?: boolean | null
           job_offer_date?: string | null
           large_employer?: boolean
           metadata?: Json
@@ -25953,6 +25969,7 @@ export type Database = {
           ciphertext: string | null
           confidence_tier: string
           created_at: string
+          deleted_at: string | null
           detector_kind: string
           detector_version: string
           expires_at: string | null
@@ -25975,6 +25992,7 @@ export type Database = {
           ciphertext?: string | null
           confidence_tier?: string
           created_at?: string
+          deleted_at?: string | null
           detector_kind?: string
           detector_version?: string
           expires_at?: string | null
@@ -25997,6 +26015,7 @@ export type Database = {
           ciphertext?: string | null
           confidence_tier?: string
           created_at?: string
+          deleted_at?: string | null
           detector_kind?: string
           detector_version?: string
           expires_at?: string | null
@@ -31207,7 +31226,6 @@ export type Database = {
           expires_at: string | null
           hot_path: string | null
           id: string
-          is_public: boolean
           labels: Json | null
           last_heartbeat_at: string | null
           metadata: Json
@@ -31239,7 +31257,6 @@ export type Database = {
           expires_at?: string | null
           hot_path?: string | null
           id?: string
-          is_public?: boolean
           labels?: Json | null
           last_heartbeat_at?: string | null
           metadata?: Json
@@ -31271,7 +31288,6 @@ export type Database = {
           expires_at?: string | null
           hot_path?: string | null
           id?: string
-          is_public?: boolean
           labels?: Json | null
           last_heartbeat_at?: string | null
           metadata?: Json
@@ -40960,6 +40976,7 @@ export type Database = {
           content_id: string
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           error: string | null
           id: string
           instructions: string | null
@@ -40983,6 +41000,7 @@ export type Database = {
           content_id: string
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           error?: string | null
           id?: string
           instructions?: string | null
@@ -41006,6 +41024,7 @@ export type Database = {
           content_id?: string
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           error?: string | null
           id?: string
           instructions?: string | null
@@ -41070,6 +41089,7 @@ export type Database = {
           content_hash: string | null
           content_type: string | null
           created_by: string | null
+          deleted_at: string | null
           extracted_images: Json | null
           extracted_links: Json | null
           failure_reason: string | null
@@ -41099,6 +41119,7 @@ export type Database = {
           content_hash?: string | null
           content_type?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           extracted_images?: Json | null
           extracted_links?: Json | null
           failure_reason?: string | null
@@ -41128,6 +41149,7 @@ export type Database = {
           content_hash?: string | null
           content_type?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           extracted_images?: Json | null
           extracted_links?: Json | null
           failure_reason?: string | null
@@ -41250,6 +41272,7 @@ export type Database = {
           content_structured: Json | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           error: string | null
           id: string
           is_current: boolean
@@ -41272,6 +41295,7 @@ export type Database = {
           content_structured?: Json | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           error?: string | null
           id?: string
           is_current?: boolean
@@ -41294,6 +41318,7 @@ export type Database = {
           content_structured?: Json | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           error?: string | null
           id?: string
           is_current?: boolean
@@ -41323,6 +41348,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           goal: string | null
           id: string
           is_stale: boolean | null
@@ -41343,6 +41369,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           goal?: string | null
           id?: string
           is_stale?: boolean | null
@@ -41363,6 +41390,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           goal?: string | null
           id?: string
           is_stale?: boolean | null
@@ -41396,6 +41424,7 @@ export type Database = {
           caption: string | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           file_id: string | null
           height: number | null
           id: string
@@ -41417,6 +41446,7 @@ export type Database = {
           caption?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           file_id?: string | null
           height?: number | null
           id?: string
@@ -41438,6 +41468,7 @@ export type Database = {
           caption?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           file_id?: string | null
           height?: number | null
           id?: string
@@ -41486,6 +41517,7 @@ export type Database = {
           authority_score: number | null
           authority_tier: string | null
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           discovered_at: string | null
           entity_match_confidence: number | null
@@ -41536,6 +41568,7 @@ export type Database = {
           authority_score?: number | null
           authority_tier?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           discovered_at?: string | null
           entity_match_confidence?: number | null
@@ -41586,6 +41619,7 @@ export type Database = {
           authority_score?: number | null
           authority_tier?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           discovered_at?: string | null
           entity_match_confidence?: number | null
@@ -41645,6 +41679,7 @@ export type Database = {
           agent_type: string
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           error: string | null
           id: string
           input_analysis_ids: Json | null
@@ -41673,6 +41708,7 @@ export type Database = {
           agent_type: string
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           error?: string | null
           id?: string
           input_analysis_ids?: Json | null
@@ -41701,6 +41737,7 @@ export type Database = {
           agent_type?: string
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           error?: string | null
           id?: string
           input_analysis_ids?: Json | null
@@ -41759,6 +41796,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           metadata: Json
@@ -41773,6 +41811,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           metadata?: Json
@@ -41787,6 +41826,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           metadata?: Json
@@ -42708,6 +42748,7 @@ export type Database = {
           claim_holder: string | null
           claimed_at: string | null
           created_at: string
+          deleted_at: string | null
           ended_at: string | null
           error: Json | null
           execution_id: string
@@ -42729,6 +42770,7 @@ export type Database = {
           claim_holder?: string | null
           claimed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
           ended_at?: string | null
           error?: Json | null
           execution_id: string
@@ -42750,6 +42792,7 @@ export type Database = {
           claim_holder?: string | null
           claimed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
           ended_at?: string | null
           error?: Json | null
           execution_id?: string
@@ -51895,6 +51938,7 @@ export type Database = {
           content: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           kind: string
           metadata: Json
@@ -51909,6 +51953,7 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           kind?: string
           metadata?: Json
@@ -51923,6 +51968,7 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           kind?: string
           metadata?: Json
@@ -52056,6 +52102,7 @@ export type Database = {
           chunk_index: number
           created_at: string
           created_by: string
+          deleted_at: string | null
           file_id: string
           id: string
           metadata: Json
@@ -52068,6 +52115,7 @@ export type Database = {
           chunk_index: number
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           file_id: string
           id?: string
           metadata?: Json
@@ -52080,6 +52128,7 @@ export type Database = {
           chunk_index?: number
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           file_id?: string
           id?: string
           metadata?: Json
@@ -52096,6 +52145,7 @@ export type Database = {
           audio_path: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           detached_at: string | null
           ended_at: string | null
           id: string
@@ -52117,6 +52167,7 @@ export type Database = {
           audio_path?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           detached_at?: string | null
           ended_at?: string | null
           id?: string
@@ -52138,6 +52189,7 @@ export type Database = {
           audio_path?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           detached_at?: string | null
           ended_at?: string | null
           id?: string
@@ -52255,6 +52307,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_slots: Json | null
+          deleted_at: string | null
           metadata: Json
           module_id: string
           module_interval_ms: number | null
@@ -52276,6 +52329,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_slots?: Json | null
+          deleted_at?: string | null
           metadata?: Json
           module_id?: string
           module_interval_ms?: number | null
@@ -52297,6 +52351,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_slots?: Json | null
+          deleted_at?: string | null
           metadata?: Json
           module_id?: string
           module_interval_ms?: number | null
@@ -58365,6 +58420,7 @@ export type Database = {
           created_by: string | null
           data_type: Database["public"]["Enums"]["field_data_type"]
           default_value: Json | null
+          deleted_at: string | null
           display_name: string
           field_name: string
           field_order: number
@@ -58385,6 +58441,7 @@ export type Database = {
           created_by?: string | null
           data_type?: Database["public"]["Enums"]["field_data_type"]
           default_value?: Json | null
+          deleted_at?: string | null
           display_name: string
           field_name: string
           field_order?: number
@@ -58405,6 +58462,7 @@ export type Database = {
           created_by?: string | null
           data_type?: Database["public"]["Enums"]["field_data_type"]
           default_value?: Json | null
+          deleted_at?: string | null
           display_name?: string
           field_name?: string
           field_order?: number
@@ -58468,6 +58526,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           data: Json
+          deleted_at: string | null
           id: string
           is_public: boolean
           metadata: Json
@@ -58482,6 +58541,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data: Json
+          deleted_at?: string | null
           id?: string
           is_public?: boolean
           metadata?: Json
@@ -58496,6 +58556,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data?: Json
+          deleted_at?: string | null
           id?: string
           is_public?: boolean
           metadata?: Json
@@ -58609,6 +58670,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          deleted_at: string | null
           description: string | null
           id: string
           is_public: boolean
@@ -58632,6 +58694,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean
@@ -58655,6 +58718,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean
@@ -58794,6 +58858,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           group_name: string | null
           help_text: string | null
@@ -58813,6 +58878,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           group_name?: string | null
           help_text?: string | null
@@ -58832,6 +58898,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           group_name?: string | null
           help_text?: string | null
@@ -58862,6 +58929,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          deleted_at: string | null
           description: string | null
           id: string
           is_public: boolean | null
@@ -58878,6 +58946,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -58894,6 +58963,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -58951,6 +59021,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          deleted_at: string | null
           description: string | null
           id: string
           is_public: boolean
@@ -58970,6 +59041,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean
@@ -58989,6 +59061,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean

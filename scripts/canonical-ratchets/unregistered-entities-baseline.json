@@ -1,5 +1,5 @@
 {
   "_comment": "Grandfathered count of live tables that look like real entities (audit.unregistered_candidates, base_col_score >= 4) and are NOT in platform.entity_types, MINUS unregistered-entities-allowlist.json. Ratchet only DOWN: the gate fails when the live count EXCEEDS this. Register a table (platform.create_entity_table) or allowlist it WITH A REASON, then shrink this with: pnpm check:unregistered-entities --update-baseline. Raising it is an Arman decision.",
-  "count": 48,
-  "seeded_at": "2026-08-21T18:37:06.776742+00:00"
+  "count": 41,
+  "seeded_at": "2026-08-21T21:04:58.600274+00:00"
 }
