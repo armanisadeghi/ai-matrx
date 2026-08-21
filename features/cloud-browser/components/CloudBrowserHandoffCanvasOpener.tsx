@@ -14,11 +14,11 @@
  * canvas behind the user). Mount it anywhere that lives for the length of a
  * chat; it renders nothing.
  *
- * NOTE (go-live seam): `handoff` is populated by `hydrateSnapshot`, which today
- * runs while a Cloud Browser hook is mounted. To fire BEFORE the panel is ever
- * opened, the chat stream's `human_required` tool event must dispatch the
- * handoff into `cloudBrowserSlice` — that stream→slice subscription is the
- * remaining connection (the scraper/tool rows are not live offline).
+ * The stream→slice seam is CLOSED (2026-08-21): `process-stream` reads a
+ * `human_required` cloud-browser tool result and dispatches
+ * `adoptCloudBrowserRunFromStream`, which hydrates the slice from the real
+ * handoff row. So this fires even when the panel has never been opened — which
+ * is the whole point of an agent-initiated open.
  */
 
 import { useEffect, useRef } from "react";

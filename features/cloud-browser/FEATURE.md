@@ -148,6 +148,20 @@ The frontend never receives a password, seed, or generated code from that path.
   (`aidream/services/cloud_browser/FEATURE.md`). Ship both halves — the card 404s
   on `capture-result` until aidream deploys.
 
+- **2026-08-21 — the agent-initiated open actually fires (stream→slice seam):**
+  `process-stream` now reads a `human_required` result off any completed
+  `cloud_browser*` / `credential_login` tool and dispatches
+  `adoptCloudBrowserRunFromStream`, so a run that stops for a person opens the
+  canvas even when the panel has never been opened — previously the watcher only
+  saw handoffs a mounted `useCloudBrowser` had already loaded, i.e. the person
+  had to go find the browser themselves. Both payload shapes are honoured
+  (`cloud_browser*` names `session_id`, `credential_login` names `handoff_id`
+  and no run). It hydrates through the canonical snapshot path rather than
+  fabricating a handoff from the tool payload, and `loadSnapshotForRun` refuses
+  to start a browser, so a stream event can never conjure one. Decision is a
+  pure, tested function (`streamHandoffSignal.ts`) because it runs in the hot
+  path of every chat message. **Not yet exercised against a live handoff** —
+  that needs a real provider account raising one.
 - **2026-08-21 — takeover steer/interrupt (D-25), both halves:** Take control is no
   longer gated on `handoff.state === "requested"` — aidream gained
   `BrowserManager.request_takeover` + `POST /runs/{id}/takeover` (composes
@@ -225,9 +239,8 @@ The frontend never receives a password, seed, or generated code from that path.
   overlay wraps the same body. Two triggers, one open path
   (`useOpenCloudBrowserCanvas`): the composer's "Cloud browser" pill on
   `ConversationContextRail` (attachment-style), and `CloudBrowserHandoffCanvasOpener`
-  (agent-initiated — opens the canvas on `handoff.state === "requested"`). Go-live
-  seam: dispatch the chat stream's `human_required` tool event into
-  `cloudBrowserSlice` so the handoff fires before the panel is first opened.
+  (agent-initiated — opens the canvas on `handoff.state === "requested"`). Its
+  go-live seam was closed 2026-08-21 (see that entry).
 - **2026-08-18** — WS-8 initial build: panel (3 media tiers + controller banner),
   profile selector (personal/org/shared + quotas), canonical share dialog, notification
   consent (setup + first-use prompt), D-9 telemetry surface, read-only audit timeline,
