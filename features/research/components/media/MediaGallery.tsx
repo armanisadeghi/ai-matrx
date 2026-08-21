@@ -56,6 +56,12 @@ import {
   hostLabel,
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
+import {
+  ResearchMediaImage,
+  isOwnedMedia,
+  mediaMimeType,
+  openResearchMedia,
+} from "./ownedMedia";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { uploadFileWithProgress } from "@/features/files/api/files";
@@ -514,12 +520,7 @@ function PhotoCard({
         )}
       >
         {item.media_type === "image" && item.url ? (
-          <img
-            src={item.thumbnail_url || item.url}
-            alt={item.alt_text || ""}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <ResearchMediaImage item={item} className="w-full h-full" />
         ) : (
           <Icon className="h-6 w-6 text-muted-foreground/30" />
         )}
@@ -573,11 +574,10 @@ function GraphicCard({
       title={tooltip}
     >
       {item.url ? (
-        <img
-          src={item.thumbnail_url || item.url}
-          alt={item.alt_text || ""}
-          className="h-full w-auto max-w-[220px] object-contain"
-          loading="lazy"
+        <ResearchMediaImage
+          item={item}
+          fit="contain"
+          className="h-full w-[220px] max-w-[220px]"
         />
       ) : (
         <div className="h-full w-24 flex items-center justify-center">
@@ -629,11 +629,10 @@ function IconTile({
       onDoubleClick={() => onToggleRelevance(item)}
     >
       {item.url ? (
-        <img
-          src={item.thumbnail_url || item.url}
-          alt={item.alt_text || ""}
-          className="max-w-full max-h-full object-contain"
-          loading="lazy"
+        <ResearchMediaImage
+          item={item}
+          fit="contain"
+          className="h-full w-full"
         />
       ) : (
         <ImageIcon className="h-3 w-3 text-muted-foreground/30" />
@@ -671,7 +670,20 @@ function ResourceCard({
 }) {
   const Icon = TYPE_ICONS[item.media_type as keyof typeof TYPE_ICONS] ?? File;
   const kind = resourceKind(item);
-  const label = item.alt_text || item.caption || item.url;
+  const owned = isOwnedMedia(item);
+  const label = item.alt_text || item.caption || (owned ? "Uploaded artifact" : item.url);
+
+  // Discovered → a plain anchor to the source page. Owned → a button that
+  // mints a fresh signed URL at click time (`url` on an owned row is a durable
+  // pointer, not something a browser can follow).
+  const openProps = owned
+    ? ({
+        as: "button",
+        type: "button",
+        onClick: () => void openResearchMedia(item),
+      } as const)
+    : ({ as: "a", href: item.url } as const);
+  const Wrapper = openProps.as;
 
   return (
     <div
@@ -680,21 +692,20 @@ function ResourceCard({
         item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
       )}
     >
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block"
+      <Wrapper
+        {...(owned
+          ? { type: "button" as const, onClick: () => void openResearchMedia(item) }
+          : {
+              href: item.url,
+              target: "_blank",
+              rel: "noopener noreferrer",
+            })}
+        className="block w-full text-left"
         title={label}
       >
         <div className="relative aspect-video bg-muted/50 flex items-center justify-center overflow-hidden">
-          {item.thumbnail_url ? (
-            <img
-              src={item.thumbnail_url}
-              alt={item.alt_text || ""}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+          {owned || item.thumbnail_url ? (
+            <ResearchMediaImage item={item} className="w-full h-full" />
           ) : (
             <Icon className="h-7 w-7 text-muted-foreground/40" />
           )}

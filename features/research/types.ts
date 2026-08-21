@@ -1132,6 +1132,17 @@ export interface ResearchMedia {
   source_id: string;
   topic_id: string;
   media_type: string;
+  /**
+   * `cld_files` identity for media WE store (the research upload sink — the
+   * extension's screenshot/download enrich goals). NULL for media discovered
+   * on a page, whose `url` is that page's external URL.
+   *
+   * Render owned rows through `researchMediaRef` / `ResearchMediaImage`
+   * (`components/media/ownedMedia.tsx`), never `<img src={url}>`: a signed URL
+   * is a handoff, never an identity, so `url` on an owned row holds only a
+   * durable pointer (the CDN URL for a public file, else the bare file_id).
+   */
+  file_id: string | null;
   url: string;
   alt_text: string | null;
   caption: string | null;
