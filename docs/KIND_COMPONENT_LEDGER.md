@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **211** — live recount 2026-08-20
 - **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
-- Individual rows (45 total): unclaimed **0** · claimed **0** · done **44** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-20 by army-fe-wd1 after flipping the last 8 (the SEO cluster). **Every individual row is now `done` except the one `blocked` row (`claim_evidence`, blocked on its EXAMPLE, not its route).**
+- Individual rows (46 total): unclaimed **0** · claimed **1** · done **44** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-20 by army-fe-wd1 after flipping the last 8 (the SEO cluster). Re-counted 2026-08-20 by army-fe-wd2 after folding the malformed stray `markdown` row (added by `86f3863d4`, appended after the change log and mis-columned) into this table. **Every individual row is `done` except the one `blocked` row (`claim_evidence`, blocked on its EXAMPLE, not its route) and `markdown`, claimed by army-fe-wd2.**
 
 **Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
 non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
@@ -202,7 +202,7 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 
 ---
 
-## Individual rows (45)
+## Individual rows (46)
 
 `Ex` = canonical `kind_example` count; **0 means you must author one first.**
 
@@ -226,6 +226,7 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | `keyword_classification_batch` | **done** | army-fe-wd1 | registry lie corrected: the row now names the REAL component the compiled bridge already renders (`KeywordClassificationBatchBlock`). LIVE + verified (migration by copy-D; verified by army-fe-wd1). `role='input'` correctly absent — `agent_io` ⇒ `dataOnly` refuses first. |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
+| `markdown` | Markdown | distilled | ? | — | **claimed** | army-fe-wd2 | INACTIVE kind (`is_active=false`) — the generation query missed it, added by 86f3863d4. Register the STREAMING MARKDOWN RENDERER as its `(kind,'web','output')` component; the row's own claim is that this activates the kind (dual gate) and collapses the two render laws into one — to be verified against live code, not trusted. |
 | `notable_timestamp` | Notable Timestamp | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `office_extraction_result` | Office Extraction Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example already present and rendered in verification |
@@ -375,7 +376,6 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
   not repointed or deleted. Whether a STREAMED proposal should render as a read-only twin
   of that card is product semantics, not a route decision.
 
-| `markdown` | primitive | distilled | todo | — | REGISTER THE STREAMING MARKDOWN RENDERER as its (kind,'web',output) component — this activates the kind (dual gate) and collapses the two render laws into one. Inactive today, which is why the generation query missed it. |
 - 2026-08-20 — **army-fe-wd1**: claim of the 8 SEO-analysis-cluster rows taken over from `copy-D`
   as ABANDONED per the army watchdog. **The watchdog was half right.** copy-D's work was not
   missing — it was COMMITTED and applied
@@ -411,3 +411,6 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
   brief PANE inside it should become a twin of the registered route is product semantics for
   the distillation pass, not a route decision. Recorded here so it is not rediscovered as a
   duplicate.
+- 2026-08-20 — **army-fe-wd2** claims the `markdown` row and folds it into the individual-rows
+  table (it had been appended after the change log, in the wrong column schema). Counts line
+  re-counted from the rows: 46 individual rows.
