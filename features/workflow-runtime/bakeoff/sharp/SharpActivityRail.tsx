@@ -26,8 +26,10 @@ import { cn } from "@/lib/utils";
 import { activityLine } from "../../components/run/activity-copy";
 import {
   selectRunActivity,
+  selectRunStatus,
   selectRunTransportMode,
 } from "../../redux/workflow-runs.selectors";
+import { TERMINAL_RUN_STATUSES } from "../../types";
 
 const TONE_ICON = {
   work: Activity,
@@ -64,6 +66,8 @@ export function SharpActivityRail({
 }) {
   const activity = useAppSelector(selectRunActivity(runId));
   const transport = useAppSelector(selectRunTransportMode(runId));
+  const status = useAppSelector(selectRunStatus(runId));
+  const over = status !== null && TERMINAL_RUN_STATUSES.has(status);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pinnedRef = useRef(true);
 
@@ -77,25 +81,36 @@ export function SharpActivityRail({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
-        <span className="text-xs font-medium text-foreground">Live updates</span>
-        <span
-          className="flex items-center gap-1 text-[11px] text-muted-foreground"
-          title={
-            transport === "sse"
-              ? "Connected — updates arrive the moment they happen"
-              : transport === "polling"
-                ? "Checking in every few seconds"
-                : "Not connected"
-          }
-        >
-          <Radio
-            className={cn(
-              "h-3 w-3",
-              transport === "sse" ? "text-emerald-500" : "text-muted-foreground",
-            )}
-          />
-          {transport === "sse" ? "live" : transport === "polling" ? "catching up" : "idle"}
+        <span className="text-xs font-medium text-foreground">
+          {over ? "What happened" : "Live updates"}
         </span>
+        {/* A finished run has nothing to be connected TO — no badge. */}
+        {over ? null : (
+          <span
+            className="flex items-center gap-1 text-[11px] text-muted-foreground"
+            title={
+              transport === "sse"
+                ? "Connected — updates arrive the moment they happen"
+                : transport === "polling"
+                  ? "Checking in every few seconds"
+                  : "Connecting"
+            }
+          >
+            <Radio
+              className={cn(
+                "h-3 w-3",
+                transport === "sse"
+                  ? "text-emerald-500"
+                  : "text-muted-foreground",
+              )}
+            />
+            {transport === "sse"
+              ? "live"
+              : transport === "polling"
+                ? "catching up"
+                : "connecting"}
+          </span>
+        )}
       </div>
       <div
         ref={scrollRef}

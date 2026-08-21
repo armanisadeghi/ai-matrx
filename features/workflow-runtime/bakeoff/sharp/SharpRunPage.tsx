@@ -51,6 +51,7 @@ import { useWorkflowRun } from "../../hooks/useWorkflowRun";
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
   selectNodeAggregatePhases,
+  selectRunEmissions,
   selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
 import { TERMINAL_RUN_STATUSES } from "../../types";
@@ -452,6 +453,7 @@ function SharpLiveSurface({
 
   const status = useAppSelector(selectRunStatus(runId));
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
+  const emissions = useAppSelector(selectRunEmissions(runId));
   const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
 
   // Viewport focus: null = follow the live step.
@@ -459,15 +461,20 @@ function SharpLiveSurface({
   const [tab, setTab] = useState<SharpTab>("watching");
   const viewedNodeId = pinned ?? liveNodeId(steps, phases);
 
-  // When the run completes, front the Delivered shelf — once, so a person
-  // who tabs back to the work isn't fought for the control.
+  // When the run completes WITH something in hand, front the Delivered
+  // shelf — once, so a person who tabs back to the work isn't fought for
+  // the control. A run that delivered nothing keeps the work in view; an
+  // empty shelf is the worse landing.
+  const anythingDelivered =
+    emissions.length > 0 ||
+    deliverables.some((step) => phases[step.nodeId] === "settled");
   const frontedRef = useRef(false);
   useEffect(() => {
-    if (status === "completed" && !frontedRef.current) {
+    if (status === "completed" && anythingDelivered && !frontedRef.current) {
       frontedRef.current = true;
       setTab("delivered");
     }
-  }, [status]);
+  }, [status, anythingDelivered]);
 
   return (
     <div

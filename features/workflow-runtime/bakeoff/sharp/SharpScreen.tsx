@@ -277,7 +277,7 @@ function WatchedStep({
               {aggregate.settledCount}/{aggregate.expectedCount}
             </span>
           ) : null}
-          {duration !== null ? (
+          {duration !== null && duration >= 1000 ? (
             <span className="tabular-nums">{formatElapsed(duration)}</span>
           ) : null}
         </span>
@@ -326,7 +326,8 @@ function WatchedStep({
                 <p className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <PhaseIcon phase={invocation.phase} />
                   Part {index + 1}
-                  {invocation.durationMs !== null
+                  {invocation.durationMs !== null &&
+                  invocation.durationMs >= 1000
                     ? ` · ${formatElapsed(invocation.durationMs)}`
                     : ""}
                 </p>
@@ -367,11 +368,14 @@ function DeliveredShelf({
 }) {
   const emissions = useAppSelector(selectRunEmissions(runId));
 
+  const status = useAppSelector(selectRunStatus(runId));
+  const over = status !== null && TERMINAL_RUN_STATUSES.has(status);
   if (deliverables.length === 0 && emissions.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
-        This workflow shows its results as it works — watch the steps on the
-        left.
+        {over
+          ? "This run kept nothing separate to hand over — each step's work is under “The work”."
+          : "This workflow shows its results as it works — watch the steps on the left."}
       </p>
     );
   }
