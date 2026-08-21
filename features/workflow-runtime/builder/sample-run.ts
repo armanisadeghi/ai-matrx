@@ -196,6 +196,7 @@ export function sampleRunFrames(
       output_kind_version: null,
       output_kind_degraded: null,
       metadata: null,
+      wrapper: null,
     });
   });
 
