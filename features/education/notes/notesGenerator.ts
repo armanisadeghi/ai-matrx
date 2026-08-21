@@ -5,6 +5,14 @@
 // TargetKind that P4 Smart Notes owns; registering it lights the "Study notes"
 // target up on the kit picker (P9) and the one-click note-convert menu.
 //
+// COVERAGE (2026-08-21): notes are the one target where "preserve, don't
+// compress" is the whole point, and a single call over a long document is the
+// worst possible shape for that — the model writes the length it thinks notes
+// should be, not the length the material needs. It now writes ONE SECTION PER
+// coverage section (`features/education/convert/coverage.ts`) and stitches them
+// into one note in the document's own order, so a 77-slide deck produces notes
+// that actually walk the 77 slides.
+//
 // A note is a real, first-class platform note (shareable, editable, Knowledge-indexable)
 // — so a generated note lands right back in the Smart Notes surface where the
 // student can keep working on it. Same lineage + TrustEnvelope contract as the
@@ -15,8 +23,12 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { NOTES_MANDATES } from "./mandates";
-import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+import {
+  looseKey,
+  segmentedGenerate,
+} from "@/features/education/convert/segmentedGenerate";
+import { mergeTrustEnvelopes } from "@/features/education/convert/trustMerge";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -74,26 +86,64 @@ async function run(
   ctx: ConvertContext,
 ): Promise<ConvertResult> {
   const { source, options } = request;
+  const sectionTrust: (TrustEnvelope | null)[] = [];
 
-  const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
+  const baseTitle = source.title ?? "";
+  let agentTitle = "";
+  const proseBySection = new Map<number, { label: string; markdown: string }>();
+
+  const covered = await segmentedGenerate<KeyTerm>({
+    ctx,
+    source,
+    targetKind: "notes",
+    options,
     mandateKey: NOTES_MANDATES.studyNotes,
     surfaceKey: "education-convert-notes",
     sourceFeature: "education-ingest",
-    organizationId: ctx.orgId,
-    variables: {
-      source_content: source.text,
-      title: source.title ?? "",
+    variables: (segment, plan) => ({
+      source_content: segment.text,
+      title:
+        plan.segments.length > 1
+          ? `${baseTitle || "Study material"} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          : baseTitle,
       focus: options?.focus ?? "",
+    }),
+    extract: (value, segment) => {
+      const part = coerceNotes(value);
+      if (!agentTitle && part.title) agentTitle = part.title;
+      if (part.markdown) {
+        proseBySection.set(segment.index, {
+          label: segment.label || part.title || `Part ${segment.index}`,
+          markdown: part.markdown,
+        });
+        sectionTrust.push(part.trust);
+      }
+      // Key terms ride as the de-duplicated stream (the same term defined in two
+      // sections is one entry in the glossary); the prose is collected above and
+      // re-assembled in document order.
+      return part.keyTerms;
     },
+    identity: (term) => looseKey(term.term),
     timeoutMs: 120_000,
-    onRequestId: ctx.onRequestId,
   });
 
-  const { title, markdown, keyTerms, trust } = coerceNotes(extracted.value);
+  const keyTerms = covered.items;
+  const ordered = [...proseBySection.entries()].sort((a, b) => a[0] - b[0]);
+  // A multi-section note keeps the agent's own headings inside each section and
+  // adds the section heading above them, so the note reads as one document.
+  const markdown = covered.plan.singlePass
+    ? (ordered[0]?.[1].markdown ?? "")
+    : ordered
+        .map(([, part]) => `## ${part.label}\n\n${part.markdown}`)
+        .join("\n\n");
+
   if (!markdown) {
     throw new Error("The notes generator returned no usable notes");
   }
-  const finalTitle = title || source.title || "Study notes";
+  const trust = mergeTrustEnvelopes(sectionTrust);
+  const finalTitle = covered.plan.singlePass
+    ? agentTitle || source.title || "Study notes"
+    : source.title || agentTitle || "Study notes";
   const content = buildNoteContent(markdown, keyTerms);
 
   const note = await NotesAPI.create({
@@ -110,9 +160,12 @@ async function run(
     href: `/education/notes/${note.id}`,
     title: finalTitle,
     trust,
-    detail: keyTerms.length
-      ? `${keyTerms.length} key term${keyTerms.length === 1 ? "" : "s"}`
-      : "Notes",
+    detail: (() => {
+      const d = keyTerms.length
+        ? `${keyTerms.length} key term${keyTerms.length === 1 ? "" : "s"}`
+        : "Notes";
+      return covered.gapNote ? `${d} - ${covered.gapNote}` : d;
+    })(),
   };
 
   // Lineage: link the note → its origin (ingest anchor file for the kit, or the

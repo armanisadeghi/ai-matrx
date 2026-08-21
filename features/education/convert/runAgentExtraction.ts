@@ -37,6 +37,20 @@ export interface RunAgentExtractionOpts {
   pollIntervalMs?: number;
   /** Fires with the live requestId the moment it is known (for live UI). */
   onRequestId?: (requestId: string) => void;
+  /**
+   * Whether this run is a VISIBLE one the caller renders.
+   *
+   * `true` (default) keeps the pre-D126 behaviour: displayMode "direct" plus a
+   * kept instance, so a live converter UI can stream it.
+   *
+   * `false` runs it fully in the background and destroys the instance after.
+   * A SEGMENTED generation (`coverage.ts`) makes many calls for ONE artifact,
+   * and every kept instance is another conversation whose render block the
+   * canvas materializer would turn into its own duplicate deck. Segment runs
+   * are therefore background by construction; the artifact is the product, not
+   * the eight streams that built it.
+   */
+  live?: boolean;
 }
 
 export interface RunAgentExtractionResult {
@@ -65,10 +79,11 @@ export async function runAgentExtraction(
     sourceFeature: opts.sourceFeature,
     variables: opts.variables,
     organizationId: opts.organizationId ?? null,
-    displayMode: "direct",
+    displayMode: opts.live === false ? "background" : "direct",
     // Live converter UI renders the stream via onRequestId — keep the
-    // instance so those selectors stay populated (pre-D126 behavior).
-    keepInstance: true,
+    // instance so those selectors stay populated (pre-D126 behavior). A
+    // background segment run keeps nothing: see `live` above.
+    keepInstance: opts.live !== false,
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_MS,
     onRequestId: opts.onRequestId,

@@ -16,6 +16,7 @@
 // `useContentConverter()` or `runConvert(ctx)`. Do NOT build a second dispatch —
 // add a generator here (or register one from your feature) instead.
 
+import type { CoverageDepth } from "./coverage";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 
@@ -91,8 +92,19 @@ export interface ConvertSource {
 
 /** Per-conversion tuning. Unknown keys are ignored by generators that don't use them. */
 export interface ConvertOptions {
-  /** Cards / questions / nodes count hint. */
+  /**
+   * An explicit total the student asked for. When set it WINS over the
+   * source-scaled count and is spread across the whole document by the coverage
+   * planner (`coverage.ts`), so "40 cards" never means 40 cards about chapter
+   * one. Leave undefined to let the artifact size itself to the material.
+   */
   count?: number;
+  /**
+   * How dense a kit the student asked for. The coverage planner multiplies every
+   * per-section count by this, so it scales the WHOLE kit at once rather than
+   * being a per-generator knob the student has to set seven times.
+   */
+  depth?: CoverageDepth;
   /** "easy" | "medium" | "hard" | "Mixed" — generator-interpreted. */
   difficulty?: string;
   /** Free-form emphasis ("focus on the causes", "I have an exam on X"). */
@@ -148,6 +160,25 @@ export interface ConvertContext {
    * as they arrive instead of a spinner. Safe to ignore.
    */
   onRequestId?: (requestId: string) => void;
+  /**
+   * Optional live hook for a SEGMENTED generation (`coverage.ts`): fires as each
+   * coverage section settles, so the kit board can say "section 3 of 8 -
+   * Measurements" instead of showing one spinner for a run that is deliberately
+   * many calls long. Safe to ignore.
+   */
+  onProgress?: (progress: ConvertProgress) => void;
+}
+
+/** One tick of a segmented generation's coverage progress. */
+export interface ConvertProgress {
+  /** Sections settled so far (succeeded or failed). */
+  done: number;
+  /** Sections in the plan. */
+  total: number;
+  /** The section that just settled, by its own heading. */
+  label: string;
+  /** Items produced so far across the whole artifact. */
+  items: number;
 }
 
 /**

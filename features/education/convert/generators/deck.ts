@@ -1,9 +1,16 @@
 // features/education/convert/generators/deck.ts
 //
-// Converter generator: source text → a flashcard deck (fc_set + fc_card). Wraps
-// the flashcards "from source" agent + fcService.createSetWithCards (the single
-// deck writer) and links a set-level `source` lineage edge to the ingest anchor
-// file so the kit results page can trace provenance.
+// Converter generator: source text -> a flashcard deck (fc_set + fc_card). Wraps
+// the flashcards "from source" mandate + fcService (the single deck writer) and
+// links a set-level `source` lineage edge to the ingest anchor file so the kit
+// results page can trace provenance.
+//
+// COVERAGE (2026-08-21): this generator used to send the whole source in ONE
+// call asking for 15 cards, and a 77-slide chemistry deck came back as 10 cards
+// drawn from the first few slides. It now runs through `segmentedGenerate`: the
+// source is planned into coverage sections and each section gets its own call
+// with its own share of the cards, so slide 62 gets asked about too. See
+// `../coverage.ts` for the law and the knobs.
 //
 // NOTE: the raw-JSON card coercion here intentionally mirrors
 // features/flashcards/data/useGenerateCards.ts#coerceCard (that helper is not
@@ -14,8 +21,8 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { CONVERT_MANDATES } from "../mandates";
-import { runAgentExtraction } from "../runAgentExtraction";
 import { recordSourceLineage } from "../recordSourceLineage";
+import { looseKey, segmentedGenerate } from "../segmentedGenerate";
 import { mergeTrustEnvelopes } from "../trustMerge";
 import type {
   ConvertContext,
@@ -28,41 +35,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
-/**
- * The from-source deck agent grounds + cites against `### Chunk <id>` markers —
- * it returns NO cards for an unmarked blob. Ingest gives us plain text, so we
- * synthesize chunk markers (paragraph-packed to ~1000 chars) before sending.
- *
- * NOTE: no page number is emitted. Ingest hands us a flat text blob with no
- * per-chunk page mapping, so any page we stamped would be a lie — and the agent
- * echoes it straight into the citation locator the trust layer renders. Better
- * an honest chunk id with no page than a false "Page 1" on every card.
- */
-function chunkForGrounding(text: string): string {
-  // IC-3 passages already carry durable chunk ids. Re-chunking that payload
-  // would replace the real citation ids with local c1/c2 markers and make the
-  // resulting citation unable to open the retrieved passage.
-  if (text.includes("[GROUNDING_PASSAGE ")) return text;
-  const paras = text
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const chunks: string[] = [];
-  let buf = "";
-  for (const p of paras) {
-    if (buf && buf.length + p.length > 1000) {
-      chunks.push(buf);
-      buf = p;
-    } else {
-      buf = buf ? `${buf}\n\n${p}` : p;
-    }
-  }
-  if (buf) chunks.push(buf);
-  if (chunks.length === 0) chunks.push(text.trim());
-  return chunks.map((c, i) => `### Chunk c${i + 1}\n${c}`).join("\n\n");
-}
-
-/** Coerce one raw agent card object → NewCardInput (drops unusable entries). */
+/** Coerce one raw agent card object -> NewCardInput (drops unusable entries). */
 function coerceCard(
   raw: unknown,
   docId: string,
@@ -81,7 +54,7 @@ function coerceCard(
 
   const rawSource = raw.source;
   // Per-card lineage points at the ingest anchor file (fcService writes a
-  // card→file `source` edge when file_id is set), keeping the agent-echoed
+  // card->file `source` edge when file_id is set), keeping the agent-echoed
   // chunk/page for the citation locator.
   const source = anchorFileId
     ? {
@@ -113,30 +86,19 @@ function coerceCard(
   };
 }
 
-function coerceCards(
-  value: unknown,
-  docId: string,
-  anchorFileId: string,
-): {
-  title: string;
-  cards: NewCardInput[];
-} {
+function rawCardsOf(value: unknown): unknown[] {
   const obj = isRecord(value) ? value : {};
-  const title =
-    (typeof obj.title === "string" && obj.title.trim()) ||
-    (typeof obj.set_title === "string" && obj.set_title.trim()) ||
-    "";
-  const rawCards = Array.isArray(obj.cards)
-    ? obj.cards
-    : Array.isArray(obj.flashcards)
-      ? obj.flashcards
-      : Array.isArray(value)
-        ? (value as unknown[])
-        : [];
-  const cards = rawCards
-    .map((c) => coerceCard(c, docId, anchorFileId))
-    .filter((c): c is NewCardInput => c !== null);
-  return { title, cards };
+  if (Array.isArray(obj.cards)) return obj.cards;
+  if (Array.isArray(obj.flashcards)) return obj.flashcards;
+  return Array.isArray(value) ? (value as unknown[]) : [];
+}
+
+function agentTitle(value: unknown): string {
+  const obj = isRecord(value) ? value : {};
+  if (typeof obj.title === "string" && obj.title.trim()) return obj.title.trim();
+  if (typeof obj.set_title === "string" && obj.set_title.trim())
+    return obj.set_title.trim();
+  return "";
 }
 
 async function run(
@@ -145,35 +107,58 @@ async function run(
 ): Promise<ConvertResult> {
   const { source, options } = request;
   const anchorFileId = source.ref?.fileId ?? "";
-  // The agent grounds cards against these markers + echoes document_id back.
+  // The agent grounds cards against chunk markers + echoes document_id back.
   const docId = (source.ref?.processedDocumentId ?? anchorFileId) || "ingest";
+  const baseTitle = source.title ?? "Study material";
 
-  const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
+  const covered = await segmentedGenerate<NewCardInput>({
+    ctx,
+    source,
+    targetKind: "deck",
+    options,
     mandateKey: CONVERT_MANDATES.deckFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
-    organizationId: ctx.orgId,
-    variables: {
-      source_content: chunkForGrounding(source.text),
-      title: source.title ?? "Study material",
-      count: String(options?.count ?? 15),
+    variables: (segment, plan) => ({
+      source_content: segment.text,
+      // The section name rides in the title the agent already declares, so a
+      // multi-section run needs no new agent variable and the model still knows
+      // which part of the document it is covering.
+      title:
+        plan.segments.length > 1
+          ? `${baseTitle} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          : baseTitle,
+      count: String(segment.items),
       difficulty: options?.difficulty ?? "Mixed",
       focus: options?.focus ?? "",
-    },
-    onRequestId: ctx.onRequestId,
+    }),
+    extract: (value) =>
+      rawCardsOf(value)
+        .map((c) => coerceCard(c, docId, anchorFileId))
+        .filter((c): c is NewCardInput => c !== null),
+    // Two sections that both define the same term produce the same card; ship
+    // it once.
+    identity: (card) => looseKey(card.front),
   });
 
-  const { title, cards } = coerceCards(extracted.value, docId, anchorFileId);
+  const cards = covered.items;
   if (cards.length === 0) {
     throw new Error("The deck generator returned no usable cards");
   }
 
-  const setName = title || source.title || "Study deck";
-  // Single-writer contract (D-WP3): this headless run's stream also
-  // materializes its flashcard render block via the canonical adapter — go
-  // through the conversation-scoped dedupe path so exactly ONE fc_set exists.
+  // On a multi-section run the agent's per-section title names a section, not
+  // the deck, so the source's own title wins.
+  const setName = covered.plan.singlePass
+    ? agentTitle(covered.firstValue) || source.title || "Study deck"
+    : source.title || agentTitle(covered.firstValue) || "Study deck";
+
+  // Single-writer contract (D-WP3): a single-pass run's stream also materializes
+  // its flashcard render block via the canonical adapter, so it goes through the
+  // conversation-scoped dedupe path and exactly ONE fc_set exists. A segmented
+  // run is background by construction (no render block to race), so it creates
+  // the set directly.
   const created = await fcService.createGeneratedSetForConversation(
-    extracted.conversationId,
+    covered.conversationId,
     {
       name: setName,
       description: source.title ? `Generated from ${source.title}` : null,
@@ -191,6 +176,7 @@ async function run(
   const setId = created.data.set.id;
 
   const trust = mergeTrustEnvelopes(cards.map((c) => c.trust));
+  const detail = `${cards.length} card${cards.length === 1 ? "" : "s"}`;
   const result: ConvertResult = {
     targetKind: "deck",
     artifactId: setId,
@@ -198,10 +184,12 @@ async function run(
     href: `/education/flashcards/${setId}`,
     title: setName,
     trust,
-    detail: `${cards.length} card${cards.length === 1 ? "" : "s"}`,
+    // A gap is never swallowed: the student is told which sections are missing
+    // and that "Add more" fills them.
+    detail: covered.gapNote ? `${detail} - ${covered.gapNote}` : detail,
   };
 
-  // Set-level lineage edge → the origin (ingest anchor file OR entity source).
+  // Set-level lineage edge -> the origin (ingest anchor file OR entity source).
   await recordSourceLineage(result, source, ctx.orgId);
 
   return result;
