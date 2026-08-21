@@ -31,6 +31,7 @@ import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedU
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { extractOfficeText } from "./officeExtract";
 import { describeIngestSupport } from "./formatSupport";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { KIT_KNOB_FEATURE } from "@/features/education/convert/coverage";
 import type { RawIngestInput, NormalizedIngest, IngestProgress } from "./types";
@@ -128,6 +129,55 @@ export function useIngest(): UseIngestResult {
       return result.fileId;
     },
     [upload],
+  );
+
+  /**
+   * Keep the CLEANED text next to the original file.
+   *
+   * Every ingest path already produces one clean markdown/text blob — that is
+   * what the whole kit is generated from. For a PDF or an Office document the
+   * platform also PERSISTS it (`docproc.processed_documents`), and a paste / URL
+   * / YouTube transcript IS its own `.md` anchor. Image OCR and audio-video
+   * transcription were the two paths that threw the extracted text away: the
+   * original bytes were kept, the readable version existed only in the tab that
+   * ran the ingest, and nothing could re-read it afterwards.
+   *
+   * This saves it as a sibling `.md` the student owns, edged back to the
+   * original so it travels with it (the registered `file -> file` pair) and so
+   * `reopenSource` can find it from the anchor alone. Best-effort: an artifact
+   * is never blocked on keeping a convenience copy.
+   */
+  const keepCleanCopy = useCallback(
+    async (
+      text: string,
+      title: string,
+      anchorFileId: string | undefined,
+      orgId?: string,
+    ): Promise<string | undefined> => {
+      if (!anchorFileId) return undefined;
+      try {
+        const cleanId = await anchorText(text, `${title} (extracted)`);
+        if (!cleanId) return undefined;
+        const edge = await associationsService.add({
+          sourceType: "file",
+          sourceId: cleanId,
+          targetType: "file",
+          targetId: anchorFileId,
+          role: "source",
+          orgId,
+          label: `${title} (extracted)`,
+          metadata: { targetKind: "clean_copy", href: `/files/f/${cleanId}` },
+        });
+        if (!edge.ok) {
+          console.error("[useIngest] clean-copy edge failed:", edge.error);
+        }
+        return cleanId;
+      } catch (e) {
+        console.error("[useIngest] could not keep a clean copy:", e);
+        return undefined;
+      }
+    },
+    [anchorText],
   );
 
   const normalize = useCallback(
@@ -263,6 +313,8 @@ export function useIngest(): UseIngestResult {
           );
         }
         const { text, truncated } = await clampToKnob(raw);
+        // OCR output exists nowhere else — keep it.
+        await keepCleanCopy(text, title, fileId);
         return {
           text,
           title,
@@ -305,6 +357,8 @@ export function useIngest(): UseIngestResult {
           );
         }
         const { text, truncated } = await clampToKnob(raw);
+        // The transcript exists nowhere else — keep it.
+        await keepCleanCopy(text, title, fileId);
         return {
           text,
           title,
@@ -422,7 +476,7 @@ export function useIngest(): UseIngestResult {
       // so a future new `IngestFileKind` can't silently fall through.
       throw new Error(describeIngestSupport(file).note);
     },
-    [anchorText, scrapeUrl, backendApi, upload, pdf],
+    [anchorText, keepCleanCopy, scrapeUrl, backendApi, upload, pdf],
   );
 
   return { normalize };

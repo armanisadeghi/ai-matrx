@@ -17,6 +17,7 @@
 
 import { fileHandler } from "@/features/files/handler/handler";
 import { createClient } from "@/utils/supabase/client";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { streamPdfExtractTextRemote } from "@/features/pdf-extractor/service/streamPdf";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import type { ConvertSource } from "./types";
@@ -43,6 +44,26 @@ export interface ReopenSourceDeps {
  * direct-DB read `features/pdf/scanner/processing.ts` uses for this table —
  * Python for compute, direct Supabase for data reads.
  */
+/** The kept clean-copy sibling for an anchor file, if `useIngest` saved one. */
+async function readCleanCopyId(anchorFileId: string): Promise<string | null> {
+  const res = await associationsService.listForEntity("file", anchorFileId);
+  if (!res.ok) return null;
+  const edge = res.data.edges.find(
+    (e) =>
+      e.direction === "incoming" &&
+      e.role === "source" &&
+      e.otherType === "file" &&
+      metaTargetKind(e.metadata) === "clean_copy",
+  );
+  return edge?.otherId ?? null;
+}
+
+function metaTargetKind(meta: unknown): string | null {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
+  const v = (meta as Record<string, unknown>).targetKind;
+  return typeof v === "string" ? v : null;
+}
+
 async function readProcessedText(fileId: string): Promise<string | null> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -107,7 +128,21 @@ export async function reopenSource(
     }
   }
 
-  // 3) A PDF re-extracts by file id — the same call the front door makes, on
+  // 3) A kept CLEAN COPY: the sibling `.md` `useIngest` saves for the paths that
+  //    have no other durable extraction (image OCR, audio/video transcript). It
+  //    is edged back to the anchor, so the anchor id alone finds it.
+  const clean = await readCleanCopyId(fileId);
+  if (clean) {
+    const blob = await fileHandler
+      .use({ kind: "file_id", fileId: clean })
+      .as({ kind: "blob" });
+    const text = (await blob.text()).trim();
+    if (text) {
+      return { text, title, ref: { kind: "file", fileId }, method: "inline" };
+    }
+  }
+
+  // 4) A PDF re-extracts by file id — the same call the front door makes, on
   //    bytes that are already in storage. No second upload.
   if (/\.pdf$/i.test(filename)) {
     const complete = await streamPdfExtractTextRemote({

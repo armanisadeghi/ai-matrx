@@ -47,7 +47,12 @@ import {
 
 type InputMode = "upload" | "paste" | "link";
 
-const DEFAULT_TARGETS: TargetKind[] = ["deck", "summary", "mind_map"];
+// Notes are ON by default. Ingest already turns every input into ONE clean
+// markdown document before anything is generated (that is what the whole kit is
+// built from), so the material for notes is already in hand — leaving the one
+// artifact that simply ORGANIZES that material unchecked was the odd default,
+// not the other way round.
+const DEFAULT_TARGETS: TargetKind[] = ["deck", "summary", "mind_map", "notes"];
 
 export function StartHero() {
   const kit = useKitGeneration();
