@@ -112,6 +112,16 @@ Two per-surface settings primitives, both resolved `manifest/DB default → glob
 
 - **Agent roles** — where a surface PLUGS IN agents (`SurfaceManifest.agentRoles`, mirrored to `ui.ui_surface_agent_role`; user/org selections in `ui_surface_agent_pref`, kinds `selection`/`roster_item`, `single`/`multi`). Reader/writer: [`services/surface-config.service.ts`](./services/surface-config.service.ts); Redux `redux/surfaceConfigSlice.ts`; hook `hooks/useSurfaceConfig.ts`. Stale roles deleted by sync CASCADE their pref rows (reported). **Mandate-backed defaults (2026-08-17):** a role may declare `mandateKey` (e.g. `"masterwork.scout"`) INSTEAD of `defaultAgentId` — the platform default then resolves live from `agent.mandate` at bundle-fetch time (`fetchMandatePins`; sourceTier `"mandate"`), so code names the Mandate and never an agent UUID (the NO HARDCODED AGENTS law applied to surface roles). Mutually exclusive with a non-null `defaultAgentId` (`pnpm check:surface-drift` enforces); an unseeded mandate leaves the role unfilled with a loud console error and auto-binds when the mandate row lands. Mirror column `ui_surface_agent_role.mandate_key`; reference consumer: `masterwork-rulebook.manifest.ts` (roles `scout`/`rule_improver`/`checkup_auditor`/`corpus_cleaner`).
 - **Config namespaces** — typed JSONB buckets in `ui.ui_surface_config` (dictionary, session_defaults, …). Each namespace registers a PURE handler (validate / layered merge / empty) in [`config/namespace-registry.ts`](./config/namespace-registry.ts); adding one = handler + a manifest `configNamespaces` line, zero SQL. A malformed row is rejected loudly, never merged.
+- **How a tier is STORED (NO NULL ORG, 2026-08-21).** `organization_id` on both tables is the row's OWNING org on every tier — never a tier flag, and never NULL (db-rules §2/§6e; `migrations/org_null_ban_ui_surface_scope_tiers.sql`). The tier is read off the tier columns, and **global is the org tier for the `matrx-system` org** (`SYSTEM_ORGANIZATION_ID`, `constants/platform-orgs.ts`), which `iam.system_orgs.global_readable` serves to every authenticated user:
+
+  | tier | `user_id` | `scope_id` | `organization_id` |
+  |---|---|---|---|
+  | global | NULL | NULL | `matrx-system` (visibility `public` — also the anon `pub_read` lane) |
+  | org | NULL | NULL | that org |
+  | scope | NULL | the scope | the scope's org (`_inherit_org_from_scope`) |
+  | user | the user | NULL | the user's personal org (`_stamp_org_default`) |
+
+  `tierOf()` in [`services/surface-config.service.ts`](./services/surface-config.service.ts) is the ONE place that knows this — never re-derive a tier inline, and never write `.is("organization_id", null)`. Its column order is load-bearing (`user_id` → `scope_id` → org), because every row now has an org. RLS is the generated `entity` set from `iam.apply_rls`; the pre-2026-08-21 hand-written policies keyed on `organization_id IS NULL` are gone.
 - Per-session choices are feature-owned and applied ON TOP of the resolved `effective` — never stored in these tables. Per-user surface UI state is the separate `user_surface_state` primitive (`user-state/`).
 - **A per-surface agent choice never lives in `userPreferences` / `useSetting`.** The last one (`transcription.scribeAssistantAgentId`) was deleted 2026-07-12 — the Scribe assistant is now the `assistant` role on `matrx-user/transcript-scribe` (`resolveDefaultAssistantAgentId` reads the resolved role; `useStudioAssistant` hydrates it).
 
@@ -1899,6 +1909,29 @@ on the first.
 
 ## Change Log
 
+- **2026-08-21 — NO NULL ORG: the scope-tier model re-founded on `ui_surface_agent_pref` +
+  `ui_surface_config`.** Both tables encoded the tier as "which scope column is non-NULL", with
+  all-NULL meaning global — NULL as a scope, which db-rules §2/§6e bans. `organization_id` is now
+  the row's owning org on all four tiers and is `NOT NULL`; global is the `matrx-system` org.
+  `..._one_scope` was re-founded over `(user_id, scope_id)` only — flipping the column NOT NULL
+  against the old three-column CHECK was unsatisfiable, so this could not be a copy of the seo
+  migration. Every `_org` partial unique index gained `user_id IS NULL AND scope_id IS NULL`
+  (without it, two colleagues in one org would collide on the org-tier index when each set their
+  OWN user-tier selection); the `_global` all-NULL indexes are dropped. Added `visibility`
+  (default `internal`, global rows `public`) — without it the global-readable and org-member lanes
+  in `iam.has_access_for_base` are both gated at `>= 'internal'` and every moved row would have
+  gone DARK. **Two defects found while measuring, both fixed:** (1) `trg_inherit_org` on
+  `ui_surface_agent_pref` inherited the org of the *agent* the pref points at — dormant while the
+  column was nullable, a leak of a private preference into the agent author's org once NOT NULL;
+  replaced with `public._stamp_org_default`. (2) Both tables were registered `rls_variant='entity'`
+  but had never had `iam.apply_rls` run — the live policies were still the hand-written launch set,
+  every read lane keyed on `organization_id IS NULL`; regenerated. Consumers swept: `tierOf` is now
+  exported and is the single tier authority (`SurfaceAdminDetailPage` had three inline forks),
+  writers use `scopeInsertColumns`/`matchScope`, and `SYSTEM_ORGANIZATION_ID` moved to
+  `constants/platform-orgs.ts`. Verified live as the non-admin test account: a global pref still
+  resolves, another user's prefs stay dark, and an old bundle still sending `organization_id: null`
+  succeeds and lands on the writer's personal org. `migrations/org_null_ban_ui_surface_scope_tiers.sql`
+  + `migrations/org_null_ban_ddl_guard_shrink_ui_surfaces.sql` (guard grandfather 34 → 32).
 - **2026-08-18 — surface-owned current-turn preparation.** `SurfaceRuntimeValue` gained the
   optional awaited `beforeExecute` seam. Provider and hook registrations retain its latest
   closure; submit-time scope refresh runs it before `getScope`, passing the untouched composer
