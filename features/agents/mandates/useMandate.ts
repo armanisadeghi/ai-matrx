@@ -20,7 +20,15 @@ export interface MandateState {
   error: string | null;
 }
 
-export function useMandate(mandateKey: string): MandateState {
+interface UseMandateOptions {
+  /** An unresolved optional override is an expected fallback, not a console error. */
+  optional?: boolean;
+}
+
+export function useMandate(
+  mandateKey: string,
+  options: UseMandateOptions = {},
+): MandateState {
   const [state, setState] = useState<
     MandateState & { key: string; epoch: number }
   >({
@@ -70,7 +78,9 @@ export function useMandate(mandateKey: string): MandateState {
       })
       .catch((error: unknown) => {
         const message = extractErrorMessage(error);
-        console.error(`[mandates] ${mandateKey} failed to resolve:`, message);
+        if (!options.optional) {
+          console.error(`[mandates] ${mandateKey} failed to resolve:`, message);
+        }
         if (!cancelled) {
           setState((prev) => ({
             ...prev,
@@ -84,7 +94,7 @@ export function useMandate(mandateKey: string): MandateState {
     return () => {
       cancelled = true;
     };
-  }, [mandateKey, epoch]);
+  }, [mandateKey, epoch, options.optional]);
 
   return { mandate: state.mandate, loading: state.loading, error: state.error };
 }

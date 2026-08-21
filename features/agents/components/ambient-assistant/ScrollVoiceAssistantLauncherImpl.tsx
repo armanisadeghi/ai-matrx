@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandateChain } from "@/features/agents/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
@@ -225,7 +226,10 @@ function ActiveAmbientVoiceAssistant({
         <AmbientTextMode
           conversationId={conversationId}
           surfaceKey={surfaceKey}
-          onVoice={() => setMode("voice")}
+          onVoice={() => {
+            setMode("voice");
+            relay.toggle();
+          }}
         />
       ) : (
         <div
@@ -322,7 +326,7 @@ function ActiveAmbientVoiceAssistant({
 export default function ScrollVoiceAssistantLauncherImpl() {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
-  const primary = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  const primary = useMandateChain(ambientAssistantMandateChain(pathname));
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [dismissed, setDismissed] = useState(false);

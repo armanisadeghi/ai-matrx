@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandateChain } from "@/features/agents/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
@@ -29,7 +29,9 @@ export default function ScrollAssistantLauncherImpl({
 }: ScrollAssistantLauncherImplProps) {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
-  const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  const { mandate, loading, error } = useMandateChain(
+    ambientAssistantMandateChain(pathname),
+  );
   const [dismissed, setDismissed] = useState(false);
   const openedConversationRef = useRef<string | null>(null);
   const openQuickChat = useOpenQuickChatSheet();
