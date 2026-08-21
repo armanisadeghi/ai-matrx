@@ -3936,6 +3936,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/browser-login/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browser Login Inventory
+         * @description Every saved login the actor may use, destination-independent — metadata
+         *     only, never a value. Backs `credential_login action='list'` for BOTH
+         *     executors so `no_matching_login` is always diagnosable.
+         */
+        get: operations["browser_login_inventory_vault_browser_login_inventory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/browser-login/report": {
         parameters: {
             query?: never;
@@ -27099,7 +27121,7 @@ export interface components {
              * @default host
              * @enum {string}
              */
-            uri_match_mode?: "host" | "exact" | "never";
+            uri_match_mode?: "host" | "domain" | "exact" | "never";
             /** Notes */
             notes?: string | null;
             /** Field Values */
@@ -27299,6 +27321,53 @@ export interface components {
             fillable: boolean;
             /** Reason */
             reason?: string | null;
+        };
+        /**
+         * BrowserLoginInventoryItem
+         * @description One usable saved login, destination-independent — metadata only. This is
+         *     how an agent diagnoses ``no_matching_login`` (wrong host key vs. fill
+         *     disabled vs. item absent) without leaving the tool surface.
+         */
+        BrowserLoginInventoryItem: {
+            /** Item Id */
+            item_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Definition Key
+             * @default website_login
+             */
+            definition_key?: string;
+            /**
+             * Status
+             * @default active
+             */
+            status?: string;
+            /**
+             * Browser Fill Enabled
+             * @default false
+             */
+            browser_fill_enabled?: boolean;
+            /**
+             * Uri Match Mode
+             * @default host
+             */
+            uri_match_mode?: string;
+            /** Login Urls */
+            login_urls?: string[];
+            /** Available Fields */
+            available_fields?: components["schemas"]["BrowserLoginAvailableField"][];
+            /** Non Secret Fields */
+            non_secret_fields?: components["schemas"]["NonSecretFieldIn"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** BrowserLoginInventoryResponse */
+        BrowserLoginInventoryResponse: {
+            /** Items */
+            items: components["schemas"]["BrowserLoginInventoryItem"][];
+            /** Count */
+            count: number;
         };
         /**
          * BrowserLoginLegacyMaterializeResponse
@@ -63236,7 +63305,7 @@ export interface components {
             /** Login Urls */
             login_urls?: string[] | null;
             /** Uri Match Mode */
-            uri_match_mode?: ("host" | "exact" | "never") | null;
+            uri_match_mode?: ("host" | "domain" | "exact" | "never") | null;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -63710,7 +63779,7 @@ export interface components {
             /** Login Urls */
             login_urls?: string[] | null;
             /** Uri Match Mode */
-            uri_match_mode?: ("host" | "exact" | "never") | null;
+            uri_match_mode?: ("host" | "domain" | "exact" | "never") | null;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -63848,7 +63917,7 @@ export interface components {
             /** Login Urls */
             login_urls?: string[] | null;
             /** Uri Match Mode */
-            uri_match_mode?: ("host" | "exact" | "never") | null;
+            uri_match_mode?: ("host" | "domain" | "exact" | "never") | null;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -73498,6 +73567,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_login_inventory_vault_browser_login_inventory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserLoginInventoryResponse"];
                 };
             };
         };

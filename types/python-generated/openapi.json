@@ -10022,6 +10022,28 @@
         }
       }
     },
+    "/vault/browser-login/inventory": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Browser Login Inventory",
+        "description": "Every saved login the actor may use, destination-independent — metadata\nonly, never a value. Backs `credential_login action='list'` for BOTH\nexecutors so `no_matching_login` is always diagnosable.",
+        "operationId": "browser_login_inventory_vault_browser_login_inventory_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserLoginInventoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/browser-login/report": {
       "post": {
         "tags": [
@@ -71062,6 +71084,7 @@
             "type": "string",
             "enum": [
               "host",
+              "domain",
               "exact",
               "never"
             ],
@@ -71541,6 +71564,88 @@
         ],
         "title": "BrowserLoginAvailableField",
         "description": "Safe field inventory for planning one complete login attempt.\n\nThis carries names and fillability only. It can never carry a value, hint,\nmask, length, or prefix derived from credential plaintext."
+      },
+      "BrowserLoginInventoryItem": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "definition_key": {
+            "type": "string",
+            "title": "Definition Key",
+            "default": "website_login"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "active"
+          },
+          "browser_fill_enabled": {
+            "type": "boolean",
+            "title": "Browser Fill Enabled",
+            "default": false
+          },
+          "uri_match_mode": {
+            "type": "string",
+            "title": "Uri Match Mode",
+            "default": "host"
+          },
+          "login_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Login Urls"
+          },
+          "available_fields": {
+            "items": {
+              "$ref": "#/components/schemas/BrowserLoginAvailableField"
+            },
+            "type": "array",
+            "title": "Available Fields"
+          },
+          "non_secret_fields": {
+            "items": {
+              "$ref": "#/components/schemas/NonSecretFieldIn"
+            },
+            "type": "array",
+            "title": "Non Secret Fields"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "item_id",
+          "display_name"
+        ],
+        "title": "BrowserLoginInventoryItem",
+        "description": "One usable saved login, destination-independent — metadata only. This is\nhow an agent diagnoses ``no_matching_login`` (wrong host key vs. fill\ndisabled vs. item absent) without leaving the tool surface."
+      },
+      "BrowserLoginInventoryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BrowserLoginInventoryItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count"
+        ],
+        "title": "BrowserLoginInventoryResponse"
       },
       "BrowserLoginLegacyMaterializeResponse": {
         "properties": {
@@ -164486,6 +164591,7 @@
                 "type": "string",
                 "enum": [
                   "host",
+                  "domain",
                   "exact",
                   "never"
                 ]
@@ -165569,6 +165675,7 @@
                 "type": "string",
                 "enum": [
                   "host",
+                  "domain",
                   "exact",
                   "never"
                 ]
@@ -165927,6 +166034,7 @@
                 "type": "string",
                 "enum": [
                   "host",
+                  "domain",
                   "exact",
                   "never"
                 ]
