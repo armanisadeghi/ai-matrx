@@ -23,6 +23,7 @@ import {
   type NodeStreamEvent,
   type RunRecordSignal,
   type RunRow,
+  TERMINAL_RUN_STATUSES,
   type WorkflowRunEvent,
   type WorkflowRunStatus,
 } from "@/features/workflow-runtime/types";
@@ -863,7 +864,26 @@ const workflowRunsSlice = createSlice({
       // during replay is therefore NEWER than the row — only adopt the row's
       // status when no event has set one, or a terminal replayed status would
       // be regressed to a stale "running" forever (Bugbot #148).
-      if (run.statusTs === null) run.status = row.status;
+      //
+      // ONE exception, and it is the opposite failure: a TERMINAL row over a
+      // NON-terminal replayed status. The lifecycle sweeper force-fails a dead
+      // run by stamping workflow.run.status directly, WITHOUT appending a
+      // terminal event to the durable log — so replay legitimately ends on
+      // "running" while the row says failed/cancelled. Keeping the replayed
+      // status there renders a watchdog-killed run as forever-in-flight (live
+      // clock, Pause/Stop, no error card) and it can never self-correct: the
+      // adopter sees a terminal row and never follows live. The row's terminal
+      // stamp is newer truth by construction, and this cannot regress a
+      // terminal replayed status — it only fires when the replay is active.
+      const rowTerminal = TERMINAL_RUN_STATUSES.has(row.status);
+      const adoptTerminalRow =
+        rowTerminal && !TERMINAL_RUN_STATUSES.has(run.status);
+      if (run.statusTs === null || adoptTerminalRow) {
+        run.status = row.status;
+        // Give the elapsed clock an honest end. The sweeper writes no
+        // completed_at, so this stays null there and the clock simply freezes.
+        if (rowTerminal && row.completed_at) run.statusTs = row.completed_at;
+      }
       if (row.error && run.error === null) run.error = row.error;
       // The engine's own start time. `run_started` (replayed above) wins; the
       // row is the fallback for a run whose first event predates the cursor.
