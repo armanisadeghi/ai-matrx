@@ -138,6 +138,10 @@ export const selectFastFireScoreboard = createSelector(
   },
 );
 
+/** Collapse-on-mastery receipt: sub-cards folded out at drill start. */
+export const selectFoldedCount = (state: RootState): number =>
+  state.fastFire.foldedCount;
+
 // ─── Review playback (audioPlayer is STATE) ───────────────────────────────────
 export const selectPlayingCardId = (state: RootState): string | null =>
   state.fastFire.audioPlayer.playingCardId;

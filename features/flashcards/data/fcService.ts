@@ -572,6 +572,34 @@ export const fcService = {
     return res;
   },
 
+  /**
+   * The expansion graph for a card list: parent card id → its sub-card ids
+   * (`expands_into` edges, written by addSubCards above). One batch RPC;
+   * parents with no expansion are absent. First read-side consumer of the
+   * edge — powers collapse-on-mastery (data/collapse.ts).
+   */
+  async getExpansionEdges(
+    cardIds: string[],
+  ): Promise<FcResult<Record<string, string[]>>> {
+    try {
+      const out: Record<string, string[]> = {};
+      if (cardIds.length === 0) return { data: out, error: null };
+      const res = await associationsService.listForSources(
+        "fc_card",
+        cardIds,
+        "fc_card",
+      );
+      if (!res.ok) return fail("getExpansionEdges", res.error);
+      for (const edge of res.data.edges) {
+        if (edge.role !== EDGE_ROLE.expandsInto) continue;
+        (out[edge.sourceId] ??= []).push(edge.targetId);
+      }
+      return { data: out, error: null };
+    } catch (e) {
+      return fail("getExpansionEdges", e);
+    }
+  },
+
   // ─── READ: a set with its ordered cards + details ────────────────────────
   async getSetWithCards(setId: string): Promise<FcResult<SetWithCards>> {
     try {

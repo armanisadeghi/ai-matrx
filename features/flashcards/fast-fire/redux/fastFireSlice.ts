@@ -170,6 +170,8 @@ export interface FastFireState {
   audioPlayer: AudioPlayerState;
   /** Live-adaptation receipt (null until the first mid-drill reorder). */
   adaptation: AdaptationState | null;
+  /** Collapse-on-mastery receipt: sub-cards folded out at drill start. */
+  foldedCount: number;
   /** Structured error string for a fatal setup/finalize failure. */
   error: string | null;
 }
@@ -190,6 +192,7 @@ const initialState: FastFireState = {
   sessionReview: null,
   audioPlayer: { playingCardId: null, filter: "all" },
   adaptation: null,
+  foldedCount: 0,
   error: null,
 };
 
@@ -309,6 +312,8 @@ const fastFireSlice = createSlice({
         cards: DrillCard[];
         sessionId: string | null;
         setName: string | null;
+        /** Sub-cards folded out by collapse-on-mastery (receipt, spec 26a). */
+        foldedCount?: number;
       }>,
     ) {
       const { cards, sessionId, setName } = action.payload;
@@ -316,6 +321,7 @@ const fastFireSlice = createSlice({
       state.cards = cards;
       state.sessionId = sessionId;
       state.config.setName = setName;
+      state.foldedCount = action.payload.foldedCount ?? 0;
       state.currentIndex = -1;
       state.lastAdvanceReason = null;
       state.gradesByCard = {};

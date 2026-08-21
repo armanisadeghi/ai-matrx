@@ -18,10 +18,12 @@ import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { readCardSourceRefs } from "@/features/flashcards/data/cardSource";
+import { resolveQueue } from "@/features/flashcards/data/collapse";
 import { getFaceImageDetail } from "@/features/flashcards/components/study/cardImages";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { sourceRefFromTrust } from "@/features/education/trust/sourceRef";
 import { studyService } from "@/features/education/study/service/studyService";
+import type { ItemMasteryRow } from "@/features/education/study/types";
 import { startContinuousCapture } from "../audio/continuousCapture";
 import { startDrill, setError } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
@@ -69,12 +71,39 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
         return false;
       }
 
+      // Collapse-on-mastery (spec 26a): mastered sub-cards fold back into
+      // their parent; a parent whose sub-cards are still being learned steps
+      // aside. Two batch reads, best-effort — a failure means no folding, and
+      // the drill runs the plain deck exactly as before this feature existed.
+      let queue = loaded;
+      let foldedCount = 0;
+      try {
+        const ids = loaded.map((c) => c.id);
+        const [edgesRes, masteryRes] = await Promise.all([
+          fcService.getExpansionEdges(ids),
+          studyService.getMasteryBulk(
+            ids.map((id) => ({ itemType: "fc_card", itemId: id })),
+          ),
+        ]);
+        const edges = edgesRes.data ?? {};
+        if (Object.keys(edges).length > 0) {
+          const masteryByItem: Record<string, ItemMasteryRow | undefined> = {};
+          for (const m of masteryRes.data ?? []) masteryByItem[m.item_id] = m;
+          const resolved = resolveQueue(loaded, edges, masteryByItem);
+          queue = resolved.queue;
+          foldedCount = resolved.foldedChildIds.length;
+        }
+      } catch (err) {
+        console.error("[useFastFireLauncher] collapse resolve failed:", err);
+      }
+      if (queue.length === 0) queue = loaded; // never fold a deck to nothing
+
       // 2. Trim to the configured limit and flatten to the drill shape. Carry any
       //    already-cached spoken-front audio (fc_detail kind='spoken_front') so the
       //    drill can play the question aloud instantly. Generation is a separate
       //    pre-step (see FastFireSetup) so the mic-warm below stays in-gesture.
       const limited =
-        config.cardLimit > 0 ? loaded.slice(0, config.cardLimit) : loaded;
+        config.cardLimit > 0 ? queue.slice(0, config.cardLimit) : queue;
       // Card-level "See source" (spec 26e): trust envelope first (persisted
       // with durable refs), the lineage edge as the fallback for cards whose
       // envelope lacks them. One batch RPC, best-effort — never blocks a start.
@@ -136,7 +165,12 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
 
       // 5. Hand off to the state machine.
       dispatch(
-        startDrill({ cards: drillCards, sessionId, setName: set.name }),
+        startDrill({
+          cards: drillCards,
+          sessionId,
+          setName: set.name,
+          foldedCount,
+        }),
       );
       return true;
     } catch (err) {

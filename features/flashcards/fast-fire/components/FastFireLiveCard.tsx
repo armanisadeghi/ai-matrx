@@ -37,6 +37,7 @@ import {
   selectPendingGradeCount,
   selectFastFireSessionId,
   selectFastFireAdaptation,
+  selectFoldedCount,
 } from "../redux/fastFire.selectors";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { FastFireTimerBar } from "./FastFireTimerBar";
@@ -73,6 +74,7 @@ export function FastFireLiveCard({
   const pending = useAppSelector(selectPendingGradeCount);
   const sessionId = useAppSelector(selectFastFireSessionId);
   const adaptation = useAppSelector(selectFastFireAdaptation);
+  const foldedCount = useAppSelector(selectFoldedCount);
 
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
@@ -174,6 +176,17 @@ export function FastFireLiveCard({
             <span className="shrink-0">
               Card {index + 1} / {cards.length}
             </span>
+            {/* Collapse receipt (26a) — folding must never read as data loss:
+                the learner sees WHY the deck is shorter. Shown on card 1 only. */}
+            {foldedCount > 0 && index === 0 && (
+              <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-green-600/40 bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">
+                  {foldedCount} mastered sub-card{foldedCount === 1 ? "" : "s"}{" "}
+                  folded in
+                </span>
+              </span>
+            )}
             {/* VISION §3 — the adaptation is EXPLAINED, never a silent
                 shuffle: when resolving grades tilt the unseen queue toward a
                 struggling topic, the learner sees why the order shifted.

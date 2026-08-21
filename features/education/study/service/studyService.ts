@@ -820,6 +820,30 @@ export const studyService = {
   },
 
   /**
+   * The learner's durable collapse decision for one item (collapse-on-mastery,
+   * `features/flashcards/data/collapse.ts`): 'auto' derives from mastery,
+   * 'collapsed'/'expanded' are explicit overrides. Direct owner update — RLS
+   * scopes writes to the learner's own mastery rows.
+   */
+  async setCollapseState(
+    item: ItemRef,
+    state: "auto" | "collapsed" | "expanded",
+  ): Promise<StudyResult<null>> {
+    try {
+      const { error } = await EDU()
+        .from("item_mastery")
+        .update({ collapse_state: state })
+        .eq("item_type", item.itemType)
+        .eq("item_id", item.itemId)
+        .is("deleted_at", null);
+      if (error) return fail("setCollapseState", error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("setCollapseState", e);
+    }
+  },
+
+  /**
    * All of the current user's mastery rows for one item_type (RLS-scoped), for
    * progress aggregation (mastery distribution, due count, struggling count).
    * Capped by `limit` — a learner with more than this many studied items is well
