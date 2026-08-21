@@ -144,11 +144,18 @@ individually "works". Verified ground truth below is from a three-way full-featu
 4. **Schedule-prefill dead end.** Composer links `/schedules/new?agentId&prompt` and claims
    prefill; `ScheduleForm` reads neither param. Either consume them (small) or stop claiming.
    Part of the automations lane: `/work/automations` + Saved Request → workflow handoff absent.
-5. **Hosted-lane decision, then wiring.** The certified hosted runtime endpoints have ZERO
-   consumers while local shipped and is winning. Decide: build the hosted launch UI (TASK-006
-   hosted half) or explicitly park it as capacity-scaling for later — either way stop carrying it
-   as implicit "next". (Sandbox reseed defect is half-fixed: `/var/log` + immutable-template
-   serving done; reseed-on-drift for user checkouts still open, aidream FOUND_DEFECTS ~L657.)
+5. **Hosted lane — RULED BUILD (2026-08-20), and the 2026-08-21 sandbox map found the hard
+   blocker (chips fired):** the new internal `development` sandbox is **EC2-tier-only**
+   (matrx-sandbox `routes/sandboxes.py:93-105`, host `matrx-sandbox-host-dev`), while managed
+   Claude is **hosted-tier-only** by an explicit gate — coding_session_bridge `FEATURE.md:232`:
+   EC2 capability probes return unavailable "until that tier has a separately reviewed container
+   isolation profile". Resolving that gate (review bwrap/socat isolation on the `development`
+   image, then deliberately open EC2 tier) is the prerequisite for "run the cloud environment in
+   the dev sandbox". Also: the hosted endpoints' 08-15 "certification" has NO in-repo record and
+   predates the AWS/Cloudflare migration — treat as unre-certified; `docs/ACCEPTANCE_DEV_SERVER.md`
+   still documents the retired Coolify deploy path; the hosted-template reseed defect
+   (aidream FOUND_DEFECTS ~L1117) is still open though the dev template's flock'd sync is the fix
+   pattern. Missing capability = LOUD "unavailable because X", never silent absence.
 6. **Codex path to LIVE mirroring.** In order: release the quarantine fix (plugin still
    `alpha-3`/"Unreleased" on main — bump + tag), Arman runs `/hooks` trust once per machine,
    build the trust detector + honest `/work/connections` status (chip fired earlier, never
