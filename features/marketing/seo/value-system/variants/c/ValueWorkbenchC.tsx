@@ -738,7 +738,9 @@ export function ValueWorkbenchC() {
       {meaningOpen ? (
         <MeaningPanel
           siteId={siteId}
+          siteDomain={site.domain}
           brandId={brandId}
+          window={window}
           bandMetas={metas}
           bandsAreTemplate={bandsAreTemplate}
           onClose={() => setMeaningOpen(false)}

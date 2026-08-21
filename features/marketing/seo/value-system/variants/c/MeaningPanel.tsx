@@ -11,7 +11,7 @@
  * so many keywords sit in Unvalued.
  */
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -39,7 +40,8 @@ import {
   listSiteTopicValues,
   listValueRules,
 } from "../../data";
-import type { SiteTopicValue, TopicNode } from "../../types";
+import { BandVocabularyEditor } from "../../vocabulary/BandVocabularyEditor";
+import type { SiteTopicValue, TopicNode, VocabKind } from "../../types";
 import { humanizeSlug, type BandMeta } from "./lib";
 
 function SectionHeader({
@@ -118,20 +120,55 @@ function guardChips(value: SiteTopicValue) {
   ));
 }
 
+/** The one affordance that turns this panel from a readout into a control. */
+function EditVocabularyButton({
+  onClick,
+  isTemplate,
+  noun,
+}: {
+  onClick: () => void;
+  isTemplate: boolean;
+  noun: string;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      onClick={onClick}
+      className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+      title={
+        isTemplate
+          ? `Adopt the platform ${noun} and make them yours — rename them, move the thresholds, add your own.`
+          : `Rename these ${noun}, move the thresholds, add or remove them.`
+      }
+    >
+      <Pencil className="h-3 w-3" />
+      {isTemplate ? "Adopt & edit" : "Edit"}
+    </Button>
+  );
+}
+
 export function MeaningPanel({
   siteId,
+  siteDomain,
   brandId,
+  window,
   bandMetas,
   bandsAreTemplate,
   onClose,
 }: {
   siteId: string;
+  siteDomain: string;
   /** Needed only to build the door to where guidelines are edited. */
   brandId: string | null | undefined;
+  /** The GSC window the band editor measures its live impact over. */
+  window: { start: string; end: string };
   bandMetas: BandMeta[];
   bandsAreTemplate: boolean;
   onClose: () => void;
 }) {
+  const [editing, setEditing] = useState<VocabKind | null>(null);
   // The prose doctrine every AI run for this site reads (D35). Read-only here:
   // the document is AUTHORED in the classification workbench, and two editors
   // for one document is how they drift.
@@ -232,7 +269,14 @@ export function MeaningPanel({
               count={bandMetas.length}
               hint="Every keyword's computed score lands in one of these bands. Negative and Unvalued are reserved: the honest buckets."
             />
-            <TemplateBadge show={bandsAreTemplate} />
+            <span className="flex shrink-0 items-center gap-1.5">
+              <TemplateBadge show={bandsAreTemplate} />
+              <EditVocabularyButton
+                noun="value bands"
+                isTemplate={bandsAreTemplate}
+                onClick={() => setEditing("value_band")}
+              />
+            </span>
           </div>
           <ul className="space-y-1">
             {bandMetas.map((meta) => (
@@ -327,7 +371,14 @@ export function MeaningPanel({
               count={geoAreas.data?.length ?? null}
               hint="Where a searcher is looking from decides the geo gate: your ideal radius, acceptable region, expansion targets — and excluded places, which force Negative."
             />
-            <TemplateBadge show={Boolean(geoBands.data?.[0]?.is_template)} />
+            <span className="flex shrink-0 items-center gap-1.5">
+              <TemplateBadge show={Boolean(geoBands.data?.[0]?.is_template)} />
+              <EditVocabularyButton
+                noun="geo bands"
+                isTemplate={Boolean(geoBands.data?.[0]?.is_template)}
+                onClick={() => setEditing("geo_band")}
+              />
+            </span>
           </div>
           {geoBands.isError ? (
             <InlineQueryError
@@ -458,6 +509,16 @@ export function MeaningPanel({
           </ul>
         </section>
       </div>
+
+      {editing ? (
+        <BandVocabularyEditor
+          siteId={siteId}
+          siteDomain={siteDomain}
+          kind={editing}
+          window={window}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </SidePanelSurface>
   );
 }
