@@ -1,7 +1,7 @@
 // hooks/useTextCleaner.ts
 import { useState, useCallback, useMemo } from 'react';
-import { patterns, ActionConfig, PatternConfig } from "@/app/_admin_build_excluded/administration/utilities/utils/configs/patterns";
-import { textContext, TextContextEntry } from "@/app/_admin_build_excluded/administration/utilities/utils/text-cleaner/configs";
+import { patterns, ActionConfig, PatternConfig } from "@/app/(admin)/administration/utilities/utils/configs/patterns";
+import { textContext, TextContextEntry } from "@/app/(admin)/administration/utilities/utils/text-cleaner/configs";
 import {ErrorSeverity, ErrorFormat, ParsedError, DetailedError, FormattedError} from "../utilities/types";
 import { ErrorManager } from '../utilities/ErrorManager';
 

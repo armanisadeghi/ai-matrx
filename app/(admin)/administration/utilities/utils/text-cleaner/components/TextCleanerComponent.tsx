@@ -3,7 +3,7 @@
 import React, { useCallback } from "react";
 import { useTextCleaner } from "../hooks/useTextCleaner";
 import { useClipboard } from "@/hooks/useClipboard";
-import { textContext } from "@/app/_admin_build_excluded/administration/utilities/utils/text-cleaner/configs";
+import { textContext } from "@/app/(admin)/administration/utilities/utils/text-cleaner/configs";
 import AnimatedSelect from "@/components/matrx/AnimatedForm/AnimatedSelect";
 import { FormField } from "@/types/AnimatedFormTypes";
 import { Copy, RefreshCw } from "lucide-react";
@@ -26,7 +26,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 
 import { toast } from "@/components/ui/use-toast";
-import type { PatternConfig } from "@/app/_admin_build_excluded/administration/utilities/utils/configs/patterns";
+import type { PatternConfig } from "@/app/(admin)/administration/utilities/utils/configs/patterns";
 
 type GroupedPatterns = {
   [key: string]: Array<{
