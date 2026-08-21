@@ -124,3 +124,32 @@ on conflict (feature, key) do update set
                     then platform.feature_knob.value else excluded.value end,
   review_due = case when platform.feature_knob.set_by = 'human'
                     then platform.feature_knob.review_due else excluded.review_due end;
+
+-- Added 2026-08-21 (applied live as edu_study_kit_max_source_chars_knob): the
+-- ingest ceiling. Was a hardcoded 48,000 in useIngest.ts because the whole
+-- source went into ONE model call; segmentation removed that constraint, so it
+-- is now a blast-radius backstop set for a real textbook chapter set.
+insert into platform.feature_knob
+  (feature, key, value, default_value, value_type, unit,
+   min_value, max_value, label, description, set_by, basis, review_due)
+values
+  ('education.study_kit', 'max_source_chars',
+   '400000'::jsonb, '400000'::jsonb, 'integer', 'characters', 1000, 5000000,
+   'Maximum source length read into a kit',
+   'How much extracted text one study kit will read from an uploaded document. Anything past this is not read, and the student is told so.',
+   'agent',
+   'This was a hardcoded 48,000 because the whole source went into ONE model call, so a 90-page PDF was silently cut to roughly its first third. Generation is now segmented and no model sees the whole document at once, so the ceiling is a blast-radius backstop rather than a context limit: 400k characters is about 200 dense pages.',
+   current_date + 45)
+on conflict (feature, key) do update set
+  default_value = excluded.default_value,
+  value_type    = excluded.value_type,
+  unit          = excluded.unit,
+  min_value     = excluded.min_value,
+  max_value     = excluded.max_value,
+  label         = excluded.label,
+  description   = excluded.description,
+  basis         = excluded.basis,
+  value      = case when platform.feature_knob.set_by = 'human'
+                    then platform.feature_knob.value else excluded.value end,
+  review_due = case when platform.feature_knob.set_by = 'human'
+                    then platform.feature_knob.review_due else excluded.review_due end;

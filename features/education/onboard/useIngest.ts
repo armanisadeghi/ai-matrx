@@ -31,14 +31,30 @@ import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedU
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { extractOfficeText } from "./officeExtract";
 import { describeIngestSupport } from "./formatSupport";
+import { knobInt } from "@/lib/knobs/featureKnobs";
+import { KIT_KNOB_FEATURE } from "@/features/education/convert/coverage";
 import type { RawIngestInput, NormalizedIngest, IngestProgress } from "./types";
 
-/** Agent context ceiling — keep source text well under the model window. */
-const MAX_CHARS = 48_000;
-
-function clamp(text: string): { text: string; truncated: boolean } {
-  if (text.length <= MAX_CHARS) return { text, truncated: false };
-  return { text: text.slice(0, MAX_CHARS), truncated: true };
+/**
+ * Source ceiling, in characters.
+ *
+ * This used to be a hardcoded 48,000 because the whole source went into ONE
+ * model call, so anything past the context window had to go. A 90-page PDF was
+ * therefore cut to roughly its first third and the student was told so by the
+ * words "trimmed to fit" appended to a meta line.
+ *
+ * Generation is now SEGMENTED (`convert/coverage.ts`) — no model ever sees the
+ * whole document at once — so the ceiling is no longer a context limit. It is a
+ * blast-radius backstop, it lives in `platform.feature_knob`, and it is set high
+ * enough for a real textbook chapter set. Whatever it cuts is now reported
+ * LOUDLY rather than as a footnote (see `KitBoard`).
+ */
+async function clampToKnob(
+  text: string,
+): Promise<{ text: string; truncated: boolean; limit: number }> {
+  const limit = await knobInt(KIT_KNOB_FEATURE, "max_source_chars");
+  if (text.length <= limit) return { text, truncated: false, limit };
+  return { text: text.slice(0, limit), truncated: true, limit };
 }
 
 function titleFromUrl(url: string): string {
@@ -126,7 +142,7 @@ export function useIngest(): UseIngestResult {
         const title = input.title?.trim() || raw.split(/\n/)[0].slice(0, 60) || "Pasted notes";
         onProgress?.({ phase: "uploading", message: "Saving your notes…" });
         const fileId = await anchorText(raw, title, onProgress);
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -161,7 +177,7 @@ export function useIngest(): UseIngestResult {
         const title = input.title?.trim() || titleFromUrl(url);
         onProgress?.({ phase: "uploading", message: "Saving the transcript…" });
         const fileId = await anchorText(raw, title, onProgress);
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -193,7 +209,7 @@ export function useIngest(): UseIngestResult {
           titleFromUrl(url);
         onProgress?.({ phase: "uploading", message: "Saving the source…" });
         const fileId = await anchorText(raw, title, onProgress);
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -246,7 +262,7 @@ export function useIngest(): UseIngestResult {
             "Couldn't read any text from that image. It works best on printed pages, slides, and screenshots — for handwriting, try a clearer, well-lit photo or paste the text.",
           );
         }
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -288,7 +304,7 @@ export function useIngest(): UseIngestResult {
               : "Couldn't transcribe that audio — make sure it contains clear speech.",
           );
         }
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -317,7 +333,7 @@ export function useIngest(): UseIngestResult {
             `Couldn't read any text from "${file.name}" — it may be empty or image-only.`,
           );
         }
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -373,7 +389,7 @@ export function useIngest(): UseIngestResult {
             "No selectable text found in that PDF. If it's a scan, try the PDF extractor's OCR mode first.",
           );
         }
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,
@@ -392,7 +408,7 @@ export function useIngest(): UseIngestResult {
         onProgress?.({ phase: "extracting", message: "Reading the file…" });
         const raw = (await file.text()).trim();
         if (!raw) throw new Error("That file is empty.");
-        const { text, truncated } = clamp(raw);
+        const { text, truncated } = await clampToKnob(raw);
         return {
           text,
           title,

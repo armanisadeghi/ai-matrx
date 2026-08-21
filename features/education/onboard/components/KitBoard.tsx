@@ -203,7 +203,6 @@ function SourceStage({
                   ? `${kit.source.meta.pages} pages · `
                   : ""}
                 {kit.source.meta.chars.toLocaleString()} characters read
-                {kit.source.meta.truncated ? " · trimmed to fit" : ""}
               </>
             ) : (
               "Ready"
@@ -229,6 +228,21 @@ function SourceStage({
         <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
           <FileText className="h-3.5 w-3.5 shrink-0" />
           Everything below is written only from this material.
+        </p>
+      )}
+
+      {/* A document we could not read all of is a WARNING, not a footnote. The
+          student is deciding whether to trust this kit as complete; "trimmed to
+          fit" appended to a character count is not enough to make that call. */}
+      {!ingesting && kit.source?.meta.truncated && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            Your document is longer than one kit can read, so this kit covers
+            only the first{" "}
+            {kit.source.meta.chars.toLocaleString()} characters of it. Split the
+            rest into a second upload to cover the whole thing.
+          </span>
         </p>
       )}
     </div>
