@@ -17,38 +17,6 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
-### D229 — `fileHandler`'s byte targets cannot read an OWNED PRIVATE file (401) (2026-08-21)
-
-`fileHandler.use({kind:"file_id",fileId}).as({kind:"blob"})` (and therefore
-`data_uri`, `form_data_part`, `anchor_download`) fails with
-`file-handler: blob fetch failed (401)` for a normal owned private file.
-
-Two causes, stacked:
-
-1. `features/files/handler/resolver.ts` guards the mint as
-   `if (opts.needsUrl && result.fileId && !result.url)`. `hydrateFromFileId`
-   already set a `url`, so `ensureSignedUrl` never runs — even though
-   `ensureSignedUrl` has its OWN correct freshness check and would have re-minted.
-2. Removing that guard is not enough: what `Files.getSignedUrl` returns is
-   `https://files.matrxserver.com/files/{id}/download`, an **authenticated
-   endpoint**, not a pre-signed URL. `toBlob`'s bare `fetch(url)` sends no
-   Authorization header, so it 401s either way.
-
-So the `signed URL` in the handler's vocabulary is not actually transport-safe,
-which is exactly what `capabilities.transportSafeForFetch: false` says — but
-`toBlob` ignores that flag and fetches anyway.
-
-**Fix (needs the files-service contract decision, hence not fixed here):** either
-have `/files/{id}/url` return a genuinely pre-signed URL, or make `toBlob` route
-through the authenticated `downloadFile()` client when
-`transportSafeForFetch === false`. The second is small and local to
-`features/files/handler/output/target.ts`.
-
-Verified live 2026-08-21 on a `.md` anchor file. Worked around in
-`features/education/convert/reopenSource.ts`, which calls `downloadFile()`
-directly and says so in a comment — that workaround should be deleted when this
-is fixed properly.
-
 ### D219 — five ACTIVE kinds have an uncompilable `emitted_json_schema` (dangling `$defs` ref) (2026-08-20)
 
 `content_ir.kind_definition.emitted_json_schema` for **`claim_evidence`, `plan_page_draft`,
@@ -1438,6 +1406,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D229** — `fileHandler`'s `blob`/`data_uri`/`anchor_download` targets 401'd on every OWNED file: `preferFetchableUrl` correctly resolves an owned file to Python's authenticated `/files/{id}/download`, but `toBlob` then fetched it with a bare `fetch` (no auth). Fixed 2026-08-21 — `toBlob` reads an owned file BY ID through the authenticated client (`features/files/handler/output/target.ts`). A file is addressed by id; nothing needs a URL.
 
 - **D213 — every AI flashcard generation persisted TWO identical sets (2026-08-18):** single-writer contract D-WP3-4 — surfaces (from-topic / from-source / convert deck) save via `fcService.createGeneratedSetForConversation` (adopt the adapter's set or create one stamped `cx_conversation`/`<cid>`); `FLASHCARDS_CANONICAL_ADAPTER` links to a surface-saved set instead of twinning. 20 live duplicate pairs soft-deleted, canvas links repointed; live-verified one generation → one set. Guard `features/flashcards/data/__tests__/generated-set-single-writer.test.ts`; contract in flashcards `FEATURE.md`.
 - **D209 — an adopted stream's output vanished when the run ended (2026-08-17):** `selectUnifiedSlots` hid every `sub_agent` block range unconditionally; a server-orchestrated run adopted via `adoptForeignStream` has no owning `agent_call`, so its only content block was hidden at operation completion — the hide is now gated on `toolCallId` (`features/agents/redux/execution-system/active-requests/active-requests.selectors.ts`, guard `__tests__/adopted-sub-agent-visibility.test.ts`). Fixing it surfaced a second class: a fieldless warm `kind_definition` row was erasing compiled schemas, rendering the finished kind card EMPTY (`features/content-ir/registry/kind-registry.ts`, guard `features/content-ir/__tests__/warm-fieldless-schema.test.ts`).

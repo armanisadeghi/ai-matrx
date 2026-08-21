@@ -29,6 +29,7 @@ import {
   preferIdentityLocator,
 } from "../utils/prefer-locator";
 import { pythonShareUrl } from "../utils/python-base";
+import { downloadFile } from "@/features/files/api/files";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import type {
   FileTarget,
@@ -156,6 +157,21 @@ function toFetchableUrl(file: NormalizedFile): string {
 }
 
 async function toBlob(file: NormalizedFile): Promise<Blob> {
+  // AN OWNED FILE IS READ BY ID, THROUGH THE AUTHENTICATED CLIENT.
+  //
+  // `preferFetchableUrl` correctly resolves an owned file to Python's
+  // `/files/{id}/download` (FEATURE.md "Locator preference" — S3 URLs are
+  // CORS-blocked, so `transportSafeForFetch` is false for them). That endpoint
+  // is AUTHENTICATED: a bare `fetch` of it sends no credentials and every owned
+  // private file came back 401, breaking `blob`, `data_uri`, `form_data_part`
+  // and `anchor_download` for exactly the files the handler exists to serve.
+  // `downloadFile` is the same endpoint through the typed client that attaches
+  // auth — so the id, which is all we ever need, is all we use.
+  if (file.fileId) {
+    const { blob } = await downloadFile(file.fileId, { inline: true });
+    return blob;
+  }
+  // No id: a foreign/base64/share source. Those genuinely are plain fetches.
   const url = preferFetchableUrl(file);
   if (!url) {
     throw new Error("file-handler: cannot produce a Blob for this file");

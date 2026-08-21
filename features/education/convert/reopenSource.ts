@@ -16,7 +16,6 @@
 // original file, so the whole kit stays one family.
 
 import { fileHandler } from "@/features/files/handler/handler";
-import { downloadFile } from "@/features/files/api/files";
 import { createClient } from "@/utils/supabase/client";
 import { streamPdfExtractTextRemote } from "@/features/pdf-extractor/service/streamPdf";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
@@ -98,12 +97,10 @@ export async function reopenSource(
     (resolved.meta.mime ?? "").startsWith("text/") ||
     resolved.meta.mime === "application/json";
   if (isTextual) {
-    // `downloadFile` is the AUTHENTICATED byte read. The handler's `blob` target
-    // cannot be used here: it does a bare `fetch` of the file's URL, and for an
-    // owned private file that URL is the files service's authenticated
-    // `/files/{id}/download` endpoint rather than a pre-signed one, so it 401s
-    // with no Authorization header (logged in FOUND_DEFECTS.md).
-    const { blob } = await downloadFile(fileId, { inline: true });
+    // ONE file entry point, addressed by ID. Nothing here knows or wants a URL.
+    const blob = await fileHandler
+      .use({ kind: "file_id", fileId })
+      .as({ kind: "blob" });
     const text = (await blob.text()).trim();
     if (text) {
       return { text, title, ref: { kind: "file", fileId }, method: "inline" };
