@@ -9,7 +9,8 @@
 //   fetchWorkflowScopeCounts  — every scope tab's true total, one round trip
 //   fetchWorkflowFacets       — filter OPTIONS with counts for every finite column
 //   saveWorkflowRowEdits      — inline table edits, one statement per row
-//   duplicateWorkflow         — copy a definition (returns the new id: a door)
+//   duplicateWorkflow         — copy a definition via wfx_duplicate_definition
+//                               (returns the new id: a door)
 //
 // The RPC family (wfx_*) is hand-written from the template in
 // lib/list-scope/FEATURE.md — see migrations/wfx_list_scoped.sql.
@@ -185,45 +186,42 @@ export async function deleteWorkflow(workflowId: string): Promise<void> {
 }
 
 /**
- * Copy a definition. Returns the NEW id so the caller can hand the user a door
- * to it — a duplicate the user cannot reach is a dead end.
+ * Copy a workflow you can VIEW into a new workflow you own. Returns the new id
+ * AND name so the caller can hand the user a door to it — a duplicate the user
+ * cannot reach is a dead end.
  *
- * `source_definition_id` + `source_snapshot_at` record the lineage the table
- * already models, so the copy knows where it came from.
+ * THE RULING (Arman, 2026-08-20): workflows adopt the agent sharing model —
+ * "anything you can view, you may duplicate and run". That gate lives in the
+ * DB (`wfx_duplicate_definition` checks `iam.has_access_for(..., 'viewer')`),
+ * exactly as `agx_duplicate_agent` does for agents.
+ *
+ * This REPLACED a client-side read-then-insert, which could not implement the
+ * ruling and was wrong in two ways: it copied the SOURCE's `organization_id`
+ * and `visibility` onto the copy — handing an outsider's row your org id, and
+ * silently re-publishing the original's reach. The RPC homes the copy in the
+ * duplicator's own org and starts it private. Per no-legacy, the old path is
+ * deleted rather than kept beside this one.
  */
 export async function duplicateWorkflow(
   workflowId: string,
 ): Promise<{ id: string; name: string }> {
-  const { data: source, error: readError } = await supabase
+  const { data: newId, error } = await supabase.rpc("wfx_duplicate_definition", {
+    p_definition_id: workflowId,
+  });
+
+  if (error) throw pgError(error);
+  if (!newId) throw new Error("The copy was not created.");
+
+  // The RPC returns the id (its contract, mirroring agx_duplicate_agent). Read
+  // the name back so the toast can say WHICH copy it made.
+  const { data: created, error: readError } = await supabase
     .schema("workflow")
     .from("definition")
-    .select(
-      "name,description,nodes,edges,viewport,channels,strict_channels,entry_nodes,metadata,variables,category,tags,organization_id,visibility,max_concurrent_runs",
-    )
-    .eq("id", workflowId)
+    .select("id,name")
+    .eq("id", newId)
     .single();
 
   if (readError) throw pgError(readError);
-  if (!source) throw new Error("That workflow could no longer be read.");
-
-  const { data: created, error: writeError } = await supabase
-    .schema("workflow")
-    .from("definition")
-    .insert({
-      ...source,
-      name: `${source.name} (copy)`,
-      source_definition_id: workflowId,
-      source_snapshot_at: new Date().toISOString(),
-      // A copy starts un-starred and un-archived: the star is a statement about
-      // the original, and inheriting "archived" would file the new copy
-      // straight into the trash-adjacent view the user just left.
-      is_favorite: false,
-      is_archived: false,
-    })
-    .select("id,name")
-    .single();
-
-  if (writeError) throw pgError(writeError);
-  if (!created) throw new Error("The copy was not created.");
+  if (!created) throw new Error("The copy was created but could not be read.");
   return { id: created.id, name: created.name };
 }

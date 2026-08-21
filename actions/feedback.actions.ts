@@ -1020,6 +1020,7 @@ export async function getActiveAnnouncements(): Promise<{
     } = await supabase.auth.getUser();
 
     let query = supabase
+      .schema("users")
       .from("system_announcements")
       .select("*")
       .eq("is_active", true);
@@ -1068,6 +1069,7 @@ export async function getAllAnnouncements(): Promise<{
     }
 
     const { data, error } = await supabase
+      .schema("users")
       .from("system_announcements")
       .select("*")
       .order("created_at", { ascending: false });
@@ -1108,6 +1110,7 @@ export async function createAnnouncement(
     }
 
     const { data, error } = await supabase
+      .schema("users")
       .from("system_announcements")
       .insert({
         ...input,
@@ -1155,6 +1158,7 @@ export async function updateAnnouncement(
     }
 
     const { data, error } = await supabase
+      .schema("users")
       .from("system_announcements")
       .update({
         ...updates,
@@ -1199,6 +1203,7 @@ export async function deleteAnnouncement(
     }
 
     const { error } = await supabase
+      .schema("users")
       .from("system_announcements")
       .delete()
       .eq("id", announcementId);

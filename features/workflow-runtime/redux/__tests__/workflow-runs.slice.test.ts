@@ -94,7 +94,6 @@ function nodeCompleted(
     output_kind_version: null,
     output_kind_degraded: null,
     metadata: null,
-    wrapper: null,
     ts: "2026-08-16T00:00:02Z",
     ...overrides,
   } as WorkflowRunEvent;
