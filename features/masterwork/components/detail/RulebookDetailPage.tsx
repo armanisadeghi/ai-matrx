@@ -1760,7 +1760,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             confirmLabel="Mark as ready"
             onConfirm={() => void activate()}
           />
+          {/* Keyed on the lane for the same reason as the chat-import dialog:
+              IngestSourceDialog reads `initialLane` into state at MOUNT, so
+              the in-page Approach picker must remount it to land the Expert on
+              the exemplar/file lane rather than the instructional default. */}
           <IngestSourceDialog
+            key={`ingest-${requestedIngestLane ?? ingestLane ?? "default"}`}
             open={ingestOpen}
             onOpenChange={setIngestOpen}
             initialLane={requestedIngestLane ?? ingestLane}
