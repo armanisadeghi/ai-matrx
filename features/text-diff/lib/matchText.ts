@@ -131,6 +131,7 @@ export function matchText(text: string, search: string): MatchResult {
   // NO MATCH FOUND
   return {
     found: false,
+    // access-errors: ok — in-memory text search over caller-provided content, not a record read
     error: 'Search pattern not found in text'
   };
 }

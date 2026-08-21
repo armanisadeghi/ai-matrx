@@ -26,6 +26,7 @@ import {
     FileCode2,
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -583,7 +584,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                 .or(`tool_name.eq.${toolName},tool_id.eq.${toolId}`)
                 .order("created_at", { ascending: false });
 
-            if (error) throw new Error(error.message);
+            if (error) throw operationFailed("load the test samples", error);
             setSamples((data as ToolTestSample[]) ?? []);
         } catch (err) {
             toast({ title: "Failed to load samples", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -601,8 +602,9 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
             .eq("id", id);
 
         if (error) {
-            toast({ title: "Update failed", description: error.message, variant: "destructive" });
-            throw new Error(error.message);
+            const failure = operationFailed("update that sample", error);
+            toast({ title: "Update failed", description: failure.message, variant: "destructive" });
+            throw failure;
         }
 
         setSamples((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));

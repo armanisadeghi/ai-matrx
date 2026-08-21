@@ -28,6 +28,7 @@ function applySearchReplaceDiff(
   if (!matchResult.found) {
     return {
       success: false,
+      // access-errors: ok — in-memory diff pattern match against caller-provided text, not a record read
       error: matchResult.error || 'Pattern not found'
     };
   }

@@ -333,6 +333,7 @@ export function validateSearchReplaceDiffs(
     
     // No match found
     errors.push(
+      // access-errors: ok — in-memory diff validation over caller-provided text, not a record read
       `Diff ${i + 1}: Search pattern not found in text (${diff.search.substring(0, 50)}...)`
     );
   }

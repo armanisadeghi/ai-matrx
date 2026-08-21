@@ -8,6 +8,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import type { NoteVersion } from "../types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 type RpcVersionRow = {
   id: string;
@@ -181,7 +182,11 @@ export async function compareVersions(
   ]);
 
   if (!version1 || !version2) {
-    throw new Error("One or both versions not found");
+    throw recordUnavailable({
+      entity: "note version",
+      reason: "unknown",
+      recordId: !version1 ? versionId1 : versionId2,
+    });
   }
 
   // Simple diff calculation (line-based)

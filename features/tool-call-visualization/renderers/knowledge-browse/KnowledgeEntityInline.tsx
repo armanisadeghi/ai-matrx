@@ -119,6 +119,7 @@ export function KnowledgeEntityInline({
       `${map.artifacts.length} ${map.artifacts.length === 1 ? "artifact" : "artifacts"}`,
     );
   } else {
+    // access-errors: ok — reports the tool payload's own knowledge-graph search outcome, not a record access state
     subtitleParts.push("not found in the knowledge graph");
   }
 

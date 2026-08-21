@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { formatDistanceToNow } from "date-fns";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useToolComponentAgent } from "@/features/tool-call-visualization/admin/hooks/useToolComponentAgent";
@@ -275,7 +276,7 @@ export function ToolComponentPreview({
         .or(`tool_name.eq.${tool.name},tool_id.eq.${tool.id}`)
         .order("created_at", { ascending: false });
 
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load the test samples", error);
       const list = (data as ToolTestSample[]) ?? [];
       setSamples(list);
 
