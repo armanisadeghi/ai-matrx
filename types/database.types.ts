@@ -28413,6 +28413,53 @@ export type Database = {
         Returns: Json
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
+      list_my_presentable_assists: {
+        Args: { p_limit?: number }
+        Returns: {
+          action: Json
+          body: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          dedupe_key: string | null
+          deleted_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          evidence: Json | null
+          expires_at: string | null
+          first_seen_at: string | null
+          id: string
+          is_starred: boolean
+          metadata: Json
+          occurrences: number
+          organization_id: string | null
+          priority: number
+          reasoning: string | null
+          resolved_at: string | null
+          result: Json | null
+          source_key: string
+          source_kind: string
+          status: string
+          suppressed_until: string | null
+          surface_name: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          viewed_at: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "assists"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       log_activity:
         | {
             Args: {
