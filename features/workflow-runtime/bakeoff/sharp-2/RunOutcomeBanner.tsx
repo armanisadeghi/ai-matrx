@@ -63,7 +63,9 @@ export function RunOutcomeBanner({
         <PartyPopper className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary">
-            Finished — everything is ready below.
+            {delivered.length > 0
+              ? "Finished — everything you were promised is ready below."
+              : "Finished — the last step's result is above."}
           </p>
           {delivered.length > 0 ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
