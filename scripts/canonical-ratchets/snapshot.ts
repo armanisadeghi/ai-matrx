@@ -78,7 +78,7 @@ export function loadEnv(): { url: string; key: string } | null {
   return url && key ? { url, key } : null;
 }
 
-async function rpc(name: string, url: string, key: string): Promise<unknown> {
+export async function rpc(name: string, url: string, key: string): Promise<unknown> {
   const res = await fetch(`${url.replace(/\/$/, "")}/rest/v1/rpc/${name}`, {
     method: "POST",
     headers: {

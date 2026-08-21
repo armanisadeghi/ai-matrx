@@ -60,6 +60,18 @@ if $STRICT; then
         # Contract + baselines: scripts/canonical-ratchets/FEATURE.md.
         "Unregistered entity-like tables (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-unregistered-entities.ts --strict"
         "Post-doctrine conformance (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-post-doctrine-conformance.ts --strict"
+        # NO NULL ORG is BLOCKING. Owner ruling 2026-08-21 (db-rules §2/§6e):
+        # "If something belongs to the system, that CANNOT EVER be represented
+        # by a NULL org! ... make the release script scream ... NO NULL ORG."
+        # Two ratchets on one ~1s snapshot: NULL-org ROW count (may only go
+        # down) and the SET of tables that still allow a nullable
+        # organization_id (may only shrink). Both seeded from live, so the 38
+        # grandfathered tables and their 21,800 legacy rows are a queue and
+        # cannot block anything — only GROWTH fails. The DDL half of the same
+        # ruling is platform._ddl_guard lane (e), which RAISEs at CREATE time;
+        # this gate also fails if that event trigger is missing or disabled,
+        # because then nothing is watching the door.
+        "NO NULL ORG (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-org-null.ts --strict"
         # REACHABILITY GUARDS. Two halves, one script. Definition parity
         # (containment_edges deps vs the trigger UPDATE OF list) is a
         # catalog-only, deterministic, one-right-answer check and BLOCKS in
@@ -198,6 +210,8 @@ else
         # like every other gate in the advisory list.
         "Unregistered entity-like tables (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-unregistered-entities.ts"
         "Post-doctrine conformance (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-post-doctrine-conformance.ts"
+        # Blocking in --strict (see above); loud and exit-0 here.
+        "NO NULL ORG (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-org-null.ts"
         # REACHABILITY GUARDS. Two halves, one script. Definition parity
         # (containment_edges deps vs the trigger UPDATE OF list) is a
         # catalog-only, deterministic, one-right-answer check and BLOCKS in
