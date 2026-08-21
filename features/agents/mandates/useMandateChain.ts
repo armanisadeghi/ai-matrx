@@ -19,15 +19,15 @@ export function useMandateChain(
     optional: true,
   });
 
-  const resolved = chain.page && pageOverride.mandate
-    ? { ...pageOverride, mandateKey: chain.page }
-    : chain.module && moduleOverride.mandate
-      ? { ...moduleOverride, mandateKey: chain.module }
-      : { ...system, mandateKey: chain.system };
+  const resolved =
+    chain.page && pageOverride.mandate
+      ? { ...pageOverride, mandateKey: chain.page }
+      : chain.module && moduleOverride.mandate
+        ? { ...moduleOverride, mandateKey: chain.module }
+        : { ...system, mandateKey: chain.system };
 
   return {
     ...resolved,
     loading: system.loading || moduleOverride.loading || pageOverride.loading,
   };
 }
-
