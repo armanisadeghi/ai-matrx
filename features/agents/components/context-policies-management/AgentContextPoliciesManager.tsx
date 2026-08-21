@@ -966,7 +966,7 @@ export function AgentContextPoliciesManager({
           <AgentContextInjectionSwitch agentId={agentId} compact />
         )}
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <button
             type="button"
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
