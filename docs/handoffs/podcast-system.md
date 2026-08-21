@@ -54,8 +54,9 @@ voice/cast diversity + voice-selection UX → `docs/handoffs/podcast-voice-diver
    mandate in by `(format, language, host_min, host_max)`); today a custom format/language means
    editing `_create_script` / `_is_legacy_script_request`. Build when the custom-agent count grows.
 4. **Wire the live-podcast pair** — `podcast.relevance_gate` + `podcast.live_rewrite` need the
-   future live-podcast orchestrator (Arman deprioritized until that's a real project). Mandates are
-   declared and admin-rebindnable; only the orchestrator is missing.
+   future live-podcast pipeline — the component that calls these two mandates during an
+   episode (Arman deprioritized until that's a real project). Mandates are declared and
+   admin-rebindnable; only that component is missing.
 5. **Legacy 2-host script agents (educational/news/persian) don't take speaker names** — they
    bake their own cast, so default no-speaker 2-host runs on the legacy path always sound like
    the same pair. Mitigated: the FE always sends a fresh previewed cast (which routes OFF the

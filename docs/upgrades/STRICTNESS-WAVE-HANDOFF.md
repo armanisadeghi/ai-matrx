@@ -24,7 +24,7 @@ The hard, non-negotiable constraint that shapes everything:
 > **Fix agents must NEVER run a type-check / `tsc` / `pnpm build`.** Dozens run in
 > parallel; a single `tsc` balloons to **20+ minutes** and stalls everyone. They fix
 > **blind**, working only from the error list in their assigned task file. Verification is
-> central (the orchestrator runs `pnpm type-check` once, after all agents finish).
+> central (the Conductor runs `pnpm type-check` once, after all agents finish).
 
 This is exactly why the per-file task files exist — each one is a complete, self-contained
 briefing for its file so the agent never needs to compile.
