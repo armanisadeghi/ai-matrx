@@ -25,6 +25,11 @@
 -- future rename of either backstop function degrades to "warn on everything"
 -- -- the LOUD direction -- instead of throwing inside the warn lane.
 --
+-- Also widened to the THIRD legal backstop, plan._stamp_from_node (db-rules §2).
+-- The original rule listed two; aidream's BLOCKING gate matches three. An
+-- advisory rule that disagrees with the blocking gate is the same defect in a
+-- smaller costume, so both now match on the same set of functions.
+--
 -- Coverage itself was never at risk: aidream/scripts/validate_org_backstop_coverage.py
 -- measures the same property correctly and is a blocking release gate. Only the
 -- guard's signal was broken.
@@ -211,13 +216,22 @@ BEGIN
       -- future rename of either function in the LOUD direction instead of
       -- throwing inside the warn lane. Same class as db-rules §1's
       -- regclass::text warning.
+      --
+      -- THREE legal backstops, not two (db-rules §2): the original rule listed
+      -- only two, but aidream's BLOCKING gate (matrx_orm.catalog
+      -- .org_backstop_coverage, validate_org_backstop_coverage.py) matches
+      -- _stamp_org_default / inherit_org_from_parent / _stamp_from_node. The
+      -- guard now matches the same three, so the advisory rule and the blocking
+      -- gate cannot disagree -- plan.node_artifact and plan.node_step carry
+      -- plan._stamp_from_node and are correctly backstopped.
       IF EXISTS (SELECT 1 FROM pg_attribute a
                  WHERE a.attrelid = cmd.objid AND a.attname = 'organization_id'
                    AND a.attnotnull AND NOT a.atthasdef AND NOT a.attisdropped)
          AND NOT EXISTS (SELECT 1 FROM pg_trigger t
                          WHERE t.tgrelid = cmd.objid AND NOT t.tgisinternal
                            AND t.tgfoid IN (to_regproc('public._stamp_org_default'),
-                                            to_regproc('platform.inherit_org_from_parent'))) THEN
+                                            to_regproc('platform.inherit_org_from_parent'),
+                                            to_regproc('plan._stamp_from_node'))) THEN
         INSERT INTO platform.ddl_guard_log(severity, rule, object_ref, command_tag, detail)
         VALUES ('warn','org_not_null_no_backstop', v_schema||'.'||v_rel, cmd.command_tag,
                 'organization_id NOT NULL with no default and no backstop trigger yet. Attach _stamp_org_default or inherit_org_from_parent in this same migration or org-forgetting writes 500. (db-rules §2.)');

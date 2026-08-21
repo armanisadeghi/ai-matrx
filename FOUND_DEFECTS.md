@@ -14,48 +14,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D241 — the `org_not_null_no_backstop` DDL-guard rule can NEVER pass: it compares a schema-qualified name against `regproc::text` (2026-08-21)
-
-**This is the single largest source of noise in `platform.ddl_guard_log`, and every row it has ever
-written is a FALSE POSITIVE.** The rule fires whenever `organization_id` is `NOT NULL` with no
-default and the table has no org-backstop trigger. Its detection:
-
-```sql
-AND NOT EXISTS (SELECT 1 FROM pg_trigger t
-                WHERE t.tgrelid = cmd.objid AND NOT t.tgisinternal
-                  AND t.tgfoid::regproc::text IN
-                      ('public._stamp_org_default','platform.inherit_org_from_parent'))
-```
-
-`regproc::text` **omits the schema for anything on the `search_path`**, so a trigger on
-`public._stamp_org_default` renders as the bare string `_stamp_org_default` and the `IN` never
-matches. Measured live 2026-08-21: **281 of 281** live triggers on that function render bare —
-i.e. the `NOT EXISTS` is unconditionally true and the rule warns on every qualifying table
-regardless of whether it is correctly backstopped.
-
-This is the exact class db-rules §1 already warns about for `regclass::text` (*"a `public` table
-prints as a bare `contact_submissions`"*), reappearing inside the guard itself.
-
-**Found** while applying the batch access model (aidream `0438`/`0439`): all five tables involved —
-`batch.cost_event`, `batch.provider_batch`, `batch.work_item`, `platform.activity_log`,
-`platform.judge_verdict` — carry `_stamp_org_default` and were warned about anyway. Those 12 log
-rows are acknowledged with this evidence via `platform.ddl_guard_ack`.
-
-**Fix (known, not applied here — it is a platform-guard change and this was a batch chip):**
-compare by OID, never by rendered text —
-
-```sql
-AND t.tgfoid IN ('public._stamp_org_default'::regproc,
-                 'platform.inherit_org_from_parent'::regproc)
-```
-
-**Why it matters beyond tidiness.** A rule that cannot pass trains every reader to ack this rule
-without looking, which is how a *genuine* missing backstop — the failure that turns an
-org-forgetting write into a 500 — gets acked along with the noise. It also inflates the advisory
-`pnpm check:ddl-guard-log` gate and the daily `docs-steward` triage load. Note the aidream release
-gate `scripts/validate_org_backstop_coverage.py` measures the same property correctly and is
-blocking, so **coverage itself is not at risk** — only the guard's signal is.
-
 ### D239 — 48,493 `scheduler.sch_run` rows are un-updatable by anyone (NOT VALID check constraint) (2026-08-21)
 
 `scheduler.sch_run_claim_protocol_by_claimed_at_chk` is
@@ -1667,6 +1625,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D241** — the `org_not_null_no_backstop` DDL-guard rule compared a schema-qualified name against `tgfoid::regproc::text`, which drops the schema for search_path-resident functions, so the `IN` never matched any of the 282 live `_stamp_org_default` triggers: the predicate was unconditionally true and the rule carried no signal for nine days (875 rows, its largest group). Now compares by OID via `to_regproc()`, and widened to the third legal backstop `plan._stamp_from_node` so the advisory rule matches aidream's blocking gate. Old predicate flagged 269 of 379 qualifying tables; fixed one flags 6 of 384. `migrations/ddl_guard_org_backstop_oid_comparison.sql`, applied live and smoke-tested in a rolled-back transaction across all four directions; 38 unacked rows acked as the class with per-object proof. 2026-08-21.
 - **D235** — CX overview KPIs moved into `chat.cx_overview_kpis` (aidream migration 0437): SECURITY DEFINER, EXECUTE for `service_role` only, returning KPI totals + per-tool usage + daily rollups in one indexed pass. `fetchOverviewKpisInner` is now that RPC plus the existing usage aggregate; the `readAllRows` paging (and its `rowKey` churn-tolerance consumer) is gone from this path. Verified live 2026-08-21 through the real admin-client → PostgREST path: **0.45s all-time** (was ~10s), totals matching the prior scan, and **403 `permission denied`** for an authenticated non-service caller.
 - **D218** — the `/crm` record-class facet works: new `MatrxColumnDef.filterSingle` renders single-choice (replace) semantics on record_class/expert_status/date buckets, CrmListPage takes the last valid value. Browser-proven 2026-08-21: switching to "Found by the platform" surfaced all discovered rows.
 - **D220** — import commits MATCHED rows too (resolver NULL-only enrichment + contact points + idempotent affiliation via `fetchCurrentEmploymentState`); preview says "will be updated", Import button counts matched rows. Browser-proven 2026-08-21 with a live match round (phone enriched, no duplicate, affiliation stayed 1).
