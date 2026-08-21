@@ -167,13 +167,13 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `boolean` | Boolean | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `claim_evidence` | Claim Evidence | — | 0 | | unclaimed | | |
+| `claim_evidence` | Claim Evidence | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | unclaimed | | |
 | `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | unclaimed | | |
 | `criteria_gate_result` | Criteria Gate Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | unclaimed | | |
-| `entity_mention` | Entity Mention | — | 0 | | unclaimed | | |
-| `evidence_source` | Evidence Source | — | 0 | | unclaimed | | |
+| `entity_mention` | Entity Mention | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `evidence_source` | Evidence Source | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
 | `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
@@ -182,7 +182,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `json` | JSON (any value) | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | unclaimed | | |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `notable_timestamp` | Notable Timestamp | — | 0 | | unclaimed | | |
+| `notable_timestamp` | Notable Timestamp | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `number` | Number | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `office_extraction_result` | Office Extraction Result | — | 1 | | unclaimed | | |
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
@@ -192,10 +192,10 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `page_keyword_map_v1` | Page Keyword Map | — | 1 | | unclaimed | | |
 | `regex_extract_result` | Regex Extract Result | — | 1 | | unclaimed | | |
 | `rendered_text` | Rendered Text | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 16 live events |
-| `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | | unclaimed | | |
+| `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `research_page_analysis` | Research Page Analysis | — | 1 | | unclaimed | | |
 | `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | unclaimed | | |
-| `research_tag_suggestions` | Research Tag Suggestions | — | 1 | | unclaimed | | |
+| `research_tag_suggestions` | Research Tag Suggestions | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | | unclaimed | | |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | unclaimed | | |
@@ -205,8 +205,8 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `table_rows` | Table Rows | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `text` | Text | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | unclaimed | | |
-| `topic_relevance` | Topic Relevance | — | 0 | | unclaimed | | |
-| `transcript_usage` | Transcript Usage | — | 0 | | unclaimed | | |
+| `topic_relevance` | Topic Relevance | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
+| `transcript_usage` | Transcript Usage | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `value` | Value (single result) | — | 1 | | claimed | copy-D | primitive-kinds set |
 | `workflow_run_result` | Workflow Run Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 
@@ -238,3 +238,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
   ⚠ Shared-checkout note: copy-E re-claimed 7 of these rows in the working tree after the claim
   was pushed. The rows are registered either way — a bespoke engine-result component would
   update `component_key` on the SAME rows.
+- 2026-08-20 — copy-B claims batch 2 (research/evidence cluster): `claim_evidence`,
+  `entity_mention`, `evidence_source`, `notable_timestamp`, `topic_relevance`,
+  `transcript_usage`, `research_cross_cutting_tags`, `research_tag_suggestions`.
+  Six of the eight have **0** canonical examples — those must be authored and validated first.
