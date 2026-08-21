@@ -46,6 +46,7 @@ import {
 } from "@/components/icons/tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 import {
   normalizeNoteEditorMode,
   usePreferredDefaultEditorMode,
@@ -723,6 +724,11 @@ export function NotesView({
             <>
               <PageHeader>{headerChrome}</PageHeader>
               <PageHeaderRightPortal>
+                {/* THE DOOR LAW — the Notes Organizer and the page assistant
+                    are Mandates the user may re-point at their own agent, with
+                    no deploy. Deep-linked to the `notes` domain: the bare list
+                    is 331 mandates across 47 domains. */}
+                <MandateDoorLink feature="notes" label="Notes agents" />
                 <TapTargetButtonGroup>
                   {activeTabId && (
                     <>

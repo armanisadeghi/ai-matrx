@@ -3,6 +3,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
@@ -35,6 +36,11 @@ export default async function CrmRoute() {
           <h1 className="truncate text-sm font-semibold text-foreground">
             {getSurfaceDisplayLabel(CRM_SURFACE_NAME)}
           </h1>
+          <MandateDoorLink
+            feature="crm"
+            label="CRM agents"
+            className="ml-auto"
+          />
         </div>
       </PageHeader>
       <CrmListPage />

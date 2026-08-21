@@ -12,6 +12,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import MasterworkLanding from "@/features/auth/components/module-landing/landings/MasterworkLanding";
 import { MasterworkHomePage } from "@/features/masterwork/home/MasterworkHomePage";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/masterwork", {
@@ -37,6 +38,11 @@ export default async function MasterworkRoute() {
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
             Masterwork
           </h1>
+          <MandateDoorLink
+            feature="masterwork"
+            label="Masterwork agents"
+            className="ml-auto"
+          />
         </div>
       </PageHeader>
       <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">

@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { Workflow as WorkflowIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 export function WorkflowsListHeader() {
   return (
@@ -17,11 +18,17 @@ export function WorkflowsListHeader() {
       {/* THE DOOR LAW: the Masterwork Studio is where a workflow is authored,
           and it is the only other place this record lives. `pr-*` on the row
           keeps the last control clear of the shell avatar. */}
+      <MandateDoorLink
+        feature="workflow"
+        label="Workflow agents"
+        className="ml-auto"
+      />
+
       <Button
         asChild
         variant="ghost"
         size="sm"
-        className="ml-auto h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+        className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
       >
         <Link href="/masterwork" title="Masterworks — where workflows are built">
           <span className="hidden sm:inline">Masterworks</span>

@@ -132,6 +132,14 @@ export function WarRoomAllView() {
       onPress: () => setMasterOpen((v) => !v),
     },
     {
+      // THE DOOR LAW — the Master Agent and the room's other AI steps are
+      // Mandates the user may re-point at their own agent, with no deploy.
+      // Deep-linked to the `war_room` domain (the bare list is 331 mandates).
+      icon: "BrainCircuit",
+      label: "War Room agents",
+      onPress: () => router.push("/agents/mandates?feature=war_room"),
+    },
+    {
       icon: "FolderKanban",
       label: "From project",
       onPress: () => setProjectDialogOpen(true),
