@@ -1,0 +1,100 @@
+---
+name: drift-audit
+type: Skill
+title: "drift-audit — refresh the canonical-DB conformance numbers, then act"
+description: "Re-measure the canonical data model's live conformance state (registration, base columns, RLS authority, grants, guards, versioning, reachability), diff it against the last recorded state, update the standing report, and IMMEDIATELY act: fire focused-session chips for everything fixable, and put only genuine judgment calls on Arman's decision list. Use with /drift-audit, or whenever Arman asks 'where are we at' on DB drift/conformance, wants the drift numbers updated, or re-issues a drift-audit brief. NOT a rulebook (that is systems/platform/db-rules/FEATURE.md) and NOT the per-table fix recipe (db-canonicalize-table)."
+tags: [db, canonical-model, audit, conformance, chips]
+timestamp: 2026-08-21T00:00:00Z
+---
+
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/drift-audit/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
+
+# drift-audit — refresh the numbers, then act
+
+**Invocation: `/drift-audit`.** The deliverable is never just numbers: it is *numbers → diff
+→ chips fired → decision list*. Ending at a report with no chips is an incomplete run —
+that gap is exactly why this skill exists (Arman, 2026-08-21).
+
+## 0. Ground rules
+
+- **Live project ONLY: `brsgrqvjdzwihsvnfqkf`** (`db.matrxserver.com`). The retired project
+  `txzxabzwovsujtloxrus` may be READ for historical comparison, never written.
+- **Verify against live state, never against a brief.** Audit briefs go stale and get
+  re-issued: the 8-finding "Canonical Architecture Drift Audit" brief is from 2026-08-15 and
+  was fully adjudicated the same day
+  ([archive](/projects/archive/db-changeover-2026-08/architecture-drift-audit-2026-08-15.md)).
+  If a finding doesn't reproduce live, say so — that is a result, not a failure.
+- Canon = [db-rules FEATURE.md](/systems/platform/db-rules/FEATURE.md); operating doctrine =
+  [database-changeover-doctrine](/policies/database-changeover-doctrine.md) (measurement
+  traps §4: certified-vs-all universes, `is_component` vs `rls_variant`, cached certify,
+  counts are not work lists).
+
+## 1. Measure (read-only, via Supabase MCP)
+
+Run these against live; record each number with its query framing so the next run diffs
+apples to apples:
+
+| # | Sentinel | Query sketch |
+|---|---|---|
+| 1 | Certification | `count(*) filter (where certified)` / total from `audit.summary` (run `select audit.refresh()` first if stale) |
+| 2 | Component `created_by` policies | policies on `rls_variant='component'` active tokens whose qual/with_check mention `created_by` — **must be 0** |
+| 3 | Nullable org (registered) | active `entity_types` rows whose table's `organization_id` is nullable (~34 known; diff the SET, not the count) |
+| 4 | Event triggers | `count(*) from pg_event_trigger` (expect 5 platform + Supabase built-ins; **any restore silently drops them**) |
+| 5 | pg_cron | `count(*) from cron.job` (restore also drops these) |
+| 6 | ddl_guard_log | total, unacknowledged, and unacknowledged `hand_rolled_entity` rows + new `object_ref`s since last run |
+| 7 | Versioned-without-capture | active `is_versioned` + `version_store='history'` tokens with no trigger whose **`tgfoid`** resolves to `platform._version_capture` (never match by trigger name) |
+| 8 | Grant holes | tables with `authenticated` policies but no SELECT grant — check `role_table_grants` **∪ `role_column_grants`** (column-grant designs are deliberate: files/secrets/docproc) |
+| 9 | RLS-off / zero-policy | `pg_class.relrowsecurity` false, or RLS on with 0 policies but live SIUD grants (the D184 class) |
+| 10 | Reachability | `count(distinct refreshed_at)` (1 = recent full rebuild; several = incremental upkeep visible); run `platform.reachability_drift()` if it exists |
+
+## 2. Diff against the last recorded state
+
+Sources, in order: the standing report artifact (update it in place — ask Arman for the link
+or use the artifact list; 2026-08-21 baseline:
+`https://claude.ai/code/artifact/bcf51fa4-8fbc-4650-9f04-ca8460f01ff5`), the archived
+08-15 adjudication, `matrx-frontend/FOUND_DEFECTS.md` (D146/D182/D184 family), and the
+session-memory note `project_drift_audit_adjudication`. For every worsened number, find the
+cause (new tables? a lost trigger? a restore?) before reporting it. **Republish the same
+artifact** — never a new URL.
+
+## 3. Act — this is the point
+
+Split every open item three ways:
+
+1. **Chip it** (default): anything a focused session can finish end-to-end — a guard, a
+   gate, a bounded sweep, a ≤3-table fix. Fire `spawn_task` chips immediately. Every chip
+   prompt must be self-contained: live project id + never-touch-retired rule, the canon and
+   doctrine pointers, the exact end state, the non-breaking constraints, the full-change
+   contract (doctrine §8a: DB + ORM + types + consumers + commit/push), and the
+   retreat-cycle rule (§3a: finish forward).
+2. **Split it**: too big for one session → chip the first bounded piece plus a handoff doc
+   per the `handoffs` skill; never chip "do the whole backlog".
+3. **Arman's list**: openness calls, machinery ratifications, schedule approvals, anything
+   db-rules marks Arman-only. Direct question + your recommendation each
+   (his standing format — never a doc pointer). Do NOT chip these.
+
+## 4. Report
+
+One message: headline numbers with deltas, what improved, what worsened and why, chips
+fired (titles), decisions awaiting Arman. Update the artifact, update the
+`project_drift_audit_adjudication` memory, log the run in common-docs if any doc changed.
+
+## Known standing items (groom this list each run — remove what's done)
+
+As of 2026-08-21: enforcement chips fired for — birth-gate ERROR flip, ddl_guard_log
+reader + triage, generator safety layers (column-grant guard + created_by check), canon
+residue trio (plan.node_* visibility / pdf.redaction_mapping policy / seo.rank_target),
+versioned-without-capture sweep, pg_cron restoration, instruction reach + ledger grooming,
+blocking ratchets, reachability guards. Awaiting Arman: seo NULL-org lane vs §6e ·
+`users.profiles` ruling · `batch.*` access model · machinery ratification (seo
+observations, runtime internals) · recurring reachability-drift schedule.
+
+## Changelog
+
+- **2026-08-21** — Created from Arman's directive after the 08-15 brief was re-issued
+  cold: refreshing the numbers must always end in chips fired + a decision list, and the
+  standing artifact is updated in place, never recreated.
