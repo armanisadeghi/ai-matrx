@@ -83,7 +83,7 @@ export default function ScrollAssistantLauncherImpl({
       className={cn(
         "pointer-events-none fixed bottom-5 left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
         inputVariant === "multiline"
-          ? "w-[min(440px,calc(100vw-2rem))]"
+          ? "w-[min(420px,calc(100vw-2rem))]"
           : "w-[min(380px,calc(100vw-2rem))]",
       )}
     >
@@ -93,32 +93,27 @@ export default function ScrollAssistantLauncherImpl({
             className={cn(
               "animate-pulse bg-glass shadow-glass backdrop-blur-glass",
               inputVariant === "multiline"
-                ? "h-24 rounded-[22px]"
+                ? "h-[72px] rounded-[20px]"
                 : "h-9 rounded-xl",
             )}
           />
         ) : error || !mandate ? (
-          <div className="flex h-9 items-center gap-2 rounded-xl bg-card/80 px-3 text-xs text-muted-foreground shadow-sm backdrop-blur-md">
+          <div
+            className={cn(
+              "flex items-center rounded-xl bg-card/80 px-3 text-xs text-muted-foreground shadow-sm backdrop-blur-md",
+              inputVariant === "multiline" ? "h-[72px]" : "h-9",
+            )}
+          >
             <span className="min-w-0 flex-1 truncate">
               Assistant unavailable
             </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 shrink-0"
-              onClick={dismiss}
-              aria-label="Dismiss assistant"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
           </div>
         ) : !conversationId ? (
           <div
             className={cn(
               "animate-pulse bg-glass shadow-glass backdrop-blur-glass",
               inputVariant === "multiline"
-                ? "h-24 rounded-[22px]"
+                ? "h-[72px] rounded-[20px]"
                 : "h-9 rounded-xl",
             )}
           />
@@ -130,22 +125,20 @@ export default function ScrollAssistantLauncherImpl({
             surfaceKey={surfaceKey}
             showConnectors={false}
             enablePasteImages={false}
-            extraRightControls={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={dismiss}
-                aria-label="Dismiss assistant"
-                title="Dismiss until refresh"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            }
           />
         )}
       </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="pointer-events-auto absolute -right-2 -top-2 z-10 h-7 w-7 rounded-full border border-glass-edge bg-card/95 text-muted-foreground opacity-80 shadow-glass backdrop-blur-glass transition-[color,opacity,transform] hover:scale-105 hover:bg-card hover:text-foreground hover:opacity-100"
+        onClick={dismiss}
+        aria-label="Dismiss assistant until refresh"
+        title="Dismiss until refresh"
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
     </div>
   );
 }

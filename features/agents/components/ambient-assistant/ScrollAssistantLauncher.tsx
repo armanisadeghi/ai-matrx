@@ -28,26 +28,47 @@ export function ScrollAssistantLauncher({
   useEffect(() => {
     if (isMobile || revealed) return undefined;
 
-    const isNavigationScroll = (target: EventTarget | null) =>
+    let bottomIntentTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearBottomIntent = () => {
+      if (!bottomIntentTimer) return;
+      clearTimeout(bottomIntentTimer);
+      bottomIntentTimer = null;
+    };
+
+    const reveal = () => {
+      clearBottomIntent();
+      setRevealed(true);
+    };
+
+    const isNavigationInteraction = (target: EventTarget | null) =>
       target instanceof Element &&
       Boolean(target.closest("aside, [data-slot='sidebar']"));
 
     const revealOnScroll = (event: Event) => {
       const target = event.target;
-      if (isNavigationScroll(target)) return;
+      if (isNavigationInteraction(target)) return;
       const offset =
         target instanceof Element ? target.scrollTop : window.scrollY;
       if (offset < 72) return;
-      setRevealed(true);
+      reveal();
     };
 
-    // Some app-shell surfaces are compositor-scrolled. Their visual offset can
-    // move before a DOM `scroll` event reaches React (notably feature landing
-    // pages), while the user's wheel intent is still delivered synchronously.
-    const revealOnWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) < 8 || isNavigationScroll(event.target))
+    // A no-scroll page still has a deliberate discovery path: dwelling near
+    // the bottom edge signals that the user is looking for a page-level action.
+    // A brief pass through the zone is ignored, so the launcher never appears
+    // merely because the pointer crossed the bottom of the viewport.
+    const revealOnBottomIntent = (event: PointerEvent) => {
+      if (
+        event.pointerType !== "mouse" ||
+        isNavigationInteraction(event.target) ||
+        event.clientY < window.innerHeight - 96
+      ) {
+        clearBottomIntent();
         return;
-      setRevealed(true);
+      }
+      if (bottomIntentTimer) return;
+      bottomIntentTimer = setTimeout(reveal, 600);
     };
 
     const shellMain = document.querySelector<HTMLElement>(".shell-main");
@@ -57,15 +78,16 @@ export function ScrollAssistantLauncher({
       capture: true,
       passive: true,
     });
-    document.addEventListener("wheel", revealOnWheel, {
+    document.addEventListener("pointermove", revealOnBottomIntent, {
       capture: true,
       passive: true,
     });
     return () => {
+      clearBottomIntent();
       window.removeEventListener("scroll", revealOnScroll);
       shellMain?.removeEventListener("scroll", revealOnScroll);
       document.removeEventListener("scroll", revealOnScroll, true);
-      document.removeEventListener("wheel", revealOnWheel, true);
+      document.removeEventListener("pointermove", revealOnBottomIntent, true);
     };
   }, [isMobile, revealed]);
 

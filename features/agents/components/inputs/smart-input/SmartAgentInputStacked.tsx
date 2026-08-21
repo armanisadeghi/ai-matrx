@@ -106,9 +106,9 @@ export function SmartAgentInputStacked({
     "w-full border",
     "flex flex-col min-h-0 overflow-hidden",
     isAmbient
-      ? "min-h-24 rounded-[22px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
+      ? "min-h-[72px] rounded-[20px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
       : "rounded-[28px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
-    isAmbient ? "max-w-[440px]" : compact ? "max-w-[500px]" : "max-w-[800px]",
+    isAmbient ? "max-w-[420px]" : compact ? "max-w-[500px]" : "max-w-[800px]",
   );
 
   if (isAmbient) {
@@ -117,11 +117,12 @@ export function SmartAgentInputStacked({
         conversationId={conversationId}
         uploadRoot={uploadRoot}
         uploadPath={uploadPath}
-        className={cn(shellClassName, "gap-1 px-2.5 pb-2 pt-2.5")}
+        className={cn(shellClassName, "gap-0.5 px-2.5 py-1.5")}
         data-ambient-input="multiline"
       >
         <AgentTextarea
           conversationId={conversationId}
+          compact
           uploadRoot={uploadRoot}
           uploadPath={uploadPath}
           enablePasteImages={enablePasteImages}
