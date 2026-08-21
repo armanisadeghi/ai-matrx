@@ -12,6 +12,7 @@ import { NotebookText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -88,7 +89,7 @@ export default function NotePeek({ id, open, onClose }: PeekProps) {
           </PeekField>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">Note not found.</p>
+        <AccessGate token="note" id={id} />
       )}
     </PeekDialog>
   );

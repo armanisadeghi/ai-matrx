@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
 import { peekHref } from "../peekHref";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -86,7 +87,7 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
           </PeekField>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">File not found.</p>
+        <AccessGate token="file" id={id} />
       )}
     </PeekDialog>
   );

@@ -12,6 +12,7 @@ import { ListTodo } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { peekHref } from "../peekHref";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -72,7 +73,7 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
           </PeekField>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">Task not found.</p>
+        <AccessGate token="task" id={id} />
       )}
     </PeekDialog>
   );
