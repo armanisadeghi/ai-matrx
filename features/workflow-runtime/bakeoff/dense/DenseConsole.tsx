@@ -268,9 +268,9 @@ export function DenseConsole({
           selectedNodeId={focusStep?.nodeId ?? null}
           pinnedNodeId={pinnedNodeId}
           onSelect={(nodeId) => setPinnedNodeId(nodeId)}
-          className="order-2 border-b border-border/60 lg:order-none lg:h-full lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r"
+          className="order-2 shrink-0 border-b border-border/60 lg:order-none lg:h-full lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r"
         />
-        <div className="order-1 min-w-0 lg:order-none lg:h-full lg:min-h-0 lg:overflow-y-auto">
+        <div className="order-1 min-w-0 shrink-0 lg:order-none lg:h-full lg:min-h-0 lg:shrink lg:overflow-y-auto">
           <div className="space-y-3 p-3">
             <InterruptCard runId={runId} />
             <RunErrorCard runId={runId} nodeLabels={labels} />
@@ -298,7 +298,7 @@ export function DenseConsole({
           activity={activity}
           stepLabels={labels}
           quiet={quiet}
-          className="order-3 border-t border-border/60 lg:order-none lg:h-full lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-t-0"
+          className="order-3 shrink-0 border-t border-border/60 lg:order-none lg:h-full lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-t-0"
         />
       </div>
     </div>
