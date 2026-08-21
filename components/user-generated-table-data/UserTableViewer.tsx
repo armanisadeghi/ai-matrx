@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
-import { EditableCell } from "@/features/data-tables/components/EditableCell";
+import { EditableCell, normalizeCellValue } from "@/features/data-tables/components/EditableCell";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
@@ -66,10 +66,20 @@ import {
 } from "@/features/data-tables/service";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
+  isBulkOpError,
   isServiceFailure,
   type BulkMergeOp,
+  type BulkOp,
   type FieldDataType,
 } from "@/features/data-tables/types";
+import {
+  buildFillDownOps,
+  buildSetColumnOps,
+  capturePriorValues,
+  orderSelectedRows,
+  type SelectableRow,
+} from "@/features/data-tables/bulk-row-actions";
+import { BulkRowActions } from "@/features/data-tables/components/BulkRowActions";
 import {
   applyColumnFilters as applyFilters,
   hasAnyActiveFilter,
@@ -1734,6 +1744,100 @@ const UserTableViewer = ({
     [cellUndo, fields, isReadOnly, readCell, refreshAfterWrite, tableId],
   );
 
+  /** Run one bulk transaction and report it honestly. */
+  const runBulkOps = useCallback(
+    async (ops: BulkOp[], describe: string): Promise<boolean> => {
+      if (isReadOnly || ops.length === 0) return false;
+      const result = await bulkWrite({ tableId, operations: ops });
+      if (isServiceFailure(result)) {
+        toast({
+          title: "Bulk change failed",
+          description: result.error,
+          variant: "destructive",
+        });
+        return false;
+      }
+      // udt_bulk_write reports per-op failures inside a successful envelope, so
+      // a green result is NOT proof every row landed. Say what actually
+      // happened rather than claiming the whole batch.
+      const failed = result.data.results.filter(isBulkOpError);
+      if (failed.length > 0) {
+        toast({
+          title: `${describe.split(" ")[0]} ${ops.length - failed.length} of ${ops.length}`,
+          description: `${failed.length} row${failed.length === 1 ? "" : "s"} could not be found — they may have been removed by someone else.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: describe });
+      }
+      refreshAfterWrite();
+      return true;
+    },
+    [isReadOnly, refreshAfterWrite, tableId],
+  );
+
+  /**
+   * Set one column across the selection. Each cell is recorded individually on
+   * the undo stack so Cmd-Z walks the change back cell by cell rather than
+   * offering an all-or-nothing revert the user cannot aim.
+   */
+  const applyBulkColumn = useCallback(
+    async (
+      fieldName: string,
+      ops: BulkOp[],
+      rows: readonly SelectableRow[],
+      describe: string,
+    ) => {
+      const field = fields.find((f) => f.field_name === fieldName);
+      const prior = capturePriorValues(rows, fieldName);
+      const landed = await runBulkOps(ops, describe);
+      if (!landed) return;
+      for (const op of ops) {
+        if (op.op !== "cell") continue;
+        cellUndo.record({
+          tableId,
+          rowId: op.row_id,
+          fieldName,
+          fieldDisplayName: field?.display_name ?? fieldName,
+          priorValue: prior.get(op.row_id) ?? null,
+          nextValue: op.value,
+        });
+      }
+    },
+    [cellUndo, fields, runBulkOps, tableId],
+  );
+
+  const handleBulkSetColumn = useCallback(
+    async (fieldName: string, rawValue: string) => {
+      const rows = orderSelectedRows(displayRows, selectedRowIds);
+      const field = fields.find((f) => f.field_name === fieldName);
+      // Coerce exactly the way a hand edit does — a second normalizer is how an
+      // agent write and a bulk write end up storing different things.
+      const value = normalizeCellValue(rawValue, field?.data_type ?? "string");
+      await applyBulkColumn(
+        fieldName,
+        buildSetColumnOps(rows.map((r) => r.id), fieldName, value),
+        rows,
+        `Set ${field?.display_name ?? fieldName} on ${rows.length} row${rows.length === 1 ? "" : "s"}`,
+      );
+    },
+    [applyBulkColumn, displayRows, fields, selectedRowIds],
+  );
+
+  const handleFillDown = useCallback(
+    async (fieldName: string) => {
+      const rows = orderSelectedRows(displayRows, selectedRowIds);
+      const field = fields.find((f) => f.field_name === fieldName);
+      await applyBulkColumn(
+        fieldName,
+        buildFillDownOps(rows, fieldName),
+        rows,
+        `Filled ${field?.display_name ?? fieldName} down ${Math.max(rows.length - 1, 0)} row${rows.length === 2 ? "" : "s"}`,
+      );
+    },
+    [applyBulkColumn, displayRows, fields, selectedRowIds],
+  );
+
   const grid = useGridSelection({
     rowIds: rowIdsOnPage,
     fieldNames: fieldNamesInOrder,
@@ -2157,37 +2261,21 @@ const UserTableViewer = ({
         </div>
       )}
 
-      {selectedRowIds.length > 0 && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
-          <span className="text-xs font-medium">
-            {selectedRowIds.length.toLocaleString()}{" "}
-            {selectedRowIds.length === 1 ? "row" : "rows"} selected
-          </span>
-          {!allRowsOnPageSelected && displayRows.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={togglePageSelection}
-            >
-              Select this page
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => {
-              setSelectedRowIds([]);
-              lastSelectedRowIndex.current = null;
-            }}
-          >
-            Clear selection
-          </Button>
-        </div>
-      )}
+      <BulkRowActions
+        selectedRowIds={selectedRowIds}
+        displayRows={displayRows}
+        fields={fields}
+        readOnly={isReadOnly}
+        allOnPageSelected={allRowsOnPageSelected}
+        onSelectPage={togglePageSelection}
+        onClearSelection={() => {
+          setSelectedRowIds([]);
+          lastSelectedRowIndex.current = null;
+        }}
+        onRunOps={runBulkOps}
+        onSetColumn={handleBulkSetColumn}
+        onFillDown={handleFillDown}
+      />
 
       {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
           the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
