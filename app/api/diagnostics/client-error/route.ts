@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown guest identity" }, { status: 404 });
   }
 
-  const { error } = await admin.from("system_error").insert({
+  const { error } = await admin.schema("ops").from("system_error").insert({
     kind: `client:${parsed.data.source}`,
     error_text: parsed.data.message,
     error_type: parsed.data.code,

@@ -8,7 +8,7 @@ import type {
 } from "@/features/admin/users/types";
 
 const LIMIT = 500;
-type ApiRow = Database["public"]["Tables"]["api_request_log"]["Row"];
+type ApiRow = Database["ops"]["Tables"]["api_request_log"]["Row"];
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
@@ -63,7 +63,7 @@ export async function GET(
     const apiQueries = [];
     if (userId) {
       let query = admin
-        .from("api_request_log")
+        .schema("ops").from("api_request_log")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
@@ -73,7 +73,7 @@ export async function GET(
     }
     if (fingerprint) {
       let query = admin
-        .from("api_request_log")
+        .schema("ops").from("api_request_log")
         .select("*")
         .eq("fingerprint_id", fingerprint)
         .order("created_at", { ascending: false })
@@ -92,7 +92,7 @@ export async function GET(
     const requestIds = [...new Set(apiRows.map((row) => row.request_id))];
 
     let errorsQuery = admin
-      .from("system_error")
+      .schema("ops").from("system_error")
       .select(
         "id,occurred_at,kind,error_text,error_type,request_id,route,source_app,resolved_at",
       )
@@ -109,7 +109,7 @@ export async function GET(
     if (from) errorsQuery = errorsQuery.gte("occurred_at", from);
 
     let logsQuery = admin
-      .from("app_log")
+      .schema("ops").from("app_log")
       .select("id,ts,level,message,request_id,route,feature,exc_type")
       .gte("level_no", 30)
       .order("ts", { ascending: false })

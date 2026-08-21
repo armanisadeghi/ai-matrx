@@ -25301,6 +25301,501 @@ export type Database = {
       [_ in never]: never
     }
   }
+  ops: {
+    Tables: {
+      api_field_warnings: {
+        Row: {
+          created_at: string
+          detail: string | null
+          field_name: string
+          id: string
+          path: string
+          replacement: string | null
+          request_id: string | null
+          user_id: string | null
+          warning_type: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          field_name: string
+          id?: string
+          path: string
+          replacement?: string | null
+          request_id?: string | null
+          user_id?: string | null
+          warning_type: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          field_name?: string
+          id?: string
+          path?: string
+          replacement?: string | null
+          request_id?: string | null
+          user_id?: string | null
+          warning_type?: string
+        }
+        Relationships: []
+      }
+      api_request_log: {
+        Row: {
+          auth_type: string
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          fingerprint_id: string | null
+          id: string
+          ip_address: string | null
+          method: string
+          path: string
+          request_id: string
+          status_code: number | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auth_type?: string
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          fingerprint_id?: string | null
+          id?: string
+          ip_address?: string | null
+          method: string
+          path: string
+          request_id: string
+          status_code?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auth_type?: string
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          fingerprint_id?: string | null
+          id?: string
+          ip_address?: string | null
+          method?: string
+          path?: string
+          request_id?: string
+          status_code?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_log: {
+        Row: {
+          classified: boolean
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          exc_type: string | null
+          feature: string
+          host_role: string | null
+          id: string
+          level: string
+          level_no: number
+          logger_name: string
+          message: string
+          metadata: Json
+          process_pid: number | null
+          request_id: string | null
+          route: string | null
+          stage: string | null
+          traceback: string | null
+          ts: string
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          classified?: boolean
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          exc_type?: string | null
+          feature?: string
+          host_role?: string | null
+          id?: string
+          level?: string
+          level_no?: number
+          logger_name?: string
+          message?: string
+          metadata?: Json
+          process_pid?: number | null
+          request_id?: string | null
+          route?: string | null
+          stage?: string | null
+          traceback?: string | null
+          ts?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          classified?: boolean
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          exc_type?: string | null
+          feature?: string
+          host_role?: string | null
+          id?: string
+          level?: string
+          level_no?: number
+          logger_name?: string
+          message?: string
+          metadata?: Json
+          process_pid?: number | null
+          request_id?: string | null
+          route?: string | null
+          stage?: string | null
+          traceback?: string | null
+          ts?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_log_muted_pattern: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          signature: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          signature: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          signature?: string
+        }
+        Relationships: []
+      }
+      app_log_norm_exception: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          match: string
+          replace_pattern: string
+          replacement: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          match: string
+          replace_pattern: string
+          replacement?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          match?: string
+          replace_pattern?: string
+          replacement?: string
+        }
+        Relationships: []
+      }
+      ops_issue_class: {
+        Row: {
+          alert_threshold: number | null
+          alert_window_minutes: number | null
+          category: string
+          created_at: string
+          description: string | null
+          disposition: string
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          provider: string | null
+          resolution_notes: string | null
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          alert_threshold?: number | null
+          alert_window_minutes?: number | null
+          category: string
+          created_at?: string
+          description?: string | null
+          disposition?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          provider?: string | null
+          resolution_notes?: string | null
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          alert_threshold?: number | null
+          alert_window_minutes?: number | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          disposition?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          provider?: string | null
+          resolution_notes?: string | null
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ops_issue_event: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          detail: Json
+          error_type: string
+          id: string
+          is_retryable: boolean
+          issue_class_id: string
+          metadata: Json
+          model: string | null
+          occurred_at: string
+          organization_id: string
+          provider: string | null
+          request_id: string | null
+          retry_count: number
+          status_code: number | null
+          updated_by: string | null
+          user_id: string | null
+          was_recovered: boolean
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          error_type: string
+          id?: string
+          is_retryable?: boolean
+          issue_class_id: string
+          metadata?: Json
+          model?: string | null
+          occurred_at?: string
+          organization_id: string
+          provider?: string | null
+          request_id?: string | null
+          retry_count?: number
+          status_code?: number | null
+          updated_by?: string | null
+          user_id?: string | null
+          was_recovered?: boolean
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          error_type?: string
+          id?: string
+          is_retryable?: boolean
+          issue_class_id?: string
+          metadata?: Json
+          model?: string | null
+          occurred_at?: string
+          organization_id?: string
+          provider?: string | null
+          request_id?: string | null
+          retry_count?: number
+          status_code?: number | null
+          updated_by?: string | null
+          user_id?: string | null
+          was_recovered?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_issue_event_issue_class_id_fkey"
+            columns: ["issue_class_id"]
+            isOneToOne: false
+            referencedRelation: "ops_issue_class"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_error: {
+        Row: {
+          agent_id: string | null
+          context: Json | null
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          error_text: string
+          error_type: string | null
+          id: string
+          kind: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string | null
+          payload: Json | null
+          request_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          route: string | null
+          source_app: string | null
+          traceback: string | null
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_text: string
+          error_type?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string | null
+          payload?: Json | null
+          request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string | null
+          source_app?: string | null
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_text?: string
+          error_type?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string | null
+          payload?: Json | null
+          request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string | null
+          source_app?: string | null
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      system_write_failure: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          depends_on: Json | null
+          error_text: string
+          failed_at: string
+          id: string
+          metadata: Json
+          op_id: string
+          op_type: string
+          organization_id: string | null
+          payload: Json
+          primary_key: Json
+          recovered_at: string | null
+          recovery_op_id: string | null
+          request_id: string | null
+          retry_count: number
+          table_target: string
+          traceback: string | null
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          depends_on?: Json | null
+          error_text: string
+          failed_at?: string
+          id?: string
+          metadata?: Json
+          op_id: string
+          op_type: string
+          organization_id?: string | null
+          payload: Json
+          primary_key: Json
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number
+          table_target: string
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          depends_on?: Json | null
+          error_text?: string
+          failed_at?: string
+          id?: string
+          metadata?: Json
+          op_id?: string
+          op_type?: string
+          organization_id?: string | null
+          payload?: Json
+          primary_key?: Json
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number
+          table_target?: string
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   pdf: {
     Tables: {
       pdf_consolidation_log: {
@@ -27057,6 +27552,7 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
+          feature_key: string | null
           governed_columns: string[] | null
           has_soft_delete: boolean
           is_active: boolean
@@ -27069,6 +27565,7 @@ export type Database = {
           reference_candidate_predicates: Json
           reference_category: string | null
           reference_pickable: boolean
+          retention_owner_column: string | null
           rls_variant: string
           schema_name: string
           table_name: string
@@ -27095,6 +27592,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          feature_key?: string | null
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           is_active?: boolean
@@ -27107,6 +27605,7 @@ export type Database = {
           reference_candidate_predicates?: Json
           reference_category?: string | null
           reference_pickable?: boolean
+          retention_owner_column?: string | null
           rls_variant?: string
           schema_name: string
           table_name: string
@@ -27133,6 +27632,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          feature_key?: string | null
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           is_active?: boolean
@@ -27145,6 +27645,7 @@ export type Database = {
           reference_candidate_predicates?: Json
           reference_category?: string | null
           reference_pickable?: boolean
+          retention_owner_column?: string | null
           rls_variant?: string
           schema_name?: string
           table_name?: string
@@ -28170,6 +28671,95 @@ export type Database = {
         }
         Relationships: []
       }
+      retention_policy: {
+        Row: {
+          archive_tier: string
+          basis: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enabled: boolean
+          entity_token: string | null
+          feature_key: string | null
+          id: string
+          label: string
+          legal_hold: boolean
+          mode: string
+          organization_id: string | null
+          priority: number
+          retention_days: number | null
+          review_due: string | null
+          scope: string
+          set_by: string
+          trigger_kind: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          user_predicate: Json | null
+          warn_days: number | null
+        }
+        Insert: {
+          archive_tier?: string
+          basis?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          entity_token?: string | null
+          feature_key?: string | null
+          id?: string
+          label: string
+          legal_hold?: boolean
+          mode?: string
+          organization_id?: string | null
+          priority?: number
+          retention_days?: number | null
+          review_due?: string | null
+          scope: string
+          set_by?: string
+          trigger_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          user_predicate?: Json | null
+          warn_days?: number | null
+        }
+        Update: {
+          archive_tier?: string
+          basis?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          entity_token?: string | null
+          feature_key?: string | null
+          id?: string
+          label?: string
+          legal_hold?: boolean
+          mode?: string
+          organization_id?: string | null
+          priority?: number
+          retention_days?: number | null
+          review_due?: string | null
+          scope?: string
+          set_by?: string
+          trigger_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          user_predicate?: Json | null
+          warn_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retention_policy_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       rulebook: {
         Row: {
           created_at: string
@@ -28993,6 +29583,18 @@ export type Database = {
         Args: { p_change_type_key: string; p_organization_id: string }
         Returns: Json
       }
+      resolve_retention_policy: {
+        Args: {
+          p_entity_token: string
+          p_organization_id?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      retention_predicate_matches: {
+        Args: { p_predicate: Json; p_user_id: string }
+        Returns: boolean
+      }
       retrofit_entity: {
         Args: {
           p_legacy_trigger?: string
@@ -29663,90 +30265,6 @@ export type Database = {
         }
         Relationships: []
       }
-      api_field_warnings: {
-        Row: {
-          created_at: string
-          detail: string | null
-          field_name: string
-          id: string
-          path: string
-          replacement: string | null
-          request_id: string | null
-          user_id: string | null
-          warning_type: string
-        }
-        Insert: {
-          created_at?: string
-          detail?: string | null
-          field_name: string
-          id?: string
-          path: string
-          replacement?: string | null
-          request_id?: string | null
-          user_id?: string | null
-          warning_type: string
-        }
-        Update: {
-          created_at?: string
-          detail?: string | null
-          field_name?: string
-          id?: string
-          path?: string
-          replacement?: string | null
-          request_id?: string | null
-          user_id?: string | null
-          warning_type?: string
-        }
-        Relationships: []
-      }
-      api_request_log: {
-        Row: {
-          auth_type: string
-          created_at: string
-          duration_ms: number | null
-          error: string | null
-          fingerprint_id: string | null
-          id: string
-          ip_address: string | null
-          method: string
-          path: string
-          request_id: string
-          status_code: number | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          auth_type?: string
-          created_at?: string
-          duration_ms?: number | null
-          error?: string | null
-          fingerprint_id?: string | null
-          id?: string
-          ip_address?: string | null
-          method: string
-          path: string
-          request_id: string
-          status_code?: number | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          auth_type?: string
-          created_at?: string
-          duration_ms?: number | null
-          error?: string | null
-          fingerprint_id?: string | null
-          id?: string
-          ip_address?: string | null
-          method?: string
-          path?: string
-          request_id?: string
-          status_code?: number | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       app_config: {
         Row: {
           app: string
@@ -29918,132 +30436,6 @@ export type Database = {
           user_id?: string
           username?: string | null
           version?: number
-        }
-        Relationships: []
-      }
-      app_log: {
-        Row: {
-          classified: boolean
-          conversation_id: string | null
-          created_at: string
-          created_by: string | null
-          exc_type: string | null
-          feature: string
-          host_role: string | null
-          id: string
-          level: string
-          level_no: number
-          logger_name: string
-          message: string
-          metadata: Json
-          process_pid: number | null
-          request_id: string | null
-          route: string | null
-          stage: string | null
-          traceback: string | null
-          ts: string
-          updated_by: string | null
-          user_id: string | null
-        }
-        Insert: {
-          classified?: boolean
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          exc_type?: string | null
-          feature?: string
-          host_role?: string | null
-          id?: string
-          level?: string
-          level_no?: number
-          logger_name?: string
-          message?: string
-          metadata?: Json
-          process_pid?: number | null
-          request_id?: string | null
-          route?: string | null
-          stage?: string | null
-          traceback?: string | null
-          ts?: string
-          updated_by?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          classified?: boolean
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          exc_type?: string | null
-          feature?: string
-          host_role?: string | null
-          id?: string
-          level?: string
-          level_no?: number
-          logger_name?: string
-          message?: string
-          metadata?: Json
-          process_pid?: number | null
-          request_id?: string | null
-          route?: string | null
-          stage?: string | null
-          traceback?: string | null
-          ts?: string
-          updated_by?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      app_log_muted_pattern: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          label: string | null
-          signature: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          label?: string | null
-          signature: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          label?: string | null
-          signature?: string
-        }
-        Relationships: []
-      }
-      app_log_norm_exception: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          label: string | null
-          match: string
-          replace_pattern: string
-          replacement: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          label?: string | null
-          match: string
-          replace_pattern: string
-          replacement?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          label?: string | null
-          match?: string
-          replace_pattern?: string
-          replacement?: string
         }
         Relationships: []
       }
@@ -30296,131 +30688,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ops_issue_class: {
-        Row: {
-          alert_threshold: number | null
-          alert_window_minutes: number | null
-          category: string
-          created_at: string
-          description: string | null
-          disposition: string
-          id: string
-          is_active: boolean
-          key: string
-          name: string
-          provider: string | null
-          resolution_notes: string | null
-          severity: string
-          updated_at: string
-        }
-        Insert: {
-          alert_threshold?: number | null
-          alert_window_minutes?: number | null
-          category: string
-          created_at?: string
-          description?: string | null
-          disposition?: string
-          id?: string
-          is_active?: boolean
-          key: string
-          name: string
-          provider?: string | null
-          resolution_notes?: string | null
-          severity?: string
-          updated_at?: string
-        }
-        Update: {
-          alert_threshold?: number | null
-          alert_window_minutes?: number | null
-          category?: string
-          created_at?: string
-          description?: string | null
-          disposition?: string
-          id?: string
-          is_active?: boolean
-          key?: string
-          name?: string
-          provider?: string | null
-          resolution_notes?: string | null
-          severity?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      ops_issue_event: {
-        Row: {
-          conversation_id: string | null
-          created_at: string
-          created_by: string | null
-          detail: Json
-          error_type: string
-          id: string
-          is_retryable: boolean
-          issue_class_id: string
-          metadata: Json
-          model: string | null
-          occurred_at: string
-          organization_id: string
-          provider: string | null
-          request_id: string | null
-          retry_count: number
-          status_code: number | null
-          updated_by: string | null
-          user_id: string | null
-          was_recovered: boolean
-        }
-        Insert: {
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          detail?: Json
-          error_type: string
-          id?: string
-          is_retryable?: boolean
-          issue_class_id: string
-          metadata?: Json
-          model?: string | null
-          occurred_at?: string
-          organization_id: string
-          provider?: string | null
-          request_id?: string | null
-          retry_count?: number
-          status_code?: number | null
-          updated_by?: string | null
-          user_id?: string | null
-          was_recovered?: boolean
-        }
-        Update: {
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          detail?: Json
-          error_type?: string
-          id?: string
-          is_retryable?: boolean
-          issue_class_id?: string
-          metadata?: Json
-          model?: string | null
-          occurred_at?: string
-          organization_id?: string
-          provider?: string | null
-          request_id?: string | null
-          retry_count?: number
-          status_code?: number | null
-          updated_by?: string | null
-          user_id?: string | null
-          was_recovered?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ops_issue_event_issue_class_id_fkey"
-            columns: ["issue_class_id"]
-            isOneToOne: false
-            referencedRelation: "ops_issue_class"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sandbox_instances: {
         Row: {
           cold_path: string | null
@@ -30535,152 +30802,218 @@ export type Database = {
         }
         Relationships: []
       }
-      system_error: {
-        Row: {
-          agent_id: string | null
-          context: Json | null
-          conversation_id: string | null
-          created_at: string
-          created_by: string | null
-          error_text: string
-          error_type: string | null
-          id: string
-          kind: string
-          metadata: Json
-          occurred_at: string
-          organization_id: string | null
-          payload: Json | null
-          request_id: string | null
-          resolution_note: string | null
-          resolved_at: string | null
-          route: string | null
-          source_app: string | null
-          traceback: string | null
-          updated_by: string | null
-          user_id: string | null
-        }
-        Insert: {
-          agent_id?: string | null
-          context?: Json | null
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          error_text: string
-          error_type?: string | null
-          id?: string
-          kind: string
-          metadata?: Json
-          occurred_at?: string
-          organization_id?: string | null
-          payload?: Json | null
-          request_id?: string | null
-          resolution_note?: string | null
-          resolved_at?: string | null
-          route?: string | null
-          source_app?: string | null
-          traceback?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          agent_id?: string | null
-          context?: Json | null
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          error_text?: string
-          error_type?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          occurred_at?: string
-          organization_id?: string | null
-          payload?: Json | null
-          request_id?: string | null
-          resolution_note?: string | null
-          resolved_at?: string | null
-          route?: string | null
-          source_app?: string | null
-          traceback?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      system_write_failure: {
-        Row: {
-          conversation_id: string | null
-          created_at: string
-          created_by: string | null
-          depends_on: Json | null
-          error_text: string
-          failed_at: string
-          id: string
-          metadata: Json
-          op_id: string
-          op_type: string
-          organization_id: string | null
-          payload: Json
-          primary_key: Json
-          recovered_at: string | null
-          recovery_op_id: string | null
-          request_id: string | null
-          retry_count: number
-          table_target: string
-          traceback: string | null
-          updated_by: string | null
-          user_id: string | null
-        }
-        Insert: {
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          depends_on?: Json | null
-          error_text: string
-          failed_at?: string
-          id?: string
-          metadata?: Json
-          op_id: string
-          op_type: string
-          organization_id?: string | null
-          payload: Json
-          primary_key: Json
-          recovered_at?: string | null
-          recovery_op_id?: string | null
-          request_id?: string | null
-          retry_count?: number
-          table_target: string
-          traceback?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          depends_on?: Json | null
-          error_text?: string
-          failed_at?: string
-          id?: string
-          metadata?: Json
-          op_id?: string
-          op_type?: string
-          organization_id?: string | null
-          payload?: Json
-          primary_key?: Json
-          recovered_at?: string | null
-          recovery_op_id?: string | null
-          request_id?: string | null
-          retry_count?: number
-          table_target?: string
-          traceback?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
+      api_field_warnings: {
+        Row: {
+          created_at: string | null
+          detail: string | null
+          field_name: string | null
+          id: string | null
+          path: string | null
+          replacement: string | null
+          request_id: string | null
+          user_id: string | null
+          warning_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detail?: string | null
+          field_name?: string | null
+          id?: string | null
+          path?: string | null
+          replacement?: string | null
+          request_id?: string | null
+          user_id?: string | null
+          warning_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detail?: string | null
+          field_name?: string | null
+          id?: string | null
+          path?: string | null
+          replacement?: string | null
+          request_id?: string | null
+          user_id?: string | null
+          warning_type?: string | null
+        }
+        Relationships: []
+      }
+      api_request_log: {
+        Row: {
+          auth_type: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error: string | null
+          fingerprint_id: string | null
+          id: string | null
+          ip_address: string | null
+          method: string | null
+          path: string | null
+          request_id: string | null
+          status_code: number | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auth_type?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          fingerprint_id?: string | null
+          id?: string | null
+          ip_address?: string | null
+          method?: string | null
+          path?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auth_type?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          fingerprint_id?: string | null
+          id?: string | null
+          ip_address?: string | null
+          method?: string | null
+          path?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_log: {
+        Row: {
+          classified: boolean | null
+          conversation_id: string | null
+          created_at: string | null
+          created_by: string | null
+          exc_type: string | null
+          feature: string | null
+          host_role: string | null
+          id: string | null
+          level: string | null
+          level_no: number | null
+          logger_name: string | null
+          message: string | null
+          metadata: Json | null
+          process_pid: number | null
+          request_id: string | null
+          route: string | null
+          stage: string | null
+          traceback: string | null
+          ts: string | null
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          classified?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          exc_type?: string | null
+          feature?: string | null
+          host_role?: string | null
+          id?: string | null
+          level?: string | null
+          level_no?: number | null
+          logger_name?: string | null
+          message?: string | null
+          metadata?: Json | null
+          process_pid?: number | null
+          request_id?: string | null
+          route?: string | null
+          stage?: string | null
+          traceback?: string | null
+          ts?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          classified?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          exc_type?: string | null
+          feature?: string | null
+          host_role?: string | null
+          id?: string | null
+          level?: string | null
+          level_no?: number | null
+          logger_name?: string | null
+          message?: string | null
+          metadata?: Json | null
+          process_pid?: number | null
+          request_id?: string | null
+          route?: string | null
+          stage?: string | null
+          traceback?: string | null
+          ts?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_log_muted_pattern: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          label: string | null
+          signature: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          label?: string | null
+          signature?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          label?: string | null
+          signature?: string | null
+        }
+        Relationships: []
+      }
+      app_log_norm_exception: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          label: string | null
+          match: string | null
+          replace_pattern: string | null
+          replacement: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          label?: string | null
+          match?: string | null
+          replace_pattern?: string | null
+          replacement?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          label?: string | null
+          match?: string | null
+          replace_pattern?: string | null
+          replacement?: string | null
+        }
+        Relationships: []
+      }
       current_user_is_admin: {
         Row: {
           admin_level: Database["public"]["Enums"]["admin_level"] | null
@@ -30698,6 +31031,131 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      ops_issue_class: {
+        Row: {
+          alert_threshold: number | null
+          alert_window_minutes: number | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          disposition: string | null
+          id: string | null
+          is_active: boolean | null
+          key: string | null
+          name: string | null
+          provider: string | null
+          resolution_notes: string | null
+          severity: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alert_threshold?: number | null
+          alert_window_minutes?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          disposition?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          key?: string | null
+          name?: string | null
+          provider?: string | null
+          resolution_notes?: string | null
+          severity?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alert_threshold?: number | null
+          alert_window_minutes?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          disposition?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          key?: string | null
+          name?: string | null
+          provider?: string | null
+          resolution_notes?: string | null
+          severity?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ops_issue_event: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          created_by: string | null
+          detail: Json | null
+          error_type: string | null
+          id: string | null
+          is_retryable: boolean | null
+          issue_class_id: string | null
+          metadata: Json | null
+          model: string | null
+          occurred_at: string | null
+          organization_id: string | null
+          provider: string | null
+          request_id: string | null
+          retry_count: number | null
+          status_code: number | null
+          updated_by: string | null
+          user_id: string | null
+          was_recovered: boolean | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          detail?: Json | null
+          error_type?: string | null
+          id?: string | null
+          is_retryable?: boolean | null
+          issue_class_id?: string | null
+          metadata?: Json | null
+          model?: string | null
+          occurred_at?: string | null
+          organization_id?: string | null
+          provider?: string | null
+          request_id?: string | null
+          retry_count?: number | null
+          status_code?: number | null
+          updated_by?: string | null
+          user_id?: string | null
+          was_recovered?: boolean | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          detail?: Json | null
+          error_type?: string | null
+          id?: string | null
+          is_retryable?: boolean | null
+          issue_class_id?: string | null
+          metadata?: Json | null
+          model?: string | null
+          occurred_at?: string | null
+          organization_id?: string | null
+          provider?: string | null
+          request_id?: string | null
+          retry_count?: number | null
+          status_code?: number | null
+          updated_by?: string | null
+          user_id?: string | null
+          was_recovered?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_issue_event_issue_class_id_fkey"
+            columns: ["issue_class_id"]
+            isOneToOne: false
+            referencedRelation: "ops_issue_class"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pdf_unified_pages: {
         Row: {
@@ -30732,6 +31190,150 @@ export type Database = {
             referencedColumns: ["file_id"]
           },
         ]
+      }
+      system_error: {
+        Row: {
+          agent_id: string | null
+          context: Json | null
+          conversation_id: string | null
+          created_at: string | null
+          created_by: string | null
+          error_text: string | null
+          error_type: string | null
+          id: string | null
+          kind: string | null
+          metadata: Json | null
+          occurred_at: string | null
+          organization_id: string | null
+          payload: Json | null
+          request_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          route: string | null
+          source_app: string | null
+          traceback: string | null
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_text?: string | null
+          error_type?: string | null
+          id?: string | null
+          kind?: string | null
+          metadata?: Json | null
+          occurred_at?: string | null
+          organization_id?: string | null
+          payload?: Json | null
+          request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string | null
+          source_app?: string | null
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_text?: string | null
+          error_type?: string | null
+          id?: string | null
+          kind?: string | null
+          metadata?: Json | null
+          occurred_at?: string | null
+          organization_id?: string | null
+          payload?: Json | null
+          request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string | null
+          source_app?: string | null
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      system_write_failure: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          created_by: string | null
+          depends_on: Json | null
+          error_text: string | null
+          failed_at: string | null
+          id: string | null
+          metadata: Json | null
+          op_id: string | null
+          op_type: string | null
+          organization_id: string | null
+          payload: Json | null
+          primary_key: Json | null
+          recovered_at: string | null
+          recovery_op_id: string | null
+          request_id: string | null
+          retry_count: number | null
+          table_target: string | null
+          traceback: string | null
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          depends_on?: Json | null
+          error_text?: string | null
+          failed_at?: string | null
+          id?: string | null
+          metadata?: Json | null
+          op_id?: string | null
+          op_type?: string | null
+          organization_id?: string | null
+          payload?: Json | null
+          primary_key?: Json | null
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number | null
+          table_target?: string | null
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          depends_on?: Json | null
+          error_text?: string | null
+          failed_at?: string | null
+          id?: string | null
+          metadata?: Json | null
+          op_id?: string | null
+          op_type?: string | null
+          organization_id?: string | null
+          payload?: Json | null
+          primary_key?: Json | null
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number | null
+          table_target?: string | null
+          traceback?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       v_context_item_suggestions: {
         Row: {
@@ -60126,6 +60728,9 @@ export const Constants = {
     Enums: {},
   },
   meta: {
+    Enums: {},
+  },
+  ops: {
     Enums: {},
   },
   pdf: {
