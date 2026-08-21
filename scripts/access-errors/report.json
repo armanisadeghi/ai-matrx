@@ -1,10 +1,10 @@
 {
   "generatedAt": "2026-08-21",
-  "total": 177,
-  "suppressed": 99,
+  "total": 175,
+  "suppressed": 100,
   "byKind": {
     "raw-supabase-message": 67,
-    "claims-deleted": 95,
+    "claims-deleted": 93,
     "claims-denied": 15
   },
   "byFeature": {
@@ -47,14 +47,12 @@
     "features/agent-comparison": 1,
     "features/agent-settings": 1,
     "features/agent-shortcuts": 1,
-    "features/agents": 1,
     "features/change-policy": 1,
     "features/cms": 1,
     "features/context-menu-v3": 1,
     "features/files": 1,
     "features/item-presentation": 1,
     "features/marketing": 1,
-    "features/organizations": 1,
     "features/research": 1,
     "features/transcripts": 1,
     "features/window-panels": 1,
@@ -312,12 +310,6 @@
       "line": 54,
       "kind": "claims-deleted",
       "snippet": "setError(\"Shortcut not found or you do not have access.\");"
-    },
-    {
-      "file": "features/agents/components/tools-management/AgentToolsManager.tsx",
-      "line": 1550,
-      "kind": "claims-deleted",
-      "snippet": "not found in registry"
     },
     {
       "file": "features/ai-models/audit/ModelDetailSheet.tsx",
@@ -774,12 +766,6 @@
       "line": 242,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to fetch tags\");"
-    },
-    {
-      "file": "features/organizations/peek/kinds/MessageTemplatePeek.tsx",
-      "line": 88,
-      "kind": "claims-deleted",
-      "snippet": "Message template not found."
     },
     {
       "file": "features/page-extraction/api/jobs.ts",
