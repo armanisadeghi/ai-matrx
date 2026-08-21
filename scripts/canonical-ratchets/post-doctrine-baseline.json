@@ -1,0 +1,5 @@
+{
+  "_comment": "Grandfathered count of iam.verify_canonical FAIL findings (audit.canonical_findings, status='FAIL') on tables BORN AFTER the 2026-08-12 doctrine cutoff, where birth = min(platform.ddl_guard_log.occurred_at) for command_tag='CREATE TABLE'. Ratchet only DOWN: the gate fails when the live count EXCEEDS this. Seeded 2026-08-21 from a fresh audit.refresh() \u2014 all findings sit on four seo tables (page_measurement_health, source_request, story_angle, landscape_brief). Shrink with: pnpm check:post-doctrine --update-baseline. Raising it is an Arman decision.",
+  "fail_findings": 22,
+  "seeded_at": "2026-08-21T18:42:28.366434+00:00"
+}

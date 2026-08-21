@@ -50,6 +50,16 @@ if $STRICT; then
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
+        # CANONICAL RATCHETS — the two BLOCKING counts from the 2026-08-15
+        # architecture drift audit's enforcement recommendation (item 2). Both
+        # read ONE cached snapshot (public.canonical_ratchet_snapshot, ~0.7s;
+        # they never run audit.refresh() on the hot path) and fail only when the
+        # live count EXCEEDS a committed baseline. A new entity-like table born
+        # unregistered, or a post-2026-08-12 table born non-conformant, stops the
+        # release; the legacy backlog stays a queue and cannot block anything.
+        # Contract + baselines: scripts/canonical-ratchets/FEATURE.md.
+        "Unregistered entity-like tables (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-unregistered-entities.ts --strict"
+        "Post-doctrine conformance (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-post-doctrine-conformance.ts --strict"
         # REACHABILITY GUARDS. Two halves, one script. Definition parity
         # (containment_edges deps vs the trigger UPDATE OF list) is a
         # catalog-only, deterministic, one-right-answer check and BLOCKS in
@@ -184,6 +194,10 @@ else
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
+        # Blocking in --strict (see the strict list above); loud and exit-0 here,
+        # like every other gate in the advisory list.
+        "Unregistered entity-like tables (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-unregistered-entities.ts"
+        "Post-doctrine conformance (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-post-doctrine-conformance.ts"
         # REACHABILITY GUARDS. Two halves, one script. Definition parity
         # (containment_edges deps vs the trigger UPDATE OF list) is a
         # catalog-only, deterministic, one-right-answer check and BLOCKS in
@@ -338,7 +352,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|CANONICAL RATCHET EXCEEDED|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"
