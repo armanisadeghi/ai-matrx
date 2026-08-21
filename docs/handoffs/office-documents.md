@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-09
+updated: 2026-08-21
 repos: [matrx-frontend, aidream, matrx-local]
 ---
 
@@ -58,20 +58,31 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
    `save_media_envelope_async` get a mime icon at creation even on a LibreOffice host; the same
    bytes re-render fine afterwards, so it's the creation-time render, not the codec. Healable with
    `thumbnail_backfill --office --force-rerender`.
-4. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
-   LibreOffice→PDF render lane (reusing the convert endpoint) could show true layout — decide if
-   fidelity matters before building. **The cheap half is already within reach:** Office gets the
-   three small SOCIAL_BASELINE thumbs but **no `page1_url`**, so there is no full-res readable
-   page-1 the way PDFs have one. `_mime_family` classifies Office as `document`, and
-   `render_kind_specific_variants_sync` (`specific_handlers/thumbnail_source.py`) only emits
-   `page1_url` for `family == "pdf"` — even though the Office lane already renders a PDF
-   internally for the thumbnail. Confirmed live 2026-08-09: all 23 Office masters carry exactly
-   `og_url` / `thumbnail_url` / `tiny_url`, zero `page1_url`.
+4. **Backfill `page1_url` + PDF derivatives for pre-existing Office masters** (ops, one run on a
+   LibreOffice host): `python -m aidream.cli.thumbnail_backfill --office --force-rerender` now
+   also emits the new Office `page1_url` variant; the PDF derivative warms lazily on first
+   preview, so no backfill is strictly required for it.
 5. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
    markdown endpoint also handles xlsx if a text view is ever wanted.
+6. **Follow-up (efficiency, not correctness):** an Office upload now runs LibreOffice up to
+   three times (baseline thumb raster, `page1_url` variant, PDF-derivative warm) — consolidate
+   to one conversion feeding all three lanes inside `thumbnails.py::_process_source` when it
+   matters. All three are background, idempotent, and bounded.
 
 ## Done
 
+- **2026-08-21 — Visual-fidelity preview SHIPPED (was item 4).** The LibreOffice→PDF render lane
+  is live end to end: new `matrx_files/office_pdf.py` creates the cached `pdf_conversion` files
+  derivative (idempotent per source revision, `parent_file_id` lineage, page/slide count in
+  `derivation_metadata`; new derivation kind + check constraint applied live; SQL 021);
+  `POST /files/{id}/office-pdf` on the package router (host + standalone parity);
+  `POST /office/{id}/convert` repointed to the same lane (no more duplicate PDFs per click);
+  automatic warm on every office upload via `upload_hook._warm_office_pdf` (all transports);
+  Office masters now emit the full-res `page1_url` kind-specific variant (same contract as PDF).
+  FE: `OfficePreview` gained a **Slides/Pages ↔ Text** toggle — decks DEFAULT to the visual
+  mode, rendered through the canonical `PdfPreview` from the derivative's file id; PDF FileRef
+  cached beside the extraction and invalidated through the same choke points. aidream
+  `61a6df5ca` + matrx-frontend (this commit).
 - **2026-08-09 — Office thumbnails, end to end.** New uploads verified in production (fresh
   docx/pptx → real page-1 renders). Every pre-existing Office master healed:
   `thumbnail_backfill --office --force-rerender` → audit **22 icons/missing → 0**, all 23 Office

@@ -529,14 +529,20 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 
 | Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
 |---|---|---|---|---|---|---|---|---|
-| `doc, docx` (Word) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — server-extracted markdown. Edit tab points at AI generation. |
-| `ppt, pptx` (PowerPoint) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — slide-by-slide markdown with slide numbers/titles. |
+| `doc, docx` (Word) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — Text (extracted markdown, default) + **Pages** visual mode (cached `pdf_conversion` derivative → `PdfPreview`). Edit tab points at AI generation. |
+| `ppt, pptx` (PowerPoint) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — **Slides visual mode is the DEFAULT** (full-fidelity LibreOffice→PDF derivative rendered through `PdfPreview`); Text mode keeps the slide-by-slide markdown. |
 | `epub` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview`. Needs an EPUB reader (`epub.js`). |
 
+**Shipped 2026-08-21 — visual fidelity:** the LibreOffice→PDF render-preview lane is live.
+`POST /office/{id}/convert` is now IDEMPOTENT server-side (cached `pdf_conversion` files
+derivative per source revision, warmed automatically on upload); `OfficePreview` renders it
+through the canonical `PdfPreview` with a Slides/Pages ↔ Text toggle. Office masters also get a
+full-res `page1_url` variant at upload (same contract as PDF).
+
 **Gaps:**
-- No visual fidelity (fonts/layout/images) — text-extraction preview only. A LibreOffice→PDF
-  render-preview lane could reuse the convert endpoint if fidelity becomes a priority.
-- Existing Office files still show mime-icon thumbnails until the aidream backfill re-renders them.
+- Existing Office files still show mime-icon thumbnails until the aidream backfill re-renders
+  them (`aidream/cli/thumbnail_backfill.py --office --force-rerender` — now also emits the new
+  Office `page1_url`).
 
 ---
 
