@@ -17,6 +17,14 @@
  * `<InlineMediaRef>` should resolve, and InlineMediaRef owns the URL
  * lifecycle from there (re-minting a signed URL from the id on expiry).
  *
+ * As of 2026-08-20 the Python producers no longer POPULATE `signed_url` /
+ * `audio_signed_url` on these outputs at all: a node output is written to
+ * `workflow.node_outcome` and read back days later, so an expiring URL stored
+ * there is a permanent 403 (51 live rows did exactly that). The fields stay in
+ * the mirrors because the seeded kind schemas still declare them, and the
+ * `mediaHandleOf` fallback stays because old rows carry them — it just never
+ * fires for a new run. Never "fix" a null `signed_url` by populating it.
+ *
  * `GeneratedVideo` / `TextToSpeechOutput` do not carry `file_id` YET — the
  * producer-side fix is Task 2 of `aidream/docs/handoffs/podcast-media-shapes.md`.
  * The readers below already look for it, so those shapes light up with the

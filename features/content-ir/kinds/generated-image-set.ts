@@ -56,7 +56,8 @@ export const generatedImageKindSchema: KindSchema = {
     signed_url: {
       type: "string",
       nullable: true,
-      description: "Expiring inline URL, present only for a non-public image.",
+      description:
+        "Never populated by the producer — an expiring URL is a handoff, not a record. Present only on rows written before 2026-08-20.",
     },
     path: { type: "string", nullable: true, description: "Local filesystem path, when the provider wrote one." },
     data_b64: { type: "string", nullable: true, description: "Base64 bytes, only when no file was persisted." },
