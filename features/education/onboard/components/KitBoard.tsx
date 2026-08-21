@@ -87,8 +87,6 @@ export function KitBoard({
   onReset: () => void;
 }) {
   const done = kit.phase === "done";
-  const now = useNow(kit.busy);
-  const elapsed = kit.startedAt ? (done ? 0 : now - kit.startedAt) : 0;
 
   const finished = kit.targets.filter(
     (t) => t.status === "success" && !t.stillGenerating,
@@ -97,6 +95,12 @@ export function KitBoard({
     (t) => t.status === "running" || (t.status === "success" && t.stillGenerating),
   ).length;
   const failed = kit.targets.filter((t) => t.status === "error").length;
+
+  // Keep ticking while ANY target is still producing — the fan-out can be
+  // "done" while a streamed target (audio) is minutes from finishing, and a
+  // frozen clock beside live work reads as a hang.
+  const now = useNow(kit.busy || stillWorking > 0);
+  const elapsed = kit.startedAt ? (done ? 0 : now - kit.startedAt) : 0;
 
   // Say the TRUE state — "0 ready" beside a cheerful "your kit is ready" is the
   // kind of line that teaches a student not to trust the screen.
@@ -243,7 +247,12 @@ function TargetRow({ target: t, now }: { target: KitTargetState; now: number }) 
   const Icon = look.icon;
   const running = t.status === "running";
   const producing = t.status === "success" && t.stillGenerating === true;
-  const elapsed = t.startedAt ? (t.finishedAt ?? now) - t.startedAt : null;
+  // A "successful" streamed target (audio) is still WORKING, so its clock must
+  // keep running — freezing it at the generator's return time made a live run
+  // look finished and stuck at the same moment.
+  const elapsed = t.startedAt
+    ? (producing ? now : (t.finishedAt ?? now)) - t.startedAt
+    : null;
 
   const body = (
     <div
@@ -273,6 +282,12 @@ function TargetRow({ target: t, now }: { target: KitTargetState; now: number }) 
             <p className="truncate text-xs text-destructive">{t.error}</p>
           ) : running ? (
             <RunningLine target={t} />
+          ) : producing ? (
+            // The live runner below is the truth for a streamed target; the
+            // generator's parting "Starting…" line would contradict it.
+            <p className="truncate text-xs text-muted-foreground">
+              {look.runningVerb}…
+            </p>
           ) : t.detail ? (
             <p className="truncate text-xs text-muted-foreground">{t.detail}</p>
           ) : (

@@ -70,6 +70,22 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 ## Invariants
 
+- **The board is up from the first millisecond, and every stage says what it is doing.** `KitBoard`
+  mounts for `ingesting` too (not just `generating`), reads byte-accurate upload progress and
+  per-page extraction from `IngestProgress.ratio/detail`, keeps an elapsed clock on the run and on
+  every target, and names the live agent phase per row. A bare spinner anywhere in this flow is a
+  defect — a 78 MB PDF spends minutes here.
+- **A file is uploaded ONCE.** PDFs extract by `file_id` (`streamPdfExtractTextRemote` +
+  `buildPdfSourceFromFileId`) against the bytes the anchor upload already stored; the multipart
+  endpoint would send the same 78 MB a second time.
+- **Every headless generation run passes an organization** (`runAgentExtraction.organizationId`,
+  required by the type). Execution refuses an org-less launch, so without it every target failed
+  with the opaque "The generation agent failed before returning a result" for anyone who had not
+  picked an org in the sidebar.
+- **A target that creates a run must RUN it.** The audio generator only creates the run row and
+  stashes the request; `KitAudioRunner` hosts the same `useStudioRun` the audio-study page uses, so
+  the work actually happens (and persists through the shared `useAudioStudyRunPersistence`) while
+  the student watches. Creating a durable row nobody streams is the "spinner forever" bug.
 - One entry point for files — everything through `fileHandler`; never a parallel storage path.
 - One dispatch for generation — `convertContent`; never a second converter.
 - Every generated artifact links a `source` edge to `ref.fileId` — lineage is never optional.
@@ -176,6 +192,22 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
   `### Chunk cN` markers before sending so cards ground + cite.
 
 ## Change log
+
+- **2026-08-20** — **The silent-flow fix.** A large PDF took minutes with no feedback and the second
+  page was a grey board of spinners. (a) `KitBoard` replaces the old results block and mounts from
+  the first moment of the run — staged, timed, coloured (`convert/targetPresentation.ts`, one
+  icon+accent map, replacing the per-surface icon copy). (b) `IngestProgress` gained `ratio`/`detail`;
+  uploads report real bytes and PDFs report `page N of M`. (c) PDFs now extract by `file_id` instead
+  of a second multipart upload of the same bytes. (d) `runAgentExtraction` REQUIRES an
+  `organizationId` (the personal org via `ctx.orgId`) — without it every generator died with an
+  opaque error whenever no org was selected. (e) `KitAudioRunner` actually runs the audio target in
+  place with real stage labels + percent, sharing `useAudioStudyRunPersistence` with the audio-study
+  page. (f) `migrations/edu_converter_lineage_association_pairs.sql` registers all 20 converter
+  lineage pairs — `note -> file` and `assessment -> file` were unregistered, so every notes / quiz /
+  practice-test artifact lost its provenance with a 23514. (g) The DB agent behind
+  `education.notes_generate` was a stock template with an EMPTY user message (it had never received
+  `source_content`, producing notes titled "No Source Material Provided"); re-authored via
+  `agent_author` to v8. Verified live on the preview server end-to-end.
 
 - **2026-08-17** — WP5 (education-platform program): IC-11 one-entry law
   (`persistImportedDeck`; `ImportSetView` folded in), lossless JSON round-trip

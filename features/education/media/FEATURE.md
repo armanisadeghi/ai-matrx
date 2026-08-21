@@ -82,6 +82,22 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 ---
 
+## Who runs a generation (2026-08-20)
+
+`useAudioStudyRunPersistence` is THE shared rule for writing a live run's outcome onto its
+`study_media` row (ready + episode + durable `audio_file_id`, `error` on failure, back to
+`generating` on retry). Two surfaces host the same run and both consume it: `AudioStudyDetail`
+(the artifact page) and `KitAudioRunner` (the study-kit board on `/education/start`).
+
+**A surface that creates an audio run MUST stream it.** The converter's `audioGenerator` creates
+the run + artifact and stashes the request in module memory for whoever renders next; before
+2026-08-20 the kit invited the student to stay on `/education/start`, so nobody ever consumed that
+stash — the row sat `generating` forever, no audio was ever produced, and the board's "we'll keep
+working even if you close this" was false. Creating a durable run row without a host that streams it
+is the defect, not a deferral.
+
+---
+
 ## Known gaps (LOUD — unverified / blocked)
 
 - **CORRECTED 2026-08-17 (WP8): the "D40 TTS stall" story above was wrong on both counts.**
