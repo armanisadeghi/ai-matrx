@@ -231,6 +231,8 @@ Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and 
 
 ## Change log
 
+- `2026-08-21` — Transcription failures write to the canonical `ops.system_error` table after the observability-schema cutover.
+
 - `2026-08-18` — Final fallback transcription failures remain user-visible while their derived voice-input toast no longer duplicates the canonical `audio_transcription` queue row.
 - `2026-08-18` — Kept the live-chunk 30-second deadline out of both generic API diagnostics and `audio_transcription`; the durable full-recording fallback remains the single final-outcome reporter.
 

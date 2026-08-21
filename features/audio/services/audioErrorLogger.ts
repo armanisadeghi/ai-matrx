@@ -1,7 +1,7 @@
 /**
  * Audio Transcription Error Logger
  *
- * Logs transcription errors to the canonical `public.system_error` log (the
+ * Logs transcription errors to the canonical `ops.system_error` log (the
  * per-feature `audio_transcription_errors` table was graveyarded in the 2026 DB
  * canonicalization — no duplicate error tables). `kind='audio_transcription'`;
  * transcription-specific fields go in `context`.
@@ -34,7 +34,7 @@ export async function logTranscriptionError(entry: TranscriptionErrorLog): Promi
   try {
     const supabase = createAdminClient();
 
-    await supabase.from('system_error').insert({
+    await supabase.schema('ops').from('system_error').insert({
       organization_id: await resolveSystemOrgId(supabase),
       kind: 'audio_transcription',
       source_app: 'matrx-frontend',
