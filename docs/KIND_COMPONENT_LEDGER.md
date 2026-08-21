@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **211** — live recount 2026-08-20
 - **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
-- Individual rows (46 total): unclaimed **0** · claimed **0** · done **45** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-20 by army-fe-wd1 after flipping the last 8 (the SEO cluster). Re-counted 2026-08-20 by army-fe-wd2 after folding the malformed stray `markdown` row (added by `86f3863d4`, appended after the change log and mis-columned) into this table. **Every individual row is now `done` except the one `blocked` row (`claim_evidence`, blocked on its EXAMPLE, not its route).**
+- Individual rows (46 total): unclaimed **0** · claimed **0** · done **46** · blocked **0** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-20 by army-fe-wd1 after flipping the last 8 (the SEO cluster). Re-counted 2026-08-20 by army-fe-wd2 after folding the malformed stray `markdown` row (added by `86f3863d4`, appended after the change log and mis-columned) into this table. **EVERY individual row is `done` — 2026-08-21, `claim_evidence` closed last. This ledger is COMPLETE.**
 
 **Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
 non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
@@ -213,7 +213,7 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 | `boolean` | Boolean | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `claim_evidence` | Claim Evidence | — | 0 | `generic_structured` | blocked | copy-B | ROUTE IS LIVE (renders, incl. nested `evidence_source`). Blocked on the EXAMPLE only. **The producer-side defect is FIXED 2026-08-21** — its `emitted_json_schema` referenced `#/$defs/EvidenceSource` with no `$defs` block, so it could not compile; repaired from the pydantic contract by `aidream/scripts/repair_dangling_kind_defs.py` and verified live (a real payload validates, a missing `sourceTitle` is rejected). The schema can now be validated against, so the canonical example is authorable — this row is unblocked WORK, no longer a defect. |
+| `claim_evidence` | Claim Evidence | — | 1 | `generic_structured` | **done** ✅ | arman-ruling-2026-08-21 | Route was always live; the blocker was the EXAMPLE. Producer-side defect FIXED: the schema referenced `#/$defs/EvidenceSource` with no `$defs` block, repaired by `aidream/scripts/repair_dangling_kind_defs.py`. Canonical example is now **captured from a REAL stored analysis** (`research.youtube_video` `FnszzeypFGU`, "AI SEO chunking for LLMs") — a full claim with 2 supporting and 1 contrasting source — validated against the LIVE `emitted_json_schema` with a negative control (dropping a nested `sourceTitle` is rejected). Rendered in the browser at `/shapes/claim_evidence`: every field shown, nested `evidence_source` recursing through the registry as tables. D219 CLOSED. |
 | `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | `generic_structured` | **done** | army-fe-wd1 | explicit basic route LIVE + verified in the registry (migration by copy-D; claim taken over and verified by army-fe-wd1). `role='input'` correctly absent — `metadata.family='agent_io'` ⇒ `dataOnly` refuses first. |
 | `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | `generic_structured` | **done** | army-fe-wd1 | explicit basic route LIVE + verified in the registry (migration by copy-D; claim taken over and verified by army-fe-wd1). `role='input'` correctly absent — `metadata.family='agent_io'` ⇒ `dataOnly` refuses first. |
 | `criteria_gate_result` | Criteria Gate Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
@@ -485,3 +485,15 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
   clause is false for any kind with a registered component — `markdown` is the live counterexample
   — so the line now keys on the verdict's render leg and reserves the generic-viewer sentence for
   the kinds where it is genuinely true.
+
+- 2026-08-21 — **`claim_evidence` done; the ledger is complete (46/46).** Its schema could not
+  compile (a `$ref` to a `$defs` block that did not exist, D219), so nothing could validate
+  against it and no canonical example was authorable. Repaired producer-side from the pydantic
+  contract, then the example was CAPTURED from a real stored analysis rather than invented,
+  validated against the live schema with a negative control, and rendered in the browser.
+  **Note on gate 7:** `pnpm type-check` is clean and `features/content-ir` is green except
+  `component-registry.test.ts › covers every known bridge by name`, which fails on ANOTHER
+  agent's uncommitted runtime-wrapper work in this shared checkout (it registers `node_outcome`
+  and `run_result` bridges without updating that test's expected list). Unrelated to this row —
+  this change touches no frontend code at all, only a `kind_example` row — and left for its
+  owner rather than edited underneath them.
