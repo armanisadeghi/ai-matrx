@@ -32,6 +32,7 @@ import {
   Zap,
   HelpCircle,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -90,12 +91,22 @@ export function FastFireSetup() {
     setPrepDone(false);
     setPrepProgress(null);
     try {
-      await dispatch(
-        ensureSpokenFrontsForSet(config.setId, (done, total) =>
-          setPrepProgress({ done, total }),
-        ),
+      let total = 0;
+      const result = await dispatch(
+        ensureSpokenFrontsForSet(config.setId, (done, t) => {
+          total = t;
+          setPrepProgress({ done, total: t });
+        }),
       );
-      setPrepDone(true);
+      // Same honesty rule as instant help: done counts what persisted.
+      const ready = Object.keys(result).length;
+      setPrepProgress({ done: ready, total });
+      setPrepDone(total > 0 && ready >= total);
+      if (ready < total) {
+        toast.error(
+          `Question audio ready for ${ready} of ${total} cards — the rest failed; try again.`,
+        );
+      }
     } finally {
       setPrepping(false);
     }
@@ -117,12 +128,22 @@ export function FastFireSetup() {
     setHelpPrepDone(false);
     setHelpPrepProgress(null);
     try {
-      await dispatch(
-        ensureHelperAudioForSet(config.setId, (done, total) =>
-          setHelpPrepProgress({ done, total }),
-        ),
+      let total = 0;
+      const result = await dispatch(
+        ensureHelperAudioForSet(config.setId, (done, t) => {
+          total = t;
+          setHelpPrepProgress({ done, total: t });
+        }),
       );
-      setHelpPrepDone(true);
+      // Done means DONE — count what actually persisted, never the attempts.
+      const ready = Object.keys(result).length;
+      setHelpPrepProgress({ done: ready, total });
+      setHelpPrepDone(total > 0 && ready >= total);
+      if (ready < total) {
+        toast.error(
+          `Instant help ready for ${ready} of ${total} cards — the rest failed; try again.`,
+        );
+      }
     } finally {
       setHelpPrepping(false);
     }

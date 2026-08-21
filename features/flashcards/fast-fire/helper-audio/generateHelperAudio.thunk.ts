@@ -117,7 +117,15 @@ function writeHelperText(card: CardWithDetails) {
       pollIntervalMs: 150,
     });
     const helper = coerceDetails(result.data).find((d) => d.kind === "helper");
-    return helper?.text ?? null;
+    if (!helper?.text) {
+      // Loud, never silent — a whole batch failing here must not read as done.
+      console.error(
+        `[fastfire.helper] no helper text for card ${card.id}:`,
+        result.error ?? "agent returned no helper layer",
+      );
+      return null;
+    }
+    return helper.text;
   };
 }
 
