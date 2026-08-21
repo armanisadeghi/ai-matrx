@@ -3,7 +3,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AgentModelConfiguration } from "./AgentModelConfiguration";
 import { AgentVariablesManager } from "@/features/agents/components/variables-management/AgentVariablesManager";
 import { AgentContextPoliciesManager } from "../context-policies-management/AgentContextPoliciesManager";
-import { AgentContextInjectionSwitch } from "../context-policies-management/AgentContextInjectionSwitch";
 import { AgentBuilderMessagesArea } from "./AgentBuilderLeftPanelContent";
 import { AddMessageButtons } from "./AddMessageButtons";
 import { AgentResourcesManager } from "./AgentResourcesManager";
@@ -38,10 +37,9 @@ export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
       <div className="flex flex-col gap-2 shrink-0 pt-0.5 pb-2">
         <AgentModelConfiguration agentId={agentId} />
         <AgentVariablesManager agentId={agentId} />
-        <AgentContextPoliciesManager agentId={agentId} />
-        <AgentContextInjectionSwitch
+        <AgentContextPoliciesManager
           agentId={agentId}
-          className="rounded-md border border-border bg-muted/30"
+          showCompactInjectionControl
         />
         <AgentResourcesManager agentId={agentId} />
       </div>

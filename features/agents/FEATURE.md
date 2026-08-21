@@ -93,7 +93,9 @@ voice) and ambient **Surface** values (`current_page_content`, `selection`,
 the exact mirror of `autoToolsDisabled`. Three states, all visible in the UI via
 `AgentContextInjectionSwitch` (rendered through the SHARED `AutoInjectionSwitch`
 primitive, so it and the tools switch can never drift into looking like
-different mechanisms):
+different mechanisms). Builder renders its compact icon + switch variant inside
+the single-line Context row; the dedicated Context tab retains the explanatory
+full-width variant:
 
 | Declared         | Switch  | Behaviour                                             |
 | ---------------- | ------- | ----------------------------------------------------- |
@@ -354,6 +356,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-21` — **Builder context injection is a compact control in the Context row.** The shared `AutoInjectionSwitch` now has a dense icon + switch presentation that preserves full state help and warning semantics without adding a second row; the dedicated Context tab keeps the full explanatory treatment. The policy stack can shrink and truncate, so Context, injection, Add, and Batch add stay on one line in a narrow Builder panel.
 - `2026-08-21` — **Ambient assistants gained configurable mandate inheritance and one-click voice.** The primary Agent now resolves section/page → module → `ambient.page_guidance`; Notes, Data, Education, and every Education section have editable mandate rows with no variables. User/org bindings win at their level; changing an inherited row's system default removes its fallback. Selecting Voice now calls `relay.start()` during the first interaction instead of requiring a second mic click.
 - `2026-08-21` — **Education gets the third ambient form: compact text ↔ realtime voice.** `inputVariant="text-voice"` preserves the 36px single-line Smart Agent input, adds a distinct Voice wing, and morphs into a 48px `VoiceOrb` rail backed by `useVoiceRelaySession`. Typed and spoken turns share one primary conversation and page context; returning to text or dismissing stops live capture. Guests reach the canonical auth gate without initializing the authenticated voice engine. The Education layout mounts it once for every `/education/*` route; mobile mounts none.
 - `2026-08-21` — **Ambient Smart Agent Input supports two page-selectable forms.**

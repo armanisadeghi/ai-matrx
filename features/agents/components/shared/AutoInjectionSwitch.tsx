@@ -44,6 +44,8 @@ interface AutoInjectionSwitchProps {
    * nothing declared). Renders the status in the warning tone instead of muted.
    */
   warn?: boolean;
+  /** Compact icon + switch treatment for dense, single-line configuration rows. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -55,8 +57,44 @@ export function AutoInjectionSwitch({
   disabled,
   onChange,
   warn = false,
+  compact = false,
   className,
 }: AutoInjectionSwitchProps) {
+  if (compact) {
+    const title =
+      typeof statusText === "string" ? `${label}. ${statusText}` : label;
+
+    return (
+      <label
+        htmlFor={id}
+        title={title}
+        className={cn(
+          "inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 transition-colors hover:bg-muted",
+          warn && "bg-amber-500/10",
+          className,
+        )}
+      >
+        <span
+          className={cn(
+            "shrink-0",
+            disabled ? "text-muted-foreground" : "text-primary",
+            warn && "text-amber-600 dark:text-amber-400",
+          )}
+        >
+          {icon}
+        </span>
+        <span className="sr-only">{label}</span>
+        <span className="sr-only">{statusText}</span>
+        <Switch
+          id={id}
+          checked={!disabled}
+          onCheckedChange={(allow) => onChange(!allow)}
+          className="shrink-0"
+        />
+      </label>
+    );
+  }
+
   return (
     <label
       htmlFor={id}

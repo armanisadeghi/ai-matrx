@@ -45,11 +45,13 @@ import { AutoInjectionSwitch } from "@/features/agents/components/shared/AutoInj
 
 interface AgentContextInjectionSwitchProps {
   agentId: string;
+  compact?: boolean;
   className?: string;
 }
 
 export function AgentContextInjectionSwitch({
   agentId,
+  compact = false,
   className,
 }: AgentContextInjectionSwitchProps) {
   const dispatch = useAppDispatch();
@@ -81,6 +83,7 @@ export function AgentContextInjectionSwitch({
       icon={<Layers className="w-3.5 h-3.5" />}
       disabled={disabled}
       warn={starved}
+      compact={compact}
       onChange={(next) =>
         dispatch(setAgentAutoContextDisabled({ agentId, disabled: next }))
       }

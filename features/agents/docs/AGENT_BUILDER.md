@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** 1 (sub-feature of `features/agents/`)
-**Last updated:** `2026-07-18`
+**Last updated:** `2026-08-21`
 
 > Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This doc drills into the Builder surface specifically.
 
@@ -42,6 +42,7 @@ This payload difference is the Builder's reason to exist: it lets engineers test
 - Tool access — which tools are exposed to the agent
 - Variable definitions — name, default UI component, help text, required/optional
 - Context policy definitions — name, source hints, whether the slot is exposed to consumers
+- Automatic context injection — a compact icon + switch inside the Context row; state detail remains available as hover and accessible help, while the dedicated Context tab uses the full explanatory treatment
 - Permissions — whether consumers may see or override model settings
 - Advanced settings (`BuilderAdvancedSettings`): `debug`, `store`, `maxIterations`, `maxRetriesPerIteration`
 
@@ -145,6 +146,7 @@ Every context policy declares whether the agent may CHANGE its value or only REA
 
 ## Change log
 
+- `2026-08-21` — codex: Moved automatic context injection from a full-width Builder card into the single-line Context row. The shared switch now supplies a compact presentation, and the policy chip shrinks/truncates before the row can wrap.
 - `2026-07-18` — codex: Corrected the live manual endpoint/payload contract (`POST /ai/manual`, flattened live definition + client-held history on every turn) and documented the local test-panel key versus per-request server conversation split. Canvas artifact persistence now resolves the server conversation through the reserved message row.
 - `2026-07-18` — codex: Choice-backed variables can opt into server-side random assignment; Builder defaults and runtime inputs share the exact typed marker, and manual payloads carry live variable definitions for authoritative resolution.
 - `2026-07-17` — claude: Output Schema tab gains "Bind to a kind" (Content IR registry picker), live "Matches kind X" indicator + drift note; same apply/save path.

@@ -69,6 +69,7 @@ import {
   type InlineMode,
 } from "@/features/agents/components/context-policies-management/InlinePolicyControl";
 import { AgentEditAccessControl } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
+import { AgentContextInjectionSwitch } from "@/features/agents/components/context-policies-management/AgentContextInjectionSwitch";
 import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@/features/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
 
@@ -729,10 +730,10 @@ function ContextPolicyStackTrigger({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-foreground border border-border hover:bg-accent transition-colors shrink-0"
+          className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>
+          <span className="truncate">
             {policies.length} context{" "}
             {policies.length === 1 ? "policy" : "policies"}
           </span>
@@ -833,10 +834,12 @@ function ContextPolicyStackTrigger({
 
 interface AgentContextPoliciesManagerProps {
   agentId: string;
+  showCompactInjectionControl?: boolean;
 }
 
 export function AgentContextPoliciesManager({
   agentId,
+  showCompactInjectionControl = false,
 }: AgentContextPoliciesManagerProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -948,7 +951,7 @@ export function AgentContextPoliciesManager({
 
   return (
     <>
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap">
         <Label className="text-xs text-muted-foreground shrink-0">
           Context
         </Label>
@@ -958,6 +961,10 @@ export function AgentContextPoliciesManager({
           onEdit={openEdit}
           onDelete={handleDelete}
         />
+
+        {showCompactInjectionControl && (
+          <AgentContextInjectionSwitch agentId={agentId} compact />
+        )}
 
         <div className="flex items-center gap-1 shrink-0">
           <button
