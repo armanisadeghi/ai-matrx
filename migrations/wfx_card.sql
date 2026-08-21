@@ -90,7 +90,24 @@ WITH (security_invoker = false) AS
 -- anonymous visitor may read.
 GRANT SELECT ON workflow.card TO anon, authenticated;
 
--- 4. Register the card as a shareable resource, alongside agent_card.
+-- 4. Register the card's canonical entity identity before making it shareable.
+--    The shareable registry guard requires every resource_type to already be
+--    a live platform.entity_types token.
+INSERT INTO platform.entity_types (
+  token, schema_name, table_name, label,
+  is_component, is_active, is_listed
+) VALUES (
+  'workflow_card', 'workflow', 'card', 'Workflow Card',
+  true, true, false
+)
+ON CONFLICT (token) DO UPDATE SET
+  schema_name = EXCLUDED.schema_name,
+  table_name  = EXCLUDED.table_name,
+  label       = EXCLUDED.label,
+  is_component = EXCLUDED.is_component,
+  is_active   = true;
+
+-- 5. Register the card as a shareable resource, alongside agent_card.
 INSERT INTO platform.shareable_resource_registry (
   resource_type, schema_name, table_name, id_column, owner_column,
   is_public_column, display_label, url_path_template,
