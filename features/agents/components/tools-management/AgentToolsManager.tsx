@@ -110,6 +110,8 @@ import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/sele
 import { supportsTools } from "@/features/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
+import { useToolRuntimes } from "./useToolRuntimes";
+import { runtimeInfoForExecutors } from "@/features/tool-registry/shared/toolRuntimes.service";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -615,6 +617,9 @@ function ServerToolsTab({
 
   // Bundle catalogue — drives the Bundles category + its sidebar count.
   const { bundles: bundleOptions } = useAgentBundleOptions();
+
+  // toolId → executor names, for the "runs on" badges. null while loading.
+  const toolRuntimes = useToolRuntimes();
 
   const orphanedTools = useMemo(() => {
     if (!Array.isArray(selectedTools)) return [];
@@ -1355,6 +1360,11 @@ function ServerToolsTab({
                         }
                         dupBundles={dupBundlesByToolId.get(tool.id)}
                         addDisabled={!isActive && !modelSupportsTools}
+                        executors={
+                          toolRuntimes
+                            ? (toolRuntimes.get(tool.id) ?? [])
+                            : null
+                        }
                       />
                     );
                   })
@@ -3798,6 +3808,7 @@ function ToolCard({
   onExpand,
   dupBundles,
   addDisabled = false,
+  executors = null,
 }: {
   tool: any;
   active: boolean;
@@ -3809,10 +3820,14 @@ function ToolCard({
   dupBundles?: string[];
   /** Model can't use tools — block selecting this (unselected) card. */
   addDisabled?: boolean;
+  /** Active executor names from tool.binding — drives the "runs on" badge.
+   * `null` = not loaded yet (render no badge); `[]` = no bindings = Server. */
+  executors?: string[] | null;
 }) {
   const hasDetails = tool.has_details ?? true;
   const colors = getCategoryColor(tool.category);
   const isDup = !!dupBundles && dupBundles.length > 0;
+  const runtime = executors ? runtimeInfoForExecutors(executors) : null;
 
   return (
     <div
@@ -3882,11 +3897,28 @@ function ToolCard({
                 )}
               </div>
             )}
+            {/* "Runs on" — where the tool's executor bindings let it execute */}
+            {runtime &&
+              runtime.badges.map((label) => (
+                <Badge
+                  key={label}
+                  variant="outline"
+                  className="text-[9px] h-4 px-1 font-normal text-muted-foreground border-border"
+                >
+                  {label}
+                </Badge>
+              ))}
           </div>
           {tool.description && (
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               {tool.description}
             </p>
+          )}
+          {runtime?.clientOnlyNote && (
+            <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Plug className="w-3 h-3 shrink-0" />
+              <span>{runtime.clientOnlyNote}</span>
+            </div>
           )}
           {isDup && (
             <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400">

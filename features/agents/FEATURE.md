@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-20`
+**Last updated:** `2026-08-21`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -353,6 +353,18 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-21` — **"Runs on" runtime badges in the tool pickers.** `AgentToolsManager`
+  tool cards and `AgentBundlesPanel` bundle cards now label where each tool
+  executes — Server / Web app / Chrome extension / Desktop app / MCP — sourced
+  from `tool.binding` executor bindings via
+  `features/tool-registry/shared/toolRuntimes.service.ts` (one cached
+  `readAllRows` sweep, consumed through `useToolRuntimes`; no bindings =
+  Server). Tools bound ONLY to `chrome-extension` / `matrx-local` get a subdued
+  "Only runs when the Chrome extension / desktop app is connected" line; bundles
+  show the same warning when everything they carry is client-only, or a mixed
+  "Includes …-only tools" indicator. Labeling only — assignment is never
+  blocked (agents are surface-independent; the server gates at runtime), and a
+  failed bindings read renders no badge rather than breaking a picker.
 - `2026-08-20` — **Delegated Matrx Extend tools execute from normal Chat.**
   The delegated-tool router offers otherwise-unowned tool names to the
   installed extension's live capabilities catalog, forwards owned calls over

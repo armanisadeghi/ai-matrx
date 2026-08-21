@@ -107,9 +107,9 @@ export interface AgentBundleOption {
  *
  * Excluded on purpose: **shared-lister** bundles (>1 bundle pointing at the
  * same lister tool — today the 14 browser bundles that all share
- * `load_browser_tools`). They are facets of a single runtime category-loader,
+ * `load_chrome_tools`). They are facets of a single runtime category-loader,
  * not independently addable units; toggling any one would toggle the shared
- * tool for all. The `load_browser_tools` tool itself still appears in normal
+ * tool for all. The `load_chrome_tools` tool itself still appears in normal
  * tool browsing for anyone who wants it directly.
  */
 export async function listAgentBundleOptions(): Promise<AgentBundleOption[]> {

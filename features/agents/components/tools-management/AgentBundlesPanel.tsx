@@ -22,6 +22,11 @@ import { selectAgentTools } from "@/features/agents/redux/agent-definition/selec
 import { setAgentTools } from "@/features/agents/redux/agent-definition/slice";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
+import { useToolRuntimes } from "./useToolRuntimes";
+import {
+  clientOnlyNoteFor,
+  isClientOnly,
+} from "@/features/tool-registry/shared/toolRuntimes.service";
 import type { AgentBundleOption } from "@/features/tool-registry/bundles/services/bundles.service";
 
 // Internal toolkits vs third-party MCP-server bundles are kept on separate tabs
@@ -36,6 +41,56 @@ const SCOPE_TABS: { key: BundleScope; label: string }[] = [
 ];
 
 type OverlapKind = "none" | "suggestion" | "warning";
+
+/**
+ * "Runs on" note for a bundle, from the member tools' executor bindings:
+ *
+ * - Every relevant tool client-only (for a lister bundle the LISTER tool is
+ *   what the agent actually carries, so it decides) → the full "Only runs
+ *   when …" warning.
+ * - Otherwise, some members client-only → a softer "Includes …-only tools"
+ *   mixed indicator.
+ *
+ * `runtimes` is toolId → active executor names; a lookup miss means no
+ * bindings = server-side. Returns null while runtimes are unloaded (never
+ * guess) or when nothing is client-only.
+ */
+function bundleRuntimeNote(
+  b: AgentBundleOption,
+  runtimes: Map<string, string[]> | null,
+): string | null {
+  if (!runtimes) return null;
+  const executorsOf = (toolId: string) => runtimes.get(toolId) ?? [];
+
+  // The ids the agent actually carries: the lister tool, or every member.
+  const carriedIds =
+    b.loadMode === "lister" && b.listerToolId
+      ? [b.listerToolId]
+      : b.members.map((m) => m.id);
+  if (carriedIds.length === 0) return null;
+
+  const carriedExecutors = carriedIds.map(executorsOf);
+  if (carriedExecutors.every(isClientOnly)) {
+    return clientOnlyNoteFor(Array.from(new Set(carriedExecutors.flat())));
+  }
+
+  // Mixed indicator over the member tools (what the model ends up calling).
+  const clientOnlyMembers = b.members.filter((m) =>
+    isClientOnly(executorsOf(m.id)),
+  );
+  if (clientOnlyMembers.length === 0) return null;
+  const kinds = new Set(
+    clientOnlyMembers.flatMap((m) => executorsOf(m.id)),
+  );
+  const hasChrome = kinds.has("chrome-extension");
+  const hasDesktop = kinds.has("matrx-local");
+  if (hasChrome && hasDesktop) {
+    return "Includes tools that only run with the Chrome extension or desktop app connected";
+  }
+  return hasChrome
+    ? "Includes Chrome-extension-only tools"
+    : "Includes desktop-app-only tools";
+}
 
 /**
  * Classify a bundle against the agent's current tools:
@@ -86,6 +141,8 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
     selectAgentTools(state, agentId),
   );
   const { bundles, status, error } = useAgentBundleOptions();
+  // toolId → executor names, for the "runs on" note. null while loading.
+  const toolRuntimes = useToolRuntimes();
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<BundleScope>("internal");
 
@@ -283,6 +340,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
                 active={isEnabled(b)}
                 agentTools={activeSet}
                 onToggle={() => toggleBundle(b)}
+                runtimeNote={bundleRuntimeNote(b, toolRuntimes)}
               />
             ))
           )}
@@ -297,11 +355,14 @@ function BundleCard({
   active,
   agentTools,
   onToggle,
+  runtimeNote,
 }: {
   bundle: AgentBundleOption;
   active: boolean;
   agentTools: Set<string>;
   onToggle: () => void;
+  /** "Runs on" caveat from executor bindings — see {@link bundleRuntimeNote}. */
+  runtimeNote?: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const MAX_VISIBLE = 12;
@@ -416,6 +477,12 @@ function BundleCard({
             )}
             {loadHint}
           </p>
+          {runtimeNote && (
+            <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Plug className="w-3 h-3 shrink-0" />
+              {runtimeNote}
+            </p>
+          )}
         </div>
       </div>
 

@@ -28,7 +28,7 @@ System bundles (`is_system=true`) and personal bundles (`is_system=false`,
 `created_by=auth.uid()`) share every view; a badge distinguishes them.
 
 > The 14 browser bundles (`chrome`, `reading`, `devtools`…) instead share one
-> lister, `load_browser_tools` — a permission-aware Chrome-extension discovery
+> lister, `load_chrome_tools` — a permission-aware Chrome-extension discovery
 > tool (filters admin-only / ungranted / desktop-gated tools). It's a deliberate
 > separate mechanism, NOT a casualty; the agent picker hides shared-lister
 > bundles. Reworking them into per-bundle listers is deferred.
@@ -49,9 +49,20 @@ remove `contributedToolIds`; the server expands the lister to the members at
 runtime, so the agent never carries the raw member tools.
 
 - **Excluded from the picker**: shared-lister bundles (>1 bundle on one lister —
-  today the 14 browser bundles sharing `load_browser_tools`). They're facets of
-  one runtime loader, not independently addable; `load_browser_tools` itself
+  today the 14 browser bundles sharing `load_chrome_tools`). They're facets of
+  one runtime loader, not independently addable; `load_chrome_tools` itself
   still appears in normal tool browsing.
+- **"Runs on" labeling**: the pickers show where each tool executes, sourced
+  from `tool.binding` (executor bindings) via
+  [`shared/toolRuntimes.service.ts`](../shared/toolRuntimes.service.ts) — one
+  cached whole-table read (`readAllRows`, session-scoped), consumed through
+  `useToolRuntimes`. Tool cards get compact badges (Server / Web app / Chrome
+  extension / Desktop app / MCP; no bindings = Server); bundle cards get a
+  subdued note when the carried tool(s) are client-only ("Only runs when the
+  Chrome extension / desktop app is connected") or a mixed indicator when only
+  some members are. Labeling only — assignment is never blocked (agents are
+  surface-independent; the server gates at runtime), and a failed read renders
+  no badge rather than breaking the picker.
 - **Overlap flagged**: the agent picker marks member tools the agent already
   added individually — fine to do, but surfaced so it isn't an accident.
 - **No agent-side special-casing**: persistence is identical to any tool — the
@@ -95,6 +106,16 @@ runtime, so the agent never carries the raw member tools.
   Postgres error surfaced via toast.
 
 ## Change Log
+
+- **2026-08-21** — **"Runs on" runtime labeling in the pickers.** New
+  `features/tool-registry/shared/toolRuntimes.service.ts` (one cached
+  `readAllRows` sweep of `tool.binding` → toolId → active executor names) +
+  `useToolRuntimes` hook. `AgentToolsManager` tool cards show executor badges
+  and a client-only warning; `AgentBundlesPanel` cards show the bundle-level
+  note (all-client-only warning / mixed indicator, lister tool decides for
+  lister bundles). Read-only labeling; fail-silent to no badge. Comment/prose
+  references to `load_browser_tools` updated to its platform-wide rename
+  `load_chrome_tools` (change-log history left as written).
 
 - **2026-08-12** — **Second assignment, no new targets: a member-alias target was
   proposed and refused.** Another agent was chipped at this console while the
