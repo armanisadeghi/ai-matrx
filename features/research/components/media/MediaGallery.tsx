@@ -58,9 +58,9 @@ import {
 import MediaDebugPanel from "./MediaDebugPanel";
 import {
   ResearchMediaImage,
+  ResearchMediaOpen,
   isOwnedMedia,
   mediaMimeType,
-  openResearchMedia,
 } from "./ownedMedia";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
@@ -673,18 +673,6 @@ function ResourceCard({
   const owned = isOwnedMedia(item);
   const label = item.alt_text || item.caption || (owned ? "Uploaded artifact" : item.url);
 
-  // Discovered → a plain anchor to the source page. Owned → a button that
-  // mints a fresh signed URL at click time (`url` on an owned row is a durable
-  // pointer, not something a browser can follow).
-  const openProps = owned
-    ? ({
-        as: "button",
-        type: "button",
-        onClick: () => void openResearchMedia(item),
-      } as const)
-    : ({ as: "a", href: item.url } as const);
-  const Wrapper = openProps.as;
-
   return (
     <div
       className={cn(
@@ -692,14 +680,8 @@ function ResourceCard({
         item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
       )}
     >
-      <Wrapper
-        {...(owned
-          ? { type: "button" as const, onClick: () => void openResearchMedia(item) }
-          : {
-              href: item.url,
-              target: "_blank",
-              rel: "noopener noreferrer",
-            })}
+      <ResearchMediaOpen
+        item={item}
         className="block w-full text-left"
         title={label}
       >
@@ -728,7 +710,7 @@ function ResourceCard({
             </p>
           )}
         </div>
-      </a>
+      </ResearchMediaOpen>
       <Button
         variant={item.is_relevant ? "default" : "outline"}
         size="icon"
@@ -984,10 +966,16 @@ function VideoCard({
 
   const embed = embedInfo(item);
   const poster = videoPoster(item);
-  const isDirectFile = DIRECT_VIDEO_RE.test(item.url);
-  const canPlayInApp = !!embed || isDirectFile;
+  const owned = isOwnedMedia(item);
+  // An owned video is bytes in our own storage: play it inline off the file
+  // handler (which re-mints from the file_id) instead of pointing an element
+  // at a URL column.
+  const isDirectFile = !owned && DIRECT_VIDEO_RE.test(item.url);
+  const canPlayInApp = !!embed || isDirectFile || owned;
   const label =
-    item.alt_text || item.caption || hostLabel(item.url) || item.url;
+    item.alt_text ||
+    item.caption ||
+    (owned ? "Uploaded video" : hostLabel(item.url) || item.url);
 
   return (
     <div
@@ -1004,6 +992,17 @@ function VideoCard({
             className="absolute inset-0 h-full w-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
+          />
+        ) : playing && owned ? (
+          <InlineMediaRef
+            ref={researchMediaRef(item)}
+            size="fill"
+            as="video"
+            controls
+            autoPlay
+            alt={label}
+            rounded="none"
+            className="absolute inset-0 h-full w-full"
           />
         ) : playing && isDirectFile ? (
           <SessionMediaElement
@@ -1025,7 +1024,9 @@ function VideoCard({
             className="absolute inset-0 h-full w-full"
             title={canPlayInApp ? "Play" : "Open on source site"}
           >
-            {poster ? (
+            {owned ? (
+              <ResearchMediaImage item={item} className="h-full w-full" />
+            ) : poster ? (
               <img
                 src={poster}
                 alt={label}
@@ -1050,16 +1051,13 @@ function VideoCard({
         >
           {label}
         </p>
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <ResearchMediaOpen
+          item={item}
           className="shrink-0 text-muted-foreground/50 hover:text-foreground transition-colors"
-          title="Open on source site"
-          onClick={(e) => e.stopPropagation()}
+          title={owned ? "Open the file" : "Open on source site"}
         >
           <ExternalLink className="h-3 w-3" />
-        </a>
+        </ResearchMediaOpen>
       </div>
       <Button
         variant={item.is_relevant ? "default" : "outline"}

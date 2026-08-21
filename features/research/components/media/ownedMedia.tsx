@@ -105,6 +105,52 @@ export async function openResearchMedia(item: ResearchMedia): Promise<void> {
   }
 }
 
+/**
+ * "Open this item" as an element: an anchor to the source page for discovered
+ * media, a button that mints a signed URL at click time for owned media. One
+ * component so no call site has to remember that `url` on an owned row is a
+ * durable pointer, not something a browser can follow.
+ */
+export function ResearchMediaOpen({
+  item,
+  className,
+  title,
+  children,
+}: {
+  item: ResearchMedia;
+  className?: string;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  if (item.file_id) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          void openResearchMedia(item);
+        }}
+        className={className}
+        title={title}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+      title={title}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </a>
+  );
+}
+
 /** `openResearchMedia` bound to an item, for click handlers. */
 export function useOpenResearchMedia(item: ResearchMedia): () => void {
   return useCallback(() => {
