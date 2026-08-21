@@ -1,27 +1,23 @@
 {
   "generatedAt": "2026-08-21",
-  "total": 75,
-  "suppressed": 120,
+  "total": 62,
+  "suppressed": 123,
   "byKind": {
-    "raw-supabase-message": 22,
+    "raw-supabase-message": 9,
     "claims-deleted": 45,
     "claims-denied": 8
   },
   "byFeature": {
     "features/code": 5,
-    "features/content-ir": 5,
     "features/tool-call-visualization": 5,
     "features/voice-agent": 5,
-    "features/agent-connections": 4,
     "features/data-tables": 4,
     "features/pdf-extractor": 4,
     "features/sharing": 4,
     "features/text-diff": 4,
-    "features/ai-work": 3,
+    "features/content-ir": 3,
     "features/crm": 3,
     "features/flashcards": 3,
-    "features/agent-apps": 2,
-    "features/entitlements": 2,
     "features/image-studio": 2,
     "features/page-extraction": 2,
     "features/tasks": 2,
@@ -55,50 +51,14 @@
       "snippet": "title: \"Origin not authorized\","
     },
     {
-      "file": "features/agent-apps/services/auto-create-draft.ts",
-      "line": 143,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message || \"Failed to save app draft\");"
-    },
-    {
-      "file": "features/agent-apps/services/auto-create-draft.ts",
-      "line": 262,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message || \"Failed to finalize app\");"
-    },
-    {
       "file": "features/agent-comparison/modes/variations/redux/thunks.ts",
       "line": 390,
       "kind": "claims-deleted",
       "snippet": "if (!col) throw new Error(\"Variation not found\");"
     },
     {
-      "file": "features/agent-connections/coding-sessions/service.ts",
-      "line": 123,
-      "kind": "raw-supabase-message",
-      "snippet": "if (authError) throw new Error(authError.message);"
-    },
-    {
-      "file": "features/agent-connections/coding-sessions/service.ts",
-      "line": 132,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/agent-connections/coding-sessions/service.ts",
-      "line": 189,
-      "kind": "raw-supabase-message",
-      "snippet": "if (authError) throw new Error(authError.message);"
-    },
-    {
-      "file": "features/agent-connections/coding-sessions/service.ts",
-      "line": 196,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
       "file": "features/agent-settings/components/ToolSelectorPanel.tsx",
-      "line": 192,
+      "line": 180,
       "kind": "claims-deleted",
       "snippet": "Tool not found in available tools list"
     },
@@ -107,24 +67,6 @@
       "line": 54,
       "kind": "claims-deleted",
       "snippet": "setError(\"Shortcut not found or you do not have access.\");"
-    },
-    {
-      "file": "features/ai-work/conversations/syncState.ts",
-      "line": 128,
-      "kind": "raw-supabase-message",
-      "snippet": "if (authError) throw new Error(authError.message);"
-    },
-    {
-      "file": "features/ai-work/service/providerConversationClient.ts",
-      "line": 80,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message);"
-    },
-    {
-      "file": "features/ai-work/service/providerConversationClient.ts",
-      "line": 121,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message);"
     },
     {
       "file": "features/change-policy/generate-seed.ts",
@@ -187,18 +129,6 @@
       "snippet": "throw new FlexibleDataError(`flexible_data row \"${id}\" was not found.`);"
     },
     {
-      "file": "features/content-ir/studio/kind-content-block-service.ts",
-      "line": 52,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message);"
-    },
-    {
-      "file": "features/content-ir/studio/shape-authoring-service.ts",
-      "line": 574,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message);"
-    },
-    {
       "file": "features/context-menu-v3/utils/widget-handle.ts",
       "line": 155,
       "kind": "claims-deleted",
@@ -245,18 +175,6 @@
       "line": 547,
       "kind": "claims-deleted",
       "snippet": "error: envelope?.error ?? \"Table not found or update failed\","
-    },
-    {
-      "file": "features/entitlements/stripe/connect.ts",
-      "line": 283,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message); // 500 → Stripe retries; the upsert above is idempotent"
-    },
-    {
-      "file": "features/entitlements/stripe/connect.ts",
-      "line": 313,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message);"
     },
     {
       "file": "features/files/components/core/FileEditor/CloudFileInlineEditor.tsx",
