@@ -89,6 +89,19 @@ type Resolution =
 
 const BASE = "/workflows/bakeoff/refine-2";
 
+/**
+ * "errored" is a terminal fact for THIS page even though it is not in the
+ * generated TERMINAL set (verified live: a run the engine records as
+ * `errored` never moves again) — the clock freezes, controls hide, and the
+ * "run it again" door opens.
+ */
+function runIsOver(status: WorkflowRunStatus | null): boolean {
+  return (
+    status !== null &&
+    (TERMINAL_RUN_STATUSES.has(status) || status === "errored")
+  );
+}
+
 export function RefineRunPage({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -344,7 +357,7 @@ function PromiseStrip({
   const statusTs = useAppSelector(selectRunStatusTs(runId ?? "∅"));
   const cost = useAppSelector(selectRunCostTotal(runId ?? "∅"));
   const summary = planSummary(steps, phases);
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const runOver = runIsOver(status);
 
   return (
     <section
@@ -500,7 +513,7 @@ function LiveRunBody({
 
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const status = useAppSelector(selectRunStatus(runId));
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const runOver = runIsOver(status);
 
   const [aimedNodeId, setAimedNodeId] = useState<string | null>(null);
   const followTarget = pickFollowTarget(steps, phases);
@@ -581,7 +594,7 @@ function RunControls({
   controls: ReturnType<typeof useWorkflowRunControls>;
 }) {
   const [busy, setBusy] = useState(false);
-  if (!status || TERMINAL_RUN_STATUSES.has(status)) return null;
+  if (runIsOver(status)) return null;
 
   const act = (fn: () => Promise<boolean>) => {
     setBusy(true);
