@@ -134,6 +134,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid='chat.coding_session'::regclass
                    AND attname='visibility' AND attnum>0 AND NOT attisdropped) THEN
+    -- personal-justified: coding sessions are owner-only private chats, not organization work.
     ALTER TABLE chat.coding_session
       ADD COLUMN visibility platform.visibility NOT NULL DEFAULT 'personal';
   END IF;
