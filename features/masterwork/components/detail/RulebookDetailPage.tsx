@@ -1544,7 +1544,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search rules…"
-              className="h-10 max-w-none sm:h-8 sm:max-w-xs"
+              className="h-10 max-w-none text-base sm:h-8 sm:max-w-xs sm:text-sm"
               data-surface-value="search_query"
             />
             {canEdit ? (

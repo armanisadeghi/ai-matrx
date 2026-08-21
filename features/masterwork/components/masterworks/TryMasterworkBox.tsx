@@ -418,6 +418,7 @@ export function TryMasterworkBox({
       <ProTextarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        className="text-base sm:text-sm"
         rows={3}
         enableTextStats={isEdit}
         placeholder={
@@ -431,6 +432,7 @@ export function TryMasterworkBox({
         <ProTextarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          className="text-base sm:text-sm"
           rows={1}
           placeholder="Facts that must not change (names, numbers, claims) — optional"
           disabled={phase === "starting" || phase === "running"}
