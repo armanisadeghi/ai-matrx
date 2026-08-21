@@ -1,0 +1,506 @@
+{
+  "competitor_opportunity_autopsy_v1": {
+    "__kind": "competitor_opportunity_autopsy_v1",
+    "already_have_percentage": 60,
+    "backlink_targets": [
+      "rival.example referring domains"
+    ],
+    "competitors": [
+      {
+        "competitor_id": "00000000-0000-4000-8000-000000000002",
+        "defensibility": "Closeable in one content sprint.",
+        "domain": "rival.example",
+        "evidence_summary": "Eighty-five intersecting keywords and one crawled guide.",
+        "key_page_urls": [
+          "https://rival.example/guide"
+        ],
+        "name": "Rival",
+        "relevance_score": 85,
+        "threat_level": "high",
+        "why_they_win": "Their guide has broader coverage and stronger support."
+      }
+    ],
+    "create_pages": [],
+    "error": null,
+    "evidence_coverage": {
+      "backlink_domains_compared": 25,
+      "competitor_pages_crawled": 1,
+      "competitors_analyzed": 1,
+      "keywords_compared": 85,
+      "limitations": [],
+      "own_pages_compared": 1
+    },
+    "executive_verdict": "Upgrade the existing guide before creating new content.",
+    "internal_link_actions": [
+      "Link /overview to /guide"
+    ],
+    "opportunities": [
+      {
+        "action": "Add setup, examples, and FAQ sections.",
+        "competitor_domain": "rival.example",
+        "competitor_url": "https://rival.example/guide",
+        "confidence": 88,
+        "current_advantage": "An indexed owned page already exists.",
+        "dependencies": [],
+        "effort": "medium",
+        "evidence": [
+          "competitor_page.char_count=4200"
+        ],
+        "impact": "high",
+        "opportunity_key": "upgrade-practical-guide",
+        "opportunity_type": "upgrade_page",
+        "primary_keyword": "practical guide",
+        "priority": 92,
+        "supporting_keywords": [
+          "guide setup"
+        ],
+        "target_page_id": "00000000-0000-4000-8000-000000000003",
+        "target_page_url": "https://example.com/guide",
+        "title": "Upgrade the practical guide",
+        "verdict": "The owned page is the right asset but lacks key coverage.",
+        "why_competitor_wins": "Crawler evidence shows deeper setup coverage."
+      }
+    ],
+    "site_domain": "example.com",
+    "site_id": "00000000-0000-4000-8000-000000000001",
+    "strategist_version": "competitor-autopsy-v1",
+    "summary": "The competitor's advantage is concentrated and closeable.",
+    "upgrade_page_ids": [
+      "00000000-0000-4000-8000-000000000003"
+    ]
+  },
+  "competitor_page_autopsy_v1": {
+    "__kind": "competitor_page_autopsy_v1",
+    "analyst_version": "competitor-autopsy-v1",
+    "backlink_advantage": {
+      "competitor_referring_domains": 20,
+      "own_referring_domains": 5,
+      "summary": "The competitor has broader referring-domain support."
+    },
+    "competitor_domain": "rival.example",
+    "competitor_url": "https://rival.example/guide",
+    "content_gaps": [
+      {
+        "action": "Add a setup section",
+        "evidence": "competitor headings include Setup; owned headings do not",
+        "gap": "No setup guidance",
+        "severity": "high"
+      }
+    ],
+    "entity_gaps": [
+      "implementation"
+    ],
+    "error": null,
+    "internal_link_advantage": {
+      "competitor_supporting_links": 8,
+      "own_supporting_links": 2,
+      "summary": "The competitor receives six more supporting links."
+    },
+    "overall_confidence": 88,
+    "own_page_id": "00000000-0000-4000-8000-000000000003",
+    "own_page_url": "https://example.com/guide",
+    "page_type": "money_page",
+    "recommended_actions": [
+      {
+        "action": "Expand the owned guide",
+        "effort": "medium",
+        "impact": "high",
+        "rationale": "Closes the directly observed coverage gap"
+      }
+    ],
+    "recommended_move": "upgrade_existing",
+    "schema_advantages": [
+      "FAQPage"
+    ],
+    "topic": "practical guide",
+    "verdict": "The competitor wins on demonstrably broader topic coverage.",
+    "why_it_wins": [
+      {
+        "confidence": 90,
+        "evidence": "competitor_page.char_count=4200; owned content is 700 characters",
+        "factor": "Content depth",
+        "impact": 80
+      }
+    ]
+  },
+  "digital_pr_reputation_brief_v1": {
+    "__kind": "digital_pr_reputation_brief_v1",
+    "analyst_version": "digital-pr-reputation-v1",
+    "cases": [
+      {
+        "action_reason": "The relationship is positive; a heavy rewrite request would add risk.",
+        "case_key": "publication:example-news.com:recycling-guide",
+        "case_type": "positive_opportunity",
+        "confidence": 88,
+        "contradictions": [],
+        "controllability": "possible",
+        "evidence_quality": 91,
+        "evidence_refs": [
+          {
+            "exact_excerpt": "The guide names Example Recycling as a certified provider and links to its data-destruction service page.",
+            "observed_at": "2026-08-11T10:00:00Z",
+            "source_id": "11111111-1111-4111-8111-111111111111",
+            "source_kind": "backlink",
+            "supports": "Observed positive editorial coverage and contextual link.",
+            "title": "A practical guide to certified electronics recycling",
+            "url": "https://example-news.com/recycling-guide"
+          },
+          {
+            "exact_excerpt": "Independent publication with three observed editorial links.",
+            "observed_at": "2026-08-11T10:00:00Z",
+            "source_id": "22222222-2222-4222-8222-222222222222",
+            "source_kind": "referring_domain",
+            "supports": "First-party relationship history for the publication.",
+            "title": "Example News",
+            "url": "https://example-news.com"
+          }
+        ],
+        "facts": [
+          "The captured guide names and links to the managed brand."
+        ],
+        "headline": "Accurate editorial coverage worth protecting",
+        "inferences": [
+          "The editor may be receptive to a narrowly relevant update."
+        ],
+        "missing_evidence": [
+          "No editor contact or update policy is stored."
+        ],
+        "opportunity_score": 86,
+        "pitch_angle": "Annual certificate-destruction volume with auditable methodology.",
+        "priority": 78,
+        "recommended_action": "Thank the editor and offer one substantiated data update.",
+        "requires_human_review": false,
+        "risk_score": 12,
+        "sentiment": "positive",
+        "source_domain": "example-news.com",
+        "source_id": "11111111-1111-4111-8111-111111111111",
+        "source_kind": "media_coverage",
+        "source_title": "A practical guide to certified electronics recycling",
+        "source_url": "https://example-news.com/recycling-guide",
+        "summary": "The publication already presents the brand accurately in a relevant guide.",
+        "target_page_id": null,
+        "target_page_url": "https://example-recycling.com/data-destruction",
+        "verdict": "protect"
+      }
+    ],
+    "evidence_coverage": {
+      "ai_citations_reviewed": 3,
+      "backlinks_reviewed": 8,
+      "brand_facts_reviewed": 5,
+      "captured_pages_reviewed": 6,
+      "competitor_intersections_reviewed": 2,
+      "domains_reviewed": 4,
+      "excluded_low_quality_inputs": 1,
+      "rag_hits_reviewed": 4
+    },
+    "executive_verdict": "Protect the accurate editorial mention and offer the publication a verifiable certificate-destruction data update.",
+    "limitations": [
+      "No editor contact or formal corrections policy is stored."
+    ],
+    "narratives": [
+      {
+        "evidence_refs": [
+          {
+            "exact_excerpt": "The guide names Example Recycling as a certified provider and links to its data-destruction service page.",
+            "observed_at": "2026-08-11T10:00:00Z",
+            "source_id": "11111111-1111-4111-8111-111111111111",
+            "source_kind": "backlink",
+            "supports": "Observed positive editorial coverage and contextual link.",
+            "title": "A practical guide to certified electronics recycling",
+            "url": "https://example-news.com/recycling-guide"
+          }
+        ],
+        "narrative": "The brand is a certified provider for secure electronics disposal.",
+        "prevalence": "Observed in one captured editorial guide.",
+        "recommended_handling": "Protect accuracy and monitor for material changes.",
+        "severity": "low risk, high relationship value",
+        "stance": "positive",
+        "verification_status": "verified"
+      }
+    ],
+    "publication_opportunities": [
+      {
+        "confidence": 82,
+        "demonstrated_topics": [
+          "electronics recycling",
+          "data destruction"
+        ],
+        "domain": "example-news.com",
+        "evidence_refs": [
+          {
+            "exact_excerpt": "The guide names Example Recycling as a certified provider and links to its data-destruction service page.",
+            "observed_at": "2026-08-11T10:00:00Z",
+            "source_id": "11111111-1111-4111-8111-111111111111",
+            "source_kind": "backlink",
+            "supports": "Observed positive editorial coverage and contextual link.",
+            "title": "A practical guide to certified electronics recycling",
+            "url": "https://example-news.com/recycling-guide"
+          },
+          {
+            "exact_excerpt": "Independent publication with three observed editorial links.",
+            "observed_at": "2026-08-11T10:00:00Z",
+            "source_id": "22222222-2222-4222-8222-222222222222",
+            "source_kind": "referring_domain",
+            "supports": "First-party relationship history for the publication.",
+            "title": "Example News",
+            "url": "https://example-news.com"
+          }
+        ],
+        "publication_name": "Example News",
+        "referring_domain_profile_id": "22222222-2222-4222-8222-222222222222",
+        "relationship_basis": "The publication already linked editorially to the brand.",
+        "suggested_angle": "Auditable annual data on certified destruction outcomes.",
+        "supporting_assets": [
+          "Confirmed annual destruction-volume business fact"
+        ]
+      }
+    ],
+    "quality": {
+      "accepted_cases": 1,
+      "accepted_publication_opportunities": 1,
+      "overall_confidence": 86,
+      "rejected_cases": 0,
+      "rejected_publication_opportunities": 0
+    },
+    "site_domain": "example-recycling.com",
+    "site_id": "33333333-3333-4333-8333-333333333333"
+  },
+  "keyword_classification_batch_v1": {
+    "classifier_version": "kwclass-v1",
+    "results": [
+      {
+        "__kind": "keyword_classification_v1",
+        "audience_type": "business",
+        "brand_presence": "unbranded",
+        "comparison_intent": "none",
+        "compliance_framing": "regulated",
+        "error": null,
+        "fulfillment_mode": "done_for_you",
+        "funnel_stage": "purchase_ready",
+        "intent_class": "transactional",
+        "keyword_id": "6f1c2b7e-2a54-4f0e-9a1d-8c2b5b0a7c31",
+        "local_intent": "explicit_local",
+        "overall_confidence": 88,
+        "per_fact_confidence": {
+          "audience_type": 74,
+          "brand_presence": 96,
+          "comparison_intent": 80,
+          "compliance_framing": 70,
+          "fulfillment_mode": 90,
+          "funnel_stage": 85,
+          "intent_class": 92,
+          "local_intent": 95,
+          "price_sensitivity": 78,
+          "query_form": 90,
+          "specificity": 93,
+          "transaction_direction": 88,
+          "urgency": 61
+        },
+        "phrase": "hard drive shredding service near me",
+        "price_sensitivity": "none",
+        "query_form": "phrase",
+        "secondary_interpretation": {
+          "audience_type": "consumer",
+          "brand_presence": null,
+          "comparison_intent": null,
+          "compliance_framing": "certification_seeking",
+          "fulfillment_mode": null,
+          "funnel_stage": "vendor_evaluation",
+          "intent_class": "commercial_investigation",
+          "local_intent": null,
+          "price_sensitivity": null,
+          "query_form": null,
+          "specificity": null,
+          "transaction_direction": null,
+          "urgency": "none"
+        },
+        "specificity": "long_tail",
+        "standards": [
+          "NIST SP 800-88"
+        ],
+        "transaction_direction": "searcher_pays",
+        "urgency": "time_sensitive"
+      }
+    ]
+  },
+  "page_keyword_analysis_v1": {
+    "analyzer_version": "pageanalyze-v1",
+    "cannibalization_risk": [
+      {
+        "__kind": "cannibalization_v1",
+        "shared_query": "lip filler",
+        "sibling_url": "https://example.com/lip-injections",
+        "why": "Near-duplicate targeting in title and H1."
+      }
+    ],
+    "content_role": "money_page",
+    "declared_vs_actual": {
+      "__kind": "target_alignment_v1",
+      "declared_keyword": "lip filler newport beach",
+      "notes": "",
+      "status": "aligned"
+    },
+    "discovered_keywords": [
+      {
+        "__kind": "keyword_ref_v1",
+        "confidence": 75,
+        "evidence": "mentioned in the closing section",
+        "phrase": "lip filler aftercare"
+      }
+    ],
+    "error": null,
+    "funnel_position": "vendor_evaluation",
+    "gaps": [
+      {
+        "__kind": "content_gap_v1",
+        "gap": "No before/after gallery despite visual-proof expectation for aesthetic procedures",
+        "severity": "high"
+      }
+    ],
+    "inferred_primary_keyword": {
+      "__kind": "keyword_ref_v1",
+      "confidence": 88,
+      "evidence": "H1 + title + 60% of body content",
+      "phrase": "lip filler newport beach"
+    },
+    "page_url": "https://example.com/lip-fillers",
+    "supported_keywords": [
+      {
+        "__kind": "keyword_ref_v1",
+        "confidence": 90,
+        "evidence": "H2 'What Do Lip Fillers Cost?'",
+        "phrase": "lip filler cost"
+      }
+    ]
+  },
+  "page_keyword_map_v1": {
+    "conflicts": [
+      {
+        "__kind": "page_conflict_v1",
+        "notes": "Near-duplicate targeting; 301 the weaker page.",
+        "resolution": "consolidate",
+        "shared_keyword": "lip filler",
+        "urls": [
+          "/lip-fillers",
+          "/lip-injections"
+        ]
+      }
+    ],
+    "error": null,
+    "mapper_version": "pagemap-v1",
+    "page_plans": [
+      {
+        "__kind": "page_plan_v1",
+        "brief": "",
+        "confidence": 85,
+        "content_role": "money_page",
+        "page": {
+          "__kind": "page_ref_v1",
+          "existing_url": "/lip-fillers",
+          "proposed": null
+        },
+        "primary_keyword": "lip filler newport beach",
+        "supporting_keywords": [
+          "lip filler cost",
+          "lip injection"
+        ]
+      },
+      {
+        "__kind": "page_plan_v1",
+        "brief": "Day-by-day aftercare timeline, normal vs concerning, links to booking.",
+        "confidence": 78,
+        "content_role": "supporting_content",
+        "page": {
+          "__kind": "page_ref_v1",
+          "existing_url": null,
+          "proposed": {
+            "reason": "informational cluster with no home; feeds the money page",
+            "title": "Lip Filler Aftercare Guide",
+            "url_slug": "/lip-filler-aftercare"
+          }
+        },
+        "primary_keyword": "lip filler aftercare",
+        "supporting_keywords": [
+          "lip filler swelling timeline"
+        ]
+      }
+    ],
+    "skipped": [
+      {
+        "__kind": "skipped_keyword_v1",
+        "phrase": "cheap lip filler",
+        "reason": "brand_fit=off_brand (premium positioning)"
+      }
+    ],
+    "topic_slug": "lip-fillers"
+  },
+  "seo_authority_route_analysis": {
+    "__kind": "seo_authority_route_analysis",
+    "executive_summary": "A high-authority educational guide can support the underlinked data destruction service page with one strongly relevant contextual link.",
+    "overall_verdict": "opportunities",
+    "priorities": [
+      {
+        "anchor_text": "certified data destruction services",
+        "candidate_key": "11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222",
+        "cannibalization_reason": null,
+        "cannibalization_risk": "low",
+        "confidence": 91,
+        "evidence": [
+          "source Link Score 88",
+          "target average position 9.2"
+        ],
+        "expected_benefit": "Transfers authority into the commercial page and gives readers a clear next step.",
+        "placement_instruction": "Add a short contextual sentence immediately after this line and link the anchor to the service page.",
+        "placement_quote": "Choose the method that matches the sensitivity of the media.",
+        "rationale": "The guide has authority supply and the service page has commercial demand but weak internal support.",
+        "source_page_id": "11111111-1111-4111-8111-111111111111",
+        "source_url": "https://example.com/guides/data-destruction-methods",
+        "target_page_id": "22222222-2222-4222-8222-222222222222",
+        "target_url": "https://example.com/services/data-destruction",
+        "topical_relevance": "strong",
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "topic_assignment_batch_v1": {
+    "assigner_version": "topicassign-v1",
+    "assignments": [
+      {
+        "__kind": "keyword_topic_assignment_v1",
+        "confidence": 91,
+        "error": null,
+        "keyword_id": "6f1c2b7e-2a54-4f0e-9a1d-8c2b5b0a7c31",
+        "primary_topic": "hard-drive-shredding",
+        "secondary_topics": []
+      }
+    ],
+    "new_topics": [
+      {
+        "__kind": "topic_proposal_v1",
+        "aliases": [
+          "drive shredding",
+          "hdd shredding"
+        ],
+        "description": "Physical destruction of drives on site or at a facility.",
+        "justified_by_keyword_ids": [
+          "6f1c2b7e-2a54-4f0e-9a1d-8c2b5b0a7c31",
+          "a3d9f0c1-7b26-4e8a-9f52-1d40cb6e93aa"
+        ],
+        "name": "Hard Drive Shredding",
+        "node_type": "service",
+        "parent_slug": "data-destruction",
+        "slug": "hard-drive-shredding",
+        "temp_id": "new-1",
+        "volatility": "stable"
+      }
+    ],
+    "unassignable": [
+      {
+        "__kind": "unassignable_keyword_v1",
+        "keyword_id": "c07be4a2-55d1-4a3f-b8f0-2e9a7c14d6b5",
+        "reason": "Generic navigational query with no topical anchor in this tree."
+      }
+    ]
+  }
+}
