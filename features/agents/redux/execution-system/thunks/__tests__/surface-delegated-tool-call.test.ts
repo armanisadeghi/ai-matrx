@@ -59,11 +59,18 @@ const mockDispatchSurfaceWrite = jest.fn((args) => ({
   type: "test/dispatchSurfaceWrite",
   payload: args,
 }));
+const mockDispatchMatrxExtendTool = jest.fn((args) => ({
+  type: "test/dispatchMatrxExtendTool",
+  payload: args,
+}));
 jest.mock("@/features/surfaces/runtime/surface-writeback", () => ({
   SURFACE_WRITE_TOOL_NAME: "apply_surface_write",
 }));
 jest.mock("../dispatch-surface-write.thunk", () => ({
   dispatchSurfaceWrite: mockDispatchSurfaceWrite,
+}));
+jest.mock("../dispatch-matrx-extend-tool.thunk", () => ({
+  dispatchMatrxExtendTool: mockDispatchMatrxExtendTool,
 }));
 
 import { surfaceDelegatedToolCall } from "../surface-delegated-tool-call.thunk";
@@ -223,7 +230,7 @@ describe("surfaceDelegatedToolCall cold desktop reconciliation", () => {
     expect(mockWatchDesktopDelegation).not.toHaveBeenCalled();
   });
 
-  it("still rejects an unknown non-desktop delegated tool", async () => {
+  it("offers an unknown non-desktop delegated tool to Matrx Extend", async () => {
     const dispatch = jest.fn((action) => action);
     surfaceDelegatedToolCall({
       ...BASE_ARGS,
@@ -232,13 +239,13 @@ describe("surfaceDelegatedToolCall cold desktop reconciliation", () => {
     await flushPromises();
 
     expect(mockWatchDesktopDelegation).not.toHaveBeenCalled();
-    expect(mockSubmitToolResult).toHaveBeenCalledWith(
-      expect.objectContaining({
-        call_id: "call-1",
-        tool_name: "unknown_client_tool",
-        is_error: true,
-        output: expect.objectContaining({ reason: "unsupported_client_tool" }),
-      }),
-    );
+    expect(mockDispatchMatrxExtendTool).toHaveBeenCalledWith({
+      conversationId: "conversation-1",
+      requestId: "request-1",
+      callId: "call-1",
+      toolName: "unknown_client_tool",
+      args: { operation: "read" },
+    });
+    expect(mockSubmitToolResult).not.toHaveBeenCalled();
   });
 });

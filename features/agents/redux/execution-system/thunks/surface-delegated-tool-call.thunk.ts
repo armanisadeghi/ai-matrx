@@ -27,8 +27,9 @@
  *     in reverse). A cold-resumed desktop call also remains durable when no
  *     desktop is currently online: reconnecting the executor is recoverable,
  *     while POSTing an error would permanently steal the call from it.
- *   - anything else   → flip the instance to `paused` and POST an
- *     `unsupported_client_tool` error so the hard-suspended loop never wedges.
+ *   - remaining tools → Matrx Extend discovers live ownership from its
+ *     capability catalog, executes owned browser tools, and answers unknowns
+ *     as `unsupported_client_tool` so the hard-suspended loop never wedges.
  *
  * `data` is the `tool_delegated` event's `data` object (`{ arguments: {...} }`).
  * Cold-resume reconstructs that exact shape from the persisted
@@ -67,6 +68,14 @@ import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence"
 import { watchDesktopDelegation } from "./watch-desktop-delegation.thunk";
 import { enqueuePendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
 import { parseSmsActionAuthorization } from "@/features/agents/ui-first-tools/sms-action-authorization";
+import { dispatchMatrxExtendTool } from "./dispatch-matrx-extend-tool.thunk";
+
+function toToolArguments(value: unknown): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return Object.fromEntries(Object.entries(value));
+}
 
 /**
  * Desktop mega-tools bound to the `matrx-local` executor (tool.definition
@@ -385,11 +394,20 @@ export const surfaceDelegatedToolCall = (
       return;
     }
 
-    // Unknown delegated tool — neither a widget nor a ui-first tool. The
-    // backend hard-suspended the loop awaiting a result; sitting on `paused`
-    // would silently wedge it. Flip to `paused` for a truthful state during the
-    // microtask window, then POST an error result through the funnel so the
-    // server can recover or surface the failure.
-    postUnsupportedError();
+    // Remaining delegated tools get one final canonical owner check against
+    // the installed Matrx Extend capability catalog. This lets normal Chat
+    // execute dynamically loaded DB-backed browser tools without copying the
+    // extension's tool names into the frontend. The dispatcher preserves the
+    // loud unsupported result when the extension is absent or does not own the
+    // name, so the hard-suspended server loop still never wedges.
+    dispatch(
+      dispatchMatrxExtendTool({
+        conversationId,
+        requestId,
+        callId,
+        toolName,
+        args: toToolArguments(data?.arguments),
+      }),
+    );
   };
 };

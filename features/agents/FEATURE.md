@@ -353,6 +353,13 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-20` — **Delegated Matrx Extend tools execute from normal Chat.**
+  The delegated-tool router offers otherwise-unowned tool names to the
+  installed extension's live capabilities catalog, forwards owned calls over
+  the shared direct bridge, and submits the result through the canonical
+  durable tool-result/resume path. The frontend never mirrors the catalog or
+  weakens Matrx Extend's schema, permission, origin, or action-confirmation
+  checks. See [`lib/extension-bridge/FEATURE.md`](../../lib/extension-bridge/FEATURE.md).
 - `2026-08-20` — **Optimistic message parts now obey the generated persisted
   contract before entering Redux.** Request parts are projected through JSON
   semantics (including omission of JavaScript `undefined` object properties)

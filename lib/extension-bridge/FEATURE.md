@@ -10,6 +10,12 @@ The bridge has two transports with one request/reply contract:
   `requestId` fields for routing and correlation.
 
 `lib/types/bridge-envelope.ts` is the wire-format source of truth.
+`lib/extension-bridge/chrome-rpc.ts` owns same-machine transport and extension
+discovery. `lib/extension-bridge/matrx-extend-client.ts` discovers the installed
+extension's live `capabilities` catalog before forwarding a delegated Chat tool
+through `callTool`; **never copy an extension tool list into the frontend.** The
+extension remains the authority for argument schemas, permission tiers, sender
+origin, and confirmation of browser-changing actions.
 `hooks/useExtensionBridgeChannel.ts` owns the frontend request/reply lifecycle.
 `ExtensionBridgeSubscriber.tsx` is mounted once in `app/Providers.tsx` and
 handles extension-initiated `openPanel` requests through
@@ -22,3 +28,9 @@ Realtime authorization requires private channels plus matching
 `realtime.messages` RLS policies. Until those are both deployed, the Broadcast
 transport is functionally per-user by convention but not access-controlled by
 the database.
+
+## Change Log
+
+- `2026-08-20` — Normal Chat delegates otherwise-unowned client tool calls to
+  the installed Matrx Extend catalog, then resumes through the canonical
+  durable tool-result path. The demo and Chat share one direct-RPC transport.
