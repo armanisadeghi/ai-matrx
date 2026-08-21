@@ -14,10 +14,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D235 — CX overview KPIs still aggregate 120k+ chat rows client-side; belongs in a Postgres RPC like `chat.cx_usage_analytics` (2026-08-21)
-
-Found while fixing the cx-dashboard usage/$0 bug. `fetchOverviewKpis` (features/cx-dashboard/service.ts) now reads `chat.user_request` (~12k rows) and `chat.tool_call` (~110k rows) via `readAllRows` parallel paging on the admin client and aggregates in JS — correct (the old bare `.select()` silently capped at 1000 rows, so every all-time KPI was confidently wrong) but ~10s server-side and growing linearly with the tables. The known fix is a second SECURITY DEFINER service-role aggregate RPC (exact template: `chat.cx_usage_analytics`, which took the usage tab from timeout→0.35s) returning the KPI + tool-usage + daily rollups; then `fetchOverviewKpisInner` collapses to head-counts + two RPC calls and the `rowKey` churn-tolerance in `lib/supabase/readAllRows.ts` loses its only consumer and can be deleted. Blocked this session ONLY because the Supabase MCP returned 404 on every call (no `execute_sql`/`apply_migration`), so no DDL path existed.
-
 ### D234 — `sandbox_instance` is 91.6% of the entire version store: 4.83M of 5.28M rows over 375 rows (2026-08-21)
 
 Found while verifying the versioned-without-capture migration (D233's sibling; measured live).
@@ -1425,6 +1421,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D235** — CX overview KPIs moved into `chat.cx_overview_kpis` (aidream migration 0437): SECURITY DEFINER, EXECUTE for `service_role` only, returning KPI totals + per-tool usage + daily rollups in one indexed pass. `fetchOverviewKpisInner` is now that RPC plus the existing usage aggregate; the `readAllRows` paging (and its `rowKey` churn-tolerance consumer) is gone from this path. Verified live 2026-08-21 through the real admin-client → PostgREST path: **0.45s all-time** (was ~10s), totals matching the prior scan, and **403 `permission denied`** for an authenticated non-service caller.
 - **D218** — the `/crm` record-class facet works: new `MatrxColumnDef.filterSingle` renders single-choice (replace) semantics on record_class/expert_status/date buckets, CrmListPage takes the last valid value. Browser-proven 2026-08-21: switching to "Found by the platform" surfaced all discovered rows.
 - **D220** — import commits MATCHED rows too (resolver NULL-only enrichment + contact points + idempotent affiliation via `fetchCurrentEmploymentState`); preview says "will be updated", Import button counts matched rows. Browser-proven 2026-08-21 with a live match round (phone enriched, no duplicate, affiliation stayed 1).
 - **D221** — pasted-text imports stamp `source_detail='pasted text'` (`ImportWizard.tsx`). DB-proven 2026-08-21.
