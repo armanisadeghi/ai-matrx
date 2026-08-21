@@ -50,6 +50,15 @@ if $STRICT; then
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
+        # REACHABILITY GUARDS. Two halves, one script. Definition parity
+        # (containment_edges deps vs the trigger UPDATE OF list) is a
+        # catalog-only, deterministic, one-right-answer check and BLOCKS in
+        # strict — a forgotten column silently rots the access cache with no
+        # symptom (drift audit 2026-08-15, finding 8 risk 1). Cache drift is
+        # a full re-derivation: the script prints it loudly and exits 0
+        # without --strict, because the fix is a rebuild + a filed defect,
+        # not a blocked release.
+        "Reachability standing guards|pnpm check:reachability-guards"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a
@@ -156,6 +165,15 @@ else
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
+        # REACHABILITY GUARDS. Two halves, one script. Definition parity
+        # (containment_edges deps vs the trigger UPDATE OF list) is a
+        # catalog-only, deterministic, one-right-answer check and BLOCKS in
+        # strict — a forgotten column silently rots the access cache with no
+        # symptom (drift audit 2026-08-15, finding 8 risk 1). Cache drift is
+        # a full re-derivation: the script prints it loudly and exits 0
+        # without --strict, because the fix is a rebuild + a filed defect,
+        # not a blocked release.
+        "Reachability standing guards|pnpm check:reachability-guards"
         # Time-bounded DDL that can expire on the calendar — partition runway,
         # catch-all partitions that started receiving rows, stalled pg_cron
         # jobs. Loud, never blocking (D122).

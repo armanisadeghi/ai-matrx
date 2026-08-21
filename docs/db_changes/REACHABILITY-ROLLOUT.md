@@ -409,6 +409,11 @@ From `admin_relationship_system_status()`: total rules, conveying rules, closure
 8. **Container sharing requires `shareable_resource_registry`** (§2.1) — that's the write-side gate on `iam.permissions`, independent of this system.
 9. **New content types:** register the entity (`entity_types`), the relationship (`association_types`), the shareability (`shareable_resource_registry` if directly grantable), and ensure canonical RLS. Then containment is config, not code.
 10. **Performance watch-items** (not concerns at current scale): the association trigger refreshes container + ancestors per edge change — if a future bulk-import writes thousands of containment edges, wrap it and call `rebuild_reachability()` once after, or convert the trigger to statement-level with transition tables at that time.
+11. **The cache is now guarded, not assumed** (added 2026-08-21; drift audit 2026-08-15 finding 8, risks 1 and 2 — `migrations/reachability_standing_guards.sql`). Two standing guards, run by `pnpm check:reachability-guards` and wired into `run-release-gates.sh`:
+    - `platform.reachability_definition_parity()` — **blocking**. If you ever add a column to `containment_edges` (the pending `conveys_access` proposal will), the `UPDATE OF` list on `trg_associations_reachability` must grow with it. Nothing else enforces that coupling; it used to be pure memory. Fix a firing by re-creating the trigger with the extra column, then rebuilding once.
+    - `platform.reachability_drift()` — **advisory**. FULL OUTER JOIN of the cache vs a fresh `derive_reachability()` walk: both directions, all depths, depth and level equality. Empty = consistent. It is a full re-derivation, so it is advisory rather than release-blocking; re-measure its cost before scheduling it as the graph grows (2026-08-21: ~9s over 4,476 rows / 468 containers).
+    - Per invariant 1, a drift firing is healed by `rebuild_reachability()` — but unlike a routine rebuild it is a **defect**: file it, because it means a write path or a trigger stopped working.
+    - **Not scheduled.** A recurring sweep + automatic self-heal needs Arman's approval by name and interval (`common-docs/policies/no-unapproved-schedules.md`); the proposal sits on the attention board. Until then this runs manually or at release.
 
 ---
 
@@ -467,6 +472,10 @@ Note: this requires `thread` in `shareable_resource_registry` (§2.1); if testin
 | `platform.refresh_reachability(text, uuid)` | fn | Scoped recompute, advisory-locked |
 | `platform.reachability_ancestors(text, uuid)` | fn | Upward walk |
 | `platform.rebuild_reachability()` | fn → bigint | Full rebuild from tuples |
+| `platform.reachability_drift()` | fn | **2026-08-21.** Cache vs fresh derivation, both directions, all depths; empty = consistent. `service_role` only |
+| `platform.reachability_definition_parity()` | fn | **2026-08-21.** `containment_edges` deps (pg_depend) vs the trigger's `UPDATE OF` list; empty = in parity. `service_role` only |
+| `public.reachability_guard_report()` | fn → jsonb | **2026-08-21.** Both guards in one PostgREST call for `pnpm check:reachability-guards`. `service_role` only |
+| `public.admin_reachability_guard_report()` | fn → jsonb | **2026-08-21.** Super-admin path (`is_super_admin` gate), mirroring `admin_rebuild_reachability` |
 | `platform.enforce_known_association()` | fn | Registration enforcement (trigger fn) |
 | `trg_associations_reachability` | trigger | Live; maintains cache on edge changes |
 | `trg_association_types_reachability` | trigger | Live; full rebuild on rule changes |
