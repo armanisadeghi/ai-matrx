@@ -18,6 +18,7 @@ import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
+import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { LiveCaptureButton } from "./LiveCaptureButton";
 
 export function EduNoteActionBar({ noteId }: { noteId: string }) {
@@ -70,6 +71,9 @@ export function EduNoteActionBar({ noteId }: { noteId: string }) {
           showStatus={false}
         />
       </div>
+
+      {/* The material these notes were made from, and their kit siblings. */}
+      <MadeFromSource entityType="note" entityId={noteId} />
 
       <GeneratedFromChips
         entityType="note"

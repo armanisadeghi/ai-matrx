@@ -32,6 +32,7 @@ import { podcastService } from "@/features/podcasts/service";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAccess } from "@/utils/permissions/access";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -186,6 +187,8 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
       ) : (
         <LiveAudioRun media={media} onReady={setMedia} />
       )}
+      {/* Where this came from + the rest of the kit made from the same upload. */}
+      <MadeFromSource entityType="study_media" entityId={media.id} />
       <TrustPanel media={media} />
     </div>
     </SurfaceRuntimeProvider>

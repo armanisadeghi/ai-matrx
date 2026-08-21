@@ -100,6 +100,7 @@ import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcar
 import { serializeDeck } from "@/features/education/media/audio/audioBrief";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
+import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ClassPicker } from "@/features/education/classes/components/ClassPicker";
 import { OfflineDeckButton } from "./OfflineDeckButton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -925,6 +926,12 @@ export function SetDetailView({ setId }: { setId: string }) {
                   variant="default"
                 />
               )}
+            </div>
+
+            {/* Forward lineage — the material this deck was made from, and the
+                rest of the kit that came out of the same upload. */}
+            <div className="mt-3">
+              <MadeFromSource entityType="fc_set" entityId={setId} />
             </div>
 
             {/* Reverse lineage — study artifacts made from this deck. */}

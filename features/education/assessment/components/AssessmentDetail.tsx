@@ -33,6 +33,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { cn } from "@/lib/utils";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
+import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import type { TargetKind } from "@/features/education/convert/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
@@ -373,6 +374,11 @@ export function AssessmentDetail({
             <Boxes className="mr-1.5 h-4 w-4" />
             Convert
           </Button>
+        </div>
+
+        {/* The material this assessment was made from, and its kit siblings. */}
+        <div className="mt-3">
+          <MadeFromSource entityType="assessment" entityId={assessmentId} />
         </div>
 
         {/* Reverse lineage — study artifacts made from this assessment. */}

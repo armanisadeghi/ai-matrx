@@ -21,6 +21,7 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
@@ -140,6 +141,9 @@ export function SummaryDetail({ id }: { id: string }) {
       <div className="prose-sm max-w-none">
         <MarkdownStream content={markdown} hideCopyButton />
       </div>
+
+      {/* Where this came from + the rest of the kit made from the same upload. */}
+      <MadeFromSource entityType="study_media" entityId={row.id} />
 
       {trust && trust.citations.length > 0 && (
         <div className="space-y-2 border-t border-border pt-4">

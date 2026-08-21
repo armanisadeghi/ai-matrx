@@ -16,6 +16,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import {
   Sheet,
@@ -298,6 +299,11 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
             </Button>
           )}
         </div>
+
+        {/* Where this came from + the rest of the kit made from the same upload. */}
+        {media && (
+          <MadeFromSource entityType="study_media" entityId={media.id} />
+        )}
 
         {trust && (
           <Sheet open={sourcesOpen} onOpenChange={setSourcesOpen}>
