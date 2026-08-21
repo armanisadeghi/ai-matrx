@@ -18,7 +18,7 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 - Active non-contract-artifact kinds: **211**
 - Already routed (web/output row exists): **211** — live recount 2026-08-20
 - **Missing a route: 0** ✅ every active non-contract-artifact kind now resolves a registered `(kind,'web','output')` component — no kind reaches a reader by silent fallback.
-- Individual rows: unclaimed **0** · claimed **12** · done **24** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**)
+- Individual rows (45 total): unclaimed **0** · claimed **8** · done **36** · blocked **1** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows by the army watchdog 2026-08-20 21:45 (the previous line read 12 claimed / 24 done and had not been refreshed after copy-D's last four flips)
 
 **Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
 non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
