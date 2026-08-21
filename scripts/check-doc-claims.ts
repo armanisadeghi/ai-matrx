@@ -219,10 +219,18 @@ const claims: Claim[] = [
         ),
       );
       if (documented.size === 0) return null; // table restructured; nothing to compare
+      // A running build/dev server parks excluded groups as `_<name>_build_excluded`
+      // for its process lifetime (see next.config.js MATRX_PROFILE). A parked group
+      // still exists — reporting it as a ghost is a false alarm every time this
+      // runs beside the preview server.
       const onDisk = new Set(
         readdirSync(join(ROOT, "app"), { withFileTypes: true })
-          .filter((d) => d.isDirectory() && /^\(.+\)$/.test(d.name))
-          .map((d) => d.name),
+          .filter((d) => d.isDirectory())
+          .map((d) => {
+            const parked = /^_(.+)_build_excluded$/.exec(d.name);
+            return parked ? `(${parked[1]})` : d.name;
+          })
+          .filter((n) => /^\(.+\)$/.test(n)),
       );
       const ghosts = [...documented].filter((g) => !onDisk.has(g));
       const undocumented = [...onDisk].filter((g) => !documented.has(g));
@@ -280,8 +288,13 @@ const claims: Claim[] = [
       if (!CLAUDE_MD.includes(trimmed)) {
         return `featureDocViewHref emits ${trimmed}/… but CLAUDE.md names a different doc-viewer route`;
       }
-      const leaf = `app/(admin)${trimmed}/[[...path]]/page.tsx`;
-      return existsSync(join(ROOT, leaf)) ? null : `${trimmed} has no route leaf at ${leaf}`;
+      // Tolerate the (admin) group being parked by a running build/dev server.
+      const leafTail = `${trimmed}/[[...path]]/page.tsx`;
+      const leaf = `app/(admin)${leafTail}`;
+      const parkedLeaf = `app/_admin_build_excluded${leafTail}`;
+      return existsSync(join(ROOT, leaf)) || existsSync(join(ROOT, parkedLeaf))
+        ? null
+        : `${trimmed} has no route leaf at ${leaf}`;
     },
     fix: "Move the doc and the route together: featureDocViewHref (features/feature-docs/sync-utils.ts) is the single href builder, and CLAUDE.md § Per-feature admin map must name the same path.",
   },
