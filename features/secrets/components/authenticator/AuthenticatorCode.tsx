@@ -10,9 +10,13 @@ import { fetchAuthenticatorCode } from "../../authenticator-service";
 export function AuthenticatorCode({
   credentialItemId,
   enabled,
+  period = 30,
+  presentation = "large",
 }: {
   credentialItemId: string;
   enabled: boolean;
+  period?: number;
+  presentation?: "compact" | "large";
 }) {
   const [code, setCode] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
@@ -55,19 +59,20 @@ export function AuthenticatorCode({
 
   if (!enabled) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Turn it on to see the code.
+      <p className="flex h-11 items-center text-sm font-medium text-muted-foreground">
+        Authenticator off
       </p>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex min-h-11 items-center gap-2">
         <p className="text-sm text-destructive">{error}</p>
         <Button
           variant="ghost"
           size="sm"
+          className="h-11"
           onClick={() => setReload((value) => value + 1)}
         >
           <RefreshCw className="mr-1 h-3.5 w-3.5" /> Retry
@@ -76,29 +81,102 @@ export function AuthenticatorCode({
     );
   }
 
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/60 px-4 py-3">
-      <div>
-        <div className="font-mono text-4xl font-semibold tracking-[0.22em] text-foreground tabular-nums sm:text-5xl">
-          {code ?? "••••••"}
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {code ? `New code in ${seconds}s` : "Getting code…"}
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        size="icon"
+  const displayCode = code
+    ? code.replace(/\s/g, "").replace(/(.{3})(?=.)/g, "$1 ")
+    : "••• •••";
+  const boundedPeriod = period > 0 ? period : 30;
+  const progress = Math.max(0, Math.min(1, seconds / boundedPeriod));
+
+  if (presentation === "compact") {
+    return (
+      <button
+        type="button"
         disabled={!code}
-        aria-label="Copy authenticator code"
+        className="group flex min-h-11 w-full items-center gap-3 rounded-md text-left disabled:cursor-wait"
+        aria-label={code ? `Copy code ${code}` : "Getting authenticator code"}
         onClick={async () => {
           if (!code) return;
           await navigator.clipboard.writeText(code);
           toast.success("Code copied");
         }}
       >
-        <Copy className="h-4 w-4" />
-      </Button>
+        <span className="font-mono text-[2rem] font-medium leading-none tracking-[0.08em] text-primary tabular-nums transition-colors group-hover:text-primary/80">
+          {displayCode}
+        </span>
+        <CountdownRing seconds={code ? seconds : null} progress={progress} />
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/60 px-4 py-3">
+      <div>
+        <div className="font-mono text-4xl font-semibold tracking-[0.22em] text-foreground tabular-nums sm:text-5xl">
+          {displayCode}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <CountdownRing seconds={code ? seconds : null} progress={progress} />
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-11 w-11"
+          disabled={!code}
+          aria-label="Copy authenticator code"
+          onClick={async () => {
+            if (!code) return;
+            await navigator.clipboard.writeText(code);
+            toast.success("Code copied");
+          }}
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function CountdownRing({
+  seconds,
+  progress,
+}: {
+  seconds: number | null;
+  progress: number;
+}) {
+  const radius = 15;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <span
+      className="relative flex h-9 w-9 shrink-0 items-center justify-center text-primary"
+      role="img"
+      aria-label={seconds === null ? "Getting code" : `${seconds} seconds left`}
+    >
+      <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90" aria-hidden>
+        <circle
+          cx="18"
+          cy="18"
+          r={radius}
+          fill="none"
+          strokeWidth="2.5"
+          className="stroke-muted"
+        />
+        <circle
+          cx="18"
+          cy="18"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - progress)}
+          className="transition-[stroke-dashoffset] duration-700 ease-linear"
+        />
+      </svg>
+      <span className="absolute text-[10px] font-semibold tabular-nums text-foreground">
+        {seconds ?? "…"}
+      </span>
+    </span>
   );
 }

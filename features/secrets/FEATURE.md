@@ -202,7 +202,7 @@ Personal and organization credentials render through the same
 | [`authenticator-service.ts`](./authenticator-service.ts)                       | `/api/authenticator/*` client — metadata plus the signed-in owner's short-lived current-code request; never a seed.                                                                                                                                                                              |
 | [`authenticator-otpauth.ts`](./authenticator-otpauth.ts)                       | Pure client parse of a setup key / `otpauth://` URI, kept in lockstep with aidream's `otpauth.py`, for the instant enrollment preview.                                                                                                                                                           |
 | [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | THE authenticator hook: entries, enrollable items, and a create-login-then-enroll `enroll` action.                                                                                                                                                                                               |
-| [`components/authenticator/`](./components/authenticator/)                     | The `/vault/authenticator` workspace, large rotating-code display, and enrollment dialog that shows the first code immediately (Credenza = Dialog/Drawer responsive).                                                                                                                            |
+| [`components/authenticator/`](./components/authenticator/)                     | The `/vault/authenticator` workspace, compact account rows with a rotating-code countdown ring, and enrollment dialog that shows the first code immediately (Credenza = Dialog/Drawer responsive).                                                                                               |
 | [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` (single dotenv-line paste-to-fill) + `generateVaultPassword` (Web Crypto, unambiguous alphabet, all basic character groups).                                                                                                                                                |
 
 ## Authenticator enrollment (2026-08-20)
@@ -249,8 +249,9 @@ site's two-factor screen can act on is the code in front of them.
   shows the current large code so it can be entered back into the provider.
   Saved entries lead with the app/account name and rotating code; algorithm and
   period metadata do not compete with the task.
-- **Every entry is a door.** The card's "View credential in Vault" opens THAT
-  credential via `/vault?item=<id>` (the deep link `VaultPage` now owns).
+- **Every entry is a door.** The account name and its row menu open THAT
+  credential via `/vault?item=<id>` (the deep link `VaultPage` now owns); the
+  menu also offers a new-tab door without cluttering the code-first list.
 
 ## Invariants
 
