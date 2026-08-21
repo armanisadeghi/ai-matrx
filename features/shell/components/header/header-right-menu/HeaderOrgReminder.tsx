@@ -74,8 +74,19 @@ export default function HeaderOrgReminder() {
           key="org-reminder"
           initial={{ opacity: 0, y: -12, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.97 }}
-          transition={{ type: "spring", stiffness: 360, damping: 30 }}
+          // pointerEvents flips to "none" the instant the exit starts (motion
+          // applies non-animatable values immediately), and the exit runs on a
+          // finite tween rather than the entrance spring — a spring only
+          // asymptotes toward opacity 0, so the card could stay mounted,
+          // invisible, and still swallowing clicks at z-50 over the page's own
+          // top-right controls.
+          exit={{ opacity: 0, y: -8, scale: 0.97, pointerEvents: "none" }}
+          transition={{
+            type: "spring",
+            stiffness: 360,
+            damping: 30,
+            exit: { type: "tween", duration: 0.18, ease: "easeOut" },
+          }}
           onMouseEnter={engage}
           style={{ top: "calc(var(--header-height, 2.5rem) + 0.5rem)" }}
           className="fixed left-3 right-3 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:left-auto sm:w-72"
