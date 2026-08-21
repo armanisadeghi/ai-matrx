@@ -233,9 +233,14 @@ export function SiteMap({
     [nodes, statusFilter, keywordFilter, searchLower, statusSlugById],
   );
 
+  const filtersActive =
+    searchLower.length > 0 || statusFilter !== "all" || keywordFilter !== "all";
+
+  // While a search/filter is active the collapse set is bypassed so every
+  // match is visible (same rule as the tree view).
   const { rows: visible, hiddenCounts } = useMemo(
-    () => collapseVisible(filteredRows, collapsed),
-    [filteredRows, collapsed],
+    () => collapseVisible(filteredRows, filtersActive ? new Set() : collapsed),
+    [filteredRows, collapsed, filtersActive],
   );
 
   const roots = useMemo(() => buildPlanTree(visible), [visible]);
@@ -272,13 +277,15 @@ export function SiteMap({
     setCollapsed(new Set(targets));
   };
 
-  const filtersActive =
-    searchLower.length > 0 || statusFilter !== "all" || keywordFilter !== "all";
-
-  // Single home root → home on top, its children as connected columns.
-  // Anything else (no home, multiple roots) → the roots are the columns.
-  const singleRoot = roots.length === 1 ? roots[0] : null;
-  const columns = singleRoot ? singleRoot.children : roots;
+  // The home page crowns the map; its children are the connected columns.
+  // Stray extra roots (pages planned without a parent) become columns too —
+  // the site never hides a page just because its parent link is missing.
+  const homeRoot =
+    roots.find((root) => root.node.node_type === "home") ??
+    (roots.length === 1 ? roots[0] : null);
+  const columns = homeRoot
+    ? [...homeRoot.children, ...roots.filter((root) => root !== homeRoot)]
+    : roots;
 
   const renderCard = (item: PlanNodeTreeItem) => (
     <PageCard
@@ -448,12 +455,19 @@ export function SiteMap({
           </div>
         ) : (
           <div className="min-w-max p-6">
-            {singleRoot ? (
-              <div className="flex flex-col items-center">
-                {renderCard(singleRoot)}
+            {homeRoot ? (
+              // Home sits above the FIRST column (not centered over the whole
+              // row — a 300-page row is wider than any screen, and a centered
+              // home would live off-screen). Its stub drops onto the spine at
+              // the first column's connector.
+              <div className="flex flex-col items-start">
+                {renderCard(homeRoot)}
                 {columns.length > 0 ? (
                   <>
-                    <div className="h-5 w-px bg-border" aria-hidden />
+                    <div
+                      className="ml-[7.5rem] h-5 w-px bg-border"
+                      aria-hidden
+                    />
                     <div className="flex items-start">
                       {columns.map((column, index) => (
                         <div

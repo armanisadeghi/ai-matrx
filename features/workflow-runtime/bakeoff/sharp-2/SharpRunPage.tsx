@@ -49,7 +49,7 @@ import {
 } from "../../redux/workflow-runs.selectors";
 import { TERMINAL_RUN_STATUSES } from "../../types";
 import { RunStatusChip } from "../../run-status";
-import { RunErrorCard } from "../../components/readout-parts";
+import { RunOutcomeBanner } from "./RunOutcomeBanner";
 import {
   deliverableSteps,
   describeWorkflowSteps,
@@ -101,6 +101,14 @@ export default function SharpRunPage({ id }: { id: string }) {
   // honest answer. An access refusal / network failure is its own answer.
   useEffect(() => {
     let cancelled = false;
+    // An id that is not even UUID-shaped can never resolve — Postgres refuses
+    // the cast (22P02) and the read THROWS. Reporting that as "try again in a
+    // moment" would promise a retry that can never succeed, so a malformed
+    // link is answered as what it is: nothing at this address.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      setLoaded({ state: "missing" });
+      return;
+    }
     (async () => {
       try {
         const asDefinition = await fetchWorkflowDefinition(id);
@@ -433,7 +441,13 @@ function ReadyPage({
                   following={aim === null}
                   onFollowLive={() => setAim(null)}
                 />
-                <RunErrorCard runId={runId} nodeLabels={stepLabels} />
+                <RunOutcomeBanner
+                  runId={runId}
+                  stepLabels={stepLabels}
+                  deliverables={deliverables}
+                  phases={phases}
+                  focusNodeId={focusNodeId}
+                />
                 <Delivered
                   runId={runId}
                   deliverables={deliverables}

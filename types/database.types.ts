@@ -3921,6 +3921,17 @@ export type Database = {
       }
     }
     Views: {
+      registry_location_drift: {
+        Row: {
+          actual_schema: unknown
+          actual_table: unknown
+          is_active: boolean | null
+          registered_schema: string | null
+          registered_table: string | null
+          token: string | null
+        }
+        Relationships: []
+      }
       summary: {
         Row: {
           audit_class: string | null
