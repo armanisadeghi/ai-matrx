@@ -632,6 +632,22 @@ re-reading the cell afterwards races with realtime and with agent writes and can
 `upsertCell` path as a hand edit, so it validates, versions, and is refused on a
 read-only table. A second write path is always the one that corrupts something.
 
+## 🚨 Which database — before you apply ANY migration here
+
+The live DB is **`brsgrqvjdzwihsvnfqkf`** ("AI Matrx"), served at
+`https://db.matrxserver.com`. Pass that `project_id` to every Supabase MCP call.
+
+`txzxabzwovsujtloxrus` is the **RETIRED** old Matrx Main. It is still healthy,
+still accepts DDL, and holds a **stale copy of real data** — same table ids,
+same row ids. A migration applied there succeeds, and reading it back confirms
+exactly what you hoped, while the app never sees the change. This cost a
+round-trip on 2026-08-21: `get_user_tables` was "verified" returning
+`visibility` while every card in the UI still said "Sharing unknown".
+
+**A DB read that agrees with you is not proof you wrote to the right database.**
+When it matters, check what the app actually talks to — intercept `fetch` in the
+browser and read the `/rest/v1/` origin.
+
 ## Change log
 
 - 2026-08-18 — **Document editor satisfies global sheets Facade dependencies without starting sheets UI.**
