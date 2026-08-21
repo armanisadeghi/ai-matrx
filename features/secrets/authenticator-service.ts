@@ -5,7 +5,7 @@
  * This client never receives a seed. The signed-in Vault owner may request the
  * current short-lived code for display; enrollment responses remain metadata.
  *
- * Spec: common-docs/systems/matrx-authenticator/FEATURE.md
+ * Spec: common-docs/systems/clients/matrx-authenticator/FEATURE.md
  */
 
 import { createClient } from "@/utils/supabase/client";

@@ -926,7 +926,7 @@ export const fcService = {
    * face. Soft-deletes any prior rows of the kind, then inserts the new one.
    * Exactly one of `file_id` / `url` should be set (stored vs hotlinked web
    * image); `alt` lands in `text` (accessibility is not optional here).
-   * Cross-repo contract: common-docs/systems/flashcard-images/VISION_AND_PLAN.md.
+   * Cross-repo contract: common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md.
    */
   async setCardImage(
     cardId: string,

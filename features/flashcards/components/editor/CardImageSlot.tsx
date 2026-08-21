@@ -33,7 +33,7 @@
 //
 // ALT TEXT IS REQUIRED on every lane — education is unusable without it, so
 // both free lanes confirm it with the user (pre-filled, never empty).
-// Cross-repo contract: common-docs/systems/flashcard-images/VISION_AND_PLAN.md.
+// Cross-repo contract: common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md.
 
 import { useRef, useState } from "react";
 import {

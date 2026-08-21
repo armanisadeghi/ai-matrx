@@ -9,7 +9,7 @@
 //  - image_file_id → our stored file: render via <InlineMediaRef>, which
 //    self-re-mints signed URLs on error (media-durability doctrine).
 //  - image_url     → a web-sourced HOTLINKED image (the primary lane per
-//    common-docs/systems/flashcard-images/VISION_AND_PLAN.md §2.3). Hotlinks
+//    common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md §2.3). Hotlinks
 //    rot — so the display contract is: try, and on failure disappear
 //    gracefully (never a broken-image glyph, never a layout explosion) while
 //    reporting the rot to the console so sweeps can re-source it.

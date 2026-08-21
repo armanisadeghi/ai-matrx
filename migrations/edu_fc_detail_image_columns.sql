@@ -1,6 +1,6 @@
 -- edu_fc_detail_image_columns.sql
 --
--- Flashcard images P0 (common-docs/systems/flashcard-images/VISION_AND_PLAN.md §2.1).
+-- Flashcard images P0 (common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md §2.1).
 -- Mirrors the audio precedent (audio_file_id) on education.fc_detail:
 --   * image_file_id — stored platform file (upload / generated / fetched-and-stored),
 --     born public via public_media_scope(); render via <InlineMediaRef/>.

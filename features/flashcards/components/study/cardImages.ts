@@ -15,7 +15,7 @@ export interface CardFaceImages {
 
 /**
  * Stock-photo attribution lives in `fc_detail.metadata.credit` ({name, url})
- * per common-docs/systems/flashcard-images/VISION_AND_PLAN.md §2.1. Unsplash's
+ * per common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md §2.1. Unsplash's
  * guidelines require it to be DISPLAYED, so the adapter surfaces it to the
  * renderer instead of leaving it buried in the row.
  */

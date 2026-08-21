@@ -1,6 +1,6 @@
 -- edu_card_image_capabilities.sql
 --
--- Flashcard images (common-docs/systems/flashcard-images/VISION_AND_PLAN.md):
+-- Flashcard images (common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md):
 -- the two metered image lanes, structural from day one per Arman's ruling
 -- 2026-08-18 — every tier has a limit row; the NUMBERS are an admin-panel
 -- decision (billing plan UI), never code. enforced:false until Arman flips it;

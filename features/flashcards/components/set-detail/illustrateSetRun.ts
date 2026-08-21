@@ -11,7 +11,7 @@
 //
 // Contract twin (never diverge): aidream/services/education/card_images.py
 // (`SetImagePlanEvent` / `SetImageProgressEvent`) + api/routers/education_images.py.
-// System-of-record: common-docs/systems/flashcard-images/VISION_AND_PLAN.md.
+// System-of-record: common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md.
 
 import { useState } from "react";
 
