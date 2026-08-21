@@ -313,7 +313,7 @@ export default function GoogleAPIProvider({
         scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(" "),
         ux_mode: "popup",
         select_account: true,
-        include_granted_scopes: true,
+        include_granted_scopes: false,
         enable_granular_consent: true,
         ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: CodeResponse) => {

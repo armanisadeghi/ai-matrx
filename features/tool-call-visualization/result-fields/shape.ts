@@ -424,7 +424,31 @@ function isBlankString(value: string): boolean {
  * Classify an arbitrary value into a `ResultShape`. Pure, synchronous, total —
  * every input lands on exactly one branch (worst case `json`).
  */
-export function detectResultShape(value: unknown): ResultShape {
+export interface DetectResultShapeOptions {
+    /**
+     * Whether a value that LOOKS like media should render AS media.
+     *
+     * Default true — an image payload in a tool result is something to look at.
+     * Pass false where a media-ish URL is an IDENTIFIER rather than content: a
+     * site-audit finding lists `https://…/hero.png` as the thing that is broken,
+     * oversized, or missing its alt text. Embedding it turns a table of findings
+     * into a wall of failed-load boxes (every row of a broken-images audit is a
+     * broken image BY DEFINITION) and buries the finding. With this off, the URL
+     * falls through to the `url` shape — a chip that still opens the file.
+     *
+     * OUR OWN files are deliberately NOT covered: `ourFileShape` runs first and
+     * keeps them on the media path, because a signed storage URL must never
+     * reach the `url` branch (it would print our storage host and expire into a
+     * dead link). Audit findings cite third-party URLs, so this is moot there.
+     */
+    embedMedia?: boolean;
+}
+
+export function detectResultShape(
+    value: unknown,
+    options: DetectResultShapeOptions = {},
+): ResultShape {
+    const embedMedia = options.embedMedia ?? true;
     // 1. Empty: null / undefined / "" / whitespace / [] / {}.
     if (value === null || value === undefined) return { kind: "empty" };
     if (typeof value === "string" && isBlankString(value)) return { kind: "empty" };
@@ -433,7 +457,8 @@ export function detectResultShape(value: unknown): ResultShape {
 
     // 2. Media (object form) — check before generic object so image payloads
     //    render as images, not key/value grids.
-    const objectMedia = isPlainObject(value) ? coerceMediaRef(value) : null;
+    const objectMedia =
+        embedMedia && isPlainObject(value) ? coerceMediaRef(value) : null;
     if (objectMedia) {
         const alt =
             isPlainObject(value) && typeof value.alt === "string"
@@ -458,7 +483,7 @@ export function detectResultShape(value: unknown): ResultShape {
     if (typeof value === "string") {
         const ours = ourFileShape(value.trim());
         if (ours) return ours;
-        const stringMedia = coerceMediaRef(value);
+        const stringMedia = embedMedia ? coerceMediaRef(value) : null;
         if (stringMedia) return { kind: "media", ref: stringMedia };
         if (looksLikeUuid(value)) return { kind: "uuid", value };
         if (looksLikeUrl(value)) return { kind: "url", value: value.trim() };

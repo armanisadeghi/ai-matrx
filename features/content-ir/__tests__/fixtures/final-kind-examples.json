@@ -1,0 +1,282 @@
+{
+  "gsc_site_intake_bundle": {
+    "brand_name": "All Green Electronics Recycling",
+    "cannibalization": {
+      "columns": [
+        "query",
+        "clicks",
+        "impressions",
+        "competing_pages",
+        "top_share"
+      ],
+      "rows": [
+        [
+          "electronics recycling",
+          120,
+          8100,
+          3,
+          0.44
+        ]
+      ]
+    },
+    "current_brand_aliases": [
+      "all green recycling"
+    ],
+    "data_max_date": "2026-08-05",
+    "data_min_date": "2025-04-01",
+    "domain": "allgreenrecycling.com",
+    "juice_pages": {
+      "columns": [
+        "key",
+        "edu_clicks",
+        "edu_clicks_prior",
+        "edu_months_active",
+        "money_clicks",
+        "money_impressions"
+      ],
+      "rows": [
+        [
+          "/blog/what-is-itad",
+          410,
+          380,
+          9,
+          55,
+          2900
+        ]
+      ]
+    },
+    "periods": [
+      {
+        "class_summary": {
+          "columns": [
+            "traffic_class",
+            "clicks",
+            "impressions",
+            "queries"
+          ],
+          "rows": [
+            [
+              "money",
+              412,
+              18240,
+              96
+            ],
+            [
+              "educational",
+              1130,
+              88214,
+              431
+            ],
+            [
+              "brand",
+              208,
+              3120,
+              22
+            ],
+            [
+              "unclassified",
+              640,
+              51201,
+              388
+            ]
+          ]
+        },
+        "end": "2026-08-05",
+        "key": "latest_28d",
+        "opportunity_queries": {
+          "columns": [
+            "key",
+            "impressions",
+            "clicks",
+            "ctr",
+            "avg_position",
+            "missed_clicks"
+          ],
+          "rows": [
+            [
+              "data destruction certificate",
+              4210,
+              12,
+              0.0029,
+              8.4,
+              160
+            ]
+          ]
+        },
+        "start": "2026-07-09",
+        "top_pages": {
+          "columns": [
+            "key",
+            "clicks",
+            "impressions",
+            "ctr",
+            "avg_position"
+          ],
+          "rows": [
+            [
+              "/services/data-destruction",
+              240,
+              6120,
+              0.0392,
+              3.8
+            ]
+          ]
+        },
+        "top_queries": {
+          "columns": [
+            "key",
+            "clicks",
+            "impressions",
+            "ctr",
+            "avg_position",
+            "traffic_class"
+          ],
+          "rows": [
+            [
+              "it asset disposition",
+              88,
+              2140,
+              0.0411,
+              4.2,
+              "money"
+            ],
+            [
+              "crt tv recycling near me",
+              302,
+              9210,
+              0.0328,
+              2.1,
+              "unclassified"
+            ],
+            [
+              "hard drive degausser",
+              121,
+              15320,
+              0.0079,
+              5.8,
+              "unclassified"
+            ]
+          ]
+        }
+      }
+    ],
+    "site_id": "0d4f5f1e-1111-4222-8333-444455556666",
+    "site_name": "All Green Recycling"
+  },
+  "gsc_site_intake_proposal": {
+    "business_inference": {
+      "business_model": "services",
+      "confidence": "medium",
+      "evidence": "Top pages are /services/* money pages; 'it asset disposition' and 'data destruction services' convert-shaped queries carry strong CTR at position ~4; the blog feeds those pages (juice).",
+      "money_definition": "Leads for paid B2B services: ITAD contracts, data destruction jobs, bulk corporate e-waste pickups. Consumer drop-off traffic is not revenue unless the owner says otherwise.",
+      "what_they_sell": "IT asset disposition (ITAD), certified data destruction, and electronics recycling services for businesses."
+    },
+    "gaps": [
+      "Year-ago period missing \u2014 seasonality unverified."
+    ],
+    "key_questions": [
+      {
+        "id": "consumer_dropoff_value",
+        "question": "Does consumer drop-off recycling (e.g. 'crt tv recycling near me') produce any revenue for you, or is it pure cost?",
+        "suggested_answers": [
+          "Pure cost \u2014 classify mismatch",
+          "Small revenue \u2014 keep educational",
+          "Real revenue line \u2014 classify money"
+        ],
+        "why_it_matters": "It is your highest-click traffic; if worthless, the whole class flips to mismatch and reporting changes materially."
+      }
+    ],
+    "overall_confidence": "medium",
+    "proposed_brand_aliases": [
+      "allgreen",
+      "all green itad"
+    ],
+    "term_groups": [
+      {
+        "confidence": "high",
+        "label": "Equipment-purchase intent on a services business",
+        "proposed_class": "mismatch",
+        "reasoning": "These searchers want to BUY equipment; the business sells a destruction service. Traffic can never convert regardless of rank.",
+        "sample_terms": [
+          "hard drive degausser"
+        ]
+      },
+      {
+        "confidence": "medium",
+        "label": "Consumer drop-off recycling",
+        "proposed_class": "mismatch",
+        "reasoning": "High-volume consumer disposal queries; only valuable if consumer drop-off actually produces revenue \u2014 asked below.",
+        "sample_terms": [
+          "crt tv recycling near me"
+        ]
+      }
+    ]
+  },
+  "seo_finding_fix_context": {
+    "__kind": "seo_finding_fix_context",
+    "finding": {
+      "analyzer_reasoning": "This page has no title for search results.",
+      "category": "on_page",
+      "first_detected_at": "2026-08-01T00:00:00+00:00",
+      "item_description": "The page has no title tag.",
+      "item_key": "title_presence",
+      "item_label": "Title presence",
+      "severity": "high",
+      "status": "open",
+      "subcategory": "metadata"
+    },
+    "finding_id": "00000000-0000-4000-8000-000000000001",
+    "fixer_version": "findingfix-v1",
+    "limits": {
+      "description_max_chars": 160,
+      "description_min_chars": 70,
+      "title_max_chars": 60,
+      "title_min_chars": 15
+    },
+    "page": {
+      "content_excerpt": "Dental crowns restore a damaged tooth in two visits.",
+      "content_truncated": false,
+      "current_meta_description": null,
+      "current_title": null,
+      "declared_target_keyword": "dental crowns portland",
+      "headings_outline": "H1: Dental Crowns\nH2: What to expect",
+      "live_search_queries": [
+        {
+          "clicks": 12,
+          "impressions": 420,
+          "position": 8.4,
+          "query": "dental crowns portland"
+        }
+      ],
+      "path": "/services/crowns",
+      "url": "https://example.com/services/crowns"
+    },
+    "site": {
+      "audience": "local families",
+      "business_one_liner": "A family dental practice in Portland.",
+      "domain": "example.com",
+      "industry": "dentistry",
+      "positioning_notes": "Gentle care, evening appointments.",
+      "services": [
+        "teeth cleaning",
+        "crowns"
+      ],
+      "site_name": "Example Dental"
+    }
+  },
+  "seo_finding_fix_proposal": {
+    "__kind": "seo_finding_fix_proposal",
+    "alt_text": [],
+    "body_markdown": null,
+    "confidence": "high",
+    "manual_instruction": null,
+    "meta_description": null,
+    "meta_title": "Dental Crowns in Portland | Example Dental",
+    "missing_inputs": [],
+    "reasoning": "This page had no headline for search results, so Google was inventing one. I used the page's own main heading and the words people actually search for to reach it, and kept it short enough that Google shows all of it.",
+    "risks": [
+      "The city name is now in the title, which narrows who it attracts."
+    ],
+    "verdict": "fix_drafted"
+  }
+}

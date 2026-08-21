@@ -31,6 +31,8 @@ export interface KeyValueGridProps {
   value: Record<string, unknown>;
   density?: ResultDensity;
   depth?: number;
+  /** Propagated to every field — see `ResultValueProps.embedMedia`. */
+  embedMedia?: boolean;
   className?: string;
 }
 
@@ -86,6 +88,7 @@ function renderFieldValue(
   val: unknown,
   density: ResultDensity,
   depth: number,
+  embedMedia: boolean,
 ): React.ReactNode {
   // A FIELD that is empty is one word, never the roomy empty STATE. `full`
   // density renders every key (that is what full means), and `EmptyResult`
@@ -112,7 +115,14 @@ function renderFieldValue(
       );
     }
   }
-  return <ResultValue value={val} density={density} depth={depth + 1} />;
+  return (
+    <ResultValue
+      value={val}
+      density={density}
+      depth={depth + 1}
+      embedMedia={embedMedia}
+    />
+  );
 }
 
 type Entry = [string, unknown];
@@ -121,6 +131,7 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   value,
   density = "inline",
   depth = 0,
+  embedMedia = true,
   className,
 }) => {
   const [showAll, setShowAll] = React.useState(false);
@@ -167,7 +178,7 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
                 {humanizeKey(key)}
               </dt>
               <dd className="min-w-0 text-sm">
-                {renderFieldValue(key, val, density, depth)}
+                {renderFieldValue(key, val, density, depth, embedMedia)}
               </dd>
             </React.Fragment>
           ))}
@@ -200,7 +211,7 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
             {humanizeKey(key)}
           </div>
           <div className="mt-1 min-w-0">
-            {renderFieldValue(key, val, density, depth)}
+            {renderFieldValue(key, val, density, depth, embedMedia)}
           </div>
         </div>
       ))}

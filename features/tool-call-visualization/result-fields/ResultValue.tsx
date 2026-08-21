@@ -37,6 +37,13 @@ export interface ResultValueProps {
     density?: ResultDensity;
     /** Current recursion depth (internal). */
     depth?: number;
+    /**
+     * Whether values that LOOK like media render AS media. Default true.
+     * Pass false where a media URL is an IDENTIFIER, not content — see
+     * {@link DetectResultShapeOptions.embedMedia}. Propagates through nested
+     * tables and grids so one decision covers the whole document.
+     */
+    embedMedia?: boolean;
     className?: string;
 }
 
@@ -121,9 +128,10 @@ export const ResultValue: React.FC<ResultValueProps> = ({
     value,
     density = "inline",
     depth = 0,
+    embedMedia = true,
     className,
 }) => {
-    const shape = detectResultShape(value);
+    const shape = detectResultShape(value, { embedMedia });
 
     // In inline density, once we recurse too deep, stop expanding structures
     // and hand off to the JSON tree (which has its own collapse). This keeps
@@ -168,10 +176,25 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                 return <IdListChip ids={shape.ids} />;
 
             case "table":
-                return <ResultTable rows={shape.rows} columns={shape.columns} density={density} depth={depth} />;
+                return (
+                    <ResultTable
+                        rows={shape.rows}
+                        columns={shape.columns}
+                        density={density}
+                        depth={depth}
+                        embedMedia={embedMedia}
+                    />
+                );
 
             case "object":
-                return <KeyValueGrid value={shape.value} density={density} depth={depth} />;
+                return (
+                    <KeyValueGrid
+                        value={shape.value}
+                        density={density}
+                        depth={depth}
+                        embedMedia={embedMedia}
+                    />
+                );
 
             case "json":
                 return <ResultJson data={shape.value} />;

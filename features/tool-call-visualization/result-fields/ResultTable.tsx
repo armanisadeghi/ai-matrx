@@ -32,6 +32,8 @@ export interface ResultTableProps {
     columns: TableColumn[];
     density?: ResultDensity;
     depth?: number;
+    /** Propagated to every cell — see `ResultValueProps.embedMedia`. */
+    embedMedia?: boolean;
     className?: string;
 }
 
@@ -67,7 +69,7 @@ function compareCells(a: unknown, b: unknown): number {
  * collapses to a tiny summary toggle — "{5 fields}" / "[3 items]" — and only
  * expands to the full ResultValue on click. Nothing is hidden, nothing wraps.
  */
-const NestedCell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => {
+const NestedCell: React.FC<{ value: unknown; depth: number; embedMedia: boolean }> = ({ value, depth, embedMedia }) => {
     const [open, setOpen] = React.useState(false);
     const summary = Array.isArray(value)
         ? `[${value.length} ${value.length === 1 ? "item" : "items"}]`
@@ -100,7 +102,7 @@ const NestedCell: React.FC<{ value: unknown; depth: number }> = ({ value, depth 
             >
                 {summary} ×
             </button>
-            <ResultValue value={value} density="inline" depth={depth + 1} />
+            <ResultValue value={value} density="inline" depth={depth + 1} embedMedia={embedMedia} />
         </div>
     );
 };
@@ -152,7 +154,7 @@ function isShortScalarList(
 }
 
 /** Render a single cell — scalar inline, structure collapsed behind a toggle. */
-const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => {
+const Cell: React.FC<{ value: unknown; depth: number; embedMedia: boolean }> = ({ value, depth, embedMedia }) => {
     if (value === null || value === undefined) {
         return <span className="italic text-muted-foreground">—</span>;
     }
@@ -170,7 +172,7 @@ const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => 
         }
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        return <ResultValue value={value} density="inline" depth={depth + 1} />;
+        return <ResultValue value={value} density="inline" depth={depth + 1} embedMedia={embedMedia} />;
     }
     // A SHORT list of short scalars is the cell — tags, labels, aliases. It
     // reads as chips; collapsing it to "[1 item]" made the reader click to
@@ -192,7 +194,7 @@ const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => 
         );
     }
     if (Array.isArray(value) || isPlainObject(value)) {
-        return <NestedCell value={value} depth={depth} />;
+        return <NestedCell value={value} depth={depth} embedMedia={embedMedia} />;
     }
     return <span className="break-words">{cellToText(value)}</span>;
 };
@@ -202,6 +204,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
     columns,
     density = "inline",
     depth = 0,
+    embedMedia = true,
     className,
 }) => {
     const [showAll, setShowAll] = React.useState(false);
@@ -328,7 +331,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                                                 colIdx === 0 && MOBILE_TABLE_FROZEN_CELL,
                                             )}
                                         >
-                                            <Cell value={row[col.key]} depth={depth} />
+                                            <Cell value={row[col.key]} depth={depth} embedMedia={embedMedia} />
                                         </td>
                                     ))}
                                 </tr>

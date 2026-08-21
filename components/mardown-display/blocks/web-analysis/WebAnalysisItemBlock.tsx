@@ -204,8 +204,14 @@ const WebAnalysisItemBlock: React.FC<WebAnalysisItemBlockProps> = ({
             Evidence
           </div>
           {/* Uniform rows become a real table; ragged ones become titled
-              sections — both from the platform's existing value renderer. */}
-          <ResultValue value={check.evidence} density="full" />
+              sections — both from the platform's existing value renderer.
+              `embedMedia={false}` because in an audit finding a media URL is
+              the SUBJECT of the finding, not content to look at: every row of
+              a broken-images check is a broken image by definition, so
+              embedding turns the evidence into a wall of failed-load boxes and
+              buries the finding. The URL still renders as a chip that opens
+              it. */}
+          <ResultValue value={check.evidence} density="full" embedMedia={false} />
         </div>
       ) : null}
     </div>
