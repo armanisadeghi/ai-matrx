@@ -374,9 +374,15 @@ export function SetDetailView({ setId }: { setId: string }) {
       if (!res.data) {
         setError(res.error ?? "Flashcard set not found");
         setData(null);
+        setLoading(false);
       } else {
         setData(res.data);
         setError(null);
+        // The deck is the primary payload; never hold the entire page behind
+        // the secondary mastery enrichment. A slow mastery read previously
+        // left mobile learners staring at skeletons indefinitely even though
+        // every card was already available.
+        setLoading(false);
         // Per-card mastery for the retention viz (read-only; RLS-scoped).
         if (res.data.cards.length > 0) {
           const mRes = await studyService.getMasteryBulk(
@@ -391,7 +397,6 @@ export function SetDetailView({ setId }: { setId: string }) {
           setMasteryByCard({});
         }
       }
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
