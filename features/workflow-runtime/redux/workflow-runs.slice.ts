@@ -64,12 +64,19 @@ export interface NodeInvocationState {
    *
    * Reading only (2) meant a payload that names its own kind still fell to the
    * raw `SettledOutputBody` printer whenever the event omitted the declaration
-   * — the exact legacy path this system exists to retire. Measured on the live
-   * DB 2026-08-20: over 30 days of `workflow.node_events`, 2,728 node_completed
-   * events, 0 payloads carry `__kind` yet (the engine still strips it — the
-   * documented defection being reversed in aidream Stage 1) and 41 events carry
-   * no `output_kind` at all. So this is the FE half landing AHEAD of the engine
-   * half: the moment interior payloads keep their `__kind`, they route.
+   * — the exact legacy path this system exists to retire.
+   *
+   * Re-measured on the live DB 2026-08-21: the engine has STARTED stamping.
+   * 08-15→08-20 was 2,097 `node_completed` events with 0 carrying `__kind`;
+   * 08-21 is 226 events with 6 carrying it — all `ai.agent.produce` steps,
+   * where the bound agent answers in the kind's shape. Settlement stamping for
+   * ordinary nodes exists in `matrx_graph/executor/scheduler.py` but had not
+   * appeared in production traffic as of that read (runs the same day still
+   * showed auto-minted `workflow_io_*` / `action_io_*` slugs, i.e. deploy lag).
+   *
+   * So the FE half is landed and correct; the engine half is arriving. Do NOT
+   * "fix" this by inferring identity from anything other than the payload or
+   * the declaration — a format word like `json` is not an identity.
    */
   outputKind: string | null;
   /**
