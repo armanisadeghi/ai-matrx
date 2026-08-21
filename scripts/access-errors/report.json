@@ -1,67 +1,75 @@
 {
-  "generatedAt": "2026-08-12",
-  "total": 353,
+  "generatedAt": "2026-08-21",
+  "total": 363,
   "suppressed": 10,
   "byKind": {
-    "raw-supabase-message": 84,
-    "claims-deleted": 245,
-    "claims-denied": 24
+    "raw-supabase-message": 113,
+    "claims-deleted": 218,
+    "claims-denied": 32
   },
   "byFeature": {
-    "lib": 59,
-    "features/agents": 34,
+    "features/agents": 35,
+    "lib": 17,
+    "features/marketing": 16,
     "features/scope-system": 16,
-    "features/administration": 14,
+    "features/admin": 15,
     "app/(dev)": 13,
-    "features/applet": 13,
-    "components": 11,
+    "features/administration": 11,
+    "features/canvas": 11,
     "features/notes": 11,
     "features/skills": 11,
     "features/organizations": 10,
+    "features/surfaces": 10,
+    "components": 9,
     "features/code-editor": 9,
     "features/legal": 9,
-    "features/admin": 8,
     "features/kg-suggestions": 8,
-    "features/surfaces": 8,
     "app/(public)": 7,
+    "features/hindsight": 7,
     "features/industries": 7,
-    "features/canvas": 6,
+    "features/masterwork": 7,
+    "features/message-templates": 7,
+    "features/scopes": 7,
     "features/content-ir": 6,
-    "features/message-templates": 6,
-    "features/scopes": 6,
     "features/secrets": 6,
-    "app/(transitional)": 5,
+    "features/workflow-runtime": 6,
+    "features/audio": 5,
     "features/code": 5,
+    "features/tool-call-visualization": 5,
+    "features/voice-agent": 5,
+    "features/war-room": 5,
+    "app/(admin)": 4,
+    "app/(core)": 4,
+    "features/agent-connections": 4,
     "features/data-tables": 4,
     "features/sharing": 4,
     "features/text-diff": 4,
-    "features/tool-call-visualization": 4,
-    "features/voice-agent": 4,
-    "app/(admin)": 3,
-    "features/audio": 3,
+    "features/ai-work": 3,
+    "features/crm": 3,
     "features/flashcards": 3,
     "features/pdf-extractor": 3,
     "features/agent-apps": 2,
-    "features/agent-connections": 2,
     "features/agent-context": 2,
     "features/entitlements": 2,
-    "features/expertise": 2,
-    "features/growth-loop": 2,
     "features/image-studio": 2,
     "features/page-extraction": 2,
     "features/podcasts": 2,
     "features/projects": 2,
+    "features/tasks": 2,
     "features/transcript-studio": 2,
-    "features/war-room": 2,
+    "app/(transitional)": 1,
     "app/oauth": 1,
     "features/agent-comparison": 1,
     "features/agent-shortcuts": 1,
+    "features/ai-models": 1,
+    "features/change-policy": 1,
+    "features/cms": 1,
     "features/context-menu-v3": 1,
     "features/pdf": 1,
-    "features/recipes": 1,
     "features/research": 1,
-    "features/tasks": 1,
-    "features/transcripts": 1
+    "features/scheduling": 1,
+    "features/transcripts": 1,
+    "hooks": 1
   },
   "findings": [
     {
@@ -72,15 +80,45 @@
     },
     {
       "file": "app/(admin)/administration/reporting/events/page.tsx",
-      "line": 67,
+      "line": 87,
       "kind": "raw-supabase-message",
       "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "app/(admin)/administration/users/feedback/components/FeedbackManagementContainer.tsx",
+      "line": 109,
+      "kind": "claims-deleted",
+      "snippet": "'The Categories tab is not open, so its category editor does not exist yet. Switch to the Categories tab and ask again.',"
     },
     {
       "file": "app/(admin)/administration/utilities/utils/text-cleaner/utilities/errorProcessors.ts",
       "line": 548,
       "kind": "claims-deleted",
       "snippet": "const propertyPattern = /Property '(.+?)' does not exist on type '(.+?)'/;"
+    },
+    {
+      "file": "app/(core)/cms/[siteId]/SiteLayoutClient.test.tsx",
+      "line": 90,
+      "kind": "claims-deleted",
+      "snippet": "getSite.mockRejectedValue(new Error(\"Site not found or access denied\"));"
+    },
+    {
+      "file": "app/(core)/education/admin/page.tsx",
+      "line": 573,
+      "kind": "claims-deleted",
+      "snippet": "\"Live/Coming-soon build-status pill. The Free/Trial/Pro funnel badge was deleted 2026-08-19 — no paywall existed behind it.\","
+    },
+    {
+      "file": "app/(core)/education/admin/page.tsx",
+      "line": 759,
+      "kind": "claims-deleted",
+      "snippet": "\"No paywall today: education capabilities are all `enforced: false`, and the free/trial/premium badges were deleted 2026-08-19 rather than advertise a gate that"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/workflows/page.tsx",
+      "line": 50,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
     },
     {
       "file": "app/(dev)/demos/api-tests/tool-testing/hooks/useSaveSample.ts",
@@ -126,9 +164,9 @@
     },
     {
       "file": "app/(dev)/demos/tests/_maps/components/SearchControl.tsx",
-      "line": 84,
+      "line": 85,
       "kind": "claims-deleted",
-      "snippet": "alert('Location not found. Please try a different search term.');"
+      "snippet": "toast.error('Location not found. Please try a different search term.');"
     },
     {
       "file": "app/(dev)/demos/tests/dynamic-gateway-concept/hooks/useDynamicGateway.ts",
@@ -192,7 +230,7 @@
     },
     {
       "file": "app/(public)/p/[slug]/page.tsx",
-      "line": 54,
+      "line": 55,
       "kind": "claims-deleted",
       "snippet": "if (!agentAppMeta) return { title: \"App Not Found\" };"
     },
@@ -201,30 +239,6 @@
       "line": 25,
       "kind": "claims-deleted",
       "snippet": "return { title: \"Not found · AI Matrx\", robots: { index: false } };"
-    },
-    {
-      "file": "app/(transitional)/_applets/[category]/page.tsx",
-      "line": 59,
-      "kind": "claims-deleted",
-      "snippet": "title: 'Category Not Found',"
-    },
-    {
-      "file": "app/(transitional)/_apps/custom/[slug]/[appletSlug]/layout.tsx",
-      "line": 15,
-      "kind": "claims-deleted",
-      "snippet": "title: \"Applet not found\","
-    },
-    {
-      "file": "app/(transitional)/_apps/custom/[slug]/layout.tsx",
-      "line": 16,
-      "kind": "claims-deleted",
-      "snippet": "title: \"App not found\","
-    },
-    {
-      "file": "app/(transitional)/_apps/debug/admin/[slug]/[appletSlug]/layout.tsx",
-      "line": 15,
-      "kind": "claims-deleted",
-      "snippet": "title: \"App not found\","
     },
     {
       "file": "app/(transitional)/_flashcard/constants.ts",
@@ -264,7 +278,7 @@
     },
     {
       "file": "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx",
-      "line": 698,
+      "line": 712,
       "kind": "claims-deleted",
       "snippet": "\"[MarkdownStream] replaceBlockContent: original substring not found in content.\","
     },
@@ -287,40 +301,46 @@
       "snippet": "toast.error(\"You don't have access to open this record\");"
     },
     {
-      "file": "components/user-generated-table-data/ExportTableModal.tsx",
-      "line": 75,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(fieldsError.message || \"Failed to fetch table fields\");"
-    },
-    {
-      "file": "components/user-generated-table-data/ExportTableModal.tsx",
-      "line": 90,
-      "kind": "raw-supabase-message",
-      "snippet": "throw new Error(error.message || \"Failed to fetch filtered data\");"
-    },
-    {
       "file": "components/user-generated-table-data/TableCards.tsx",
-      "line": 250,
+      "line": 317,
       "kind": "claims-deleted",
       "snippet": "description: `\"${tableToDelete.table_name}\" has been deleted successfully`,"
     },
     {
-      "file": "features/admin/agent-review/service.ts",
-      "line": 16,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/admin/agent-review/service.ts",
-      "line": 31,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/admin/mandates/service.ts",
-      "line": 486,
+      "file": "features/admin/agent-review/components/AgentReviewWorkspace.tsx",
+      "line": 63,
       "kind": "claims-deleted",
-      "snippet": "if (!found) throw new Error(`Bench result ${resultId} was not found.`);"
+      "snippet": "setError(item ? null : \"Review item not found\");"
+    },
+    {
+      "file": "features/admin/agent-review/components/AgentReviewWorkspace.tsx",
+      "line": 76,
+      "kind": "claims-deleted",
+      "snippet": "setError(item ? null : \"Review item not found\");"
+    },
+    {
+      "file": "features/admin/agent-review/service.ts",
+      "line": 41,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/agent-review/service.ts",
+      "line": 54,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/agent-review/service.ts",
+      "line": 86,
+      "kind": "raw-supabase-message",
+      "snippet": "if (conversationError) throw new Error(conversationError.message);"
+    },
+    {
+      "file": "features/admin/agent-review/service.ts",
+      "line": 113,
+      "kind": "raw-supabase-message",
+      "snippet": "if (messageError) throw new Error(messageError.message);"
     },
     {
       "file": "features/admin/applications/catalogs/components/CatalogEntryEditor.tsx",
@@ -335,8 +355,32 @@
       "snippet": "description: error?.message ?? `Row for \"${app}\" not found`,"
     },
     {
+      "file": "features/admin/assist-control/service.ts",
+      "line": 19,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/assist-control/service.ts",
+      "line": 63,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/mandates/rebind-impact.ts",
+      "line": 234,
+      "kind": "claims-deleted",
+      "snippet": "`4. If the value genuinely does not exist in the calling code path, write the code that supplies it.`,"
+    },
+    {
+      "file": "features/admin/mandates/service.ts",
+      "line": 833,
+      "kind": "claims-deleted",
+      "snippet": "if (!found) throw new Error(`Bench result ${resultId} was not found.`);"
+    },
+    {
       "file": "features/admin/relationships/components/RelationshipRulesClient.tsx",
-      "line": 104,
+      "line": 137,
       "kind": "claims-deleted",
       "snippet": "toast.error(`Rule not found: ${initialEditKey}`);"
     },
@@ -354,25 +398,7 @@
     },
     {
       "file": "features/administration/canonicalization/service/canonicalizationService.ts",
-      "line": 42,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
-      "line": 138,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
-      "line": 156,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/administration/hindsight/components/EnrollmentDetailPanel.tsx",
-      "line": 92,
+      "line": 43,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message);"
     },
@@ -426,25 +452,25 @@
     },
     {
       "file": "features/administration/local-storage/LocalStorageAdmin.tsx",
-      "line": 286,
+      "line": 288,
       "kind": "claims-deleted",
       "snippet": ": { success: false, message: `Cookie not found: ${name}` };"
     },
     {
       "file": "features/administration/local-storage/LocalStorageAdmin.tsx",
-      "line": 309,
+      "line": 311,
       "kind": "claims-deleted",
       "snippet": ": { success: false, message: `Storage item not found: ${fullKey}` };"
     },
     {
       "file": "features/agent-apps/services/auto-create-draft.ts",
-      "line": 141,
+      "line": 143,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to save app draft\");"
     },
     {
       "file": "features/agent-apps/services/auto-create-draft.ts",
-      "line": 253,
+      "line": 262,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to finalize app\");"
     },
@@ -456,13 +482,25 @@
     },
     {
       "file": "features/agent-connections/coding-sessions/service.ts",
-      "line": 61,
+      "line": 123,
       "kind": "raw-supabase-message",
       "snippet": "if (authError) throw new Error(authError.message);"
     },
     {
       "file": "features/agent-connections/coding-sessions/service.ts",
-      "line": 65,
+      "line": 132,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/agent-connections/coding-sessions/service.ts",
+      "line": 189,
+      "kind": "raw-supabase-message",
+      "snippet": "if (authError) throw new Error(authError.message);"
+    },
+    {
+      "file": "features/agent-connections/coding-sessions/service.ts",
+      "line": 196,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message);"
     },
@@ -504,25 +542,55 @@
     },
     {
       "file": "features/agents/import/agent-import-validation.ts",
-      "line": 615,
+      "line": 613,
       "kind": "claims-deleted",
       "snippet": "message: `Tool \\`${t}\\` was not found in the registry.`,"
     },
     {
       "file": "features/agents/import/agent-import-validation.ts",
-      "line": 628,
+      "line": 626,
       "kind": "claims-deleted",
       "snippet": "message: `Tool \\`${name}\\` was not found in the registry.`,"
     },
     {
+      "file": "features/agents/mandates/components/MandateOverrideEditor.tsx",
+      "line": 167,
+      "kind": "claims-deleted",
+      "snippet": "message: \"Agent not found, or you don't have access to it.\","
+    },
+    {
+      "file": "features/agents/mandates/overrides.ts",
+      "line": 167,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`mandate \"${mandateKey}\" not found — declare it server-side first`);"
+    },
+    {
+      "file": "features/agents/mandates/service.server.ts",
+      "line": 44,
+      "kind": "claims-deleted",
+      "snippet": "`mandate \"${mandateKey}\" not found — it must be declared server-side and seeded (see mandates FEATURE.md)`,"
+    },
+    {
+      "file": "features/agents/mandates/service.ts",
+      "line": 97,
+      "kind": "claims-deleted",
+      "snippet": "`mandate \"${mandateKey}\" not found — it must be declared server-side and seeded (see mandates FEATURE.md)`,"
+    },
+    {
+      "file": "features/agents/mandates/service.ts",
+      "line": 221,
+      "kind": "claims-deleted",
+      "snippet": "`[mandates] mandate \"${key}\" not found — it must be declared server-side and seeded (see mandates FEATURE.md)`,"
+    },
+    {
       "file": "features/agents/redux/agent-apps/thunks.ts",
-      "line": 92,
+      "line": 98,
       "kind": "claims-deleted",
       "snippet": "error: error?.message ?? \"App not found\","
     },
     {
       "file": "features/agents/redux/agent-apps/thunks.ts",
-      "line": 96,
+      "line": 102,
       "kind": "claims-deleted",
       "snippet": "throw error ? pgErrorToError(error) : new Error(\"App not found\");"
     },
@@ -563,12 +631,6 @@
       "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
     },
     {
-      "file": "features/agents/redux/execution-system/message-crud/set-message-reaction.thunk.ts",
-      "line": 74,
-      "kind": "claims-deleted",
-      "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
-    },
-    {
       "file": "features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk.ts",
       "line": 61,
       "kind": "claims-deleted",
@@ -594,87 +656,69 @@
     },
     {
       "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
-      "line": 364,
+      "line": 367,
       "kind": "claims-deleted",
       "snippet": "if (!shortcut) throw new Error(`Shortcut ${shortcutId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
-      "line": 774,
+      "line": 776,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Conversation ${currentConversationId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
-      "line": 934,
+      "line": 936,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Conversation ${currentConversationId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
-      "line": 1099,
+      "line": 1101,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Conversation ${currentConversationId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
-      "line": 411,
+      "line": 446,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Conversation ${conversationId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
-      "line": 560,
+      "line": 588,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Conversation ${conversationId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
-      "line": 594,
+      "line": 473,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Shortcut ${shortcutId} not found in Redux`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
-      "line": 134,
+      "line": 168,
       "kind": "claims-deleted",
       "snippet": "return rejectWithValue(`Conversation ${conversationId} not found`);"
     },
     {
       "file": "features/agents/redux/execution-system/thunks/run-ai-stream.ts",
-      "line": 439,
+      "line": 503,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Conversation not found: ${serverMessage}`);"
     },
     {
-      "file": "features/agents/mandates/components/MandateOverrideEditor.tsx",
-      "line": 167,
+      "file": "features/agents/redux/execution-system/utils/required-organization.ts",
+      "line": 18,
       "kind": "claims-deleted",
-      "snippet": "message: \"Agent not found, or you don't have access to it.\","
+      "snippet": "throw new Error(`Conversation ${conversationId} not found.`);"
     },
     {
-      "file": "features/agents/mandates/overrides.ts",
-      "line": 171,
+      "file": "features/agents/redux/tools/tools.thunks.ts",
+      "line": 61,
       "kind": "claims-deleted",
-      "snippet": "throw new Error(`agent slot \"${slotKey}\" not found — declare it server-side first`);"
-    },
-    {
-      "file": "features/agents/mandates/service.server.ts",
-      "line": 43,
-      "kind": "claims-deleted",
-      "snippet": "`agent slot \"${slotKey}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
-    },
-    {
-      "file": "features/agents/mandates/service.ts",
-      "line": 81,
-      "kind": "claims-deleted",
-      "snippet": "`agent slot \"${slotKey}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
-    },
-    {
-      "file": "features/agents/mandates/service.ts",
-      "line": 204,
-      "kind": "claims-deleted",
-      "snippet": "`[agent-slots] slot \"${key}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
+      "snippet": "if (!data) throw new Error(`Tool ${toolId} was not found`);"
     },
     {
       "file": "features/agents/war-room-master-tools/handlers/read-resource.handler.ts",
@@ -689,82 +733,28 @@
       "snippet": "return { ok: false, message: \"Tile not found.\" };"
     },
     {
-      "file": "features/applet/builder/modules/app-builder/AppBuilder.tsx",
-      "line": 264,
+      "file": "features/ai-models/redux/modelRegistrySlice.ts",
+      "line": 240,
       "kind": "claims-deleted",
-      "snippet": "description: \"App has been deleted successfully.\","
+      "snippet": "if (!data) throw new Error(`AI model ${modelId} was not found`);"
     },
     {
-      "file": "features/applet/builder/modules/applet-builder/AppletBuilder.tsx",
-      "line": 350,
-      "kind": "claims-deleted",
-      "snippet": "description: \"Applet has been deleted successfully.\","
+      "file": "features/ai-work/conversations/syncState.ts",
+      "line": 128,
+      "kind": "raw-supabase-message",
+      "snippet": "if (authError) throw new Error(authError.message);"
     },
     {
-      "file": "features/applet/builder/modules/container-builder/GroupBuilder.tsx",
-      "line": 280,
-      "kind": "claims-deleted",
-      "snippet": "description: \"Group has been deleted successfully.\","
+      "file": "features/ai-work/service/providerConversationClient.ts",
+      "line": 80,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
     },
     {
-      "file": "features/applet/builder/modules/container-builder/container-comparison/ContainerComparisonModal.tsx",
-      "line": 88,
-      "kind": "claims-deleted",
-      "snippet": "console.error(\"Container not found in applet\");"
-    },
-    {
-      "file": "features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx",
-      "line": 126,
-      "kind": "claims-deleted",
-      "snippet": "description: `\"${applet.name}\" has been deleted successfully.`,"
-    },
-    {
-      "file": "features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx",
-      "line": 228,
-      "kind": "claims-deleted",
-      "snippet": "description: `\"${app.name}\" has been deleted successfully.`,"
-    },
-    {
-      "file": "features/applet/contepts/BrokerDebugger.tsx",
-      "line": 103,
-      "kind": "claims-deleted",
-      "snippet": "{fieldEntry?.brokerId || \"Not found\"}"
-    },
-    {
-      "file": "features/applet/hooks/useAppletSave.ts",
-      "line": 19,
-      "kind": "claims-deleted",
-      "snippet": "console.error('Cannot save: No applet ID or applet not found');"
-    },
-    {
-      "file": "features/applet/services/appletAgentSource.ts",
-      "line": 52,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Agent \"${agentId}\" not found or has no execution payload`);"
-    },
-    {
-      "file": "features/applet/styles/StyledComponents.tsx",
-      "line": 501,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Color '${color}' not found for usage '${usage}'`);"
-    },
-    {
-      "file": "features/applet/styles/StyledComponents.tsx",
-      "line": 551,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Component type '${type}' not found`);"
-    },
-    {
-      "file": "features/applet/styles/StyledComponents.tsx",
-      "line": 561,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Color '${color}' not found for component type '${type}'`);"
-    },
-    {
-      "file": "features/applet/styles/StyledComponents.tsx",
-      "line": 577,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Icon '${icon}' not found`);"
+      "file": "features/ai-work/service/providerConversationClient.ts",
+      "line": 121,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
     },
     {
       "file": "features/audio/components/devices/MediaDevicesPanel.tsx",
@@ -785,8 +775,20 @@
       "snippet": "if (error) throw new Error(error.message);"
     },
     {
+      "file": "features/audio/utils/microphone-diagnostics.test.ts",
+      "line": 10,
+      "kind": "claims-denied",
+      "snippet": "const error = Object.assign(new Error(\"Permission denied\"), { name });"
+    },
+    {
+      "file": "features/audio/utils/microphone-diagnostics.test.ts",
+      "line": 28,
+      "kind": "claims-denied",
+      "snippet": "expect(isMicrophonePermissionDenial(\"Permission denied\")).toBe(false);"
+    },
+    {
       "file": "features/canvas/components/CanvasArtifactDebugPanel.tsx",
-      "line": 155,
+      "line": 156,
       "kind": "claims-deleted",
       "snippet": "? \"UUID set but row not found in DB\""
     },
@@ -795,6 +797,36 @@
       "line": 126,
       "kind": "claims-deleted",
       "snippet": "if (!r) setError(\"Artifact not found\");"
+    },
+    {
+      "file": "features/canvas/maps/service.ts",
+      "line": 94,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Could not load your maps.\");"
+    },
+    {
+      "file": "features/canvas/maps/service.ts",
+      "line": 121,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Could not count your maps.\");"
+    },
+    {
+      "file": "features/canvas/maps/service.ts",
+      "line": 176,
+      "kind": "claims-deleted",
+      "snippet": "error: error ? (error.message ?? String(error)) : \"Map not found.\","
+    },
+    {
+      "file": "features/canvas/maps/service.ts",
+      "line": 240,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message ?? String(error));"
+    },
+    {
+      "file": "features/canvas/maps/service.ts",
+      "line": 249,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message ?? String(error));"
     },
     {
       "file": "features/canvas/materialization/attachBlockAsEditableContext.ts",
@@ -816,13 +848,25 @@
     },
     {
       "file": "features/canvas/services/canvasArtifactService.ts",
-      "line": 572,
+      "line": 608,
       "kind": "claims-deleted",
       "snippet": "conversationErr ?? \"conversation not found\","
     },
     {
+      "file": "features/change-policy/generate-seed.ts",
+      "line": 108,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`[change-policy --check] ${name} not set and not found in .env.local`);"
+    },
+    {
+      "file": "features/cms/hooks/useCmsPagePlanContext.ts",
+      "line": 109,
+      "kind": "claims-deleted",
+      "snippet": "error: \"The linked plan page was not found.\","
+    },
+    {
       "file": "features/code-editor/agent-code-editor/hooks/useSmartCodeEditor.ts",
-      "line": 174,
+      "line": 181,
       "kind": "claims-deleted",
       "snippet": "msg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\\n`;"
     },
@@ -846,7 +890,7 @@
     },
     {
       "file": "features/code-editor/hooks/useAICodeEditor.ts",
-      "line": 337,
+      "line": 354,
       "kind": "claims-deleted",
       "snippet": "errorMsg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\\n`;"
     },
@@ -947,6 +991,24 @@
       "snippet": "throw new Error(\"search_text not found in surface content\");"
     },
     {
+      "file": "features/crm/components/record/ContactCandidatesCard.tsx",
+      "line": 65,
+      "kind": "claims-deleted",
+      "snippet": "return { text: \"Does not exist\", variant: \"destructive\" };"
+    },
+    {
+      "file": "features/crm/crm-assists-producer.ts",
+      "line": 76,
+      "kind": "claims-deleted",
+      "snippet": "body: `${autoMerged} record${autoMerged === 1 ? \"\" : \"s\"} sharing a verified identity email or phone ${autoMerged === 1 ? \"was\" : \"were\"} merged automatically. "
+    },
+    {
+      "file": "features/crm/outreach-start/service.ts",
+      "line": 194,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
       "file": "features/data-tables/components/DocumentHistoryViewer.tsx",
       "line": 81,
       "kind": "claims-deleted",
@@ -954,7 +1016,7 @@
     },
     {
       "file": "features/data-tables/components/VersionHistoryViewer.tsx",
-      "line": 118,
+      "line": 124,
       "kind": "claims-deleted",
       "snippet": "\"The row was deleted, so this snapshot will be re-inserted as a new row (with a fresh history).\","
     },
@@ -966,63 +1028,81 @@
     },
     {
       "file": "features/data-tables/service.ts",
-      "line": 203,
+      "line": 547,
       "kind": "claims-deleted",
       "snippet": "error: envelope?.error ?? \"Table not found or update failed\","
     },
     {
       "file": "features/entitlements/stripe/connect.ts",
-      "line": 232,
+      "line": 283,
       "kind": "raw-supabase-message",
       "snippet": "throw new Error(error.message); // 500 → Stripe retries; the upsert above is idempotent"
     },
     {
       "file": "features/entitlements/stripe/connect.ts",
-      "line": 262,
+      "line": 313,
       "kind": "raw-supabase-message",
       "snippet": "throw new Error(error.message);"
     },
     {
-      "file": "features/expertise/components/desks/PackDesksPage.tsx",
-      "line": 35,
-      "kind": "claims-deleted",
-      "snippet": "if (!p) setError(\"This pack doesn't exist, or you don't have access.\");"
-    },
-    {
-      "file": "features/expertise/components/detail/PackDetailPage.tsx",
-      "line": 200,
-      "kind": "claims-deleted",
-      "snippet": "setError(\"This pack doesn't exist, or you don't have access to it.\");"
-    },
-    {
       "file": "features/flashcards/components/editor/EditSetView.tsx",
-      "line": 130,
+      "line": 193,
       "kind": "claims-deleted",
       "snippet": "setError(res.error ?? \"Flashcard set not found\");"
     },
     {
       "file": "features/flashcards/components/set-detail/SetDetailView.tsx",
-      "line": 231,
+      "line": 377,
       "kind": "claims-deleted",
       "snippet": "setError(res.error ?? \"Flashcard set not found\");"
     },
     {
       "file": "features/flashcards/data/fcService.ts",
-      "line": 190,
+      "line": 250,
       "kind": "claims-deleted",
       "snippet": "error: \"Set not found or you don't have access to it\","
     },
     {
-      "file": "features/growth-loop/map/loop-map.ts",
-      "line": 798,
-      "kind": "claims-deleted",
-      "snippet": "\"A purpose-built fixer slot was written — aidream/services/seo/finding_fix.py declares seo.finding_fixer — but it is local-only AND orphaned: zero importers, no"
+      "file": "features/hindsight/components/EnrollDialog.tsx",
+      "line": 193,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
     },
     {
-      "file": "features/growth-loop/map/loop-map.ts",
-      "line": 887,
-      "kind": "claims-deleted",
-      "snippet": "\"BUILT BUT UNSHIPPED, AND FORKED. packages/matrx-graph/nodes/pipe/ now defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step"
+      "file": "features/hindsight/components/EnrollDialog.tsx",
+      "line": 217,
+      "kind": "raw-supabase-message",
+      "snippet": "if (markerError) throw new Error(markerError.message);"
+    },
+    {
+      "file": "features/hindsight/components/EnrollDialog.tsx",
+      "line": 232,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/hindsight/components/EnrollDialog.tsx",
+      "line": 250,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/hindsight/components/EnrollDialog.tsx",
+      "line": 271,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/hindsight/components/EnrollmentDetailPanel.tsx",
+      "line": 59,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/hindsight/workspace/VersionLadder.tsx",
+      "line": 54,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
     },
     {
       "file": "features/image-studio/hooks/useBase64Decoder.ts",
@@ -1032,7 +1112,7 @@
     },
     {
       "file": "features/image-studio/hooks/useImageStudio.ts",
-      "line": 1069,
+      "line": 1043,
       "kind": "claims-deleted",
       "snippet": "throw new Error(\"Preview uploaded but its file id was not found\");"
     },
@@ -1181,38 +1261,182 @@
       "snippet": "throw new Error(detail?.message ?? created.error.message);"
     },
     {
-      "file": "features/message-templates/services/message-templates-service.ts",
+      "file": "features/marketing/components/integrations/MarketingConnectionsWorkspace.tsx",
+      "line": 230,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"YouTube was not authorized\", {"
+    },
+    {
+      "file": "features/marketing/components/integrations/SiteIntegrationsWorkspace.tsx",
+      "line": 634,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"Google Analytics was not authorized\", {"
+    },
+    {
+      "file": "features/marketing/content-plan/components/NodePanel.tsx",
+      "line": 1206,
+      "kind": "claims-deleted",
+      "snippet": "/* \"This page does not exist yet\" is the state that most needs an"
+    },
+    {
+      "file": "features/marketing/content-plan/hooks/useNodeMeasurement.ts",
+      "line": 101,
+      "kind": "claims-deleted",
+      "snippet": "return \"Measured: nothing yet — this page does not exist on the website.\";"
+    },
+    {
+      "file": "features/marketing/data/crawl-schedule-service.ts",
+      "line": 159,
+      "kind": "claims-deleted",
+      "snippet": "\"This crawl schedule was deleted while you were editing it. Reload the page to start a new one.\","
+    },
+    {
+      "file": "features/marketing/data/move-site-org.ts",
+      "line": 64,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/data/move-site-org.ts",
+      "line": 92,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/link-valuation/components/CandidateForm.tsx",
+      "line": 63,
+      "kind": "claims-deleted",
+      "snippet": "hint: \"Leave empty when the placement page does not exist yet.\","
+    },
+    {
+      "file": "features/marketing/link-valuation/configs/matrx-v1.ts",
+      "line": 147,
+      "kind": "claims-deleted",
+      "snippet": "\"0–100 strength of the SPECIFIC placement page. Leave empty when the page does not exist yet — that is the normal case for a guest post, and empty is honest whe"
+    },
+    {
+      "file": "features/marketing/link-valuation/configs/matrx-v1.ts",
+      "line": 483,
+      "kind": "claims-deleted",
+      "snippet": "\"How strong is the specific placement page? Legitimately absent for a page that does not exist yet.\","
+    },
+    {
+      "file": "features/marketing/link-valuation/configs/matrx-v1.ts",
+      "line": 634,
+      "kind": "claims-deleted",
+      "snippet": "\"How strong the specific page is. Absent for a page that does not exist yet.\","
+    },
+    {
+      "file": "features/marketing/link-valuation/configs/sheet-2018.ts",
+      "line": 62,
+      "kind": "claims-deleted",
+      "snippet": "\"The same 0–100 strength estimate scoped to ONE PAGE rather than the domain. Undefined for a page that does not exist yet.\","
+    },
+    {
+      "file": "features/marketing/pr/data.ts",
+      "line": 199,
+      "kind": "claims-denied",
+      "snippet": "\"seo.story_angle: permission denied for schema seo (RLS). This is the forced ?data=error state — no real read failed.\","
+    },
+    {
+      "file": "features/marketing/pr/data.ts",
+      "line": 427,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/pr/data.ts",
+      "line": 446,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/pr/data.ts",
+      "line": 622,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/masterwork/audition/auditionRuns.ts",
+      "line": 50,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/masterwork/audition/auditionRuns.ts",
       "line": 81,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/masterwork/components/add-rule/AddRulePanel.tsx",
+      "line": 92,
+      "kind": "claims-deleted",
+      "snippet": "\"This Rulebook doesn't exist, or you don't have access to it.\","
+    },
+    {
+      "file": "features/masterwork/components/detail/ChatImportDialog.tsx",
+      "line": 317,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/masterwork/components/detail/RulebookDetailPage.tsx",
+      "line": 782,
+      "kind": "claims-deleted",
+      "snippet": "\"This Rulebook doesn't exist, or you don't have access to it.\","
+    },
+    {
+      "file": "features/masterwork/encore/EncoreRunPage.tsx",
+      "line": 80,
+      "kind": "claims-denied",
+      "snippet": "if (!m) setError(\"This isn't here, or you don't have access to it.\");"
+    },
+    {
+      "file": "features/masterwork/understudy/refresh.ts",
+      "line": 51,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message ?? \"The Understudy could not be refreshed.\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 82,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to fetch templates\");"
     },
     {
       "file": "features/message-templates/services/message-templates-service.ts",
-      "line": 129,
+      "line": 108,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to fetch templates\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 146,
       "kind": "raw-supabase-message",
       "snippet": "throw new Error(error.message || \"Failed to fetch template\");"
     },
     {
       "file": "features/message-templates/services/message-templates-service.ts",
-      "line": 161,
+      "line": 179,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to create template\");"
     },
     {
       "file": "features/message-templates/services/message-templates-service.ts",
-      "line": 188,
+      "line": 207,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to update template\");"
     },
     {
       "file": "features/message-templates/services/message-templates-service.ts",
-      "line": 202,
+      "line": 222,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to delete template\");"
     },
     {
       "file": "features/message-templates/services/message-templates-service.ts",
-      "line": 221,
+      "line": 242,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message || \"Failed to fetch tags\");"
     },
@@ -1344,19 +1568,19 @@
     },
     {
       "file": "features/page-extraction/api/jobs.ts",
-      "line": 77,
+      "line": 78,
       "kind": "claims-deleted",
       "snippet": "if (!src) throw new Error(\"Template not found\");"
     },
     {
       "file": "features/page-extraction/data-review/data.ts",
-      "line": 247,
+      "line": 244,
       "kind": "claims-deleted",
       "snippet": "if (!job) throw new Error(\"Dataset not found\");"
     },
     {
       "file": "features/pdf-extractor/state/thunks.ts",
-      "line": 68,
+      "line": 73,
       "kind": "raw-supabase-message",
       "snippet": "throw new Error(rpcError.message);"
     },
@@ -1403,16 +1627,16 @@
       "snippet": "throw new Error(\"Project not found\");"
     },
     {
-      "file": "features/recipes/recipe-source/RecipeSelectionList.tsx",
-      "line": 378,
-      "kind": "claims-deleted",
-      "snippet": "description: `Version ${specificVersion} does not exist for this recipe`,"
-    },
-    {
       "file": "features/research/admin/service.ts",
       "line": 121,
       "kind": "claims-deleted",
       "snippet": "if (!template) throw new Error(\"Template not found\");"
+    },
+    {
+      "file": "features/scheduling/components/list/DuplicateScheduleBanner.tsx",
+      "line": 75,
+      "kind": "claims-deleted",
+      "snippet": "{ description: \"The original keeps running. Nothing was deleted.\" },"
     },
     {
       "file": "features/scope-system/components/ContextItemEditView.tsx",
@@ -1440,7 +1664,7 @@
     },
     {
       "file": "features/scope-system/components/ContextItemsHub.tsx",
-      "line": 360,
+      "line": 419,
       "kind": "claims-deleted",
       "snippet": "title=\"Scope type not found\""
     },
@@ -1524,9 +1748,15 @@
     },
     {
       "file": "features/scopes/service/rpcResult.ts",
-      "line": 56,
+      "line": 74,
       "kind": "claims-denied",
       "snippet": "return { code: \"forbidden_org\", message: \"Permission denied\" };"
+    },
+    {
+      "file": "features/scopes/service/rpcResult.ts",
+      "line": 77,
+      "kind": "claims-denied",
+      "snippet": "return { code: \"unauthorized\", message: \"Your session expired\" };"
     },
     {
       "file": "features/scopes/service/scopesService.ts",
@@ -1542,7 +1772,7 @@
     },
     {
       "file": "features/scopes/types.ts",
-      "line": 621,
+      "line": 636,
       "kind": "claims-denied",
       "snippet": "| \"unauthorized\""
     },
@@ -1697,8 +1927,14 @@
       "snippet": "\"The last transport/token/microphone failure as { code, message } (e.g. mic-permission-denied, connect-timeout, token-unauthorized). Absent when there is no out"
     },
     {
+      "file": "features/surfaces/manifests/education-mind-maps.manifest.ts",
+      "line": 245,
+      "kind": "claims-deleted",
+      "snippet": "\"True when the fetch finished and returned nothing — the map does not exist, was deleted, or the learner has no access. Absent on the happy path and outside the"
+    },
+    {
       "file": "features/surfaces/manifests/extractor-chunker.manifest.ts",
-      "line": 215,
+      "line": 252,
       "kind": "claims-deleted",
       "snippet": "\"Inherited from PDF Extractor's scope picker, which does not exist in a chunked run — never populated here.\","
     },
@@ -1710,9 +1946,15 @@
     },
     {
       "file": "features/surfaces/manifests/settings.manifest.ts",
-      "line": 62,
+      "line": 137,
       "kind": "claims-deleted",
       "snippet": "'Registry id of the open settings tab (dot-notation, e.g. \"ai.textGeneration\"). Empty on the /user-settings index landing (no tab selected) or when the URL name"
+    },
+    {
+      "file": "features/surfaces/manifests/transcript-studio.manifest.ts",
+      "line": 427,
+      "kind": "claims-deleted",
+      "snippet": "\"Re-verified 2026-08-12 after the `SurfaceAgentsPanelImpl` overlay fix. REACHABILITY is fixed and confirmed: with the studio window open over a mapped route (/d"
     },
     {
       "file": "features/surfaces/services/bind-agent-to-surface.service.ts",
@@ -1725,6 +1967,12 @@
       "line": 43,
       "kind": "claims-deleted",
       "snippet": "throw new Error(\"Task not found\");"
+    },
+    {
+      "file": "features/tasks/components/editor/TaskEditorCopyButtons.tsx",
+      "line": 76,
+      "kind": "claims-deleted",
+      "snippet": "if (!bundle) throw new Error(\"Task not found\");"
     },
     {
       "file": "features/text-diff/lib/applyDiff.ts",
@@ -1764,9 +2012,15 @@
     },
     {
       "file": "features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview.tsx",
-      "line": 279,
+      "line": 278,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/tool-call-visualization/admin/mcp-tools/format.ts",
+      "line": 330,
+      "kind": "claims-deleted",
+      "snippet": "? \"LIVE input values at copy time — this tool does NOT exist yet.\""
     },
     {
       "file": "features/tool-call-visualization/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
@@ -1776,7 +2030,7 @@
     },
     {
       "file": "features/transcript-studio/components/scribe/ScribeLiveScreen.tsx",
-      "line": 220,
+      "line": 247,
       "kind": "claims-denied",
       "snippet": "toast.error(\"Microphone access denied\", {"
     },
@@ -1788,21 +2042,27 @@
     },
     {
       "file": "features/transcripts/service/transcriptsService.ts",
-      "line": 443,
+      "line": 442,
       "kind": "claims-deleted",
       "snippet": "throw new Error(\"Original transcript not found\");"
     },
     {
       "file": "features/voice-agent/audio/audioCapture.ts",
-      "line": 215,
+      "line": 234,
       "kind": "claims-denied",
       "snippet": "? \"Microphone access denied — check browser permissions.\""
     },
     {
       "file": "features/voice-agent/components/VoiceAgentSurface.tsx",
-      "line": 199,
+      "line": 202,
       "kind": "claims-denied",
       "snippet": "toast.error(\"Microphone access denied\", {"
+    },
+    {
+      "file": "features/voice-agent/hooks/useVoiceAgentInstance.ts",
+      "line": 174,
+      "kind": "claims-deleted",
+      "snippet": ": \"was not found\";"
     },
     {
       "file": "features/voice-agent/transport/tokenManager.ts",
@@ -1817,6 +2077,24 @@
       "snippet": "? \"unauthorized\""
     },
     {
+      "file": "features/war-room/components/shared/ThreadCopyButtons.tsx",
+      "line": 99,
+      "kind": "claims-deleted",
+      "snippet": "if (!bundle) throw new Error(\"Project not found\");"
+    },
+    {
+      "file": "features/war-room/components/shared/ThreadCopyButtons.tsx",
+      "line": 103,
+      "kind": "claims-deleted",
+      "snippet": "if (!bundle) throw new Error(\"Task not found\");"
+    },
+    {
+      "file": "features/war-room/components/thread/useWarRoomThreadWriteHandlers.ts",
+      "line": 100,
+      "kind": "claims-deleted",
+      "snippet": "`${target}: the note this thread points at has been deleted, so writing to it would be invisible to the user. Ask them to add a new note from the thread's Notes"
+    },
+    {
       "file": "features/war-room/redux/thunks.ts",
       "line": 407,
       "kind": "claims-deleted",
@@ -1829,286 +2107,64 @@
       "snippet": "throw new Error(`[war-room] updateSession: room ${id} not found`);"
     },
     {
-      "file": "lib/redux/app-builder/service/customAppService.ts",
-      "line": 363,
+      "file": "features/workflow-runtime/bakeoff/dense-2/DenseRunConsole.tsx",
+      "line": 176,
       "kind": "claims-deleted",
-      "snippet": "throw new Error(`Custom app config with id ${id} not found`);"
+      "snippet": "? \"This workflow doesn't exist, or you don't have access to it.\""
     },
     {
-      "file": "lib/redux/app-builder/service/customAppletService.ts",
-      "line": 356,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Custom applet config with id ${id} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/service/customAppletService.ts",
-      "line": 654,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Component group ${groupId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/service/customAppletService.ts",
-      "line": 662,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Applet ${appletId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/service/fieldComponentService.ts",
-      "line": 226,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Field component with id ${id} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/service/fieldContainerService.ts",
-      "line": 120,
-      "kind": "claims-deleted",
-      "snippet": "`Field component ${fieldId} not found in the field_components library`,"
-    },
-    {
-      "file": "lib/redux/app-builder/service/fieldContainerService.ts",
-      "line": 131,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Component group ${groupId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/service/fieldContainerService.ts",
-      "line": 395,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Component group with id ${id} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/appBuilderSlice.ts",
-      "line": 24,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`App with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/appBuilderSlice.ts",
-      "line": 368,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`App with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/appletBuilderSlice.ts",
-      "line": 25,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Applet with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/appletBuilderSlice.ts",
-      "line": 322,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Container with ID ${containerId} not found in applet ${appletId}`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/appletBuilderSlice.ts",
-      "line": 375,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Applet with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
-      "line": 27,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Container with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
-      "line": 90,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Container with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
-      "line": 175,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Field with ID ${fieldId} not found in container ${containerId}`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
-      "line": 194,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Field with ID ${fieldId} not found in container ${containerId}`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/fieldBuilderSlice.ts",
-      "line": 31,
-      "kind": "claims-deleted",
-      "snippet": "console.warn(`Field with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/slices/fieldBuilderSlice.ts",
-      "line": 648,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Field with ID ${id} not found in state`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appBuilderThunks.ts",
-      "line": 224,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`App with ID ${appId} not found on server`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appBuilderThunks.ts",
-      "line": 252,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`App with ID ${appId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appBuilderThunks.ts",
-      "line": 295,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`App with ID ${appId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 81,
-      "kind": "claims-deleted",
-      "snippet": "console.error(`Applet with ID ${appletId} not found on server`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 84,
-      "kind": "claims-deleted",
-      "snippet": "`Applet with ID ${appletId} not found on server`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 115,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Applet with ID ${appletId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 142,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Applet with ID ${appletId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 192,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Applet with ID ${id} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 238,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(\"Container not found in applet after adding\");"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 257,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(\"Applet not found\");"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 283,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Applet with ID ${appletId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 290,
-      "kind": "claims-deleted",
-      "snippet": "`Container with ID ${containerId} not found in applet ${appletId}`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
-      "line": 303,
-      "kind": "claims-deleted",
-      "snippet": "`Container with ID ${containerId} not found after recompilation`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 46,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 160,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${id} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 270,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 278,
-      "kind": "claims-deleted",
-      "snippet": "`Field with ID ${fieldId} not found in container ${containerId}`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 361,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 388,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 463,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 471,
-      "kind": "claims-deleted",
-      "snippet": "`Field with ID ${fieldId} not found in container ${containerId}`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 507,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 515,
-      "kind": "claims-deleted",
-      "snippet": "`Field with ID ${fieldId} not found in container ${containerId}`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
-      "line": 588,
-      "kind": "claims-deleted",
-      "snippet": "`Container with ID ${containerId} not found on server`,"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/fieldBuilderThunks.ts",
-      "line": 38,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(`Field with ID ${fieldId} not found`);"
-    },
-    {
-      "file": "lib/redux/app-builder/thunks/fieldBuilderThunks.ts",
+      "file": "features/workflow-runtime/bakeoff/dense-2/DenseRunConsole.tsx",
       "line": 184,
       "kind": "claims-deleted",
-      "snippet": "throw new Error(`Field with ID ${id} not found`);"
+      "snippet": "headline=\"This run doesn't exist, or you don't have access to it.\""
     },
     {
-      "file": "lib/redux/app-builder/thunks/fieldBuilderThunks.ts",
-      "line": 285,
+      "file": "features/workflow-runtime/bakeoff/reimagine-2/CommissionPage.tsx",
+      "line": 226,
       "kind": "claims-deleted",
-      "snippet": "console.error(`Field with ID ${fieldId} not found on server`);"
+      "snippet": "? \"This workflow doesn't exist\""
     },
     {
-      "file": "lib/redux/app-runner/validations/appRunnerValidations.ts",
-      "line": 45,
+      "file": "features/workflow-runtime/bakeoff/reimagine-2/CommissionPage.tsx",
+      "line": 248,
       "kind": "claims-deleted",
-      "snippet": "message: `App references applet ID ${listItem.appletId} which doesn't exist`,"
+      "snippet": "body=\"It doesn't exist, or it isn't yours to see. You can start a fresh run of this workflow instead.\""
+    },
+    {
+      "file": "features/workflow-runtime/builder/RunSurfaceBuilder.tsx",
+      "line": 342,
+      "kind": "claims-deleted",
+      "snippet": ": \"Nothing was saved, because this view has been deleted since you opened it. Copy anything you need out of your edits before you leave this page.\""
+    },
+    {
+      "file": "features/workflow-runtime/surface/config.ts",
+      "line": 435,
+      "kind": "claims-deleted",
+      "snippet": "problems.push(`Readout \"${r.id}\" names a page that doesn't exist (\"${r.pageId}\").`);"
+    },
+    {
+      "file": "hooks/canvas/useSharedCanvas.ts",
+      "line": 16,
+      "kind": "claims-deleted",
+      "snippet": "if (!canvas) throw new Error('Canvas not found');"
+    },
+    {
+      "file": "lib/output-feedback/service.ts",
+      "line": 62,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message || \"Failed to save feedback\");"
+    },
+    {
+      "file": "lib/output-feedback/service.ts",
+      "line": 81,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message || \"Failed to clear feedback\");"
+    },
+    {
+      "file": "lib/records/recordUnavailable.test.ts",
+      "line": 49,
+      "kind": "claims-denied",
+      "snippet": "userMessage: \"You don't have access to this site.\","
     },
     {
       "file": "lib/redux/slices/agent-settings/agentSettingsSlice.ts",
@@ -2148,31 +2204,31 @@
     },
     {
       "file": "lib/sandbox/orchestrator-routing.ts",
-      "line": 148,
+      "line": 161,
       "kind": "claims-deleted",
       "snippet": "return { ok: false, status: 404, error: \"Sandbox instance not found\" };"
     },
     {
       "file": "lib/services/agent-feedback.service.ts",
-      "line": 103,
+      "line": 102,
       "kind": "claims-deleted",
       "snippet": "`the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL} was not found`,"
     },
     {
       "file": "lib/services/agent-feedback.service.ts",
-      "line": 218,
+      "line": 205,
       "kind": "claims-deleted",
       "snippet": "return { success: false, error: \"Feedback item not found\" };"
     },
     {
       "file": "lib/services/guest-oauth-transfer.ts",
-      "line": 137,
+      "line": 139,
       "kind": "claims-deleted",
       "snippet": "\"[guest-oauth-transfer] LOUD: mapped auth_user_id not found — stale guest row:\","
     },
     {
       "file": "lib/services/guest-promotion.ts",
-      "line": 122,
+      "line": 129,
       "kind": "claims-deleted",
       "snippet": "\"[guest-promotion] LOUD: mapped auth_user_id not found — stale guest row:\","
     },
@@ -2181,6 +2237,18 @@
       "line": 53,
       "kind": "claims-deleted",
       "snippet": "throw convError ?? new Error(\"DM conversation not found\");"
+    },
+    {
+      "file": "lib/sms/receive.ts",
+      "line": 125,
+      "kind": "claims-deleted",
+      "snippet": "`Failed to load duplicate inbound SMS receipt: ${existingError?.message ?? \"not found\"}`,"
+    },
+    {
+      "file": "lib/sms/receive.ts",
+      "line": 805,
+      "kind": "claims-deleted",
+      "snippet": "`Failed to recover idempotent inbound SMS: ${existingMessageError?.message ?? \"not found\"}`,"
     }
   ]
 }

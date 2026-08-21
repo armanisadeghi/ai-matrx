@@ -35,6 +35,7 @@ import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { isJsonRecord } from "@/features/marketing/types";
+import { operationFailed } from "@/utils/errors";
 // TYPE ONLY. `fixtures.ts` is ~950 lines of sample dataset that almost nobody
 // on this route ever sees, so it must not sit in the bundle every user
 // downloads. A type-only import is erased at build time; the module itself is
@@ -196,6 +197,8 @@ export interface PressRoomData {
 }
 
 const FORCED_ERROR = new Error(
+  // access-errors: ok — deliberate ?data=error fixture string, not real page copy
+
   "seo.story_angle: permission denied for schema seo (RLS). This is the forced ?data=error state — no real read failed.",
 );
 
@@ -424,7 +427,7 @@ async function persistAngleRuling(
     .from("story_angle")
     .update(patch)
     .eq("id", angleId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this ruling", error);
 }
 
 async function persistRequestRuling(
@@ -443,7 +446,7 @@ async function persistRequestRuling(
     .from("source_request")
     .update(patch)
     .eq("id", requestId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this ruling", error);
 }
 
 /**
@@ -619,7 +622,7 @@ async function persistEvidenceHold(
     .from("story_angle")
     .update(patch)
     .eq("id", angle.id);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this review", error);
 }
 
 export function usePressRoomRulings(): RulingController {

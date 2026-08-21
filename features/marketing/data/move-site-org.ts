@@ -8,6 +8,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 
 export type BrandAction = "move_brand" | "detach" | "keep";
 
@@ -61,7 +62,7 @@ export async function previewSiteOrganizationMove(
   const { data, error } = await supabase.rpc("preview_site_organization_move", {
     p_site_id: siteId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("preview this site move", error);
   return data as unknown as SiteMovePreview;
 }
 
@@ -89,6 +90,6 @@ export async function moveSiteToOrganization(
     p_expected_version: input.expectedVersion,
     ...(input.brandAction ? { p_brand_action: input.brandAction } : {}),
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("move this site", error);
   return data as unknown as SiteMoveResult;
 }
