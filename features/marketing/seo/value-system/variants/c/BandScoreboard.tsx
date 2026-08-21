@@ -115,9 +115,9 @@ export function BandScoreboard({
               >
                 {siteDelta.dir === "new"
                   ? "are new"
-                  : siteDelta.pct !== null
-                    ? formatPct(siteDelta.pct)
-                    : "flat"}
+                  : siteDelta.dir === "flat" || siteDelta.pct === null
+                    ? "held flat"
+                    : formatPct(siteDelta.pct)}
               </span>{" "}
               vs the previous 28 days
               {topBand && topDelta && topDelta.dir !== "none" ? (
@@ -138,9 +138,9 @@ export function BandScoreboard({
                   >
                     {topDelta.dir === "new"
                       ? "is new"
-                      : topDelta.pct !== null
-                        ? formatPct(topDelta.pct)
-                        : "flat"}
+                      : topDelta.dir === "flat" || topDelta.pct === null
+                        ? "held flat"
+                        : formatPct(topDelta.pct)}
                   </span>
                 </>
               ) : null}
@@ -151,64 +151,123 @@ export function BandScoreboard({
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
-        {metas.map((meta) => {
-          const totals = byBand.get(meta.value);
-          const clicks = totals?.clicks ?? 0;
-          const impressions = totals?.impressions ?? 0;
-          const queries = totals?.queries ?? 0;
-          const clickDelta = computeDelta(clicks, totals?.cmpClicks ?? 0);
-          const share = totalClicks > 0 ? (clicks / totalClicks) * 100 : 0;
-          const isUnvalued = meta.reserved === "unvalued";
-          const active = activeBand === meta.value;
-          return (
-            <button
-              key={meta.value}
-              type="button"
-              className={cn(
-                "rounded-lg border p-2 text-left transition-colors",
-                active
-                  ? "border-primary bg-accent"
-                  : "border-border bg-card hover:border-primary/40 hover:bg-accent/50",
-                isUnvalued && queries > 0 && !active && "border-warning/60",
-              )}
-              title={`${meta.description ?? meta.label}\nClick to ${active ? "clear the" : "show only this"} tier in the table below.`}
-              onClick={() => onSelectBand(active ? null : meta.value)}
-            >
-              <p className="flex items-center justify-between gap-1">
-                <span
-                  className={cn(
-                    "truncate text-[10px] font-medium uppercase tracking-wide",
-                    meta.tone,
-                  )}
-                >
-                  {meta.label}
-                </span>
-                <DeltaBadge delta={clickDelta} label={`${meta.label} clicks`} />
-              </p>
-              <p
+        {metas
+          .filter((meta) => meta.reserved !== "unvalued")
+          .map((meta) => {
+            const totals = byBand.get(meta.value);
+            const clicks = totals?.clicks ?? 0;
+            const impressions = totals?.impressions ?? 0;
+            const queries = totals?.queries ?? 0;
+            const clickDelta = computeDelta(clicks, totals?.cmpClicks ?? 0);
+            const share = totalClicks > 0 ? (clicks / totalClicks) * 100 : 0;
+            const active = activeBand === meta.value;
+            return (
+              <button
+                key={meta.value}
+                type="button"
                 className={cn(
-                  "mt-0.5 text-lg font-semibold tabular-nums leading-tight",
-                  isUnvalued && queries > 0 && "text-warning",
+                  "rounded-lg border p-2 text-left transition-colors",
+                  active
+                    ? "border-primary bg-accent"
+                    : "border-border bg-card hover:border-primary/40 hover:bg-accent/50",
+                )}
+                title={`${meta.description ?? meta.label}\nClick to ${active ? "clear the" : "show only this"} tier in the table below.`}
+                onClick={() => onSelectBand(active ? null : meta.value)}
+              >
+                <p className="flex items-center justify-between gap-1">
+                  <span
+                    className={cn(
+                      "truncate text-[10px] font-medium uppercase tracking-wide",
+                      meta.tone,
+                    )}
+                  >
+                    {meta.label}
+                  </span>
+                  <DeltaBadge
+                    delta={clickDelta}
+                    label={`${meta.label} clicks`}
+                  />
+                </p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums leading-tight">
+                  {formatCount(queries)}
+                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                    keywords
+                  </span>
+                </p>
+                <p className="text-[10px] tabular-nums text-muted-foreground">
+                  {formatCount(clicks)} clicks · {formatCount(impressions)}{" "}
+                  impr.
+                  {totalClicks > 0 ? ` · ${share.toFixed(0)}%` : ""}
+                </p>
+                {(totals?.overrideQueries ?? 0) > 0 ? (
+                  <p className="text-[10px] text-primary">
+                    {formatCount(totals?.overrideQueries)} ruled by you
+                  </p>
+                ) : null}
+              </button>
+            );
+          })}
+      </div>
+
+      {/* The work queue — Unvalued is a first-class strip, never a ragged
+          seventh tile. */}
+      {(() => {
+        const meta = metas.find((m) => m.reserved === "unvalued");
+        if (!meta) return null;
+        const totals = byBand.get(meta.value);
+        const queries = totals?.queries ?? 0;
+        const clicks = totals?.clicks ?? 0;
+        const impressions = totals?.impressions ?? 0;
+        const active = activeBand === meta.value;
+        return (
+          <button
+            type="button"
+            className={cn(
+              "flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-left transition-colors",
+              active
+                ? "border-primary bg-accent"
+                : queries > 0
+                  ? "border-warning/60 bg-warning/5 hover:border-warning hover:bg-warning/10"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-accent/50",
+            )}
+            title={`${meta.description ?? meta.label}\nClick to ${active ? "clear the" : "work"} this queue in the table below.`}
+            onClick={() => onSelectBand(active ? null : meta.value)}
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "text-[10px] font-medium uppercase tracking-wide",
+                  meta.tone,
+                )}
+              >
+                {meta.label}
+              </span>
+              <span
+                className={cn(
+                  "text-lg font-semibold tabular-nums leading-tight",
+                  queries > 0 && "text-warning",
                 )}
               >
                 {formatCount(queries)}
-                <span className="ml-1 text-[10px] font-normal text-muted-foreground">
-                  {isUnvalued ? "to value" : "keywords"}
-                </span>
-              </p>
-              <p className="text-[10px] tabular-nums text-muted-foreground">
-                {formatCount(clicks)} clicks · {formatCount(impressions)} impr.
-                {!isUnvalued && totalClicks > 0 ? ` · ${share.toFixed(0)}%` : ""}
-              </p>
-              {(totals?.overrideQueries ?? 0) > 0 ? (
-                <p className="text-[10px] text-primary">
-                  {formatCount(totals?.overrideQueries)} ruled by you
-                </p>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
+              </span>
+            </span>
+            <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+              {queries > 0 ? (
+                <>
+                  keywords carrying {formatCount(clicks)} clicks ·{" "}
+                  {formatCount(impressions)} impr. have no meaning expressed
+                  yet — this is the work queue.{" "}
+                  <span className="font-medium text-foreground">
+                    {active ? "Showing them below." : "Click to work it."}
+                  </span>
+                </>
+              ) : (
+                "Every active keyword carries a value — the work queue is empty."
+              )}
+            </span>
+          </button>
+        );
+      })()}
     </div>
   );
 }

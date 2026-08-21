@@ -403,7 +403,7 @@ export function ValueWorkbenchC() {
     },
     {
       id: "why",
-      header: "Why (the resolver's work, in order)",
+      header: "Why this tier",
       sortable: false,
       filter: false,
       className: "min-w-[260px] max-w-[420px]",

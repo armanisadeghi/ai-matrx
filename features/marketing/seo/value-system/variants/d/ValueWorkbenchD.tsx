@@ -86,10 +86,11 @@ export function ValueWorkbenchD() {
   const [selected, setSelected] = useState<Map<string, ValueReviewRow>>(new Map());
   const [railOpen, setRailOpen] = useState(true);
 
-  // The rail defaults open on desktop; on a phone it is an overlay the user
-  // summons — never auto-opened over the ledger.
+  // The rail follows the breakpoint: docked open on desktop, an overlay the
+  // user summons on a phone — never auto-opened over the ledger. The user's
+  // toggle still wins until the breakpoint changes again.
   useEffect(() => {
-    if (isMobile) setRailOpen(false);
+    setRailOpen(!isMobile);
   }, [isMobile]);
 
   useEffect(() => {
