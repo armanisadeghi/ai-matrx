@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BrainCircuit, ChevronLeft, Plus } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import TopicList from "@/features/research/components/landing/TopicList";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 export default async function ResearchTopicsPage() {
   // Guests bounce to the public `/research` marketing landing — the topics
@@ -32,14 +33,7 @@ export default async function ResearchTopicsPage() {
                 may re-point at their own agent. The per-topic roles page only
                 covers one topic; this is the door to the whole domain.
                 Deep-linked: the bare list is 264 mandates across 45 domains. */}
-            <Link
-              href="/agents/mandates?feature=research"
-              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-              aria-label="Research agents"
-              title="Research agents"
-            >
-              <BrainCircuit className="h-4 w-4" />
-            </Link>
+            <MandateDoorLink feature="research" label="Research agents" />
             <Link
               href="/research/topics/new"
               className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"

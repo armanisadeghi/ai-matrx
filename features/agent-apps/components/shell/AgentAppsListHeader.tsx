@@ -1,10 +1,8 @@
 "use client";
 
-import { AppWindow, BrainCircuit, Plus } from "lucide-react";
-import {
-  TapTargetButtonSolid,
-  TapTargetButtonTransparent,
-} from "@/components/icons/TapTargetButton";
+import { AppWindow, Plus } from "lucide-react";
+import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 /** Injected route header for /agent-apps — the list/gallery entry point. */
 export function AgentAppsListHeader() {
@@ -17,12 +15,7 @@ export function AgentAppsListHeader() {
             (`agent_apps.prompt_app_dev`) the builder may swap for their own,
             with no deploy. Deep-linked to the `agent_apps` domain: the bare
             list is 264 mandates across 45 domains. */}
-        <TapTargetButtonTransparent
-          href="/agents/mandates?feature=agent_apps"
-          icon={<BrainCircuit className="h-4 w-4" />}
-          ariaLabel="App builder agents"
-          tooltip="App builder agents"
-        />
+        <MandateDoorLink feature="agent_apps" label="App builder agents" />
         <TapTargetButtonSolid
           href="/agent-apps/new"
           icon={<Plus className="h-4 w-4" />}

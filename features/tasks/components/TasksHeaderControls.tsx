@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { BrainCircuit } from "lucide-react";
 import {
   PanelLeftTapButton,
   MenuTapButton,
 } from "@/components/icons/tap-buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { TasksAssistStrip } from "@/features/tasks/components/TasksAssistStrip";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header
@@ -54,14 +53,7 @@ export function TasksHeaderControls() {
           (`tasks.triage`) the user may swap for their own, with no deploy.
           Deep-linked to the `tasks` domain: the bare list is 264 mandates
           across 45 domains. */}
-      <Link
-        href="/agents/mandates?feature=tasks"
-        aria-label="Task agents"
-        title="Task agents"
-        className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-      >
-        <BrainCircuit className="h-4 w-4" />
-      </Link>
+      <MandateDoorLink feature="tasks" label="Task agents" className="ml-auto" />
     </div>
   );
 }
