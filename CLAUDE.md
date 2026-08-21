@@ -70,7 +70,7 @@ A `.sql` file changes nothing until **applied AND verified live AND `pnpm db-typ
 
 ## Shared checkout — many concurrent writers is NORMAL
 
-Arman plus dozens of agents edit this ONE checkout at once. `git add <your files>`, commit immediately and often. Never tree-wide destructive git (blanket `stash` / `checkout -- .` / `reset --hard` / `clean` / dirty `pull --rebase`) — pathspec-scope to your files. Never complain about other sessions editing the tree, never request a branch/worktree. Full ruling: root `CLAUDE.md` § Shared checkout.
+Arman plus dozens of agents edit this ONE checkout at once. `git add <your files>`, commit immediately and often. Never tree-wide destructive git (blanket `stash` / `checkout -- .` / `reset --hard` / `clean` / dirty `pull --rebase`) — pathspec-scope to your files. Never complain about other sessions editing the tree, never request a branch/worktree. Full ruling: `/Users/armanisadeghi/code/common-docs/policies/shared-checkout.md`.
 
 ## File organization & routes
 
