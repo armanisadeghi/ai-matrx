@@ -1,5 +1,5 @@
 {
-  "generated_for": "456-kinds+76d142a09435",
+  "generated_for": "460-kinds+bcc910d11db5",
   "columns": [
     "definition",
     "example",
@@ -64,6 +64,20 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "aggregate_result",
+      "is_active": false,
+      "family": "data_ops",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -246,6 +260,20 @@
         "skill": "n/a",
         "content_block": "ok",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "batched_list_result",
+      "is_active": false,
+      "family": "data_ops",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -2503,6 +2531,20 @@
       }
     },
     {
+      "kind": "parsed_table",
+      "is_active": false,
+      "family": "data_ops",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "pdf_table_extraction",
       "is_active": false,
       "family": "docproc",
@@ -4410,6 +4452,20 @@
       "kind": "slug_result",
       "is_active": false,
       "family": "primitive",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "sorted_list_result",
+      "is_active": false,
+      "family": "data_ops",
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -6457,6 +6513,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "aggregate_result",
+      "message": "kind \"aggregate_result\" has no content block referencing \"__kind\": \"aggregate_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "ai_answer",
       "message": "kind \"ai_answer\" has no content block referencing \"__kind\": \"ai_answer\""
     },
@@ -6513,6 +6575,12 @@
       "code": "no-content-block",
       "kind": "asset_variant",
       "message": "kind \"asset_variant\" has no content block referencing \"__kind\": \"asset_variant\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "batched_list_result",
+      "message": "kind \"batched_list_result\" has no content block referencing \"__kind\": \"batched_list_result\""
     },
     {
       "severity": "yellow",
@@ -7005,6 +7073,12 @@
       "code": "no-content-block",
       "kind": "parsed_datetime",
       "message": "kind \"parsed_datetime\" has no content block referencing \"__kind\": \"parsed_datetime\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "parsed_table",
+      "message": "kind \"parsed_table\" has no content block referencing \"__kind\": \"parsed_table\""
     },
     {
       "severity": "yellow",
@@ -7551,6 +7625,12 @@
       "code": "no-content-block",
       "kind": "slug_result",
       "message": "kind \"slug_result\" has no content block referencing \"__kind\": \"slug_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "sorted_list_result",
+      "message": "kind \"sorted_list_result\" has no content block referencing \"__kind\": \"sorted_list_result\""
     },
     {
       "severity": "yellow",
@@ -8719,6 +8799,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "aggregate_result",
+      "message": "kind \"aggregate_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "ai_answer",
       "message": "kind \"ai_answer\" has no render_block skill teaching it"
     },
@@ -8775,6 +8861,12 @@
       "code": "no-skill",
       "kind": "asset_variant",
       "message": "kind \"asset_variant\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "batched_list_result",
+      "message": "kind \"batched_list_result\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -9231,6 +9323,12 @@
       "code": "no-skill",
       "kind": "parsed_datetime",
       "message": "kind \"parsed_datetime\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "parsed_table",
+      "message": "kind \"parsed_table\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -9723,6 +9821,12 @@
       "code": "no-skill",
       "kind": "slug_result",
       "message": "kind \"slug_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "sorted_list_result",
+      "message": "kind \"sorted_list_result\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -10363,12 +10467,6 @@
     {
       "severity": "yellow",
       "code": "stale-example",
-      "kind": "assertion_result",
-      "message": "kind \"assertion_result\" example is older than the kind definition (example 2026-08-21T00:56:02.53382+00:00 < kind 2026-08-21T04:48:34.954347+00:00) — revalidate/recapture"
-    },
-    {
-      "severity": "yellow",
-      "code": "stale-example",
       "kind": "cms_align_item",
       "message": "kind \"cms_align_item\" example is older than the kind definition (example 2026-08-21T01:13:04.296103+00:00 < kind 2026-08-21T05:15:59.257484+00:00) — revalidate/recapture"
     },
@@ -10491,12 +10589,6 @@
       "code": "stale-example",
       "kind": "file_tree_result",
       "message": "kind \"file_tree_result\" example is older than the kind definition (example 2026-08-21T00:56:04.795514+00:00 < kind 2026-08-21T04:21:47.820814+00:00) — revalidate/recapture"
-    },
-    {
-      "severity": "yellow",
-      "code": "stale-example",
-      "kind": "filter_result",
-      "message": "kind \"filter_result\" example is older than the kind definition (example 2026-08-21T00:56:05.594328+00:00 < kind 2026-08-21T04:48:35.694436+00:00) — revalidate/recapture"
     },
     {
       "severity": "yellow",
