@@ -301,6 +301,126 @@ Re-run the census any time: `pnpm check:ddl-guard-log`, or `select * from platfo
 Acknowledging is `platform.ddl_guard_ack(p_reason => '…', p_by => '…', p_rule => '…' | p_object_ref => '…' | p_ids => '{…}')`
 — the reason is constraint-enforced.
 
+### D233 — `agent_card`: a permission key the registry guard cannot hold (2026-08-21; **took prod down once, now restored**)
+
+`agent.card` is a security VIEW over `agent.definition` whose WHERE clause ends in
+`has_permission('agent_card', id, 'viewer')`, and `public.has_permission_for()` RAISES
+`P0001 'Unknown entity token'` unless the token has an **active** `platform.entity_types` row.
+So the token must stay registered and active — but `platform._enforce_entity_is_table` refuses any
+active row whose relation is `relkind='v'`. Those two rules contradict each other on this one token.
+
+**This already bit.** Clearing the versioned-without-capture backlog, a session deleted the
+`agent_card` registry row (and its composition edge). Every read of `agent.card` then raised —
+while `platform.shareable_resource_registry` still routed `agent_card -> agent.card` (is_active=true)
+and `iam.permissions` still held 2 live grants. Restored by `migrations/agent_card_registry_restore_d233.sql`,
+which re-inserts the row with `is_versioned=false` (correct: a view cannot capture, and agent
+definitions are already versioned by the certified custom store `agent.definition_version`),
+re-arms the guard, and asserts `select count(*) from agent.card` succeeds. Verified live: 343 rows.
+**The restore had to DISABLE `_enforce_entity_is_table` for one insert.** That is a revert to the
+state that ran for months, not a new design — but it means the row is currently in a shape the guard
+would reject, so the contradiction is live, not theoretical.
+
+**Arman's call — pick one:**
+- **(a) Recommended.** Teach `has_permission_for` (and `_enforce_entity_is_table`) about a
+  *permission-surface* token: registered and active for permission checks, exempt from the
+  relkind rule, skipped by the canonical checks instead of silently omitted. Cleanest, and fixes the
+  reporting blind spot below at the same time.
+- **(b)** Repoint `agent_card` at `agent.definition`. Blocked today by
+  `UNIQUE(schema_name, table_name)` — the `agent` token already holds that pair.
+- **(c)** Drop the `has_permission` arm from the view. Loses explicit-share visibility on agent cards
+  (2 live grants would stop resolving). Cheapest, and a real product regression.
+
+**Related reporting bug, unfixed:** the `trg_version_capture` check only scans `relkind='r'`, so a
+view-backed token is invisible to it — that is why `audit.canonical_findings` reported 46 FAILs where
+the live registry-joined-to-`pg_trigger` count was 47. Any conformance number taken from
+`canonical_findings` under-reports view-backed tokens. (db-rules §7.)
+
+### D232 — the DDL-guard backlog, triaged; §A/§B/§C closed, §D's hard remainder split out (2026-08-21)
+
+Product of giving `platform.ddl_guard_log` a reader (`migrations/ddl_guard_log_ack_contract.sql`,
+`scripts/check-ddl-guard-log.ts`, docs-steward daily step). All firings are acknowledged **with a
+reason**; this entry is the residue no ack should hide. Every line below was re-verified live
+against `iam.verify_canonical` / `iam.canonical_certify_ok` / `pg_trigger` / `pg_attribute`
+immediately before it was acted on.
+
+**The `hand_rolled_entity` class is closed at the source** — `d2b8e526b` flipped that rule from WARN
+to ERROR the same day. A fresh `hand_rolled_entity` row appearing after 2026-08-21 means the event
+trigger was disabled.
+
+**Ratchets moved, which is the proof:** unregistered entity-like tables **48 → 41**
+(`scripts/canonical-ratchets/unregistered-entities-baseline.json`), post-doctrine FAIL findings
+**22 → 1** (`post-doctrine-baseline.json`), org-backstop exemptions **78 → 6**
+(aidream `scripts/org_backstop_exemptions.json`).
+
+**A. Unregistered entity-looking tables (9) — CLOSED as dispositioned.** Judged by purpose
+(changeover doctrine §5) and recorded, with a required reason each, in
+`scripts/canonical-ratchets/unregistered-entities-allowlist.json` — that file IS the "reviewed,
+deliberately unregistered" record the 08-15 audit found missing. Five are structurally not entities
+(PK is `organization_id` / `user_id` / `country_code` / `token` / a composite, so there is no `id`
+identity to register): `billing.org_plan`, `billing.user_plan`, `crm.jurisdiction_policy`,
+`crm.unsubscribe_token`, `platform.org_change_policy`. `billing.plan` has an `id TEXT` PK
+(`'personal-pro'`) and no org/owner/visibility — a global price list. Two were declared non-entities
+in their own creating migrations and the allowlist quotes them: `platform.retention_policy`
+("deliberately NOT a canonical entity table: a configuration registry with no owner and nothing
+shareable") and `content_ir.io_contract` ("a TYPE SIGNATURE, never a Shape"). The ninth,
+`crm.outreach_acceptance`, is a genuine entity candidate and is the one that needs a decision —
+split out as **D237**.
+
+**B. Registered but failing certify — CLOSED.** `migrations/d232_seo_canonical_repair.sql`:
+`seo.source_request` and `seo.story_angle` are now `canonical_certify_ok = true` (org FK +
+`NOT NULL` + backstop, `created_by`/`updated_by` FKs, `_stamp_actor`, `visibility` at `internal`
+with the §6a-1 justification written into the migration, and `iam.apply_rls` re-run to restore the
+`created_by` short-circuit `std_select` was missing — a live 42501 risk for a row's own owner).
+`seo.landscape_brief` and `seo.page_measurement_health` (the 4th post-doctrine table, 7 FAILs) are
+at **zero FAIL**, holding only the `soft_delete` WARN. **That WARN is the one open question here and
+it is Arman's: does a ledger/event table need `deleted_at`, or should `iam.verify_canonical` stop
+WARNing when `has_soft_delete=false` is deliberate?** One WARN is all that stands between those two
+and certification.
+
+**C. `organization_id NOT NULL` with no backstop — CLOSED (13 tables), and the CHECKER was wrong.**
+`migrations/d232_org_backstop_11_laggards.sql` (the original 11: `_stamp_org_default` on the seven
+roots, `platform.inherit_org_from_parent` on the four children) plus
+`migrations/d232_org_backstop_seo_starter_pack.sql` (`seo.starter_pack` /
+`seo.starter_pack_item`, which appeared the same day from parallel work).
+**The bigger win was the gate:** aidream's `matrx_orm.catalog.org_backstop_coverage` matched on the
+TRIGGER NAME `_stamp_org_default`, so every child entity carrying the documented
+`inherit_org_from_parent` backstop read as drift — **72 of the 78 grandfathered exemptions were
+never real**. It now matches the trigger FUNCTION against all three legal backstops (db-rules §2),
+`scripts/org_backstop_exemptions.json` is pruned 78 → 6, and
+`validate_org_backstop_coverage.py --strict` is green.
+
+**D. Kill-list columns — 2 cut, 2 code-complete and deploy-gated, 1 dispositioned, 4 split out.** Disagreement was measured per
+column first (db-rules §6a: three different correct outcomes), then acted on:
+- **Cut, pure dead weight** (`migrations/d232_kill_list_dead_weight_drops.sql`):
+  `canvas.canvas_comments.deleted` (0 rows) and `public.sandbox_instances.is_public`
+  (283 rows / 0 true / zero consumers anywhere).
+- **Code repointed, DROP deploy-gated — D238**: `canvas.canvas_items.is_public` (632 rows, 0 true,
+  `visibility` agrees). Its three readers now read `visibility` — `features/canvas/services/canvasItemsService.ts`,
+  `features/canvas/core/SavedCanvasItems.tsx`, and the `/maps` feature. The maps list SELECTs the
+  column by name, so the DROP waits for a READY production deployment (doctrine §8a-1 state 3).
+- **Bivalent, drop filed as D238**: `legal.wc_claim.is_public` — written by aidream's WC router.
+  `migrations/d232_wc_claim_visibility_bivalent.sql` installs the is_public ↔ visibility mirror and
+  drops the column's `NOT NULL` (§8d step 2) so each repo cuts over independently; both repos are
+  repointed. The DROP is gated on the **deployed** aidream SHA — **D238**.
+- **NOT a kill-list violation, no cut**: `billing.plan.is_public` means "shows on /pricing" on a
+  text-PK global price list with no owner, no org and no `visibility` column. It is a merchandising
+  flag, not an access driver, so there is nothing to map (db-rules §2 kills `is_public` *as the
+  access driver*). Dispositioned; leave it.
+- **Split out as D236**: the seven `workbench.udt_*` `is_public` columns. Their additive half is
+  already live (a `_bridge_legacy_owner` trigger keeps `is_public` and `visibility` in agreement and
+  the FE already writes only `visibility`), but the breaking half is 15 RPCs, three child RLS
+  policies, a shared bridge function and the aidream ORM — one coherent unit of work, not nine.
+
+**Observed, out of scope:** `browser.profile_checkpoint` is the single remaining post-doctrine FAIL
+(`policies_canonical: missing={pub_read}`). Every other `restricted`-variant table has `pub_read`, so
+the table — not the checker — is the outlier and one `iam.apply_rls` call fixes it; left alone
+because it was born 2026-08-18 in another session's work (doctrine §8c). Note db-rules §5's
+"`restricted` … No `pub_read`" line has drifted from what `iam.apply_rls` actually generates.
+
+Re-run the census any time: `pnpm check:ddl-guard-log`, or `select * from platform.ddl_guard_unacked;`.
+Acknowledging is `platform.ddl_guard_ack(p_reason => '…', p_by => '…', p_rule => '…' | p_object_ref => '…' | p_ids => '{…}')`
+— the reason is constraint-enforced.
+
 ### D233 — `agent_card` is a registered ACTIVE entity pointing at a VIEW, and the conformance check can't see it (2026-08-21)
 
 Found clearing the versioned-without-capture backlog (`migrations/platform_versioned_without_capture_adjudication.sql`).
