@@ -38,7 +38,7 @@ every visual element is actionable (drag = real reparent, click = edit,
 color = live status). This is a product for orgs planning for the brands they
 manage — org-scoped, no internal-only assumptions.
 
-**Cross-repo system of record:** `common-docs/systems/content-planning/FEATURE.md`
+**Cross-repo system of record:** `common-docs/systems/content-planning/STATE.md`
 (DB truth, invariants, rollout). Server work (plan generation, brief
 deepening, crawl reconciliation) is aidream's — this feature never routes
 plan CRUD through it.
@@ -766,7 +766,7 @@ authored draft) — never stamped on a column.
 **And a planned page that IS real carries its AFTER.** The section under it —
 "What the live page is doing" (`NodeMeasureCard` + `hooks/useNodeMeasurement.ts`)
 — also always renders, per the before/during/after doctrine in
-`docs/handoffs/cms-page-hub.md`: the _during_ surface may never forget where the
+`/Users/armanisadeghi/code/common-docs/systems/cms-system/HANDOFF.md`: the _during_ surface may never forget where the
 page came from or where it went. It follows the SAME durable id join the CMS
 Measure tab uses — `plan.node` → `client_pages.plan_node_id` →
 `client_pages.web_page_id` → `web.page` — reading `web_page_id` off the full CMS

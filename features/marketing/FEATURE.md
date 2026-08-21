@@ -592,7 +592,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   tree/table measure door. `PageSearchPerformance` is now a named type in
   `types.ts`, so the workspace and the bulk read can never drift.
 - 2026-08-15 — Claude: **The page workspace shows its BEFORE — the plan the page
-  was built from** (`docs/handoffs/cms-page-hub.md` item 6). `PageWorkspace` mounts
+  was built from** (`/Users/armanisadeghi/code/common-docs/systems/cms-system/HANDOFF.md` item 6). `PageWorkspace` mounts
   the new `components/pages/cards/PagePlanContextCard.tsx` full-width above the
   current/plan split (it belongs to neither lane): it resolves the plan node
   through the EXISTING push-lane join — `useCmsPushFacts` → `resolvePushTarget`

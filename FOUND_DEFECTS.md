@@ -1030,7 +1030,7 @@ before realize applies it, that is a ruling, not an agent's call — see the not
 <details><summary>Original entry</summary>
 
 🚨 **Read the scope correction first: TEMPLATES ARE AN OPTION AND ARE NEVER REQUIRED**
-(Arman, 2026-08-16 — `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN
+(Arman, 2026-08-16 — `common-docs/systems/content-planning/STATE.md` § TEMPLATES ARE AN
 OPTION). This entry originally read as "a required capability is switched off." It is not:
 a site with no template library is a **correct, fully supported site**, realize writing an
 empty body is the **free-form path working**, and the site's THEME is what makes its pages

@@ -6,7 +6,7 @@ scope: feature
 feature: Content Planning
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md
-  - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
+  - /Users/armanisadeghi/code/common-docs/systems/content-planning/STATE.md
 ---
 
 # Content Planning — an AI at every step, grounded in the resources we already have
