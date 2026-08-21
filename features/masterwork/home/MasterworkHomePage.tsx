@@ -409,7 +409,15 @@ export function MasterworkHomePage() {
       {/* Start here — the Approach registry */}
       {approaches !== null && startableApproaches(approaches).length > 0 ? (
         <section className="space-y-2">
-          <SectionHeading title="Start here" />
+          <div className="flex items-baseline justify-between gap-3">
+            <SectionHeading title="Start here" />
+            <Link
+              href="/masterwork/approaches"
+              className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              See every way, including what's coming
+            </Link>
+          </div>
           {/* ONE card component, three consumers (2026-08-20) — this grid used
               to hand-roll a plainer tile, so the same Approach looked like two
               different things depending on which page you were on. */}

@@ -525,6 +525,15 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "List",
       },
       {
+        // The standing Approach catalog — every way to build a Rulebook,
+        // including the ones still being built. An Approach you can only meet
+        // inside a funnel is one you cannot find (Arman, 2026-08-21).
+        label: "Ways to build one",
+        href: "/masterwork/approaches",
+        iconName: "Compass",
+        description: "Every way to capture what you know — and what's coming",
+      },
+      {
         // Encore — the Operator door: run a released Masterwork.
         label: "Encore",
         href: "/masterwork/encore",

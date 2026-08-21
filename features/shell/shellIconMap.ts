@@ -18,6 +18,7 @@ import {
   CalendarDays,
   CalendarClock,
   ChevronDown,
+  Compass,
   ChevronRight,
   CircleHelp,
   CircleDollarSign,
@@ -120,6 +121,7 @@ import {
 } from "lucide-react";
 
 export const shellIconComponents = {
+  Compass,
   AppWindow,
   Aperture,
   ArrowLeftRight,
