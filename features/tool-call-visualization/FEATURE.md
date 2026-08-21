@@ -2,7 +2,7 @@
 
 **Status:** `consolidated — canonical home for all tool-call UI`
 **Tier:** `1` — tools are first-class product surface, not auxiliary output
-**Last updated:** `2026-08-11`
+**Last updated:** `2026-08-21`
 
 ---
 
@@ -74,6 +74,7 @@ features/tool-call-visualization/
 │   │                              pair serves every action + every legacy seo_* name in history
 │   │                              (SeoInline card · SeoOverlay · KeywordDataBody · RankReceiptBody)
 │   ├── seo-shared/             ← SerpToolInline + SerpToolOverlay — ONE SERP body for every meta check
+│   ├── cloud-browser/          ← ONE compact run card for cloud_browser + credential_login actions
 │   ├── picklist/               ← `picklist` tool — renders the REAL list (reuses user-lists GroupSection/ListDetailClient) + open-in-window / open-in-new-tab
 │   ├── _shared-entity/         ← EntityOpenActions (Open-in-window + New-tab) shared by the entity renderers
 │   ├── task/                   ← `task` (real ctx_tasks → TaskEditor + window + /tasks/[id]) · `tasks`/`user_todos` (checklist)
@@ -285,6 +286,7 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-08-21` — codex: **Cloud Browser and Credential Login render as one compact activity run.** Consecutive `cloud_browser` calls (all nine unified actions plus persisted legacy names) and `credential_login` calls (all six actions) stay grouped as one `ToolResultCard`: one modern **View browser** action, one Details disclosure, 12px icon-led one-line activity rows, truncated external links, and screenshots rendered at a useful inline size. Screenshot clicks open the canonical image WindowPanel. Compact labels never expose typed text, credential ids, session ids, or raw result fields; the complete payload remains available once under Details. `EnhancedChatMarkdown` preserves this browser-family batch inside settled `AgentWorkGroup` expansions instead of flattening it back into generic per-call cards. Guard: `renderers/cloud-browser/cloudBrowserRun.test.ts`. Demo: `/demos/tool-viz/result-fields` § "Cloud Browser run — one compact activity card".
 - `2026-08-21` — claude: **A link chip is labelled by its path, not just its host.** `UrlChip` labelled every URL with the bare domain, so a `web_broken_images_v1` audit's three evidence rows all read "example.com" — three visually identical chips in a column where the PATH was the row's identity. The default label now carries the path's identifying tail (`example.com/…/hero-old.png`; no ellipsis for a single segment; the query stands in when the path is empty; percent-decoded), falling back to the bare domain only for a genuinely path-less URL. Fixed in `UrlChip` itself rather than in `ResultTable`'s cell (Arman's call, 2026-08-21) — a wrapping `UrlChips` row of same-host links was broken the same way, and one rule beats two. Callers may still override with `label`. Guard: `result-fields/__tests__/url-chip-label.test.ts` (7 tests). Live-verified on `/shapes/web_broken_images_v1/test`.
 - `2026-08-17` — claude: **D209 fixed — an ADOPTED stream's output no longer vanishes when the run ends.** `selectUnifiedSlots` hid every `sub_agent` block range unconditionally; a server-orchestrated run adopted via `adoptForeignStream` emits that operation with NO owning `agent_call`, so its only content block was hidden the moment the operation completed and `LiveRunWindow` went blank ("Batch saved… — complete" over an empty body). The hide is now gated on `toolCallId` — the card it hands off to. Live-verified with real paid runs on `/marketing/admin/keyword-data-quality`; guarded by `active-requests/__tests__/adopted-sub-agent-visibility.test.ts` (fails without the fix) with the chat half still pinned by `collab-child-stream.test.ts`.
 - `2026-08-12` — claude: **Provider transcripts consume the canonical stack + two service upgrades.** The AI Work provider transcript (`features/ai-work/components/ProviderConversationTranscript.tsx`) renders mirrored Claude/Codex `chat.tool_call` rows through `cxToolCallToLifecycleEntry` → `ToolCallVisualization`/`ToolCallBatch` — no bespoke renderer. `fetchConversationToolCallsPage` grew an optional `sinceStartedAt` (inclusive lower bound) and returns `totalCount` (exact count for the query bounds); existing callers are unaffected. `GenericRenderer` no longer shows an infinite "Working…" spinner for a **completed** call with no captured output (mirrored provider calls record name/status/timing only) — it states "Completed. No output was captured for this call."
