@@ -10,6 +10,13 @@ rulings (R1–R12, now §2.8/§2.10 there), the scale target (20–100 nodes, ne
 phase plan live THERE; this doc is the code contract for what exists in this repo. Read STATE.md
 before extending this feature.
 
+**Wire contract for a node's output and a run's result:**
+`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md` — every
+`node_completed` carries `wrapper` (a self-describing `node_outcome`: which workflow, which node,
+timing, kind verdict, the data kind nested under `output`) and `GET /runs/{id}` returns `result` (a
+`run_result` nesting one per terminal node). Payloads are elided — `output_ref` names the frame
+field to rehydrate from. Read it before touching how a run's output reaches the screen in ANY repo.
+
 ## What Phase 1 is
 
 The **Run Stream Adapter** and everything a run surface needs to exist: one multiplexed workflow
