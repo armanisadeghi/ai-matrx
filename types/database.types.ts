@@ -30772,69 +30772,6 @@ export type Database = {
       }
     }
     Views: {
-      contact_submissions: {
-        Row: {
-          admin_notes: string | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          email: string | null
-          id: string | null
-          message: string | null
-          metadata: Json | null
-          name: string | null
-          organization_id: string | null
-          resolved_at: string | null
-          resolved_by: string | null
-          status: string | null
-          subject: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number | null
-        }
-        Insert: {
-          admin_notes?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          email?: string | null
-          id?: string | null
-          message?: string | null
-          metadata?: Json | null
-          name?: string | null
-          organization_id?: string | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: string | null
-          subject?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Update: {
-          admin_notes?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          email?: string | null
-          id?: string | null
-          message?: string | null
-          metadata?: Json | null
-          name?: string | null
-          organization_id?: string | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: string | null
-          subject?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
       current_user_is_admin: {
         Row: {
           admin_level: Database["public"]["Enums"]["admin_level"] | null
@@ -30850,201 +30787,6 @@ export type Database = {
           admin_level?: Database["public"]["Enums"]["admin_level"] | null
           is_admin?: never
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      dev_login_audit: {
-        Row: {
-          id: string | null
-          jwt_jti: string | null
-          metadata: Json | null
-          requested_at: string | null
-          requester_ip: string | null
-          requester_secret_hash: string | null
-          target_user_id: string | null
-          ttl_seconds: number | null
-        }
-        Insert: {
-          id?: string | null
-          jwt_jti?: string | null
-          metadata?: Json | null
-          requested_at?: string | null
-          requester_ip?: string | null
-          requester_secret_hash?: string | null
-          target_user_id?: string | null
-          ttl_seconds?: number | null
-        }
-        Update: {
-          id?: string | null
-          jwt_jti?: string | null
-          metadata?: Json | null
-          requested_at?: string | null
-          requester_ip?: string | null
-          requester_secret_hash?: string | null
-          target_user_id?: string | null
-          ttl_seconds?: number | null
-        }
-        Relationships: []
-      }
-      feedback_comments: {
-        Row: {
-          author_name: string | null
-          author_type: string | null
-          content: string | null
-          created_at: string | null
-          feedback_id: string | null
-          id: string | null
-        }
-        Insert: {
-          author_name?: string | null
-          author_type?: string | null
-          content?: string | null
-          created_at?: string | null
-          feedback_id?: string | null
-          id?: string | null
-        }
-        Update: {
-          author_name?: string | null
-          author_type?: string | null
-          content?: string | null
-          created_at?: string | null
-          feedback_id?: string | null
-          id?: string | null
-        }
-        Relationships: []
-      }
-      feedback_user_messages: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          email_sent: boolean | null
-          feedback_id: string | null
-          id: string | null
-          image_file_ids: string[] | null
-          image_urls: string[] | null
-          sender_name: string | null
-          sender_type: string | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          email_sent?: boolean | null
-          feedback_id?: string | null
-          id?: string | null
-          image_file_ids?: string[] | null
-          image_urls?: string[] | null
-          sender_name?: string | null
-          sender_type?: string | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          email_sent?: boolean | null
-          feedback_id?: string | null
-          id?: string | null
-          image_file_ids?: string[] | null
-          image_urls?: string[] | null
-          sender_name?: string | null
-          sender_type?: string | null
-        }
-        Relationships: []
-      }
-      library_audit_log: {
-        Row: {
-          action: string | null
-          actor_user_id: string | null
-          created_at: string | null
-          data_store_id: string | null
-          detail: Json | null
-          id: string | null
-          industry_id: string | null
-          organization_id: string | null
-        }
-        Insert: {
-          action?: string | null
-          actor_user_id?: string | null
-          created_at?: string | null
-          data_store_id?: string | null
-          detail?: Json | null
-          id?: string | null
-          industry_id?: string | null
-          organization_id?: string | null
-        }
-        Update: {
-          action?: string | null
-          actor_user_id?: string | null
-          created_at?: string | null
-          data_store_id?: string | null
-          detail?: Json | null
-          id?: string | null
-          industry_id?: string | null
-          organization_id?: string | null
-        }
-        Relationships: []
-      }
-      mtx_media_heal_queue: {
-        Row: {
-          bad_value: string | null
-          column_name: string | null
-          created_at: string | null
-          error: string | null
-          healed_at: string | null
-          id: string | null
-          row_id: string | null
-          schema_name: string | null
-          status: string | null
-          table_name: string | null
-        }
-        Insert: {
-          bad_value?: string | null
-          column_name?: string | null
-          created_at?: string | null
-          error?: string | null
-          healed_at?: string | null
-          id?: string | null
-          row_id?: string | null
-          schema_name?: string | null
-          status?: string | null
-          table_name?: string | null
-        }
-        Update: {
-          bad_value?: string | null
-          column_name?: string | null
-          created_at?: string | null
-          error?: string | null
-          healed_at?: string | null
-          id?: string | null
-          row_id?: string | null
-          schema_name?: string | null
-          status?: string | null
-          table_name?: string | null
-        }
-        Relationships: []
-      }
-      mtx_public_url_guard: {
-        Row: {
-          column_name: string | null
-          created_at: string | null
-          id: string | null
-          note: string | null
-          schema_name: string | null
-          table_name: string | null
-        }
-        Insert: {
-          column_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          note?: string | null
-          schema_name?: string | null
-          table_name?: string | null
-        }
-        Update: {
-          column_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          note?: string | null
-          schema_name?: string | null
-          table_name?: string | null
         }
         Relationships: []
       }
@@ -31081,45 +30823,6 @@ export type Database = {
             referencedColumns: ["file_id"]
           },
         ]
-      }
-      system_announcements: {
-        Row: {
-          announcement_type: string | null
-          created_at: string | null
-          created_by: string | null
-          id: string | null
-          is_active: boolean | null
-          message: string | null
-          min_display_seconds: number | null
-          target_user_id: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          announcement_type?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          message?: string | null
-          min_display_seconds?: number | null
-          target_user_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          announcement_type?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          message?: string | null
-          min_display_seconds?: number | null
-          target_user_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       v_context_item_suggestions: {
         Row: {
@@ -37943,6 +37646,11 @@ export type Database = {
         Args: { p_bucket: string; p_n: number }
         Returns: boolean
       }
+      wfx_duplicate_definition: {
+        Args: { p_definition_id: string }
+        Returns: string
+      }
+      wfx_duplicate_version: { Args: { p_version_id: string }; Returns: string }
       wfx_list_facets: {
         Args: {
           p_archived?: string
@@ -57965,6 +57673,7 @@ export type Database = {
       }
       definition: {
         Row: {
+          card_visibility: Database["platform"]["Enums"]["visibility"]
           category: string | null
           channels: Json
           compiled_at: string | null
@@ -58007,6 +57716,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          card_visibility?: Database["platform"]["Enums"]["visibility"]
           category?: string | null
           channels?: Json
           compiled_at?: string | null
@@ -58049,6 +57759,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          card_visibility?: Database["platform"]["Enums"]["visibility"]
           category?: string | null
           channels?: Json
           compiled_at?: string | null
@@ -58184,6 +57895,13 @@ export type Database = {
           viewport?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wf_definition_version_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wf_definition_version_definition_id_fkey"
             columns: ["definition_id"]
@@ -58458,6 +58176,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "node_data_slot_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "node_data_slot_definition_id_fkey"
             columns: ["definition_id"]
@@ -58787,6 +58512,13 @@ export type Database = {
             foreignKeyName: "plan_definition_id_fkey"
             columns: ["definition_id"]
             isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
@@ -58809,6 +58541,13 @@ export type Database = {
             columns: ["parent_plan_id"]
             isOneToOne: false
             referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_promoted_definition_id_fkey"
+            columns: ["promoted_definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
             referencedColumns: ["id"]
           },
           {
@@ -59019,6 +58758,13 @@ export type Database = {
             foreignKeyName: "wf_recovery_audit_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_recovery_audit_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
@@ -59142,6 +58888,13 @@ export type Database = {
             foreignKeyName: "wf_run_definition_id_fkey"
             columns: ["definition_id"]
             isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
@@ -59234,6 +58987,13 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "runtime_surface_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "runtime_surface_definition_id_fkey"
             columns: ["definition_id"]
@@ -59402,6 +59162,13 @@ export type Database = {
           webhook_secret?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wf_trigger_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wf_trigger_definition_id_fkey"
             columns: ["definition_id"]
@@ -59617,6 +59384,57 @@ export type Database = {
       }
     }
     Views: {
+      card: {
+        Row: {
+          card_visibility: Database["platform"]["Enums"]["visibility"] | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          organization_id: string | null
+          step_count: number | null
+          tags: string[] | null
+          updated_at: string | null
+          variables: Json | null
+          version: number | null
+        }
+        Insert: {
+          card_visibility?: Database["platform"]["Enums"]["visibility"] | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          organization_id?: string | null
+          step_count?: never
+          tags?: string[] | null
+          updated_at?: string | null
+          variables?: Json | null
+          version?: number | null
+        }
+        Update: {
+          card_visibility?: Database["platform"]["Enums"]["visibility"] | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          organization_id?: string | null
+          step_count?: never
+          tags?: string[] | null
+          updated_at?: string | null
+          variables?: Json | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       v_definition_catalog: {
         Row: {
           category: string | null
@@ -59664,6 +59482,13 @@ export type Database = {
           run_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wf_run_definition_id_fkey"
             columns: ["definition_id"]
