@@ -836,6 +836,27 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-21 — **Every rail chip runs, and the pipeline exists at the SITE
+  level.** (1) `p1_keywords` joined `RUNNABLE_PIPELINE_STEPS` (the server's
+  step route now serves it — deterministic: it confirms the recorded keyword
+  into the one store, never chooses one). (2) `NodeStepRail` grew
+  `extraRunners`: the host hands in run arrows for steps whose producer is not
+  the step route — NodePanel wires p2→Deepen, p6→reality build/create,
+  p7→reality publish — so all seven chips are validated steps that actually
+  run, each through its existing canonical producer. (3) New
+  `SitePipelineStrip` renders the eight server-derived site stages (Research →
+  Plan → SEO strategy → Page content → **Design & components** → Development →
+  Draft → Live; aidream `content_plan/site_pipeline.py`, live-derived, never
+  stamped) in `PlanToolbar`'s KPI zone — the one-chrome-row ruling holds; the
+  strip replaces the built/live text with the richer truth, and each chip
+  jumps to the view where that stage's work happens (`useSitePipeline` +
+  `fetchSitePipeline`). (4) Rendered-shell inspection: `bridgeShellCheck`
+  (POST `/content-plan/sites/{id}/shell-check`) checks the RENDERED pages for
+  the site-level defects that break every page (missing header/menu, footer,
+  brand, stylesheet) plus title/meta/h1 basics; Setup rung 5 gained an
+  "Inspect rendered pages" button, and every real bulk publish returns the
+  same inspection automatically (`BridgePublishResult.shellCheck`, rendered in
+  `PublishSummary`).
 - 2026-08-20 — **A routed site the caller cannot read renders the Access Gate,
   never the empty workspace.** Once `useSiteOptions` settles (it is an
   unfiltered RLS read of every visible site), a `[siteId]` with no matching
