@@ -133,7 +133,18 @@ export function SiteGrowthLoopWorkspace() {
   return (
     <div className="flex flex-col gap-3 p-3">
       {!live && (
-        <SectionCard title="Growth loop">
+        // THE DOOR LAW — the door must NOT be conditional on a loop existing:
+        // "you decide each step, or hand it to an agent" is the pitch, so the
+        // way to choose that agent belongs here too, not only once running.
+        <SectionCard
+          title="Growth loop"
+          headerExtra={
+            <MandateDoorLink
+              feature="growth_loop"
+              label="Growth Loop agents"
+            />
+          }
+        >
           <div className="flex flex-col gap-3 p-3">
             <p className="max-w-2xl text-sm text-muted-foreground">
               The growth loop runs {site.name} end to end — learn the market,
