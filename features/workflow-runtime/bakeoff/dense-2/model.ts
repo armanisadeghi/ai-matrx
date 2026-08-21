@@ -147,17 +147,21 @@ export function freshestNodeId(
   let running: string | null = null;
   let failed: string | null = null;
   let lastDeliverable: string | null = null;
+  let lastSettled: string | null = null;
   for (const row of rows) {
     if (row.phase === "running" || row.phase === "retrying") {
       running = row.step.nodeId;
     }
     if (row.phase === "failed") failed = row.step.nodeId;
-    if (row.step.outputKind !== null && row.phase === "settled") {
-      lastDeliverable = row.step.nodeId;
+    if (row.phase === "settled") {
+      lastSettled = row.step.nodeId;
+      if (row.step.outputKind !== null) lastDeliverable = row.step.nodeId;
     }
   }
   if (running) return running;
   if (failed) return failed;
-  if (runOver && lastDeliverable) return lastDeliverable;
+  // Over with nothing failed: land on the last deliverable — or, for a
+  // workflow that declares none, the last step that produced anything.
+  if (runOver) return lastDeliverable ?? lastSettled;
   return null;
 }

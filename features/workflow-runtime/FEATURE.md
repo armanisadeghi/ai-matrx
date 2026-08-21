@@ -135,6 +135,20 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-21 — **ui-dense wave-2 bake-off entry: the operations-desk run page** at
+  `/workflows/bakeoff/dense-2/[id]` (`bakeoff/dense-2/**`) — a candidate
+  PRESENTATION only, consuming the canonical data layer unchanged (adoption,
+  selectors, `InvocationBody`, `DbEmitRenderer`, `RunFormFieldControl`,
+  `activity-copy`, `useWorkflowRunControls`). Three fixed panes: a plan ledger
+  with progressive condensation (contiguous finished stretches fold into one
+  "N steps done · time" line), ONE aimed auto-following focus pane — the only
+  streamed lane — and an activity rail; a facts strip and a promises strip on
+  top. Intake, live run and delivered result share the same geometry. Deleted
+  or promoted when the bake-off is judged. Fixed while building it: the shared
+  free test workflow 31318fb7… failed every run (its "Measure it" expression
+  used a generator expression the matrx-graph sandbox forbids); its expression
+  was repaired in the DB so every wave-2 entry can verify live.
+
 - 2026-08-21 — **ui-reimagine wave-2 bake-off entry: The Commission** at
   `/workflows/bakeoff/reimagine-2/[id]` (`bakeoff/reimagine-2/**`) — a
   candidate PRESENTATION only, consuming the canonical data layer unchanged
