@@ -158,7 +158,12 @@ CREATE OR REPLACE FUNCTION public.wfx_list_scoped(
 RETURNS TABLE(
   id uuid, name text, description text, category text, tags text[],
   is_active boolean, is_archived boolean, is_favorite boolean,
-  visibility text, created_by uuid, organization_id uuid,
+  visibility text,
+  -- The card's reach, INDEPENDENT of the body's. This is the column the Public
+  -- scope actually keys on, so the client must be able to see and manage it;
+  -- `visibility` alone can no longer explain why a row is in the Public tab.
+  card_visibility text,
+  created_by uuid, organization_id uuid,
   organization_name text, version integer,
   created_at timestamptz, updated_at timestamptz,
   step_count integer, run_count bigint,
@@ -205,7 +210,10 @@ BEGIN
     SELECT d.*, false, 'org'::text FROM workflow.definition d
     WHERE v_scope='orgs' AND d.created_by IS DISTINCT FROM v_uid
       AND d.organization_id IN (SELECT mo.org_id FROM my_orgs mo)
-      AND d.visibility IN ('internal','public')
+      -- 'public' is deliberately absent: the body-not-public invariant means
+      -- workflow.definition.visibility can never hold it. Listing it would
+      -- describe a state the DB refuses.
+      AND d.visibility = 'internal'
     UNION ALL
     SELECT d.*, false, perm.permission_level::text FROM workflow.definition d
     JOIN iam.permissions perm ON perm.resource_type='workflow' AND perm.resource_id=d.id
@@ -221,8 +229,21 @@ BEGIN
       AND NOT EXISTS (SELECT 1 FROM iam.permissions p2 WHERE p2.resource_type='workflow'
         AND p2.resource_id=d.id AND p2.granted_to_user_id=v_uid)
     UNION ALL
+    -- THE PUBLIC SCOPE LISTS CARDS, NOT BODIES.
+    -- Arman's ruling 2026-08-20: workflows adopt the agent sharing model, so a
+    -- workflow BODY is never public (workflow_definition_body_not_public_chk
+    -- enforces it at the DB edge). Keying this arm on d.visibility therefore
+    -- made the Public tab empty BY CONSTRUCTION -- not a data gap, a modelling
+    -- bug. The public face is the CARD, gated by card_visibility.
+    --
+    -- Reading workflow.definition here rather than workflow.card is safe and
+    -- deliberate: this function is SECURITY DEFINER and its RETURNS TABLE
+    -- exposes only card-safe columns (name/description/category/tags/counts) --
+    -- never nodes, edges or channels. It is the card's projection, computed at
+    -- the same place the other three scopes are.
     SELECT d.*, false, 'public'::text FROM workflow.definition d
-    WHERE v_scope='public' AND d.created_by IS DISTINCT FROM v_uid AND d.visibility='public'
+    WHERE v_scope='public' AND d.created_by IS DISTINCT FROM v_uid
+      AND d.card_visibility='public'
   ),
   joined AS (
     SELECT s.*,
@@ -314,7 +335,8 @@ BEGIN
   counted AS (SELECT s.*, count(*) OVER () AS s_total FROM scored s)
   SELECT c.id, c.name, c.description, c.category,
     coalesce(c.tags, ARRAY[]::text[]), c.is_active, c.is_archived, c.is_favorite,
-    c.visibility::text, c.created_by, c.organization_id, c.s_org_name, c.version,
+    c.visibility::text, c.card_visibility::text,
+    c.created_by, c.organization_id, c.s_org_name, c.version,
     c.created_at, c.updated_at, c.s_steps, c.s_runs,
     c.s_last_run_id, c.s_last_run_status, c.s_last_run_at,
     c.s_is_owner, c.s_access, c.s_owner_email, c.s_total

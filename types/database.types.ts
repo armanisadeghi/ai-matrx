@@ -37695,6 +37695,7 @@ export type Database = {
         }
         Returns: {
           access_level: string
+          card_visibility: string
           category: string
           created_at: string
           created_by: string
