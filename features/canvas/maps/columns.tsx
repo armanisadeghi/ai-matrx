@@ -32,7 +32,7 @@ export const MAP_COLUMNS: EntityColumnSpec<MapListRow>[] = [
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.title}</span>
-          {row.is_public && (
+          {row.visibility === "public" && (
             <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
               Shared
             </Badge>

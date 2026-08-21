@@ -36,7 +36,7 @@ import {
 
 /** Columns the list needs. `content` comes along for the box/arrow counts. */
 const LIST_COLUMNS =
-  "id,title,description,content,tags,is_favorited,is_archived,is_public,created_at,updated_at";
+  "id,title,description,content,tags,is_favorited,is_archived,visibility,created_at,updated_at";
 
 const SORTABLE: Record<string, string> = {
   title: "title",
@@ -60,7 +60,7 @@ function toRow(raw: Record<string, unknown>): MapListRow {
     arrow_count: diagram?.edges.length ?? 0,
     is_favorited: raw.is_favorited === true,
     is_archived: raw.is_archived === true,
-    is_public: raw.is_public === true,
+    visibility: typeof raw.visibility === "string" ? raw.visibility : "internal",
     tags: Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : "",
     created_at: typeof raw.created_at === "string" ? raw.created_at : "",
@@ -196,7 +196,7 @@ export async function getMap(id: string): Promise<{
       tags: data.tags,
       is_favorited: data.is_favorited,
       is_archived: data.is_archived,
-      is_public: data.is_public,
+      visibility: data.visibility,
       created_at: data.created_at,
       updated_at: data.updated_at,
     }),
