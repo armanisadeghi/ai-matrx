@@ -115,8 +115,40 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
         // a user mutation flushes: the serialized body shape is the policy's
         // stable contract, and round-tripping through the slice is the job of
         // the reducer's REHYDRATE case, not the persistence tier.
+        //
+        // GUARD: an INSUFFICIENT fetch result must never clobber the cache.
+        // `remote.cacheSatisfies` is the policy's own definition of "this
+        // record is an answer"; a result that fails it is the ABSENCE of an
+        // answer (e.g. resolveActiveOrgContext's deliberate `organization_id:
+        // null` nudge when a multi-org user has no default preference). The
+        // REHYDRATE reducer already refuses to blank live Redux state on such
+        // a result — but until this guard, the cache-warm below overwrote the
+        // user's persisted selection with the hollow record, so every reload
+        // booted org-less and nudged the user to pick again (the recurring
+        // "my organization didn't stick" class).
+        const satisfies = policy.config.remote?.cacheSatisfies;
+        let resultSufficient = true;
+        if (typeof satisfies === "function") {
+            try {
+                resultSufficient = satisfies(state) === true;
+            } catch (err) {
+                // A throwing predicate blocks the warm — never risk replacing
+                // a good record on an undecidable answer.
+                resultSufficient = false;
+                logger.error("fallback.cacheSatisfies.threw", {
+                    sliceName: policy.config.sliceName,
+                    meta: { error: extractErrorMessage(err) },
+                });
+            }
+        }
         const caps = getPreset(policy.config.preset);
-        if (caps.storageTier === "idb") {
+        if (caps.storageTier === "idb" && !resultSufficient) {
+            logger.info("fallback.cache.skipInsufficient", {
+                sliceName: policy.config.sliceName,
+                meta: { reason },
+            });
+        }
+        if (caps.storageTier === "idb" && resultSufficient) {
             try {
                 await writeSlice(
                     startIdentity.key,

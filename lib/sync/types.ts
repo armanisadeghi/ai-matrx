@@ -152,6 +152,16 @@ export interface PolicyConfig<TState = unknown> {
          * immediately instead of at `staleAfter`. Only legal with
          * `remote.fetch`. Must be pure and must never throw (a throw is
          * treated as "not sufficient" and logged).
+         *
+         * SECOND DUTY (2026-08-20): the same predicate guards the cache-WARM
+         * after a `remote.fetch`. A fetch result that fails it is treated as
+         * the absence of an answer and is dispatched to Redux but NOT
+         * persisted — an insufficient result must never clobber a sufficient
+         * cached record (appContext org: the stale-refresh "no default org →
+         * null" nudge was overwriting the user's persisted active-org
+         * selection, so every reload booted org-less). The predicate is
+         * evaluated against the post-`deserialize` fetch result, so keep it
+         * total over partial state — read fields with `?.`.
          */
         cacheSatisfies?: (state: TState) => boolean;
     };
