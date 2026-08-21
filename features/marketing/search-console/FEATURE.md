@@ -358,6 +358,40 @@ class into it (`Classify →` / `Review →`,
   truth layer beside it. Never fork a second write path for classes —
   extend `gsc_set_keyword_class`.
 
+## Universal facets — the backfill strip (2026-08-21)
+
+**Two planes, two bands, never merged.** `ClassStatsBand` is the SITE's traffic classes
+(money / educational / brand / mismatch — this site's rulings). `FacetBackfillStrip`
+directly beneath it is the UNIVERSAL plane: the 13 intent facets on `seo.keyword`, one
+classification per phrase shared by every tenant (P3), which every rule in the Keyword
+Value System reads. A site ruling and a platform-wide fact are not the same kind of truth,
+so they never share a band.
+
+**Why it exists.** On 2026-08-21 only 1,835 of 196,483 keyword rows carried facets, so
+`free_seeking ⇒ ×0.2` and every sibling value rule was a silent no-op — and no screen said
+so. Same failure mode as the five dead days of GSC ingestion that produced
+`IngestionHealthBanner`: recorded everywhere, surfaced nowhere.
+
+**Server state, not tab state.** The strip renders
+`seo.keyword_classification_status(site_id, min_impressions)`. A tab closed mid-pass
+returns to the true number and a second tab agrees with the first, because the progress
+lives in `seo.keyword_classification_queue`, not in this document. "Classify next"
+advances that ledger by one bounded pass
+(`POST /seo/keywords/classification/backfill`) — it does not own a loop.
+
+**The headline is clicks.** ~68,000 GSC-active keywords, of which ~1,400 have ever earned
+a click, so "2% of keywords" and "52% of Search Console clicks" are both true and only one
+describes the business. Click coverage is the primary meter; keyword coverage is the quiet
+second one, because a percentage that can only crawl is not a progress bar anyone believes.
+
+**The demand floor is reported, never silent.** Keywords below the
+`seo.keyword_classification.min_impressions` knob are shown as held back — not classified
+and not counted as done. The strip reads that knob (`fetchFeatureKnobValues`) rather than
+assuming a number, so what it reports is what the server is actually applying.
+
+Cross-repo SoR: `../../../../common-docs/systems/marketing/seo/seo-keywords/value-system.md`.
+Server half: `aidream/services/seo/keyword_classification_backfill.py`.
+
 ## KW business guidelines — the doctrine the AI classifies under (2026-08-21)
 
 D35, ratified by Arman 2026-08-21: *"the agent wouldn't know CRT is a horrible
@@ -586,6 +620,13 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-21 — **Universal-facet backfill strip** (§ above): the classification
+  workbench gained a server-state band for the 13-facet plane, reading
+  `seo.keyword_classification_status()` and driving the durable backfill ledger
+  through one bounded pass per press. Verified live on datadestruction.com —
+  Search Console click coverage moved 13.9% → 52.2% off a single 40-keyword
+  batch. The aidream endpoint it calls is not yet deployed; until it is, the
+  reads are live and the button reports the server's 404 rather than pretending.
 - 2026-08-21 — **KW business guidelines** (§ above): per-site prose document on
   `web.site.settings.kw_guidelines` behind one read + one write RPC, an editor
   panel in the classification workbench, read-only surfacing in the value
