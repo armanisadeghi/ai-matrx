@@ -16,6 +16,7 @@
 // confident wrong total (FOUND_DEFECTS D190).
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import {
   providerAccountIdentity,
@@ -125,7 +126,7 @@ export async function readSyncState(): Promise<SyncStateSnapshot> {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
-  if (authError) throw new Error(authError.message);
+  if (authError) throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Sign in to see your sync state.");
 
   const rows = await readAllRows<SyncRow>(

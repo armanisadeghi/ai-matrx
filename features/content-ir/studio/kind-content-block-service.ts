@@ -18,6 +18,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase as browserSupabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { operationFailed } from "@/utils/errors";
 import type { Database } from "@/types/database.types";
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
 
@@ -30,7 +31,7 @@ export interface AdminUpsertContentBlockResult {
 
 /**
  * Store (or regenerate in place) a platform kind's teaching content block.
- * Super-admin only — the RPC raises `42501` for anyone else, surfaced verbatim.
+ * Super-admin only — the RPC raises `42501` for anyone else.
  */
 export async function adminUpsertKindContentBlock(
   client: SupabaseClient<Database>,
@@ -49,7 +50,7 @@ export async function adminUpsertKindContentBlock(
       p_metadata: { tier: block.tier },
     });
   if (error) {
-    throw new Error(error.message);
+    throw operationFailed("save this kind's content block", error);
   }
   const row =
     typeof data === "object" && data !== null && !Array.isArray(data)

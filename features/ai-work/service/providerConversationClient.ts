@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import {
   normalizeProviderMessage,
   PROVIDER_MESSAGE_COLUMNS,
@@ -77,7 +78,7 @@ export async function fetchEarlierProviderMessages(
       message: error.message,
       code: error.code,
     });
-    throw new Error(error.message);
+    throw operationFailed("load earlier messages", error);
   }
 
   return {
@@ -118,7 +119,7 @@ export async function fetchNewerProviderMessages(
       message: error.message,
       code: error.code,
     });
-    throw new Error(error.message);
+    throw operationFailed("load new messages", error);
   }
 
   return data.map(normalizeProviderMessage);
