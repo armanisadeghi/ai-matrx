@@ -196,10 +196,11 @@ export type VaultTransferResponse = ApiSchemas["VaultTransferResponse"];
 
 /** URL matching rule for browser fill. `host` = same host, any path;
  *  `exact` = same host AND path; `never` = this item is never auto-filled. */
-export type UriMatchMode = "host" | "exact" | "never";
+export type UriMatchMode = "host" | "domain" | "exact" | "never";
 
 export const URI_MATCH_MODE_LABELS: Record<UriMatchMode, string> = {
   host: "Any page on this site",
+  domain: "This site and its sister sites (e.g. all of google.com)",
   exact: "Only this exact URL",
   never: "Never fill automatically",
 };
