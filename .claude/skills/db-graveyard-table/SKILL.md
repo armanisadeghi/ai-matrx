@@ -8,27 +8,22 @@ description: Retire a live table during the 2026 Matrx DB transition by moving i
 Goal: get the table **offline and reversible** (`SET SCHEMA graveyard`, never `DROP`), then erase every reference. **Getting it offline is priority #1; reference cleanup follows and must not block the move.** Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`.
 
 ## Step 1 — Discover every reference (this is the real work)
-Run all of these (`execute_sql`) and grep both repos. Record the hit list.
+
+**🚨 THE ORACLE FIRST — `audit.relation_usage(schema, table)` (built 2026-08-20, graveyard-sweep postmortem).** One call returns EVERY DB-side mention: inbound/outbound FKs, dependent views/matviews **recursively** (each dependent view joins the closure, so its consumers are found too), triggers on it, every function/procedure body (qualified vs bare matches labeled), RLS policy expressions on other tables, trigger string-arguments (`_version_capture` tokens, org-inherit args), cron jobs, realtime publications, and the entity/shareable/deprecation registries.
+
 ```sql
--- inbound FKs (tables that point AT this one)
-select conrelid::regclass as referencing_table, conname, pg_get_constraintdef(oid) as def
-from pg_constraint where confrelid = 'public.<table>'::regclass and contype='f';
+select * from audit.relation_usage('<schema>', '<table>') order by via, kind, ref;
+```
 
--- functions / RPCs that mention it (broad; expect false positives, read each)
-select n.nspname, p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-where pg_get_functiondef(p.oid) ilike '%<table>%';
+The transitive hop is the whole point: single-hop name searches missed `graveyard.prompt_builtins` → `public.context_menu_unified_view` → `get_ssr_shell_data` (a LIVE session hydrator) in the 2026-08-20 sweep — the table name appears nowhere in the function, only the view's name does. Never substitute a plain `pg_proc ilike` scan for this call. `function_body_bare` rows can be same-named objects in another schema — read each; `function_body_qualified` rows are certain.
 
--- views that mention it
-select schemaname, viewname from pg_views where definition ilike '%<table>%';
+Two checks the oracle does not cover:
 
--- is it registered as a platform entity / shareable / in associations?
-select * from platform.entity_types where table_name='<table>';
-select * from platform.shareable_resource_registry where table_name='<table>';
-
+```sql
 -- is anything still actually reading it? (needs pg_stat_statements)
 select calls, query from pg_stat_statements where query ~* '\m<table>\M' order by calls desc limit 20;
 ```
-Code (both repos): grep `<table>` for `.from('<table>')`, `.schema(...).from('<table>')`, generated type names, Python model/manager names (`aidream/db/models*.py`, `db/managers/**`), package wiring in `aidream/package_integration.py`, **and raw SQL strings** (`from <table>`, `SELECT 1 FROM <table>` ACL joins in `.py`/`.sql`).
+Code (both repos): grep `<table>` for `.from('<table>')`, `.schema(...).from('<table>')`, generated type names, Python model/manager names (`aidream/db/models*.py`, `db/managers/**`), package wiring in `aidream/package_integration.py`, **and raw SQL strings** (`from <table>`, `SELECT 1 FROM <table>` ACL joins in `.py`/`.sql`). **Also grep for every `ref` the oracle returned** — a dependent view or RPC it surfaces can be called from code by ITS name with the table name appearing nowhere in the repo.
 
 > **A 0-row table can still be LIVE.** Verified: `note_shares` had 0 rows but was joined by RAG-search ACL (`matrx-rag/search.py: SELECT 1 FROM public.note_shares`) — graveyarding it turned an empty result into a missing-relation error, breaking search. **Row count ≠ usage.** The query string is what breaks; grep it before you move. (Recovery: `alter table graveyard.<t> set schema public` — reversible, which is why we never `DROP`.)
 
