@@ -66,17 +66,19 @@ export function ResearchMediaImage({
   item,
   className,
   fit = "cover",
+  alt,
 }: {
   item: ResearchMedia;
   className?: string;
   fit?: "cover" | "contain" | "fill";
+  alt?: string;
 }) {
   return (
     <InlineMediaRef
       ref={researchMediaRef(item)}
       size="fill"
       fit={fit}
-      alt={item.alt_text || ""}
+      alt={alt ?? item.alt_text ?? ""}
       as="img"
       fallback="icon"
       rounded="none"

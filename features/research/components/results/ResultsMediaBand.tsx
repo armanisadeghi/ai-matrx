@@ -101,6 +101,7 @@ function MediaTile({
             URL. Both go through the one renderer. */}
         <ResearchMediaImage
           item={image}
+          alt={label}
           className="h-full w-full transition-transform duration-300 group-hover:scale-105"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />

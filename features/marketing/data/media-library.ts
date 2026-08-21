@@ -27,6 +27,13 @@ type ResearchMediaRow =
 
 export interface ResearchImageRow {
   id: string;
+  /**
+   * `cld_files` identity when the row is an artifact WE store (the research
+   * upload sink). NULL for an image discovered on a page. Render owned rows
+   * from this id — `url` then holds only a durable pointer (the CDN URL for a
+   * public file, else the bare file_id), never a followable link.
+   */
+  fileId: string | null;
   url: string;
   thumbnailUrl: string | null;
   alt: string | null;
@@ -46,6 +53,10 @@ export interface ResearchImageRow {
 const RESEARCH_IMAGE_LIMIT = 600;
 
 interface ResearchMediaJoinedRow extends ResearchMediaRow {
+  // `file_id` landed in migration 0434, newer than the checked-in generated
+  // `Database` types; declared here so this file compiles before they are
+  // regenerated (the column is selected below and always present).
+  file_id: string | null;
   rs_source: {
     id: string;
     url: string | null;
@@ -70,7 +81,7 @@ export async function fetchResearchImages(
     .schema("research")
     .from("rs_media")
     .select(
-      "id, url, thumbnail_url, alt_text, caption, width, height, is_relevant, created_at, topic_id, source_id, rs_source(id, url, hostname, title), rs_topic(id, name)",
+      "id, file_id, url, thumbnail_url, alt_text, caption, width, height, is_relevant, created_at, topic_id, source_id, rs_source(id, url, hostname, title), rs_topic(id, name)",
     )
     .eq("organization_id", organizationId)
     .eq("media_type", "image")
@@ -83,6 +94,7 @@ export async function fetchResearchImages(
   const rows = (response.data ?? []) as unknown as ResearchMediaJoinedRow[];
   return rows.map((row) => ({
     id: row.id,
+    fileId: row.file_id,
     url: row.url,
     thumbnailUrl: row.thumbnail_url,
     alt: row.alt_text,

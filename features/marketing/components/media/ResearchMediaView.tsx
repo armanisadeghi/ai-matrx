@@ -29,6 +29,11 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { MediaEmptyState } from "@/features/marketing/components/media/SnapshotMediaGallery";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import {
+  fileIdToMediaRef,
+  urlToMediaRef,
+} from "@/features/files/redux/converters";
 import type { ResearchImageRow } from "@/features/marketing/data/media-library";
 
 function hostnameOf(url: string | null): string | null {
@@ -225,12 +230,21 @@ export function ResearchMediaView({
                 className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card"
               >
                 <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/40">
-                  {/* Third-party research asset — external URL, no file_id. */}
-                  <img
-                    src={row.thumbnailUrl || row.url}
+                  {/* Owned uploads resolve from their file_id (the reader
+                      re-mints); third-party assets render their external
+                      URL. */}
+                  <InlineMediaRef
+                    ref={
+                      row.fileId
+                        ? fileIdToMediaRef(row.fileId)
+                        : urlToMediaRef(row.thumbnailUrl || row.url)
+                    }
+                    size="fill"
+                    fit="cover"
+                    as="img"
+                    rounded="none"
                     alt={row.alt ?? ""}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
+                    className="h-full w-full"
                   />
                 </div>
                 <div className="space-y-0.5 p-1.5">
