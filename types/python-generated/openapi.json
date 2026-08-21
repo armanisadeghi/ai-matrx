@@ -15187,7 +15187,7 @@
           "SEO Collections"
         ],
         "summary": "Generate Press Story Angles",
-        "description": "Find what is genuinely newsworthy about this business.\n\nComposes a closed evidence bundle from platform truth the site already owns,\nasks the mandated Press Story Analyst which angles a journalist would care\nabout, then applies deterministic gates before anything persists. An angle\nclaiming `pitch_now` while it still has missing evidence is downgraded, never\nshipped.",
+        "description": "Find what is genuinely newsworthy about this business — a DURABLE\nstreamed command.\n\nComposes a closed evidence bundle from platform truth the site already owns,\nasks the mandated Press Story Analyst which angles a journalist would care\nabout, then applies deterministic gates before anything persists. An angle\nclaiming `pitch_now` while it still has missing evidence is downgraded, never\nshipped.\n\nStreamed because the analyst pass is minutes of paid model work (measured\n~4.5 min live on 2026-08-21) and the production gateway severs a synchronous\nresponse at 60s — the old JSON route completed server-side behind an HTTP\n504 the client could only read as failure. Rejoin with\n``POST /seo/collections/{run_id}/rejoin``.",
         "operationId": "generate_press_story_angles_seo_sites__site_id__press_angles_generate_post",
         "parameters": [
           {
@@ -15215,9 +15215,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StoryAngleGenerateResult"
-                }
+                "schema": {}
               }
             }
           },
@@ -147762,6 +147760,9 @@
                     "$ref": "#/components/schemas/RobotsCheckResult"
                   },
                   {
+                    "$ref": "#/components/schemas/StoryAngleGenerateResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/StructuredDataValidateResult"
                   }
                 ],
@@ -147779,6 +147780,7 @@
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
                     "pages.analyze": "#/components/schemas/PageAnalysisResult",
                     "pages.map_keywords": "#/components/schemas/PageKeywordMapResult",
+                    "press.story_angles.generate": "#/components/schemas/StoryAngleGenerateResult",
                     "public.page_audit": "#/components/schemas/PageAuditResult",
                     "public.robots_check": "#/components/schemas/RobotsCheckResult",
                     "public.structured_data_validate": "#/components/schemas/StructuredDataValidateResult",
@@ -154147,6 +154149,12 @@
       },
       "StoryAngleGenerateResult": {
         "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "press.story_angles.generate",
+            "title": "Result Kind",
+            "default": "press.story_angles.generate"
+          },
           "kept": {
             "type": "integer",
             "title": "Kept"
@@ -154154,6 +154162,21 @@
           "dropped": {
             "type": "integer",
             "title": "Dropped"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated",
+            "default": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged",
+            "default": 0
           },
           "gates": {
             "items": {

@@ -6250,13 +6250,20 @@ export interface paths {
         put?: never;
         /**
          * Generate Press Story Angles
-         * @description Find what is genuinely newsworthy about this business.
+         * @description Find what is genuinely newsworthy about this business — a DURABLE
+         *     streamed command.
          *
          *     Composes a closed evidence bundle from platform truth the site already owns,
          *     asks the mandated Press Story Analyst which angles a journalist would care
          *     about, then applies deterministic gates before anything persists. An angle
          *     claiming `pitch_now` while it still has missing evidence is downgraded, never
          *     shipped.
+         *
+         *     Streamed because the analyst pass is minutes of paid model work (measured
+         *     ~4.5 min live on 2026-08-21) and the production gateway severs a synchronous
+         *     response at 60s — the old JSON route completed server-side behind an HTTP
+         *     504 the client could only read as failure. Rejoin with
+         *     ``POST /seo/collections/{run_id}/rejoin``.
          */
         post: operations["generate_press_story_angles_seo_sites__site_id__press_angles_generate_post"];
         delete?: never;
@@ -56797,7 +56804,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -59304,10 +59311,30 @@ export interface components {
          * @description Durable result shared by the HTTP route and workflow node.
          */
         StoryAngleGenerateResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "press.story_angles.generate";
             /** Kept */
             kept: number;
             /** Dropped */
             dropped: number;
+            /**
+             * Created
+             * @default 0
+             */
+            created?: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated?: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged?: number;
             /** Gates */
             gates?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -77435,7 +77462,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StoryAngleGenerateResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
