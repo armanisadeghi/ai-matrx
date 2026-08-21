@@ -90,51 +90,28 @@ WITH (security_invoker = false) AS
 -- anonymous visitor may read.
 GRANT SELECT ON workflow.card TO anon, authenticated;
 
--- 4. Register the card's canonical entity identity before making it shareable.
---    The shareable registry guard requires every resource_type to already be
---    a live platform.entity_types token.
-INSERT INTO platform.entity_types (
-  token, schema_name, table_name, label,
-  is_component, is_active, is_listed
-) VALUES (
-  'workflow_card', 'workflow', 'card', 'Workflow Card',
-  true, true, false
-)
-ON CONFLICT (token) DO UPDATE SET
-  schema_name = EXCLUDED.schema_name,
-  table_name  = EXCLUDED.table_name,
-  label       = EXCLUDED.label,
-  is_component = EXCLUDED.is_component,
-  is_active   = true;
+-- 4. Link sharing stays on the canonical `workflow` entity and its base table.
+--    Views cannot be active entity types (they own no rows and have no RLS), so
+--    the card is the browse projection while the registry's strict allowlist is
+--    the share projection. The workflow graph remains excluded.
+DO $$
+BEGIN
+  UPDATE platform.shareable_resource_registry
+  SET public_columns = ARRAY[
+        'id','name','description','category','tags','variables',
+        'is_active','version','created_at','updated_at','created_by','organization_id'
+      ],
+      is_link_shareable = true,
+      notes = 'Workflow sharing exposes card-safe definition fields only. Nodes, edges, viewport, channels, entry_nodes, and metadata are excluded.',
+      updated_at = now()
+  WHERE resource_type = 'workflow'
+    AND schema_name = 'workflow'
+    AND table_name = 'definition';
 
--- 5. Register the card as a shareable resource, alongside agent_card.
-INSERT INTO platform.shareable_resource_registry (
-  resource_type, schema_name, table_name, id_column, owner_column,
-  is_public_column, display_label, url_path_template,
-  rls_uses_has_permission, is_active, content_role, is_scopeable,
-  public_columns, is_link_shareable, notes
-) VALUES (
-  'workflow_card', 'workflow', 'card', 'id', 'created_by',
-  NULL, 'Workflow Card', '',
-  true, true, 'utility', false,
-  ARRAY['id','name','description','category','tags','variables','step_count','created_at','updated_at'],
-  true,
-  'The public face of a workflow. The definition body (nodes/edges) is never public — workflow_definition_body_not_public_chk enforces it.'
-)
-ON CONFLICT (resource_type) DO UPDATE SET
-  schema_name             = EXCLUDED.schema_name,
-  table_name              = EXCLUDED.table_name,
-  id_column               = EXCLUDED.id_column,
-  owner_column            = EXCLUDED.owner_column,
-  display_label           = EXCLUDED.display_label,
-  rls_uses_has_permission = EXCLUDED.rls_uses_has_permission,
-  is_active               = EXCLUDED.is_active,
-  content_role            = EXCLUDED.content_role,
-  is_scopeable            = EXCLUDED.is_scopeable,
-  public_columns          = EXCLUDED.public_columns,
-  is_link_shareable       = EXCLUDED.is_link_shareable,
-  notes                   = EXCLUDED.notes,
-  updated_at              = now();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'wfx_card: canonical workflow share registry row is missing';
+  END IF;
+END $$;
 
 COMMIT;
 
