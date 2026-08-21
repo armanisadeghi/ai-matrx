@@ -69,6 +69,7 @@ export const forkAndResubmitFromMessage = createAsyncThunk<
     const sourceMessage = sourceEntry?.byId?.[messageId];
     if (!sourceMessage) {
       return rejectWithValue({
+        // access-errors: ok — browser-local Redux lookup; the message is absent from the loaded conversation slice, no record read involved
         message: `Message ${messageId} not found in conversation ${conversationId}`,
       });
     }

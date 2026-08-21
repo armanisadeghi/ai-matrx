@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { isJsonObject, type JsonValue } from "@/types/json";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -164,7 +165,12 @@ export function MandateOverrideEditor({
       if (!payload.isReady) {
         setContractCheck({
           status: "error",
-          message: "Agent not found, or you don't have access to it.",
+          message: recordUnavailable({
+            entity: "agent",
+            reason: "unknown",
+            recordId: candidateId,
+            token: "agent",
+          }).message,
         });
         return;
       }

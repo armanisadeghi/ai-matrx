@@ -28,7 +28,8 @@ export function LookupError({
     status === 404
       ? "The WC ratings router isn't deployed on the active server. Switch to a backend that has it (e.g. localhost:8000)."
       : status === 401 || status === 403
-        ? "You don't have access to this endpoint. Sign in or check your session."
+        ? // access-errors: ok — keyed on a verified HTTP 401/403 the ratings backend returned for this endpoint call, not a guess about a record read
+          "You don't have access to this endpoint. Sign in or check your session."
         : `Check that the rating engine backend is reachable.`;
 
   return (

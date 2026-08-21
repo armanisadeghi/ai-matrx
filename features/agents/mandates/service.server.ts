@@ -21,6 +21,7 @@ import "server-only";
 
 import { createClient } from "@/utils/supabase/server";
 import { isJsonObject } from "@/types/json";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { toLlmParams } from "./llm-params";
 import { parseMandateContract } from "./contract";
 import type { ResolvedMandate } from "./service";
@@ -40,9 +41,12 @@ export async function resolveMandateServer(
     .maybeSingle();
   if (error) throw error;
   if (!mandate) {
-    throw new Error(
-      `mandate "${mandateKey}" not found — it must be declared server-side and seeded (see mandates FEATURE.md)`,
-    );
+    throw recordUnavailable({
+      entity: "mandate",
+      reason: "unknown",
+      recordId: mandateKey,
+      relation: "agent.mandate",
+    });
   }
   if (!mandate.is_enabled) {
     throw new Error(`mandate "${mandateKey}" is disabled`);

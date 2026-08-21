@@ -22,6 +22,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
@@ -164,7 +165,12 @@ export async function fetchMandatePickerData(
     .maybeSingle();
   if (error) throw error;
   if (!mandate) {
-    throw new Error(`mandate "${mandateKey}" not found — declare it server-side first`);
+    throw recordUnavailable({
+      entity: "mandate",
+      reason: "unknown",
+      recordId: mandateKey,
+      relation: "agent.mandate",
+    });
   }
 
   let defaultAgentId = mandate.default_agent_id;

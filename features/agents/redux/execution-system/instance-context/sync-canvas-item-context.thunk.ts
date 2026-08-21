@@ -19,6 +19,7 @@ import {
 } from "@/features/canvas/hooks/useCanvasItem";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -126,7 +127,13 @@ export const syncCanvasItemContextFromAgentThunk = createAsyncThunk<
         : await canvasArtifactService.getById(artifactId);
 
     if (!latest) {
-      return rejectWithValue({ message: "canvas item not found" });
+      return rejectWithValue({
+        message: recordUnavailable({
+          entity: "canvas item",
+          reason: "unknown",
+          recordId: artifactId,
+        }).message,
+      });
     }
 
     const prev =

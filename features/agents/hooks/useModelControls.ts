@@ -229,6 +229,7 @@ export function useModelControls(
   if (!selectedModel) {
     // Only log error if we have models loaded but still can't find the ID
     if (models.length > 0) {
+      // access-errors: ok — dev console log; the id was checked against the already-loaded browser-local models array
       console.error("Model not found:", {
         selectedModelId,
         availableModelIds: models.map((m) => m.id),
@@ -238,6 +239,7 @@ export function useModelControls(
     return {
       normalizedControls: null,
       selectedModel: null,
+      // access-errors: ok — the id was checked against the already-loaded browser-local models array, not a record read
       error: `Model not found: ${selectedModelId}`,
     };
   }

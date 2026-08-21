@@ -364,6 +364,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   const state = getState() as RootState;
   const shortcut = getShortcutRecordFromState(state, shortcutId);
 
+  // access-errors: ok — browser-local Redux lookup; the shortcut is absent from the loaded store, no record read involved
   if (!shortcut) throw new Error(`Shortcut ${shortcutId} not found`);
 
   // ──────────────────────────────────────────────────────────────────────
@@ -773,6 +774,7 @@ export const startNewConversation = createAsyncThunk<
     const instance =
       state.conversations.byConversationId[currentConversationId];
     if (!instance) {
+      // access-errors: ok — browser-local Redux lookup; the instance is absent from the loaded store, no record read involved
       throw new Error(`Conversation ${currentConversationId} not found`);
     }
 
@@ -933,6 +935,7 @@ export const startNewConversationAndExecute = createAsyncThunk<
     const instance =
       state.conversations.byConversationId[currentConversationId];
     if (!instance) {
+      // access-errors: ok — browser-local Redux lookup; the instance is absent from the loaded store, no record read involved
       throw new Error(`Conversation ${currentConversationId} not found`);
     }
     const { agentId, origin, sourceFeature } = instance;
@@ -1098,6 +1101,7 @@ export const splitInputIntoNewConversation = createAsyncThunk<
     const instance =
       state.conversations.byConversationId[currentConversationId];
     if (!instance) {
+      // access-errors: ok — browser-local Redux lookup; the instance is absent from the loaded store, no record read involved
       throw new Error(`Conversation ${currentConversationId} not found`);
     }
     const { agentId, origin, sourceFeature } = instance;

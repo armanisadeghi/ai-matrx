@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Organization } from "../../types";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail, useOrgRoster } from "../hooks";
 import { ReassignResourcesDialog, type ReassignCandidate } from "./ReassignResourcesDialog";
 
@@ -53,7 +54,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
     return (
       <div className="p-4 md:p-6">
         <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
-          {error ?? "Member not found."}
+          {error ?? recordUnavailableMessage("member", "unknown")}
         </Card>
       </div>
     );

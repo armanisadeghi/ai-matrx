@@ -231,7 +231,7 @@ export function buildRebindFixBrief({
     `1. If it is only a NAME difference, add a mapping. Do NOT rename anything in code.`,
     `2. If the agent should own the variable, declare it on the agent (and update its prompt to use it).`,
     `3. If the value only needs to be SEEN, pass it in user_input as "Name: value" — mark it as a caution to clean up later.`,
-    `4. If the value genuinely does not exist in the calling code path, write the code that supplies it.`,
+    `4. If the value genuinely does not exist in the calling code path, write the code that supplies it.`, // access-errors: ok — instruction text authored for a coding agent about a code variable, not access copy about a record
     ``,
     `REQUIREMENTS:`,
     `- Update EVERY call site, not just the one you found first.`,

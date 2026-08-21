@@ -605,7 +605,7 @@ export const canvasArtifactService = {
         if (conversationErr || !conversation) {
           console.error(
             "[canvasArtifactService.upsertDiscoveryIndex] conversation lookup error:",
-            conversationErr ?? "conversation not found",
+            conversationErr ?? "zero-row conversation read",
           );
           return null;
         }

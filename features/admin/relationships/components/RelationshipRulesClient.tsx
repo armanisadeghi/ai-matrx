@@ -134,7 +134,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
     if (rule) {
       openEditInSidePanel(rule);
     } else {
-      toast.error(`Rule not found: ${initialEditKey}`);
+      toast.error(`Rule not found: ${initialEditKey}`); // access-errors: ok — verified absence: the key is matched against the complete in-memory registry the admin RPC returned, not an ambiguous DB read
     }
     const params = new URLSearchParams(window.location.search);
     params.delete("edit");

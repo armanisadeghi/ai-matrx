@@ -633,6 +633,7 @@ export interface SetContextValueResult {
 // Service methods always return this — they never throw to callers.
 
 export type ScopesRpcErrorCode =
+  // access-errors: ok — error-code union member mirroring the RPC contract, never rendered as copy
   | "unauthorized"
   | "forbidden_org"
   | "forbidden_role"

@@ -212,7 +212,7 @@ export class ContextVersionManager {
   resetToVersion(versionNumber: number): ContextVersion {
     const targetVersion = this.versions.find(v => v.version === versionNumber);
     if (!targetVersion) {
-      throw new Error(`Version ${versionNumber} not found`);
+      throw new Error(`Version ${versionNumber} not found`); // access-errors: ok — in-memory version array lookup; .find verified no such version exists locally
     }
     
     // Mark all as not current

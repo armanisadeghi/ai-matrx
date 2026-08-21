@@ -1,6 +1,7 @@
 "use client";
 
 import type { Database } from "@/types/database.types";
+import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 
 export type AssistProducerPolicy =
@@ -16,7 +17,7 @@ export async function listAssistProducerPolicies(): Promise<
     .select("*")
     .order("feature_key")
     .order("display_name");
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load the assist producer policies", error);
   return data ?? [];
 }
 
@@ -60,6 +61,6 @@ export async function updateAssistProducerPolicy(
       p_expected_version: row.version,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this assist policy", error);
   return data;
 }

@@ -105,6 +105,203 @@ export interface BridgePublishResult {
   items: BridgePublishItem[];
   statusesAdvanced: string[];
   warnings: string[];
+  /** Post-publish structural inspection of what just went live (server-run). */
+  shellCheck: ShellCheckSummary | null;
+}
+
+// ── rendered-shell inspection (aidream cms_verify/shell_check.py) ───────────
+
+export interface ShellIssue {
+  key: string;
+  /** "site" = shell defect that breaks every page; "page" = this page only. */
+  severity: "site" | "page";
+  message: string;
+}
+
+export interface ShellPageResult {
+  pageId: string | null;
+  route: string;
+  url: string;
+  stateChecked: string;
+  httpStatus: number | null;
+  ok: boolean;
+  issues: ShellIssue[];
+}
+
+export interface ShellCheckSummary {
+  site: string;
+  pagesChecked: number;
+  pagesPassed: number;
+  siteIssues: { key: string; message: string; pagesAffected: number }[];
+  pages: ShellPageResult[];
+  truncationNote: string | null;
+}
+
+function parseShellCheck(value: unknown): ShellCheckSummary | null {
+  if (!value || typeof value !== "object") return null;
+  const data = value as Record<string, unknown>;
+  const issues = (raw: unknown): ShellIssue[] =>
+    Array.isArray(raw)
+      ? raw.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const row = item as Record<string, unknown>;
+          return [
+            {
+              key: String(row.key ?? ""),
+              severity: row.severity === "site" ? "site" : "page",
+              message: String(row.message ?? ""),
+            } satisfies ShellIssue,
+          ];
+        })
+      : [];
+  return {
+    site: String(data.site ?? ""),
+    pagesChecked: typeof data.pages_checked === "number" ? data.pages_checked : 0,
+    pagesPassed: typeof data.pages_passed === "number" ? data.pages_passed : 0,
+    siteIssues: Array.isArray(data.site_issues)
+      ? data.site_issues.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const row = item as Record<string, unknown>;
+          return [
+            {
+              key: String(row.key ?? ""),
+              message: String(row.message ?? ""),
+              pagesAffected:
+                typeof row.pages_affected === "number" ? row.pages_affected : 0,
+            },
+          ];
+        })
+      : [],
+    pages: Array.isArray(data.pages)
+      ? data.pages.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const row = item as Record<string, unknown>;
+          return [
+            {
+              pageId: typeof row.page_id === "string" ? row.page_id : null,
+              route: String(row.route ?? ""),
+              url: String(row.url ?? ""),
+              stateChecked: String(row.state_checked ?? ""),
+              httpStatus:
+                typeof row.http_status === "number" ? row.http_status : null,
+              ok: row.ok === true,
+              issues: issues(row.issues),
+            } satisfies ShellPageResult,
+          ];
+        })
+      : [],
+    truncationNote:
+      typeof data.truncation_note === "string" ? data.truncation_note : null,
+  };
+}
+
+/**
+ * Inspect the paired CMS site's RENDERED pages for the site-level defects
+ * that make every page look broken (missing header/menu, footer, brand,
+ * stylesheet) plus per-page basics. Deterministic server-side fetch+parse —
+ * no browser, no model, safe to run any time.
+ */
+export async function bridgeShellCheck(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: { state?: string; limit?: number; routes?: string[] } = {},
+): Promise<ShellCheckSummary> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/shell-check",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        state: options.state ?? "auto",
+        limit: options.limit ?? 10,
+        routes: options.routes ?? null,
+      },
+    }),
+  );
+  const parsed = parseShellCheck(requireBody(result, "shell-check"));
+  if (!parsed) throw new Error("The shell check returned an unreadable result.");
+  return parsed;
+}
+
+// ── the site-level pipeline (aidream content_plan/site_pipeline.py) ─────────
+
+export type SiteStageState =
+  | "complete"
+  | "in_progress"
+  | "attention"
+  | "not_started";
+
+export interface SitePipelineStage {
+  key: string;
+  label: string;
+  state: SiteStageState;
+  done: number;
+  total: number;
+  detail: string;
+  missing: string[];
+}
+
+export interface SitePipelineData {
+  siteId: string;
+  stages: SitePipelineStage[];
+  pagesPlanned: number;
+  cmsLinked: boolean;
+  cmsSiteId: string | null;
+  cmsSlug: string | null;
+}
+
+const STAGE_STATES: readonly SiteStageState[] = [
+  "complete",
+  "in_progress",
+  "attention",
+  "not_started",
+];
+
+/**
+ * The site-level pipeline — the per-page rail's eight steps answered for the
+ * whole site, derived server-side from live rows (never stamped).
+ */
+export async function fetchSitePipeline(
+  dispatch: AppDispatch,
+  siteId: string,
+): Promise<SitePipelineData> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/pipeline",
+      method: "GET",
+      pathParams: { site_id: siteId },
+    }),
+  );
+  const data = requireBody(result, "site pipeline");
+  const stages: SitePipelineStage[] = Array.isArray(data.stages)
+    ? data.stages.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const row = item as Record<string, unknown>;
+        const state = STAGE_STATES.includes(row.state as SiteStageState)
+          ? (row.state as SiteStageState)
+          : "not_started";
+        return [
+          {
+            key: String(row.key ?? ""),
+            label: String(row.label ?? ""),
+            state,
+            done: typeof row.done === "number" ? row.done : 0,
+            total: typeof row.total === "number" ? row.total : 0,
+            detail: String(row.detail ?? ""),
+            missing: Array.isArray(row.missing) ? row.missing.map(String) : [],
+          } satisfies SitePipelineStage,
+        ];
+      })
+    : [];
+  return {
+    siteId: String(data.site_id ?? siteId),
+    stages,
+    pagesPlanned:
+      typeof data.pages_planned === "number" ? data.pages_planned : 0,
+    cmsLinked: data.cms_linked === true,
+    cmsSiteId: typeof data.cms_site_id === "string" ? data.cms_site_id : null,
+    cmsSlug: typeof data.cms_slug === "string" ? data.cms_slug : null,
+  };
 }
 
 export interface FillPreviewResult {
@@ -514,6 +711,7 @@ function parsePublish(data: Record<string, unknown>): BridgePublishResult {
       ? data.statuses_advanced.map(String)
       : [],
     warnings: Array.isArray(data.warnings) ? data.warnings.map(String) : [],
+    shellCheck: parseShellCheck(data.shell_check),
   };
 }
 

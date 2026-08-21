@@ -61,14 +61,16 @@ export const PIPELINE_STEPS = [
 export type PipelineStepKey = (typeof PIPELINE_STEPS)[number]["step"];
 
 /**
- * The steps a human can run on ONE page from the rail
+ * The steps a human can run on ONE page through the step route
  * (`POST /content-plan/nodes/{id}/steps/{step}`, aidream `page_pipeline.py`).
- * The others have their own producers: keywords/research come from Deepen and
- * the Setup passes, build/publish from the CMS fill and publish jobs. Keep this
- * in lockstep with `RUNNABLE_STEPS` there — the server rejects anything else
- * with a 404 that names the valid set.
+ * `p2_research` runs through its own `/deepen` route, `p6_build` through the
+ * fill queue, and `p7_publish` through `/cms-publish` — one canonical path per
+ * producer; the rail wires each chip to its own path so EVERY step runs. Keep
+ * this list in lockstep with the server (`RUNNABLE_STEPS` + the p1 dispatch) —
+ * it rejects anything else with a 404 that names the valid set.
  */
 export const RUNNABLE_PIPELINE_STEPS = [
+  "p1_keywords",
   "p3_family",
   "p4_write",
   "p5_review",
@@ -80,6 +82,11 @@ export const RUNNABLE_STEP_ACTIONS: Record<
   RunnablePipelineStep,
   { action: string; explains: string }
 > = {
+  p1_keywords: {
+    action: "Confirm keyword",
+    explains:
+      "Store this page's chosen primary keyword so every later step aims at it. Pick the keyword itself in the SEO plan tab first.",
+  },
   p3_family: {
     action: "Decide coverage",
     explains:

@@ -830,7 +830,7 @@ function metadataWithUpdatedResult(
     found = true;
     return { ...entry, ...patch };
   });
-  if (!found) throw new Error(`Bench result ${resultId} was not found.`);
+  if (!found) throw new Error(`Bench result ${resultId} was not found.`); // access-errors: ok — verified absence: the id is searched in metadata already fetched into memory, not an ambiguous DB read
   return { ...metadata, test_bench_results: next };
 }
 

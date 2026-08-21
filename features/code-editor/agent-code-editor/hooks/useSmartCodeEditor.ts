@@ -178,7 +178,7 @@ export function useSmartCodeEditor({
     if (!validation.valid) {
       let msg = `⚠️ INVALID CODE EDITS\n\n`;
       msg += `The AI provided ${parsed.edits.length} edit${parsed.edits.length !== 1 ? "s" : ""}, but some SEARCH patterns don't match the current code.\n\n`;
-      msg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\n`;
+      msg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\n`; // access-errors: ok — describes SEARCH patterns that failed to match the local editor buffer, not a record read
       msg += `You can continue the conversation to clarify or try again.\n\n`;
       if (validation.warnings.length > 0) {
         msg += `✓ ${validation.warnings.length} edit${validation.warnings.length !== 1 ? "s" : ""} will use fuzzy matching (whitespace-tolerant)\n`;

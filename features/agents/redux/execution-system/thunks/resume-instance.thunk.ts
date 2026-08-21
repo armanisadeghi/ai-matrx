@@ -165,6 +165,7 @@ export const resumeInstance = createAsyncThunk<
       const instance = state.conversations.byConversationId[conversationId];
       if (!instance) {
         releaseResumeClaim(userRequestId);
+        // access-errors: ok — browser-local Redux lookup; the instance was torn down locally, no record read involved
         return rejectWithValue(`Conversation ${conversationId} not found`);
       }
 

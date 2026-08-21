@@ -115,8 +115,9 @@ export function ScopeItemDetail({
   if (!scopeType) {
     return typesLoaded ? (
       <ScopeNotFound
-        title="Scope type not found"
-        message={`No scope type matches "${typeParam}" in this organization.`}
+        token="scope_type"
+        param={typeParam}
+        entityLabel="scope type"
         backHref={orgScopesHref(orgSlugOrId)}
         backLabel="Back to scopes"
       />
@@ -127,8 +128,9 @@ export function ScopeItemDetail({
   if (!scope) {
     return scopesLoaded ? (
       <ScopeNotFound
-        title={`${scopeType.label_singular} not found`}
-        message={`No ${scopeType.label_singular.toLowerCase()} matches "${scopeParam}".`}
+        token="scope"
+        param={scopeParam}
+        entityLabel={scopeType.label_singular.toLowerCase()}
         backHref={scopeTypeHref(orgSlugOrId, scopeType)}
         backLabel={`Back to ${scopeType.label_plural}`}
       />
@@ -139,8 +141,9 @@ export function ScopeItemDetail({
   if (!item) {
     return itemsLoaded ? (
       <ScopeNotFound
-        title="Context item not found"
-        message={`No context item matches "${itemParam}" for ${scopeType.label_plural}.`}
+        token="context_item"
+        param={itemParam}
+        entityLabel="context item"
         backHref={scopeHref(orgSlugOrId, scopeType, scope)}
         backLabel={`Back to ${scope.name}`}
       />

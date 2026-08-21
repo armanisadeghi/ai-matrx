@@ -306,7 +306,7 @@ export function validateEdits(
     const lastLine = searchLines[searchLines.length - 1].trim();
 
     let errorMsg = `\n━━━ Edit ${i + 1} of ${edits.length} ━━━\n`;
-    errorMsg += `❌ SEARCH pattern not found in code\n\n`;
+    errorMsg += `❌ SEARCH pattern not found in code\n\n`; // access-errors: ok — in-memory string match against the local editor buffer; indexOf verified the pattern is absent
     errorMsg += `📝 Search Pattern (${searchLines.length} lines, ${edit.search.length} chars):\n`;
     errorMsg += `   First line: "${firstLine.substring(0, 60)}${firstLine.length > 60 ? "..." : ""}"\n`;
     if (searchLines.length > 1) {
@@ -333,7 +333,7 @@ export function validateEdits(
       errorMsg += `🔍 Similar content found: "${fuzzyMatch.substring(0, 80)}..."\n`;
       errorMsg += `💡 The AI's search pattern might not match the actual code exactly\n`;
     } else {
-      errorMsg += `❌ First line not found anywhere in the code\n`;
+      errorMsg += `❌ First line not found anywhere in the code\n`; // access-errors: ok — code.includes verified the line is absent from the local editor buffer
       errorMsg += `💡 The AI might be editing code that doesn't exist in this file\n`;
     }
 

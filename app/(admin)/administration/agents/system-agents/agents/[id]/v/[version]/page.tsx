@@ -13,7 +13,7 @@ export async function generateMetadata({
 }) {
   const { version } = await params;
   const versionNum = parseInt(version, 10);
-  if (isNaN(versionNum)) return { title: "Not Found" };
+  if (isNaN(versionNum)) return { title: "System Agents" };
   return { title: `v${versionNum} | System Agents` };
 }
 

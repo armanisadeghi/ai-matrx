@@ -62,10 +62,11 @@ export const editMessage = createAsyncThunk<
     if (!prevRecord) {
       // eslint-disable-next-line no-console
       console.error(
-        "[editMessage] prevRecord not found",
+        "[editMessage] prevRecord not found", // access-errors: ok — dev console log for a browser-local Redux lookup; absence verified in the loaded slice
         JSON.stringify({ conversationId, messageId }),
       );
       return rejectWithValue({
+        // access-errors: ok — browser-local Redux lookup; the message is absent from the loaded conversation slice, no record read involved
         message: `Message ${messageId} not found in conversation ${conversationId}`,
       });
     }

@@ -5,8 +5,7 @@
  * Mutations are called directly from components via ./service (each re-fetches on success).
  */
 import { useCallback, useEffect, useState } from "react";
-import { getOrganizationBySlugOrId } from "../service";
-import { useUserRole } from "../hooks";
+import { useResolvedOrganization } from "../hooks";
 import type { Organization, OrgRole } from "../types";
 import { getOrgMember, getOrgOverview, listOrgMembers } from "./service";
 import type { OrgAdminMember, OrgAdminMemberDetail, OrgAdminOverview } from "./types";
@@ -18,60 +17,29 @@ export interface OrgAdminGate {
   role: OrgRole | null;
   isAdmin: boolean;
   loading: boolean;
-  error: string | null;
+  /** A genuine fault from the resolve — NOT "we got no row back". */
+  error: unknown;
+  refresh: () => void;
 }
 
 /**
  * Resolves the [orgId] route param (UUID or slug) and the caller's org role.
  * `isAdmin` is true for owner/admin — the gate every org-admin surface checks.
  * (The DB RPCs enforce the same gate; this is the UX layer.)
+ * Thin wrapper over the canonical `useResolvedOrganization`.
  */
 export function useOrgAdminGate(orgIdParam: string | undefined): OrgAdminGate {
-  const [orgId, setOrgId] = useState<string | null>(null);
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [resolving, setResolving] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function resolve() {
-      if (!orgIdParam) {
-        setError("Organization not found");
-        setResolving(false);
-        return;
-      }
-      setResolving(true);
-      try {
-        const org = await getOrganizationBySlugOrId(orgIdParam);
-        if (cancelled) return;
-        if (!org) {
-          setError("Organization not found");
-        } else {
-          setOrgId(org.id);
-          setOrganization(org);
-          setError(null);
-        }
-      } catch (err: unknown) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load organization");
-      } finally {
-        if (!cancelled) setResolving(false);
-      }
-    }
-    resolve();
-    return () => {
-      cancelled = true;
-    };
-  }, [orgIdParam]);
-
-  const { role, loading: roleLoading, isAdmin } = useUserRole(orgId ?? undefined);
+  const { organization, organizationId, role, loading, error, refresh } =
+    useResolvedOrganization(orgIdParam);
 
   return {
-    orgId,
+    orgId: organizationId,
     organization,
     role,
-    isAdmin: Boolean(isAdmin),
-    loading: resolving || (orgId != null && roleLoading),
+    isAdmin: role === "owner" || role === "admin",
+    loading,
     error,
+    refresh,
   };
 }
 

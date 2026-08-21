@@ -102,8 +102,9 @@ export function ContextItemHub({
   if (!scopeType) {
     return typesLoaded ? (
       <ScopeNotFound
-        title="Scope type not found"
-        message={`No scope type matches "${typeParam}".`}
+        token="scope_type"
+        param={typeParam}
+        entityLabel="scope type"
         backHref={orgScopesHref(orgSlugOrId)}
         backLabel="Back to scopes"
       />
@@ -114,8 +115,9 @@ export function ContextItemHub({
   if (!item) {
     return itemsLoaded ? (
       <ScopeNotFound
-        title="Context item not found"
-        message={`No context item matches "${itemParam}" for ${scopeType.label_plural}.`}
+        token="context_item"
+        param={itemParam}
+        entityLabel="context item"
         backHref={contextItemsHref(orgSlugOrId, scopeType)}
         backLabel="Back to context items"
       />

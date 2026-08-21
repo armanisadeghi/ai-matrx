@@ -911,6 +911,47 @@ export function NodePanel({
                       ? "No target keyword yet — set one on the Keywords tab first."
                       : null
                 }
+                // EVERY chip runs (Arman, 2026-08-21). These three steps keep
+                // their own canonical producers — the rail gets an arrow, the
+                // producer stays the one it always was.
+                extraRunners={{
+                  p2_research: {
+                    action: "Deepen research",
+                    explains:
+                      "Research this page and draft its brief from the site's linked research.",
+                    busy: deepeningThisNode,
+                    blockedReason:
+                      deepening && !deepeningThisNode
+                        ? "Another page is being deepened — one run at a time."
+                        : null,
+                    run: () => void deepen.start(node.id),
+                  },
+                  p6_build: {
+                    action: cmsPage ? "Build the page" : "Create on the website",
+                    explains: cmsPage
+                      ? "Rebuild this page's HTML on the website from its approved content."
+                      : "Create this page on the website and build its HTML from the approved content.",
+                    busy: reality.busy === "write" || reality.busy === "create",
+                    blockedReason: cmsSiteId
+                      ? null
+                      : "No website linked yet — link one in Setup first.",
+                    run: () =>
+                      void (cmsPage ? reality.write() : reality.create()),
+                  },
+                  p7_publish: {
+                    action: "Publish the page",
+                    explains:
+                      "Put this page live on the public site. The rendered page is inspected for site-level problems right after.",
+                    busy: reality.busy === "publish",
+                    blockedReason: !cmsPage
+                      ? "Not on the website yet — build it on the Build tab first."
+                      : reality.verdict.state === "empty" ||
+                          reality.verdict.state === "retired"
+                        ? `This page is ${reality.verdict.state} — write its content first.`
+                        : null,
+                    run: () => void reality.publish(),
+                  },
+                }}
               />
             </div>
             <RunSetWindowController

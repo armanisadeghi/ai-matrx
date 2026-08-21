@@ -15,6 +15,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 
 export interface SavedClaimRow {
   id: string;
@@ -58,7 +59,7 @@ export function useMyClaims(userId: string | undefined) {
         )
         .order("updated_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load your saved cases", error);
       return (data ?? []) as SavedClaimRow[];
     },
   });
@@ -74,7 +75,7 @@ export function useDeleteClaim() {
         .from(TABLE as never)
         .delete()
         .eq("id", claimId);
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("delete this saved case", error);
     },
     onSuccess: (_, { userId }) => {
       qc.invalidateQueries({ queryKey: claimsKeys.list(userId) });

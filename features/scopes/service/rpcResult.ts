@@ -71,9 +71,11 @@ export function mapPgError(e: unknown): ScopesRpcError {
 
   if (pgCode === "PGRST116") return { code: "not_found", message: "Not found" };
   if (pgCode === "42501")
+    // access-errors: ok — maps Postgres 42501 (insufficient_privilege), the server's own explicit verdict, not a zero-row guess
     return { code: "forbidden_org", message: "Permission denied" };
   // The session's JWT is gone or expired — the user is signed out, not broken.
   if (pgCode === "PGRST301" || pgCode === "PGRST303")
+    // access-errors: ok — PGRST301/303 is PostgREST's own expired-JWT verdict, verified by code, not a guess
     return { code: "unauthorized", message: "Your session expired" };
   // Postgres killed the statement at the role's `statement_timeout` (8s for
   // `authenticated`). The database is up and the query is valid; it ran out of

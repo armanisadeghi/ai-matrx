@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
@@ -340,8 +341,10 @@ export function CatalogEntryEditor({
     if (error || !data) {
       toast({
         title: "Reload failed",
-        description:
-          error?.message ?? `Entry ${app}/${kindValue}/${keyValue} not found`,
+        description: operationFailed(
+          `reload the latest version of ${app}/${kindValue}/${keyValue}`,
+          error ?? undefined,
+        ).message,
         variant: "destructive",
       });
       return;

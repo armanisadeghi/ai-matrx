@@ -610,6 +610,7 @@ function analyzeTools(
         pushIssue(issues, {
           severity: "warning",
           path,
+          // access-errors: ok — import-file field hint; the name was checked against the loaded tool index, not a record read
           message: `Tool \`${t}\` was not found in the registry.`,
           fix: "Use a valid tool UUID, a registered tool name, or remove it and add tools in the builder.",
         });
@@ -623,6 +624,7 @@ function analyzeTools(
         pushIssue(issues, {
           severity: "warning",
           path,
+          // access-errors: ok — import-file field hint; the name was checked against the loaded tool index, not a record read
           message: `Tool \`${name}\` was not found in the registry.`,
         });
       }

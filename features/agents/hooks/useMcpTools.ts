@@ -119,6 +119,7 @@ export function useMcpAllTools() {
   const invokeByName = useCallback(
     async (toolName: string, args?: Record<string, unknown>) => {
       const tool = allTools.find((t) => t.name === toolName);
+      // access-errors: ok — lookup in the browser-local discovered-tools list; absence verified in memory, no record read involved
       if (!tool) throw new Error(`MCP tool not found: ${toolName}`);
       // Runs in aidream with vault-resolved auth — no token in the browser.
       return invokeMcpServerTool(tool.serverId, toolName, args);

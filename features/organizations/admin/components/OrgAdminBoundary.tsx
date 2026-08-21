@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Organization, OrgRole } from "../../types";
+import { OrganizationAccessGate } from "../../components/OrganizationAccessGate";
 import { useOrgAdminGate } from "../hooks";
 
 interface OrgAdminBoundaryProps {
@@ -21,7 +22,8 @@ interface OrgAdminBoundaryProps {
 
 export function OrgAdminBoundary({ orgIdParam, children }: OrgAdminBoundaryProps) {
   const router = useRouter();
-  const { orgId, organization, role, isAdmin, loading, error } = useOrgAdminGate(orgIdParam);
+  const { orgId, organization, role, isAdmin, loading, error, refresh } =
+    useOrgAdminGate(orgIdParam);
 
   if (loading) {
     return (
@@ -36,18 +38,12 @@ export function OrgAdminBoundary({ orgIdParam, children }: OrgAdminBoundaryProps
 
   if (error || !orgId || !organization) {
     return (
-      <div className="p-4 md:p-6">
-        <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center">
-          <h2 className="mb-2 text-lg font-semibold text-foreground">Organization not found</h2>
-          <p className="mb-4 text-sm text-muted-foreground">
-            {error ?? "This organization doesn't exist or you don't have access."}
-          </p>
-          <Button onClick={() => router.push("/organizations")} variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to organizations
-          </Button>
-        </Card>
-      </div>
+      <OrganizationAccessGate
+        orgSlugOrId={orgIdParam ?? ""}
+        organizationId={orgId}
+        error={error}
+        onRetry={refresh}
+      />
     );
   }
 

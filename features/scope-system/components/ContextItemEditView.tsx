@@ -76,8 +76,9 @@ export function ContextItemEditView({
   if (!scopeType) {
     return typesLoaded ? (
       <ScopeNotFound
-        title="Scope type not found"
-        message={`No scope type matches "${typeParam}".`}
+        token="scope_type"
+        param={typeParam}
+        entityLabel="scope type"
         backHref={orgScopesHref(orgSlugOrId)}
         backLabel="Back to scopes"
       />
@@ -88,8 +89,9 @@ export function ContextItemEditView({
   if (!item) {
     return itemsLoaded ? (
       <ScopeNotFound
-        title="Context item not found"
-        message={`No context item matches "${itemParam}".`}
+        token="context_item"
+        param={itemParam}
+        entityLabel="context item"
         backHref={contextItemsHref(orgSlugOrId, scopeType)}
         backLabel="Back to context items"
       />

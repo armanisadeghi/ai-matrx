@@ -60,7 +60,7 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
       ]);
       setRow(item);
       setRegistry(nextRegistry);
-      setError(item ? null : "Review item not found");
+      setError(null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Review item failed to load");
     }
@@ -73,7 +73,7 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
         if (!active) return;
         setRow(item);
         setRegistry(nextRegistry);
-        setError(item ? null : "Review item not found");
+        setError(null);
       })
       .catch((loadError: unknown) => {
         if (active) {

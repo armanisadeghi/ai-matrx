@@ -64,8 +64,9 @@ export function ScopeTypeEditView({
   if (!scopeType) {
     return typesLoaded ? (
       <ScopeNotFound
-        title="Scope type not found"
-        message={`No scope type matches "${typeParam}".`}
+        token="scope_type"
+        param={typeParam}
+        entityLabel="scope type"
         backHref={orgScopesHref(orgSlugOrId)}
         backLabel="Back to scopes"
       />

@@ -140,8 +140,9 @@ export function ScopeDetailEditor({
   if (!scopeType) {
     return typesLoaded ? (
       <ScopeNotFound
-        title="Scope type not found"
-        message={`No scope type matches "${typeParam}" in this organization.`}
+        token="scope_type"
+        param={typeParam}
+        entityLabel="scope type"
         backHref={orgScopesHref(orgSlugOrId)}
         backLabel="Back to scopes"
       />
@@ -152,8 +153,9 @@ export function ScopeDetailEditor({
   if (!scope) {
     return scopesLoaded ? (
       <ScopeNotFound
-        title={`${scopeType.label_singular} not found`}
-        message={`No ${scopeType.label_singular.toLowerCase()} matches "${scopeParam}".`}
+        token="scope"
+        param={scopeParam}
+        entityLabel={scopeType.label_singular.toLowerCase()}
         backHref={scopeTypeHref(orgSlugOrId, scopeType)}
         backLabel={`Back to ${scopeType.label_plural}`}
       />

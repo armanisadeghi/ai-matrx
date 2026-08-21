@@ -18,6 +18,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   assignField,
@@ -92,14 +93,18 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
       .single();
 
     if (error || !data) {
+      const unavailable = recordUnavailable({
+        entity: "app",
+        reason: "unknown",
+        recordId: appId,
+        token: "app",
+        relation: "app.definition",
+      });
       dispatch(
-        agentAppActions.setAppError({
-          id: appId,
-          error: error?.message ?? "App not found",
-        }),
+        agentAppActions.setAppError({ id: appId, error: unavailable.message }),
       );
       dispatch(agentAppActions.setAppLoading({ id: appId, loading: false }));
-      throw error ? pgErrorToError(error) : new Error("App not found");
+      throw error ? pgErrorToError(error) : unavailable;
     }
 
     dispatch(agentAppActions.upsertApp(data as AgentApp));

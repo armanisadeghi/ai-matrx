@@ -22,6 +22,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { callApi } from "@/lib/api/call-api";
+import { operationFailed } from "@/utils/errors";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
@@ -139,7 +140,7 @@ export const fetchSkills = createAsyncThunk<
   const { data, error } = await query;
   if (error) {
     dispatch(skillsActions.skillsError(error.message));
-    throw new Error(error.message);
+    throw operationFailed("load your skills", error);
   }
 
   const rows = (data ?? []).map(supabaseRowToSkillRow);
@@ -166,7 +167,7 @@ export const fetchSkillById = createAsyncThunk<
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw operationFailed("open this skill", error);
   }
   if (!data) return null;
 
@@ -199,7 +200,7 @@ export const fetchSkillCategories = createAsyncThunk<
 
   if (error) {
     dispatch(skillsActions.categoriesError(error.message));
-    throw new Error(error.message);
+    throw operationFailed("load skill categories", error);
   }
 
   const rows = (data ?? []).map((row) =>
@@ -281,7 +282,7 @@ export const createSkill = createAsyncThunk<
     .insert(insertPayload)
     .select(SKILL_SELECT)
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("create this skill", error);
   const row = supabaseRowToSkillRow(data);
   dispatch(skillsActions.skillUpserted(row));
   return row;
@@ -332,7 +333,7 @@ export const patchSkill = createAsyncThunk<
     .eq("id", skillId)
     .select(SKILL_SELECT)
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this skill", error);
   const row = supabaseRowToSkillRow(data);
   dispatch(skillsActions.skillUpserted(row));
   return row;
@@ -385,7 +386,7 @@ export const deleteSkill = createAsyncThunk<
       .from("definition")
       .update({ is_active: false })
       .eq("id", skillId);
-    if (error) throw new Error(error.message);
+    if (error) throw operationFailed("delete this skill", error);
   }
 
   dispatch(skillsActions.skillRemoved(skillId));
@@ -597,7 +598,7 @@ export const createCategoryThunk = createAsyncThunk<
     .insert(insertPayload)
     .select(PLATFORM_SKILL_CATEGORY_SELECT)
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("create this category", error);
   const row = supabaseRowToCategoryRow(platformCategoryToSklRow(data));
   dispatch(skillsActions.categoryUpserted(row));
   return row;
@@ -712,7 +713,7 @@ export const updateCategoryThunk = createAsyncThunk<
     .eq("dimension", "skill")
     .select(PLATFORM_SKILL_CATEGORY_SELECT)
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this category", error);
   const row = supabaseRowToCategoryRow(platformCategoryToSklRow(data));
   dispatch(skillsActions.categoryUpserted(row));
   // Silence unused-var lint for userId — it's documented as the
@@ -754,7 +755,7 @@ export const deleteCategoryThunk = createAsyncThunk<
       .update({ metadata: { ...existingMeta, is_active: false } })
       .eq("id", id)
       .eq("dimension", "skill");
-    if (error) throw new Error(error.message);
+    if (error) throw operationFailed("delete this category", error);
   }
 
   dispatch(skillsActions.categoryRemoved(id));
@@ -972,6 +973,7 @@ export const updateSkillResourceThunk = createAsyncThunk<
         break;
       }
     }
+    // access-errors: ok — checks the browser-local Redux cache for the row being edited, not a claim about a DB read
     if (!skillId || !current) throw new Error("resource not found in state");
 
     // filename / content live on the code_file.

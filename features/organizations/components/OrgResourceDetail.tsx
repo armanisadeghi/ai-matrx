@@ -54,6 +54,7 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { OrganizationAccessGate } from "./OrganizationAccessGate";
 import {
   getEntry,
   getContentRole,
@@ -150,17 +151,16 @@ export function OrgResourceDetail() {
     );
   }
 
-  if (!entry || !org) {
+  if (!entry) {
     return (
       <CenterState>
         <Card className="max-w-md w-full p-8 text-center">
-          <h2 className="text-xl font-semibold mb-2">
-            {!entry ? "Unknown resource" : "Organization not found"}
-          </h2>
+          <h2 className="text-xl font-semibold mb-2">Unknown resource</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            {!entry
-              ? "This resource kind doesn't exist."
-              : "This organization doesn't exist or has been removed."}
+            {
+              // access-errors: ok — `getEntry` is a static catalogue lookup; the kind in the URL genuinely is not in the catalogue
+              "This resource kind doesn't exist."
+            }
           </p>
           <Button
             variant="outline"
@@ -173,6 +173,10 @@ export function OrgResourceDetail() {
         </Card>
       </CenterState>
     );
+  }
+
+  if (!org) {
+    return <OrganizationAccessGate orgSlugOrId={orgParam} />;
   }
 
   const role = getContentRole(entry.role);

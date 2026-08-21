@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -84,7 +85,7 @@ export default function AdminEventsPage() {
           p_action_prefix: prefix ?? undefined,
         },
       );
-      if (rpcError) throw new Error(rpcError.message);
+      if (rpcError) throw operationFailed("load the recent activity events", rpcError);
       setRows((data as ActivityRow[]) ?? []);
       setError(null);
     } catch (e) {

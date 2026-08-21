@@ -106,6 +106,7 @@ function FeedbackConsoleSurface({
                 const editor = store.categoryEditor;
                 if (!editor)
                     throw new Error(
+                        // access-errors: ok — verified local UI state: the editor store is checked in memory (the tab is not mounted); not a record read
                         'The Categories tab is not open, so its category editor does not exist yet. Switch to the Categories tab and ask again.',
                     );
                 if (editor.isSaving)

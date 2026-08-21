@@ -41,6 +41,7 @@ import {
   canvasArtifactService,
   type CanvasArtifactRow,
 } from "@/features/canvas/services/canvasArtifactService";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { planMaterialization } from "./planMaterialization";
 import type { PersistRewrite } from "./materializeBlocks";
 
@@ -196,7 +197,15 @@ export async function unbindArtifact(
       ? history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!)
       : await deps.getById(artifactId);
   if (!latest) {
-    errors.push(`Artifact ${artifactId} not found`);
+    errors.push(
+      recordUnavailable({
+        entity: "artifact",
+        reason: "unknown",
+        recordId: artifactId,
+        token: "canvas_item",
+        relation: "canvas.canvas_items",
+      }).message,
+    );
     return fail("row_not_found");
   }
 

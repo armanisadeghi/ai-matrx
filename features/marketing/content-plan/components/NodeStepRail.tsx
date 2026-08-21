@@ -10,12 +10,15 @@
  * exist even while today's one-shot fill skips them
  * (docs/handoffs/website-factory-vision.md).
  *
- * Three of the seven steps are RUNNABLE from here — family comparison, write,
- * review (`usePageStepRun` → aidream `page_pipeline.py`). This surface still
- * never writes either table itself: the server is the ONE writer
- * (`services/content_plan/artifacts.py`) and the rail re-reads it afterwards.
- * The other four have their own producers (Deepen, the Setup passes, the CMS
- * fill and publish jobs).
+ * EVERY step is runnable from here (Arman, 2026-08-21: the rail is validated
+ * steps that actually run, never decoration). Keywords, family, write and
+ * review run through the step route (`usePageStepRun` → aidream
+ * `page_pipeline.py`); research, build and publish keep their own canonical
+ * producers (Deepen, the CMS fill, `/cms-publish`) and the HOST hands their
+ * run arrows in via `extraRunners` — the rail never becomes a second client
+ * for an existing producer. This surface still never writes either table
+ * itself: the server is the ONE writer (`services/content_plan/artifacts.py`)
+ * and the rail re-reads it afterwards.
  *
  * WHAT A STEP'S ARTIFACT LOOKS LIKE: every step persists a `__kind`-carrying
  * envelope, and all five of those kinds are REGISTERED
@@ -76,6 +79,23 @@ import {
 } from "../lib/pipeline-staleness";
 
 const EMPTY_STEPS: ReadonlyMap<string, never> = new Map<string, never>();
+
+/**
+ * A run arrow supplied by the host for a step whose producer lives outside the
+ * step route (Deepen, the CMS build, publish). The rail renders it with the
+ * exact same arrow UI the runnable steps get; the host owns the run itself.
+ */
+export type StepRunnerOverride = {
+  /** Verb the tooltip leads with, e.g. "Publish this page". */
+  action: string;
+  /** One sentence of what pressing it does. */
+  explains: string;
+  /** True while THIS producer is running for this page. */
+  busy: boolean;
+  /** Why it cannot run right now (names the fix), or null when it can. */
+  blockedReason?: string | null;
+  run: () => void;
+};
 
 /**
  * ONE chip geometry for the whole tab strip. Exported because the NodePanel
@@ -355,6 +375,7 @@ export function NodeStepRail({
   activeStep,
   onSelectStep,
   stepRun: stepRunProp,
+  extraRunners,
 }: {
   nodeId: string;
   /** Needed to refresh the site-wide step query after a run. */
@@ -382,6 +403,14 @@ export function NodeStepRail({
   onSelectStep?: (step: string) => void;
   /** Share the panel's run state so tabs and arrows report one truth. */
   stepRun?: ReturnType<typeof usePageStepRun>;
+  /**
+   * Run arrows for the steps whose producer is NOT the step route — p2
+   * (Deepen), p6 (the CMS build), p7 (publish). The host that owns those
+   * producers (NodePanel) hands each one in as a verb + explanation + run, so
+   * EVERY chip on the rail is a step that actually runs, through its own
+   * canonical path — never a second client for an existing producer.
+   */
+  extraRunners?: Partial<Record<string, StepRunnerOverride>>;
 }) {
   const artifacts = useNodeArtifacts(nodeId);
   const [openArtifact, setOpenArtifact] = useState<PlanNodeArtifactRow | null>(
@@ -452,6 +481,9 @@ export function NodeStepRail({
           const runnable = isRunnableStep(step)
             ? (step as RunnablePipelineStep)
             : null;
+          // A host-supplied runner for a step whose producer is not the step
+          // route (p2/p6/p7) — never doubled onto a step the rail runs itself.
+          const override = runnable === null ? (extraRunners?.[step] ?? null) : null;
           // The server refuses these anyway (`assert_step_preconditions`);
           // surfacing the same refusal here means the user reads WHY before
           // the click, not as an error after it. Review's input lives in the
@@ -583,6 +615,48 @@ export function NodeStepRail({
                     ) : staleness ? (
                       <p className="text-amber-600 dark:text-amber-400">
                         {stalenessTitle(label, staleness)}
+                      </p>
+                    ) : null}
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+              {override ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={override.busy}
+                      aria-disabled={Boolean(override.blockedReason)}
+                      onClick={() => !override.blockedReason && override.run()}
+                      aria-label={`${override.action} for this page`}
+                      className={cn(
+                        STEP_RUN_BUTTON_CLASS,
+                        staleness && "text-amber-600 dark:text-amber-400",
+                        override.blockedReason &&
+                          "cursor-not-allowed opacity-40 hover:bg-transparent",
+                      )}
+                    >
+                      {override.busy ? (
+                        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                      ) : status === "done" ? (
+                        <RotateCw className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <Play className="h-3 w-3" aria-hidden />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs space-y-1">
+                    <p className="font-medium text-popover-foreground">
+                      {status === "done"
+                        ? `${override.action} again`
+                        : override.action}
+                    </p>
+                    <p className="text-muted-foreground">{override.explains}</p>
+                    {override.blockedReason ? (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        {override.blockedReason}
                       </p>
                     ) : null}
                   </TooltipContent>

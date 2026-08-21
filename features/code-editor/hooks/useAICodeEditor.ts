@@ -351,7 +351,7 @@ export function useAICodeEditor({
         setState("error");
         let errorMsg = `⚠️ INVALID CODE EDITS\n\n`;
         errorMsg += `The AI provided ${parsed.edits.length} edit${parsed.edits.length !== 1 ? "s" : ""}, but some SEARCH patterns don't match the current code.\n\n`;
-        errorMsg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\n`;
+        errorMsg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\n`; // access-errors: ok — describes SEARCH patterns that failed to match the local editor buffer, not a record read
         errorMsg += `You can continue the conversation to clarify or try again.\n\n`;
 
         if (validation.warnings.length > 0) {

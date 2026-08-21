@@ -6,6 +6,7 @@
 // lib/integrity/server.ts and the SQL Workbench: `execute_admin_query`.
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { operationFailed } from "@/utils/errors";
 import { unwrapRows } from "@/lib/integrity/unwrap";
 import {
   DATASET_QUERIES,
@@ -40,7 +41,7 @@ import type {
 async function runQuery<T>(query: string): Promise<T[]> {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("execute_admin_query", { query });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("run that canonicalization query", error);
   return unwrapRows(data) as T[];
 }
 

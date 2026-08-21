@@ -351,6 +351,7 @@ export type InstanceReadyCheck = {
 
 const INSTANCE_READY_NOT_FOUND: InstanceReadyCheck = {
   ready: false,
+  // access-errors: ok — internal readiness reason for a browser-local Redux lookup; absence verified in the store, no record read involved
   reasons: ["Instance not found"],
 };
 

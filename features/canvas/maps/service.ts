@@ -12,6 +12,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { operationFailed } from "@/utils/errors";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { buildSearchOr } from "@/utils/supabase-search";
 import {
   materializeDiagramDefaults,
@@ -91,7 +93,7 @@ export async function fetchMapListPage(
   q = q.range(from, from + sort.pageSize - 1);
 
   const { data, error, count } = await q;
-  if (error) throw new Error(error.message || "Could not load your maps.");
+  if (error) throw operationFailed("load your maps", error);
 
   return {
     rows: (data ?? []).map((r) => toRow(r as Record<string, unknown>)),
@@ -118,7 +120,7 @@ export async function fetchMapScopeCounts(
   if (search) q = q.or(buildSearchOr(search, ["title", "description"]));
 
   const { count, error } = await q;
-  if (error) throw new Error(error.message || "Could not count your maps.");
+  if (error) throw operationFailed("count your maps", error);
   return { byKind: { mine: count ?? 0 }, narrow: {} };
 }
 
@@ -159,7 +161,7 @@ export async function createMap(
   return {
     id: data?.id ?? null,
     isDuplicate,
-    error: error ? (error.message ?? String(error)) : null,
+    error: error ? operationFailed("create this map", error).message : null,
   };
 }
 
@@ -173,7 +175,15 @@ export async function getMap(id: string): Promise<{
     return {
       row: null,
       diagram: null,
-      error: error ? (error.message ?? String(error)) : "Map not found.",
+      error: error
+        ? operationFailed("open this map", error).message
+        : recordUnavailable({
+            entity: "map",
+            reason: "unknown",
+            recordId: id,
+            token: "canvas_item",
+            relation: "canvas.canvas_items",
+          }).message,
     };
   }
   const title = data.title ?? "Untitled map";
@@ -208,7 +218,7 @@ export async function saveMap(
       metadata: { title: normalized.title },
     },
   });
-  return { error: error ? (error.message ?? String(error)) : null };
+  return { error: error ? operationFailed("save this map", error).message : null };
 }
 
 /**
@@ -237,7 +247,7 @@ export async function saveMapRowEdit(
           metadata: { title: edit.title },
         },
       });
-      if (error) throw new Error(error.message ?? String(error));
+      if (error) throw operationFailed("save this map", error);
       return;
     }
   }
@@ -246,12 +256,12 @@ export async function saveMapRowEdit(
     title: edit.title,
     description: edit.description ?? undefined,
   });
-  if (error) throw new Error(error.message ?? String(error));
+  if (error) throw operationFailed("save this map", error);
 }
 
 export async function deleteMap(id: string): Promise<{ error: string | null }> {
   const { error } = await canvasItemsService.delete(id);
-  return { error: error ? (error.message ?? String(error)) : null };
+  return { error: error ? operationFailed("delete this map", error).message : null };
 }
 
 export async function duplicateMap(id: string): Promise<CreateMapResult> {

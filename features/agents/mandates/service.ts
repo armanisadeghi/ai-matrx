@@ -27,6 +27,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { toLlmParams } from "./llm-params";
 import {
@@ -93,9 +94,12 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
     .maybeSingle();
   if (error) throw error;
   if (!mandate) {
-    throw new Error(
-      `mandate "${mandateKey}" not found — it must be declared server-side and seeded (see mandates FEATURE.md)`,
-    );
+    throw recordUnavailable({
+      entity: "mandate",
+      reason: "unknown",
+      recordId: mandateKey,
+      relation: "agent.mandate",
+    });
   }
   if (!mandate.is_enabled) {
     throw new Error(`mandate "${mandateKey}" is disabled`);
@@ -217,9 +221,12 @@ export async function fetchMandatePins(
   }
   for (const key of missing) {
     if (!found.has(key)) {
-      console.error(
-        `[mandates] mandate "${key}" not found — it must be declared server-side and seeded (see mandates FEATURE.md)`,
-      );
+      recordUnavailable({
+        entity: "mandate",
+        reason: "unknown",
+        recordId: key,
+        relation: "agent.mandate",
+      });
     }
   }
   return out;

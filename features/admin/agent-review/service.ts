@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@/lib/supabase/readAllRows";
+import { operationFailed } from "@/utils/errors";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   ReviewQueueRow,
   ReviewQueueUpdate,
@@ -38,12 +40,12 @@ export async function updateReviewQueueRow(
     .update(patch)
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this review update", error);
 }
 
 export async function loadReviewQueueItem(
   id: string,
-): Promise<ReviewQueueRow | null> {
+): Promise<ReviewQueueRow> {
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
@@ -51,7 +53,14 @@ export async function loadReviewQueueItem(
     .select("*")
     .eq("id", id)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error || !data) {
+    throw recordUnavailable({
+      entity: "review item",
+      reason: "unknown",
+      recordId: id,
+      relation: "agent.review_queue",
+    });
+  }
   return data;
 }
 
@@ -83,7 +92,7 @@ export async function recordHumanReviewAction({
     .select("organization_id")
     .eq("id", row.conversation_id)
     .single();
-  if (conversationError) throw new Error(conversationError.message);
+  if (conversationError) throw operationFailed("send your review feedback", conversationError);
   const organizationId = await ensureOrgId(conversation.organization_id);
   const message =
     trimmed ||
@@ -110,7 +119,7 @@ export async function recordHumanReviewAction({
         review_queue_id: row.id,
       },
     });
-  if (messageError) throw new Error(messageError.message);
+  if (messageError) throw operationFailed("send your review feedback", messageError);
 
   await updateReviewQueueRow(row.id, {
     status,

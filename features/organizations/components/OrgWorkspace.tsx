@@ -107,7 +107,8 @@ export function OrgWorkspace() {
     [],
   );
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<unknown>(null);
+  const [loadNonce, setLoadNonce] = React.useState(0);
 
   const [addScopeOpen, setAddScopeOpen] = React.useState(false);
   const [galleryOpen, setGalleryOpen] = React.useState(false);

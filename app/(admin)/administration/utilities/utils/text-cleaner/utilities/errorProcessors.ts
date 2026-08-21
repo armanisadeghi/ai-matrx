@@ -545,6 +545,7 @@ export function parseTS1501Error(error: string): ParsedError {
 }
 
 export function parseTS2339Error(error: string): ParsedError {
+    // access-errors: ok — regex over TypeScript compiler diagnostic text being parsed, not access copy shown to a user
     const propertyPattern = /Property '(.+?)' does not exist on type '(.+?)'/;
     const match = error.match(propertyPattern);
 

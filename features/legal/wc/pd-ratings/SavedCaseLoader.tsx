@@ -9,6 +9,7 @@ import {
 } from "./api/hooks";
 import { hydrateRatingDraft } from "./state/hydrateFromServer";
 import { CaPdCalculatorClient } from "./CaPdCalculatorClient";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 
@@ -41,7 +42,7 @@ export function SavedCaseLoader({ claimId }: SavedCaseLoaderProps) {
     report.isLoading ||
     (!!reportId && injuries.isLoading);
 
-  const error = claim.error ?? report.error ?? injuries.error;
+  const error = report.error ?? injuries.error;
 
   if (isLoading) {
     return (
@@ -57,12 +58,24 @@ export function SavedCaseLoader({ claimId }: SavedCaseLoaderProps) {
     );
   }
 
-  if (error) {
-    return <ErrorState message={(error as Error).message ?? "Couldn't load case"} />;
+  if (claim.error || !claim.data) {
+    return (
+      <>
+        <LoaderHeader />
+        <AccessGate
+          token="wc_claim"
+          id={claimId}
+          error={claim.error}
+          onRetry={() => void claim.refetch()}
+          fallbackHref="/legal/ca-wc/cases"
+          fallbackLabel="Saved cases"
+        />
+      </>
+    );
   }
 
-  if (!claim.data) {
-    return <ErrorState message="Case not found." />;
+  if (error) {
+    return <ErrorState message={(error as Error).message ?? "Couldn't load case"} />;
   }
 
   if (!report.data) {

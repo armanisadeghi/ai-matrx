@@ -23,6 +23,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { isUuid } from "@/features/scopes/service/associationGuards";
 
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { ConnectionsSkillsDraftSnapshot } from "@/features/surfaces/manifests/connections-skills.manifest";
@@ -369,12 +371,19 @@ export function SkillDetailEditor({
   }
 
   if (!isNew && !skill) {
+    // A uuid names a real record the platform can resolve; a `skill_id`
+    // business key that matched nothing is an address we cannot ask about.
     return (
       <div className="flex flex-col h-full min-h-0">
-        <Header onBack={onBack} title="Skill not found" subtitle={skillId} />
-        <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-          That skill is no longer available.
-        </div>
+        <Header onBack={onBack} title="Skill" subtitle={skillId} />
+        {isUuid(skillId) ? (
+          <AccessGate token="skill" id={skillId} />
+        ) : (
+          <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+            This address didn&apos;t match a skill you can open. Check the
+            link, or go back.
+          </div>
+        )}
       </div>
     );
   }

@@ -15,6 +15,7 @@ export function requireExecutionOrganizationId(
 ): string {
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) {
+    // access-errors: ok — browser-local Redux lookup; the instance is absent from the loaded store, no record read involved
     throw new Error(`Conversation ${conversationId} not found.`);
   }
 

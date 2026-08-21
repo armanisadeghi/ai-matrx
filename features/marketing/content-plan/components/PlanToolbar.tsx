@@ -104,6 +104,7 @@ export function PlanToolbar({
   onOpenSetup,
   copySlot,
   assistSlot,
+  pipelineSlot,
 }: {
   nodeCount: number;
   run: PlanAiRunState;
@@ -130,6 +131,13 @@ export function PlanToolbar({
   copySlot?: React.ReactNode;
   /** Assist chips, inline — the strip renders nothing when it has nothing. */
   assistSlot?: React.ReactNode;
+  /**
+   * The site-level pipeline strip (SitePipelineStrip) — when provided it IS
+   * the KPI zone: the same eight steps the page rail shows, answered for the
+   * whole site, in the same spot the built/live counts occupied. Still one
+   * chrome row; the strip replaces the KPI text, never adds a bar.
+   */
+  pipelineSlot?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [maxNodes, setMaxNodes] = useState(40);
@@ -217,8 +225,9 @@ export function PlanToolbar({
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border bg-muted/20 px-2 py-1">
-      {/* Identity + honest KPIs (or the transient narration in their place) */}
-      {narration ?? (
+      {/* Identity + honest KPIs (or the transient narration in their place).
+          When the host supplies the site-pipeline strip, it IS this zone. */}
+      {narration ?? pipelineSlot ?? (
         <>
           {cmsLink && nodeCount > 0 ? (
             linked && !pagesLoaded ? null : linked ? (

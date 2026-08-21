@@ -19,6 +19,7 @@
 // code here.
 
 import { supabase } from "@/utils/supabase/client";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { tryGetEntityInfo } from "./entityRegistry";
 
 export type EntityContentResult =
@@ -111,7 +112,17 @@ export async function readEntityRowGeneric(
     .eq("id" as never, id as never)
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  if (!data) return { ok: false, error: "Not found or not accessible" };
+  if (!data)
+    return {
+      ok: false,
+      error: recordUnavailable({
+        entity: info.label.toLowerCase(),
+        reason: "unknown",
+        recordId: id,
+        token,
+        relation: info.table,
+      }).message,
+    };
   const row = Object.fromEntries(
     Object.entries(data as Record<string, unknown>).filter(
       ([k]) => !NOISE_COLUMNS.test(k),

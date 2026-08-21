@@ -15,6 +15,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { clearMessages } from "../messages/messages.slice";
@@ -51,14 +52,16 @@ export const softDeleteConversation = createAsyncThunk<
     });
 
     if (error) {
-      return rejectWithValue({ message: error.message });
+      return rejectWithValue({
+        message: operationFailed("delete this conversation", error).message,
+      });
     }
 
     // RPC returns a boolean. `false` ⇒ the row wasn't found.
     const deleted = data === true;
     if (!deleted) {
       return rejectWithValue({
-        message: `Conversation ${conversationId} not found or already deleted`,
+        message: operationFailed("delete this conversation").message,
       });
     }
 

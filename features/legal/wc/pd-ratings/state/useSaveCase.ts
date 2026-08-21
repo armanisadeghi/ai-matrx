@@ -14,11 +14,8 @@ import {
   useEnsureReport,
 } from "../api/hooks";
 import { claimsKeys } from "../api/claims";
-import {
-  extractApiError,
-  type WcClaimRead,
-  type WcInjuryRead,
-} from "../api/types";
+import { operationFailed } from "@/utils/errors";
+import type { WcClaimRead, WcInjuryRead } from "../api/types";
 import {
   claimDraftToCreate,
   claimDraftToPatch,
@@ -86,8 +83,7 @@ export function useSaveCase() {
             }),
           )) as ApiCallResult<WcInjuryRead>;
           if (result.error) {
-            const detail = extractApiError(result.error.serverDetail);
-            throw new Error(detail?.message ?? result.error.message);
+            throw operationFailed("save this injury", result.error);
           }
           injuryIds[injury.tmpId] = result.data!.id;
         }
@@ -163,8 +159,7 @@ export function useSaveCase() {
           }),
         )) as ApiCallResult<WcClaimRead>;
         if (patchResult.error) {
-          const detail = extractApiError(patchResult.error.serverDetail);
-          throw new Error(detail?.message ?? patchResult.error.message);
+          throw operationFailed("save your changes to this case", patchResult.error);
         }
 
         setStatus({ kind: "saving", step: "injuries" });
@@ -178,8 +173,7 @@ export function useSaveCase() {
           );
           // 404 = already gone; tolerate it.
           if (delResult.error && delResult.error.status !== 404) {
-            const detail = extractApiError(delResult.error.serverDetail);
-            throw new Error(detail?.message ?? delResult.error.message);
+            throw operationFailed("remove that injury", delResult.error);
           }
         }
 
@@ -195,8 +189,7 @@ export function useSaveCase() {
               }),
             )) as ApiCallResult<WcInjuryRead>;
             if (patch.error) {
-              const detail = extractApiError(patch.error.serverDetail);
-              throw new Error(detail?.message ?? patch.error.message);
+              throw operationFailed("save your changes to this injury", patch.error);
             }
             injuryIds[injury.tmpId] = injury.persistedId;
           } else {
@@ -209,8 +202,7 @@ export function useSaveCase() {
               }),
             )) as ApiCallResult<WcInjuryRead>;
             if (created.error) {
-              const detail = extractApiError(created.error.serverDetail);
-              throw new Error(detail?.message ?? created.error.message);
+              throw operationFailed("add this injury", created.error);
             }
             injuryIds[injury.tmpId] = created.data!.id;
           }

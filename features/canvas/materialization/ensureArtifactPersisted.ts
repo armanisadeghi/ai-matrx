@@ -152,7 +152,9 @@ export async function ensureArtifactPersisted(
         row: linked,
       };
     }
-    errors.push(`artifactId ${input.artifactId} not found in DB — will upsert`);
+    errors.push(
+      `read for artifactId ${input.artifactId} returned no row — will upsert`,
+    );
   }
 
   // ── 2. Lookup by source + index / type ────────────────────────────────────

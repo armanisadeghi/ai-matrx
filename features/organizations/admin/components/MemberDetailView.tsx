@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Organization } from "../../types";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail, useOrgRoster } from "../hooks";
 import { setMemberStatus } from "../service";
 import { formatBytes, formatMcents, formatRelativeTime } from "../utils";
@@ -73,7 +74,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
     return (
       <div className="p-4 md:p-6">
         <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
-          {error ?? "Member not found."}
+          {error ?? recordUnavailableMessage("member", "unknown")}
         </Card>
       </div>
     );

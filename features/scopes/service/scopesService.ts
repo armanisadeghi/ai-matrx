@@ -37,6 +37,7 @@ import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -513,7 +514,17 @@ export const scopesService = {
         .eq("id", args.scopeId)
         .single();
       if (scopeErr) return err(...mapPgErrorPair(scopeErr));
-      if (!scope) return err("not_found", "Scope not found");
+      if (!scope)
+        return err(
+          "not_found",
+          recordUnavailable({
+            entity: "scope",
+            reason: "unknown",
+            recordId: args.scopeId,
+            token: "scope",
+            relation: "scopes",
+          }).message,
+        );
 
       const scopeTypeP = contextDb(supabase)
         .from("scope_types")
@@ -1017,7 +1028,8 @@ export const scopesService = {
         const code = envelope.error?.code;
         const mapped: ScopesRpcError["code"] =
           code === "unauthorized"
-            ? "unauthorized"
+            ? // access-errors: ok — passes through the code the set_context_value RPC itself returned; the server's verdict, not a guess
+              "unauthorized"
             : code === "forbidden_org"
               ? "forbidden_org"
               : code === "not_found"

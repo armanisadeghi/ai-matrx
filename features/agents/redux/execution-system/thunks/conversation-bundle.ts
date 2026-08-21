@@ -13,6 +13,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import type { Database } from "@/types/database.types";
 import type {
   MessageRecord,
@@ -156,7 +157,7 @@ export async function fetchConversationBundle(
       if (!bundle.conversation) {
         // Row doesn't exist yet (pre-first-turn conversation) — benign.
         throw Object.assign(
-          new Error(`Conversation ${conversationId} not found`),
+          new Error(recordUnavailableMessage("conversation", "unknown")),
           { code: CONVERSATION_NOT_MATERIALIZED },
         );
       }
@@ -256,7 +257,7 @@ export async function fetchConversationBundle(
     // Recognizable, benign-by-code: callers (loadConversation) treat a
     // not-yet-materialized conversation as "nothing to hydrate", not a failure.
     throw Object.assign(
-      new Error(`Conversation ${conversationId} not found`),
+      new Error(recordUnavailableMessage("conversation", "unknown")),
       { code: CONVERSATION_NOT_MATERIALIZED },
     );
   }

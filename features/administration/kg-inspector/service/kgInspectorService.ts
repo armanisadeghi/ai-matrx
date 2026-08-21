@@ -9,8 +9,11 @@
  * eyeballing NER entity / mention / edge data quality before the full
  * cytoscape viz (Phase G).
  */
+import { makeAssertData } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
+
+const assertData = makeAssertData("load the knowledge-graph inspector data");
 
 export interface KgEntityRow {
   id: string;
@@ -85,8 +88,7 @@ export async function listKgEntities(
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as KgEntitiesPage;
+  return assertData(data, error) as unknown as KgEntitiesPage;
 }
 
 export async function listKgEntityMentions(
@@ -102,8 +104,7 @@ export async function listKgEntityMentions(
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as KgMentionsPage;
+  return assertData(data, error) as unknown as KgMentionsPage;
 }
 
 export async function listKgTopEdges(
@@ -118,6 +119,5 @@ export async function listKgTopEdges(
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as KgEdgesTop;
+  return assertData(data, error) as unknown as KgEdgesTop;
 }

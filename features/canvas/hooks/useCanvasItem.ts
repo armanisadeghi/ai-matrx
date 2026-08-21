@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   canvasArtifactService,
   type CanvasArtifactRow,
@@ -123,7 +124,17 @@ export function useCanvasItem(
         if (cancelled) return;
         setRow(r);
         setLoading(false);
-        if (!r) setError("Artifact not found");
+        if (!r) {
+          setError(
+            recordUnavailable({
+              entity: "artifact",
+              reason: "unknown",
+              recordId: artifactId,
+              token: "canvas_item",
+              relation: "canvas.canvas_items",
+            }).message,
+          );
+        }
       })
       .catch((e) => {
         if (cancelled) return;

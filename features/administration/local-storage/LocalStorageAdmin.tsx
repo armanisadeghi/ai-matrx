@@ -285,7 +285,7 @@ function useLocalStorageManager(): UseLocalStorageManager {
               message: `Cookie found: ${name}`,
               data: cookies[name],
             }
-          : { success: false, message: `Cookie not found: ${name}` };
+          : { success: false, message: `Cookie not found: ${name}` }; // access-errors: ok — verified fact: document.cookie was enumerated in this browser and the name is absent
       } catch (error) {
         return { success: false, message: `Error verifying cookie: ${error}` };
       }
@@ -308,7 +308,7 @@ function useLocalStorageManager(): UseLocalStorageManager {
               message: `Storage item found: ${fullKey}`,
               data: JSON.parse(value),
             }
-          : { success: false, message: `Storage item not found: ${fullKey}` };
+          : { success: false, message: `Storage item not found: ${fullKey}` }; // access-errors: ok — verified fact: localStorage.getItem in this browser returned null for the key
       } catch (error) {
         return {
           success: false,

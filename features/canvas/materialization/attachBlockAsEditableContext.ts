@@ -283,7 +283,7 @@ export async function attachBlockAsEditableContext(
       rowContent = extractBody(latest) || body;
     } else {
       // Stale id — fall back to upsert below.
-      steps.push("existing id not found in DB — will upsert");
+      steps.push("existing id returned no row — will upsert");
       artifactId = null;
     }
   }

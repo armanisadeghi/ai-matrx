@@ -7,7 +7,10 @@
  * `aidream/api/routers/kg_cost.py` endpoints exactly — admin-gated INSIDE
  * each function (public.is_super_admin()), identity from auth.uid() only.
  */
+import { makeAssertData } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
+
+const assertData = makeAssertData("load the knowledge-graph cost data");
 
 // ---------------------------------------------------------------------------
 // Wire types — same field names the retired FastAPI models used
@@ -119,8 +122,7 @@ export async function getKgCostSummary(
   let query = supabase.rpc("fn_kg_cost_summary");
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as KgCostSummaryResponse;
+  return assertData(data, error) as unknown as KgCostSummaryResponse;
 }
 
 export async function listOrgCosts(
@@ -134,8 +136,7 @@ export async function listOrgCosts(
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as OrgCostListResponse;
+  return assertData(data, error) as unknown as OrgCostListResponse;
 }
 
 export async function getOrgCostDetail(
@@ -146,8 +147,7 @@ export async function getOrgCostDetail(
   let query = supabase.rpc("fn_kg_cost_org_detail", { p_org_id: orgId });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as OrgCostDetailResponse;
+  return assertData(data, error) as unknown as OrgCostDetailResponse;
 }
 
 export async function listPendingBatches(
@@ -161,8 +161,7 @@ export async function listPendingBatches(
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as PendingBatchListResponse;
+  return assertData(data, error) as unknown as PendingBatchListResponse;
 }
 
 export async function getBatchDetail(
@@ -175,6 +174,5 @@ export async function getBatchDetail(
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data as unknown as BatchDetailResponse;
+  return assertData(data, error) as unknown as BatchDetailResponse;
 }

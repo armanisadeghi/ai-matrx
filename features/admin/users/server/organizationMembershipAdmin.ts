@@ -1,5 +1,6 @@
 import "server-only";
 
+import { operationFailed } from "@/utils/errors";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import type {
@@ -124,6 +125,6 @@ export async function manageAdminOrganizationMembership(args: {
     },
   );
 
-  if (error) throw new Error(error.message || "Membership change failed");
+  if (error) throw operationFailed("apply that membership change", error);
   return data;
 }

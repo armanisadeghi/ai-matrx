@@ -470,6 +470,7 @@ export const launchAgentExecution = createAsyncThunk<
     const shortcut = getShortcutRecordFromState(state, shortcutId);
 
     if (!shortcut) {
+      // access-errors: ok — browser-local Redux lookup after ensureShortcutLoaded; absence verified in the store, no claim about the record itself
       throw new Error(`Shortcut ${shortcutId} not found in Redux`);
     }
 

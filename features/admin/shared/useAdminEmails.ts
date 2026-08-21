@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 
+import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 
 let adminEmailsPromise: Promise<Record<string, string>> | null = null;
@@ -22,7 +23,7 @@ function loadAdminEmails(): Promise<Record<string, string>> {
       if (error) {
         // Allow a retry on the next mount instead of caching the failure.
         adminEmailsPromise = null;
-        throw new Error(error.message);
+        throw operationFailed("load the admin email list", error);
       }
       const map: Record<string, string> = {};
       for (const admin of data ?? []) {

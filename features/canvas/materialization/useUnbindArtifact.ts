@@ -86,9 +86,7 @@ export function useUnbindArtifact(args: UseUnbindArtifactArgs) {
             ? "This artifact type can't detach yet — it would re-convert on reload. Use Copy as Markdown instead."
             : result.reason === "ref_not_found"
               ? `Couldn't find this artifact's reference in the ${surfaceNoun}`
-              : result.reason === "row_not_found"
-                ? "The saved artifact no longer exists"
-                : (result.errors[0] ?? "Detach failed");
+              : (result.errors[0] ?? "Detach failed");
         toast.error(message);
         return false;
       }

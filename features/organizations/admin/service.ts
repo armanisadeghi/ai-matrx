@@ -8,6 +8,7 @@
  */
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { OrgRole } from "../types";
 import type {
   OrgAdminAuditEntry,
@@ -97,6 +98,14 @@ export async function getOrgMember(orgId: string, userId: string): Promise<OrgAd
   });
   if (error) throw pgErrorToError(error);
   const row = (data ?? {}) as unknown as Record<string, unknown>;
+  if (!row.user_id) {
+    throw recordUnavailable({
+      entity: "member",
+      reason: "unknown",
+      recordId: userId,
+      relation: "org_admin_get_member",
+    });
+  }
   const resources = Array.isArray(row.resources)
     ? (row.resources as Record<string, unknown>[]).map(mapResource)
     : [];

@@ -18,6 +18,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { TablesUpdate } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";

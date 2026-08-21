@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
 import { AppConfigHistoryPanel } from "@/features/admin/applications/config/components/AppConfigHistoryPanel";
@@ -184,7 +185,10 @@ export function AppConfigEditor({
     if (error || !data) {
       toast({
         title: "Reload failed",
-        description: error?.message ?? `Row for "${app}" not found`,
+        description: operationFailed(
+          `reload the latest "${app}" configuration`,
+          error ?? undefined,
+        ).message,
         variant: "destructive",
       });
       return;

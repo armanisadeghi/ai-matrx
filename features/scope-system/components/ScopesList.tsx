@@ -264,8 +264,9 @@ export function ScopesList({
   if (!scopeType) {
     return typesLoaded ? (
       <ScopeNotFound
-        title="Scope type not found"
-        message={`No scope type matches "${typeId}" in this organization.`}
+        token="scope_type"
+        param={typeId}
+        entityLabel="scope type"
         backHref={orgScopesHref(orgSlugOrId)}
         backLabel="Back to scopes"
       />

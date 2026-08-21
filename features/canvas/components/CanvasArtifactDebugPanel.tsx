@@ -153,7 +153,7 @@ export function CanvasArtifactDebugPanel({
               !loading && (
                 <p className="text-destructive">
                   {hasRealId
-                    ? "UUID set but row not found in DB"
+                    ? "UUID set but the DB read returned no row"
                     : "No artifact UUID — canvas is ephemeral"}
                 </p>
               )

@@ -2,6 +2,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { operationFailed } from "@/utils/errors";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   resolvePersonalOrgId,
   ensureOrgId,
@@ -342,7 +344,9 @@ export async function updateNote(
         );
       }
     }
-    throw new Error("You don't have permission to save this note.");
+    throw operationFailed(
+      "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
+    );
   }
 
   await syncNoteContextLinks({
@@ -372,7 +376,9 @@ export async function deleteNote(id: string): Promise<void> {
   }
   // RLS silently filters a non-admin sharee's delete to 0 rows — surface it.
   if (!data || data.length === 0) {
-    throw new Error("You don't have permission to delete this note.");
+    throw operationFailed(
+      "delete this note — nothing was changed. It may need owner access you don't have, or the note may already be gone",
+    );
   }
 }
 
@@ -392,8 +398,8 @@ export async function permanentlyDeleteNote(id: string): Promise<void> {
     throw error;
   }
   if (!data || data.length === 0) {
-    throw new Error(
-      "You don't have permission to permanently delete this note.",
+    throw operationFailed(
+      "permanently delete this note — nothing was changed. It may need owner access you don't have, or the note may already be gone",
     );
   }
 }
@@ -432,9 +438,18 @@ export async function copyNote(id: string): Promise<Note> {
     .eq("id", id)
     .maybeSingle();
 
-  if (fetchError || !original) {
+  if (fetchError) {
     console.error("Error fetching note to copy:", fetchError);
-    throw fetchError || new Error("Note not found");
+    throw operationFailed("copy this note", fetchError);
+  }
+  if (!original) {
+    throw recordUnavailable({
+      entity: "note",
+      reason: "unknown",
+      recordId: id,
+      token: "note",
+      relation: "workbench.notes",
+    });
   }
 
   // Smart label handling
