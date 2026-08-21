@@ -97,7 +97,8 @@ verification method → completes it → a SERVICE path stamps `verified_at` →
   (guardian-auth'd, validates an active link) creates the session; the **Stripe webhook**
   (`app/api/stripe/webhook` → `consent/verificationSync.confirmCoppaVerification`) voids the
   auth and marks the link verified. Reuses the existing `lib/stripe/server` client +
-  `billing.customer` mapping; kept in files SEPARATE from subscription checkout + creator
+  `billing.customer` mapping; non-production requires `STRIPE_TEST_MODE_SECRET_KEY` and never
+  substitutes the live account. Kept in files SEPARATE from subscription checkout + creator
   payouts. Uses Stripe TEST keys in dev (`STRIPE_TEST_MODE_SECRET_KEY`).
 - **(b) Signed form — scaffold.** A parent downloads/e-signs a consent form and uploads it;
   an admin reviews and confirms via `guardian_confirm_verification(link, 'signed_form', file_id)`
@@ -221,6 +222,8 @@ pattern every other education data-rights and age RPC already uses (`export`, `d
   (COPPA + class both use `mode:'payment'`).
 
 ## Change log
+
+- `2026-08-21` — Non-production COPPA verification refuses live Stripe credential substitution.
 
 - `2026-08-20` — **`guardian_confirm_verification` now audits itself.** Every other education
   data-rights and age RPC wrote to `education.data_rights_event`; the single most consequential

@@ -408,7 +408,7 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
 - [x] Admin usage read surface (`/administration/entitlements`, super-admin) + `usage_admin_summary` / `usage_my_summary` (P5).
 - [x] Stripe machinery: SDK, checkout, customer portal (one-click cancel), webhooks, lifecycle sync, idempotency + ordering guard.
 - [x] Stripe TEST secret/publishable keys are in `.env.local` (`STRIPE_TEST_MODE_SECRET_KEY` /
-      `STRIPE_TEST_MODE_PUBLISHABLE_KEY`, win over the live keys per `lib/stripe/server.ts`); a
+      `STRIPE_TEST_MODE_PUBLISHABLE_KEY`, required outside confirmed Vercel production); a
       test `billing.product`/`price` row is seeded (`AI Matrx Premium (TEST)`, $10/mo).
 - [ ] **Blocked on Arman:** `STRIPE_WEBHOOK_SECRET` is still unset (only remaining gap — run
       `stripe listen --forward-to localhost:3000/api/stripe/webhook` for a dev secret, or pull the
@@ -456,6 +456,8 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-08-21** — Stripe credential resolution selects test/live by deployment identity and refuses cross-account fallback.
 
 - **2026-08-20** — **The first tests this feature has ever had, and D-5 written down.**
   `features/entitlements/__tests__/` did not exist, in the most invariant-heavy feature in

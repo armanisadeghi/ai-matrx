@@ -4,40 +4,43 @@
 // checkout + portal) — the ONE place the app talks to Stripe. Never import this
 // into client code.
 //
-// Key resolution (test-safe by construction): TEST keys WIN when present. So a
-// dev/preview env with STRIPE_TEST_MODE_SECRET_KEY set never touches the live
-// account, even though STRIPE_SECRET_KEY (live) is also in .env.local.
-//   secret:      STRIPE_TEST_MODE_SECRET_KEY  ?? STRIPE_SECRET_KEY
-//   publishable: STRIPE_TEST_MODE_PUBLISHABLE_KEY ?? NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-//   webhook:     STRIPE_WEBHOOK_SECRET (from `stripe listen` or the dashboard)
-// Production sets only the live keys (no TEST_MODE vars) → live is used there.
+// Credential mode is selected by deployment identity, never key availability:
+// confirmed Vercel production uses live keys; every other environment uses test.
 
 import Stripe from "stripe";
 
 let cached: Stripe | null = null;
 
-function resolveSecretKey(): string | undefined {
-  return (
-    process.env.STRIPE_TEST_MODE_SECRET_KEY?.trim() ||
-    process.env.STRIPE_SECRET_KEY?.trim()
+export class StripeCredentialModeError extends Error {}
+
+export function requiredStripeMode(): "test" | "live" {
+  return process.env.VERCEL_ENV === "production" ? "live" : "test";
+}
+
+export function resolveSecretKeyOrRaise(): string {
+  /** Missing test credentials used to fall through to the live account. Those
+   * are different money ledgers, not equivalent credentials. Fix the exact
+   * mode's setting or do not run Stripe in this environment. */
+  const mode = requiredStripeMode();
+  const setting = mode === "live" ? "STRIPE_SECRET_KEY" : "STRIPE_TEST_MODE_SECRET_KEY";
+  const key = process.env[setting]?.trim();
+  if (!key) throw new StripeCredentialModeError(
+    `Stripe ${mode} mode was requested by VERCEL_ENV=${process.env.VERCEL_ENV || "unset"}, but ${setting} is missing. ` +
+    `Set ${setting} for this environment, or leave Stripe unavailable; substituting the ${mode === "live" ? "test" : "live"} account is refused.`
   );
+  return key;
 }
 
 /** 'test' when a test key is active, else 'live'. Drives the guard + logging. */
 export function stripeMode(): "test" | "live" {
-  const key = resolveSecretKey();
-  return key?.startsWith("sk_test_") ? "test" : "live";
+  return requiredStripeMode();
 }
 
 /** Lazily construct the Stripe client. Throws clearly if the key is missing. */
 export function getStripe(): Stripe {
   if (cached) return cached;
-  const key = resolveSecretKey();
-  if (!key) {
-    throw new Error(
-      "No Stripe secret key configured (STRIPE_TEST_MODE_SECRET_KEY or STRIPE_SECRET_KEY).",
-    );
-  }
+  // 🚨 Do not restore `test || live`; the resolver owns account identity.
+  const key = resolveSecretKeyOrRaise();
   // Omit apiVersion → the SDK uses the version it was built against, avoiding a
   // literal-type mismatch on upgrades.
   cached = new Stripe(key);
@@ -46,10 +49,8 @@ export function getStripe(): Stripe {
 
 /** Publishable key for the active mode (client-safe to expose). */
 export function getPublishableKey(): string | undefined {
-  return (
-    process.env.STRIPE_TEST_MODE_PUBLISHABLE_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim()
-  );
+  const mode = requiredStripeMode();
+  return process.env[mode === "live" ? "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" : "STRIPE_TEST_MODE_PUBLISHABLE_KEY"]?.trim();
 }
 
 export function getWebhookSecret(): string {
@@ -64,5 +65,5 @@ export function getWebhookSecret(): string {
 
 /** True when Stripe is configured enough to run checkout (a secret key exists). */
 export function isStripeConfigured(): boolean {
-  return Boolean(resolveSecretKey());
+  try { resolveSecretKeyOrRaise(); return true; } catch { return false; }
 }

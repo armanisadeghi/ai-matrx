@@ -22,6 +22,17 @@ import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveServer } from "@/lib/redux/preferences/adminPreferencesSlice";
 import { hydrateContextState } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
 
+export class SelectedBackendUnavailableError extends Error {}
+
+export function resolveSelectedBackendOrRaise(env: string): string {
+  const url = BACKEND_URLS[env];
+  if (!url) throw new SelectedBackendUnavailableError(
+    `Backend environment "${env}" was requested, but its NEXT_PUBLIC_BACKEND_URL_* setting is missing. ` +
+    "Configure that selected environment or select another one explicitly; production substitution is refused."
+  );
+  return url;
+}
+
 // Wire shape from GET /cx/conversations/{id}/context-state. JSONB-shaped
 // fields are typed as Record<string, unknown> so the response can be
 // dispatched into the slice without casting. The slice's reducer narrows
@@ -59,10 +70,10 @@ export const fetchContextState = createAsyncThunk<
     }
 
     const env = selectEffectiveServer(state);
-    const baseUrl = BACKEND_URLS[env] ?? BACKEND_URLS.production;
-    if (!baseUrl) {
-      return rejectWithValue("no_backend_url");
-    }
+    // 🚨 Do not restore `?? production`; this resolver owns endpoint identity.
+    let baseUrl: string;
+    try { baseUrl = resolveSelectedBackendOrRaise(env); }
+    catch (error) { return rejectWithValue((error as Error).message); }
 
     const url = `${baseUrl}${ENDPOINTS.cx.contextState(conversationId)}`;
     const response = await fetch(url, {
