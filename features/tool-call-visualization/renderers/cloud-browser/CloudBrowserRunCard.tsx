@@ -52,13 +52,14 @@ function ScreenshotPreview({
   index: number;
 }) {
   const openImageViewer = useOpenImageViewerWindow();
-  const resolvedUrl = useFileSrc(mediaSource(media));
+  const source = mediaSource(media);
+  const resolvedUrl = useFileSrc(source);
   const label = `Cloud Browser screenshot ${index + 1}`;
 
   return (
     <div className="mt-2 overflow-hidden rounded-lg border border-border/60 bg-muted/20">
       <InlineMediaRef
-        ref={media}
+        ref={{ ...media }}
         as="img"
         size="fill"
         fit="contain"
