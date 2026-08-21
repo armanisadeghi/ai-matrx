@@ -786,6 +786,12 @@
           "description": "Provider-native voice id or name.",
           "title": "Voice",
           "type": "string"
+        },
+        "gender": {
+          "default": "",
+          "description": "Optional speaker gender ('male' / 'female'). Never sent to a provider — it lets TTSVoiceConfig pair voices with the SCRIPT's speaker labels by gender when the two disagree, instead of positionally (which inverted speakers: a male character voiced female).",
+          "title": "Gender",
+          "type": "string"
         }
       },
       "required": [

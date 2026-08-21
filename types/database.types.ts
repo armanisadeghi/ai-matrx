@@ -36925,6 +36925,7 @@ export type Database = {
         Args: { p_module_key: string; p_namespace: string; p_org_id: string }
         Returns: Json
       }
+      org_null_ratchet_snapshot: { Args: never; Returns: Json }
       outreach_unsubscribe: {
         Args: { p_reason?: string; p_token: string; p_user_agent?: string }
         Returns: Json
@@ -45308,6 +45309,9 @@ export type Database = {
           target_ref: string
           trigger: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           attempt_count?: number
@@ -45345,6 +45349,9 @@ export type Database = {
           target_ref: string
           trigger?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           attempt_count?: number
@@ -45382,6 +45389,9 @@ export type Database = {
           target_ref?: string
           trigger?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }

@@ -18,6 +18,7 @@ import type {
 import type { GscDigRuleContent } from "@/features/marketing/search-console/lib/dig-rules";
 import { serializeDigConditions } from "@/features/marketing/search-console/lib/dig-rules";
 import { makeAssertData } from "@/utils/errors";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -70,7 +71,9 @@ export interface DigRuleInput {
   organizationId: string | null;
 }
 
-function ruleWriteColumns(input: DigRuleInput) {
+function ruleWriteColumns(
+  input: Omit<DigRuleInput, "organizationId"> & { organizationId: string },
+) {
   return {
     name: input.name,
     description: input.description,
@@ -89,12 +92,13 @@ function ruleWriteColumns(input: DigRuleInput) {
 export async function createDigRule(
   input: DigRuleInput,
 ): Promise<GscDigRuleRow> {
+  const organizationId = await ensureOrgId(input.organizationId);
   const session = await requireAuthenticatedSupabaseSession(supabase);
   const response = await supabase
     .schema("seo")
     .from("gsc_dig_rule")
     .insert({
-      ...ruleWriteColumns(input),
+      ...ruleWriteColumns({ ...input, organizationId }),
       created_by: session.user.id,
       updated_by: session.user.id,
     })
@@ -107,11 +111,15 @@ export async function updateDigRule(
   ruleId: string,
   input: DigRuleInput,
 ): Promise<GscDigRuleRow> {
+  const organizationId = await ensureOrgId(input.organizationId);
   const session = await requireAuthenticatedSupabaseSession(supabase);
   const response = await supabase
     .schema("seo")
     .from("gsc_dig_rule")
-    .update({ ...ruleWriteColumns(input), updated_by: session.user.id })
+    .update({
+      ...ruleWriteColumns({ ...input, organizationId }),
+      updated_by: session.user.id,
+    })
     .eq("id", ruleId)
     .select("*")
     .single();
@@ -133,6 +141,7 @@ export async function adoptDigTemplate(
   siteId: string | null,
   organizationId: string | null,
 ): Promise<GscDigRuleRow> {
+  const resolvedOrganizationId = await ensureOrgId(organizationId);
   const session = await requireAuthenticatedSupabaseSession(supabase);
   const response = await supabase
     .schema("seo")
@@ -148,7 +157,7 @@ export async function adoptDigTemplate(
       base_filters: template.base_filters,
       traffic_class: template.traffic_class,
       site_id: siteId,
-      organization_id: organizationId,
+      organization_id: resolvedOrganizationId,
       created_by: session.user.id,
       updated_by: session.user.id,
     })

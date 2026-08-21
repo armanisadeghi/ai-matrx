@@ -527,6 +527,9 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- `2026-08-21` — Codex: Made Search Console rule creates, updates, and template
+  adoption resolve a canonical non-null organization before writing.
+
 - 2026-08-20 — Codex: **The contained YouTube surface passed a real fresh-identity proof.** Google showed the exact new permission as **View your YouTube account**. The canonical exchange discovered the fresh identity's owned channel, and Google Connections rendered its identity/statistics plus 15 real recent uploads—including private-video titles, dates, view counts, and privacy status—with working channel/video doors. This proves the result comes from authenticated `youtube.readonly` access rather than public metadata. Production Data Access remained unchanged.
 - 2026-08-20 — Codex: **YouTube consent no longer inherits incompatible Workspace grants.** Its authorization-code request sets `include_granted_scopes=false`, so Google receives identity plus `youtube.readonly` instead of rejecting the request after merging an existing `drive.file` grant. Other Google grants remain intact and capability-specific consent stays separate.
 - 2026-08-20 — Codex: **YouTube gained its focused, contained reviewer surface.** Google Connections now gives internal testers an explicit read-only disclosure, a separate `youtube.readonly` authorization that does not bundle Search Console or Workspace, deliberate selection of an owned discovered channel, and a visible in-app channel/statistics/recent-upload preview with working doors back to the channel and every video. The server re-verifies super-admin status, the exact connection/resource tuple, and the granted scope before minting a short-lived token; normal users fail closed while the campaign is unapproved. `yt-analytics.readonly` is deliberately excluded because this surface proves the requested outcome with YouTube Data alone.

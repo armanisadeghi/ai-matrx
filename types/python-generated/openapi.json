@@ -14110,13 +14110,53 @@
           "SEO Collections"
         ],
         "summary": "Keyword Classify",
-        "description": "Run the Keyword Classifier over unclassified keywords (or explicit ids),\nfilling the 13 intrinsic columns + envelope — a DURABLE streamed command.\n\nTHE FLOATING LAW: one 40-keyword batch is ~88s of paid model work. It\nstreams its real milestones (eligible set → batch plan → per-batch\nstarted/completed) AND the classifier's own token output, so the operator\nwatches the work instead of a spinner. The stream also removes the ~100s\nCDN severance the synchronous version hit. Rejoin with\n``POST /seo/collections/{run_id}/rejoin``.",
+        "description": "Run the Keyword Classifier over unclassified keywords (or explicit ids),\nfilling the 13 intrinsic columns + envelope — a DURABLE streamed command.\n\n``site_id`` carries that site's KW business guidelines (D35) into every\nbatch as a named agent variable — the terminology doctrine that lets the\nmodel read an industry's words the way the industry uses them. It is\nnever appended to user_input (THE USER-INPUT LAW).\n\nTHE FLOATING LAW: one 40-keyword batch is ~88s of paid model work. It\nstreams its real milestones (eligible set → batch plan → per-batch\nstarted/completed) AND the classifier's own token output, so the operator\nwatches the work instead of a spinner. The stream also removes the ~100s\nCDN severance the synchronous version hit. Rejoin with\n``POST /seo/collections/{run_id}/rejoin``.",
         "operationId": "keyword_classify_seo_keywords_classify_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/KeywordClassifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/keywords/classification/backfill": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Keyword Facet Backfill",
+        "description": "Advance the universal-facet backfill by one bounded, demand-ordered pass.\n\nThis is the product flow the browser loop was standing in for: the ledger\n(`seo.keyword_classification_queue`) remembers what has been done and what is\nowed, so pressing this twenty times finishes the job and closing the tab loses\nnothing. Progress is SERVER state — the strip reads\n`seo.keyword_classification_status()`, not this response.\n\nCeilings come from the `seo.keyword_classification` knobs; a pass that hits the\ndaily ceiling says so instead of quietly doing nothing. Rejoin a live pass with\n`POST /seo/collections/{run_id}/rejoin`.",
+        "operationId": "keyword_facet_backfill_seo_keywords_classification_backfill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeywordFacetBackfillBody"
               }
             }
           },
@@ -50560,6 +50600,59 @@
         }
       }
     },
+    "/browser-manager/runs/{run_id}/capture-result": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Record Capture Outcome",
+        "description": "Retire the credential-capture card with a value-free receipt (D-11).",
+        "operationId": "record_capture_outcome_browser_manager_runs__run_id__capture_result_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureOutcomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureOutcomeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser-manager/runs/{run_id}/authenticator": {
       "post": {
         "tags": [
@@ -74241,6 +74334,63 @@
         "type": "object",
         "title": "CaptureHealth",
         "description": "Capture-failure counter over the alarm window."
+      },
+      "CaptureOutcomeRequest": {
+        "properties": {
+          "handoff_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Handoff Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "captured",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "credential_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential Item Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "handoff_id",
+          "status"
+        ],
+        "title": "CaptureOutcomeRequest",
+        "description": "What the person did with the D-11 credential-capture card.\n\n🚨 There is no value-bearing field and unknown keys are refused: a\ncredential cannot ride this reporting path. The values themselves went\ncard → ``POST /api/vault/browser-login/capture`` and never touch the\ncontrol plane."
+      },
+      "CaptureOutcomeResponse": {
+        "properties": {
+          "handoff_id": {
+            "type": "string",
+            "title": "Handoff Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "handoff_id",
+          "status"
+        ],
+        "title": "CaptureOutcomeResponse"
       },
       "CaptureResponse": {
         "properties": {
@@ -112350,6 +112500,17 @@
             "minimum": 1,
             "title": "Limit",
             "default": 200
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
           }
         },
         "additionalProperties": false,
@@ -112447,6 +112608,67 @@
           "keywords"
         ],
         "title": "KeywordCreate"
+      },
+      "KeywordFacetBackfillBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "refresh": {
+            "type": "boolean",
+            "title": "Refresh",
+            "default": true
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KeywordFacetBackfillBody"
       },
       "KeywordReorderRequest": {
         "properties": {
@@ -161656,6 +161878,12 @@
             "type": "string",
             "title": "Voice",
             "description": "Provider-native voice id or name."
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender",
+            "description": "Optional speaker gender ('male' / 'female'). Never sent to a provider — it lets TTSVoiceConfig pair voices with the SCRIPT's speaker labels by gender when the two disagree, instead of positionally (which inverted speakers: a male character voiced female).",
+            "default": ""
           }
         },
         "additionalProperties": false,

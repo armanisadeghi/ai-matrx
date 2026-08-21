@@ -12,6 +12,7 @@ import type {
   KeywordClassRuleRow,
 } from "@/features/marketing/search-console/lib/class-rules";
 import { makeAssertData } from "@/utils/errors";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -42,7 +43,7 @@ export async function listClassRules(
 function ruleWriteColumns(
   draft: ClassRuleDraft,
   siteId: string | null,
-  organizationId: string | null,
+  organizationId: string,
 ) {
   return {
     name: draft.name.trim(),
@@ -62,6 +63,7 @@ export async function createClassRule(
   siteId: string | null,
   organizationId: string | null,
 ): Promise<KeywordClassRuleRow> {
+  const resolvedOrganizationId = await ensureOrgId(organizationId);
   const db = await seoDb();
   const {
     data: { user },
@@ -70,7 +72,7 @@ export async function createClassRule(
   const response = await db
     .from("keyword_class_rule")
     .insert({
-      ...ruleWriteColumns(draft, siteId, organizationId),
+      ...ruleWriteColumns(draft, siteId, resolvedOrganizationId),
       created_by: user.id,
       updated_by: user.id,
     })
@@ -85,9 +87,10 @@ export async function updateClassRule(
   siteId: string | null,
   organizationId: string | null,
 ): Promise<KeywordClassRuleRow> {
+  const resolvedOrganizationId = await ensureOrgId(organizationId);
   const response = await (await seoDb())
     .from("keyword_class_rule")
-    .update(ruleWriteColumns(draft, siteId, organizationId))
+    .update(ruleWriteColumns(draft, siteId, resolvedOrganizationId))
     .eq("id", ruleId)
     .select("*")
     .single();
@@ -108,6 +111,7 @@ export async function adoptClassTemplate(
   siteId: string,
   organizationId: string | null,
 ): Promise<KeywordClassRuleRow> {
+  const resolvedOrganizationId = await ensureOrgId(organizationId);
   const db = await seoDb();
   const {
     data: { user },
@@ -124,7 +128,7 @@ export async function adoptClassTemplate(
       notes: template.notes,
       auto_apply: false,
       site_id: siteId,
-      organization_id: organizationId,
+      organization_id: resolvedOrganizationId,
       created_by: user.id,
       updated_by: user.id,
     })

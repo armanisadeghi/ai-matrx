@@ -15,6 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { UserAccountData, UserAccountPatch } from "@/features/user-profile/types";
 import { EMPTY_ACCOUNT_DATA } from "@/features/user-profile/types";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 
 // Fields the client is allowed to PATCH on this surface. Anything outside
 // this list is ignored — auth.users has many sensitive metadata namespaces
@@ -195,11 +196,13 @@ export async function PATCH(request: NextRequest) {
         profilesPatch.display_name = fallback;
       }
 
+      const organizationId = await ensureOrgIdServer(supabase, null);
       const { error: upsertError } = await supabase
         .schema("users").from("profiles")
         .upsert(
           {
             id: user.id,
+            organization_id: organizationId,
             ...profilesPatch,
             // Keep updated_at fresh on every save.
             updated_at: new Date().toISOString(),
