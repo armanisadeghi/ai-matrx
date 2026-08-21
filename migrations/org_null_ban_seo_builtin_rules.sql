@@ -140,7 +140,7 @@ BEGIN
   -- The backstop is what makes the NOT NULL flip survivable (db-rules §2).
   SELECT count(*) INTO v_n FROM pg_trigger t
    WHERE t.tgrelid IN ('seo.gsc_dig_rule'::regclass, 'seo.keyword_class_rule'::regclass)
-     AND NOT t.tgisinternal AND t.tgfoid::regproc::text = 'public._stamp_org_default';
+     AND NOT t.tgisinternal AND t.tgfoid = 'public._stamp_org_default'::regproc;
   IF v_n <> 2 THEN RAISE EXCEPTION 'org backstop missing (found % of 2)', v_n; END IF;
 
   -- Every builtin must sit on the global-readable system org.
