@@ -104,9 +104,12 @@ function seededEnvelopeFor(source: string): CanonicalBlockIR | undefined {
 
 function looksLikeCompleteJsonObject(trimmed: string): boolean {
   if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return false;
-  const opens = (trimmed.match(/\{/g) || []).length;
-  const closes = (trimmed.match(/\}/g) || []).length;
-  return opens > 0 && opens === closes;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
 }
 
 export function memoizedRegionEnvelope(

@@ -44,6 +44,7 @@ import {
   envelopeForCompletedFenceRegion,
   envelopeForCompletedXmlRegion,
 } from "@/features/content-ir/surfaces/xml-finalize";
+import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 
@@ -84,6 +85,64 @@ export interface SplitterBlock {
  * Kept as an alias so existing imports continue to compile during migration.
  */
 export type ContentBlock = SplitterBlock;
+
+function blockHasResolvedRootKind(block: SplitterBlock): boolean {
+  const envelope = block.metadata?.[IR_ENVELOPE_KEY];
+  if (typeof envelope !== "object" || envelope === null) return false;
+  const root = (envelope as { root?: unknown }).root;
+  if (typeof root !== "object" || root === null) return false;
+  const kind = (root as { kind?: unknown }).kind;
+  return typeof kind === "string" && kind.length > 0;
+}
+
+/**
+ * Detection is recursive across arrival containers: a complete object that
+ * directly declares `__kind` becomes its own JSON/Content-IR block even when
+ * Markdown first captured it inside prose, a non-JSON fence, or XML. Every
+ * byte around recovered objects stays in document order as its original block
+ * type. Artifact wrappers already carry their body envelope for selectors and
+ * retain their identity/chrome; they are the one container that must not be
+ * exploded into anonymous fragments.
+ */
+export function recoverEmbeddedKindJsonBlocks(
+  input: SplitterBlock[],
+): SplitterBlock[] {
+  const recovered: SplitterBlock[] = [];
+
+  for (const block of input) {
+    if (block.type === "artifact" || blockHasResolvedRootKind(block)) {
+      recovered.push(block);
+      continue;
+    }
+
+    const pieces = splitAroundEmbeddedKindJson(block.content);
+    if (pieces.length === 1 && pieces[0]?.type === "container") {
+      recovered.push(block);
+      continue;
+    }
+
+    for (const piece of pieces) {
+      if (piece.type === "kind") {
+        recovered.push({
+          type: "code",
+          content: piece.content,
+          language: "json",
+          metadata: withIrEnvelope(piece.content, undefined),
+        });
+        continue;
+      }
+
+      if (!piece.content) continue;
+      recovered.push({
+        ...block,
+        content: piece.content,
+        metadata: undefined,
+      });
+    }
+  }
+
+  return recovered;
+}
 
 
 /**
@@ -795,6 +854,13 @@ function extractUnrecognizedXmlBlock(
   }
 
   return null;
+}
+
+/** Redux parity hook: classify a whole text block before kind recovery splits it. */
+export function isCompleteUnrecognizedXmlContainer(source: string): boolean {
+  const lines = source.split(/\r?\n/);
+  const extraction = extractUnrecognizedXmlBlock(0, [...lines]);
+  return extraction !== null && extraction.nextIndex >= lines.length;
 }
 
 /**
@@ -2424,5 +2490,5 @@ export const splitContentIntoBlocksV2 = (
     blocks.push({ type: "text", content: currentText.trimEnd() });
   }
 
-  return blocks;
+  return recoverEmbeddedKindJsonBlocks(blocks);
 };

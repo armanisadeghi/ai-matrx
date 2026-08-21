@@ -30,6 +30,7 @@ import {
   countInlineImages,
   detectVideoMarkdown,
   detectMatrxFileMarkdown,
+  isCompleteUnrecognizedXmlContainer,
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
@@ -49,6 +50,8 @@ import {
   envelopeForCompletedFenceRegion,
   envelopeForCompletedXmlRegion,
 } from "@/features/content-ir/surfaces/xml-finalize";
+import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
+import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 // ============================================================================
@@ -469,7 +472,9 @@ export class StreamBlockAccumulator {
     if (this.irSession) {
       this.irCloseRegion();
     }
-    this.emitCurrentBlock(dispatch, "complete");
+    if (!this.emitRecoveredEmbeddedKindBlocks(dispatch)) {
+      this.emitCurrentBlock(dispatch, "complete");
+    }
     this.irEnvelope = null;
     this.irRegionIsXmlBody = false;
     this.irDisposeAll();
@@ -1347,6 +1352,15 @@ export class StreamBlockAccumulator {
         if (fenceEnvelope) this.irEnvelope = fenceEnvelope;
       }
     }
+    if (this.emitRecoveredEmbeddedKindBlocks(dispatch)) {
+      this.fenceClosedCleanly = false;
+      this.xmlClosedCleanly = false;
+      this.irEnvelope = null;
+      this.irRegionIsXmlBody = false;
+      this.currentBlockContent = "";
+      this.currentBlockLineCount = 0;
+      return;
+    }
     this.fenceClosedCleanly = false;
     this.xmlClosedCleanly = false;
     this.emitCurrentBlock(dispatch, "complete");
@@ -1354,6 +1368,62 @@ export class StreamBlockAccumulator {
     this.irRegionIsXmlBody = false;
     this.currentBlockContent = "";
     this.currentBlockLineCount = 0;
+  }
+
+  /**
+   * A surrounding Markdown/code/XML classification never outranks an inner
+   * complete object carrying `__kind`. Replace the formerly monolithic Redux
+   * block with lossless container fragments plus independently routable JSON
+   * blocks. The first fragment reuses the already-streamed block id; later
+   * fragments take consecutive ids, so the next ordinary openBlock continues
+   * at the correct document position.
+   */
+  private emitRecoveredEmbeddedKindBlocks(dispatch: DispatchFn): boolean {
+    if (this.currentBlockType === "artifact" || this.irEnvelope?.root.kind) {
+      return false;
+    }
+
+    // The one-shot XML extractor returns the body without boundary whitespace;
+    // match it so recovered fragment bytes agree across persisted and Redux
+    // paths. Other containers remain byte-verbatim.
+    const recoverySource =
+      this.subState.kind === "xml_tag" && !this.subState.isAttrXml
+        ? this.currentBlockContent.trim()
+        : this.currentBlockContent;
+    const pieces = splitAroundEmbeddedKindJson(recoverySource);
+    if (pieces.length === 1 && pieces[0]?.type === "container") return false;
+
+    const recoveredXmlContainer =
+      this.currentBlockType === "text" &&
+      isCompleteUnrecognizedXmlContainer(recoverySource);
+    const containerType = recoveredXmlContainer ? "code" : this.currentBlockType;
+    const containerData = recoveredXmlContainer
+      ? { language: "xml" }
+      : this.buildBlockData();
+    let emitted = 0;
+    for (const piece of pieces) {
+      if (!piece.content) continue;
+      if (emitted > 0) this.currentBlockIndex++;
+
+      const isKind = piece.type === "kind";
+      const block: RenderBlockPayload = {
+        blockId: this.currentBlockId,
+        blockIndex: this.currentBlockIndex,
+        type: isKind ? "code" : containerType,
+        status: "complete",
+        content: piece.content,
+        data: isKind ? { language: "json" } : containerData,
+        metadata: isKind
+          ? withIrEnvelope(piece.content, undefined)
+          : undefined,
+      };
+      dispatch(this.upsertAction({ requestId: this.requestId, block }));
+      emitted++;
+      this.emitCount++;
+    }
+
+    this.currentBlockEmitted = emitted > 0;
+    return emitted > 0;
   }
 
   /**
