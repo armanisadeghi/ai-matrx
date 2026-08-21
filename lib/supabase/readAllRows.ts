@@ -76,28 +76,6 @@ export interface ReadAllRowsOptions {
   pageSize?: number;
   /** Runaway guard. A read past this throws rather than looping forever. */
   maxRows?: number;
-  /**
-   * Pages fetched in parallel after the first page reveals the total
-   * (default 1 = fully sequential, the original behavior). Use for large
-   * relations where N sequential 1000-row round trips dominate latency
-   * (measured: 110k chat.tool_call rows = 111 pages ≈ 100s sequential).
-   * The completeness contract is unchanged — collected rows are verified
-   * against the declared total and a mismatch still THROWS. Requires a
-   * stable total order exactly like the sequential path.
-   */
-  concurrency?: number;
-  /**
-   * AGGREGATES-ONLY escape hatch for HOT tables (parallel mode only).
-   * Concurrent writers shift offset pages mid-read, so a busy relation can
-   * make the strict count check throw on every attempt (measured on
-   * chat.tool_call, which agents append to continuously). With `rowKey`
-   * set, collected rows are DEDUPED by that key and accepted when within
-   * one page of the declared total, logging the drift instead of throwing.
-   * The result is complete to within in-flight churn — fine for rendering
-   * a stats rollup, WRONG for an existence check, diff, or set
-   * subtraction. Never set this on a decision-making read.
-   */
-  rowKey?: (row: unknown) => string;
 }
 
 const DEFAULT_PAGE_SIZE = 1000;
@@ -133,87 +111,8 @@ export async function readAllRows<T>(
 ): Promise<T[]> {
   const pageSize = opts.pageSize ?? DEFAULT_PAGE_SIZE;
   const maxRows = opts.maxRows ?? DEFAULT_MAX_ROWS;
-  const concurrency = Math.max(1, opts.concurrency ?? 1);
   const rows: T[] = [];
   let total: number | null = null;
-
-  if (concurrency > 1) {
-    // Parallel mode: page 0 reveals the total, remaining pages fetch in waves.
-    const first = await query({ from: 0, to: pageSize - 1 });
-    if (first.error) {
-      throw new Error(
-        `readAllRows(${opts.label}): query failed — ${first.error.message}`,
-      );
-    }
-    const firstPage = first.data ?? [];
-    if (typeof first.count !== "number") {
-      if (firstPage.length < pageSize) return firstPage;
-      throw new IncompleteReadError(
-        opts.label,
-        firstPage.length,
-        null,
-        'the query returned no count — pass { count: "exact" } to select() so ' +
-          "completeness can be verified",
-      );
-    }
-    const declaredTotal = first.count;
-    if (declaredTotal > maxRows) {
-      throw new IncompleteReadError(
-        opts.label,
-        firstPage.length,
-        declaredTotal,
-        `exceeded the ${maxRows}-row safety limit`,
-      );
-    }
-    const pages: T[][] = [firstPage];
-    const starts: number[] = [];
-    for (let from = pageSize; from < declaredTotal; from += pageSize) {
-      starts.push(from);
-    }
-    for (let i = 0; i < starts.length; i += concurrency) {
-      const wave = starts.slice(i, i + concurrency);
-      const results = await Promise.all(
-        wave.map((from) => query({ from, to: from + pageSize - 1 })),
-      );
-      for (const res of results) {
-        if (res.error) {
-          throw new Error(
-            `readAllRows(${opts.label}): query failed — ${res.error.message}`,
-          );
-        }
-        pages.push(res.data ?? []);
-      }
-    }
-    let collected = pages.flat();
-    if (opts.rowKey) {
-      const seen = new Set<string>();
-      collected = collected.filter((row) => {
-        const key = opts.rowKey!(row);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    }
-    if (collected.length !== declaredTotal) {
-      const drift = Math.abs(collected.length - declaredTotal);
-      if (opts.rowKey && drift <= pageSize) {
-        console.warn(
-          `[readAllRows] ${opts.label}: accepted churn drift of ${drift} row(s) ` +
-            `(collected ${collected.length} of a declared ${declaredTotal}) — ` +
-            "aggregate-only read on a hot table.",
-        );
-        return collected;
-      }
-      throw new IncompleteReadError(
-        opts.label,
-        collected.length,
-        declaredTotal,
-        "final row count does not match the total the server reported " +
-          "(concurrent writes during a parallel read can shift pages — retry)",
-      );
-    }
-    return collected;
-  }
 
   for (let from = 0; ; from += pageSize) {
     const res = await query({ from, to: from + pageSize - 1 });
