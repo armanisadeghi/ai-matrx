@@ -175,8 +175,8 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `entity_mention` | Entity Mention | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `evidence_source` | Evidence Source | — | 1 | `generic_structured` | done | copy-B | explicit basic route; canonical example authored + validated where it was missing |
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | unclaimed | | |
-| `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | unclaimed | | |
+| `gsc_site_intake_bundle` | GSC Site Intake Bundle | — | 1 | | claimed | copy-D | final 4 |
+| `gsc_site_intake_proposal` | GSC Site Intake Proposal | — | 1 | | claimed | copy-D | final 4 |
 | `http_response` | HTTP Response | — | 1 | | claimed | copy-B | batch 3 |
 | `items` | Items (list result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
@@ -199,8 +199,8 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | | claimed | copy-B | batch 3 |
 | `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
-| `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
-| `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | unclaimed | | |
+| `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | claimed | copy-D | final 4 |
+| `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | claimed | copy-D | final 4 |
 | `string_list` | String List | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `table_rows` | Table Rows | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `text` | Text | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
