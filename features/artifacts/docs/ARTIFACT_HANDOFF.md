@@ -1,6 +1,6 @@
 # Artifact System — Handoff (2026-06-19)
 
-Pick-up doc for the next agent. The artifact system is the most important feature in the app. Vision reference: [`/Users/armanisadeghi/code/common-docs/systems/artifacts/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/artifacts/VISION.md). Shipped reality: [`../FEATURE.md`](../FEATURE.md).
+Pick-up doc for the next agent. The artifact system is the most important feature in the app. Vision reference: [`/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md). Shipped reality: [`../FEATURE.md`](../FEATURE.md).
 
 ## The governing principle (do not lose this)
 **Everything generated becomes an artifact UNLESS Arman says otherwise. Nothing is allowed to die as text.** The app is a two-way collaborative environment — every structured/durable output must persist *outside* the chat, be versioned, render-by-id (never re-parsed/re-created), and — where a domain system exists — **two-way sync** to it. A markdown table the agent makes is real data, not chat text. This was the #1 thing the prior agent kept getting wrong (treated materialization as opt-in; it is opt-OUT).

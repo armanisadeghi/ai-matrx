@@ -2,7 +2,7 @@
 status: active
 updated: 2026-08-15
 repos: [matrx-frontend]
-vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKILL.md, lib/coming-soon/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/growth-loop/VISION.md]
+vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKILL.md, lib/coming-soon/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/marketing/growth-loop/VISION.md]
 ---
 
 # Marketing module — consolidation and build-out
@@ -13,16 +13,16 @@ The module was **structurally repaired and then given its full intended shape**.
 
 | Area | Doc |
 | --- | --- |
-| Websites vertical (brands, crawls, coverage, GSC) **+ the `web.*` access model** | [common-docs/systems/websites/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md) |
+| Websites vertical (brands, crawls, coverage, GSC) **+ the `web.*` access model** | [common-docs/systems/marketing/websites-and-brands/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md) |
 | ↳ Backlinks workspace (provider profile, assessments, outreach) | [backlink-intelligence-frontend.md](backlink-intelligence-frontend.md) + aidream `docs/handoffs/backlink-intelligence-backend.md` |
 | ↳ Competitor link-gap / outreach targets | [competitor-link-gap.md](competitor-link-gap.md) · [outreach-system.md](outreach-system.md) |
 | ↳ Legacy `web.gsc_page_stat` retirement | [gsc-page-stat-retirement.md](gsc-page-stat-retirement.md) |
 | ↳ Per-page analysis workers (stabilization) | [per-page-analysis-stabilization.md](per-page-analysis-stabilization.md) |
 | Marketing ↔ CMS page join | [cms-page-hub.md](cms-page-hub.md) |
 | Page workspace authoring layer (desired values, drafts, keywords, tasks, Studio parity) | [marketing-page-workspace-evolution.md](marketing-page-workspace-evolution.md) |
-| Content Plan (client + server + CMS bridge) | SoR `common-docs/systems/content-planning/STATE.md` · `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md` (§3 Plan-side) · plan→site pipeline [website-factory-vision.md](website-factory-vision.md) · AI grounding [content-plan-ai-steps.md](content-plan-ai-steps.md) |
-| The umbrella pipeline (research→plan→pages→live→crawl→findings→fixes) | [growth-loop.md](growth-loop.md) · `common-docs/systems/growth-loop/` + `features/growth-loop/map/loop-map.ts` (the ONLY status source) |
-| SEO vertical server side (rank/keyword/backlink collection, providers, budgets) | aidream via [common-docs/systems/seo/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/seo/HANDOFF.md) |
+| Content Plan (client + server + CMS bridge) | SoR `common-docs/systems/marketing/content-planning/STATE.md` · `common-docs/systems/website-platform/cms/CMS-BUILDOUT-HANDOFF.md` (§3 Plan-side) · plan→site pipeline [website-factory-vision.md](website-factory-vision.md) · AI grounding [content-plan-ai-steps.md](content-plan-ai-steps.md) |
+| The umbrella pipeline (research→plan→pages→live→crawl→findings→fixes) | [growth-loop.md](growth-loop.md) · `common-docs/systems/marketing/growth-loop/` + `features/growth-loop/map/loop-map.ts` (the ONLY status source) |
+| SEO vertical server side (rank/keyword/backlink collection, providers, budgets) | aidream via [common-docs/systems/marketing/seo/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/HANDOFF.md) |
 | `seo` chat-tool renderer | [seo-tool-renderer.md](seo-tool-renderer.md) |
 | Live coordination board + parking lot | [../MARKETING_PROGRAM_BOARD.md](../MARKETING_PROGRAM_BOARD.md) |
 
@@ -52,7 +52,7 @@ The module was **structurally repaired and then given its full intended shape**.
 
 ### Partial
 1. **No surface manifests for the 11 reserved routes** — correct for now (nothing to declare), but a manifest is part of "done" for each one (`surface-authoring` skill).
-2. **Access asymmetry on `/marketing/ranks`:** `seo.rank_target` rows can be readable where their `web.site` row is not → raw site UUID instead of a name. Belongs to the access-model work in [common-docs/systems/websites/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md).
+2. **Access asymmetry on `/marketing/ranks`:** `seo.rank_target` rows can be readable where their `web.site` row is not → raw site UUID instead of a name. Belongs to the access-model work in [common-docs/systems/marketing/websites-and-brands/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md).
 
 ### Not started
 The other 7 pillar promises + 11 `marketing.tools.*` analyzer promises. **No database schema exists for any of them** (re-verified 2026-08-15: no social/email/ads/automation tables anywhere). The schema is the real work; routes and nav are already waiting. The user-facing promise text in `lib/coming-soon/registry.ts` IS the spec.
@@ -78,7 +78,7 @@ Testing: `/login` admin@admin.com / Password1234#. Dev server ONLY via `pnpm pre
 
 ## 4. Next steps, in order
 
-1. **Keep `/marketing/analytics` reserved until GA4 has honest synced evidence.** Reports now consume the GSC data that exists; `seo.web_analytics_daily` remains empty. GA4 activation is server work ([common-docs/systems/seo/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/seo/HANDOFF.md); OAuth/GA4 threads tracked in [common-docs/systems/websites/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/websites/HANDOFF.md) item 13).
+1. **Keep `/marketing/analytics` reserved until GA4 has honest synced evidence.** Reports now consume the GSC data that exists; `seo.web_analytics_daily` remains empty. GA4 activation is server work ([common-docs/systems/marketing/seo/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/HANDOFF.md); OAuth/GA4 threads tracked in [common-docs/systems/marketing/websites-and-brands/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/websites-and-brands/HANDOFF.md) item 13).
 2. **The access-asymmetry question (§2 Partial 2).**
 3. **Open defects touching this module** (from `FOUND_DEFECTS.md`, all still open 2026-08-15): D199 GSC keyword-class rules dark in prod · D180 hydration mismatch on every `(core)` marketing route · D150 item surfaces hide identities/doors · D141 audit dead-ends on large sites · D153 no per-site cost attribution · D74 `web.link_edge.http_status` never populated (no broken-link detection). Backlinks follow-ups are chipped in `.matrx/AGENT_TASKS.md` (`TASK-BL-*`).
 

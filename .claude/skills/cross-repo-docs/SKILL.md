@@ -83,7 +83,7 @@ symlink to it — edit the repo copy, never a detached copy.
      FEATURE.md/context-docs system. NOT here.
    - Two or more repos must agree on it (a shared DB, a wire protocol, a security model, a
      rendering contract) → here, one doc, with a **"Repositories" section up top naming every
-     repo it touches and what each one's role is** (see `systems/cms-system/STATE.md` — that section is
+     repo it touches and what each one's role is** (see `systems/website-platform/cms/STATE.md` — that section is
      mandatory, it IS the cure for single-repo thinking).
    - Execution plans / project briefs for work inside ONE repo → that repo, linking here for
      the system-of-record. Briefs are temporary; the doc here is durable. **This is not a
@@ -162,7 +162,7 @@ standard; the same setup is planned for every user sandbox). Every edit here kee
    frontmatter except the bundle-root index, which carries exactly `okf_version: "0.1"`. Log
    entries group under `## YYYY-MM-DD` headings, newest first, `**Update**`/`**Creation**`/
    `**Deprecation**` bold-keyword convention.
-3. **Links between concepts are bundle-relative** (`/systems/cms-system/STATE.md`) — stable under moves.
+3. **Links between concepts are bundle-relative** (`/systems/website-platform/cms/STATE.md`) — stable under moves.
    Broken links are tolerated by consumers (§5.3) but the linter warns; fix or justify.
 4. **After ANY .md create/move/edit:** update the affected `index.md` entries, add a `log.md`
    line under today's date, and run `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT

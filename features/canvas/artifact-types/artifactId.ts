@@ -15,7 +15,7 @@
  * persisted artifact." Used by the renderers (render-by-id vs inline) and by
  * materialization (skip-already-materialized vs create-new).
  *
- * See `/Users/armanisadeghi/code/common-docs/systems/artifacts/VISION.md` (R1–R3).
+ * See `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md` (R1–R3).
  */
 
 const UUID_RE =

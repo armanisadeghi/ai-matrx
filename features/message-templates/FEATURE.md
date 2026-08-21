@@ -1,6 +1,6 @@
 # Message templates — frontend implementation
 
-Cross-repo authority: `/Users/armanisadeghi/code/common-docs/systems/message-templates/FEATURE.md`.
+Cross-repo authority: `/Users/armanisadeghi/code/common-docs/systems/communications/message-templates/FEATURE.md`.
 This file records only the browser implementation.
 
 `features/message-templates/` is the one authoring and discovery surface for

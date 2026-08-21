@@ -19,7 +19,7 @@ provider wire protocols interchangeable.
 This feature is browser realtime voice. It does not implement PSTN calls, Twilio Voice/TwiML,
 ConversationRelay, Media Streams, `CallSid` lifecycle, or phone handoff.
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications-platform/STATE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications/STATE.md — read it before touching this feature in ANY repo.
 
 ---
 
@@ -190,7 +190,7 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 
 ## Voice Communication Layer — `relay/` (the voice model as MOUTH, not brain)
 
-Cross-repo SoR: `common-docs/systems/voice-communication-layer/FEATURE.md` — read it first.
+Cross-repo SoR: `common-docs/systems/agents/voice/FEATURE.md` — read it first.
 The relay inverts this feature's default architecture: the realtime model (the
 **Communicator**, Mandate `voice.communicator`, realtime waiver) never answers the
 user — the user's transcript routes to a **primary text agent** (an ordinary
@@ -294,13 +294,13 @@ Implementation tracked in
   interview (shared conversation via the panel's surfaceKey). DB persona
   updated to v2 (pacing modes, coming-up preview, reflective mirroring,
   side-path interrupt handling). Rulings SoR:
-  `common-docs/systems/voice-communication-layer/FEATURE.md`.
+  `common-docs/systems/agents/voice/FEATURE.md`.
 - `2026-08-17` — **Voice Communication Layer v1 (`relay/`).** The Communicator
   (Mandate `voice.communicator`) speaks FOR a primary text agent: relay
   controller + question ledger client tool + `useVoiceRelaySession` +
   `/demos/voice-relay`; `SessionUpdatePayload.createResponseOnTurn` and the
   `relay` binding on `useXaiVoiceSession`. SoR:
-  `common-docs/systems/voice-communication-layer/FEATURE.md`. Also corrected the
+  `common-docs/systems/agents/voice/FEATURE.md`. Also corrected the
   stale `app/(a)/...` route paths in Entry points to `(core)`.
 - `2026-08-15` — Clarified the browser-voice boundary and linked the cross-repo communications system record; PSTN/telephony is a separate transport over shared agent, conversation, tool, and transcript primitives, not an implemented part of this feature.
 - `2026-08-15` — **Gemini Live became a first-class realtime surface.** Added

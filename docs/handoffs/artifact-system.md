@@ -2,7 +2,7 @@
 status: active
 updated: 2026-07-28
 repos: [matrx-frontend, aidream]
-vision: [/Users/armanisadeghi/code/common-docs/systems/artifacts/VISION.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md]
 ---
 
 # Artifact system — render blocks become real, connected things
@@ -21,7 +21,7 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 
 ## Resources
 
-- Vision + R1–R8: `/Users/armanisadeghi/code/common-docs/systems/artifacts/VISION.md`. Shipped: `features/artifacts/FEATURE.md`.
+- Vision + R1–R8: `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md`. Shipped: `features/artifacts/FEATURE.md`.
 - Pin-as-editable-context: `features/canvas/materialization/attachBlockAsEditableContext.ts`, `features/agents/utils/canvasItemContext.ts`, aidream `context_writeback.py` `@register_writeback("canvas_item")`.
 - Flashcards canonical adapter: `features/canvas/artifact-types/persistence/flashcards-canonical-adapter.ts`.
 - RPCs: `cx_canvas_upsert`, `cx_message_set_content`, `cx_canvas_get_version_history`, `cx_canvas_save_user_version` (now preserves external links).

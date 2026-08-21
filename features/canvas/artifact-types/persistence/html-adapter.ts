@@ -8,7 +8,7 @@
  * HTML is a "self-contained deliverable" (vision R7): the published webpage IS
  * the artifact, so it ALWAYS auto-saves on materialize (Q2). `onMaterialize`
  * publishes the page and links the canvas row — closing the open hand-off in
- * /Users/armanisadeghi/code/common-docs/systems/artifacts/VISION.md (no canvas path set `external_system='html_pages'`
+ * /Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md (no canvas path set `external_system='html_pages'`
  * before; only the editor path wrote the cx_artifact discovery index).
  *
  * IDEMPOTENT: `createPage` passes `sourceMessageId`, and the API updates the
