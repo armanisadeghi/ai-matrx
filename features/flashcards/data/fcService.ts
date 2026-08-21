@@ -907,6 +907,27 @@ export const fcService = {
     }
   },
 
+  /**
+   * Attach durable TTS audio to an EXISTING detail row (e.g. a text-only
+   * `helper` layer written by enrich that the helper-audio lane later renders).
+   * Flips `generation_status` to `audio_ready` in the same write.
+   */
+  async setDetailAudio(
+    detailId: string,
+    audioFileId: string,
+  ): Promise<FcResult<null>> {
+    try {
+      const { error } = await EDU()
+        .from("fc_detail")
+        .update({ audio_file_id: audioFileId, generation_status: "audio_ready" })
+        .eq("id", detailId);
+      if (error) return fail("setDetailAudio", error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("setDetailAudio", e);
+    }
+  },
+
   /** Soft-delete one detail row (all reads filter `deleted_at is null`). */
   async softDeleteDetail(detailId: string): Promise<FcResult<null>> {
     try {

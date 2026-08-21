@@ -60,7 +60,10 @@ interface SpokenFrontCard {
  * `audio_output` block (with `fileId`) is checked as a fallback for any deploy
  * that emits one. Prefer the re-mintable `file_id`; last block wins.
  */
-function readAudioFileId(state: RootState, requestId: string): string | null {
+export function readAudioFileId(
+  state: RootState,
+  requestId: string,
+): string | null {
   // Path A (canonical for streaming TTS): audio_stream_end → file_id.
   const unknown = selectRenderBlocksByType(
     requestId,

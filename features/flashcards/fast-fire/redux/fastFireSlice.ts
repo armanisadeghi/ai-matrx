@@ -100,6 +100,10 @@ export interface DrillCard {
   position: number;
   /** Durable file_id of the pre-generated spoken front, if any (optional TTS). */
   spokenFrontFileId?: string | null;
+  /** Durable file_id of the pre-generated "I'm confused" helper audio, if any. */
+  helperFileId?: string | null;
+  /** The helper explanation text behind that audio (shown while it plays). */
+  helperText?: string | null;
   /** The card's topic — the axis live adaptation reorders on. */
   topic?: string | null;
   /** Front-face image (fc_detail kind='front_image'): stored file_id or hotlinked URL + alt. */

@@ -75,6 +75,13 @@ export function FastFireLiveCard({
 
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
+  // Q15 zero-wait lane: the card's PRE-GENERATED helper (text + durable audio)
+  // shows/plays the instant the button is tapped — no run, no wait. The live
+  // personalized lane still fires and replaces the text when it lands.
+  const [instantHelp, setInstantHelp] = useState<{
+    fileId: string;
+    text: string | null;
+  } | null>(null);
   const cardShownAtRef = useRef<number>(0);
 
   // L3: clear any help text when the card changes, so the previous card's help
@@ -87,6 +94,7 @@ export function FastFireLiveCard({
   // arrived a beat late is still recoverable instead of simply gone.
   useEffect(() => {
     setHelp(null);
+    setInstantHelp(null);
     cardShownAtRef.current = Date.now();
   }, [card?.id]);
 
@@ -127,6 +135,12 @@ export function FastFireLiveCard({
   const betweenCards = phase !== "card_recording";
 
   const askForHelp = async (): Promise<void> => {
+    // Zero wait: cached helper audio + text land IMMEDIATELY ("fast fire = you
+    // never wait on the AI"). The live lane below still runs for the deeper,
+    // context-aware answer.
+    if (card.helperFileId) {
+      setInstantHelp({ fileId: card.helperFileId, text: card.helperText ?? null });
+    }
     setHelpLoading(true);
     setHelp(null);
     try {
@@ -249,6 +263,18 @@ export function FastFireLiveCard({
             Next card
           </Button>
         </div>
+
+        {/* Pre-generated helper: plays the moment the button was tapped (the
+            zero-wait lane). The player is text-independent — the live answer
+            below may replace the text while the audio keeps playing. */}
+        {instantHelp && (
+          <SpokenFrontPlayer fileId={instantHelp.fileId} cardId={card.id} />
+        )}
+        {!shownHelp && instantHelp?.text && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+            {instantHelp.text}
+          </div>
+        )}
 
         {/* Help result */}
         {shownHelp && shownHelp.trust?.confidence === "not_in_material" ? (

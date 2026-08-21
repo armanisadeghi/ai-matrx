@@ -199,7 +199,7 @@ const EXPAND_SIGNAL_BY_DEPTH: Record<Depth, string> = {
 const asString = (v: unknown): string =>
   typeof v === "string" ? v.trim() : "";
 
-function coerceDetails(raw: unknown): EnrichedDetail[] {
+export function coerceDetails(raw: unknown): EnrichedDetail[] {
   const obj =
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)

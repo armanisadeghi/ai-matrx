@@ -76,6 +76,10 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
         const spoken = c.details.find(
           (d) => d.kind === "spoken_front" && !!d.audio_file_id,
         );
+        // Pre-generated "I'm confused" audio (zero-wait help; Q15 lane).
+        const helper = c.details.find(
+          (d) => d.kind === "helper" && !!d.audio_file_id,
+        );
         const frontImage = getFaceImageDetail(c, "front");
         return {
           id: c.id,
@@ -83,6 +87,8 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
           back: c.back,
           position: c.position ?? i,
           spokenFrontFileId: spoken?.audio_file_id ?? null,
+          helperFileId: helper?.audio_file_id ?? null,
+          helperText: helper?.text ?? null,
           // The axis live adaptation reorders on (VISION §3).
           topic: c.topic ?? null,
           frontImageFileId: frontImage?.image_file_id ?? null,

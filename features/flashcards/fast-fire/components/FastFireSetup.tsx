@@ -30,6 +30,7 @@ import {
   Loader2,
   CheckCircle2,
   Zap,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -53,6 +54,10 @@ import {
   ensureSpokenFrontsForSet,
   getSpokenFrontReadiness,
 } from "../spoken-front/generateSpokenFront.thunk";
+import {
+  ensureHelperAudioForSet,
+  getHelperAudioReadiness,
+} from "../helper-audio/generateHelperAudio.thunk";
 import { FastFireSetPicker } from "./FastFireSetPicker";
 
 export function FastFireSetup() {
@@ -95,6 +100,50 @@ export function FastFireSetup() {
       setPrepping(false);
     }
   };
+
+  // Instant-help prep (Q15 zero-wait lane): pre-write + pre-record each card's
+  // "I'm confused" explanation so mid-drill help plays with NO wait. Same
+  // on-demand + durable-cache contract as the spoken fronts above.
+  const [helpPrepping, setHelpPrepping] = useState(false);
+  const [helpPrepProgress, setHelpPrepProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const [helpPrepDone, setHelpPrepDone] = useState(false);
+
+  const prepareHelpAudio = async (): Promise<void> => {
+    if (!config.setId) return;
+    setHelpPrepping(true);
+    setHelpPrepDone(false);
+    setHelpPrepProgress(null);
+    try {
+      await dispatch(
+        ensureHelperAudioForSet(config.setId, (done, total) =>
+          setHelpPrepProgress({ done, total }),
+        ),
+      );
+      setHelpPrepDone(true);
+    } finally {
+      setHelpPrepping(false);
+    }
+  };
+
+  // Reflect the PERSISTED helper-audio state when a set is (re)selected — same
+  // never-look-unprepared contract as the spoken fronts below.
+  useEffect(() => {
+    const setId = config.setId;
+    if (!setId) return undefined;
+    let cancelled = false;
+    void (async () => {
+      const { ready, total } = await getHelperAudioReadiness(setId);
+      if (cancelled) return;
+      setHelpPrepProgress({ done: ready, total });
+      setHelpPrepDone(total > 0 && ready >= total);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [config.setId]);
 
   // Reflect the PERSISTED spoken-front state when a set is (re)selected — the
   // audio is cached durably in fc_detail, so returning to a prepared set must
@@ -423,6 +472,67 @@ export function FastFireSetup() {
             </div>
           )}
         </section>
+
+        {/* Instant help (Q15) — pre-recorded "I'm confused" audio per card, so
+            mid-drill help plays with zero wait. Prepared once, cached durably. */}
+        {selectedSet && (
+          <section className="mb-5 rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="text-sm font-medium text-foreground">
+                    Instant help
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {helpPrepDone
+                      ? "Every card has a pre-recorded explanation — “I'm confused” answers instantly, no wait."
+                      : helpPrepProgress && helpPrepProgress.done > 0
+                        ? `${helpPrepProgress.done} of ${helpPrepProgress.total} cards have a pre-recorded explanation — Prepare covers the ${helpPrepProgress.total - helpPrepProgress.done} still missing.`
+                        : "Pre-record a short explanation for each card so “I'm confused” answers instantly mid-drill."}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                onClick={() => void prepareHelpAudio()}
+                disabled={helpPrepping || helpPrepDone}
+              >
+                {helpPrepping ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : helpPrepDone ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <HelpCircle className="h-4 w-4" />
+                )}
+                {helpPrepping
+                  ? "Preparing…"
+                  : helpPrepDone
+                    ? "Help ready"
+                    : helpPrepProgress && helpPrepProgress.done > 0
+                      ? `Prepare ${helpPrepProgress.total - helpPrepProgress.done} more`
+                      : "Prepare help"}
+              </Button>
+            </div>
+            {helpPrepProgress && helpPrepProgress.total > 0 && (
+              <div className="mt-2">
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width]"
+                    style={{
+                      width: `${Math.round((helpPrepProgress.done / helpPrepProgress.total) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {helpPrepProgress.done} / {helpPrepProgress.total} ready
+                </p>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the
             drill. Reuses the shared MediaDevicesPanel (also openable as a window
