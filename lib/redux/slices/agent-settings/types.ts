@@ -9,84 +9,16 @@
  */
 
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
-import type { LLMParamReasoningEffort } from "@/types/python-generated/llm-params-enums.generated";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 // ── Core Settings Shape ────────────────────────────────────────────────────────
 
 /**
- * All LLM and agent settings in one flat, fully-enumerated shape.
- * Every field is explicitly named — no catch-all index signatures.
- * snake_case throughout — sent verbatim to the Python backend.
+ * Agent model settings are the generated server contract—never a handwritten
+ * subset or frontend extension. UI-only input capabilities live in UiGates and
+ * runtime attachment state; selected tools live in the client-tools slice.
  */
-export interface AgentSettings {
-  // Identity
-  model_id?: string;
-
-  // Core generation
-  temperature?: number;
-  max_output_tokens?: number;
-  top_p?: number;
-  top_k?: number;
-  seed?: number;
-  n?: number;
-  stop_sequences?: string[];
-
-  // Reasoning / thinking
-  thinking_budget?: number;
-  thinking_level?: "minimal" | "low" | "medium" | "high";
-  include_thoughts?: boolean;
-  // Generated from the backend Pydantic contract; do not duplicate this enum.
-  reasoning_effort?: LLMParamReasoningEffort;
-  reasoning_summary?: "concise" | "detailed" | "never" | "auto" | "always";
-  verbosity?: string;
-
-  // Control flow
-  stream?: boolean;
-  store?: boolean;
-  parallel_tool_calls?: boolean;
-
-  // Tool calling
-  tool_choice?: "none" | "auto" | "required";
-  tools?: string[]; // array of tool names (UI-managed list)
-
-  // Output format — sent as dict to backend; "text" means omit the field
-  response_format?: ResponseFormatValue;
-
-  // TTS
-  tts_voice?: string;
-  audio_format?: string;
-
-  // Image / video generation
-  steps?: number;
-  width?: number;
-  height?: number;
-  guidance_scale?: number;
-  negative_prompt?: string;
-  fps?: number;
-  seconds?: number;
-  output_quality?: number;
-  reference_images?: unknown[];
-  frame_images?: unknown[];
-  image_loras?: unknown[];
-  disable_safety_checker?: boolean;
-
-  // Provider-native boolean params (REAL settings, sent to the API).
-  internal_web_search?: boolean;
-  internal_url_context?: boolean;
-
-  // NOTE: The model-gated UI flags (image_urls, file_urls, youtube_videos, and
-  // the `tools` capability boolean) are NO LONGER part of AgentSettings — they
-  // moved to the dedicated FE-only `agent.uiGates` column (type UiGates). See
-  // lib/redux/slices/agent-settings/ui-gates.ts. `tools?: string[]` above is the
-  // separate UI-managed tool-name list, not the capability gate.
-
-  // Deprecated — read-only migration field. Never write this.
-  output_format?: string;
-}
-
-export type ResponseFormatValue =
-  | { type: string; [key: string]: unknown }
-  | string;
+export type AgentSettings = LLMParams;
 
 /**
  * Fields in AgentSettings that are UI-only and must be stripped before API
@@ -128,6 +60,11 @@ export interface ControlDefinition {
 export type NormalizedControls = Partial<
   Record<keyof AgentSettings, ControlDefinition>
 > & {
+  /** Frontend capability declarations from model controls, never API params. */
+  tools?: ControlDefinition;
+  image_urls?: ControlDefinition;
+  file_urls?: ControlDefinition;
+  youtube_videos?: ControlDefinition;
   rawControls: Record<string, unknown>;
   unmappedControls: Record<string, unknown>;
 };

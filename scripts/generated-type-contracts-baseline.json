@@ -1,6 +1,6 @@
 {
   "_comment": "Verified generated-contract shadow debt. Declaration ids may only be removed. `pnpm check:generated-contracts:accept` refuses to add new ids.",
-  "verifiedAt": "2026-08-21T21:58:54.476Z",
+  "verifiedAt": "2026-08-21T22:24:21.824Z",
   "findings": [
     "app/api/cms/_lib/validateContent.ts::CmsFieldValidationReport::CmsFieldValidationReport",
     "app/api/cms/_lib/validateContent.ts::CmsValidationFinding::CmsValidationFinding",
@@ -16,7 +16,6 @@
     "features/agents/api/submit-tool-results.ts::PendingToolResult::ClientToolResult",
     "features/agents/redux/execution-system/context-state/context-state.slice.ts::ContextStateWirePayload::ContextStateResponse",
     "features/agents/redux/execution-system/inbox/inbox.thunks.ts::InboxItemWire::InboxItem",
-    "features/agents/types/agent-api-types.ts::FeLlmParams::LLMParams",
     "features/agents/types/request.types.ts::AssembledAgentStartRequest::AgentStartRequest",
     "features/agents/types/request.types.ts::AssembledConversationRequest::ConversationContinueRequest",
     "features/agents/types/tool-injection.types.ts::ClientContext::ClientContext",
@@ -137,7 +136,6 @@
     "hooks/use-desktop-instances.ts::DesktopInstanceSummary::DesktopInstanceSummary",
     "lib/api/context-api.ts::ContextStateApiResponse::ContextStateResponse",
     "lib/api/types.ts::ToolTestSessionResponse::ToolTestSessionResponse",
-    "lib/redux/slices/agent-settings/types.ts::AgentSettings::LLMParams",
     "utils/user-table-utls/table-utils.ts::FieldDefinition::FieldDefinition"
   ]
 }

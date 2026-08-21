@@ -200,11 +200,26 @@ type NormalizedControlKey = Exclude<
  */
 export function supportsTools(
   normalizedControls:
-    | { tools?: { default?: unknown } | null }
+    | {
+        tools?: { allowed?: unknown; default?: unknown } | null;
+        rawControls?: Record<string, unknown>;
+      }
     | null
     | undefined,
 ): boolean {
-  return normalizedControls?.tools?.default !== false;
+  const normalizedTools = normalizedControls?.tools;
+  const rawTools = normalizedControls?.rawControls?.tools;
+  const rawToolsControl =
+    rawTools && typeof rawTools === "object" && !Array.isArray(rawTools)
+      ? (rawTools as Record<string, unknown>)
+      : null;
+
+  return (
+    normalizedTools?.allowed !== false &&
+    normalizedTools?.default !== false &&
+    rawToolsControl?.allowed !== false &&
+    rawToolsControl?.default !== false
+  );
 }
 
 /**

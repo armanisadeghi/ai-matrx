@@ -311,7 +311,7 @@ export function detectConflicts(
   const supportedKeys: Array<keyof AgentSettings> = [];
 
   // Fields to skip from conflict analysis
-  const skipKeys = new Set<string>(["model_id", "output_format"]);
+  const skipKeys = new Set<string>(["model"]);
 
   for (const [rawKey, currentValue] of Object.entries(currentSettings)) {
     const key = rawKey as keyof AgentSettings;

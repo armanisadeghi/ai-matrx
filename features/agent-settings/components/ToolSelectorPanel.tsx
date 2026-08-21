@@ -17,12 +17,10 @@ import {
 import { formatText } from "@/utils/text/text-case-converter";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectEffectiveSettings,
-  selectNormalizedControls,
-} from "@/lib/redux/slices/agent-settings/selectors";
-import { applySettingsFromDialog } from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
+import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
 import { supportsTools } from "@/features/agents/hooks/useModelControls";
+import { selectAgentTools } from "@/features/agents/redux/agent-definition/selectors";
+import { setAgentTools } from "@/features/agents/redux/agent-definition/slice";
 
 interface AvailableTool {
   name: string;
@@ -41,14 +39,13 @@ export function ToolSelectorPanel({
   availableTools,
 }: ToolSelectorPanelProps) {
   const dispatch = useAppDispatch();
-  const effectiveSettings = useAppSelector((state) =>
-    selectEffectiveSettings(state, agentId),
-  );
+  const selectedTools = useAppSelector((state) =>
+    selectAgentTools(state, agentId),
+  ) ?? [];
   const normalizedControls = useAppSelector((state) =>
     selectNormalizedControls(state, agentId),
   );
 
-  const selectedTools: string[] = effectiveSettings.tools ?? [];
   // Canonical capability read — supported unless the model explicitly declares
   // tools:{allowed:false} (mirrors the server's permissive default).
   const modelSupportsTools = supportsTools(normalizedControls);
@@ -56,24 +53,15 @@ export function ToolSelectorPanel({
   const handleAddTool = (toolName: string) => {
     if (selectedTools.includes(toolName)) return;
     dispatch(
-      applySettingsFromDialog({
-        agentId,
-        newSettings: {
-          ...effectiveSettings,
-          tools: [...selectedTools, toolName],
-        },
-      }),
+      setAgentTools({ id: agentId, tools: [...selectedTools, toolName] }),
     );
   };
 
   const handleRemoveTool = (toolName: string) => {
     dispatch(
-      applySettingsFromDialog({
-        agentId,
-        newSettings: {
-          ...effectiveSettings,
-          tools: selectedTools.filter((t) => t !== toolName),
-        },
+      setAgentTools({
+        id: agentId,
+        tools: selectedTools.filter((t) => t !== toolName),
       }),
     );
   };

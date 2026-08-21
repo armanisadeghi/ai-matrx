@@ -89,14 +89,14 @@ export const selectEffectiveSettings = createSelector(
 );
 
 /**
- * The effective model_id — reads from overrides first, then defaults.
+ * The effective model id — reads the generated `model` field from overrides first.
  */
 export const selectEffectiveModelId = createSelector(
   [
     (state: RootState, agentId: string) =>
-      state.agentSettings?.entries[agentId]?.overrides?.model_id,
+      state.agentSettings?.entries[agentId]?.overrides?.model,
     (state: RootState, agentId: string) =>
-      state.agentSettings?.entries[agentId]?.defaults?.model_id,
+      state.agentSettings?.entries[agentId]?.defaults?.model,
   ],
   (overrideModelId, defaultModelId): string | null =>
     overrideModelId ?? defaultModelId ?? null,
@@ -109,8 +109,8 @@ export const selectEffectiveModelId = createSelector(
 export const selectEffectiveModelName = createSelector(
   [
     (state: RootState, agentId: string) =>
-      state.agentSettings?.entries[agentId]?.overrides?.model_id ??
-      state.agentSettings?.entries[agentId]?.defaults?.model_id ??
+      state.agentSettings?.entries[agentId]?.overrides?.model ??
+      state.agentSettings?.entries[agentId]?.defaults?.model ??
       null,
     (state: RootState) => state.modelRegistry?.entities,
   ],
@@ -133,8 +133,8 @@ export const selectNormalizedControls = createSelector(
   [
     (state: RootState, agentId: string) => {
       const modelId =
-        state.agentSettings?.entries[agentId]?.overrides?.model_id ??
-        state.agentSettings?.entries[agentId]?.defaults?.model_id ??
+        state.agentSettings?.entries[agentId]?.overrides?.model ??
+        state.agentSettings?.entries[agentId]?.defaults?.model ??
         null;
       if (!modelId) return null;
       return selectModelById(state, modelId);
@@ -182,7 +182,7 @@ export const selectPreviewedResolution = createSelector(
 
     return {
       ...resolved,
-      model_id: pendingSwitch.newModelId,
+      model: pendingSwitch.newModelId,
     };
   },
 );
@@ -445,7 +445,7 @@ export const selectActiveModelId = createSelector(
     if (!activeAgentId) return null;
     const entry = entries[activeAgentId];
     if (!entry) return null;
-    return entry.overrides?.model_id ?? entry.defaults?.model_id ?? null;
+    return entry.overrides?.model ?? entry.defaults?.model ?? null;
   },
 );
 

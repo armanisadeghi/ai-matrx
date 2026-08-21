@@ -353,7 +353,7 @@ export const requestModelSwitch = createAsyncThunk(
 
     // Get model display names
     const prevModelId =
-      currentEffective.model_id ?? entry.defaults.model_id ?? "";
+      currentEffective.model ?? entry.defaults.model ?? "";
     const prevModel = selectModelById(
       state as Parameters<typeof selectModelById>[0],
       prevModelId,
@@ -736,10 +736,10 @@ const agentSettingsSlice = createSlice({
       // Apply conflict resolution to get the final settings
       const resolved = resolveConflicts(currentEffective, pending);
 
-      // Always apply the new model_id
+      // Always apply the generated model identifier field.
       const finalSettings: Partial<AgentSettings> = {
         ...resolved,
-        model_id: pending.newModelId,
+        model: pending.newModelId,
       };
 
       if (entry.context === "builder") {
