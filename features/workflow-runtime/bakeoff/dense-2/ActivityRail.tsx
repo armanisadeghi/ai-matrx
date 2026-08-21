@@ -53,11 +53,8 @@ export function ActivityRail({
   runId: string;
   /** nodeId → the author's label (a feed line never shows a graph id). */
   stepLabels: Record<string, string>;
-  /** entry index → nodeId, resolved by the parent for aiming. */
-  nodeIdOf?: never;
   onAim: (nodeId: string) => void;
 }) {
-  void nodeIdOf;
   const activity = useAppSelector(selectRunActivity(runId));
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [pinned, setPinned] = useState(true);
