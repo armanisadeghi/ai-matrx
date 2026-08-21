@@ -105,7 +105,7 @@ export async function transferGuestDataAfterOAuth(
 
     // 1. Resolve the anon auth uid for this fingerprint.
     const { data: rows, error: selErr } = await admin
-      .from("guest_executions")
+      .schema("users").from("guest_executions")
       .select("id, auth_user_id")
       .eq("fingerprint", fingerprint)
       .limit(1);

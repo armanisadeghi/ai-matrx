@@ -89,7 +89,7 @@ export async function promoteGuestToUser({
 
   // 1. Resolve the anon auth uid for this fingerprint.
   const { data: rows, error: selErr } = await admin
-    .from("guest_executions")
+    .schema("users").from("guest_executions")
     .select("id, auth_user_id, converted_to_user_id")
     .eq("fingerprint", fingerprint)
     .limit(1);
@@ -170,7 +170,7 @@ export async function promoteGuestToUser({
   // 4. Stamp the conversion on the guest row (the `link_guest_to_user`
   //    equivalent). Non-fatal: promotion already succeeded.
   const { error: linkErr } = await admin
-    .from("guest_executions")
+    .schema("users").from("guest_executions")
     .update({
       converted_to_user_id: promotedId,
       converted_at: new Date().toISOString(),

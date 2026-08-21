@@ -15,7 +15,7 @@ import type { Database } from "@/types/database.types";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50;
-type GuestRow = Database["public"]["Tables"]["guest_executions"]["Row"];
+type GuestRow = Database["users"]["Tables"]["guest_executions"]["Row"];
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
   for (let page = 0; page < MAX_PAGES; page++) {
     const start = page * PER_PAGE;
     const { data, error } = await admin
-      .from("guest_executions")
+      .schema("users").from("guest_executions")
       .select("*")
       .order("created_at", { ascending: false })
       .range(start, start + PER_PAGE - 1);

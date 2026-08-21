@@ -43,7 +43,7 @@ export async function GET(
     let fingerprint: string | null = null;
     if (visitorId) {
       const { data, error } = await admin
-        .from("guest_executions")
+        .schema("users").from("guest_executions")
         .select("fingerprint")
         .eq("id", visitorId)
         .maybeSingle();
@@ -51,7 +51,7 @@ export async function GET(
       fingerprint = data?.fingerprint ?? null;
     } else if (userId) {
       const { data, error } = await admin
-        .from("guest_executions")
+        .schema("users").from("guest_executions")
         .select("fingerprint")
         .or(`auth_user_id.eq.${userId},converted_to_user_id.eq.${userId}`)
         .limit(1)

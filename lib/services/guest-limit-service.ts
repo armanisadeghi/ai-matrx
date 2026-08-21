@@ -178,7 +178,7 @@ export async function getGuestHistory(fingerprint: string) {
 
     // First get guest record
     const { data: guest, error: guestError } = await supabaseClient
-      .from("guest_executions")
+      .schema("users").from("guest_executions")
       .select("*")
       .eq("fingerprint", fingerprint)
       .single();
@@ -189,7 +189,7 @@ export async function getGuestHistory(fingerprint: string) {
 
     // Get execution log
     const { data: logs, error: logsError } = await supabaseClient
-      .from("guest_execution_log")
+      .schema("users").from("guest_execution_log")
       .select("*")
       .eq("guest_id", guest.id)
       .order("created_at", { ascending: false })
@@ -215,7 +215,7 @@ export async function getGuestStatus(fingerprint: string) {
     const supabaseClient = supabase;
 
     const { data, error } = await supabaseClient
-      .from("guest_executions")
+      .schema("users").from("guest_executions")
       .select("*")
       .eq("fingerprint", fingerprint)
       .single();

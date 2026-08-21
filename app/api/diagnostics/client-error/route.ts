@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
   const { data: guest, error: guestError } = await admin
-    .from("guest_executions")
+    .schema("users").from("guest_executions")
     .select("auth_user_id")
     .eq("fingerprint", parsed.data.fingerprint)
     .maybeSingle();
