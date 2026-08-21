@@ -1,0 +1,48 @@
+-- The first three industry starter packs, and the topic-tree branches they
+-- hang off. CONTENT, not schema: these rows were produced by the product's own
+-- agent flows on 2026-08-21 and applied live. The DATABASE IS THE TRUTH for
+-- them — this file records what was done and how to inspect it, rather than a
+-- hand-transcribed copy that would drift the moment the expert edits a row.
+--
+-- HOW THEY WERE PRODUCED (never hand-driven — the gap IS the finding):
+--   1. seo.starter_pack_corpus(<sample site ids>) assembled 12 months of real
+--      Google Search Console demand per industry plus the controlled
+--      vocabularies.
+--   2. The platform's Topic Assigner (`seo.topic_assigner`, topicassign-v1)
+--      proposed each industry's topic tree from that corpus, WITH PARENTS. The
+--      tree had been flat — 281 roots — so this is the first real hierarchy in
+--      it. Nodes that already existed (`itad`, `crt-tv-recycling`) were
+--      re-parented, never duplicated.
+--   3. The platform's Site Strategy Interviewer (`seo.site_strategist`,
+--      sitevalue-v1) valued each tree for a TYPICAL business in that industry,
+--      with the human expert rulings supplied as ground truth. Values are set
+--      as high in the tree as they are true; children inherit.
+--   4. A new agent, `seo_starter_pack_proposer` (packpropose-v1, DB id
+--      6e30326f-6108-46ae-9c64-309946d2257d), proposed each pack's qualifier
+--      rules, band vocabularies, geo archetypes and guidelines skeleton.
+--
+-- THE PACKS (all status='proposed' until Arman ratifies each one):
+--   itad-data-destruction          — ITAD / electronics recycling / certified
+--                                    data destruction. Encodes his ruling:
+--                                    "CRT and TV are consumer signals,
+--                                    enterprise is where the money is."
+--   medical-practice               — doctor-led clinic. Encodes the two-radius
+--                                    geography ruling and "the doctor's name is
+--                                    the best keyword in the business".
+--   consulting-marketing-services  — agencies and business coaching. Centred on
+--                                    fulfillment_mode: learning to do it
+--                                    yourself vs hiring it done.
+--
+-- No pack names a sample company, its brand, its founder, its book or its city.
+--
+-- INSPECT:
+--   select * from seo.starter_pack_catalog();
+--   select seo.starter_pack_detail(id) from seo.starter_pack where slug = '<slug>';
+--
+-- ONE live-verified correction is already folded into the ITAD pack: the first
+-- proposal's bare `shredding` pattern promoted PAPER shredding to the top band
+-- ("irvine document shredding regulations" resolved Platinum), exactly the trap
+-- the sample business's own guidelines warn about. The promoter was narrowed to
+-- `drive shredding` with `hdd shredding` / `media shredding` companions, and
+-- `document shredding` / `paper shredding` demoters were added — to the pack
+-- template AND to every site row already copied from it.

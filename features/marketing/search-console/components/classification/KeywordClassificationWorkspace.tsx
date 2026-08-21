@@ -19,12 +19,12 @@
  *    document (D35) every AI run for this site reads before it judges a
  *    keyword — "the agent wouldn't know CRT is a horrible keyword unless
  *    there's some document that guides it" (Arman, 2026-08-21). Written here,
- *    surfaced read-only in the value workbench, and ready for the producer's
- *    future explicit named-variable contract (never user_input).
+ *    surfaced read-only in the value workbench, injected server-side as the
+ *    named agent variable `business_guidelines` (never user_input).
  *  - "Classify with AI" — the universal classifier
  *    (`seo.keyword_classifier` slot via aidream `/seo/keywords/classify`),
- *    results land as "AI intent" provenance, overridable like any machine
- *    signal. The Site Intake Wizard (`../intake/`) remains the full-site
+ *    now carrying this site's guidelines; results land as "AI intent"
+ *    provenance, overridable like any machine signal. The Site Intake Wizard (`../intake/`) remains the full-site
  *    AI interview; this button is the surgical batch complement.
  *
  * Reusable ANYWHERE: props-based (siteId/siteDomain/organizationId), with
@@ -615,6 +615,7 @@ export function KeywordClassificationWorkspace({
       const result = await classifyKeywordsWithAi(
         dispatch,
         ids,
+        siteId,
         (done, all) => {
           if (all > 200) {
             toast.message(`AI classifying… ${done}/${all}`, {
@@ -627,8 +628,9 @@ export function KeywordClassificationWorkspace({
         `AI classified ${result.updated.toLocaleString()} keywords`,
         {
           id: "ai-classify",
-          description:
-            "Results carry “AI intent” provenance — filter Why = AI intent to review, and override anything it got wrong. Your rulings always win.",
+          description: hasGuidelines
+            ? "Ruled under this site's keyword guidelines. Results carry “AI intent” provenance — filter Why = AI intent to review, and override anything it got wrong. Your rulings always win."
+            : "This site has no keyword guidelines, so the AI had no business context. Results carry “AI intent” provenance — review them, and write the guidelines before the next sweep.",
         },
       );
       setSelected(new Set());
@@ -1018,8 +1020,8 @@ export function KeywordClassificationWorkspace({
                     ? `Run the AI classifier on the ${selected.size} selected keywords`
                     : "Run the AI classifier on the filtered unclassified keywords (up to 1,000)",
                   hasGuidelines
-                    ? "This site has keyword guidelines available for review."
-                    : "This site has no keyword guidelines yet. Open Guidelines to add them.",
+                    ? "This site's keyword guidelines are sent with every batch."
+                    : "This site has no keyword guidelines — the AI will classify with no business context. Open Guidelines first.",
                 ].join(" ")}
                 onClick={() => void runAiClassify()}
               >
