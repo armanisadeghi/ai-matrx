@@ -5705,6 +5705,11 @@ export interface paths {
          * @description Run the Keyword Classifier over unclassified keywords (or explicit ids),
          *     filling the 13 intrinsic columns + envelope — a DURABLE streamed command.
          *
+         *     ``site_id`` carries that site's KW business guidelines (D35) into every
+         *     batch as a named agent variable — the terminology doctrine that lets the
+         *     model read an industry's words the way the industry uses them. It is
+         *     never appended to user_input (THE USER-INPUT LAW).
+         *
          *     THE FLOATING LAW: one 40-keyword batch is ~88s of paid model work. It
          *     streams its real milestones (eligible set → batch plan → per-batch
          *     started/completed) AND the classifier's own token output, so the operator
@@ -5713,6 +5718,36 @@ export interface paths {
          *     ``POST /seo/collections/{run_id}/rejoin``.
          */
         post: operations["keyword_classify_seo_keywords_classify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/keywords/classification/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyword Facet Backfill
+         * @description Advance the universal-facet backfill by one bounded, demand-ordered pass.
+         *
+         *     This is the product flow the browser loop was standing in for: the ledger
+         *     (`seo.keyword_classification_queue`) remembers what has been done and what is
+         *     owed, so pressing this twenty times finishes the job and closing the tab loses
+         *     nothing. Progress is SERVER state — the strip reads
+         *     `seo.keyword_classification_status()`, not this response.
+         *
+         *     Ceilings come from the `seo.keyword_classification` knobs; a pass that hits the
+         *     daily ceiling says so instead of quietly doing nothing. Rejoin a live pass with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         */
+        post: operations["keyword_facet_backfill_seo_keywords_classification_backfill_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10606,6 +10641,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19338,6 +19397,26 @@ export interface paths {
         put?: never;
         /** Fill Saved Login */
         post: operations["fill_saved_login_browser_manager_runs__run_id__saved_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/capture-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Capture Outcome
+         * @description Retire the credential-capture card with a value-free receipt (D-11).
+         */
+        post: operations["record_capture_outcome_browser_manager_runs__run_id__capture_result_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -28494,6 +28573,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * CaptureOutcomeRequest
+         * @description What the person did with the D-11 credential-capture card.
+         *
+         *     🚨 There is no value-bearing field and unknown keys are refused: a
+         *     credential cannot ride this reporting path. The values themselves went
+         *     card → ``POST /api/vault/browser-login/capture`` and never touch the
+         *     control plane.
+         */
+        CaptureOutcomeRequest: {
+            /** Handoff Id */
+            handoff_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "captured" | "cancelled" | "expired";
+            /** Credential Item Id */
+            credential_item_id?: string | null;
+        };
+        /** CaptureOutcomeResponse */
+        CaptureOutcomeResponse: {
+            /** Handoff Id */
+            handoff_id: string;
+            /** Status */
+            status: string;
+        };
         /** CaptureResponse */
         CaptureResponse: {
             /** Ok */
@@ -35358,6 +35464,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -42931,6 +43064,8 @@ export interface components {
              * @default 200
              */
             limit?: number;
+            /** Site Id */
+            site_id?: string | null;
         };
         /** KeywordClassifyResult */
         KeywordClassifyResult: {
@@ -42970,6 +43105,31 @@ export interface components {
             search_provider?: ("brave" | "google") | null;
             /** Goals */
             goals?: (string | null)[] | null;
+        };
+        /** KeywordFacetBackfillBody */
+        KeywordFacetBackfillBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Refresh
+             * @default true
+             */
+            refresh?: boolean;
+            /** Limit */
+            limit?: number | null;
         };
         /**
          * KeywordReorderRequest
@@ -62265,6 +62425,12 @@ export interface components {
              * @description Provider-native voice id or name.
              */
             voice: string;
+            /**
+             * Gender
+             * @description Optional speaker gender ('male' / 'female'). Never sent to a provider — it lets TTSVoiceConfig pair voices with the SCRIPT's speaker labels by gender when the two disagree, instead of positionally (which inverted speakers: a male character voiced female).
+             * @default
+             */
+            gender?: string;
         };
         /**
          * TurnRange
@@ -76709,6 +76875,39 @@ export interface operations {
             };
         };
     };
+    keyword_facet_backfill_seo_keywords_classification_backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordFacetBackfillBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     keyword_assign_topics_seo_keywords_assign_topics_post: {
         parameters: {
             query?: never;
@@ -84865,6 +85064,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -100481,6 +100715,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_capture_outcome_browser_manager_runs__run_id__capture_result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptureOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptureOutcomeResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

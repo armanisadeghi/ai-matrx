@@ -87,6 +87,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { ClassCell } from "@/features/marketing/search-console/components/classification/ClassCell";
 import { ClassStatsBand } from "@/features/marketing/search-console/components/classification/ClassStatsBand";
+import { FacetBackfillStrip } from "@/features/marketing/search-console/components/classification/FacetBackfillStrip";
 import { ClassRulesPanel } from "@/features/marketing/search-console/components/classification/ClassRulesPanel";
 import { BrandIdentityPanel } from "@/features/marketing/search-console/components/classification/BrandIdentityPanel";
 import { KwGuidelinesPanel } from "@/features/marketing/search-console/components/classification/KwGuidelinesPanel";
@@ -870,6 +871,11 @@ export function KeywordClassificationWorkspace({
           });
         }}
       />
+
+      {/* The site's traffic classes sit above; this is the UNIVERSAL plane the
+          value rules read. Two different planes, so two bands — never merged:
+          a site ruling and a platform-wide fact are not the same kind of truth. */}
+      <FacetBackfillStrip siteId={siteId} />
 
       {brandAliasFilter && !preview ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary bg-accent/60 px-3 py-2">

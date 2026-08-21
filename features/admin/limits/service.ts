@@ -27,6 +27,28 @@ export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
   return (data ?? []) as FeatureKnob[];
 }
 
+/**
+ * One feature's knobs, as a `{key: value}` map — for a surface that needs to
+ * RESPECT a knob rather than edit it (a strip that must report the demand floor
+ * the server is actually applying).
+ *
+ * Missing key = missing row, and the caller must treat that as an error, never
+ * as a default: a frozen fallback would mean an admin turning the knob changed
+ * nothing, which is the silent-failure class this whole registry exists to end.
+ */
+export async function fetchFeatureKnobValues(
+  feature: string,
+): Promise<Record<string, unknown>> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("feature_knob")
+    .select("key, value")
+    .eq("feature", feature);
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((row) => [row.key, row.value]));
+}
+
 export async function setFeatureKnob(
   feature: string,
   key: string,

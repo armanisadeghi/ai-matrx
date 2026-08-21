@@ -477,7 +477,9 @@ export async function getFacetBackfillStatus(
     await seoDb()
   )
     .rpc("keyword_classification_status", {
-      p_site_id: siteId,
+      // The generated arg type is optional-only; a null site means "global",
+      // which the function expresses as the argument being absent.
+      p_site_id: siteId ?? undefined,
       p_min_impressions: minImpressions,
     })
     .abortSignal(signal ?? new AbortController().signal);
