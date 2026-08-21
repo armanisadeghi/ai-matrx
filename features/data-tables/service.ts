@@ -27,8 +27,8 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
-import type {
 import { operationFailed } from "@/utils/errors";
+import type {
   BulkOp,
   BulkWriteResponse,
   ChangeFieldTypeResponse,
