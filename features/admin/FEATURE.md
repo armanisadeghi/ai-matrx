@@ -169,6 +169,39 @@ exception; it does not duplicate any customer-facing capability or data path.
 
 ---
 
+## Per-feature admin map — `/[feature]/admin` (`FeatureAdminMap`)
+
+Every Tier 1 feature ships an **admin-gated** (`requireAdmin`, any level) map at
+`/[feature]/admin` listing every URL, window panel, modal, component, API
+route, Redux slice, and demo route it owns — utilitarian, never pretty, never
+failing to connect a resource. Fill a `FeatureAdminMap` config
+(`features/admin/types/featureAdminMap.ts`) and render
+`<FeatureAdminPage map={...} />`
+(`features/admin/components/FeatureAdminPage.tsx`). It exists because features
+sprawl across `window-panels/windows/`, `components/official-candidate/`,
+`(dev)/demos/`, and sibling folders — without one index, half the surface is
+invisible.
+
+Design rules (the primitive enforces them):
+
+- No section descriptions / hero text; full viewport width; every link opens a
+  new tab; rows single-line + compact (`notes?: string[]` for a rare 1–4
+  bullet expand).
+- Window-panel cards get a live "Open" button (`OverlayLaunchButton`).
+- Components are tiered `official` / `candidate` / `internal` with distinct
+  treatments.
+- `.md` links route through the DB-backed feature-docs viewer at
+  `/administration/documentation/feature-docs/view/<repo-relative-path>` —
+  build the href with `featureDocViewHref`
+  (`features/feature-docs/sync-utils.ts`), never by hand; it is keyed by
+  **path**, not slug or id, and 404s on anything not ending `.md`.
+- Drift auto-surfaces — any matching route or panel not declared shows as a
+  yellow warning. **When you add a route / panel / overlay / component, add it
+  to the map config** — run `pnpm check:doctrine` yourself to flag misses;
+  nothing runs it for you.
+
+---
+
 ## Current work / migration state
 
 The old category catalog remains only as destination display metadata. All
@@ -185,6 +218,8 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-08-20` — Relocated the per-feature admin map (`FeatureAdminMap`) contract and design rules here from CLAUDE.md (charter rewrite); CLAUDE.md keeps a pointer.
 
 - `2026-08-19` — Registered User Acquisition in the canonical Users navigation and admin destination catalog.
 

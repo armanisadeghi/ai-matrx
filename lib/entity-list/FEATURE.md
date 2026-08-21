@@ -193,7 +193,22 @@ BEFORE any shorter prefix that would swallow its route — the panel discards a
 registered runtime whose name disagrees with the route, so a `/crm` row above
 `/crm/inbox` silently makes the whole surface unreachable from the header.
 
+## Feature entry pages are LIST views, not forced workspaces
+
+`/[feature]` is the user's first stop — a list of everything they can do
+(create / open / fork), like `/agents` (the gold standard): list → click an
+item → pick a UI (view / build / run / versions) → back out or jump UIs via
+the header row. **Never trap the user in a single record's detail UI as if it
+were the home page** (`/transcripts` shows all my/shared transcripts,
+recent-first, filters, New button, per-row UI choices — not a forced detail
+page). If a feature does this today, the fix is the missing list "savior" page
+demoting the detail page — cheap, high value, not a redesign. This shell is
+how that savior page gets built.
+
 ## Change log
+
+- 2026-08-20 — Relocated the "feature entry pages are LIST views" doctrine
+  here from CLAUDE.md (charter rewrite); CLAUDE.md now carries a one-liner.
 
 - 2026-08-16 — `surface` prop: any list page can emit its live values to an
   agent surface in two lines, reading the shell's own controller (first
