@@ -358,10 +358,24 @@ export const EnhancedChatMarkdownInternal: React.FC<
     return map;
   }, [reduxRenderBlocks]);
 
-  const hasClientBlocks = !!(
-    reduxRenderBlocks &&
-    reduxRenderBlocks.length > 0 &&
-    reduxRenderBlocks.some((b) => b.blockId.startsWith("client_"))
+  /**
+   * Render from the Redux render blocks whenever there ARE any — client-
+   * produced (`client_…`, the StreamBlockAccumulator) or SERVER-produced
+   * (`render_block` events, block mode + server-orchestrated pipeline runs).
+   *
+   * The old gate keyed on the `client_` PREFIX, which is a proxy for "the
+   * frontend parsed these", not for "we have render blocks". A stream whose
+   * blocks all come from the server therefore fell through to
+   * `splitContentIntoBlocksV2(currentContent)` — re-deriving blocks from the
+   * flat text and DISCARDING every block's `metadata`. That silently threw
+   * away the server's `__ir` envelopes and its `__ir_partial` provisional
+   * events, so server-side kind routing and progressive partial rendering
+   * could never happen on this path. Re-splitting text we already have as
+   * typed blocks is also strictly worse: it loses the block's type, its
+   * serverData, and its arrival order.
+   */
+  const hasReduxRenderBlocks = !!(
+    reduxRenderBlocks && reduxRenderBlocks.length > 0
   );
 
   const resolvedContent = requestText || content;
@@ -370,7 +384,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const hasRequestOrTaskId = requestId || taskId;
   const hasReceivedNonTextContent =
     (serverProcessedBlocks && serverProcessedBlocks.length > 0) ||
-    hasClientBlocks;
+    hasReduxRenderBlocks;
   const isWaitingForContent =
     hasRequestOrTaskId && !resolvedContent.trim() && !hasReceivedNonTextContent;
 
@@ -538,7 +552,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     // Fast path: Redux already has client-generated render blocks from the
     // StreamBlockAccumulator. Convert to RenderBlock shape and skip the
     // expensive splitContentIntoBlocksV2 entirely.
-    if (hasClientBlocks && reduxRenderBlocks) {
+    if (hasReduxRenderBlocks && reduxRenderBlocks) {
       const clientBlocks: RenderBlock[] = reduxRenderBlocks
         .filter((rb) => rb.content?.trim())
         .map(renderBlockToContentBlock);
@@ -617,7 +631,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     isWaitingForContent,
     useServerBlocks,
     serverProcessedBlocks,
-    hasClientBlocks,
+    hasReduxRenderBlocks,
     reduxRenderBlocks,
   ]);
 

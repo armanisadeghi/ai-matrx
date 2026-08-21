@@ -16,9 +16,12 @@
  *    a broken message.
  * 2. **Say it is still arriving.** The user must be able to tell a live
  *    fill-in from a finished render, and it must not read as an error. A quiet
- *    shimmering "Still arriving" pill sits in the block's top-right corner —
- *    absolutely positioned and `pointer-events-none`, so it costs the content
- *    no layout and cannot shift the page when it disappears.
+ *    shimmering "Still arriving" chip rides the block's top edge — absolutely
+ *    positioned and `pointer-events-none`, so it costs the content no layout
+ *    and cannot shift the page when it disappears. It sits ON the border
+ *    rather than inside the block: a routed kind often renders its own chrome
+ *    (the artifact header's icon row), and a chip inside the box lands on top
+ *    of those controls.
  *
  * No wrapper chrome: no border, no background, no padding. The kind component
  * already carries its own (CLAUDE.md § Don't wrap a component in wrappers).
@@ -81,7 +84,7 @@ export const ProvisionalKindFrame: React.FC<{
 }> = ({ children }) => (
   <div className="relative" aria-busy="true">
     {children}
-    <span className="pointer-events-none absolute right-2 top-2 z-10 select-none">
+    <span className="pointer-events-none absolute -top-2 right-4 z-10 select-none rounded-full bg-background px-1.5 leading-4">
       <ShimmerText text="Still arriving" className="text-[10px]" />
     </span>
   </div>
