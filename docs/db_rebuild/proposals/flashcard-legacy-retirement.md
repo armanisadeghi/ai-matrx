@@ -12,7 +12,7 @@ completed, and was the most actively misleading line in the education doc set.
 prototype** tables `education.flashcard_data` / `flashcard_sets`. The *live* legacy system —
 `users.user_flashcard_sets` / `user_flashcard_reviews` (24 sets / 37 reviews, one remaining writer
 in aidream's conversation fork) — has **not** been retired and is tracked in
-`common-docs/projects/education-platform/STATE.md`. The two are constantly conflated; check the
+`common-docs/systems/education/STATE.md`. The two are constantly conflated; check the
 schema before acting on either.
 
 **Measured live:** 2026-08-12, Matrx Main (`txzxabzwovsujtloxrus`), direct Postgres read.

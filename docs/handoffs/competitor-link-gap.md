@@ -7,7 +7,7 @@ owner: unassigned — ONE code task left (T7) plus one human step only Arman can
 
 # Competitor link gap + competitor classification
 
-**Cluster state:** [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md) — verified 2026-08-19; every pending item in this doc was re-confirmed still pending.
+**Cluster state:** [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md) — verified 2026-08-19; every pending item in this doc was re-confirmed still pending.
 
 **Arman, 2026-08-14:**
 

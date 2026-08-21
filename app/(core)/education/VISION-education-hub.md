@@ -12,7 +12,7 @@ It moved because the education product spans matrx-frontend + aidream + the shar
 because two near-identical copies of it existed in this repo with nothing pointing between them
 — docs cited both interchangeably.
 
-**Start at `common-docs/projects/education-platform/README.md`.** That project holds the vision,
+**Start at `common-docs/systems/education/STATE.md`.** That project holds the vision,
 the measured gap analysis (`GAP_ANALYSIS.md`, 2026-08-17 — which supersedes every prior status
 doc), the execution plan, twelve parallel work packages, and the live boards agents write to
 while they work.

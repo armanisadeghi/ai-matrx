@@ -1,6 +1,6 @@
 # Education Hub — Per-Class Hub (FEATURE.md)
 
-**Status:** live · **Tier:** 2 (Education Hub tool) · **Spec:** [`STATE.md`](../../../../common-docs/projects/education-platform/STATE.md) · **Vision:** [`VISION-education-hub.md`](../../../app/(core)/education/VISION-education-hub.md) · **Last updated:** 2026-07-14
+**Status:** live · **Tier:** 2 (Education Hub tool) · **Spec:** [`STATE.md`](../../../../common-docs/systems/education/STATE.md) · **Vision:** [`VISION-education-hub.md`](../../../app/(core)/education/VISION-education-hub.md) · **Last updated:** 2026-07-14
 
 > 🔴 The binding spec is `W2-class-hub.md`. This file documents only HOW the Per-Class Hub is built. Drift → the spec wins; report it. **This feature invents NO new scope semantics** — read [`features/scopes/FEATURE.md`](../../scopes/FEATURE.md) before touching it.
 
@@ -24,7 +24,7 @@ This is the "massive win" from the spec: a class hub is **not a new data model**
 
 ## Membership + access model (Convergence C — the creator/teacher foundation)
 
-> Binding design: [`STATE.md` §2.4 — the creator north star](../../../../common-docs/projects/education-platform/STATE.md). A class is ALREADY a scope; this layer EXTENDS it with who-can-join + a roster. Scopes-native, reuse-first: the roster is `iam.memberships`, NOT a bespoke table.
+> Binding design: [`STATE.md` §2.4 — the creator north star](../../../../common-docs/systems/education/STATE.md). A class is ALREADY a scope; this layer EXTENDS it with who-can-join + a roster. Scopes-native, reuse-first: the roster is `iam.memberships`, NOT a bespoke table.
 
 **Access mode** (`scope.settings.access_mode`):
 - **open** — publicly listed + anyone joins instantly. `context.scopes` RLS lets ANYONE (incl. anon) read an open class scope → landing-page/public listing.
@@ -68,7 +68,7 @@ Consumed by the class hub AND the creator landing page. TS wrappers: [`service.t
 
 ## Teacher tools — assignments + class analytics (Convergence C)
 
-> Binding design: [`STATE.md` §2.4 — the creator north star](../../../../common-docs/projects/education-platform/STATE.md) — the "professional teacher" workflow. Built on the LIVE roster/access model above. Scopes-native + reuse-first: **NO new table.**
+> Binding design: [`STATE.md` §2.4 — the creator north star](../../../../common-docs/systems/education/STATE.md) — the "professional teacher" workflow. Built on the LIVE roster/access model above. Scopes-native + reuse-first: **NO new table.**
 
 **An assignment is a `platform.associations` edge** — `source=(fc_set|assessment) → target=('scope', classId)`, **`role='assignment'`**, `metadata={due_date, assigned_at, assigned_by}`. It reuses the ONE association system; `role='assignment'` distinguishes it from a plain content-tag edge (`role=null`), so `useClassContent` excludes assignment edges (via `ContainerLink.role`, added to the primitive) — an assigned deck never double-lists as generic tagged content. Assignable tokens = `fc_set` (deck) + `assessment` (quiz/practice-test), the study-spine-backed completable resources (`ASSIGNABLE_TOKENS`; kept in sync with the DB `_edu_is_assignable_token` guard).
 
@@ -95,7 +95,7 @@ Least-privilege + self-revoking: **viewer only** (never editor/admin — the bra
 
 ## Invites + join codes (WP6 — "a teacher gets students in under a minute")
 
-> Program home: `/Users/armanisadeghi/code/common-docs/projects/education-platform/` (WP6). Built 2026-08-18. Three lanes, ALL on canonical primitives — no new table, no second invitation system.
+> Program home: `/Users/armanisadeghi/code/common-docs/systems/education/` (WP6). Built 2026-08-18. Three lanes, ALL on canonical primitives — no new table, no second invitation system.
 
 | Lane | Mechanism |
 |---|---|

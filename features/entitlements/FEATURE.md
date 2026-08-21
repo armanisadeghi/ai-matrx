@@ -6,7 +6,7 @@
 > and the aidream half. This file is the frontend contract only.
 
 > **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
-> **Spec:** [`common-docs/projects/education-platform/STATE.md`](../../../common-docs/projects/education-platform/STATE.md).
+> **Spec:** [`common-docs/systems/education/STATE.md`](../../../common-docs/systems/education/STATE.md).
 > **The education contract is live and permissive — but limits are VISIBLE and now DECREMENT.** Every
 > `education.*` capability ships `enforced: false`, so nothing there is capped until Arman approves
 > the free-tier matrix AND the backend limit + server re-check both exist. Plan dimensions enforce
@@ -191,7 +191,7 @@ in `PLAN_MODEL.md`; this page does not keep a second list. Rationale:
 ## 🚨 D-5 — THE CORE-PRACTICE LAW: core practice is never metered
 
 > **Source:** Arman, education program law **D-5** — recorded in
-> [`common-docs/projects/education-platform/STATE.md`](../../../common-docs/projects/education-platform/STATE.md)
+> [`common-docs/systems/education/STATE.md`](../../../common-docs/systems/education/STATE.md)
 > §4.1 E. Restated: **unlimited studying, review and all study modes stay free
 > forever; gating applies to DEPTH and CONVENIENCE only.**
 

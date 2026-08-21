@@ -6,18 +6,18 @@ example carries the register and density the template can't.
 | Artifact | Worked example |
 |---|---|
 | Vision doc | `common-docs/systems/education/VISION.md` |
-| Competitive insights | `common-docs/projects/education-platform/research/2026-07-competitive-insights.md` |
+| Competitive insights | `common-docs/systems/education/research/2026-07-competitive-insights.md` |
 | Master plan | `common-docs/projects/outreach-system/MASTER_PLAN.md` |
 | Project brief | `common-docs/projects/outreach-system/work-packages/wp1-pipeline-core.md` (best all-round), `wp4-architecture.md` (contract-owner shape) |
-| Assignment prompt | `common-docs/projects/education-platform/STATE.md` §2.1 — Arman's own prompt, verbatim |
-| Integration contracts | `common-docs/projects/education-platform/INTEGRATION_MAP.md` (IC-1..IC-14) |
-| Decision ledger | `common-docs/projects/education-platform/DECISION_LOG.md` |
+| Assignment prompt | `common-docs/systems/education/STATE.md` §2.1 — Arman's own prompt, verbatim |
+| Integration contracts | `common-docs/systems/education/INTEGRATION_MAP.md` (IC-1..IC-14) |
+| Decision ledger | `common-docs/systems/education/DECISIONS.md` |
 
 🚨 **Read the education run's postmortem before you start one.** The 2026-06/07 Education Hub run
 produced the first instance of every template here, and the 2026-08 program that followed it went
 stale inside 48 hours — its briefs described work that had already shipped, and a manager handed one
 would have rebuilt working code. The lesson is in
-`common-docs/projects/education-platform/STATE.md`: **a brief is evidence only at the moment it is
+`common-docs/systems/education/STATE.md`: **a brief is evidence only at the moment it is
 written, so a fleet needs a re-verification cadence, not just a change log.**
 
 ---

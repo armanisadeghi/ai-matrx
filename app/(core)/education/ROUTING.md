@@ -243,7 +243,7 @@ app/(core)/education/
   false for every tool; the per-tool table listed 9 tools against 21+ on disk; the route tree was
   missing `[setId]/edit` (shipped 2026-07-07) plus ~40 other routes. Added the four known
   route-graph gaps and the admin-only list. Converged state:
-  `common-docs/projects/education-platform/STATE.md`.
+  `common-docs/systems/education/STATE.md`.
 - **2026-07-07** — P7: the view/edit gate is real. `flashcards/[setId]/edit` is EDIT-gated via
   `requireAccess`; `[setId]` view surface offers duplicate-to-edit for view-only sharees. Gating
   primitive is `useAccess`/`requireAccess` (`utils/permissions`); indexable public resources live

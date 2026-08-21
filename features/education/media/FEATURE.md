@@ -4,7 +4,7 @@
 see Known gaps. Every audio row in the DB is from 2026-07-14; nothing has exercised the pipeline
 since, so the old "~86% failure" number describes a pipeline that has since been fixed twice and
 is **not a current measurement**. Mind maps / summaries / memory aids generate fine. WP8 of the
-education-platform program owns this — `common-docs/projects/education-platform/`)
+education-platform program owns this — `common-docs/systems/education/`)
 **Tier:** `2`
 **Last updated:** `2026-08-17`
 
@@ -121,7 +121,7 @@ is the defect, not a deferral.
   divergent row — `generating`+run `failed` → `error` carrying the run's own reason. **Live audio
   rows claiming `generating` falsely: 0.** The seed ships handler-gated (`enabled=false`) and
   `activate_registered_system_tasks()` flips it at boot — no manual step. Contract: IC-6 in
-  `common-docs/projects/education-platform/INTEGRATION_MAP.md`. **Still unverified at runtime: the
+  `common-docs/systems/education/INTEGRATION_MAP.md`. **Still unverified at runtime: the
   headless START branch**, which spends money and was proven only up to its pre-launch guards.
 - **[CLOSED 2026-08-17] A failed audio study is no longer a dead end.** The detail surface now
   shows what failed plus a real retry (re-runs the stored request, reusing the row) or a

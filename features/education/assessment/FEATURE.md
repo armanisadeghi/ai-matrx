@@ -1,7 +1,7 @@
 # FEATURE.md — Assessment Engine (P1)
 
 > **Status:** Live (2026-07-07). Quizzes + Practice Tests. One engine, two tools.
-> Owner project: `common-docs/projects/education-platform/STATE.md`.
+> Owner project: `common-docs/systems/education/STATE.md`.
 
 ## Purpose
 

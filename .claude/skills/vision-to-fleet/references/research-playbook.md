@@ -2,7 +2,7 @@
 
 How to run Phase 3 so it produces the education-grade insights doc PLUS the two capture steps
 that run missed (screenshots, design). Worked example output:
-`common-docs/projects/education-platform/research/2026-07-competitive-insights.md`.
+`common-docs/systems/education/research/2026-07-competitive-insights.md`.
 
 ## Step 1 — Pick the right competitors (this decides everything)
 

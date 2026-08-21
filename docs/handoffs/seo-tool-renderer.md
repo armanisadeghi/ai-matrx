@@ -7,7 +7,7 @@ vision: [/Users/armanisadeghi/code/common-docs/policies/canvas-doctrine.md]
 
 # SEO in chat — rendering the `seo` tool, and making its output actionable
 
-**Cluster state:** [`common-docs/projects/seo-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/seo-engine/STATE.md) — verified 2026-08-19; every pending item in this doc was re-confirmed still pending.
+**Cluster state:** [`common-docs/systems/seo/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/seo/STATE.md) — verified 2026-08-19; every pending item in this doc was re-confirmed still pending.
 
 ## 1. Vision — Arman's words
 

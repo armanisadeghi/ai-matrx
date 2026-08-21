@@ -4,7 +4,7 @@
 > **completed 2026-08-18**: there are zero raw agent UUIDs in `features/education/**` or
 > `features/flashcards/**`, and all 38 education mandates resolve through `{ mandateKey }`.
 > Every `{ agentId }` example in this file is the pre-migration shape. Call shapes: IC-1/IC-2 in
-> `common-docs/projects/education-platform/INTEGRATION_MAP.md`; the key roster lives in the
+> `common-docs/systems/education/INTEGRATION_MAP.md`; the key roster lives in the
 > `mandates.ts` file beside each surface. **The response-schema contracts below remain valid and
 > are why this file still exists.**
 

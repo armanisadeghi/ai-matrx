@@ -21,7 +21,7 @@ description: >-
 The paved road from "Arman has some ideas about X" to "N agents are building X in parallel from
 briefs they can execute blind." First run: the Education Hub (2026-06/07) — its converged
 record, including what went wrong the second time around, is
-`common-docs/projects/education-platform/STATE.md`; every template referenced below names a live
+`common-docs/systems/education/STATE.md`; every template referenced below names a live
 worked example in `references/templates.md`.
 
 **The one-sentence job:** produce documents so good that a capable agent, handed one brief and

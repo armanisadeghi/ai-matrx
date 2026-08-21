@@ -2,7 +2,7 @@
 
 The largest education subsystem (sets, cards, details, study modes, FastFire, editor,
 public deck pages). 🚨 **Start at the education project home:
-`/Users/armanisadeghi/code/common-docs/projects/education-platform/README.md`** — its
+`/Users/armanisadeghi/code/common-docs/systems/education/STATE.md`** — its
 GAP_ANALYSIS supersedes any older status claim. This file holds the durable per-feature
 contracts; it was created by the flashcard-images build (2026-08-18) and is deliberately
 narrow — extend it as other lanes land, don't fork a second doc.
