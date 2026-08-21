@@ -14,6 +14,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D235 — CX overview KPIs still aggregate 120k+ chat rows client-side; belongs in a Postgres RPC like `chat.cx_usage_analytics` (2026-08-21)
+
+Found while fixing the cx-dashboard usage/$0 bug. `fetchOverviewKpis` (features/cx-dashboard/service.ts) now reads `chat.user_request` (~12k rows) and `chat.tool_call` (~110k rows) via `readAllRows` parallel paging on the admin client and aggregates in JS — correct (the old bare `.select()` silently capped at 1000 rows, so every all-time KPI was confidently wrong) but ~10s server-side and growing linearly with the tables. The known fix is a second SECURITY DEFINER service-role aggregate RPC (exact template: `chat.cx_usage_analytics`, which took the usage tab from timeout→0.35s) returning the KPI + tool-usage + daily rollups; then `fetchOverviewKpisInner` collapses to head-counts + two RPC calls and the `rowKey` churn-tolerance in `lib/supabase/readAllRows.ts` loses its only consumer and can be deleted. Blocked this session ONLY because the Supabase MCP returned 404 on every call (no `execute_sql`/`apply_migration`), so no DDL path existed.
+
 ### D234 — `sandbox_instance` is 91.6% of the entire version store: 4.83M of 5.28M rows over 375 rows (2026-08-21)
 
 Found while verifying the versioned-without-capture migration (D233's sibling; measured live).
