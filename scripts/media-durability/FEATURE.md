@@ -94,7 +94,7 @@ perfectly" and "nothing is running".
 The default scan is **contract-scoped on purpose** — it probes exactly the two
 populations where the mismatch is definitionally a defect:
 
-1. every column registered in `public.mtx_public_url_guard` (columns a DB designer
+1. every column registered in `platform.mtx_public_url_guard` (columns a DB designer
    declared must stay durable);
 2. every text/jsonb column named in `platform.shareable_resource_registry.public_columns`
    — literally the projection an anonymous share-link viewer receives.
@@ -135,7 +135,7 @@ the consumer and say why expiry is fine for it, it is not intentional — fix th
 
 ## The DB-edge guard (write time)
 
-`public.mtx_public_url_guard` + `mtx_public_url_guard_trigger()` catch a non-durable
+`platform.mtx_public_url_guard` + `mtx_public_url_guard_trigger()` catch a non-durable
 write *as it happens*: loud `WARNING` in the Postgres log plus a row in
 `mtx_media_heal_queue`. Non-blocking by design — rejecting the write would lose the
 real media.
@@ -143,12 +143,12 @@ real media.
 Register a column:
 
 ```sql
-insert into public.mtx_public_url_guard (schema_name, table_name, column_name, note)
+insert into platform.mtx_public_url_guard (schema_name, table_name, column_name, note)
 values ('podcast', 'pc_episodes', 'image_url', 'public episode cover — anonymous web reads it');
 
 create trigger pc_episodes_public_url_guard
   after insert or update on podcast.pc_episodes
-  for each row execute function public.mtx_public_url_guard_trigger();
+  for each row execute function platform.mtx_public_url_guard_trigger();
 ```
 
 **Do NOT register intentional-expiry columns** — that would queue heal jobs against

@@ -23,7 +23,7 @@
   ],
   "intentional": [
     {
-      "target": "public.mtx_media_heal_queue.bad_value",
+      "target": "platform.mtx_media_heal_queue.bad_value",
       "reason": "The queue's entire job is to hold the offending URL until it is healed. The expiring string IS the payload.",
       "consumer": "migrations/mtx_public_media_url_guard.sql \u2014 the heal worker reads bad_value to know what to replace."
     },
