@@ -18,7 +18,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatElapsed } from "./elapsed";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
+import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
 import { studyMediaService } from "@/features/education/media/service";
 import { useAudioStudyRunPersistence } from "@/features/education/media/audio/useAudioStudyRunPersistence";
 import type { StudyMediaRow } from "@/features/education/media/types";
@@ -138,10 +140,38 @@ function LiveKitAudio({
           style={{ width: `${Math.max(2, pct)}%` }}
         />
       </div>
+      {run.livePlayer && (
+        // The TTS render is the long step, and the platform already streams the
+        // audio as it is spoken — so let the student HEAR it arriving instead of
+        // watching one percentage sit still. Canonical player, not a second one.
+        <LiveAudioPlayer player={run.livePlayer} title="Listening in as it records" />
+      )}
       <p className="text-[11px] text-muted-foreground">
+        {/* Percent alone goes quiet for minutes during the TTS render, and a
+            number that has not moved reads as a hang; time in the current step
+            is something we always know honestly. */}
+        <StepClock key={state.currentLabel} />
         Keep this open to watch it — if you leave, it keeps running and picks up
         where it left off on the audio page.
       </p>
     </div>
   );
+}
+
+/** Time spent on the CURRENT step, rendered as a sentence. Mounted with the
+ *  step label as its `key`, so moving to the next step remounts it and the
+ *  clock restarts — no ref juggling, and a long step keeps saying "still on
+ *  this" instead of showing a percentage that has not moved in minutes. */
+function StepClock() {
+  const [startedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const elapsed = Math.max(0, now - startedAt);
+  if (elapsed < 15_000) return null;
+  return <>On this step for {formatElapsed(elapsed)} — audio takes the longest. </>;
 }
