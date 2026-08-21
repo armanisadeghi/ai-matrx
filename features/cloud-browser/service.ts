@@ -495,6 +495,43 @@ export async function listProfiles(): Promise<CloudBrowserProfile[]> {
   );
 }
 
+/**
+ * Load the panel for ONE known live run — the chat-stream handoff seam.
+ *
+ * Deliberately NOT `loadSnapshot`: that one starts a browser when the profile
+ * has none, which is right when a person opens the panel and catastrophic when
+ * a stream event triggers it. This resolves first and returns null unless the
+ * run genuinely exists and is live, so adopting a handoff can never conjure a
+ * second browser. `handoffId` is the `credential_login` shape (it names the
+ * episode, not the run).
+ */
+export async function loadSnapshotForRun(ref: {
+  runId?: string | null;
+  handoffId?: string | null;
+}): Promise<CloudBrowserSnapshot | null> {
+  let runId = ref.runId ?? null;
+  if (!runId && ref.handoffId) {
+    const { data } = await supabase
+      .schema("browser")
+      .from("handoff")
+      .select("run_id")
+      .eq("id", ref.handoffId)
+      .maybeSingle();
+    runId = data?.run_id ?? null;
+  }
+  if (!runId) return null;
+  const { data, error } = await supabase
+    .schema("browser")
+    .from("run")
+    .select("profile_id")
+    .eq("id", runId)
+    .in("state", [...LIVE_STATES])
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error || !data) return null;
+  return loadSnapshot(data.profile_id, runId);
+}
+
 export async function loadSnapshot(
   requestedProfileId = "",
   /**
