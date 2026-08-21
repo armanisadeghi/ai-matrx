@@ -21,12 +21,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCrmContext } from "../../hooks/useCrmContext";
-import { addMembersByPartyIds } from "../../outreach-lists/service";
+import {
+  addMembersByPartyIds,
+  recordEnrollmentSource,
+} from "../../outreach-lists/service";
 import {
   OutreachListPickerFields,
   useOutreachListChoice,
 } from "./OutreachListPicker";
-import type { PartyListRow } from "../../types";
+import type { PartyListQuery, PartyListRow } from "../../types";
 
 export function AddToOutreachListDialog({
   open,
@@ -36,12 +39,22 @@ export function AddToOutreachListDialog({
   /** … and the full id set (selection can span pages). */
   selectedIds,
   onDone,
+  enrollmentQuery,
+  activeView,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedRows: PartyListRow[];
   selectedIds: string[];
   onDone: () => void;
+  /**
+   * The query the list is running when the user enrolls, stamped as the
+   * list's enrollment provenance — this entry point used to skip the stamp
+   * the list-page dialog writes, leaving `definition = {}` (D222).
+   */
+  enrollmentQuery?: PartyListQuery;
+  /** The applied smart view behind that query, if any. */
+  activeView?: { id: string; name: string } | null;
 }) {
   const ctx = useCrmContext();
   const choice = useOutreachListChoice(open);
@@ -76,6 +89,15 @@ export function AddToOutreachListDialog({
         list,
         partyIds: enrollIds,
       });
+      if (enrollmentQuery) {
+        await recordEnrollmentSource({
+          list,
+          query: enrollmentQuery,
+          savedViewId: activeView?.id ?? null,
+          savedViewName: activeView?.name ?? null,
+          enrolled: added,
+        });
+      }
       onOpenChange(false);
       onDone();
       const skippedDnc = selectedIds.length - enrollIds.length;

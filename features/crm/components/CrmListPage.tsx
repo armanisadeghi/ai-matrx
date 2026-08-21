@@ -524,6 +524,12 @@ export function CrmListPage({
   // Smart views: the saved query the list is currently running, if any. The
   // bar owns the records; this page owns which one is applied.
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  // The whole active view (id + name) — enrollment provenance stamps the name
+  // so the outreach list can render its "Filled from <view>" door (D222).
+  const [activeView, setActiveView] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const applySavedView = (definition: SavedViewDefinition) => {
     list.setQuery(queryFromDefinition(definition));
     setPrefs({ sort: definition.sort, direction: definition.direction });
@@ -1016,6 +1022,7 @@ export function CrmListPage({
               orgId={savedViewOrgId}
               activeViewId={activeViewId}
               onActiveViewIdChange={setActiveViewId}
+              onActiveViewChange={setActiveView}
               onApply={applySavedView}
               autoOpenViewId={requestedViewId}
               className="mt-2"
@@ -1157,6 +1164,10 @@ export function CrmListPage({
           selectedRows={selectedLoadedRows}
           selectedIds={selectedIds}
           onDone={() => setSelectedIds([])}
+          // Provenance for the enrollment stamp (D222): the query the list is
+          // running and the applied smart view, if any.
+          enrollmentQuery={list.query}
+          activeView={activeView}
         />
       </div>
     </SurfaceRuntimeProvider>

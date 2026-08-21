@@ -300,6 +300,43 @@ export async function fetchExistingMemberPartyIds(
  * batch would abort the whole batch on a single duplicate). Bare inserts:
  * component RETURNING is forbidden (rule 1).
  */
+/**
+ * Best contact point per party, for binding at enrollment (D223): the list
+ * kind's channel first (call → phone, otherwise email), primary before
+ * non-primary, falling back to the other channel. A member with no binding is
+ * reported "blocked" by Chasebox even when the party is perfectly reachable —
+ * so the binding happens here, once, for every enrollment entry point.
+ */
+async function fetchBestContactPointIds(
+  partyIds: string[],
+  listKind: string,
+): Promise<Map<string, string>> {
+  const preferred = listKind === "call" ? "phone" : "email";
+  const best = new Map<string, string>();
+  for (let i = 0; i < partyIds.length; i += 200) {
+    const chunkIds = partyIds.slice(i, i + 200);
+    const { data, error } = await crm()
+      .from("party_contact_point")
+      .select("id, party_id, channel, is_primary")
+      .in("party_id", chunkIds)
+      .in("channel", ["email", "phone"])
+      .is("deleted_at", null);
+    if (error) throw pgError(error);
+    const rank = (r: { channel: string; is_primary: boolean }) =>
+      (r.channel === preferred ? 0 : 2) + (r.is_primary ? 0 : 1);
+    const bestRank = new Map<string, number>();
+    for (const r of data ?? []) {
+      const current = bestRank.get(r.party_id);
+      const score = rank(r);
+      if (current === undefined || score < current) {
+        bestRank.set(r.party_id, score);
+        best.set(r.party_id, r.id);
+      }
+    }
+  }
+  return best;
+}
+
 export async function addMembersByPartyIds(args: {
   list: OutreachListRow;
   partyIds: string[];
@@ -318,12 +355,19 @@ export async function addMembersByPartyIds(args: {
     (id) => !existing.has(id),
   );
   const skippedExisting = args.partyIds.length - fresh.length;
+  // Bind each member to their best contact point up front (D223). Best-effort:
+  // a party with no usable medium simply enrolls unbound, exactly as before.
+  const contactPoints = await fetchBestContactPointIds(
+    fresh,
+    args.list.list_kind ?? "list",
+  );
 
   for (let i = 0; i < fresh.length; i += 200) {
     const batch = fresh.slice(i, i + 200).map((partyId) => ({
       outreach_list_id: args.list.id,
       party_id: partyId,
       organization_id: args.list.organization_id,
+      contact_point_id: contactPoints.get(partyId) ?? null,
       ...(args.metadata && Object.keys(args.metadata).length
         ? { metadata: args.metadata as unknown as Json }
         : {}),

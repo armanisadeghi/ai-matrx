@@ -732,23 +732,28 @@ export async function planImport(args: {
         : ((plan.primaryDomain
             ? domainOwners.get(plan.primaryDomain)
             : undefined) ?? nameOwners.get(plan.displayName.toLowerCase())));
-    if (existing) {
-      plan.status = "exists";
-      plan.existing = existing;
-      continue;
-    }
+    // The employer match applies to MATCHED rows too — commit enriches them
+    // (D220), so their company column must ride the same resolution.
     if (plan.companyName) {
       plan.existingEmployer = employerMatches.get(
         plan.companyName.toLowerCase(),
       );
     }
+    if (existing) {
+      plan.status = "exists";
+      plan.existing = existing;
+      continue;
+    }
   }
 
   const creates = drafts.filter((p) => p.status === "create");
+  const committed = drafts.filter(
+    (p) => p.status === "create" || p.status === "exists",
+  );
   // Dedupe by the SAME lowercase key the commit loop uses, so the preview's
   // "creates N companies" is exactly what commit will do.
   const newCompanyByKey = new Map<string, string>();
-  for (const p of creates) {
+  for (const p of committed) {
     if (p.companyName && !p.existingEmployer) {
       const key = p.companyName.toLowerCase();
       if (!newCompanyByKey.has(key)) newCompanyByKey.set(key, p.companyName);
@@ -799,7 +804,13 @@ export async function commitImport(
   /** The uploaded file name — stamped on every row as `source_detail`. */
   sourceDetail?: string,
 ): Promise<ImportResult> {
-  const rows = plan.rows.filter((p) => p.status === "create");
+  // MATCHED rows go through commit too (D220): the resolver's NULL-only
+  // enrichment plus the contact-point/affiliation steps below are exactly what
+  // a row matched to an existing party is for. Filtering to "create" silently
+  // discarded every field the matched row carried.
+  const rows = plan.rows.filter(
+    (p) => p.status === "create" || p.status === "exists",
+  );
   const created: RowResult[] = [];
   const failed: RowResult[] = [];
   const companiesCreated: PartyRef[] = [];

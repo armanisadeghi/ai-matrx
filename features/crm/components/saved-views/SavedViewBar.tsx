@@ -64,6 +64,12 @@ export interface SavedViewBarProps<TDef> {
   orgId: string | null;
   activeViewId: string | null;
   onActiveViewIdChange: (id: string | null) => void;
+  /**
+   * Fires with the whole view alongside `onActiveViewIdChange` — for callers
+   * that need the NAME too (enrollment provenance stamps it, D222). Optional
+   * so existing callers change nothing.
+   */
+  onActiveViewChange?: (view: { id: string; name: string } | null) => void;
   /** Applies a view: the caller lands it through setQuery + setPrefs. */
   onApply: (definition: TDef) => void;
   /**
@@ -85,6 +91,7 @@ export function SavedViewBar<TDef>({
   orgId,
   activeViewId,
   onActiveViewIdChange,
+  onActiveViewChange,
   onApply,
   autoOpenViewId,
   className,
@@ -130,6 +137,7 @@ export function SavedViewBar<TDef>({
       return;
     }
     onActiveViewIdChange(target.id);
+    onActiveViewChange?.({ id: target.id, name: target.name });
     onApply(target.definition);
     void touchSavedView(target.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per URL
@@ -143,6 +151,7 @@ export function SavedViewBar<TDef>({
 
   const apply = (view: SavedView<TDef>) => {
     onActiveViewIdChange(view.id);
+    onActiveViewChange?.({ id: view.id, name: view.name });
     onApply(view.definition);
     void touchSavedView(view.id);
     setViews((prev) =>
@@ -164,6 +173,7 @@ export function SavedViewBar<TDef>({
     });
     setViews((prev) => [created, ...prev]);
     onActiveViewIdChange(created.id);
+    onActiveViewChange?.({ id: created.id, name: created.name });
     toast.success(`"${created.name}" saved`);
   };
 
@@ -186,6 +196,9 @@ export function SavedViewBar<TDef>({
     setViews((prev) =>
       prev.map((v) => (v.id === view.id ? { ...v, name: name.trim() } : v)),
     );
+    if (view.id === activeViewId) {
+      onActiveViewChange?.({ id: view.id, name: name.trim() });
+    }
     toast.success(`Renamed to "${name.trim()}"`);
   };
 
@@ -266,7 +279,10 @@ export function SavedViewBar<TDef>({
               try {
                 await deleteSavedView(view.id);
                 setViews((prev) => prev.filter((v) => v.id !== view.id));
-                if (activeViewId === view.id) onActiveViewIdChange(null);
+                if (activeViewId === view.id) {
+                  onActiveViewIdChange(null);
+                  onActiveViewChange?.(null);
+                }
                 toast.success(`"${view.name}" deleted`);
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : "Delete failed");

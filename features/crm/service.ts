@@ -659,6 +659,48 @@ export async function setPartiesDoNotContact(args: {
   }
 }
 
+/**
+ * Flag do-not-contact on ONE record and say so on its timeline — the exact
+ * mirror of `allowPartyContact`. The FLAG is the consequential half of the
+ * pair (it silences every channel), and it was the unaudited one (D224).
+ */
+export async function blockPartyContact(args: {
+  partyId: string;
+  orgId: string;
+  userId: string;
+  reason?: string | null;
+}): Promise<void> {
+  await setPartiesDoNotContact({
+    ids: [args.partyId],
+    doNotContact: true,
+    reason: args.reason ?? undefined,
+  });
+
+  // Bare insert — component INSERT…RETURNING 42501s (D181).
+  const logged = await supabase
+    .schema("crm")
+    .from("interaction")
+    .insert({
+      party_id: args.partyId,
+      organization_id: args.orgId,
+      channel_code: "note",
+      direction: "outbound",
+      status: "completed",
+      subject: "Do-not-contact flagged",
+      body:
+        "This record must not be contacted." +
+        (args.reason?.trim() ? ` Reason: ${args.reason.trim()}` : ""),
+      occurred_at: new Date().toISOString(),
+      performed_by: args.userId,
+    });
+  if (logged.error) {
+    console.error(
+      "[crm] do-not-contact flagged but the audit note failed:",
+      pgError(logged.error).message,
+    );
+  }
+}
+
 // ── Unsuppress (the reverse of "Do not call") ───────────────────────────────
 
 /**

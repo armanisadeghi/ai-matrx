@@ -301,13 +301,17 @@ export default function AssistsDock() {
   return (
     <div
       className={cn(
-        "fixed z-40 hidden flex-col items-end gap-1.5 pb-safe md:flex",
+        // pointer-events-none on the CONTAINER: it is a layout box larger than
+        // its visible children, and it sat over page controls swallowing their
+        // clicks (D225 — the record page's Log button). The panel and the pill
+        // re-enable their own events below.
+        "pointer-events-none fixed z-40 hidden flex-col items-end gap-1.5 pb-safe md:flex",
         dragging && "select-none",
       )}
       style={style}
     >
       {open && (
-        <div className="flex max-h-[50dvh] w-72 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+        <div className="pointer-events-auto flex max-h-[50dvh] w-72 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
           {visible.map((assist) => (
             <AssistChip
               key={assist.id}
@@ -327,7 +331,7 @@ export default function AssistsDock() {
       )}
       <div
         className={cn(
-          "group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md",
+          "pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md",
           dragging && "ring-1 ring-primary/40",
         )}
       >

@@ -195,7 +195,8 @@ export function ImportWizard() {
 
   const runImport = async () => {
     if (!plan) return;
-    setProgress({ done: 0, total: plan.counts.create });
+    // Commit processes new AND matched rows (D220) — the bar counts both.
+    setProgress({ done: 0, total: plan.counts.create + plan.counts.exists });
     try {
       const res = await commitImport(
         plan,
@@ -443,7 +444,9 @@ export function ImportWizard() {
                   className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
                   disabled={!pastedText.trim() || !resolvedOrgId}
                   onClick={() =>
-                    loadParsedData(parseDelimitedText(pastedText), null)
+                    // "pasted text" IS the provenance — a NULL here landed
+                    // every pasted row with source_detail NULL (D221).
+                    loadParsedData(parseDelimitedText(pastedText), "pasted text")
                   }
                 >
                   <ArrowRight className="h-3.5 w-3.5" /> Use pasted text
@@ -586,7 +589,7 @@ export function ImportWizard() {
                 {plan.counts.create} new
               </span>
               <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                {plan.counts.exists} already exist
+                {plan.counts.exists} already exist (will be updated)
               </span>
               {plan.counts.duplicateInFile > 0 && (
                 <span className="rounded bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">

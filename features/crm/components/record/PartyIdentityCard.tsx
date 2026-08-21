@@ -15,7 +15,11 @@ import { CategoryTagPicker } from "@/features/scopes/components/CategoryTagPicke
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { allowPartyContact, updateParty } from "../../service";
+import {
+  allowPartyContact,
+  blockPartyContact,
+  updateParty,
+} from "../../service";
 import type { PartyListRow, PartyUpdate } from "../../types";
 import { SectionCard } from "./SectionCard";
 
@@ -186,18 +190,22 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
    */
   const toggleDnc = async (next: boolean) => {
     try {
+      if (!userId) {
+        toast.error(
+          "Sign in again — the audit trail needs to name who changed it",
+        );
+        return;
+      }
       if (next) {
-        await updateParty(party.id, {
-          do_not_contact: true,
-          do_not_contact_reason: party.do_not_contact_reason,
+        // Flagging writes the same timeline note lifting always did — the
+        // consequential half of the pair was the unaudited one (D224).
+        await blockPartyContact({
+          partyId: party.id,
+          orgId: party.organization_id,
+          userId,
+          reason: party.do_not_contact_reason,
         });
       } else {
-        if (!userId) {
-          toast.error(
-            "Sign in again — the audit trail needs to name who lifted it",
-          );
-          return;
-        }
         await allowPartyContact({
           partyId: party.id,
           orgId: party.organization_id,
