@@ -17,6 +17,38 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D229 — `fileHandler`'s byte targets cannot read an OWNED PRIVATE file (401) (2026-08-21)
+
+`fileHandler.use({kind:"file_id",fileId}).as({kind:"blob"})` (and therefore
+`data_uri`, `form_data_part`, `anchor_download`) fails with
+`file-handler: blob fetch failed (401)` for a normal owned private file.
+
+Two causes, stacked:
+
+1. `features/files/handler/resolver.ts` guards the mint as
+   `if (opts.needsUrl && result.fileId && !result.url)`. `hydrateFromFileId`
+   already set a `url`, so `ensureSignedUrl` never runs — even though
+   `ensureSignedUrl` has its OWN correct freshness check and would have re-minted.
+2. Removing that guard is not enough: what `Files.getSignedUrl` returns is
+   `https://files.matrxserver.com/files/{id}/download`, an **authenticated
+   endpoint**, not a pre-signed URL. `toBlob`'s bare `fetch(url)` sends no
+   Authorization header, so it 401s either way.
+
+So the `signed URL` in the handler's vocabulary is not actually transport-safe,
+which is exactly what `capabilities.transportSafeForFetch: false` says — but
+`toBlob` ignores that flag and fetches anyway.
+
+**Fix (needs the files-service contract decision, hence not fixed here):** either
+have `/files/{id}/url` return a genuinely pre-signed URL, or make `toBlob` route
+through the authenticated `downloadFile()` client when
+`transportSafeForFetch === false`. The second is small and local to
+`features/files/handler/output/target.ts`.
+
+Verified live 2026-08-21 on a `.md` anchor file. Worked around in
+`features/education/convert/reopenSource.ts`, which calls `downloadFile()`
+directly and says so in a comment — that workaround should be deleted when this
+is fixed properly.
+
 ### D219 — five ACTIVE kinds have an uncompilable `emitted_json_schema` (dangling `$defs` ref) (2026-08-20)
 
 `content_ir.kind_definition.emitted_json_schema` for **`claim_evidence`, `plan_page_draft`,
