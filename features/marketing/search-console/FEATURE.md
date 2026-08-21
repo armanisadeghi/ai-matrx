@@ -244,6 +244,14 @@ to unclassified) or, above 70% unclassified share, the intake wizard.
   the route resolves to in route-to-surface) — move the `GSC_ASSIST_SURFACE`
   constant when a dedicated GSC surface manifest lands.
 
+**Keyword VALUE tiers (2026-08-21):** value is orthogonal to class and resolves
+server-side in `seo.keyword_value_map` (override > computed-with-reasons >
+unvalued) — never re-derive a band client-side. Cross-repo system-of-record:
+/Users/armanisadeghi/code/common-docs/systems/marketing/seo/seo-keywords/value-system.md — read it
+before touching value tiers in ANY repo. FE home: `features/marketing/seo/value-system/`
++ the bake-off workbench at `/marketing/brands/[brandId]/sites/[siteId]/value` (default
+forwards to the ruling winner among `/a…/d`).
+
 ## Classification UI — the manual truth-editing surface (2026-08-08)
 
 Classification is important enough for a DEDICATED UI (Arman, 2026-08-08).
