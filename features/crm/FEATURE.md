@@ -823,9 +823,9 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
   browser-proven. D227: deals page resolves the ACTIVE org and the create
   dialog searches all reachable orgs (deal follows the picked party's org),
   browser-proven. D228: provenance token links only when it is a real URL.
-  **D219 remainder:** `migrations/crm_12_merge_fidelity.sql` (exact
+  **D246 remainder:** `migrations/crm_12_merge_fidelity.sql` (exact
   merge/unmerge round trip) is written but NOT applied — MCP DDL was
-  permission-blocked; see FOUND_DEFECTS.md D219 (merge fidelity).
+  permission-blocked; see FOUND_DEFECTS.md D246.
 - 2026-08-20 — **Deals + pipelines shipped (Arman's ruling ×2 — STATE.md P4/Q2).**
   DB: `crm.deal` (entity, versioned) + `crm.deal_stage_event` (hand-built
   component per the crm_02 recipe), the `deal_pipeline` category dimension

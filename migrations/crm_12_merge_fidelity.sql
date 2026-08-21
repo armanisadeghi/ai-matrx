@@ -1,7 +1,7 @@
 -- ============================================================================
--- crm_12_merge_fidelity.sql — D219: the merge/unmerge round trip must be exact
+-- crm_12_merge_fidelity.sql — D246 (filed as a second D219): the merge/unmerge round trip must be exact
 -- ============================================================================
--- The defect (FOUND_DEFECTS.md D219, proven live 2026-08-20):
+-- The defect (FOUND_DEFECTS.md D246, proven live 2026-08-20):
 --   * merge set `is_primary = false` on EVERY moved contact point, address and
 --     affiliation, unconditionally. When the winner had no primary+current
 --     affiliation of its own, the affiliation→party mirror trigger

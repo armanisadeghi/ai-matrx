@@ -5,7 +5,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
-- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Known past collisions: two D138s, D150s, D167s, D183s, D184s. 🚨 **Renumbering has itself collided** — `D193`, `D194`, `D195` and `D219` each name two live entries today (the D184→D193 and D183→D194 renumbers landed on numbers that were already taken). Do not add to it: the next free ID is **above D241**.
+- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Past collisions: two D138s, D150s, D167s, D183s, D184s — and the D184→D193 / D183→D194 renumbers then landed on numbers that were **already taken**, so D193/D194/D195/D219 each named two entries. All cleared 2026-08-21 by moving the *uncited* namesake to a free ID (D242–D246) — the entry other docs cite always keeps its number. **Grep before you claim, and take the next ID above the current maximum, not above the last entry in the file.**
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
@@ -347,7 +347,7 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 *(Filed 2026-08-16; recovered 2026-08-21 from inside the "claim the next free ID" rule bullet, where it had been spliced and invisible.)*
 
 ### D229 — the FE mirrors aidream's contract inventory to serve one always-null lookup (2026-08-20)
-Fallout from the contract-artifact eviction (`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
+Fallout from the contract-artifact eviction (`../common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
 
 What's left: `scripts/shape/content-ir-contract-manifest.json` (~776 stale contract slugs) plus `scripts/shape/refresh-contract-manifest.ts`, `scripts/shape/contract-manifest-format.ts` and the `check:shapes:manifest:refresh` script. Its **only** remaining consumer is `familyByKind` in `features/content-ir/admin/shape-doctor-server.ts:442`, which now resolves `null` for every live kind because the map is built exclusively from contract slugs — so the admin board's Family column is dead (it was always null for real shapes; now it is null for everything).
 
@@ -392,7 +392,7 @@ registered web/output route and renders its nested `evidence_source` children
 (`features/content-ir/__tests__/kind-explicit-basic-routes.test.tsx`) — a broken schema must
 never mean a broken screen. Its ledger row stays `blocked` on the EXAMPLE only.
 
-### D219 (merge fidelity) — OPEN REMAINDER: crm_12_merge_fidelity.sql is written but NOT APPLIED (2026-08-21)
+### D246 (filed as a second D219, renumbered 2026-08-21) — OPEN REMAINDER: crm_12_merge_fidelity.sql is written but NOT APPLIED (2026-08-21)
 The lossy merge/unmerge round trip (merge blanked the winner's job title via the affiliation
 mirror trigger; unmerge never restored `is_primary`) is fixed in
 `migrations/crm_12_merge_fidelity.sql`: merge demotes a moved primary ONLY when the winner
@@ -969,7 +969,7 @@ Their `shareable_resource_registry` rows say `is_public_column='is_public'`, `ow
 
 The other 51 `visibility`-less entities were reviewed and are legitimately non-shareable (user preferences, memberships, invitations, likes/views, system errors, job runs).
 
-### D194 — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
+### D244 (filed as D194, renumbered 2026-08-21) — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
 
 `features/surfaces/runtime/SurfaceRuntimeContext.tsx::getSurfaceRuntime()` resolves "deepest wins,
 ties broken by higher registration id". Depth is correct and load-bearing for real nesting (an open
@@ -983,7 +983,7 @@ surfaceName that already has a live entry at the SAME depth, naming both call si
 independent layer the loud-recovery doctrine requires. Filed as AI Dream feedback
 `ebed27b8-8544-4a6a-92f3-3dabdebe2ad0`.
 
-### D195 — `append_rows_to_user_table`'s only caller is in matrx-extend and still reads the old error text (2026-08-15)
+### D245 (filed as D195, renumbered 2026-08-21) — `append_rows_to_user_table`'s only caller is in matrx-extend and still reads the old error text (2026-08-15)
 
 The D167 honest-access-error sweep (`migrations/invoker_fns_honest_access_error.sql`, applied live
 2026-08-15) rewrote 17 SECURITY INVOKER functions to raise an honest ambiguous message under
@@ -1076,7 +1076,7 @@ uses. Fixed 2026-08-13; each function is now checked under its own effective sea
 path, every finding carries a `severity`, and the actionable count is **0**. A `real`
 row today is a real runtime failure — treat it as one.
 
-### D193 (was a second D184) — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
+### D242 (filed as D184, renumbered to D193 which was taken, renumbered 2026-08-21) — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
 
 Found while building the growth loop's human pipe. Two halves, both must land together:
 
@@ -1455,7 +1455,7 @@ The 4-day platform freeze is fixed and re-verified live 2026-08-15 (28 partition
 deleted; the sole survivor WF-10 (site→vertical binding) shipped 2026-08-19 as the real FK
 `web.site.plan_profile_id`. Remaining factory work is in
 [docs/handoffs/website-factory-vision.md](docs/handoffs/website-factory-vision.md) and
-`/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md` §4.3.
+`../common-docs/projects/content-engine/STATE.md` §4.3.
 
 ### D119 — RESOLVED 2026-08-14: the EDIT/FULL boundary is now enforced on columns, not just statements
 
@@ -1658,7 +1658,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
-- **D193 (tabs)** — `TabsContent` unmounts inactive panels again; the hardcoded `forceMount` (added incidentally in an unrelated 2025-02-26 bulk commit, live for 18 months) is gone and force-mounting is opt-in per panel. Hidden tabs no longer run effects, fire fetches, open subscriptions, or register providers. Verified in-browser: on `/administration/agents/agent-apps/executions` the inactive panel now holds **0** children (it was a fully-live second table registering a competing `SurfaceRuntimeProvider` — the D194 trigger), on `/administration/database/enums` two of three heavy admin tables no longer mount, and switching tabs still mounts and renders correctly. Audited for state-loss before flipping: the 5 stream/Monaco panels all render from props; **zero** uncontrolled (`defaultValue`) inputs exist inside any panel repo-wide; and every live split-across-tabs form lifts its state above `<Tabs>` (checked the clearest case, `AgentAppSettingsContent`, plus the config/catalog/shape editors). The one component holding per-tab draft state, `tabbed-builder/TaskTab`, is inside `MainPromptBuilder`, which **nothing mounts** — unfinished scaffolding, left alone, and whoever finishes it lifts the state rather than reaching for `forceMount`. 2026-08-15.
+- **D243 (tabs; filed as a third D193, renumbered 2026-08-21)** — `TabsContent` unmounts inactive panels again; the hardcoded `forceMount` (added incidentally in an unrelated 2025-02-26 bulk commit, live for 18 months) is gone and force-mounting is opt-in per panel. Hidden tabs no longer run effects, fire fetches, open subscriptions, or register providers. Verified in-browser: on `/administration/agents/agent-apps/executions` the inactive panel now holds **0** children (it was a fully-live second table registering a competing `SurfaceRuntimeProvider` — the D244 trigger), on `/administration/database/enums` two of three heavy admin tables no longer mount, and switching tabs still mounts and renders correctly. Audited for state-loss before flipping: the 5 stream/Monaco panels all render from props; **zero** uncontrolled (`defaultValue`) inputs exist inside any panel repo-wide; and every live split-across-tabs form lifts its state above `<Tabs>` (checked the clearest case, `AgentAppSettingsContent`, plus the config/catalog/shape editors). The one component holding per-tab draft state, `tabbed-builder/TaskTab`, is inside `MainPromptBuilder`, which **nothing mounts** — unfinished scaffolding, left alone, and whoever finishes it lifts the state rather than reaching for `forceMount`. 2026-08-15.
 - **D189** — Strict Validation is reachable at last: the toggle moved into `TableConfigModal`'s Table Settings tab (the modal the gear actually opens), saving through `setValidationMode()`; the never-mounted `TableSettingsModal` is DELETED. Authenticated Access was deliberately not ported — `udt_datasets` has no `authenticated_read` column and `update_user_table_metadata` ignores `p_authenticated_read`, so that switch could never save anything. Browser-verified on `/data/…`: toggle on → toast → survives a hard reload as ON, and with strict armed the DB refuses both a missing required field and a non-numeric value (`udt_validate_row` P0001) (`aa49f1190`). 2026-08-15.
 - **D191** — the orphan-trigger retirement's kept-set assertion now names BOTH deliberate keeps (`platform.dead_relation_write()` + `workflow.plan_touch_row()`); `retire_orphan_updated_at_trigger_helpers.sql` applied live and the shared applier is unblocked. The assertion did its job — it refused to retire 19 functions while an un-triaged 20th orphan existed, and `workflow.plan_touch_row()` turned out to be matrx-graph's standalone-deployment fallback that must NOT be retired. 2026-08-14.
 - **D164 (the duplicate)** — `keyword_set` deactivated via the canonical `content_ir.set_kind_activation` gate (reversible, not deleted) after the investigation proved both kinds identical from birth; `keyword_variant_set` survives — it holds the only real component and the only bound agent, `keyword_set` had zero consumers. Verified live: **0** fingerprint collisions remain between active `user_authored` kinds. Arman's call, 2026-08-15. Mint-time guard → D164 remainder.
