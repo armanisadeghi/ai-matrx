@@ -65,7 +65,7 @@ export function MindMapHome() {
       getScope={getScope}
     >
     <EducationToolHeader title="Mind Maps" />
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
         <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/mind-maps/new")}>
           <Plus className="h-4 w-4" />

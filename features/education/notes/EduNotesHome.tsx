@@ -130,7 +130,7 @@ export function EduNotesHome() {
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">
       <EducationToolHeader title="Smart Notes" />
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6 pt-[var(--shell-header-h)]">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6">
         <div className="flex items-center justify-end">
           <Button onClick={createNote} disabled={creating || isPending}>
             <Plus className="mr-1.5 h-4 w-4" />

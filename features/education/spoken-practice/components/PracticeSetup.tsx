@@ -172,7 +172,7 @@ export function PracticeSetup({
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5 px-4 pb-4 pt-[var(--shell-header-h)] sm:px-6 sm:pb-6">
+    <div className="mx-auto w-full max-w-md space-y-5 px-4 pb-4 sm:px-6 sm:pb-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back">
           <ArrowLeft className="h-4 w-4" />

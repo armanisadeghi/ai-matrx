@@ -53,7 +53,7 @@ export function OfflineStudyPanel() {
   return (
     // The heading is the first thing the learner must read, so it clears the
     // glass header rather than scrolling behind it (IC-5 / core-route-headers).
-    <div className="mx-auto h-full w-full max-w-2xl overflow-y-auto px-4 pb-8 pb-safe pt-[calc(var(--shell-header-h)+1.5rem)]">
+    <div className="mx-auto h-full w-full max-w-2xl overflow-y-auto px-4 pb-8 pb-safe pt-6">
       <div className="mb-6 flex items-start gap-3">
         <CloudOff className="mt-1 h-6 w-6 shrink-0 text-muted-foreground" />
         <div>

@@ -23,7 +23,7 @@ export function TutorHome() {
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <EducationToolHeader title="AI Tutor" />
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-8 pt-[var(--shell-header-h)]">
+      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-8">
         {/* Hero */}
         <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

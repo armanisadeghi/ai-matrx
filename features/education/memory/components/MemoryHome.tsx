@@ -67,7 +67,7 @@ export function MemoryHome() {
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <EducationToolHeader title="Memory Aids" />
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
         <Button
           size="sm"

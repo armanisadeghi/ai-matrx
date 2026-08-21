@@ -85,7 +85,7 @@ export function AudioStudyHome() {
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <EducationToolHeader title="Audio Study" />
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/review")}>
           <Mic className="h-4 w-4" />

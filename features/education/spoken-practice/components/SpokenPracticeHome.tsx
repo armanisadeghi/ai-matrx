@@ -16,7 +16,7 @@ export function SpokenPracticeHome({
   onPick: (mode: SpokenPracticeMode) => void;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 pb-4 pt-[var(--shell-header-h)] sm:px-6 sm:pb-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 pb-4 sm:px-6 sm:pb-6">
       <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
         <Mic className="h-3.5 w-3.5" />
         Voice-first · graded on meaning

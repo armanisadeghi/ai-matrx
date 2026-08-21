@@ -42,7 +42,7 @@ export function SummaryHome() {
   return (
     <>
       <EducationToolHeader title="Study Summaries" />
-      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8 pt-[var(--shell-header-h)]">
+      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
         <div className="flex items-center justify-end">
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/education/start">
