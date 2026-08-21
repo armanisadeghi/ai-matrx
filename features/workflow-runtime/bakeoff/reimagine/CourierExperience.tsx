@@ -47,7 +47,10 @@ import {
   deriveRunForm,
   seedRunFormValues,
 } from "@/features/workflow-runtime/surface/run-form";
-import { fetchWorkflowDefinition } from "@/features/workflow-runtime/surface/service";
+import {
+  fetchRunDefinitionId,
+  fetchWorkflowDefinition,
+} from "@/features/workflow-runtime/surface/service";
 import type { WorkflowDefinitionLike } from "@/features/workflow-runtime/trigger-points";
 
 import { doneCount, marqueeSentence, pickFollowedNode } from "./camera";
@@ -113,14 +116,29 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
     new Set(),
   );
 
-  // A run that will not connect (removed, or not ours) must say so, not
-  // shimmer forever. 12s of silence turns the calm skeleton into the truth.
-  const [connectSlow, setConnectSlow] = useState(false);
+  // A run that cannot be reached (removed, or not ours) must say so, not
+  // shimmer forever — and the adapter initialises status to "pending", so
+  // silence is indistinguishable from a queued run. So PROBE the truth
+  // directly: the canonical run→definition read answers "missing / no
+  // access" exactly. A transient probe failure stays "unknown" (never
+  // asserted as anything) and the calm state persists.
+  const [runProbe, setRunProbe] = useState<"unknown" | "ok" | "unreachable">(
+    "unknown",
+  );
   useEffect(() => {
-    setConnectSlow(false);
+    setRunProbe("unknown");
     if (!runId) return;
-    const timer = setTimeout(() => setConnectSlow(true), 12_000);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+    fetchRunDefinitionId(runId)
+      .then((defId) => {
+        if (!cancelled) setRunProbe(defId ? "ok" : "unreachable");
+      })
+      .catch(() => {
+        // Transient read failure — leave it unknown; the adapter keeps trying.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [runId]);
 
   if (def.phase === "loading") {
@@ -168,9 +186,11 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   const followedStep = followedNodeId ? (stepsById[followedNodeId] ?? null) : null;
 
   const done = doneCount(steps, phases);
-  const sentence = runId
-    ? marqueeSentence(status, done, steps.length)
-    : "Ready when you are — press start and watch it happen";
+  const sentence = !runId
+    ? "Ready when you are — press start and watch it happen"
+    : runProbe === "unreachable"
+      ? "That run isn't here any more"
+      : marqueeSentence(status, done, steps.length);
 
   const pickNode = (nodeId: string) => setPinnedNodeId(nodeId);
   const followLive = () => setPinnedNodeId(null);
@@ -190,13 +210,13 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   };
 
   const sections = deriveRunForm(def.definition);
-  const showDeadRunNotice = Boolean(runId) && status === null && connectSlow;
+  const showDeadRunNotice = Boolean(runId) && runProbe === "unreachable";
 
   return (
     <Frame title={def.name}>
       <Marquee
         sentence={sentence}
-        status={runId ? status : null}
+        status={runId && !showDeadRunNotice ? status : null}
         startedAt={runId ? startedAt : null}
         endedAt={statusTs}
         costUsd={runId ? costUsd : 0}
