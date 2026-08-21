@@ -737,7 +737,7 @@ function MatrxDataTableCore<T>({
             <div
               className={cn(
                 "flex w-full",
-                toolbar?.searchMatch ? "max-w-md" : "max-w-xs",
+                toolbar?.searchMatch ? "sm:max-w-md" : "sm:max-w-xs",
               )}
             >
               <div className="relative min-w-0 flex-1">
@@ -842,7 +842,7 @@ function MatrxDataTableCore<T>({
                 title="Clear all filters"
               >
                 <Eraser className="h-3.5 w-3.5" />
-                Clear all
+                <span className="max-sm:sr-only">Clear all</span>
               </Button>
             ) : null}
             {showToolbarCopy && copy ? (

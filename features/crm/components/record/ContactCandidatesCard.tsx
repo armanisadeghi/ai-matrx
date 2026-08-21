@@ -25,10 +25,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   BadgeCheck,
+  ContactRound,
   ExternalLink,
   Search,
   ShieldQuestion,
-  Sparkles,
   ThumbsDown,
   RefreshCw,
 } from "lucide-react";
@@ -98,8 +98,8 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
       const personal = result.personal_found ?? 0;
       toast.success(
         result.candidates?.length
-          ? `${result.candidates.length} way(s) to reach someone here — ${personal} personal address(es). Nothing has been added to your contacts.`
-          : "We could not find an address for this domain. Nothing was added.",
+          ? `${result.candidates.length} found · ${personal} personal`
+          : "No contact details found",
       );
       await load();
     } catch (cause) {
@@ -136,7 +136,7 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
         acceptRoleAddress: Boolean(candidate.is_role_address),
         acceptUnverified: candidate.verification_status !== "verified",
       });
-      toast.success(`${candidate.address} is now a contact point.`);
+      toast.success("Contact added");
       await load();
       onChanged?.();
     } catch (cause) {
@@ -157,7 +157,7 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
     setBusyId(candidate.id);
     try {
       await rejectCandidate(partyId, candidate.id);
-      toast.success("Refused. We will not suggest it again.");
+      toast.success("Suggestion dismissed");
       await load();
     } catch (cause) {
       toast.error(extractErrorMessage(cause));
@@ -168,15 +168,15 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
 
   return (
     <SectionCard
-      title="Ways to reach this record"
-      Icon={Sparkles}
+      title="Contact details"
+      Icon={ContactRound}
       count={rows?.length}
       action={
-        <div className="flex items-center gap-1">
+        <div className="flex w-full items-center gap-1 sm:w-auto">
           <Button
             variant="outline"
             size="sm"
-            className="h-6 px-2 text-xs"
+            className="h-11 flex-1 px-3 text-xs sm:h-6 sm:flex-none sm:px-2"
             disabled={finding}
             onClick={() => void find()}
           >
@@ -185,12 +185,12 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
             ) : (
               <Search className="mr-1 h-3 w-3" />
             )}
-            Find contacts
+            Find contact info
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="h-11 w-11 shrink-0 sm:h-6 sm:w-6"
             disabled={loading}
             onClick={() => void load()}
             aria-label="Refresh candidates"
@@ -219,8 +219,7 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
 
       {!loading && !error && rows?.length === 0 && (
         <p className="py-3 text-center text-xs text-muted-foreground">
-          No suggested addresses yet. “Find contacts” looks through the pages we
-          have already read, then the address providers.
+          No suggestions yet. Search known pages and contact providers.
         </p>
       )}
 

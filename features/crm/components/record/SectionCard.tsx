@@ -30,14 +30,11 @@ export function SectionCard({
 }: Props) {
   return (
     <section
-      className={cn(
-        "rounded-md border border-border bg-card",
-        className,
-      )}
+      className={cn("rounded-md border border-border bg-card", className)}
     >
-      <header className="flex h-8 items-center gap-1.5 border-b border-border px-2.5">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+      <header className="flex min-h-8 flex-wrap items-center gap-x-1.5 border-b border-border px-2.5 py-1 sm:flex-nowrap sm:py-0">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <h3 className="min-w-0 text-xs font-semibold uppercase tracking-wider text-foreground">
           {title}
         </h3>
         {count !== undefined && (
@@ -45,7 +42,11 @@ export function SectionCard({
             {count}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1">{action}</div>
+        {action ? (
+          <div className="mt-1 flex basis-full items-center gap-1 border-t border-border/60 pt-1 sm:ml-auto sm:mt-0 sm:basis-auto sm:border-0 sm:pt-0 max-sm:[&>div]:w-full max-sm:[&_button]:min-h-11">
+            {action}
+          </div>
+        ) : null}
       </header>
       <div className="p-2">{children}</div>
     </section>

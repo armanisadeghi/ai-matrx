@@ -815,7 +815,7 @@ export function CrmListPage({
           target={presentation === "route" ? undefined : "_blank"}
         >
           <Megaphone className="h-3.5 w-3.5" />
-          Outreach Lists
+          <span className="max-sm:sr-only">Outreach lists</span>
         </Link>
       </Button>
       {/* The two outreach WORK surfaces: who replied, and what needs me now.
@@ -832,7 +832,7 @@ export function CrmListPage({
           target={presentation === "route" ? undefined : "_blank"}
         >
           <Inbox className="h-3.5 w-3.5" />
-          Inbox
+          <span className="max-sm:sr-only">Inbox</span>
         </Link>
       </Button>
       <Button
@@ -846,7 +846,7 @@ export function CrmListPage({
           target={presentation === "route" ? undefined : "_blank"}
         >
           <ListChecks className="h-3.5 w-3.5" />
-          Chasebox
+          <span className="max-sm:sr-only">Chasebox</span>
         </Link>
       </Button>
       <Button
@@ -861,7 +861,7 @@ export function CrmListPage({
           target={presentation === "route" ? undefined : "_blank"}
         >
           <FileUp className="h-3.5 w-3.5" />
-          Import
+          <span className="max-sm:sr-only">Import</span>
         </Link>
       </Button>
       <Button
@@ -880,7 +880,7 @@ export function CrmListPage({
         }}
       >
         <Building2 className="h-3.5 w-3.5" />
-        New company
+        <span className="max-sm:sr-only">New company</span>
       </Button>
       <Button
         size="sm"
@@ -897,7 +897,7 @@ export function CrmListPage({
         }}
       >
         <UserPlus className="h-3.5 w-3.5" />
-        New person
+        <span className="max-sm:sr-only">New person</span>
       </Button>
     </div>
   );
@@ -949,7 +949,7 @@ export function CrmListPage({
                 onChange={(scope) => list.setQuery({ scope })}
               />
             </div>
-            <div className="ml-auto flex items-center gap-1.5">
+            <div className="ml-auto flex max-w-full items-center gap-1.5 max-sm:w-full max-sm:justify-between">
               <Button
                 size="sm"
                 variant="ghost"
@@ -958,7 +958,7 @@ export function CrmListPage({
               >
                 <Link href="/crm/duplicates">
                   <Merge className="h-3.5 w-3.5" />
-                  Duplicates
+                  <span className="max-sm:sr-only">Duplicates</span>
                   {dupCount !== null && dupCount > 0 && (
                     <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
                       {dupCount}
@@ -979,7 +979,9 @@ export function CrmListPage({
                 ) : (
                   <Trash2 className="h-3.5 w-3.5" />
                 )}
-                {inTrash ? "Back to records" : "Trash"}
+                <span className="max-sm:sr-only">
+                  {inTrash ? "Back to records" : "Trash"}
+                </span>
               </Button>
               {!inTrash && newButtons}
             </div>

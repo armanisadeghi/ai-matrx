@@ -24,7 +24,10 @@ export function ToolbarFacets({ facets }: { facets: ToolbarFacet[] }) {
         const isNonDefault = facet.value !== defaultValue;
 
         return (
-          <div key={facet.id} className="flex flex-wrap items-center gap-1.5">
+          <div
+            key={facet.id}
+            className="flex flex-wrap items-center gap-1.5 max-sm:grid max-sm:w-full max-sm:grid-cols-3"
+          >
             {facet.label ? (
               <span className="mr-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {facet.label}
@@ -39,7 +42,7 @@ export function ToolbarFacets({ facets }: { facets: ToolbarFacet[] }) {
                   size="sm"
                   variant={active ? "default" : "outline"}
                   className={cn(
-                    "h-7 gap-1 px-2.5 text-xs",
+                    "h-7 gap-1 px-2.5 text-xs max-sm:w-full",
                     active && isNonDefault && "pr-1.5",
                   )}
                   onClick={() => facet.onChange(opt.value)}

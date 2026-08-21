@@ -64,6 +64,20 @@ export function MergeStatusCard({
   const activeAsWinner = merges.filter(
     (m) => m.winner_id === party.id && !m.unmerged_at,
   );
+  const candidateGroups = Array.from(
+    candidates.reduce((groups, candidate) => {
+      const other =
+        candidate.source?.id === party.id ? candidate.target : candidate.source;
+      if (!other) return groups;
+      const current = groups.get(other.id);
+      groups.set(other.id, {
+        other,
+        count: (current?.count ?? 0) + 1,
+        confidence: Math.max(current?.confidence ?? 0, candidate.confidence),
+      });
+      return groups;
+    }, new Map<string, { other: NonNullable<MergeCandidateWithParties["source"]>; count: number; confidence: number }>()),
+  ).map(([, group]) => group);
 
   const onUnmerge = async (m: PartyMergeWithParties) => {
     const ok = await confirm({
@@ -82,7 +96,11 @@ export function MergeStatusCard({
     }
   };
 
-  if (!party.canonical_id && candidates.length === 0 && activeAsWinner.length === 0) {
+  if (
+    !party.canonical_id &&
+    candidates.length === 0 &&
+    activeAsWinner.length === 0
+  ) {
     return null;
   }
 
@@ -125,27 +143,32 @@ export function MergeStatusCard({
             Possible duplicate
           </div>
           <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-            {candidates.map((c) => {
-              const other = c.source?.id === party.id ? c.target : c.source;
-              if (!other) return null;
+            {candidateGroups.map(({ other, count, confidence }) => {
               return (
-                <li key={c.id}>
-                  Looks like the same {other.party_kind === "organization" ? "company" : "person"} as{" "}
+                <li key={other.id}>
+                  Possible{" "}
+                  {other.party_kind === "organization" ? "company" : "person"}{" "}
+                  match:{" "}
                   <Link
                     href={`/crm/${other.id}`}
                     className="font-medium text-foreground "
                   >
                     {other.display_name}
                   </Link>{" "}
-                  ({c.confidence}% match)
+                  ({confidence}%{count > 1 ? ` · ${count} signals` : ""})
                 </li>
               );
             })}
           </ul>
-          <Button size="sm" variant="outline" className="mt-1.5 h-7 gap-1 px-2 text-xs" asChild>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-1.5 h-7 gap-1 px-2 text-xs"
+            asChild
+          >
             <Link href="/crm/duplicates">
               <GitMerge className="h-3.5 w-3.5" />
-              Review side by side
+              Review match
             </Link>
           </Button>
         </div>

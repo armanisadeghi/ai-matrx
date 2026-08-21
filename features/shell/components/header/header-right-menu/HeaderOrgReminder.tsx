@@ -78,7 +78,7 @@ export default function HeaderOrgReminder() {
           transition={{ type: "spring", stiffness: 360, damping: 30 }}
           onMouseEnter={engage}
           style={{ top: "calc(var(--header-height, 2.5rem) + 0.5rem)" }}
-          className="fixed right-3 z-50 w-72 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+          className="fixed left-3 right-3 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:left-auto sm:w-72"
           role="status"
         >
           {/* Auto-dismiss progress bar — hidden once the user engages */}
@@ -86,7 +86,9 @@ export default function HeaderOrgReminder() {
             <div className="absolute left-0 right-0 top-0 h-0.5 overflow-hidden bg-muted">
               <div
                 className="h-full origin-left bg-red-500"
-                style={{ animation: `shrink ${AUTO_HIDE_MS}ms linear forwards` }}
+                style={{
+                  animation: `shrink ${AUTO_HIDE_MS}ms linear forwards`,
+                }}
               />
               <style>{`@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }`}</style>
             </div>
@@ -102,12 +104,12 @@ export default function HeaderOrgReminder() {
               />
             </span>
             <span className="flex-1 text-xs font-semibold leading-none text-foreground">
-              Choose your organization
+              Choose an organization
             </span>
             <button
               type="button"
               onClick={dismiss}
-              className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
               aria-label="Dismiss reminder"
             >
               <X className="h-3.5 w-3.5" />
@@ -116,8 +118,7 @@ export default function HeaderOrgReminder() {
 
           {/* Body */}
           <p className="px-3 pb-2.5 text-[11px] leading-relaxed text-muted-foreground">
-            No active organization is set. Pick one to scope your workspace — you
-            can make it your default so it loads automatically next time.
+            Pick an organization for this workspace.
           </p>
 
           {/* CTA → org picker popover */}
@@ -132,10 +133,10 @@ export default function HeaderOrgReminder() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:h-8"
                 >
                   <Building2 size={13} strokeWidth={2} />
-                  Choose organization
+                  Choose
                 </button>
               </PopoverTrigger>
               <PopoverContent align="end" sideOffset={8} className="w-72 p-1">

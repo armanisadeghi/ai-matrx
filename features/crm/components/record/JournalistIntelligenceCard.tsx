@@ -150,14 +150,14 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
 
   return (
     <SectionCard
-      title="Journalist intelligence"
+      title="Journalist info"
       Icon={Newspaper}
       action={
-        <div className="flex items-center gap-1">
+        <div className="flex w-full items-center gap-1 sm:w-auto">
           <Button
             variant="outline"
             size="sm"
-            className="h-6 px-2 text-xs"
+            className="h-11 w-full px-3 text-xs sm:h-6 sm:w-auto sm:px-2"
             disabled={checking}
             onClick={() => void check()}
           >
@@ -166,7 +166,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
             ) : (
               <Radar className="mr-1 h-3 w-3" />
             )}
-            Check they are still there
+            Check activity
           </Button>
         </div>
       }
@@ -189,8 +189,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {activity?.summary ??
-              "We have not checked whether this person is still writing where we have them."}
+            {activity?.summary ?? "Not checked yet."}
           </p>
           {(activity?.evidence?.length ?? 0) > 0 && (
             <ul className="space-y-0.5 text-xs">
@@ -226,7 +225,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
               {deriving ? (
                 <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
               ) : null}
-              {beat ? "Work it out again" : "Work out their beat"}
+              {beat ? "Refresh beat" : "Find beat"}
             </Button>
           </div>
 
