@@ -49464,7 +49464,7 @@ export type Database = {
           p_keyword_ids: string[]
           p_notes?: string
           p_site_id: string
-          p_value_tier: string
+          p_value_tier?: string
         }
         Returns: {
           keyword_id: string

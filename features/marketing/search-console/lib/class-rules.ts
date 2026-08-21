@@ -50,7 +50,7 @@ export function ruleToDraft(rule: KeywordClassRuleRow): ClassRuleDraft {
   return {
     name: rule.name,
     description: rule.description ?? "",
-    pattern: rule.pattern,
+    pattern: rule.pattern ?? "",
     matchKind: isClassRuleMatchKind(rule.match_kind) ? rule.match_kind : "contains",
     targetClass: (["money", "educational", "brand", "mismatch"] as const).includes(
       rule.target_class as ClassRuleTargetClass,
@@ -75,10 +75,11 @@ export function validateClassRule(draft: ClassRuleDraft): string[] {
 
 /** One-line human description, e.g. `starts with "how to" → Educational`. */
 export function classRuleSummary(rule: {
-  pattern: string;
-  match_kind: string;
-  target_class: string;
+  pattern: string | null;
+  match_kind: string | null;
+  target_class: string | null;
 }): string {
   const kind = CLASS_RULE_MATCH_KINDS.find((k) => k.key === rule.match_kind);
-  return `${(kind?.label ?? rule.match_kind).toLowerCase()} “${rule.pattern}” → ${rule.target_class}`;
+  const matchLabel = kind?.label ?? rule.match_kind ?? "Incomplete match";
+  return `${matchLabel.toLowerCase()} “${rule.pattern ?? ""}” → ${rule.target_class ?? "Unclassified"}`;
 }

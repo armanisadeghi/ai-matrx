@@ -436,7 +436,7 @@ export function KeywordClassificationWorkspace({
     const isRow = "pattern" in source && "id" in source;
     setPreview({
       pattern: (isRow
-        ? (source as KeywordClassRuleRow).pattern
+        ? ((source as KeywordClassRuleRow).pattern ?? "")
         : (source as ClassRuleDraft).pattern
       ).toLowerCase(),
       matchKind: isRow
