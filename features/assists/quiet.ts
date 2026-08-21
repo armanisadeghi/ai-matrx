@@ -52,7 +52,7 @@ export const QUIET_WINDOWS: readonly QuietWindow[] = [
 export type QuietWindowKey = (typeof QUIET_WINDOWS)[number]["key"];
 
 /** The X on the dock uses this one — cheap, obvious, and self-reversing. */
-export const DEFAULT_QUIET_KEY: QuietWindowKey = "today";
+export const DEFAULT_QUIET_KEY: QuietWindowKey = "24h";
 
 /**
  * Resolve a window to the stored value. `now` is injectable so the tests (and

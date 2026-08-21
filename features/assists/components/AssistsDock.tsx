@@ -269,7 +269,7 @@ export default function AssistsDock() {
                 }
               >
                 <BellOff className="mr-1.5 h-4 w-4" />
-                Quiet today
+                Quiet for 24 hours
               </Button>
             </DrawerHeader>
 

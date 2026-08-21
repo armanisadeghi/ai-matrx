@@ -28306,6 +28306,15 @@ export type Database = {
     Functions: {
       actor_system: { Args: never; Returns: string }
       actor_tier: { Args: never; Returns: string }
+      assist_admission_decision: {
+        Args: { p_source_key: string; p_user_id: string }
+        Returns: {
+          allowed: boolean
+          pending_count: number
+          pending_limit: number
+          reason: string
+        }[]
+      }
       assist_production_allowed: {
         Args: { p_source_key: string }
         Returns: boolean
@@ -28491,6 +28500,15 @@ export type Database = {
           members_can_add: boolean
           needs_approval: boolean
           scopeable: boolean
+        }[]
+      }
+      my_assist_admission_decision: {
+        Args: { p_source_key: string }
+        Returns: {
+          allowed: boolean
+          pending_count: number
+          pending_limit: number
+          reason: string
         }[]
       }
       purpose_for_unit: {

@@ -94,17 +94,17 @@ export async function listMyPendingAssists(userId: string): Promise<Assist[]> {
   return narrowRows(data ?? []);
 }
 
-/** Read the shared production gate before a producer does optional work. */
+/** Read the shared admission gate before a producer does optional work. */
 export async function canProduceAssist(sourceKey: string): Promise<boolean> {
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("platform")
-    .rpc("assist_production_allowed", { p_source_key: sourceKey });
+    .rpc("my_assist_admission_decision", { p_source_key: sourceKey });
   if (error) {
-    console.error(`[assists] production policy failed: ${error.message}`);
+    console.error(`[assists] admission policy failed: ${error.message}`);
     return false;
   }
-  return data === true;
+  return data?.[0]?.allowed === true;
 }
 
 /**
