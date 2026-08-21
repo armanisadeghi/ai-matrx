@@ -21818,7 +21818,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{stream_slug}/claim": {
+    "/cb-{stream_session_id}/claim": {
         parameters: {
             query?: never;
             header?: never;
@@ -21828,14 +21828,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Claim Stream */
-        post: operations["claim_stream__stream_slug__claim_post"];
+        post: operations["claim_stream_cb__stream_session_id__claim_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/{stream_slug}/renew": {
+    "/cb-{stream_session_id}/renew": {
         parameters: {
             query?: never;
             header?: never;
@@ -21845,7 +21845,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Renew Stream */
-        post: operations["renew_stream__stream_slug__renew_post"];
+        post: operations["renew_stream_cb__stream_session_id__renew_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -104689,14 +104689,14 @@ export interface operations {
             };
         };
     };
-    claim_stream__stream_slug__claim_post: {
+    claim_stream_cb__stream_session_id__claim_post: {
         parameters: {
             query?: never;
             header?: {
                 origin?: string | null;
             };
             path: {
-                stream_slug: string;
+                stream_session_id: string;
             };
             cookie?: never;
         };
@@ -104724,12 +104724,12 @@ export interface operations {
             };
         };
     };
-    renew_stream__stream_slug__renew_post: {
+    renew_stream_cb__stream_session_id__renew_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                stream_slug: string;
+                stream_session_id: string;
             };
             cookie?: never;
         };

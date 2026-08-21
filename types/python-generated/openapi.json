@@ -58303,21 +58303,21 @@
         }
       }
     },
-    "/{stream_slug}/claim": {
+    "/cb-{stream_session_id}/claim": {
       "post": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Claim Stream",
-        "operationId": "claim_stream__stream_slug__claim_post",
+        "operationId": "claim_stream_cb__stream_session_id__claim_post",
         "parameters": [
           {
-            "name": "stream_slug",
+            "name": "stream_session_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Stream Slug"
+              "title": "Stream Session Id"
             }
           },
           {
@@ -58364,21 +58364,21 @@
         }
       }
     },
-    "/{stream_slug}/renew": {
+    "/cb-{stream_session_id}/renew": {
       "post": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Renew Stream",
-        "operationId": "renew_stream__stream_slug__renew_post",
+        "operationId": "renew_stream_cb__stream_session_id__renew_post",
         "parameters": [
           {
-            "name": "stream_slug",
+            "name": "stream_session_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Stream Slug"
+              "title": "Stream Session Id"
             }
           }
         ],
