@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
@@ -387,7 +386,10 @@ export function ValueWorkbenchD() {
                 </div>
               </div>
             ) : (
-              <ScrollArea className="h-full">
+              // Plain two-axis scroll: on a phone the wide ledger pans
+              // horizontally inside this container — never a clipped column,
+              // never body-level horizontal scroll.
+              <div className="h-full overflow-auto scrollbar-thin">
                 <KeywordTable
                   rows={rows}
                   bandIndex={bandIndex}
@@ -401,7 +403,7 @@ export function ValueWorkbenchD() {
                   pending={setValue.isPending}
                   onRule={applyRuling}
                 />
-              </ScrollArea>
+              </div>
             )}
             {review.isFetching && !review.isLoading ? (
               <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 animate-pulse bg-primary/60" />

@@ -82,7 +82,7 @@ export function KeywordTable({
   const allOnPageSelected = rows.length > 0 && rows.every((r) => selected.has(r.keyword_id));
 
   return (
-    <table className="w-full table-fixed border-collapse">
+    <table className="w-full min-w-[880px] table-fixed border-collapse">
       <thead className="sticky top-0 z-10 bg-background">
         <tr className="border-b border-border">
           <th className="w-8 px-2 py-1.5">
