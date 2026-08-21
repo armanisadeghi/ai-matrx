@@ -103,8 +103,11 @@ A message can carry a generic **`action_data`** envelope `{ kind, version, paylo
 
 - `is_dm_participant(user_id, conversation_id)` - Check participation
 - `get_dm_unread_count(user_id, conversation_id)` - Get unread count
-- `get_dm_user_info(user_id)` - Get user info from auth.users
-- `get_dm_conversations_with_details(user_id)` - **Canonical conversation-list read.** Returns conversation metadata, unread count, and active participants with guarded profile fields in one request. List loaders must consume this payload; per-conversation participant SELECTs and per-participant `get_dm_user_info` fan-out are forbidden.
+- `get_dm_user_info(user_id)` - Get user info from auth.users. **Browser code
+  never calls this directly** — go through `features/messaging/data/dmUserInfo.ts`
+  (in-flight dedup + TTL cache), or better, take the profile the conversation
+  read already returned.
+- `get_dm_conversations_with_details(user_id)` - **Canonical conversation-list read.** Returns conversation metadata, unread count, and active participants with guarded profile fields in one request. List loaders must consume this payload; per-conversation participant SELECTs and per-participant `get_dm_user_info` fan-out are forbidden. **Browser code reads it only through `features/messaging/data/conversationsWithDetails.ts`** — the ONE deduped reader; a second direct `.rpc()` call site re-creates the stampede it exists to prevent.
 - `find_dm_direct_conversation(user1_id, user2_id)` - Find existing direct chat (read-only)
 - `dm_get_or_create_direct_conversation(user1_id, user2_id, org_id?)` - **Canonical atomic** find-or-create for a 1:1 DM. Advisory-locks the unordered pair so concurrent callers (two tabs / double-click / batched system notifications) can't mint duplicate conversations — the old client-side `find_dm` → insert-conversation → insert-participants raced and silently did. All 4 DM find-or-create callsites route through this (browser + service-role). SECURITY DEFINER; guards that an `authenticated` caller can only pass themselves as user1. `2026-07-04`.
 
@@ -569,6 +572,29 @@ sequenceDiagram
 4. Console logs show correct count after fetch
 
 ## Change Log
+
+- **2026-08-21 — every browser DM read goes through ONE deduped reader; the
+  last `get_dm_user_info` fan-out is gone.** The 2026-08-20 fix converted the
+  list loaders but missed four callers, and the survivors produced a
+  `supabase-browser-transport-loss` storm on a workflow run page: 909 captured
+  `TypeError: Failed to fetch` in 0.6s from one hiccup. Fixed at the choke
+  point, not per call site:
+  `features/messaging/data/conversationsWithDetails.ts` is now the ONE browser
+  reader for `get_dm_conversations_with_details` (module-scoped in-flight dedup
+  + 1s TTL; callers that must see a just-written row pass `maxAgeMs: 0` and
+  still share an in-flight request), and
+  `features/messaging/data/dmUserInfo.ts` is the ONE reader for
+  `get_dm_user_info` (in-flight dedup + 5-minute TTL, since a profile is
+  near-static). `MessagingInitializer.fetchConversationDetails` no longer
+  selects participants and calls a profile RPC per participant — it takes the
+  canonical row; `useConversations`/`useMessages`/`loadMoreMessages` and the
+  realtime new-message handler consume the shared readers. A conversation
+  list + thread load now issues ONE conversations request and at most one
+  profile request per distinct sender, verified live on `/messages`.
+  Capture side: `errorCaptureStore` caches each entry's dedupe key instead of
+  rebuilding it for all ~300 held entries on every occurrence, so collapsing a
+  storm is no longer itself a cost (identical failures already collapsed into
+  one entry with a count, and persistence was already once-per-entry).
 
 - **2026-08-20 — conversation bootstrap is one database request.**
   `get_dm_conversations_with_details` now returns active participants and their
