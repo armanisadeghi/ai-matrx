@@ -1539,12 +1539,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           feeding this Rulebook moved into the Sources section above; this row
           used to also carry "Interview me", "From a source", "Your published
           work" and "Your AI chats". */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search rules…"
-              className="h-8 max-w-xs"
+              className="h-10 max-w-none sm:h-8 sm:max-w-xs"
               data-surface-value="search_query"
             />
             {canEdit ? (
@@ -1552,7 +1552,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    className="h-8"
+                    className="h-10 w-full sm:h-8 sm:w-auto"
                     onClick={() => openAddRuleWindow()}
                   >
                     <Plus className="h-4 w-4" />
@@ -1594,11 +1594,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             ) : (
               grouped.map((group) =>
                 group.rules.length === 0 && search ? null : (
-                  <section key={group.code} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        {group.label}
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  <section key={group.code} className="space-y-4 sm:space-y-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between sm:gap-0">
+                      <h3 className="min-w-0 text-sm font-semibold leading-snug text-foreground sm:leading-normal">
+                        <span>{group.label}</span>
+                        <span className="mt-0.5 block text-xs font-normal text-muted-foreground sm:ml-2 sm:mt-0 sm:inline">
                           {group.rules.length}{" "}
                           {group.rules.length === 1 ? "rule" : "rules"}
                         </span>
@@ -1607,7 +1607,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7"
+                          className="h-10 sm:h-7"
                           onClick={() => openAddRuleWindow(group.code)}
                         >
                           <Plus className="h-3.5 w-3.5" />
