@@ -251,10 +251,14 @@ export interface ShapeDoctorInput {
   crosswalkNames?: ReadonlySet<string>;
   /**
    * The aidream generated-contract inventory snapshot
-   * (scripts/shape/content-ir-contract-manifest.json). When provided, the
-   * doctor cross-checks it against the live catalog: a manifest contract with
-   * no ACTIVE live kind row, or an ACTIVE live generated-family kind absent
-   * from the manifest, is a RED `contract-gap` finding.
+   * (scripts/shape/content-ir-contract-manifest.json). Since the 2026-08-20
+   * contract-artifact eviction its only job here is to switch ON the re-drift
+   * detector: when supplied, ANY ACTIVE generated-family kind found in
+   * `content_ir.kind_definition` is a RED `contract-gap` finding, because I/O
+   * contracts live in `content_ir.io_contract` now and nothing may put one
+   * back in the Shape registry. Manifest↔registry parity is NOT checked here
+   * any more — aidream's `sync_content_ir_contracts.py --check` owns it,
+   * against the store that actually holds the contracts.
    */
   contractManifest?: DoctorContractManifestEntry[];
   /**
@@ -922,33 +926,33 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
     }
   }
 
-  // Contract-family gap — the aidream manifest is the runtime inventory; the
-  // live catalog must carry exactly its ACTIVE generated rows, both directions.
+  // Contract-family gap — ONE direction only since the 2026-08-20 eviction.
+  //
+  // This used to check BOTH ways: every manifest contract had to have an ACTIVE
+  // live `kind_definition` row, and every ACTIVE generated-family kind had to be
+  // in the manifest. The first direction is now WRONG BY DESIGN — machine-minted
+  // I/O contracts were evicted out of the Shape registry into
+  // `content_ir.io_contract` (KINDS_EVERYWHERE_PLAN.md §10b item 5), so a
+  // manifest contract having no registry row is the CORRECT state, and asserting
+  // otherwise fired ~975 false reds. Its real replacement lives where the
+  // inventory lives: aidream's `scripts/sync_content_ir_contracts.py --check`
+  // compares the live runtime inventory against `content_ir.io_contract` and
+  // exits nonzero — derived, not snapshotted, and therefore authoritative. A
+  // second implementation here could only disagree with it.
+  //
+  // The surviving direction inverts into the regression detector this eviction
+  // needs: a generated-family contract appearing in the Shape registry again
+  // means something re-minted one, which is exactly what was deleted.
   if (input.contractManifest) {
-    const liveActiveBySlug = new Map(
-      kinds.filter((k) => k.isActive).map((k) => [k.kind, k]),
-    );
-    for (const c of [...input.contractManifest].sort((a, b) => a.kind.localeCompare(b.kind))) {
-      if (!liveActiveBySlug.has(c.kind)) {
-        reds.push({
-          severity: "red",
-          code: "contract-gap",
-          message: `manifest contract "${c.kind}" (${c.family}) has no ACTIVE live kind_definition row — publisher and catalog have diverged`,
-        });
-      }
-    }
-    const manifestSlugs = new Set(input.contractManifest.map((c) => c.kind));
     for (const kind of kinds) {
       const family = kindFamily(kind.metadata);
       if (!kind.isActive || family === null || !GENERATED_CONTRACT_FAMILIES.has(family)) continue;
-      if (!manifestSlugs.has(kind.kind)) {
-        reds.push({
-          severity: "red",
-          code: "contract-gap",
-          kind: kind.kind,
-          message: `ACTIVE generated kind "${kind.kind}" (${family}) is not in the contract manifest — stale catalog row or stale snapshot (pnpm check:shapes:manifest:refresh)`,
-        });
-      }
+      reds.push({
+        severity: "red",
+        code: "contract-gap",
+        kind: kind.kind,
+        message: `ACTIVE generated-family kind "${kind.kind}" (${family}) is in content_ir.kind_definition — machine-minted I/O contracts were EVICTED to content_ir.io_contract and nothing may put one back in the Shape registry`,
+      });
     }
   }
 

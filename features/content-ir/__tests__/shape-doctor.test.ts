@@ -746,11 +746,13 @@ describe("shape doctor — coverage gates", () => {
     expect(report.findings.filter((f) => f.code === "vocab-unclassified")).toHaveLength(0);
   });
 
-  it("reds contract-gap in both directions (manifest↔live)", () => {
+  it("reds an ACTIVE generated-family kind that re-entered the Shape registry", () => {
+    // Post-eviction (2026-08-20) this is the ONLY contract-gap direction: I/O
+    // contracts live in content_ir.io_contract, so one showing up here means
+    // something re-minted it into the Shape registry.
     const report = runShapeDoctor(
       baseInput({
         kinds: [
-          // Live ACTIVE generated kind absent from the manifest → stale.
           makeKind({
             id: "k1",
             kind: "tool_io_orphan_input",
@@ -763,16 +765,18 @@ describe("shape doctor — coverage gates", () => {
           { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
         ],
         contractManifest: [
-          // Manifest contract with no active live row → missing.
+          // A manifest contract with no registry row is now the CORRECT state
+          // and must produce NO finding — asserting otherwise fired ~975 false
+          // reds the moment the eviction landed.
           { kind: "action_io_missing_output", family: "action_io" },
         ],
       }),
     );
     const gaps = report.findings.filter((f) => f.code === "contract-gap");
-    expect(gaps).toHaveLength(2);
-    expect(gaps.map((f) => f.message).join("\n")).toContain("action_io_missing_output");
-    expect(gaps.map((f) => f.message).join("\n")).toContain("tool_io_orphan_input");
-    expect(gaps.every((f) => f.severity === "red")).toBe(true);
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0].message).toContain("tool_io_orphan_input");
+    expect(gaps.map((f) => f.message).join("\n")).not.toContain("action_io_missing_output");
+    expect(gaps[0].severity).toBe("red");
   });
 
   it("does not gap-check INACTIVE generated kinds (deliberate deactivations)", () => {
