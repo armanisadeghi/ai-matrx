@@ -45962,16 +45962,19 @@ export type Database = {
           id: string
           is_template: boolean
           last_applied_at: string | null
-          match_kind: string
+          match_facet: string | null
+          match_facet_value: string | null
+          match_kind: string | null
           metadata: Json
           name: string
           notes: string | null
           organization_id: string | null
-          pattern: string
+          pattern: string | null
           site_id: string | null
-          target_class: string
+          target_class: string | null
           updated_at: string
           updated_by: string | null
+          value_multiplier: number | null
         }
         Insert: {
           auto_apply?: boolean
@@ -45982,16 +45985,19 @@ export type Database = {
           id?: string
           is_template?: boolean
           last_applied_at?: string | null
-          match_kind?: string
+          match_facet?: string | null
+          match_facet_value?: string | null
+          match_kind?: string | null
           metadata?: Json
           name: string
           notes?: string | null
           organization_id?: string | null
-          pattern: string
+          pattern?: string | null
           site_id?: string | null
-          target_class: string
+          target_class?: string | null
           updated_at?: string
           updated_by?: string | null
+          value_multiplier?: number | null
         }
         Update: {
           auto_apply?: boolean
@@ -46002,16 +46008,19 @@ export type Database = {
           id?: string
           is_template?: boolean
           last_applied_at?: string | null
-          match_kind?: string
+          match_facet?: string | null
+          match_facet_value?: string | null
+          match_kind?: string | null
           metadata?: Json
           name?: string
           notes?: string | null
           organization_id?: string | null
-          pattern?: string
+          pattern?: string | null
           site_id?: string | null
-          target_class?: string
+          target_class?: string | null
           updated_at?: string
           updated_by?: string | null
+          value_multiplier?: number | null
         }
         Relationships: []
       }
@@ -47947,6 +47956,60 @@ export type Database = {
           },
         ]
       }
+      site_geo_area: {
+        Row: {
+          area_kind: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          geo_band: string
+          id: string
+          label: string
+          match_tokens: Json
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          area_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          geo_band: string
+          id?: string
+          label: string
+          match_tokens?: Json
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          area_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          geo_band?: string
+          id?: string
+          label?: string
+          match_tokens?: Json
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       site_keyword_value: {
         Row: {
           audience_fit: string | null
@@ -47971,6 +48034,10 @@ export type Database = {
           traffic_class: string | null
           updated_at: string
           updated_by: string | null
+          value_computed_at: string | null
+          value_reasons: Json | null
+          value_score: number | null
+          value_tier: string | null
           version: number
           workflow_status: string
         }
@@ -47997,6 +48064,10 @@ export type Database = {
           traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
+          value_computed_at?: string | null
+          value_reasons?: Json | null
+          value_score?: number | null
+          value_tier?: string | null
           version?: number
           workflow_status?: string
         }
@@ -48023,6 +48094,10 @@ export type Database = {
           traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
+          value_computed_at?: string | null
+          value_reasons?: Json | null
+          value_score?: number | null
+          value_tier?: string | null
           version?: number
           workflow_status?: string
         }
@@ -48106,6 +48181,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_vocabulary: {
+        Row: {
+          active: boolean
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          site_id: string
+          sort: number
+          updated_at: string
+          updated_by: string | null
+          value: string
+          version: number
+          vocab_kind: string
+        }
+        Insert: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          site_id: string
+          sort?: number
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+          version?: number
+          vocab_kind: string
+        }
+        Update: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          site_id?: string
+          sort?: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+          version?: number
+          vocab_kind?: string
+        }
+        Relationships: []
       }
       source_request: {
         Row: {
@@ -48879,6 +49014,32 @@ export type Database = {
           traffic_class: string
         }[]
       }
+      gsc_keyword_value_review: {
+        Args: {
+          p_band?: string
+          p_end: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_sort?: string
+          p_sort_dir?: string
+          p_source?: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          impressions: number
+          keyword: string
+          keyword_id: string
+          reasons: Json
+          total_count: number
+          traffic_class: string
+          value_band: string
+          value_score: number
+          value_source: string
+        }[]
+      }
       gsc_perf_breakdown: {
         Args: {
           p_compare_end?: string
@@ -49235,6 +49396,25 @@ export type Database = {
           weeks: number
         }[]
       }
+      gsc_perf_value_summary: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          cmp_queries: number
+          impressions: number
+          queries: number
+          value_band: string
+          value_source: string
+        }[]
+      }
       gsc_perf_watch: {
         Args: {
           p_compare_end?: string
@@ -49277,6 +49457,40 @@ export type Database = {
           class_source: string
           keyword_id: string
           traffic_class: string
+        }[]
+      }
+      gsc_set_keyword_value: {
+        Args: {
+          p_keyword_ids: string[]
+          p_notes?: string
+          p_site_id: string
+          p_value_tier: string
+        }
+        Returns: {
+          keyword_id: string
+          value_band: string
+          value_source: string
+        }[]
+      }
+      gsc_value_vocabulary: {
+        Args: { p_kind?: string; p_site_id: string }
+        Returns: {
+          config: Json
+          description: string
+          is_template: boolean
+          label: string
+          sort: number
+          value: string
+        }[]
+      }
+      keyword_value_map: {
+        Args: { p_site_id: string }
+        Returns: {
+          keyword_id: string
+          reasons: Json
+          value_band: string
+          value_score: number
+          value_source: string
         }[]
       }
       release_page_measurement_quarantine: {
