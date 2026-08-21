@@ -374,3 +374,5 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
   that cannot render from a kind envelope alone — so it is NOT a competing renderer and was
   not repointed or deleted. Whether a STREAMED proposal should render as a read-only twin
   of that card is product semantics, not a route decision.
+
+| `markdown` | primitive | distilled | todo | — | REGISTER THE STREAMING MARKDOWN RENDERER as its (kind,'web',output) component — this activates the kind (dual gate) and collapses the two render laws into one. Inactive today, which is why the generation query missed it. |
