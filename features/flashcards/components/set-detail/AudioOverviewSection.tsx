@@ -13,7 +13,14 @@
 // React Compiler is on: no manual memo.
 
 import { useEffect, useRef, useState } from "react";
-import { Volume2, Loader2, RefreshCw, AlertCircle, Mic } from "lucide-react";
+import {
+  Volume2,
+  Loader2,
+  RefreshCw,
+  AlertCircle,
+  Mic,
+  HelpCircle,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -21,23 +28,49 @@ import { usePodcastRun } from "@/features/podcasts/generator/usePodcastRun";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { SessionAudio } from "@/features/education/study/components/SessionAudio";
 import { ensureSpokenFrontsForSet } from "@/features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk";
+import { ensureHelperAudioForSet } from "@/features/flashcards/fast-fire/helper-audio/generateHelperAudio.thunk";
 import { fcService } from "../../data/fcService";
 import { buildDeckOverviewRequest } from "../../data/podcastOverview";
 import type { FcSetRow, CardWithDetails } from "../../data/types";
 
 /**
- * WP3 gap 12 — deck-level card-audio prep. `ensureSpokenFrontsForSet` (the
- * cached, resumable batch generator FastFire setup already uses) becomes
- * reachable from the deck itself, so a learner preps a whole set once instead
- * of generating card audio one tap at a time mid-study.
+ * WP3 gap 12 + Q15 lane 1 — deck-level per-card audio prep, ONE component for
+ * both cached batch lanes (spoken fronts, instant-help audio). The thunks are
+ * cached + resumable, so the deck preps a whole set once instead of one tap at
+ * a time mid-study.
  */
+const DETAIL_PREP_LANES = {
+  spoken_front: {
+    ensure: ensureSpokenFrontsForSet,
+    icon: Mic,
+    noun: "card audio",
+    doneLabel: "Card audio ready",
+    doneTitle: "Every card already has audio",
+    idleTitle:
+      "Generate spoken audio for every card front (cached — instant playback while studying)",
+    successToast: "Every card can be heard now",
+  },
+  helper: {
+    ensure: ensureHelperAudioForSet,
+    icon: HelpCircle,
+    noun: "instant help",
+    doneLabel: "Instant help ready",
+    doneTitle: "Every card already has a pre-recorded explanation",
+    idleTitle:
+      "Pre-record a short explanation per card so “I'm confused” answers instantly while studying",
+    successToast: "“I'm confused” now answers instantly on every card",
+  },
+} as const;
+
 function CardAudioPrep({
   setId,
   cards,
+  lane,
   onCardsChanged,
 }: {
   setId: string;
   cards: CardWithDetails[];
+  lane: keyof typeof DETAIL_PREP_LANES;
   onCardsChanged?: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -45,9 +78,10 @@ function CardAudioPrep({
     done: number;
     total: number;
   } | null>(null);
+  const cfg = DETAIL_PREP_LANES[lane];
 
   const withAudio = cards.filter((c) =>
-    c.details.some((d) => d.kind === "spoken_front" && !!d.audio_file_id),
+    c.details.some((d) => d.kind === lane && !!d.audio_file_id),
   ).length;
   const allDone = cards.length > 0 && withAudio === cards.length;
 
@@ -55,17 +89,15 @@ function CardAudioPrep({
     setProgress({ done: 0, total: cards.length });
     try {
       const result = await dispatch(
-        ensureSpokenFrontsForSet(setId, (done, total) =>
-          setProgress({ done, total }),
-        ),
+        cfg.ensure(setId, (done, total) => setProgress({ done, total })),
       );
       const ready = Object.keys(result).length;
       if (ready < cards.length) {
         toast.error(
-          `Card audio ready for ${ready} of ${cards.length} cards — the rest failed; try again.`,
+          `${cfg.noun} ready for ${ready} of ${cards.length} cards — the rest failed; try again.`,
         );
       } else {
-        toast.success("Every card can be heard now");
+        toast.success(cfg.successToast);
       }
       onCardsChanged?.();
     } finally {
@@ -80,12 +112,13 @@ function CardAudioPrep({
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
         <span className="min-w-0 flex-1 truncate">
-          Preparing card audio… {progress.done}/{progress.total}
+          Preparing {cfg.noun}… {progress.done}/{progress.total}
         </span>
       </div>
     );
   }
 
+  const Icon = cfg.icon;
   return (
     <Button
       variant="outline"
@@ -93,18 +126,14 @@ function CardAudioPrep({
       className="gap-1.5"
       onClick={() => void prepare()}
       disabled={allDone}
-      title={
-        allDone
-          ? "Every card already has audio"
-          : "Generate spoken audio for every card front (cached — instant playback while studying)"
-      }
+      title={allDone ? cfg.doneTitle : cfg.idleTitle}
     >
-      <Mic className="h-4 w-4" />
+      <Icon className="h-4 w-4" />
       {allDone
-        ? "Card audio ready"
+        ? cfg.doneLabel
         : withAudio > 0
-          ? `Prepare card audio (${withAudio}/${cards.length} done)`
-          : "Prepare card audio"}
+          ? `Prepare ${cfg.noun} (${withAudio}/${cards.length} done)`
+          : `Prepare ${cfg.noun}`}
     </Button>
   );
 }
@@ -235,6 +264,13 @@ export function AudioOverviewSection({
         <CardAudioPrep
           setId={setId}
           cards={cards}
+          lane="spoken_front"
+          onCardsChanged={onCardsChanged}
+        />
+        <CardAudioPrep
+          setId={setId}
+          cards={cards}
+          lane="helper"
           onCardsChanged={onCardsChanged}
         />
       </div>
@@ -255,6 +291,13 @@ export function AudioOverviewSection({
       <CardAudioPrep
         setId={setId}
         cards={cards}
+        lane="spoken_front"
+        onCardsChanged={onCardsChanged}
+      />
+      <CardAudioPrep
+        setId={setId}
+        cards={cards}
+        lane="helper"
         onCardsChanged={onCardsChanged}
       />
     </div>
