@@ -44,6 +44,7 @@ import {
   Loader2,
   RefreshCw,
   PenLine,
+  ScanSearch,
   Square,
 } from "lucide-react";
 
@@ -81,6 +82,7 @@ import {
   bridgeFillStart,
   bridgeFillStatus,
   bridgePublish,
+  bridgeShellCheck,
   bridgeRealize,
   bridgeReconcile,
   bridgeStarterKit,
@@ -287,6 +289,20 @@ export function SetupBridgeSection({
   const [savingTier, setSavingTier] = useState(false);
   const [fillStatus, setFillStatus] = useState<FillStatus | null>(null);
   const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
+  // On-demand rendered-page inspection (the same check every publish runs
+  // automatically) — a human can point it at the live site any time.
+  const [shellSummary, setShellSummary] = useState<ShellCheckSummary | null>(null);
+  const [shellBusy, setShellBusy] = useState(false);
+  const handleShellCheck = async () => {
+    setShellBusy(true);
+    try {
+      setShellSummary(await bridgeShellCheck(dispatch, site.id, { limit: 10 }));
+    } catch (error) {
+      toast.error(`Could not inspect the site: ${extractErrorMessage(error)}`);
+    } finally {
+      setShellBusy(false);
+    }
+  };
   const fillRunning = fillStatus?.status === "pending" || fillStatus?.status === "processing";
 
   // ESTIMATE BEFORE THE BUTTON — every tier priced for THIS site from measured
@@ -1025,6 +1041,21 @@ export function SetupBridgeSection({
                 ? `Publish ${publishPending} page${publishPending === 1 ? "" : "s"}`
                 : "Publish"}
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              disabled={!linked || shellBusy}
+              title="Fetch the rendered pages and check the site shell — header, menu, footer, brand, styling — plus title/meta/h1 basics. Runs automatically on every publish; this runs it now."
+              onClick={() => void handleShellCheck()}
+            >
+              {shellBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ScanSearch className="h-3.5 w-3.5" />
+              )}
+              Inspect rendered pages
+            </Button>
             {publishPending === null ? (
               <span className="text-[11px] text-muted-foreground">
                 Run &quot;See what would go live&quot; first — nothing publishes
@@ -1046,6 +1077,7 @@ export function SetupBridgeSection({
       ) : null}
       {fillStatus ? <FillStatusSummary status={fillStatus} /> : null}
       {publishResult ? <PublishSummary result={publishResult} /> : null}
+      {shellSummary ? <ShellSummaryBlock summary={shellSummary} /> : null}
     </SetupSection>
   );
 }

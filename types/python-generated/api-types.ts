@@ -6250,13 +6250,20 @@ export interface paths {
         put?: never;
         /**
          * Generate Press Story Angles
-         * @description Find what is genuinely newsworthy about this business.
+         * @description Find what is genuinely newsworthy about this business — a DURABLE
+         *     streamed command.
          *
          *     Composes a closed evidence bundle from platform truth the site already owns,
          *     asks the mandated Press Story Analyst which angles a journalist would care
          *     about, then applies deterministic gates before anything persists. An angle
          *     claiming `pitch_now` while it still has missing evidence is downgraded, never
          *     shipped.
+         *
+         *     Streamed because the analyst pass is minutes of paid model work (measured
+         *     ~4.5 min live on 2026-08-21) and the production gateway severs a synchronous
+         *     response at 60s — the old JSON route completed server-side behind an HTTP
+         *     504 the client could only read as failure. Rejoin with
+         *     ``POST /seo/collections/{run_id}/rejoin``.
          */
         post: operations["generate_press_story_angles_seo_sites__site_id__press_angles_generate_post"];
         delete?: never;
@@ -6486,10 +6493,15 @@ export interface paths {
          * Run Page Step Route
          * @description Run ONE Website Factory pipeline step for ONE page.
          *
-         *     `p3_family` / `p4_write` / `p5_review` — each independently re-runnable, each
-         *     persisting its own superseding artifact. The precondition refusals (no brief
-         *     to write from, no draft to review) are checked BEFORE the stream opens, so
-         *     the client renders them as the gap plus its fix rather than a toast.
+         *     `p1_keywords` / `p3_family` / `p4_write` / `p5_review` — each independently
+         *     re-runnable. The agent steps persist a superseding artifact; `p1_keywords`
+         *     is deterministic (it confirms the already-chosen keyword into THE store and
+         *     stamps the rail — choosing one is the SEO plan tab's job). `p2_research`
+         *     runs through its own `/deepen` route, `p6_build` through the fill queue,
+         *     `p7_publish` through `/cms-publish` — one canonical path per producer. The
+         *     precondition refusals (no brief to write from, no draft to review) are
+         *     checked BEFORE the stream opens, so the client renders them as the gap plus
+         *     its fix rather than a toast.
          */
         post: operations["run_page_step_route_content_plan_nodes__node_id__steps__step__post"];
         delete?: never;
@@ -6777,6 +6789,53 @@ export interface paths {
         get: operations["cms_page_map_route_content_plan_sites__site_id__cms_pages_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/pipeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Site Pipeline Route
+         * @description The SITE-level pipeline — the per-page rail's eight steps, answered for
+         *     the whole site from live rows (nodes, step states, the SEO-plan store, the
+         *     CMS shell and page rows). Derived on read, never stamped: what it says is
+         *     what exists right now.
+         */
+        get: operations["site_pipeline_route_content_plan_sites__site_id__pipeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/shell-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Shell Check Route
+         * @description Structurally inspect the paired CMS site's RENDERED pages for the
+         *     site-level defects that make every page look broken — missing header/menu,
+         *     footer, brand, stylesheet — plus per-page basics (title, meta description,
+         *     one h1). Deterministic and free: one HTTP fetch + parse per page, no
+         *     browser, no model.
+         */
+        post: operations["shell_check_route_content_plan_sites__site_id__shell_check_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10547,6 +10606,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -17549,8 +17632,8 @@ export interface paths {
         put?: never;
         /**
          * Convert Office File
-         * @description Render an existing Office file to PDF (LibreOffice lane) and persist the
-         *     PDF as a new asset owned by the caller. Returns the new file's FileRef.
+         * @description Create or reuse the cached PDF derivative of an existing Office file
+         *     (LibreOffice lane; idempotent per source revision). Returns its FileRef.
          */
         post: operations["convert_office_file_office__file_id__convert_post"];
         delete?: never;
@@ -30756,6 +30839,7 @@ export interface components {
             statuses_advanced?: string[];
             /** Warnings */
             warnings?: string[];
+            shell_check?: components["schemas"]["ShellCheckSummary"] | null;
         };
         /** CmsReconcileBody */
         CmsReconcileBody: {
@@ -35301,6 +35385,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -47307,8 +47418,6 @@ export interface components {
              * @default pdf
              */
             target?: string;
-            /** Visibility */
-            visibility?: string | null;
         };
         /**
          * OfficeExtractionResponse
@@ -56746,7 +56855,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -57342,6 +57451,95 @@ export interface components {
             /** Values */
             values: string[][];
         };
+        /** ShellCheckBody */
+        ShellCheckBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * State
+             * @default auto
+             */
+            state?: string;
+            /**
+             * Limit
+             * @default 10
+             */
+            limit?: number;
+            /** Routes */
+            routes?: string[] | null;
+        };
+        /** ShellCheckSummary */
+        ShellCheckSummary: {
+            /** Site */
+            site: string;
+            /**
+             * Pages Checked
+             * @default 0
+             */
+            pages_checked?: number;
+            /**
+             * Pages Passed
+             * @default 0
+             */
+            pages_passed?: number;
+            /** Site Issues */
+            site_issues?: components["schemas"]["ShellSiteIssue"][];
+            /** Pages */
+            pages?: components["schemas"]["ShellPageResult"][];
+            /** Truncation Note */
+            truncation_note?: string | null;
+        };
+        /** ShellIssue */
+        ShellIssue: {
+            /** Key */
+            key: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "site" | "page";
+            /** Message */
+            message: string;
+        };
+        /** ShellPageResult */
+        ShellPageResult: {
+            /** Page Id */
+            page_id?: string | null;
+            /**
+             * Route
+             * @default
+             */
+            route?: string;
+            /** Url */
+            url: string;
+            /**
+             * State Checked
+             * @default
+             */
+            state_checked?: string;
+            /** Http Status */
+            http_status?: number | null;
+            /**
+             * Ok
+             * @default false
+             */
+            ok?: boolean;
+            /** Issues */
+            issues?: components["schemas"]["ShellIssue"][];
+        };
+        /** ShellSiteIssue */
+        ShellSiteIssue: {
+            /** Key */
+            key: string;
+            /** Message */
+            message: string;
+            /** Pages Affected */
+            pages_affected: number;
+        };
         /** SignedUrlResponse */
         SignedUrlResponse: {
             /** Url */
@@ -57717,6 +57915,27 @@ export interface components {
              */
             tier: "critical" | "high" | "normal" | "low";
         };
+        /** SitePipeline */
+        SitePipeline: {
+            /** Site Id */
+            site_id: string;
+            /** Stages */
+            stages?: components["schemas"]["SiteStage"][];
+            /**
+             * Pages Planned
+             * @default 0
+             */
+            pages_planned?: number;
+            /**
+             * Cms Linked
+             * @default false
+             */
+            cms_linked?: boolean;
+            /** Cms Site Id */
+            cms_site_id?: string | null;
+            /** Cms Slug */
+            cms_slug?: string | null;
+        };
         /** SiteScheduleStatusResponse */
         SiteScheduleStatusResponse: {
             /** Site Id */
@@ -57728,6 +57947,35 @@ export interface components {
             generated_at: string;
             /** Providers */
             providers: components["schemas"]["ProviderScheduleStatus"][];
+        };
+        /** SiteStage */
+        SiteStage: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "complete" | "in_progress" | "attention" | "not_started";
+            /**
+             * Done
+             * @default 0
+             */
+            done?: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Missing */
+            missing?: string[];
         };
         /** SiteStrategyBody */
         SiteStrategyBody: {
@@ -59114,10 +59362,30 @@ export interface components {
          * @description Durable result shared by the HTTP route and workflow node.
          */
         StoryAngleGenerateResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "press.story_angles.generate";
             /** Kept */
             kept: number;
             /** Dropped */
             dropped: number;
+            /**
+             * Created
+             * @default 0
+             */
+            created?: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated?: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged?: number;
             /** Gates */
             gates?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -77245,7 +77513,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StoryAngleGenerateResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -78096,6 +78364,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CmsPageMapResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    site_pipeline_route_content_plan_sites__site_id__pipeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePipeline"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shell_check_route_content_plan_sites__site_id__shell_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ShellCheckBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShellCheckSummary"];
                 };
             };
             /** @description Validation Error */
@@ -84576,6 +84910,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

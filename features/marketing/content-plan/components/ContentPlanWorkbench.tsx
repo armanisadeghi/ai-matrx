@@ -187,6 +187,7 @@ export function ContentPlanWorkbench({
   const nodes = usePlanNodes(siteId);
   const nodeSteps = useNodeSteps(siteId);
   const entities = usePlanEntities(siteId);
+  // access-errors: ok — party options for the node panels; a failed read only trims options, the plan nodes are the workbench's primary
   const siteParties = useSiteParties(siteId);
   const profiles = usePlanProfiles(site?.organization_id ?? null);
   const reparent = useReparentPlanNode(siteId ?? "none");

@@ -68,6 +68,7 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: LucideIcon }[] = [
  */
 export function useContentPlanSites() {
   const orgId = useAppSelector(selectEffectiveOrganizationId);
+  // access-errors: ok — site options for the plan switcher; a failed read only empties the dropdown, the selected plan surface owns its own record errors
   const sites = useSiteOptions();
   const all = sites.data ?? [];
   const scopedSites = useMemo(
