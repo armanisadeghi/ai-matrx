@@ -191,7 +191,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `page_keyword_map_v1` | Page Keyword Map | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `regex_extract_result` | Regex Extract Result | — | 1 | | unclaimed | | |
-| `rendered_text` | Rendered Text | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 16 live events |
+| `rendered_text` | Rendered Text | — | 1 | `generic_structured` | done | copy-E | explicit basic route LIVE — migrations/content_ir_rendered_text_output_route.sql, applied + verified in the DB. Reuse-first: nothing in the compiled bootstrap or the block dispatch registry renders `{text, rendered, truncated}`. UPGRADE PATH: `text` IS markdown, so a component streaming it through MarkdownStream (with rendered/truncated as chrome) beats the JSON tree view — a one-line component_key swap on this same row. Route case belongs in features/content-ir/__tests__/kind-explicit-basic-routes.test.tsx (copy-B's file, in flight at the time). |
 | `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `research_page_analysis` | Research Page Analysis | — | 1 | | unclaimed | | |
 | `research_setup_suggestion` | Research Setup Suggestion | — | 1 | | unclaimed | | |
@@ -277,3 +277,15 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
   from content_ir.kind_definition d
   where d.is_active and d.deleted_at is null and d.is_contract_artifact = false;
   ```
+- 2026-08-20 — copy-E **done**: `rendered_text` registered (the 8th engine-result kind;
+  copy-B's concurrent `content_ir_workflow_result_output_routes.sql` covered the other seven, so
+  copy-E's migration was reduced from 8 kinds to 1 rather than left as a duplicate).
+  copy-E also landed the RUNTIME-IMPACT slice: the workflow run page now routes node outputs on
+  the payload's in-band `__kind` (falling back to the out-of-band `output_kind` declaration), and
+  the engine's `output_kind_ok` drift verdict — which had NO consumer anywhere in the UI — is now
+  surfaced in the readout. Measured baseline on the live DB (30d, 2,728 `node_completed`):
+  0 payloads carry `__kind` yet, 41 events carry no `output_kind` at all.
+  **FINDING for whoever owns the contract-artifact quarantine:** `output_kind` on live events can
+  name a kind that does NOT exist in `kind_definition` —
+  `action_io_action_ai_util_parse_llm_json_98c46b15_output` fired 12 times in 30 days against no
+  registered kind. That is declaration drift, not a missing component.
