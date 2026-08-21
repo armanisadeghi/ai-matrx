@@ -246,10 +246,7 @@ export function SingleSendDialog({
             {busy !== "loading" && templates.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No email-ready template exists yet. Add a subject and body in{" "}
-                <Link
-                  className="underline"
-                  href="/settings/message-templates/new"
-                >
+                <Link className="underline" href="/chat/message-templates/new">
                   New template
                 </Link>
                 .

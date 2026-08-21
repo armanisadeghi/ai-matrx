@@ -30,7 +30,6 @@ import {
   HardDrive,
   MessageSquareMore,
   Filter,
-  FileText,
   IdCard,
   Phone,
   Truck,
@@ -77,7 +76,6 @@ import GoogleWorkspaceTab from "./tabs/GoogleWorkspaceTab";
 import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
-import MessageTemplatesTab from "./tabs/MessageTemplatesTab";
 import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
@@ -620,17 +618,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     description: "Manage organizations you belong to and create new ones.",
     searchKeywords: ["org", "orgs", "team", "teams", "workspace", "members"],
     component: OrganizationsTab,
-    persistence: "synced",
-  },
-
-  // ── Templates ─────────────────────────────────────────────────────────────
-  {
-    id: "templates",
-    label: "Message templates",
-    icon: FileText,
-    description: "Reusable message templates for your prompts and responses.",
-    searchKeywords: ["template", "content", "snippets", "saved"],
-    component: MessageTemplatesTab,
     persistence: "synced",
   },
 

@@ -1,5 +1,5 @@
-import { TemplateEditor } from "@/features/message-templates/components/TemplateEditor";
 import { createClient } from "@/utils/supabase/server";
+import { TemplateEditor } from "@/features/message-templates/components/TemplateEditor";
 import type { MessageTemplateEditorSource } from "@/features/message-templates/types/message-templates-db";
 
 interface PageProps {
@@ -8,7 +8,6 @@ interface PageProps {
 
 export default async function NewTemplatePage({ searchParams }: PageProps) {
   const { from } = await searchParams;
-
   let sourceTemplate: MessageTemplateEditorSource | null = null;
 
   if (from) {

@@ -336,7 +336,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Message Template",
-    urlPathTemplate: "/settings/message-templates/{id}",
+    urlPathTemplate: "/chat/message-templates/{id}",
     rlsUsesHasPermission: true,
   },
   marketing_initiative: {

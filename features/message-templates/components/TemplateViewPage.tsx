@@ -7,7 +7,7 @@ import {
   MessageTemplateDB,
   MessageRole,
 } from "@/features/message-templates/types/message-templates-db";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -93,92 +93,94 @@ function TemplatePageHeader({
   onDelete: () => void;
 }) {
   return (
-    <PageSpecificHeader>
-      <div className="flex items-center gap-1.5 w-full px-1">
-        {/* Back */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 flex-shrink-0"
-          onClick={onBack}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-
-        {/* View / Edit toggle pill */}
-        {canEdit && (
-          <div className="flex items-center gap-0.5 rounded-full bg-muted p-0.5 flex-shrink-0">
-            <button
-              onClick={() => onModeChange("view")}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-                mode === "view"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Eye className="h-3 w-3" />
-              View
-            </button>
-            <button
-              onClick={() => onModeChange("edit")}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-                mode === "edit"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Pencil className="h-3 w-3" />
-              Edit
-            </button>
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        {/* Right actions */}
-        <div className="flex items-center gap-0.5">
+    <RouteHeader
+      left={
+        <div className="flex items-center gap-1.5 w-full px-1">
+          {/* Back */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
-            onClick={onCopy}
-            title="Copy content"
+            className="h-8 w-8 flex-shrink-0"
+            onClick={onBack}
           >
-            <Copy className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
 
+          {/* View / Edit toggle pill */}
           {canEdit && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={onDelete}
-                title="Delete"
+            <div className="flex items-center gap-0.5 rounded-full bg-muted p-0.5 flex-shrink-0">
+              <button
+                onClick={() => onModeChange("view")}
+                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                  mode === "view"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-
-              {mode === "edit" && (
-                <Button
-                  size="icon"
-                  onClick={onSave}
-                  disabled={isSaving || !isDirty || !canSave}
-                  className="h-8 w-8"
-                  title="Save"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              )}
-            </>
+                <Eye className="h-3 w-3" />
+                View
+              </button>
+              <button
+                onClick={() => onModeChange("edit")}
+                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                  mode === "edit"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </button>
+            </div>
           )}
+
+          <div className="flex-1" />
+
+          {/* Right actions */}
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onCopy}
+              title="Copy content"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+
+            {canEdit && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={onDelete}
+                  title="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+
+                {mode === "edit" && (
+                  <Button
+                    size="icon"
+                    onClick={onSave}
+                    disabled={isSaving || !isDirty || !canSave}
+                    className="h-8 w-8"
+                    title="Save"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </PageSpecificHeader>
+      }
+    />
   );
 }
 
@@ -247,7 +249,10 @@ export function TemplateViewPage({
 
   const canSave = label.trim().length > 0 && content.trim().length > 0;
 
-  const handleBack = useCallback(() => router.back(), [router]);
+  const handleBack = useCallback(
+    () => router.push("/chat/message-templates"),
+    [router],
+  );
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(template.content ?? "").then(() => {
@@ -298,7 +303,7 @@ export function TemplateViewPage({
       await deleteTemplate(template.id);
       clearTemplateCache();
       toast({ title: "Template deleted" });
-      router.back();
+      router.push("/chat/message-templates");
     } catch (err) {
       console.error("Error deleting template:", err);
       toast({ title: "Failed to delete template", variant: "destructive" });
@@ -324,7 +329,7 @@ export function TemplateViewPage({
       />
 
       {/* Single scroll area — the page itself scrolls, nothing nested */}
-      <div className="min-h-[calc(100dvh-var(--header-height))] bg-textured">
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-16">
           {mode === "view" ? (
             /* ── View Mode ── */

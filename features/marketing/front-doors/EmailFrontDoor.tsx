@@ -69,7 +69,7 @@ export function EmailFrontDoor() {
     },
     {
       label: "Message templates",
-      href: "/settings/message-templates",
+      href: "/chat/message-templates",
       description:
         "The messages themselves, with merge fields that refuse to send when a value is missing. Your own templates and the shared public ones.",
       Icon: FileText,

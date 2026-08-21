@@ -18,7 +18,7 @@ import {
   ChevronRight,
   RotateCcw,
 } from "lucide-react";
-import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
+import { useRouter } from "next/navigation";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { Button } from "@/components/ui/button";
@@ -56,11 +56,7 @@ import { selectUser } from "@/lib/redux/slices/userSlice";
 
 type ActiveTab = "my" | "public";
 type SortOption =
-  | "updated-desc"
-  | "updated-asc"
-  | "created-desc"
-  | "label-asc"
-  | "label-desc";
+  "updated-desc" | "updated-asc" | "created-desc" | "label-asc" | "label-desc";
 type VisibilityFilter = "all" | "public" | "private";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -108,15 +104,6 @@ function TopBar({
   onNewClick,
   activeFilterCount,
 }: TopBarProps) {
-  const [local, setLocal] = useState(searchValue);
-  useEffect(() => {
-    setLocal(searchValue);
-  }, [searchValue]);
-  const handleChange = (v: string) => {
-    setLocal(v);
-    onSearchChange(v);
-  };
-
   return (
     <div className="flex-shrink-0 px-3 pt-3 pb-2  border-b border-border/40">
       <div className="flex items-center gap-2 p-1.5 rounded-full ">
@@ -171,15 +158,15 @@ function TopBar({
           <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <input
             type="text"
-            value={local}
-            onChange={(e) => handleChange(e.target.value)}
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search..."
             style={{ fontSize: "16px" }}
             className="flex-1 bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground min-w-0"
           />
-          {local && (
+          {searchValue && (
             <button
-              onClick={() => handleChange("")}
+              onClick={() => onSearchChange("")}
               className="flex-shrink-0 text-muted-foreground active:opacity-70"
             >
               <X className="h-3 w-3" />
@@ -213,11 +200,7 @@ function TopBar({
 }
 
 export function UserMessageTemplateManager() {
-  // Presentation-aware nav. Inside the settings window/drawer this
-  // dismisses the shell before pushing — so opening a template no
-  // longer leaves a stale settings overlay floating over the editor.
-  // Standalone /settings/message-templates route just pushes.
-  const navigate = useSettingsNavigate();
+  const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -252,7 +235,6 @@ export function UserMessageTemplateManager() {
 
   const loadData = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await fetchMessageTemplates();
       setTemplates(data);
     } catch (err) {
@@ -264,8 +246,15 @@ export function UserMessageTemplateManager() {
   }, [toast]);
 
   useEffect(() => {
-    if (currentUserId) loadData();
-  }, [loadData, currentUserId]);
+    if (!currentUserId) return;
+    void fetchMessageTemplates()
+      .then(setTemplates)
+      .catch((error) => {
+        console.error("Error loading templates:", error);
+        toast({ title: "Failed to load templates", variant: "destructive" });
+      })
+      .finally(() => setLoading(false));
+  }, [currentUserId, toast]);
 
   // Derive all unique tags from all templates
   const allTags = useMemo(() => {
@@ -279,8 +268,10 @@ export function UserMessageTemplateManager() {
     [templates, currentUserId],
   );
   const publicTemplates = useMemo(
-    () => templates.filter(
-        (t) => isPubliclyVisible(t.visibility) && t.created_by !== currentUserId,
+    () =>
+      templates.filter(
+        (t) =>
+          isPubliclyVisible(t.visibility) && t.created_by !== currentUserId,
       ),
     [templates, currentUserId],
   );
@@ -360,16 +351,16 @@ export function UserMessageTemplateManager() {
   const canEdit = (t: MessageTemplateDB) => t.created_by === currentUserId;
 
   const handleNewTemplate = () =>
-    startTransition(() => navigate("/settings/message-templates/new"));
+    startTransition(() => router.push("/chat/message-templates/new"));
   const handleView = (t: MessageTemplateDB) =>
-    startTransition(() => navigate(`/settings/message-templates/${t.id}`));
+    startTransition(() => router.push(`/chat/message-templates/${t.id}`));
   const handleEdit = (t: MessageTemplateDB) =>
     startTransition(() =>
-      navigate(`/settings/message-templates/${t.id}?mode=edit`),
+      router.push(`/chat/message-templates/${t.id}?mode=edit`),
     );
   const handleDuplicate = (t: MessageTemplateDB) =>
     startTransition(() =>
-      navigate(`/settings/message-templates/new?from=${t.id}`),
+      router.push(`/chat/message-templates/new?from=${t.id}`),
     );
   const handleCardClick = (t: MessageTemplateDB) => {
     setActionTarget(t);
@@ -429,7 +420,7 @@ export function UserMessageTemplateManager() {
     <>
       <MessageTemplatesPageHeader />
 
-      <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-transparent">
+      <div className="flex h-full flex-col bg-transparent pt-[var(--shell-header-h)]">
         <TopBar
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -625,8 +616,7 @@ export function UserMessageTemplateManager() {
                     onClick={() => toggleTag(tag)}
                     className={cn(
                       "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
-                      idx < allTags.length - 1 &&
-                        "border-b border-glass-edge",
+                      idx < allTags.length - 1 && "border-b border-glass-edge",
                     )}
                   >
                     <span

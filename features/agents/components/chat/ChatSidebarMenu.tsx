@@ -43,7 +43,14 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mic, MessageCircle, Plus, Search, Webhook } from "lucide-react";
+import {
+  LayoutTemplate,
+  Mic,
+  MessageCircle,
+  Plus,
+  Search,
+  Webhook,
+} from "lucide-react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   Popover,
@@ -73,6 +80,7 @@ const VOICE_AGENT_HREF = "/chat/voice";
  *  nav's "Chat" item (same icon/label/href) so this rail exposes the same
  *  "reset to the start page" action once the chat menu is embedded. */
 const CHAT_HOME_HREF = "/chat/new";
+const MESSAGE_TEMPLATES_HREF = "/chat/message-templates";
 
 /** Canonical chrome-row class — identical to NavItem.tsx PLUS the
  *  `shell-nav-stable` height modifier so the row height stays the same
@@ -91,6 +99,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
   const store = useAppStore();
   const { activeConversationId, activeAgentId } = parseChatPath(pathname);
   const isVoiceRoute = pathname.startsWith(VOICE_AGENT_HREF);
+  const isMessageTemplatesRoute = pathname.startsWith(MESSAGE_TEMPLATES_HREF);
   // Home = the bare `/chat` redirect target and its landing (`/chat/new`).
   const isChatHome = pathname === "/chat" || pathname === CHAT_HOME_HREF;
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
@@ -234,6 +243,25 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           </button>
         }
       />
+
+      <Link
+        href={MESSAGE_TEMPLATES_HREF}
+        title="Message templates"
+        aria-label="Message templates"
+        aria-current={isMessageTemplatesRoute ? "page" : undefined}
+        className={cn(
+          ROUTE_MENU_NAV_ITEM_CLASS,
+          isMessageTemplatesRoute && "shell-active-pill",
+        )}
+      >
+        <span className="shell-nav-icon">
+          <LayoutTemplate
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
+        </span>
+        <span className="shell-nav-label">Message templates</span>
+      </Link>
 
       {/* Voice agent — real route, so a <Link>. Active state via the same
           `.shell-active-pill` the main nav uses. */}

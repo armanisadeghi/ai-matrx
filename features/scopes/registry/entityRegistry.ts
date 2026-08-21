@@ -256,7 +256,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   message_template: {
     Icon: LayoutTemplate,
     labelPlural: "Message Templates",
-    hrefFor: (id) => `/settings/message-templates/${id}`,
+    hrefFor: (id) => `/chat/message-templates/${id}`,
   },
   // Pick Lists / user lists (`/lists`) — canonical token is structured_list
   // (legacy names picklist / udt_picklists / user_lists are dead).

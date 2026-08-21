@@ -21,7 +21,12 @@ export function parseChatPath(pathname: string): {
     };
   }
   const convMatch = pathname.match(/^\/chat\/([^/]+)$/);
-  if (convMatch && convMatch[1] !== "new") {
+  if (
+    convMatch &&
+    convMatch[1] !== "new" &&
+    convMatch[1] !== "message-templates" &&
+    convMatch[1] !== "voice"
+  ) {
     return { activeConversationId: convMatch[1], activeAgentId: undefined };
   }
   return { activeConversationId: null, activeAgentId: undefined };
@@ -101,7 +106,8 @@ export async function beginFreshChat({
 }): Promise<void> {
   let defaultAgentId: string | null = null;
   try {
-    defaultAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
+    defaultAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY))
+      .agentId;
   } catch (error) {
     console.error(
       `[beginFreshChat] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — routing to /chat/new, which will surface the error:`,

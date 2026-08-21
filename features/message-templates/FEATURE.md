@@ -21,7 +21,9 @@ or unresolved paths before it creates an approvable interaction.
   `content`.
 - Template visibility and organization RLS remain the discovery authority. Public templates
   may be consumed cross-org; internal templates may not.
-- `/settings/message-templates/new` is the repair door when the single-send surface finds no
+- `/chat/message-templates` is the canonical authoring home; the former Settings routes
+  permanently redirect to their exact chat counterparts.
+- `/chat/message-templates/new` is the repair door when the single-send surface finds no
   email-ready template.
 - The Smart Agent Input `+` menu renders its user-message template picker inside the same
   resource panel used by Tools and Skills. Row selection applies immediately; preview and
@@ -44,6 +46,8 @@ preview-before-use authoring flow.
 
 ## Change log
 
+- **2026-08-21** — Moved the canonical authoring route from Settings to Chat, updated every
+  internal door, and retained permanent redirects for existing links.
 - **2026-08-20** — Replaced chat's modal detour with an in-panel, mobile-friendly picker whose
   rows apply immediately and whose preview/open doors remain independent.
 - **2026-08-19** — Reused the canonical browser in chat's Smart Agent Input; template insertion

@@ -33,7 +33,7 @@ import {
   updateTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -104,48 +104,50 @@ function EditorHeader({
   onCompare?: () => void;
 }) {
   return (
-    <PageSpecificHeader>
-      <div className="flex items-center gap-1.5 w-full px-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 flex-shrink-0"
-          onClick={onBack}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-          <span className="text-sm font-semibold truncate">
-            {mode === "create" ? "New Template" : "Edit Template"}
-          </span>
-        </div>
-        {onCompare && (
+    <RouteHeader
+      left={
+        <div className="flex items-center gap-1.5 w-full px-1">
           <Button
             variant="ghost"
             size="icon"
-            onClick={onCompare}
             className="h-8 w-8 flex-shrink-0"
-            title="Compare saved vs draft"
+            onClick={onBack}
           >
-            <GitCompareArrows className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-        )}
-        <Button
-          size="icon"
-          onClick={onSave}
-          disabled={isSaving || !canSave}
-          className="h-8 w-8 flex-shrink-0"
-          title="Save"
-        >
-          {isSaving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+            <span className="text-sm font-semibold truncate">
+              {mode === "create" ? "New Template" : "Edit Template"}
+            </span>
+          </div>
+          {onCompare && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCompare}
+              className="h-8 w-8 flex-shrink-0"
+              title="Compare saved vs draft"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />
+            </Button>
           )}
-        </Button>
-      </div>
-    </PageSpecificHeader>
+          <Button
+            size="icon"
+            onClick={onSave}
+            disabled={isSaving || !canSave}
+            className="h-8 w-8 flex-shrink-0"
+            title="Save"
+          >
+            {isSaving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      }
+    />
   );
 }
 
@@ -184,7 +186,10 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
     });
   }, [openDiff, template, content]);
 
-  const handleBack = useCallback(() => router.back(), [router]);
+  const handleBack = useCallback(
+    () => router.push("/chat/message-templates"),
+    [router],
+  );
 
   const handleSave = useCallback(async () => {
     if (!canSave || isSaving) return;
@@ -228,7 +233,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
         toast({ title: "Template saved" });
       }
       clearTemplateCache();
-      router.back();
+      router.push("/chat/message-templates");
     } catch (err) {
       console.error("Error saving template:", err);
       toast({
@@ -266,7 +271,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
       />
 
       {/* Single page scroll — no bounded inner container */}
-      <div className="min-h-[calc(100dvh-var(--header-height))] bg-textured">
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-16 space-y-3">
           {/* Label + Type in one compact row */}
           <div className="grid grid-cols-[1fr_auto] gap-2">

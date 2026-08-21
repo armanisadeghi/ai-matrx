@@ -8,7 +8,6 @@ import {
   Settings as SettingsIcon,
   Building2,
   Mic,
-  FileText,
   MessageSquareMore,
   Plug,
   Monitor,
@@ -122,12 +121,6 @@ const settingsNavItems: SettingsNavItem[] = [
         icon: <BrainCircuit className="h-3 w-3" />,
       },
     ],
-  },
-  {
-    title: "Templates",
-    href: "/settings/message-templates",
-    icon: <FileText className="h-3.5 w-3.5" />,
-    IconComp: FileText,
   },
   {
     title: "Agent shortcuts",
