@@ -13,8 +13,12 @@ narrow — extend it as other lanes land, don't fork a second doc.
 [data/fcService.ts](./data/fcService.ts)). Set membership is a `platform.associations`
 edge (`fc_card -member-> fc_set`), NOT a column. A card loads as `CardWithDetails`
 (`{...card, position, details: FcDetailRow[]}`). Detail rows are the per-card layer
-system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` +
-`audio_file_id`), and images (below). All reads filter `deleted_at is null`.
+system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` and
+`helper` + `audio_file_id`), and images (below). All reads filter
+`deleted_at is null`. A text-only layer gains durable TTS audio via
+`fcService.setDetailAudio` (status → `audio_ready`) — the helper-audio lane
+([fast-fire/helper-audio/generateHelperAudio.thunk.ts](./fast-fire/helper-audio/generateHelperAudio.thunk.ts))
+is its consumer.
 
 ## Agent-generated decks — the single-writer contract (D-WP3-4)
 
@@ -127,6 +131,19 @@ own fresh conversation):
   already writes both).
 
 ## Change log
+
+- **2026-08-21 — Pre-generated "I'm confused" helper audio (Q15 lane #1).** The
+  FastFire spec's zero-wait help headline shipped by composing live primitives:
+  `flashcards.enrich_card` writes the spoken-friendly helper text (kind
+  `helper`), the new `flashcards.helper_tts` mandate (declared in aidream
+  `client_mandates.py`, same TTS holder as spoken fronts, independently
+  rebindable calm voice) renders it ONCE to a durable `audio_file_id` on the
+  same `fc_detail` row. Prep is on-demand + cached
+  (`ensureHelperAudioForSet`, "Instant help" card on FastFire setup, N/M
+  progress, never re-generates); mid-drill, "I'm confused" plays the cached
+  clip + shows the text INSTANTLY while the live `flashcards.help_live` lane
+  still deepens the answer in the background. No cached helper → behavior
+  unchanged.
 
 - **2026-08-19 — DB-backed decks can print.** `SetDetailView` gained a **Print** action
   (beside Export) on the SAME canonical printer/dialog the markdown lane uses, fed by the

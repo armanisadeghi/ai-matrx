@@ -16,6 +16,7 @@ UUIDs and prompt text) is deleted per WP2 — it documented ids code no longer c
 |---|---|---|
 | `features/flashcards/data/mandates.ts` | `FC_MANDATES` | `flashcards.generate_cards`, `flashcards.generate_from_source`, `flashcards.enrich_card`, `flashcards.expand_card`, `flashcards.grade_spoken`, `flashcards.grade_typed_answer`, `flashcards.help_live`, `flashcards.review_batch`, `flashcards.micro_coach`, `flashcards.make_quiz_items`, `flashcards.verify_against_source` |
 | `features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk.ts` | `SPOKEN_FRONT_TTS_MANDATE` | `flashcards.spoken_front_tts` |
+| `features/flashcards/fast-fire/helper-audio/generateHelperAudio.thunk.ts` | `HELPER_TTS_MANDATE` | `flashcards.helper_tts` |
 | `features/flashcards/components/study/VoiceTutorPanel.tsx` | `EDUCATION_VOICE_TUTOR_MANDATE` | `education.voice_tutor` |
 | `features/education/spoken-practice/mandates.ts` | `SPOKEN_PRACTICE_MANDATES` | `education.spoken_practice_design`, `education.spoken_practice_design_language`, `education.spoken_practice_grade`, `education.spoken_practice_grade_pronunciation`, `education.spoken_practice_review` |
 | `features/education/assessment/data/mandates.ts` | `ASSESSMENT_MANDATES` | `education.quiz_generate`, `education.quiz_generate_from_source`, `education.quiz_deepen_item`, `education.grade_handwritten` (+ reuses the three flashcards grading/verify keys) |

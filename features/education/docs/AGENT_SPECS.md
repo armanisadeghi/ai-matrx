@@ -164,6 +164,16 @@ the agent is fully focused. The platform's context system supplies what the lear
 ---
 
 ## 4. `fc_write_helper` — batch "I'm confused" copy → durable audio  **(P1)**
+
+> **SHIPPED 2026-08-21, composed rather than built as spec'd** — no dedicated
+> `fc_write_helper` agent and no `narrate()`: the live `flashcards.enrich_card`
+> mandate writes the per-card helper text (kind `helper`) and the
+> `flashcards.helper_tts` mandate renders it to a durable `audio_file_id` on
+> the same `fc_detail` row. Lane:
+> `features/flashcards/fast-fire/helper-audio/generateHelperAudio.thunk.ts`;
+> playback is instant in `FastFireLiveCard`. The batch schema below is retained
+> as design intent only.
+
 **Goal:** For a batch of cards, write a short, spoken-friendly explanation (the "I'm confused" copy).
 Then the FE calls `narrate()` to render durable audio.
 
