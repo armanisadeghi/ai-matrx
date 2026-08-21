@@ -3,12 +3,18 @@
 **Status:** live · **BLOCKING in `--strict`** (loud, exit 0 otherwise) ·
 `pnpm check:canonical-ratchets`
 
-Two gates, one live snapshot:
+Four gates, two live snapshots:
 
 | Gate | Command | Baseline |
 |---|---|---|
 | Unregistered entity-like tables | `pnpm check:unregistered-entities` | `unregistered-entities-baseline.json` (+ `unregistered-entities-allowlist.json`) |
 | Post-doctrine conformance | `pnpm check:post-doctrine` | `post-doctrine-baseline.json` |
+| **NO NULL ORG** — NULL-org row count | `pnpm check:org-null` | `org-null-baseline.json` |
+| **NO NULL ORG** — nullable-org column set | `pnpm check:org-null` | `org-null-baseline.json` |
+
+The first two read `public.canonical_ratchet_snapshot()` (the cached audit
+store); the NO NULL ORG pair reads `public.org_null_ratchet_snapshot()` (live,
+~1s) and shares one command because it is one RPC call and one story.
 
 ## Why this exists
 
@@ -122,3 +128,75 @@ exactly two functions and nothing else:
 ## Flags
 
 `--strict` (exit 1 over baseline) · `--update-baseline` · `--refresh` · `--json`.
+
+---
+
+## Ratchets 3 + 4 — NO NULL ORG
+
+**Owner ruling, 2026-08-21** (db-rules FEATURE.md §2, *NO NULL ORG*):
+
+> *"If something belongs to the system, that CANNOT EVER be represented by a
+> NULL org! Write checks that will scream and paint everything RED if anyone
+> does that ... make the release script scream ... NO NULL ORG. the system has
+> an org and this is well-established."*
+
+NULL is not a scope. System/global/builtin content belongs to the **system org**
+(`matrx-system`, `39c38960-d30c-4840-b0c1-c9960de95582`, `global_readable` in
+`iam.system_orgs`); everything a user owns falls back to the creator's **personal
+org**. There is no third answer, and the question is settled — it does not go
+back to Arman.
+
+These two gates are the DATA and SCHEMA layers of a five-layer enforcement. The
+DDL layer is `platform._ddl_guard` lane (e), which **RAISEs** on a `CREATE TABLE`
+with a nullable `organization_id` and logs `severity='error'` on an `ALTER TABLE`
+that leaves one — it fires at creation time, before a row exists to be wrong.
+The ORM layer is `aidream/db/org_null_scream.py`, printed by every
+`python db/generate.py`. The aidream release gate is the twin
+`aidream/scripts/check_org_null.py`.
+
+### The two counts
+
+| | Source | Contract |
+|---|---|---|
+| **ROWS** | every nullable-org table, scanned for actual NULLs | may only go **DOWN** |
+| **COLUMNS** | the tables that still ALLOW a NULL `organization_id` | a table **NEW to the set** fails |
+
+The COLUMNS half is a **set**, not a count — unlike ratchet 1. Membership is the
+actionable fact here and the population is small and named, so a set-diff tells
+you exactly which table regressed instead of making you go find it.
+
+The ROWS half is the one that does the real work on the backlog. 38 tables are
+still legitimately nullable and the ruling deliberately does **not** force them
+NOT NULL in one sweep — but every one of them fails the release the moment it
+*grows* its NULL-org count. The flip is optional; new NULLs are not.
+
+### `history` is excluded from the ROWS scan
+
+Not for cost. A `history.row_versions` row is a snapshot of a row already
+counted at its source, so counting it double-counts one defect — and worse, it
+**inverts the gate**: editing or soft-deleting an existing legacy NULL-org row
+captures a new NULL-org version, so the number would GROW and fail a release for
+touching old data rather than for creating a new defect. A ratchet that punishes
+cleanup is a broken ratchet. (It was also 50s of a 64s scan; excluding it took
+the snapshot to ~1s.)
+
+### Seeded 2026-08-21, from live
+
+**21,800 NULL-org rows across 29 tables · 38 tables still nullable.** Seeded from
+live, not from zero, for the same reason as ratchets 1 and 2: the gate's job is
+preventing growth, and it must never be able to block a release on the legacy
+backlog. Both numbers may only shrink; raising either is an Arman decision.
+
+### Database side
+
+`migrations/org_null_ratchet_snapshot.sql` (ledgered, applied 2026-08-21) adds
+one function: `public.org_null_ratchet_snapshot() → jsonb`, STABLE SECURITY
+DEFINER, **service_role only** — the counts must be taken with the RLS boundary
+off, or the gate measures what its own credentials can see instead of what is
+true.
+
+### It also fails when the DDL guard is down
+
+`ddl_guard_attached` is part of the snapshot and both halves fail `--strict`
+without it. A ratchet on a door nobody is watching is not a gate — and event
+trigger bindings are dropped SILENTLY by a project restore (db-rules §1).
