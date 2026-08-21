@@ -112,7 +112,8 @@
 
   **The older TEMPLATE Build is not deleted and is not the primary action.** `build/` +
   aidream `services/masterworks/build.py` fill one of two fixed shapes with no questions
-  asked; they now sit in the header's **More** menu as **Build from template**, named for
+  asked; since 2026-08-21 this is the header's **Quick build** button (it left the **More**
+  menu, which no longer exists on this page), named for
   what they are, until the Conductor supersedes them outright.
 
 - 🚨 **THE RULEBOOK PAGE HAS FOUR THINGS ON IT — the page IA is now LAW (2026-08-18).**
@@ -125,7 +126,7 @@
 
   | # | Section | Owns | Never holds |
   | --- | --- | --- | --- |
-  | 1 | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges), ONE primary action **Make a Masterwork** (the Conductor), a **More** menu (Systems · Build from template · Final checkup · Mark as ready), the KPI tiles + progress bar + **ONE** line, and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar |
+  | 1 | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges); the MAKE class top-right — share (icon only) · **Quick build** (template) · **Build it with me** (the Conductor); the KPI tiles + progress bar + **ONE** line; the CHECK & FINISH class under the KPIs — **What you've built** · **Check for what's missing** · **Mark as ready**; and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar; a `More` menu (2026-08-21: actions are classed by WHEN THEY HAPPEN and every one carries a tooltip naming its agent — see `common-docs/systems/masterwork/USABILITY-VERDICT-2026-08-21.md`) |
   | 2 | **Sources** (`RulebookInputsSection`) | EVERY input: interviews (list), attached documents/files/links/workspace things, **Your words** (the record — its ONE entry point on this page), **Add ▾** (a document · published work · AI chats), **New interview**, and **Turn this into rules** | — |
   | 3 | **Understudy** (`UnderstudyCard`) | The system that already runs, and trying it | — |
   | 4 | **Rules** | Search · **Add rule** · the grouped rule list (+ per-group "Add here") | Any source/import/interview button |
