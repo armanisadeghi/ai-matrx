@@ -616,6 +616,37 @@ function chunkIds(ids: string[], size = 200): string[][] {
   return out;
 }
 
+/** Restore many trashed records at once (D226 — the trash's bulk half). */
+export async function restoreParties(ids: string[]): Promise<void> {
+  for (const batch of chunkIds(ids)) {
+    const { error } = await supabase
+      .schema("crm")
+      .from("party")
+      .update({ deleted_at: null })
+      .in("id", batch);
+    if (error) throw pgError(error);
+  }
+}
+
+/**
+ * Permanently erase many records (D226). The purge RPC is deliberately
+ * one-record (admin-gated, touches history/comments/state), so bulk is a loop
+ * — a per-row failure stops the run with the count that DID land.
+ */
+export async function purgeParties(ids: string[]): Promise<void> {
+  let done = 0;
+  for (const id of ids) {
+    try {
+      await purgeParty(id);
+      done += 1;
+    } catch (e) {
+      throw new Error(
+        `${e instanceof Error ? e.message : String(e)} (${done} of ${ids.length} deleted before the failure)`,
+      );
+    }
+  }
+}
+
 /** Trash many records at once (restorable, same as the row action). */
 export async function deleteParties(ids: string[]): Promise<void> {
   const now = new Date().toISOString();

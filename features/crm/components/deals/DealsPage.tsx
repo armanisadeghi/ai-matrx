@@ -28,6 +28,8 @@ import type {
 } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
@@ -189,7 +191,17 @@ export function DealsPage() {
     setMode("list");
   };
 
-  const effectiveOrgId = list.ctx?.orgIds[0] ?? null;
+  // The ACTIVE org, not orgIds[0] (D227): the ctx lists every org the user
+  // belongs to in arbitrary order, so `orgIds[0]` pointed the create dialog's
+  // party search (and the deal itself) at whichever org happened to be first —
+  // searching an org the user was not even looking at, returning nothing.
+  const activeOrgId = useAppSelector(selectEffectiveOrganizationId);
+  const effectiveOrgId =
+    (activeOrgId && list.ctx?.orgIds.includes(activeOrgId)
+      ? activeOrgId
+      : null) ??
+    list.ctx?.orgIds[0] ??
+    null;
 
   const onTableState = (state: MatrxDataTableQueryState) => {
     if (state.sort && (state.sort.id !== prefs.sort || state.sort.direction !== prefs.direction)) {

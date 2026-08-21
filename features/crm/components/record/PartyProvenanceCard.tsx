@@ -275,14 +275,25 @@ export function PartyProvenanceCard({
             {party.source_detail ? (
               <>
                 {" · "}
-                <a
-                  href={party.source_detail}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary "
-                >
-                  {party.source_detail}
-                </a>
+                {/* `source_detail` is a URL only for some sources (a folded
+                    social profile). A file name or a form token rendered as a
+                    relative <a> resolved to /crm/<token> and dead-ended
+                    (D228) — anything that is not an absolute URL is a label,
+                    not a door. */}
+                {/^https?:\/\//i.test(party.source_detail) ? (
+                  <a
+                    href={party.source_detail}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary"
+                  >
+                    {party.source_detail}
+                  </a>
+                ) : (
+                  <span className="text-foreground">
+                    {party.source_detail}
+                  </span>
+                )}
               </>
             ) : null}
           </p>

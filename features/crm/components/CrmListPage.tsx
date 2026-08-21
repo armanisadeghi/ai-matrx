@@ -32,6 +32,7 @@ import {
   ListChecks,
   Megaphone,
   Merge,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -53,7 +54,9 @@ import {
   deleteParties,
   deleteParty,
   fetchPendingCandidateCount,
+  purgeParties,
   purgeParty,
+  restoreParties,
   restoreParty,
   setPartiesDoNotContact,
 } from "../service";
@@ -636,6 +639,46 @@ export function CrmListPage({
     </div>
   );
 
+  // The trash's own bulk bar (D226): a trash filled with one click must empty
+  // with one click — restore or permanently delete the whole selection.
+  const trashBulkActions = () => (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        disabled={bulkBusy}
+        onClick={() =>
+          runBulk("Restored", async (ids) => {
+            await restoreParties(ids);
+          })
+        }
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+        Restore
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+        disabled={bulkBusy}
+        onClick={async () => {
+          const ok = await confirm({
+            title: `Permanently delete ${selectedIds.length} record${selectedIds.length === 1 ? "" : "s"}?`,
+            description:
+              "This erases the records, their history, notes and pins. It cannot be undone.",
+            confirmLabel: "Delete permanently",
+            variant: "destructive",
+          });
+          if (!ok) return;
+          await runBulk("Permanently deleted", (ids) => purgeParties(ids));
+        }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        Delete permanently
+      </Button>
+    </div>
+  );
+
   const menuFor = (row: PartyListRow): (() => ItemMenuConfig) => {
     if (inTrash) {
       return () => ({
@@ -650,6 +693,9 @@ export function CrmListPage({
                   try {
                     await restoreParty(row.id);
                     list.removeRow(row.id);
+                    // Counts come from the server — without this the scope
+                    // chips keep the pre-restore numbers (D226).
+                    list.refresh();
                     // The row is removed from THIS list on restore, so the
                     // record it just restored becomes unreachable from here.
                     toast.success(`${row.display_name} restored`, {
@@ -683,6 +729,7 @@ export function CrmListPage({
                   try {
                     await purgeParty(row.id);
                     list.removeRow(row.id);
+                    list.refresh();
                     toast.success(`${row.display_name} permanently deleted`);
                   } catch (e) {
                     toast.error(
@@ -1106,16 +1153,13 @@ export function CrmListPage({
             detail={{ enabled: false }}
             window={{ enabled: false }}
             onRowOpen={openRow}
-            selection={
-              inTrash
-                ? undefined
-                : {
-                    selectedIds,
-                    onSelectedIdsChange: setSelectedIds,
-                    noun: "record",
-                    actions: bulkActions,
-                  }
-            }
+            selection={{
+              selectedIds,
+              onSelectedIdsChange: setSelectedIds,
+              noun: "record",
+              // The trash gets its own verbs (D226): restore + purge in bulk.
+              actions: inTrash ? trashBulkActions : bulkActions,
+            }}
             rowActions={(row) => (
               <ItemMenu config={menuFor(row)} align="end">
                 <button

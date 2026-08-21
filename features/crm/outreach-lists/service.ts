@@ -322,7 +322,7 @@ async function fetchBestContactPointIds(
       .in("channel", ["email", "phone"])
       .is("deleted_at", null);
     if (error) throw pgError(error);
-    const rank = (r: { channel: string; is_primary: boolean }) =>
+    const rank = (r: { channel: string | null; is_primary: boolean }) =>
       (r.channel === preferred ? 0 : 2) + (r.is_primary ? 0 : 1);
     const bestRank = new Map<string, number>();
     for (const r of data ?? []) {

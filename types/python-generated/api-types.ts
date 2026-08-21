@@ -24951,6 +24951,18 @@ export interface components {
             runtime_execution_id?: string | null;
             /** @description Structured terminal failure, or null on success. */
             error?: components["schemas"]["AssignmentError"] | null;
+            /**
+             * Attempt Count
+             * @description How many times this item was executed. The durable item row has always tracked it and the result dropped it, so a consumer could not tell a first-try success from one that burned two retries (real sessions show 1 on success and 3 on terminal failure).
+             * @default 0
+             */
+            attempt_count?: number;
+            /**
+             * Max Attempts
+             * @description The retry budget this item was given — the number ``attempt_count`` was racing. 0 means the producer did not say.
+             * @default 0
+             */
+            max_attempts?: number;
         };
         /**
          * AssignmentItemStatus
@@ -34631,6 +34643,12 @@ export interface components {
              * @description Declared run variables. Node static inputs reference them with {'$var': name}; run-time initial_variables supply the values. A reference to an UNDECLARED variable fails compile/validate loudly (see matrx_graph.types.variables).
              */
             variables?: components["schemas"]["VariableSpec"][];
+            /**
+             * Public Media
+             * @description True when this workflow's output is PUBLISHED — read by an anonymous viewer on an episode page, a blog article, a share page. Every media artifact the run generates is then persisted PUBLIC, so it gets a permanent CDN url instead of a signed one that expires. Leave False for private work: a personal image must not become world-readable because a workflow touched it.
+             * @default false
+             */
+            public_media?: boolean;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -50598,6 +50616,12 @@ export interface components {
              * @default 8
              */
             clean_concurrency?: number;
+            /**
+             * Clean Dispatch
+             * @default auto
+             * @enum {string}
+             */
+            clean_dispatch?: "auto" | "live" | "batch";
             /**
              * Force Ocr
              * @default false

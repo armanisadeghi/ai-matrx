@@ -70,6 +70,10 @@ export function DealCreateDialog({
   const [partySearch, setPartySearch] = useState("");
   const [partyResults, setPartyResults] = useState<PartyRef[]>([]);
   const [searching, setSearching] = useState(false);
+  // A completed empty search must SAY so — without this flag the dropdown
+  // unmounted on zero results and the "No contacts match" branch was
+  // unreachable (D227's silent half).
+  const [searched, setSearched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Reset per open; land the defaults the caller knows about.
@@ -98,6 +102,7 @@ export function DealCreateDialog({
   useEffect(() => {
     if (!open || !orgId || party || !partySearch.trim()) {
       setPartyResults([]);
+      setSearched(false);
       return;
     }
     let cancelled = false;
@@ -105,7 +110,10 @@ export function DealCreateDialog({
     const timer = setTimeout(async () => {
       try {
         const rows = await searchPartiesByName({ orgId, search: partySearch });
-        if (!cancelled) setPartyResults(rows);
+        if (!cancelled) {
+          setPartyResults(rows);
+          setSearched(true);
+        }
       } catch (e) {
         if (!cancelled) console.error("[crm] deal party search failed:", e);
       } finally {
@@ -286,7 +294,8 @@ export function DealCreateDialog({
                   placeholder="Search your contacts…"
                   className="h-9 pl-7 text-sm"
                 />
-                {(partyResults.length > 0 || searching) && partySearch.trim() && (
+                {(partyResults.length > 0 || searching || searched) &&
+                  partySearch.trim() && (
                   <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-popover p-1 shadow-md">
                     {searching && (
                       <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground">

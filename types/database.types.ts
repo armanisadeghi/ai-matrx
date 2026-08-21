@@ -27035,10 +27035,24 @@ export type Database = {
             referencedColumns: ["token"]
           },
           {
+            foreignKeyName: "association_types_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+          {
             foreignKeyName: "association_types_target_type_fkey"
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "association_types_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
         ]
@@ -27123,10 +27137,24 @@ export type Database = {
             referencedColumns: ["token"]
           },
           {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+          {
             foreignKeyName: "associations_target_type_fkey"
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
         ]
@@ -27529,10 +27557,24 @@ export type Database = {
             referencedColumns: ["token"]
           },
           {
+            foreignKeyName: "entity_relationships_child_type_fkey"
+            columns: ["child_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+          {
             foreignKeyName: "entity_relationships_parent_type_fkey"
             columns: ["parent_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_relationships_parent_type_fkey"
+            columns: ["parent_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
         ]
@@ -27963,6 +28005,147 @@ export type Database = {
         }
         Relationships: []
       }
+      lifecycle_entity_plan: {
+        Row: {
+          blocking_edges: number
+          built_at: string
+          cascade_edges: number
+          dangling_edges: number
+          delete_rank: number | null
+          entity_ref: string
+          entity_token: string
+          feature_key: string
+          in_cycle: boolean
+          mutating_edges: number
+          owner_column: string
+          unmanaged_blockers: number
+        }
+        Insert: {
+          blocking_edges?: number
+          built_at?: string
+          cascade_edges?: number
+          dangling_edges?: number
+          delete_rank?: number | null
+          entity_ref: string
+          entity_token: string
+          feature_key: string
+          in_cycle?: boolean
+          mutating_edges?: number
+          owner_column: string
+          unmanaged_blockers?: number
+        }
+        Update: {
+          blocking_edges?: number
+          built_at?: string
+          cascade_edges?: number
+          dangling_edges?: number
+          delete_rank?: number | null
+          entity_ref?: string
+          entity_token?: string
+          feature_key?: string
+          in_cycle?: boolean
+          mutating_edges?: number
+          owner_column?: string
+          unmanaged_blockers?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
+      lifecycle_map_build: {
+        Row: {
+          built_at: string
+          cycles: number
+          detail: Json
+          edges: number
+          entities: number
+          fingerprint: string
+          id: boolean
+        }
+        Insert: {
+          built_at?: string
+          cycles: number
+          detail?: Json
+          edges: number
+          entities: number
+          fingerprint: string
+          id?: boolean
+        }
+        Update: {
+          built_at?: string
+          cycles?: number
+          detail?: Json
+          edges?: number
+          entities?: number
+          fingerprint?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
+      lifecycle_reference_map: {
+        Row: {
+          built_at: string
+          child_column: string
+          child_is_managed: boolean
+          child_ref: string
+          child_token: string | null
+          cross_schema: boolean
+          guard_sql: string
+          hazard: string
+          id: string
+          on_delete: string
+          parent_ref: string
+          parent_token: string
+          self_reference: boolean
+          source: string
+        }
+        Insert: {
+          built_at?: string
+          child_column: string
+          child_is_managed: boolean
+          child_ref: string
+          child_token?: string | null
+          cross_schema: boolean
+          guard_sql: string
+          hazard: string
+          id?: string
+          on_delete: string
+          parent_ref: string
+          parent_token: string
+          self_reference: boolean
+          source: string
+        }
+        Update: {
+          built_at?: string
+          child_column?: string
+          child_is_managed?: boolean
+          child_ref?: string
+          child_token?: string | null
+          cross_schema?: boolean
+          guard_sql?: string
+          hazard?: string
+          id?: string
+          on_delete?: string
+          parent_ref?: string
+          parent_token?: string
+          self_reference?: boolean
+          source?: string
+        }
+        Relationships: []
+      }
       masterwork_corpus_item: {
         Row: {
           attempts: number
@@ -28360,6 +28543,13 @@ export type Database = {
             referencedRelation: "entity_types"
             referencedColumns: ["token"]
           },
+          {
+            foreignKeyName: "org_module_config_module_token_fkey"
+            columns: ["module_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
         ]
       }
       outcome_event: {
@@ -28537,10 +28727,24 @@ export type Database = {
             referencedColumns: ["token"]
           },
           {
+            foreignKeyName: "output_feedback_corrected_ref_type_fkey"
+            columns: ["corrected_ref_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+          {
             foreignKeyName: "output_feedback_subject_type_fkey"
             columns: ["subject_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_subject_type_fkey"
+            columns: ["subject_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
         ]
@@ -28650,6 +28854,51 @@ export type Database = {
         }
         Relationships: []
       }
+      reference_declaration: {
+        Row: {
+          child_column: string
+          child_schema: string
+          child_table: string
+          created_at: string
+          id: string
+          note: string
+          parent_token: string
+        }
+        Insert: {
+          child_column: string
+          child_schema: string
+          child_table: string
+          created_at?: string
+          id?: string
+          note: string
+          parent_token: string
+        }
+        Update: {
+          child_column?: string
+          child_schema?: string
+          child_table?: string
+          created_at?: string
+          id?: string
+          note?: string
+          parent_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_declaration_parent_token_fkey"
+            columns: ["parent_token"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "reference_declaration_parent_token_fkey"
+            columns: ["parent_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       repo: {
         Row: {
           github_full_name: string | null
@@ -28756,6 +29005,13 @@ export type Database = {
             columns: ["entity_token"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "retention_policy_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
         ]
@@ -28961,10 +29217,12 @@ export type Database = {
           created_at: string
           docs_path: string | null
           id: string
+          last_reviewed_at: string | null
           level: string
           name: string
           notes: string | null
           parent_id: string | null
+          review_notes: string | null
           slug: string
           status: string
           updated_at: string
@@ -28974,10 +29232,12 @@ export type Database = {
           created_at?: string
           docs_path?: string | null
           id?: string
+          last_reviewed_at?: string | null
           level: string
           name: string
           notes?: string | null
           parent_id?: string | null
+          review_notes?: string | null
           slug: string
           status?: string
           updated_at?: string
@@ -28987,10 +29247,12 @@ export type Database = {
           created_at?: string
           docs_path?: string | null
           id?: string
+          last_reviewed_at?: string | null
           level?: string
           name?: string
           notes?: string | null
           parent_id?: string | null
+          review_notes?: string | null
           slug?: string
           status?: string
           updated_at?: string
@@ -29120,10 +29382,24 @@ export type Database = {
             referencedColumns: ["token"]
           },
           {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+          {
             foreignKeyName: "associations_target_type_fkey"
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
         ]
@@ -29196,6 +29472,42 @@ export type Database = {
           mode: string | null
           scored: number | null
           subject_kind: string | null
+        }
+        Relationships: []
+      }
+      v_lifecycle_registry_drift: {
+        Row: {
+          drift: string | null
+          entity_ref: string | null
+          feature_key: string | null
+          has_deleted_at: boolean | null
+          has_owner_column: boolean | null
+          has_soft_delete: boolean | null
+          owner_column: string | null
+          table_exists: boolean | null
+          token: string | null
+        }
+        Insert: {
+          drift?: never
+          entity_ref?: never
+          feature_key?: never
+          has_deleted_at?: never
+          has_owner_column?: never
+          has_soft_delete?: boolean | null
+          owner_column?: never
+          table_exists?: never
+          token?: string | null
+        }
+        Update: {
+          drift?: never
+          entity_ref?: never
+          feature_key?: never
+          has_deleted_at?: never
+          has_owner_column?: never
+          has_soft_delete?: boolean | null
+          owner_column?: never
+          table_exists?: never
+          token?: string | null
         }
         Relationships: []
       }
@@ -29308,6 +29620,7 @@ export type Database = {
         Args: { p_source_key: string }
         Returns: boolean
       }
+      build_lifecycle_reference_map: { Args: never; Returns: Json }
       clear_output_feedback: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
@@ -29411,6 +29724,16 @@ export type Database = {
         Returns: Json
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
+      lifecycle_map_is_fresh: { Args: never; Returns: boolean }
+      lifecycle_schema_fingerprint: { Args: never; Returns: string }
+      lifecycle_sweep_plan: {
+        Args: {
+          p_entity_token?: string
+          p_max_entities?: number
+          p_max_owners_per_entity?: number
+        }
+        Returns: Json
+      }
       list_my_presentable_assists: {
         Args: { p_limit?: number }
         Returns: {
