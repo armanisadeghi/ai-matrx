@@ -400,6 +400,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Assessments",
     hrefFor: (id) => `/education/quizzes/${id}`,
   },
+  study_media: {
+    Icon: AudioLines,
+    labelPlural: "Study Media",
+    hrefFor: (id) => `/education/media/${id}`,
+  },
   canvas_item: {
     Icon: Frame,
     labelPlural: "Canvas Items",

@@ -1,20 +1,24 @@
-# Community Library (`features/education/library`)
+# Education Library (`features/education/library`)
 
 > **P6 Phase C.** Browse/discover public study decks, the **Certified** editorial tier, and the ethical **suggest-edit** contribution flywheel. Consumes P7's public viewer + duplicate-to-edit.
 > Read before touching community-deck browsing, certification, or suggestions.
 
 ## What it is
 
-`/education/library` — a public (signed-out-friendly) surface over `visibility='public'` flashcard decks. Search + a **Certified-only** facet, certified-first ordering. Each deck: **View** (→ P7 public viewer `/p/e/fc_set/{id}`), **Study a copy** (P7 `DuplicateToEditButton` — anon → sign-up → fork), **Suggest edit** (signed-in), and an inline **Certify/Uncertify** toggle for super-admins.
+`/education/library` is the authenticated canonical entity-list surface for the learner's persisted study artifacts. It unifies `education.fc_set`, `education.assessment`, `education.study_media`, and `workbench.notes`, with the fixed **Mine / Shared / Public** scope vocabulary, server paging/filtering/sorting, and a real row door into each artifact's owning tool.
+
+`/education/library/community` preserves the signed-out-friendly public flashcard-deck browser. It offers search + a **Certified-only** facet and certified-first ordering. Each deck: **View** (→ P7 public viewer `/p/e/fc_set/{id}`), **Study a copy** (P7 `DuplicateToEditButton` — anon → sign-up → fork), **Suggest edit** (signed-in), and an inline **Certify/Uncertify** toggle for super-admins.
 
 ## Data model
 
-| Table | Role | Access |
-|---|---|---|
+| Table                             | Role                                                                                            | Access                                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `education.content_certification` | The "Certified" mark, polymorphic by `(resource_type, resource_id)` (`fc_set` now, extensible). | **Public read** (badges render everywhere, signed-out); writes ONLY via super-admin RPCs. |
-| `education.deck_suggestion` | Suggest-edit rows: `(resource, owner_id, suggested_by, body, status)`. | RLS read = contributor \| deck owner \| super-admin. Writes via RPCs. |
+| `education.deck_suggestion`       | Suggest-edit rows: `(resource, owner_id, suggested_by, body, status)`.                          | RLS read = contributor \| deck owner \| super-admin. Writes via RPCs.                     |
 
 RPCs (all `public.`, SECURITY DEFINER):
+
+- `edu_library_list_scoped` / `edu_library_scope_counts` / `edu_library_facets` — authenticated canonical-list reads across decks, assessments, study media, and notes. Scope is explicit (`mine`, `shared`, `public`); permissions and visibility are enforced server-side. Migration: `education_library_scoped_list.sql`.
 - `edu_public_decks(search, certified_only, limit, exam_slug)` — the listing read (public deck + card count via `platform.associations` member edges + certified status), anon-executable, **exposes only `visibility='public'`**. One round-trip, no N+1. **`exam_slug` filters on `fc_set.metadata->>'exam_slug'`** so the exam-prep hub reuses this exact RPC for its curated block (`fetchExamCertifiedDecks`). Card count counts `a.role='member'` — the column `fcService` writes (an earlier version counted `a.label`, always NULL → every deck showed 0 cards; fixed in `migrations/education_public_decks_exam_filter.sql`).
 - `edu_certify_content` / `edu_uncertify_content` — super-admin only (protected-style admin grant).
 - `edu_suggest_edit` — any authenticated user; resolves + denormalizes the deck owner, rejects self-suggestions.
@@ -24,18 +28,21 @@ Migrations: `education_content_certification.sql`, `education_deck_suggestion.sq
 
 ## Entry points
 
-| File | Role |
-|---|---|
-| `queries.ts` | Server SSR read of initial public decks (anon cookie-free client). |
-| `service.ts` | Client re-query as the user searches/filters (`edu_public_decks` RPC). |
-| `actions.ts` | Server actions: certify/uncertify (super-admin), suggest-edit, resolve, owner-inbox list. |
-| `components/CertifiedBadge.tsx` | The ONE certified trust mark — reuse everywhere, never restyle. |
-| `components/LibraryBrowser.tsx` · `DeckCard.tsx` | Browse grid + per-deck actions. |
-| `components/SuggestEditDialog.tsx` · `OwnerSuggestionInbox.tsx` | Contribution flywheel + owner inbox. |
-| `app/(core)/education/library/page.tsx` · `library/suggestions/page.tsx` | Routes. |
+| File                                                                                                    | Role                                                                                                            |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `queries.ts`                                                                                            | Server SSR read of initial public decks (anon cookie-free client).                                              |
+| `service.ts`                                                                                            | Canonical list service triple plus client re-query for the community browser.                                   |
+| `listConfig.tsx` · `columns.tsx` · `useEducationLibraryRowActions.tsx`                                  | One `EntityListPage` configuration: scopes, server-backed columns/facets, subtype-aware doors, and row actions. |
+| `actions.ts`                                                                                            | Server actions: certify/uncertify (super-admin), suggest-edit, resolve, owner-inbox list.                       |
+| `components/CertifiedBadge.tsx`                                                                         | The ONE certified trust mark — reuse everywhere, never restyle.                                                 |
+| `components/LibraryBrowser.tsx` · `DeckCard.tsx`                                                        | Browse grid + per-deck actions.                                                                                 |
+| `components/SuggestEditDialog.tsx` · `OwnerSuggestionInbox.tsx`                                         | Contribution flywheel + owner inbox.                                                                            |
+| `app/(core)/education/library/page.tsx` · `library/community/page.tsx` · `library/suggestions/page.tsx` | Artifact list, community browser, and suggestion-inbox routes.                                                  |
 
 ## Invariants
 
+- **Created artifacts are never hidden behind a public-only query.** Every target produced by Create Kit has a row in the Mine scope and a subtype-aware door to its owning detail surface.
+- **One canonical list shell.** The artifact Library is configured through `EntityListPage`; do not build a parallel table, scope vocabulary, or client-side complete-list query.
 - **Reuse, don't fork P7.** Viewing = `/p/e/fc_set/{id}` (P7 public viewer); copying = `DuplicateToEditButton`. The library never reimplements a viewer or a fork.
 - **Certification is admin-only, at the DB.** `content_certification` has no user write policy; only the super-admin SECURITY DEFINER RPCs + service_role write. A TS check is not the gate.
 - **`edu_public_decks` must only ever return `visibility='public'`** — it's anon-executable. Never widen its WHERE.
@@ -52,8 +59,9 @@ must never call them Certified. Generated via the real flashcards agent and pers
 canonical `fc_set`/`fc_card` tables + `role='member'` association edges +
 `content_certification`. They surface on each exam-prep page through
 `features/education/components/ExamCuratedLibrary.tsx` (`fetchExamCertifiedDecks(examSlug)` decks
-+ `getExamLearnDocs(examSlug)` guides) and in the community library's curated filter, rendered
-with the WP9 trust-state badge.
+
+- `getExamLearnDocs(examSlug)` guides) and in the community library's curated filter, rendered
+  with the WP9 trust-state badge.
 
 New corpus expansion uses `publishing/components/ExamContentPipeline.tsx`: official material is
 processed through canonical RAG, IC-3 retrieves exact passages, the existing converter runs
@@ -68,6 +76,8 @@ the human may make it public + curated. This path still creates an **AI-built st
 - The 9 seed decks are AI-generated starters — the certify flow exists for later **human** verification; more exams (ACT, IB, MCAT, LSAT, GMAT) follow the same seed recipe.
 
 ## Change log
+
+- **2026-08-21** — Split the user artifact Library from the community deck browser. `/education/library` now lists persisted decks, assessments, study media, and notes across Mine / Shared / Public; the public certified-deck browser moved intact to `/education/library/community`. Added subtype-aware routes so generated audio, summaries, mind maps, memory aids, quizzes, and practice tests open in their owning tools.
 - **2026-07-14** — Seeded the first curated exam libraries: 9 certified public decks (SAT/AP Bio/GRE, 128 cards) via the real generation agent, tagged `exam_slug`; `edu_public_decks` gained an `exam_slug` filter and a card-count fix (`role` not `label`); new `ExamCuratedLibrary` surfaces certified decks + guides on each exam-prep page.
 
 - **2026-07-07** — Phase C shipped: `content_certification` + `deck_suggestion` + `edu_public_decks` (migrations ledger-recorded), `/education/library` browse (search + certified facet + certify toggle), suggest-edit flywheel + owner inbox, `CertifiedBadge`, hub discovery link. Reuses P7's public viewer + duplicate-to-edit.

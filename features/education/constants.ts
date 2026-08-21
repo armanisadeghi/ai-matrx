@@ -31,10 +31,9 @@ export const EDU_BASE = "/education" as const;
  * (learn.aimatrx.com)" for the full cutover (DNS, Vercel domain, cookie
  * domain).
  */
-export const EDU_ORIGIN = (process.env.NEXT_PUBLIC_EDU_ORIGIN?.trim() || siteConfig.url).replace(
-  /\/$/,
-  "",
-);
+export const EDU_ORIGIN = (
+  process.env.NEXT_PUBLIC_EDU_ORIGIN?.trim() || siteConfig.url
+).replace(/\/$/, "");
 
 /**
  * The discovery axes, in nav/hub order. Each is a top-level path namespace
@@ -102,5 +101,5 @@ export function eduHref(...parts: string[]): string {
  * page. Used by the funnel CTA. Points at the hub for now; retarget when the
  * primary study workspace ships.
  */
-export const EDU_WORKSPACE_HREF = EDU_BASE;
+export const EDU_WORKSPACE_HREF = `${EDU_BASE}/overview`;
 export const EDU_WORKSPACE_LABEL = "Study Hub";

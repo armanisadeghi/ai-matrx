@@ -16,11 +16,13 @@ mix shapes.
 
 ## 1. The three layers
 
-| Layer | Shape | Where | Rendering | Example |
-|---|---|---|---|---|
-| **Marketing / discovery** | **Nested** under an axis, data-driven `[slug]` | `education/<axis>/[slug]` | 100% server, SEO, `MarketingPageShell` | `education/study-aids/flashcards` |
-| **SEO content** | Hierarchical catch-all | `education/learn/[...slug]` | 100% server, Article JSON-LD | `education/learn/biology/photosynthesis` |
-| **Application tools** | **Flat** — one segment per tool + its own sub-routes | `education/<tool>/…` | server shell + client islands | `education/flashcards/[setId]/study` |
+| Layer                     | Shape                                                | Where                       | Rendering                              | Example                                  |
+| ------------------------- | ---------------------------------------------------- | --------------------------- | -------------------------------------- | ---------------------------------------- |
+| **Marketing / discovery** | **Nested** under an axis, data-driven `[slug]`       | `education/<axis>/[slug]`   | 100% server, SEO, `MarketingPageShell` | `education/study-aids/flashcards`        |
+| **SEO content**           | Hierarchical catch-all                               | `education/learn/[...slug]` | 100% server, Article JSON-LD           | `education/learn/biology/photosynthesis` |
+| **Application tools**     | **Flat** — one segment per tool + its own sub-routes | `education/<tool>/…`        | server shell + client islands          | `education/flashcards/[setId]/study`     |
+
+`/education` is the marketing landing. `/education/overview` is the authenticated, compact product-navigation hub. They are deliberately separate: marketing content never masquerades as the signed-in navigation surface.
 
 ### The load-bearing rule: marketing is nested, the app is flat
 
@@ -61,7 +63,7 @@ The `[id]` view/use surface and the `[id]/edit` authoring surface share one reso
 are **gated differently**, which is what makes sharing clean:
 
 - **`[id]` and its use-modes → gated by VIEW access.** Owner, org, a shared user, or public (per
-  the item's `visibility` / share grant) can open and *use* it. This is the URL you share.
+  the item's `visibility` / share grant) can open and _use_ it. This is the URL you share.
 - **`[id]/edit` → gated by EDIT permission.** Only the owner or an editor-shared user. A
   view-only sharee who hits `/edit` is **redirected to `[id]`** (never a hard 404 for a resource
   they can see).
@@ -73,7 +75,7 @@ view surface (to show "Make a copy" where level is `view`). Backed by `get_resou
 `iam.has_access`; **do not roll a bespoke check.** Recipe: [`features/sharing/FEATURE.md`](../../../features/sharing/FEATURE.md) "View-vs-edit access gate". The point of the separate `/edit` segment is that the gate is one guard at one route, not scattered through a component.
 
 > **No route renders a coming-soon placeholder today** — all 16 tools graduated to real surfaces.
-> The `EduComingSoon` / `EduToolComingSoon` mechanism stays live for the *next* unbuilt tool: it
+> The `EduComingSoon` / `EduToolComingSoon` mechanism stays live for the _next_ unbuilt tool: it
 > reserves the route and documents the surface + its gate via
 > `<EduToolComingSoon slug surface={{label, gate}} />`, and gets its guard when the real surface
 > lands. Zero consumers is the success condition here, not dead code.
@@ -83,31 +85,31 @@ view surface (to show "Make a copy" where level is `view`). Backed by `get_resou
 **Every tool below is BUILT and renders a real surface.** A `—` means the tool has no such surface
 by design, not that it is unfinished.
 
-| Tool (flat slug) | Library | Create | View/use `[id]` | Edit | Use-modes / extras |
-|---|---|---|---|---|---|
-| `flashcards` | ✓ | `/new`, `/new/from-source`, `/new/import` | `/[setId]` (VIEW-gated) | `/[setId]/edit` (EDIT-gated) | `/study` `/learn` `/test` `/write` `/match` `/sessions`; plus `/review`, `/weak-areas`, `/sessions`, `/sessions/[sessionId]`, `/progress` (→ `/education/progress`), `/admin` |
-| `fastfire` | launcher (`?set=`) | — | — (consumes sets) | — | `/capture-test` (admin/dev harness) |
-| `quizzes` | ✓ | `/new` | `/[id]` (take) | `/[id]/edit` | `/[id]/results` |
-| `practice-tests` | ✓ | `/new` | `/[id]` (take) | `/[id]/edit` | `/[id]/results` |
-| `tutor` | ✓ (recent) | `/new` | `/[conversationId]` | — | — |
-| `audio-study` | ✓ | `/new` | `/[id]` (player) | `/[id]/edit` | `/review` (audio review session) |
-| `mind-maps` | ✓ | `/new` | `/[id]` (map) | `/[id]/edit` | — |
-| `memory` | ✓ | `/new` | `/[id]` | `/[id]/edit` | — |
-| `notes` | ✓ | `/new` | `/[id]` | `/[id]/edit` | — |
-| `summaries` | ✓ | — (converter-produced) | `/[id]` | — | index shipped 2026-08-20; `EDU_TOOLS` entry gives it the hub door |
-| `planner` | ✓ (dashboard) | — | — (personal) | — | — |
-| `progress` | ✓ | — | — (personal) | — | `/learning-gain` |
-| `practice-oral` | ✓ (single surface) | — | — | — | — |
-| `grade-work` | ✓ (single surface) | — | — | — | — |
-| `game` | ✓ | `/host` | `/play/[roomId]` | — | `/join`, `/solo` |
-| `classes` | ✓ | — (dialog) | `/[classId]` | — | `/join` |
-| `family` | ✓ | — | `/[studentId]` (read-only) | — | — |
-| `creator` | ✓ (dashboard) | — | — | — | public face is `/c/[handle]`, outside `(core)` |
-| `library` | ✓ | — | — (browses `fc_set`) | — | `/suggestions` (owner inbox, linked from the library header) |
-| `start` | — | onboarding hero | — | — | — |
-| `data` | — | — | — | — | data-ownership / export / delete |
-| `offline` | — | — | — | — | offline shell — doors: the queue-depth chip + `/education/data` |
-| `media` | — | — | `/[id]` (kind router) | — | the canonical `study_media` entity route — see below |
+| Tool (flat slug) | Library                                    | Create                                    | View/use `[id]`                       | Edit                         | Use-modes / extras                                                                                                                                                            |
+| ---------------- | ------------------------------------------ | ----------------------------------------- | ------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `flashcards`     | ✓                                          | `/new`, `/new/from-source`, `/new/import` | `/[setId]` (VIEW-gated)               | `/[setId]/edit` (EDIT-gated) | `/study` `/learn` `/test` `/write` `/match` `/sessions`; plus `/review`, `/weak-areas`, `/sessions`, `/sessions/[sessionId]`, `/progress` (→ `/education/progress`), `/admin` |
+| `fastfire`       | launcher (`?set=`)                         | —                                         | — (consumes sets)                     | —                            | `/capture-test` (admin/dev harness)                                                                                                                                           |
+| `quizzes`        | ✓                                          | `/new`                                    | `/[id]` (take)                        | `/[id]/edit`                 | `/[id]/results`                                                                                                                                                               |
+| `practice-tests` | ✓                                          | `/new`                                    | `/[id]` (take)                        | `/[id]/edit`                 | `/[id]/results`                                                                                                                                                               |
+| `tutor`          | ✓ (recent)                                 | `/new`                                    | `/[conversationId]`                   | —                            | —                                                                                                                                                                             |
+| `audio-study`    | ✓                                          | `/new`                                    | `/[id]` (player)                      | `/[id]/edit`                 | `/review` (audio review session)                                                                                                                                              |
+| `mind-maps`      | ✓                                          | `/new`                                    | `/[id]` (map)                         | `/[id]/edit`                 | —                                                                                                                                                                             |
+| `memory`         | ✓                                          | `/new`                                    | `/[id]`                               | `/[id]/edit`                 | —                                                                                                                                                                             |
+| `notes`          | ✓                                          | `/new`                                    | `/[id]`                               | `/[id]/edit`                 | —                                                                                                                                                                             |
+| `summaries`      | ✓                                          | — (converter-produced)                    | `/[id]`                               | —                            | index shipped 2026-08-20; `EDU_TOOLS` entry gives it the hub door                                                                                                             |
+| `planner`        | ✓ (dashboard)                              | —                                         | — (personal)                          | —                            | —                                                                                                                                                                             |
+| `progress`       | ✓                                          | —                                         | — (personal)                          | —                            | `/learning-gain`                                                                                                                                                              |
+| `practice-oral`  | ✓ (single surface)                         | —                                         | —                                     | —                            | —                                                                                                                                                                             |
+| `grade-work`     | ✓ (single surface)                         | —                                         | —                                     | —                            | —                                                                                                                                                                             |
+| `game`           | ✓                                          | `/host`                                   | `/play/[roomId]`                      | —                            | `/join`, `/solo`                                                                                                                                                              |
+| `classes`        | ✓                                          | — (dialog)                                | `/[classId]`                          | —                            | `/join`                                                                                                                                                                       |
+| `family`         | ✓                                          | —                                         | `/[studentId]` (read-only)            | —                            | —                                                                                                                                                                             |
+| `creator`        | ✓ (dashboard)                              | —                                         | —                                     | —                            | public face is `/c/[handle]`, outside `(core)`                                                                                                                                |
+| `library`        | ✓ (decks, assessments, study media, notes) | —                                         | subtype-aware doors into owning tools | —                            | `/community` (public certified decks), `/suggestions` (owner inbox)                                                                                                           |
+| `start`          | —                                          | onboarding hero                           | —                                     | —                            | —                                                                                                                                                                             |
+| `data`           | —                                          | —                                         | —                                     | —                            | data-ownership / export / delete                                                                                                                                              |
+| `offline`        | —                                          | —                                         | —                                     | —                            | offline shell — doors: the queue-depth chip + `/education/data`                                                                                                               |
+| `media`          | —                                          | —                                         | `/[id]` (kind router)                 | —                            | the canonical `study_media` entity route — see below                                                                                                                          |
 
 **Admin-only routes:** `/education/admin`, `/education/flashcards/admin`, `/education/learn/admin`,
 `/education/fastfire/capture-test`.
@@ -144,7 +146,7 @@ recorded here on 2026-08-19 were all closed on 2026-08-20:
   no door at all.
 
 > ✅ **`flashcards/[setId]/edit` is built + EDIT-gated** (P7, 2026-07-07): `requireAccess("fc_set",
-> setId, "edit", { redirectTo })` redirects a view-only sharee to the view page, which offers
+setId, "edit", { redirectTo })` redirects a view-only sharee to the view page, which offers
 > "Make a copy" (`DuplicateToEditButton`). This is the reference wiring — gate every tool the same
 > way with `useAccess` / `requireAccess` (see [`features/sharing/FEATURE.md`](../../../features/sharing/FEATURE.md) "View-vs-edit access gate").
 
@@ -155,13 +157,13 @@ recorded here on 2026-08-19 were all closed on 2026-08-20:
 - **Server-first.** Page files are Server Components. No `"use client"` on a `page.tsx` — push
   interactivity into a client leaf the page imports (Next code-splits it; `dynamic({ssr:false})`
   is illegal in a Server Component). Heavy browser-only clients (mic/canvas/katex) → `dynamic({
-  ssr:false })` via a wrapper.
+ssr:false })` via a wrapper.
 - **Metadata via the helpers.** Marketing/content: `createDynamicRouteMetadata` (with `keywords`
-  + `canonicalPath`). Tools: `toolMetadata("<slug>")`. Never hand-roll `<title>`.
+  - `canonicalPath`). Tools: `toolMetadata("<slug>")`. Never hand-roll `<title>`.
 - **Marketing/content body markup → `SectionRenderer` only**, fed by the registries in
   `features/education/data/`. New block kind = extend the `EduSection` union + add one branch.
 - **Coming-soon = `EduComingSoon` / `EduToolComingSoon`.** Never a bespoke "under construction".
-- **Graduation in place.** A tool's real build *replaces* its coming-soon at the **same slug** —
+- **Graduation in place.** A tool's real build _replaces_ its coming-soon at the **same slug** —
   it never moves to a new path and never lands in `(transitional)`/`(legacy)`/a sibling feature.
 - **Icons:** Lucide only, and **validate at runtime** — lucide dropped brand icons (`Youtube`…),
   which pass `tsc` but 500 the route (`node -e "console.log('X' in require('lucide-react'))"`).
@@ -176,7 +178,7 @@ recorded here on 2026-08-19 were all closed on 2026-08-20:
   file stays thin and imports from it.
 - Registries (the data that drives marketing + tool placeholders): `features/education/data/`.
 - Add a new tool → add an `EduToolEntry` to `data/tools.ts`, create `education/<tool>/page.tsx`
-  + the canonical sub-routes above as placeholders, and update this file's per-tool table.
+  - the canonical sub-routes above as placeholders, and update this file's per-tool table.
 
 ---
 
@@ -187,7 +189,8 @@ surface. If you add or remove a route, update this tree in the same change.
 
 ```
 app/(core)/education/
-├─ page.tsx                         Hub landing (data-driven off EDU_TOOLS)
+├─ page.tsx                         Marketing/discovery landing
+├─ overview/        page · loading  Compact authenticated navigation hub
 ├─ layout.tsx · loading.tsx · error.tsx · ROUTING.md · VISION-education-hub.md (pointer stub)
 │
 │  ── MARKETING AXES (nested, data-driven [slug], server, SEO) ──
@@ -222,7 +225,7 @@ app/(core)/education/
 ├─ classes/         page · join · [classId]
 ├─ family/          page · [studentId]
 ├─ creator/         page                     (public face: /c/[handle], outside (core))
-├─ library/         page · suggestions
+├─ library/         page · community · suggestions
 ├─ start/           page
 ├─ data/            page
 ├─ offline/         page
@@ -233,6 +236,8 @@ app/(core)/education/
 ---
 
 ## Change log
+
+- **2026-08-21** — Separated the marketing landing from signed-in navigation (`/overview`) and split the canonical artifact Library (`/library`) from the signed-out-friendly certified-deck browser (`/library/community`). Library rows route by persisted artifact subtype.
 - **2026-08-20** — The four route-graph gaps are CLOSED. Added `/education/summaries` (index +
   `EDU_TOOLS` entry), the Community Library's suggestion-inbox door (with open count), the offline
   surface's two doors (the `/education/data` card + the outbox queue-depth chip), and recorded

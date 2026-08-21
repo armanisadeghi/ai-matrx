@@ -16,8 +16,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { InstallStudyAppButton } from "@/features/education/components/InstallStudyAppButton";
+import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 import {
-  BrainCircuit,
   CalendarClock,
   Flame,
   Target,
@@ -254,13 +254,11 @@ export function StudyTodayCard() {
                 learner may re-point at their own agent, and no education
                 surface named that. Deep-linked to the `education` domain: the
                 bare list is 264 mandates across 45 domains. */}
-            <Link
-              href="/agents/mandates?feature=education"
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <BrainCircuit className="h-3.5 w-3.5" />
-              Study agents
-            </Link>
+            <MandateDoorLink
+              feature="education"
+              label="Study agents"
+              variant="inline"
+            />
             <Link
               href="/education/progress"
               className="text-xs text-muted-foreground hover:text-foreground"

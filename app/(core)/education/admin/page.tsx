@@ -29,10 +29,18 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: "/education",
-      label: "Hub home",
+      label: "Marketing home",
       description:
-        "Landing / savior list view into all axes, content, and tools.",
+        "Public Education landing with product marketing, discovery axes, content, and tool conversion paths.",
       filePath: "app/(core)/education/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/overview",
+      label: "Signed-in study overview",
+      description:
+        "Compact navigational hub over Create Kit, Library, Guides, Plan, Progress, and every registered Education tool.",
+      filePath: "app/(core)/education/overview/page.tsx",
       status: "Live",
     },
     {
@@ -126,10 +134,22 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/education/library",
-      label: "Community Library (P6-C)",
+      label: "Artifact Library",
       description:
-        "Public browse over community decks (edu_public_decks): search, Certified-only facet, view (P7 /p/e), duplicate-to-edit, suggest-edit. Super-admins certify inline.",
+        "Authenticated canonical entity list over created decks, assessments, study media, and notes, with Mine, Shared, and Public scopes.",
       filePath: "app/(core)/education/library/page.tsx",
+      status: "Live",
+      notes: [
+        "RPC family: edu_library_list_scoped / edu_library_scope_counts / edu_library_facets",
+        "Feature: features/education/library/**",
+      ],
+    },
+    {
+      url: "/education/library/community",
+      label: "Community deck library (P6-C)",
+      description:
+        "Signed-out-friendly public deck browser: search, Certified-only facet, view, duplicate-to-edit, and suggest-edit.",
+      filePath: "app/(core)/education/library/community/page.tsx",
       status: "Live",
       notes: [
         "Certified tier: education.content_certification (super-admin RPCs edu_certify_content/edu_uncertify_content)",
@@ -171,7 +191,8 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/education/fastfire",
       label: "FastFire",
-      description: "App tool — LIVE. Signature spoken-recall drill with live per-card AI grading.",
+      description:
+        "App tool — LIVE. Signature spoken-recall drill with live per-card AI grading.",
       filePath: "app/(core)/education/fastfire/page.tsx",
       status: "Live",
     },
@@ -674,8 +695,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "GradeWorkSurface",
-      filePath:
-        "features/education/assessment/grade-work/GradeWorkSurface.tsx",
+      filePath: "features/education/assessment/grade-work/GradeWorkSurface.tsx",
       description:
         "Standalone 'Grade my handwritten work' surface (problem + rubric + snap photo → step-level verdict). Code-split via GradeWorkClient (ssr:false); orchestration in useGradeWork (gradeAnswerImage → vision grader → studyService). Metered via education.image_grade.",
       tier: "official",

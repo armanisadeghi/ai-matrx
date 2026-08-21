@@ -14,9 +14,8 @@ import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 const EDUCATION_NAV_ITEMS = [
   {
     name: "Overview",
-    href: "/education",
+    href: "/education/overview",
     icon: GraduationCap,
-    exact: true,
   },
   {
     name: "Create kit",

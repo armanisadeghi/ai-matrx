@@ -1,37 +1,21 @@
-// Community Library (P6 Phase C) — public browse over community decks.
-// Signed-out friendly (view + duplicate-to-edit route through P7); super-admins
-// get inline certify controls.
-
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
-import {
-  fetchInitialPublicDecks,
-  fetchOwnerOpenSuggestionCount,
-} from "@/features/education/library/queries";
-import { LibraryBrowser } from "@/features/education/library/components/LibraryBrowser";
+import { loginHref } from "@/utils/auth/auth-destination";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { EducationLibraryPage } from "@/features/education/library/components/EducationLibraryPage";
 
 export const metadata: Metadata = createRouteMetadata("/education", {
-  titlePrefix: "Community Library",
+  titlePrefix: "Library",
   title: "Education",
   description:
-    "Free, public study decks from the AI Matrx community — study a copy, suggest an improvement, and look for editorially Certified decks.",
+    "Find your flashcards, assessments, study media, and notes in one scoped Education Library.",
   letter: "Lb",
   canonicalPath: "/education/library",
 });
 
-export default async function CommunityLibraryPage() {
-  const [status, initialDecks, openSuggestions] = await Promise.all([
-    getCurrentUserAdminStatus(),
-    fetchInitialPublicDecks(),
-    fetchOwnerOpenSuggestionCount(),
-  ]);
-  return (
-    <LibraryBrowser
-      initialDecks={initialDecks}
-      isSuperAdmin={status?.level === "super_admin"}
-      isSignedIn={!!status}
-      openSuggestionCount={openSuggestions}
-    />
-  );
+export default async function EducationLibraryRoute() {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) redirect(loginHref("/education/library"));
+  return <EducationLibraryPage />;
 }
