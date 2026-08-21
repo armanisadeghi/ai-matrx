@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Sparkles } from "lucide-react";
+import { FileText, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -46,7 +46,7 @@ export function SummaryHome() {
         <div className="flex items-center justify-end">
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/education/start">
-              <Sparkles className="h-4 w-4" />
+              <BrainCircuit className="h-4 w-4" />
               Summarize something
             </Link>
           </Button>
@@ -66,7 +66,7 @@ export function SummaryHome() {
             </p>
             <Button asChild size="sm" className="gap-1.5">
               <Link href="/education/start">
-                <Sparkles className="h-4 w-4" />
+                <BrainCircuit className="h-4 w-4" />
                 Create a study kit
               </Link>
             </Button>

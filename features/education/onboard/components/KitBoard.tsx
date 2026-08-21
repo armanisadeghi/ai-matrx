@@ -32,6 +32,7 @@ import type { Phase } from "@/types/python-generated/stream-events";
 import type { useKitGeneration } from "../useKitGeneration";
 import type { KitTargetState } from "../types";
 import { KitAudioRunner } from "./KitAudioRunner";
+import { formatElapsed } from "./elapsed";
 
 /** Student-facing words for the agent's stream phase. Never raw enum text. */
 const PHASE_COPY: Partial<Record<Phase, string>> = {
@@ -58,13 +59,6 @@ function useNow(active: boolean): number {
     return () => clearInterval(id);
   }, [active]);
   return now;
-}
-
-export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return m > 0 ? `${m}m ${String(s).padStart(2, "0")}s` : `${s}s`;
 }
 
 /** Motion that means "work is happening" when there is no honest percentage. */
