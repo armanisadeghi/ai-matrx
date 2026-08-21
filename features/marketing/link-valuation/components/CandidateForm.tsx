@@ -60,6 +60,7 @@ const ENTITY_GROUPS: readonly {
   {
     key: "page",
     label: "The page",
+    // access-errors: ok — form-field hint about a prospective external page, not a failed read
     hint: "Leave empty when the placement page does not exist yet.",
   },
   {

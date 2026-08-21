@@ -227,6 +227,7 @@ function MarketingConnectionsContent() {
         description: `${discovered.length} owned channel${discovered.length === 1 ? "" : "s"} found. Choose one and load its read-only preview.`,
       });
     } catch (error) {
+      // access-errors: ok — verified OAuth outcome from the provider flow, not an RLS guess
       toast.error("YouTube was not authorized", {
         description:
           error instanceof Error

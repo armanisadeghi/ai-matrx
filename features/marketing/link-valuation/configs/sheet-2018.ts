@@ -59,6 +59,7 @@ export const SHEET_2018_CONFIG: LinkValuationConfig = {
       entity: "page",
       valueKind: "number",
       semantic:
+        // access-errors: ok — metric description for a prospective external page, not a failed read
         "The same 0–100 strength estimate scoped to ONE PAGE rather than the domain. Undefined for a page that does not exist yet.",
       scale: NUMBER_SCALE,
       sources: [

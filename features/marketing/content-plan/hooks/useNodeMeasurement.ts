@@ -98,6 +98,7 @@ export function useNodeMeasurement(args: {
 export function nodeMeasurementSummary(measurement: NodeMeasurement): string {
   switch (measurement.state) {
     case "no-page":
+      // access-errors: ok — a crawl-verified fact about the website, not a guess about a failed read
       return "Measured: nothing yet — this page does not exist on the website.";
     case "unpublished":
       return "Measured: nothing yet — this page is not published.";

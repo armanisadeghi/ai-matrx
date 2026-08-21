@@ -144,6 +144,7 @@ const signals: SignalDef[] = [
     entity: "page",
     valueKind: "number",
     semantic:
+      // access-errors: ok — metric description for a prospective external page, not a failed read
       "0–100 strength of the SPECIFIC placement page. Leave empty when the page does not exist yet — that is the normal case for a guest post, and empty is honest where 0 would be a lie.",
     scale: zeroToHundred,
     sources: [
@@ -480,6 +481,7 @@ export const MATRX_V1_CONFIG: LinkValuationConfig = {
       key: "page_authority",
       label: "Page Authority",
       description:
+        // access-errors: ok — metric description for a prospective external page, not a failed read
         "How strong is the specific placement page? Legitimately absent for a page that does not exist yet.",
       members: [
         {
@@ -631,6 +633,7 @@ export const MATRX_V1_CONFIG: LinkValuationConfig = {
       mode: "average",
       weight: 1,
       explain:
+        // access-errors: ok — metric description for a prospective external page, not a failed read
         "How strong the specific page is. Absent for a page that does not exist yet.",
       enabled: true,
     },

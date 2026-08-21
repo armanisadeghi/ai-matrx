@@ -149,12 +149,14 @@ function scan(): Finding[] {
       // A comment explaining the class is not an instance of it — including
       // a JSX comment, which opens `{/*` and so slipped past the first two
       // tests for years (NodePanel's note about the unbuilt-page state was
-      // reported as copy no human reads).
+      // reported as copy no human reads). A bare `/*` opener (a comment as a
+      // JSX expression after `(`/`?`) is the same case in a fourth spelling.
       const trimmed = text.trim();
       if (
         trimmed.startsWith("*") ||
         trimmed.startsWith("//") ||
-        trimmed.startsWith("{/*")
+        trimmed.startsWith("{/*") ||
+        trimmed.startsWith("/*")
       )
         return;
       if (MATCHING.test(text)) return;

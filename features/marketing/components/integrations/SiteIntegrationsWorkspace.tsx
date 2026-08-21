@@ -631,6 +631,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         description: `${discovered.length} propert${discovered.length === 1 ? "y" : "ies"} found. Choose the exact property above, then connect it to ${site.domain}.`,
       });
     } catch (error) {
+      // access-errors: ok — verified OAuth outcome from the provider flow, not an RLS guess
       toast.error("Google Analytics was not authorized", {
         description:
           error instanceof Error
