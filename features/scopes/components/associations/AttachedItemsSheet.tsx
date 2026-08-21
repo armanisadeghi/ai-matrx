@@ -8,7 +8,8 @@
 // association edge's stored label: the edge label is a snapshot from attach
 // time and goes stale the moment the target is renamed (and many existing edges
 // have no label at all). Ids the viewer cannot read are omitted by the RPC, so
-// they surface here as "No longer available" instead of leaking a name.
+// they resolve through the access gate (`UnresolvedEntityRef`) instead of this
+// surface guessing why.
 //
 // Adaptive per project rule: a NON-BLOCKING draggable `WindowPanel` on
 // desktop (the page behind stays interactive), bottom Drawer on mobile.
@@ -23,9 +24,11 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { AlertTriangle, Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
+import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { fetchEntityTitles } from "@/features/sharing/service/accessSummary";
@@ -163,6 +166,16 @@ function AttachedItemsBody({
     .sort()
     .join(",");
 
+  // Ids whose title the RPC omitted AND whose edge kept no label: the platform
+  // resolves WHY each one is unreadable instead of this surface guessing.
+  const unresolvedIds =
+    titles === null
+      ? []
+      : links
+          .filter((l) => !titles.has(l.resourceId) && l.label == null)
+          .map((l) => l.resourceId);
+  const access = useAccessStates(token, unresolvedIds);
+
   useEffect(() => {
     if (!enabled) return;
     const ids = idKey ? idKey.split(",") : [];
@@ -244,16 +257,12 @@ function AttachedItemsBody({
                   <info.Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="flex-1 min-w-0 truncate">
                     {name === null ? (
-                      // The edge points at something this viewer cannot read
-                      // (deleted, or access revoked). Say so loudly — the X
-                      // beside it is the one-click fix.
-                      <span
-                        className="inline-flex items-center gap-1 text-destructive"
-                        title="This item was deleted or is no longer shared with you. Detach it with the X."
-                      >
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                        Unresolved — deleted or no longer shared
-                      </span>
+                      // The X beside the row stays the one-click detach.
+                      <UnresolvedEntityRef
+                        id={link.resourceId}
+                        context={access.states.get(link.resourceId) ?? null}
+                        onChanged={access.refresh}
+                      />
                     ) : (
                       <EntityRef
                         token={token}
