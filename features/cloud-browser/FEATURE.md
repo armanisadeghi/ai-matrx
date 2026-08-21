@@ -57,6 +57,31 @@ knows them passes them.
 controller sees "X asked to take over" in their own banner and grants it by returning
 control. It never wrests the wheel away, and it is no longer an alias for Take.
 
+## Saving a login the agent has no credential for (D-11 capture card)
+
+When the agent hits a sign-in it has no stored credential for, it calls
+`credential_login action="capture"` instead of asking the person to type a
+password where it can see one. The aidream executor raises a
+`credentials_missing` handoff carrying the card's SPEC — display name, the
+agent's field NAMES + selectors, the known/unknown recipe branch, the expiry —
+on `browser.handoff.metadata.capture_request`, which this surface already reads.
+`CredentialCaptureCard` renders from it, and the outcome (status + the new vault
+item id, never a value) goes to `POST …/runs/{id}/capture-result`, which retires
+the card and hands the browser back to the agent — the person never has to take
+control just to give it away again.
+
+🚨 **The leak boundary is that one component.** Typed values live in its local
+state and go DIRECTLY to `POST /api/vault/browser-login/capture`; they never
+enter Redux, a toast, a log, the control plane, or anything the agent reads. The
+card SAVES only — the agent signs in afterwards with `action="auto"`, which is
+what keeps the fill value-free. The peer implementation is matrx-extend's
+`AgentCaptureCredentialCard` (same request shape, same expiry semantics); a
+change to one belongs in both.
+
+`LoginCapturePanel` is the different, person-initiated case: someone driving the
+browser signs in themselves, with generic selectors, and the values also fill the
+live form. When an agent-raised capture card is open, it takes precedence.
+
 ## Entry points
 
 - **First composer:** the globe beside the `/chat/new` composer opens the same
@@ -111,6 +136,17 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-08-21 — the D-11 credential capture card (both halves):** `credential_login
+  action="capture"` on the cloud browser used to return `human_required` guidance
+  because the private value box existed only in the Chrome extension. It now raises
+  a handoff whose `metadata.capture_request` carries the card spec, and this repo
+  renders `components/CredentialCaptureCard.tsx` from it — values straight to the
+  vault, a value-free receipt to the new `POST …/runs/{id}/capture-result`, and the
+  agent unparked without a takeover. aidream side:
+  `BrowserManager.open_capture_card` / `record_capture_outcome`
+  (`aidream/services/cloud_browser/FEATURE.md`). Ship both halves — the card 404s
+  on `capture-result` until aidream deploys.
 
 - **2026-08-21 — takeover steer/interrupt (D-25), both halves:** Take control is no
   longer gated on `handoff.state === "requested"` — aidream gained
