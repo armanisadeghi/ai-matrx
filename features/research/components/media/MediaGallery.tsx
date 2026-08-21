@@ -61,7 +61,9 @@ import {
   ResearchMediaOpen,
   isOwnedMedia,
   mediaMimeType,
+  researchMediaRef,
 } from "./ownedMedia";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { uploadFileWithProgress } from "@/features/files/api/files";
