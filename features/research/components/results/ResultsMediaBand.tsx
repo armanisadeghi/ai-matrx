@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { ImageIcon, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResearchMediaImage } from "../media/ownedMedia";
 import type { ResearchMedia } from "../../types";
 
 const MAX_IMAGES = 8;
@@ -79,7 +80,6 @@ function MediaTile({
   index: number;
   href: string;
 }) {
-  const src = image.thumbnail_url || image.url;
   const label = image.alt_text || image.caption || "Research image";
 
   return (
@@ -96,12 +96,12 @@ function MediaTile({
           "transition-colors hover:border-border",
         )}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={label}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        {/* Owned uploads resolve from their file_id (a signed URL is a
+            handoff, never an identity); discovered images render their source
+            URL. Both go through the one renderer. */}
+        <ResearchMediaImage
+          item={image}
+          className="h-full w-full transition-transform duration-300 group-hover:scale-105"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         {(image.caption || image.alt_text) && (
