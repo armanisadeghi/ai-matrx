@@ -36,6 +36,7 @@ that is the exit-test surface.
 | **THE LIVE RUN EXPERIENCE** | `components/run/RunStage.tsx` | The surface a person actually watches, composed like the podcast studio: hero + promise → journey rail + activity feed → authored readouts → deliverables. Hoists the authored progress rails into the always-visible journey (`hideProgressRails`) and renders the failure/interrupt cards itself (`hideRunStatusCards`), so nothing is drawn twice. Falls back to `deriveDefaultSurfaceConfig` when a workflow has no authored surface. |
 | **The catalog** | `browse/` → `app/(core)/workflows/all/page.tsx` | `/workflows/all` on the CANONICAL entity-list shell (`lib/entity-list`) — not a bespoke grid. Config in `browse/listConfig.tsx`; rows from `public.wfx_list_scoped` read DIRECT via supabase-js (`browse/service.ts`), never through the Python server. Table-first with every column sorting AND filtering server-side, card + dense views, Mine / My Orgs / Shared / Public with true server counts, relevance-ranked search. ONE `ItemMenuConfig` builder (`browse/workflowActionRegistry.tsx`) feeds the table kebab, the card kebab, the dense-row kebab and right-click, so the three-drifting-action-lists failure that hit agents cannot happen here. |
 | Catalog RPCs | `migrations/wfx_list_scoped.sql` | `wfx_list_scoped` / `wfx_list_scope_counts` / `wfx_list_facets` / `wfx_bucket_matches`, hand-written from the template in `lib/list-scope/FEATURE.md`. Owner column is `created_by` (agents use `user_id`); `iam.permissions.resource_type` is `'workflow'`. Relevance comes from `public.mtx_search_score` — the GENERIC scorer, not a fourth copy of `agx_search_score`: it reproduces agx's tiers exactly on the shared parity fixture (12/12 MATCH), with the per-feature extras passed as `p_extra_300` / `p_extra_100` arrays. |
+| **Sharing — the card** | `migrations/wfx_card.sql`, `migrations/wfx_duplicate.sql` | Workflows use the AGENT sharing model verbatim (Arman, 2026-08-20): **anything you can view, you may duplicate and run.** `workflow.card` is a view over the definition — the public face — gated by `card_visibility`, which is INDEPENDENT of the body's `visibility`. `wfx_duplicate_definition` / `wfx_duplicate_version` mirror `agx_duplicate_agent` / `agx_duplicate_version`, including the `iam.has_access_for(..., 'viewer')` gate; they carry no `p_as_system` because workflows have no builtin tier. The card is a PROJECTION of the workflow, not a second entity — `platform._enforce_entity_is_table` forbids registering a view as an entity, so there is **no card-only per-person grant**; broadcast reach is `card_visibility`. |
 | Run status vocabulary | `run-status.tsx` | THE one place a `workflow.run.status` becomes words and an icon (`RUN_STATUS_LABEL`, `RUN_STATUS_PHASE`, `runStatusLabel`, `RunStatusChip`). There were two disagreeing copies before it — `ReadoutView`'s and the old catalog's ("completed" was "Done" in one and "Finished" in the other) — and the list page would have been a third. Both now import from here. |
 | Run routes | `app/(core)/workflows/[id]/page.tsx`, `app/(core)/workflows/runs/[runId]/page.tsx` → `components/run/WorkflowRunPage.tsx` | One body, two doors: `/workflows/[id]` sets up + runs (run id rides `?run=`), `/workflows/runs/[runId]` is the run's permalink (THE DOOR LAW). Each resolves the other, so a refresh always lands back on the live run. `(core)` conformant: `RouteHeader`, body `h-full overflow-hidden`, one inner scroll. |
 | Hero + the promise | `components/run/RunHero.tsx` | Status, elapsed (from the ENGINE's start, not the attach), cost, step count, and the chip row naming every deliverable **from frame zero** — the ProductionTeaser job, generalized. Fixed heights: nothing below it moves as state changes. |
@@ -101,7 +102,13 @@ that is the exit-test surface.
    the slice; every other path SETS. A re-adoption refolds the whole durable log with
    `replay: true` (dedup bypassed by design), so appends ride the `appendedThroughSeq` watermark.
    Without it, opening a run twice printed the entire activity feed twice.
-13. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
+13. **A workflow GRAPH is never public.** `workflow_definition_body_not_public_chk` bans `public`
+   on `workflow.definition.visibility` at the DB edge — the graph is the author's craft, exactly
+   as an agent's prompt body is. The public face is the CARD (`card_visibility`). Anything that
+   publishes a workflow writes `card_visibility`; a "make public" control that writes `visibility`
+   is a defect that raises 23514. Never reintroduce a boolean `is_public` — agents deleted theirs
+   deliberately.
+14. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
    terminal run event — a finished run never keeps polling.
 
 ## Doctrine
@@ -135,6 +142,23 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-08-20 — **Workflows became shareable on the agent model.** `card_visibility` +
+  the `workflow.card` view + `workflow_definition_body_not_public_chk` (`wfx_card.sql`);
+  `wfx_duplicate_definition` / `wfx_duplicate_version` mirroring the `agx` pair
+  (`wfx_duplicate.sql`); `wfx_list_scoped`'s **Public** scope repointed from `d.visibility`
+  (which the new invariant makes impossible — the tab was empty BY CONSTRUCTION) to
+  `card_visibility`, which it now also RETURNS so the client can explain and manage why a row is
+  public. `browse/service.ts`'s `duplicateWorkflow` was a client-side read-then-insert that
+  copied the SOURCE's `organization_id` and `visibility` onto the copy; it now calls the RPC and
+  the old path is deleted. Fixed on the way, and it was **already broken for agents** since
+  2026-08-12: `get_share_capabilities` preferred `visibility` unconditionally, so the ShareModal's
+  Public tab wrote a column the DB refuses — it now excludes any column banned by a
+  body-not-public CHECK, detected from the constraint rather than an allowlist. The Duplicate
+  action already existed in `browse/workflowActionRegistry.tsx` and needed no second list.
+  Live-verified: a stranger sees a public card but NOT the body; a card-only stranger cannot
+  duplicate; a viewer-level grantee can, and the copy lands in THEIR org, private, reputation
+  reset.
 
 - 2026-08-21 — **ui-dense wave-2 bake-off entry: the operations-desk run page** at
   `/workflows/bakeoff/dense-2/[id]` (`bakeoff/dense-2/**`) — a candidate
