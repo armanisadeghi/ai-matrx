@@ -625,8 +625,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   `seo.keyword_classification_status()` and driving the durable backfill ledger
   through one bounded pass per press. Verified live on datadestruction.com —
   Search Console click coverage moved 13.9% → 52.2% off a single 40-keyword
-  batch. The aidream endpoint it calls is not yet deployed; until it is, the
-  reads are live and the button reports the server's 404 rather than pretending.
+  batch.
 - 2026-08-21 — **KW business guidelines** (§ above): per-site prose document on
   `web.site.settings.kw_guidelines` behind one read + one write RPC, an editor
   panel in the classification workbench, read-only surfacing in the value
