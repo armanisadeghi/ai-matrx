@@ -383,6 +383,19 @@ export function SessionDetailView({
               generating={generatingReview}
             />
 
+            {/* The full-session transcript the review was grounded in (26c) —
+                collapsed by default; a persisted artifact must have a door. */}
+            {session.session_transcript && (
+              <details className="mb-4 rounded-xl border border-border bg-card p-3">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">
+                  Full session transcript
+                </summary>
+                <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">
+                  {session.session_transcript}
+                </pre>
+              </details>
+            )}
+
             {/* Attempt ledger */}
             <h2 className="mb-2 text-sm font-medium text-foreground">
               Answers

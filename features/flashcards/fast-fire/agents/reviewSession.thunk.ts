@@ -10,6 +10,7 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { reviewSession as reviewSessionCore } from "@/features/education/tutor/lanes/reviewSession";
+import { buildSessionTranscript } from "../session-transcript";
 import { setSessionReview } from "../redux/fastFireSlice";
 import {
   selectGradesInOrder,
@@ -49,8 +50,17 @@ export function reviewSession(args: ReviewSessionArgs) {
       accuracy: resolved.length > 0 ? correct / resolved.length : 0,
     };
 
+    // Spec 26c: the professor reviews the SESSION — the segmented, in-order
+    // full-session transcript — not a bag of per-card grades.
+    const { text: sessionTranscript } = buildSessionTranscript(cards, byId);
+
     const result = await dispatch(
-      reviewSessionCore({ sessionId: args.sessionId, attempts, aggregate }),
+      reviewSessionCore({
+        sessionId: args.sessionId,
+        attempts,
+        aggregate,
+        sessionTranscript,
+      }),
     );
     if (result) dispatch(setSessionReview({ review: result.summary }));
   };

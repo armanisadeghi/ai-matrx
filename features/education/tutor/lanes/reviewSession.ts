@@ -39,6 +39,14 @@ export interface ReviewSessionArgs {
   sessionId: string | null;
   attempts: ReviewAttempt[];
   aggregate: ReviewAggregate;
+  /**
+   * The segmented FULL-SESSION transcript (spec 26c): per-card, in presented
+   * order, with question + grade per segment. When present it becomes the
+   * `transcript` variable (instead of the flat per-attempt join) AND persists
+   * to `study_session.session_transcript`, so the professor reviews the
+   * SESSION — cross-card confusion, consistency, in-session improvement.
+   */
+  sessionTranscript?: string;
   /** Override the review mandate (rare — testing only). */
   mandateKey?: string | null;
   /**
@@ -127,10 +135,12 @@ export function reviewSession(args: ReviewSessionArgs) {
         ...livePosture(args.onConversationCreated),
         onConversationCreated: bindRun,
         variables: {
-          transcript: args.attempts
-            .map((a) => a.transcript)
-            .filter(Boolean)
-            .join("\n"),
+          transcript:
+            args.sessionTranscript ??
+            args.attempts
+              .map((a) => a.transcript)
+              .filter(Boolean)
+              .join("\n"),
           attempts: args.attempts,
           aggregate: args.aggregate,
           remaining_cards: [],
@@ -154,6 +164,11 @@ export function reviewSession(args: ReviewSessionArgs) {
       if (sessionId) {
         await studyService.updateSession(sessionId, {
           session_review: raw as never,
+          // The transcript the review was grounded in persists beside it, so
+          // the session detail page can show exactly what was reviewed.
+          ...(args.sessionTranscript
+            ? { session_transcript: args.sessionTranscript }
+            : {}),
         });
       }
       await settleRun(result.conversationId, "complete");
