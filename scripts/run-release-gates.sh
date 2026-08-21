@@ -59,6 +59,18 @@ if $STRICT; then
         # without --strict, because the fix is a rebuild + a filed defect,
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
+        # DB GUARD LIVENESS is BLOCKING. A guard's function body proves nothing —
+        # `pg_event_trigger` is the only proof one is live (db-rules §1), and a
+        # project restore drops event triggers SILENTLY because CREATE EVENT
+        # TRIGGER needs superuser. That already happened: from the changeover
+        # until 2026-08-20 all five platform guards existed as functions and NONE
+        # was bound, so the registry's text columns rotted for weeks with nothing
+        # erroring. Since 2026-08-21 `ddl_guard` also hard-ERRORs on hand-rolled
+        # entity tables, so a silently-dropped binding now also un-does that
+        # block. Missing OR disabled both fail: the escape hatch is DISABLE and
+        # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
+        # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
+        "DB guard liveness (pg_event_trigger)|pnpm check:db-guards:strict"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a
@@ -140,6 +152,13 @@ if $STRICT; then
         # allowlist is a reason-required ratchet whose count only goes down.
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
+        # DDL GUARD LOG — the reader the sentinel never had. Advisory in BOTH
+        # modes: the guard's own WARN lane is advisory, and a release that never
+        # touches the database must not be blocked because someone else's ALTER
+        # TABLE tripped a WARN. Findings are acknowledged WITH A REASON via
+        # platform.ddl_guard_ack(); triage is the docs-steward daily step.
+        # (2026-08-15 drift audit §1; adjudicated + built 2026-08-21.)
+        "Unacknowledged DDL guard firings|pnpm check:ddl-guard-log"
         # TYPE-ESCAPE RATCHET stays ADVISORY even in strict mode (no --strict on
         # the command), per Arman's standing rule: scream, never block the build.
         # It is listed here because NOTHING else runs it — no CI, no pre-commit
@@ -174,6 +193,7 @@ else
         # without --strict, because the fix is a rebuild + a filed defect,
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
+        "DB guard liveness (pg_event_trigger)|pnpm check:db-guards"
         # Time-bounded DDL that can expire on the calendar — partition runway,
         # catch-all partitions that started receiving rows, stalled pg_cron
         # jobs. Loud, never blocking (D122).
@@ -228,6 +248,13 @@ else
         # allowlist is a reason-required ratchet whose count only goes down.
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
+        # DDL GUARD LOG — the reader the sentinel never had. Advisory in BOTH
+        # modes: the guard's own WARN lane is advisory, and a release that never
+        # touches the database must not be blocked because someone else's ALTER
+        # TABLE tripped a WARN. Findings are acknowledged WITH A REASON via
+        # platform.ddl_guard_ack(); triage is the docs-steward daily step.
+        # (2026-08-15 drift audit §1; adjudicated + built 2026-08-21.)
+        "Unacknowledged DDL guard firings|pnpm check:ddl-guard-log"
         # New escape hatches vs the frozen baseline — advisory, loud. See the
         # strict list above for why this gate exists here at all (D136).
         "Type-escape hatch ratchet|pnpm check:hatches"
@@ -311,7 +338,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"
