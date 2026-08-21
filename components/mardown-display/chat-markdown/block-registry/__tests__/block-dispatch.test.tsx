@@ -144,6 +144,9 @@ const FE_SYNTHESIZED_TYPES = [
   // Produced only by applyIrKindRoute's db-override flip (an active
   // source='db' kind_component row winning the resolution).
   "db_kind_component",
+  // The `web-audit-check` family route: one component for the 85 `web_*_v1`
+  // site-audit check kinds, reached through a kind_component row per kind.
+  "web_audit_check_result",
 ];
 
 describe("block-dispatch registry", () => {
