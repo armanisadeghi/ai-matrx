@@ -34,6 +34,8 @@ import {
   getToolCardUserChoice,
   setToolCardUserChoice,
 } from "./toolCardUiSession";
+import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { groupCloudBrowserTurnFragments } from "../grouping/groupCloudBrowserRuns";
 
 export interface AgentWorkGroupRegistration {
   /** Unique id for the group (its sessionKey). */
@@ -46,6 +48,22 @@ export interface AgentWorkGroupRegistration {
   stepCount: number;
 }
 
+interface CloudBrowserRunRegistration {
+  id: string;
+  memberIndex: number;
+  order: number;
+  entries: ToolLifecycleEntry[];
+  entryRevision: string;
+  breakBefore: boolean;
+  breakAfter: boolean;
+}
+
+export interface CloudBrowserTurnRun {
+  primaryId: string;
+  entries: ToolLifecycleEntry[];
+  compact: boolean;
+}
+
 interface AgentWorkTurnValue {
   register: (info: AgentWorkGroupRegistration) => () => void;
   /** The id of the group that renders the turn's single header. */
@@ -56,6 +74,8 @@ interface AgentWorkTurnValue {
   /** Shared expand choice for the whole turn (null = no user choice yet). */
   expandedChoice: boolean | null;
   setExpanded: (open: boolean) => void;
+  registerCloudBrowserRun: (info: CloudBrowserRunRegistration) => () => void;
+  cloudBrowserRunById: Record<string, CloudBrowserTurnRun>;
 }
 
 const AgentWorkTurnContext = createContext<AgentWorkTurnValue | null>(null);
@@ -94,6 +114,9 @@ export function AgentWorkTurnProvider({
   children: React.ReactNode;
 }) {
   const [groups, setGroups] = useState<AgentWorkGroupRegistration[]>([]);
+  const [browserFragments, setBrowserFragments] = useState<
+    CloudBrowserRunRegistration[]
+  >([]);
 
   const register = useCallback((info: AgentWorkGroupRegistration) => {
     setGroups((prev) => [...prev.filter((g) => g.id !== info.id), info]);
@@ -101,6 +124,21 @@ export function AgentWorkTurnProvider({
       setGroups((prev) => prev.filter((g) => g.id !== info.id));
     };
   }, []);
+
+  const registerCloudBrowserRun = useCallback(
+    (info: CloudBrowserRunRegistration) => {
+      setBrowserFragments((previous) => [
+        ...previous.filter((fragment) => fragment.id !== info.id),
+        info,
+      ]);
+      return () => {
+        setBrowserFragments((previous) =>
+          previous.filter((fragment) => fragment.id !== info.id),
+        );
+      };
+    },
+    [],
+  );
 
   const sessionKey = `agent-work-turn:${turnKey}`;
   const [expandedChoice, setExpandedChoice] = useState<boolean | null>(() =>
@@ -125,6 +163,30 @@ export function AgentWorkTurnProvider({
       : null;
   const totalStepCount = sorted.reduce((sum, g) => sum + g.stepCount, 0);
 
+  const cloudBrowserRunById: Record<string, CloudBrowserTurnRun> = {};
+  const browserGroups = groupCloudBrowserTurnFragments(
+    browserFragments.map((fragment) => ({
+      ...fragment,
+      items: fragment.entries,
+    })),
+  );
+  browserGroups.forEach((browserGroup) => {
+    const seenCallIds = new Set<string>();
+    const entries = browserGroup.items.filter((entry) => {
+      if (seenCallIds.has(entry.callId)) return false;
+      seenCallIds.add(entry.callId);
+      return true;
+    });
+    const run = {
+      primaryId: browserGroup.primaryId,
+      entries,
+      compact: browserGroup.compact,
+    };
+    for (const fragmentId of browserGroup.fragmentIds) {
+      cloudBrowserRunById[fragmentId] = run;
+    }
+  });
+
   return (
     <AgentWorkTurnContext.Provider
       value={{
@@ -134,11 +196,63 @@ export function AgentWorkTurnProvider({
         totalStepCount,
         expandedChoice,
         setExpanded,
+        registerCloudBrowserRun,
+        cloudBrowserRunById,
       }}
     >
       {children}
     </AgentWorkTurnContext.Provider>
   );
+}
+
+export function useCloudBrowserTurnRun({
+  id,
+  order,
+  entries,
+  entryRevision,
+  breakBefore,
+  breakAfter,
+  enabled,
+}: {
+  id: string;
+  order: number;
+  entries: ToolLifecycleEntry[];
+  entryRevision: string;
+  breakBefore: boolean;
+  breakAfter: boolean;
+  enabled: boolean;
+}): (CloudBrowserTurnRun & { isPrimary: boolean }) | null {
+  const turn = useAgentWorkTurn();
+  const memberIndex = useAgentWorkMemberIndex();
+  const register = turn?.registerCloudBrowserRun;
+
+  useLayoutEffect(() => {
+    if (!enabled || !register) return;
+    return register({
+      id,
+      memberIndex,
+      order,
+      entries,
+      entryRevision,
+      breakBefore,
+      breakAfter,
+    });
+  }, [
+    enabled,
+    register,
+    id,
+    memberIndex,
+    order,
+    entryRevision,
+    breakBefore,
+    breakAfter,
+    entries,
+  ]);
+
+  if (!enabled || !turn) return null;
+  const run = turn.cloudBrowserRunById[id];
+  if (!run) return { primaryId: id, entries, compact: false, isPrimary: true };
+  return { ...run, isPrimary: run.primaryId === id };
 }
 
 /**

@@ -47,6 +47,7 @@ import {
 import { AgentWorkGroup } from "@/features/tool-call-visualization/components/AgentWorkGroup";
 import { getToolDisplayMode } from "@/features/tool-call-visualization/registry/registry";
 import { isCloudBrowserToolName } from "@/features/tool-call-visualization/renderers/cloud-browser/cloudBrowserRun";
+import { collectCloudBrowserRun } from "@/features/tool-call-visualization/grouping/groupCloudBrowserRuns";
 import { selectMessageInterleavedContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -138,6 +139,9 @@ type GroupedSlot =
       callIds: string[];
       seq: number;
       batchKind: "default" | "cloud-browser";
+      browserRunOrder?: number;
+      browserBreakBefore?: boolean;
+      browserBreakAfter?: boolean;
     };
 
 function groupConsecutiveToolSlots(
@@ -146,11 +150,39 @@ function groupConsecutiveToolSlots(
   // the DELIVERABLE — they render their full card directly and are never
   // hidden behind a "N tool calls" line. Only "auto" tools batch.
   getBatchKind: (callId: string) => "default" | "cloud-browser" | null,
+  isCloudBrowserBridge: (slot: UnifiedSlot) => boolean,
 ): GroupedSlot[] {
   const out: GroupedSlot[] = [];
+  let browserRunOrder = 0;
   for (let i = 0; i < slots.length;) {
     const s = slots[i];
     const batchKind = s.kind === "tool" ? getBatchKind(s.callId) : null;
+    if (s.kind === "tool" && batchKind === "cloud-browser") {
+      const run = collectCloudBrowserRun(slots, i, (candidate) => {
+        if (
+          candidate.kind === "tool" &&
+          getBatchKind(candidate.callId) === "cloud-browser"
+        ) {
+          return "browser";
+        }
+        return isCloudBrowserBridge(candidate) ? "bridge" : "break";
+      });
+      out.push({
+        kind: "tool_batch",
+        callIds: run.browserItems.map(
+          (candidate) => (candidate as { kind: "tool"; callId: string }).callId,
+        ),
+        seq: s.seq,
+        batchKind,
+        browserRunOrder,
+        browserBreakBefore: browserRunOrder > 0,
+        browserBreakAfter: run.breakAfter,
+      });
+      out.push(...run.bridgeItems);
+      browserRunOrder++;
+      i = run.nextIndex;
+      continue;
+    }
     if (s.kind === "tool" && batchKind) {
       const callIds: string[] = [s.callId];
       let j = i + 1;
@@ -188,6 +220,9 @@ type GroupedSegment =
       segments: ContentSegmentDbTool[];
       key: string;
       batchKind: "default" | "cloud-browser";
+      browserRunOrder?: number;
+      browserBreakBefore?: boolean;
+      browserBreakAfter?: boolean;
     };
 
 function groupConsecutiveDbTools(
@@ -196,11 +231,37 @@ function groupConsecutiveDbTools(
   getBatchKind: (
     seg: ContentSegmentDbTool,
   ) => "default" | "cloud-browser" | null,
+  isCloudBrowserBridge: (segment: ContentSegment) => boolean,
 ): GroupedSegment[] {
   const out: GroupedSegment[] = [];
+  let browserRunOrder = 0;
   for (let i = 0; i < segments.length;) {
     const seg = segments[i];
     const batchKind = seg.type === "db_tool" ? getBatchKind(seg) : null;
+    if (seg.type === "db_tool" && batchKind === "cloud-browser") {
+      const run = collectCloudBrowserRun(segments, i, (candidate) => {
+        if (
+          candidate.type === "db_tool" &&
+          getBatchKind(candidate) === "cloud-browser"
+        ) {
+          return "browser";
+        }
+        return isCloudBrowserBridge(candidate) ? "bridge" : "break";
+      });
+      out.push({
+        type: "db_tool_batch",
+        segments: run.browserItems as ContentSegmentDbTool[],
+        key: `db-tool-batch-${seg.callId}`,
+        batchKind,
+        browserRunOrder,
+        browserBreakBefore: browserRunOrder > 0,
+        browserBreakAfter: run.breakAfter,
+      });
+      out.push(...run.bridgeItems);
+      browserRunOrder++;
+      i = run.nextIndex;
+      continue;
+    }
     if (seg.type === "db_tool" && batchKind) {
       const run: ContentSegmentDbTool[] = [seg];
       let j = i + 1;
@@ -452,20 +513,44 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // `hasDbInterleavedSpecial` branch checks still read the raw arrays.
   const groupedSlots = useMemo(
     () =>
-      groupConsecutiveToolSlots(unifiedSlots, (callId) => {
-        const toolName = toolLifecycleMap?.[callId]?.toolName ?? null;
-        if (getToolDisplayMode(toolName) !== "auto") return null;
-        return isCloudBrowserToolName(toolName) ? "cloud-browser" : "default";
-      }),
-    [unifiedSlots, toolLifecycleMap],
+      groupConsecutiveToolSlots(
+        unifiedSlots,
+        (callId) => {
+          const toolName = toolLifecycleMap?.[callId]?.toolName ?? null;
+          if (getToolDisplayMode(toolName) !== "auto") return null;
+          return isCloudBrowserToolName(toolName) ? "cloud-browser" : "default";
+        },
+        (slot) => {
+          if (slot.kind === "thinking" || slot.kind === "status") return true;
+          if (slot.kind !== "render_block") return false;
+          const block = renderBlocksMap[slot.blockId];
+          if (!block) return true;
+          return (
+            block.type === "text" &&
+            classifyTextForFold(block.content) === "shortText"
+          );
+        },
+      ),
+    [unifiedSlots, toolLifecycleMap, renderBlocksMap],
   );
   const groupedSegments = useMemo(
     () =>
-      groupConsecutiveDbTools(messageInterleavedContent, (seg) => {
-        const toolName = seg.record?.toolName ?? seg.stubName;
-        if (getToolDisplayMode(toolName) !== "auto") return null;
-        return isCloudBrowserToolName(toolName) ? "cloud-browser" : "default";
-      }),
+      groupConsecutiveDbTools(
+        messageInterleavedContent,
+        (seg) => {
+          const toolName = seg.record?.toolName ?? seg.stubName;
+          if (getToolDisplayMode(toolName) !== "auto") return null;
+          return isCloudBrowserToolName(toolName) ? "cloud-browser" : "default";
+        },
+        (segment) => {
+          if (segment.type === "thinking" || segment.type === "status")
+            return true;
+          return (
+            segment.type === "text" &&
+            classifyTextForFold(segment.content) === "shortText"
+          );
+        },
+      ),
     [messageInterleavedContent],
   );
 
@@ -925,6 +1010,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
           requestId={requestId}
           callIds={slot.callIds}
           conversationId={conversationId ?? ""}
+          browserRunOrder={slot.browserRunOrder}
+          browserBreakBefore={slot.browserBreakBefore}
+          browserBreakAfter={slot.browserBreakAfter}
         />
       );
     }
@@ -1054,6 +1142,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
           key={segment.key}
           segments={segment.segments}
           conversationId={conversationId ?? ""}
+          browserRunOrder={segment.browserRunOrder}
+          browserBreakBefore={segment.browserBreakBefore}
+          browserBreakAfter={segment.browserBreakAfter}
         />
       );
     }

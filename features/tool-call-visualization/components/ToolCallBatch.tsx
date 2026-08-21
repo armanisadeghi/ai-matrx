@@ -47,6 +47,7 @@ import {
 import { asFsListing, FsBatchCard } from "../renderers/fs/FsInline";
 import { CloudBrowserRunCard } from "../renderers/cloud-browser/CloudBrowserRunCard";
 import { isCloudBrowserRun } from "../renderers/cloud-browser/cloudBrowserRun";
+import { useCloudBrowserTurnRun } from "./agentWorkTurn";
 
 export interface ToolCallBatchProps {
   /** One entry per tool in the run — drives the count + streaming state. */
@@ -58,6 +59,10 @@ export interface ToolCallBatchProps {
   /** The pre-rendered individual tool cards, in order. */
   children: React.ReactNode;
   className?: string;
+  /** Position and real-boundary metadata for turn-wide browser consolidation. */
+  browserRunOrder?: number;
+  browserBreakBefore?: boolean;
+  browserBreakAfter?: boolean;
 }
 
 export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
@@ -66,8 +71,30 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   conversationId,
   children,
   className,
+  browserRunOrder = 0,
+  browserBreakBefore = false,
+  browserBreakAfter = false,
 }) => {
   const count = entries.length;
+  const cloudBrowserRun = isCloudBrowserRun(entries);
+  const browserRunId = entries[0]?.callId
+    ? `cloud-browser:${entries[0].callId}`
+    : "cloud-browser:empty";
+  const entryRevision = entries
+    .map(
+      (entry) =>
+        `${entry.callId}:${entry.status}:${entry.events?.length ?? 0}:${entry.completedAt ?? ""}`,
+    )
+    .join("|");
+  const turnBrowserRun = useCloudBrowserTurnRun({
+    id: browserRunId,
+    order: browserRunOrder,
+    entries,
+    entryRevision,
+    breakBefore: browserBreakBefore,
+    breakAfter: browserBreakAfter,
+    enabled: cloudBrowserRun,
+  });
 
   const anyActive = entries.some(
     (e) =>
@@ -140,15 +167,20 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   // Cloud Browser + Credential Login are one human-meaningful activity stream,
   // not N generic tool cards. Keep the first browser header and append every
   // action beneath it, including screenshots and secure sign-in steps.
-  if (isCloudBrowserRun(entries)) {
+  if (cloudBrowserRun) {
+    if (turnBrowserRun && !turnBrowserRun.isPrimary) return null;
+    const browserEntries = turnBrowserRun?.entries ?? entries;
+    const compact = turnBrowserRun?.compact ?? false;
+    const browserExpanded = compact && userChoice === null ? false : isExpanded;
     return (
       <CloudBrowserRunCard
-        entries={entries}
+        entries={browserEntries}
         conversationId={conversationId}
-        expanded={isExpanded}
+        compact={compact}
+        expanded={browserExpanded}
         onToggleExpanded={() => {
-          setToolCardUserChoice(batchKey, !isExpanded);
-          setUserChoiceState(!isExpanded);
+          setToolCardUserChoice(batchKey, !browserExpanded);
+          setUserChoiceState(!browserExpanded);
         }}
         className={className}
       />

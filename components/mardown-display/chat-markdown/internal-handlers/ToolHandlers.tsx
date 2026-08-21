@@ -104,12 +104,18 @@ interface InlineToolBatchProps {
   requestId: string;
   callIds: string[];
   conversationId: string;
+  browserRunOrder?: number;
+  browserBreakBefore?: boolean;
+  browserBreakAfter?: boolean;
 }
 
 export const InlineToolBatch: React.FC<InlineToolBatchProps> = ({
   requestId,
   callIds,
   conversationId,
+  browserRunOrder,
+  browserBreakBefore,
+  browserBreakAfter,
 }) => {
   const hidden = useAppSelector(selectHideToolResults(conversationId));
   const lifecycleMap = useAppSelector(selectToolLifecycleMap(requestId));
@@ -127,7 +133,13 @@ export const InlineToolBatch: React.FC<InlineToolBatchProps> = ({
   if (entries.length === 0) return null;
 
   return (
-    <ToolCallBatch entries={entries} conversationId={conversationId}>
+    <ToolCallBatch
+      entries={entries}
+      conversationId={conversationId}
+      browserRunOrder={browserRunOrder}
+      browserBreakBefore={browserBreakBefore}
+      browserBreakAfter={browserBreakAfter}
+    >
       {callIds.map((callId) => (
         <InlineToolCard
           key={callId}
@@ -204,11 +216,17 @@ export const DbToolCard: React.FC<DbToolCardProps> = ({
 interface DbToolBatchProps {
   segments: ContentSegmentDbTool[];
   conversationId: string;
+  browserRunOrder?: number;
+  browserBreakBefore?: boolean;
+  browserBreakAfter?: boolean;
 }
 
 export const DbToolBatch: React.FC<DbToolBatchProps> = ({
   segments,
   conversationId,
+  browserRunOrder,
+  browserBreakBefore,
+  browserBreakAfter,
 }) => {
   const hidden = useAppSelector(selectHideToolResults(conversationId));
 
@@ -221,7 +239,14 @@ export const DbToolBatch: React.FC<DbToolBatchProps> = ({
   if (segments.length === 0) return null;
 
   return (
-    <ToolCallBatch entries={entries} conversationId={conversationId} isPersisted>
+    <ToolCallBatch
+      entries={entries}
+      conversationId={conversationId}
+      isPersisted
+      browserRunOrder={browserRunOrder}
+      browserBreakBefore={browserBreakBefore}
+      browserBreakAfter={browserBreakAfter}
+    >
       {segments.map((segment, i) => (
         <DbToolCard
           key={`${segment.callId}-${i}`}
