@@ -29467,11 +29467,17 @@ export interface components {
              */
             deprecated_keys_found?: string[][];
             /**
-             * Quality
+             * Duration
              * @deprecated
-             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
              */
-            quality?: ("low" | "medium" | "high" | "auto") | null;
+            duration?: number | null;
+            /**
+             * Output Quality
+             * @deprecated
+             * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
+             */
+            output_quality?: number | null;
             /**
              * Seconds
              * @deprecated
@@ -29491,17 +29497,11 @@ export interface components {
              */
             num_outputs?: number | null;
             /**
-             * Duration
+             * Quality
              * @deprecated
-             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
              */
-            duration?: number | null;
-            /**
-             * Output Quality
-             * @deprecated
-             * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
-             */
-            output_quality?: number | null;
+            quality?: ("low" | "medium" | "high" | "auto") | null;
         } & {
             [key: string]: unknown;
         };
@@ -43828,11 +43828,17 @@ export interface components {
             /** Tts Quality */
             tts_quality?: ("high_quality" | "fast") | null;
             /**
-             * Quality
+             * Duration
              * @deprecated
-             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
+             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
              */
-            quality?: ("low" | "medium" | "high" | "auto") | null;
+            duration?: number | null;
+            /**
+             * Output Quality
+             * @deprecated
+             * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
+             */
+            output_quality?: number | null;
             /**
              * Seconds
              * @deprecated
@@ -43852,17 +43858,11 @@ export interface components {
              */
             num_outputs?: number | null;
             /**
-             * Duration
+             * Quality
              * @deprecated
-             * @description Deprecated input alias for `duration_seconds`. The server normalizes this name before validation and dispatch; new callers should send `duration_seconds`.
+             * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
              */
-            duration?: number | null;
-            /**
-             * Output Quality
-             * @deprecated
-             * @description Deprecated input alias for `encode_quality`. The server normalizes this name before validation and dispatch; new callers should send `encode_quality`.
-             */
-            output_quality?: number | null;
+            quality?: ("low" | "medium" | "high" | "auto") | null;
         };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {

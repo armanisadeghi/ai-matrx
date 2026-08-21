@@ -40170,7 +40170,7 @@ export type Database = {
           detail: Json
           id: string
           industry_id: string | null
-          organization_id: string | null
+          target_organization_id: string | null
         }
         Insert: {
           action: string
@@ -40180,7 +40180,7 @@ export type Database = {
           detail?: Json
           id?: string
           industry_id?: string | null
-          organization_id?: string | null
+          target_organization_id?: string | null
         }
         Update: {
           action?: string
@@ -40190,7 +40190,7 @@ export type Database = {
           detail?: Json
           id?: string
           industry_id?: string | null
-          organization_id?: string | null
+          target_organization_id?: string | null
         }
         Relationships: []
       }
@@ -40198,53 +40198,65 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          created_by: string | null
+          doc_version: string | null
           effective_from: string | null
           effective_to: string | null
           id: string
           jurisdiction: string | null
           kind: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           short_code: string | null
           source_url: string | null
           storage_uri: string | null
           title: string
           updated_at: string
-          version: string | null
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           body?: string
           created_at?: string
+          created_by?: string | null
+          doc_version?: string | null
           effective_from?: string | null
           effective_to?: string | null
           id?: string
           jurisdiction?: string | null
           kind: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           short_code?: string | null
           source_url?: string | null
           storage_uri?: string | null
           title: string
           updated_at?: string
-          version?: string | null
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           body?: string
           created_at?: string
+          created_by?: string | null
+          doc_version?: string | null
           effective_from?: string | null
           effective_to?: string | null
           id?: string
           jurisdiction?: string | null
           kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           short_code?: string | null
           source_url?: string | null
           storage_uri?: string | null
           title?: string
           updated_at?: string
-          version?: string | null
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
