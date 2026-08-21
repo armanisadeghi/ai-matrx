@@ -1265,6 +1265,115 @@ const FS_BATCH_ENTRIES: ToolLifecycleEntry[] = [
   }),
 ];
 
+const CLOUD_BROWSER_SCREENSHOT =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='675' viewBox='0 0 1200 675'%3E%3Crect width='1200' height='675' fill='%23f8fafc'/%3E%3Crect x='36' y='34' width='1128' height='607' rx='22' fill='%23ffffff' stroke='%23cbd5e1'/%3E%3Crect x='36' y='34' width='1128' height='58' rx='22' fill='%23f1f5f9'/%3E%3Ccircle cx='70' cy='63' r='8' fill='%2394a3b8'/%3E%3Ccircle cx='96' cy='63' r='8' fill='%2394a3b8'/%3E%3Ccircle cx='122' cy='63' r='8' fill='%2394a3b8'/%3E%3Crect x='170' y='49' width='770' height='28' rx='14' fill='%23ffffff' stroke='%23cbd5e1'/%3E%3Ctext x='194' y='69' font-family='Arial,sans-serif' font-size='14' fill='%23475569'%3Email.google.com/mail/u/0/%23inbox%3C/text%3E%3Ctext x='85' y='158' font-family='Arial,sans-serif' font-size='30' font-weight='700' fill='%230f172a'%3EInbox%3C/text%3E%3Crect x='85' y='196' width='1030' height='1' fill='%23e2e8f0'/%3E%3Crect x='85' y='224' width='820' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='267' width='680' height='16' rx='8' fill='%23e2e8f0'/%3E%3Crect x='85' y='318' width='950' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='361' width='600' height='16' rx='8' fill='%23e2e8f0'/%3E%3Crect x='85' y='412' width='880' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='455' width='720' height='16' rx='8' fill='%23e2e8f0'/%3E%3C/svg%3E";
+
+// One real renderer path for the whole browser session: browser actions and
+// Credential Login consolidate into a single card; screenshots remain visual.
+const CLOUD_BROWSER_BATCH_ENTRIES: ToolLifecycleEntry[] = [
+  entry({
+    callId: "browser-navigate",
+    toolName: "cloud_browser",
+    arguments: {
+      action: "navigate",
+      url: "https://mail.google.com/mail/u/0/#inbox",
+    },
+    result: {
+      success: true,
+      session_id: "run-cloud-browser-gallery",
+      profile_id: "personal-browser-gallery",
+      url: "https://mail.google.com/mail/u/0/#inbox",
+      title: "Inbox",
+    },
+  }),
+  entry({
+    callId: "browser-login",
+    toolName: "credential_login",
+    arguments: {
+      action: "auto",
+      session_id: "run-cloud-browser-gallery",
+    },
+    result: {
+      status: "authenticated",
+      current_url: "https://accounts.google.com/",
+    },
+  }),
+  entry({
+    callId: "browser-click",
+    toolName: "cloud_browser",
+    arguments: {
+      action: "click",
+      session_id: "run-cloud-browser-gallery",
+      selector: "Search mail",
+    },
+    result: {
+      success: true,
+      url: "https://mail.google.com/mail/u/0/#inbox",
+      title: "Inbox",
+    },
+  }),
+  entry({
+    callId: "browser-type",
+    toolName: "cloud_browser",
+    arguments: {
+      action: "type_text",
+      session_id: "run-cloud-browser-gallery",
+      selector: "Search mail",
+      text: "after:2026/08/21 before:2026/08/22",
+      press_enter: true,
+    },
+    result: {
+      success: true,
+      selector: "Search mail",
+      url: "https://mail.google.com/mail/u/0/#search/today",
+    },
+  }),
+  entry({
+    callId: "browser-read",
+    toolName: "cloud_browser",
+    arguments: {
+      action: "get_element",
+      session_id: "run-cloud-browser-gallery",
+      selector: "Search results",
+    },
+    result: {
+      success: true,
+      found: true,
+      selector: "Search results",
+      text: "12 conversations from this morning",
+    },
+  }),
+  entry({
+    callId: "browser-screenshot",
+    toolName: "cloud_browser",
+    arguments: {
+      action: "screenshot",
+      session_id: "run-cloud-browser-gallery",
+    },
+    result: {
+      kind: "image_ref",
+      session_id: "run-cloud-browser-gallery",
+      media_ref: {
+        url: CLOUD_BROWSER_SCREENSHOT,
+        mime_type: "image/svg+xml",
+      },
+    },
+  }),
+  entry({
+    callId: "browser-scroll-live",
+    toolName: "cloud_browser",
+    status: "progress",
+    completedAt: null,
+    arguments: {
+      action: "scroll",
+      session_id: "run-cloud-browser-gallery",
+      direction: "down",
+      amount_px: 640,
+    },
+    result: null,
+  }),
+];
+
 // DB-loaded renderer examples — each resolves to its `tool_ui` row (agent-
 // authored code), fetched + compiled at runtime via compileSlotComponent. The
 // codebase ships NONE of these renderers; they live in the DB. This is the
@@ -1953,6 +2062,24 @@ export default function ResultFieldsGalleryPage() {
             onOpenOverlay={() => {}}
           />
         </FixtureCard>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Cloud Browser run — one compact activity card
+        </h2>
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Cloud Browser and Credential Login actions consolidate under one
+          header. Every action is a single compact line; destinations are real
+          truncated links; screenshots stay visual and open in the image viewer.
+        </p>
+        <ChatResultColumn>
+          <ToolCallBatch entries={CLOUD_BROWSER_BATCH_ENTRIES}>
+            {CLOUD_BROWSER_BATCH_ENTRIES.map((e) => (
+              <ToolCallVisualization key={e.callId} entries={[e]} hasContent />
+            ))}
+          </ToolCallBatch>
+        </ChatResultColumn>
       </section>
 
       <section className="space-y-4">
