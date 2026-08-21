@@ -15758,7 +15758,7 @@
           "Content Plan"
         ],
         "summary": "Run Page Step Route",
-        "description": "Run ONE Website Factory pipeline step for ONE page.\n\n`p3_family` / `p4_write` / `p5_review` — each independently re-runnable, each\npersisting its own superseding artifact. The precondition refusals (no brief\nto write from, no draft to review) are checked BEFORE the stream opens, so\nthe client renders them as the gap plus its fix rather than a toast.",
+        "description": "Run ONE Website Factory pipeline step for ONE page.\n\n`p1_keywords` / `p3_family` / `p4_write` / `p5_review` — each independently\nre-runnable. The agent steps persist a superseding artifact; `p1_keywords`\nis deterministic (it confirms the already-chosen keyword into THE store and\nstamps the rail — choosing one is the SEO plan tab's job). `p2_research`\nruns through its own `/deepen` route, `p6_build` through the fill queue,\n`p7_publish` through `/cms-publish` — one canonical path per producer. The\nprecondition refusals (no brief to write from, no draft to review) are\nchecked BEFORE the stream opens, so the client renders them as the gap plus\nits fix rather than a toast.",
         "operationId": "run_page_step_route_content_plan_nodes__node_id__steps__step__post",
         "parameters": [
           {
@@ -16574,6 +16574,111 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CmsPageMapResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/pipeline": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Site Pipeline Route",
+        "description": "The SITE-level pipeline — the per-page rail's eight steps, answered for\nthe whole site from live rows (nodes, step states, the SEO-plan store, the\nCMS shell and page rows). Derived on read, never stamped: what it says is\nwhat exists right now.",
+        "operationId": "site_pipeline_route_content_plan_sites__site_id__pipeline_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePipeline"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/shell-check": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Shell Check Route",
+        "description": "Structurally inspect the paired CMS site's RENDERED pages for the\nsite-level defects that make every page look broken — missing header/menu,\nfooter, brand, stylesheet — plus per-page basics (title, meta description,\none h1). Deterministic and free: one HTTP fetch + parse per page, no\nbrowser, no model.",
+        "operationId": "shell_check_route_content_plan_sites__site_id__shell_check_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ShellCheckBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShellCheckSummary"
                 }
               }
             }
@@ -45391,7 +45496,7 @@
           "Office"
         ],
         "summary": "Convert Office File",
-        "description": "Render an existing Office file to PDF (LibreOffice lane) and persist the\nPDF as a new asset owned by the caller. Returns the new file's FileRef.",
+        "description": "Create or reuse the cached PDF derivative of an existing Office file\n(LibreOffice lane; idempotent per source revision). Returns its FileRef.",
         "operationId": "convert_office_file_office__file_id__convert_post",
         "parameters": [
           {
@@ -80956,6 +81061,16 @@
             },
             "type": "array",
             "title": "Warnings"
+          },
+          "shell_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShellCheckSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -123809,17 +123924,6 @@
             "type": "string",
             "title": "Target",
             "default": "pdf"
-          },
-          "visibility": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Visibility"
           }
         },
         "type": "object",
@@ -149229,6 +149333,231 @@
         ],
         "title": "SheetWriteRequest"
       },
+      "ShellCheckBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "default": "auto"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 25,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 10
+          },
+          "routes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ShellCheckBody"
+      },
+      "ShellCheckSummary": {
+        "properties": {
+          "site": {
+            "type": "string",
+            "title": "Site"
+          },
+          "pages_checked": {
+            "type": "integer",
+            "title": "Pages Checked",
+            "default": 0
+          },
+          "pages_passed": {
+            "type": "integer",
+            "title": "Pages Passed",
+            "default": 0
+          },
+          "site_issues": {
+            "items": {
+              "$ref": "#/components/schemas/ShellSiteIssue"
+            },
+            "type": "array",
+            "title": "Site Issues"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/ShellPageResult"
+            },
+            "type": "array",
+            "title": "Pages"
+          },
+          "truncation_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Truncation Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site"
+        ],
+        "title": "ShellCheckSummary"
+      },
+      "ShellIssue": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "site",
+              "page"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "severity",
+          "message"
+        ],
+        "title": "ShellIssue"
+      },
+      "ShellPageResult": {
+        "properties": {
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route",
+            "default": ""
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "state_checked": {
+            "type": "string",
+            "title": "State Checked",
+            "default": ""
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": false
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ShellIssue"
+            },
+            "type": "array",
+            "title": "Issues"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ShellPageResult"
+      },
+      "ShellSiteIssue": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "pages_affected": {
+            "type": "integer",
+            "title": "Pages Affected"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "message",
+          "pages_affected"
+        ],
+        "title": "ShellSiteIssue"
+      },
       "SignedUrlResponse": {
         "properties": {
           "url": {
@@ -150126,6 +150455,59 @@
         ],
         "title": "SitePerformanceSuggestedAction"
       },
+      "SitePipeline": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/SiteStage"
+            },
+            "type": "array",
+            "title": "Stages"
+          },
+          "pages_planned": {
+            "type": "integer",
+            "title": "Pages Planned",
+            "default": 0
+          },
+          "cms_linked": {
+            "type": "boolean",
+            "title": "Cms Linked",
+            "default": false
+          },
+          "cms_site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cms Site Id"
+          },
+          "cms_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cms Slug"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "SitePipeline"
+      },
       "SiteScheduleStatusResponse": {
         "properties": {
           "site_id": {
@@ -150153,6 +150535,58 @@
           "providers"
         ],
         "title": "SiteScheduleStatusResponse"
+      },
+      "SiteStage": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "in_progress",
+              "attention",
+              "not_started"
+            ],
+            "title": "State"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done",
+            "default": 0
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "state"
+        ],
+        "title": "SiteStage"
       },
       "SiteStrategyBody": {
         "properties": {

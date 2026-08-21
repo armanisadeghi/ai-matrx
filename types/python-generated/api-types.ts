@@ -6250,20 +6250,13 @@ export interface paths {
         put?: never;
         /**
          * Generate Press Story Angles
-         * @description Find what is genuinely newsworthy about this business — a DURABLE
-         *     streamed command.
+         * @description Find what is genuinely newsworthy about this business.
          *
          *     Composes a closed evidence bundle from platform truth the site already owns,
          *     asks the mandated Press Story Analyst which angles a journalist would care
          *     about, then applies deterministic gates before anything persists. An angle
          *     claiming `pitch_now` while it still has missing evidence is downgraded, never
          *     shipped.
-         *
-         *     Streamed because the analyst pass is minutes of paid model work (measured
-         *     ~4.5 min live on 2026-08-21) and the production gateway severs a synchronous
-         *     response at 60s — the old JSON route completed server-side behind an HTTP
-         *     504 the client could only read as failure. Rejoin with
-         *     ``POST /seo/collections/{run_id}/rejoin``.
          */
         post: operations["generate_press_story_angles_seo_sites__site_id__press_angles_generate_post"];
         delete?: never;
@@ -10606,30 +10599,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -35386,33 +35355,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -56855,7 +56797,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -59362,30 +59304,10 @@ export interface components {
          * @description Durable result shared by the HTTP route and workflow node.
          */
         StoryAngleGenerateResult: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            result_kind: "press.story_angles.generate";
             /** Kept */
             kept: number;
             /** Dropped */
             dropped: number;
-            /**
-             * Created
-             * @default 0
-             */
-            created?: number;
-            /**
-             * Updated
-             * @default 0
-             */
-            updated?: number;
-            /**
-             * Unchanged
-             * @default 0
-             */
-            unchanged?: number;
             /** Gates */
             gates?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -77513,7 +77435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["StoryAngleGenerateResult"];
                 };
             };
             /** @description Validation Error */
@@ -84910,41 +84832,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
