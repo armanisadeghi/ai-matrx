@@ -242,16 +242,15 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/education/quizzes/{id}",
     rlsUsesHasPermission: true,
   },
-  batch_provider_batch: {
-    resourceType: "batch_provider_batch",
-    tableName: "provider_batch",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: null,
-    displayLabel: "Auto-ingest Batch",
-    urlPathTemplate: "",
-    rlsUsesHasPermission: false,
-  },
+  // `batch_provider_batch` was here until 2026-08-21. It was registered
+  // shareable on 2026-06-03 as "Auto-ingest Batch" (owner_column `user_id`),
+  // and that registration was the only reason its bespoke
+  // `is_resource_owner('batch_provider_batch', id)` RLS policy resolved at all.
+  // The whole `batch` schema now runs the canonical `ledger` variant (aidream
+  // migrations 0438/0439): the server writes, users read their own org's rows,
+  // and there is no grant lane to share through. `provider_batch` also has no
+  // real owner — the flusher stamps user_id/created_by from items[0] of a flush
+  // group that can span users. The DB row is deactivated, never deleted.
   canvas_item: {
     resourceType: "canvas_item",
     tableName: "canvas_items",

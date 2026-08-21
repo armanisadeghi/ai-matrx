@@ -155,7 +155,7 @@ describe("setResourceVisibility", () => {
     });
 
     const result = await setResourceVisibility(
-      "batch_provider_batch",
+      "udt_document",
       "c3f6270e-b750-49d0-bcc2-4ea02b39f7b7",
       "internal",
     );
