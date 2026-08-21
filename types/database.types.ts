@@ -3924,6 +3924,15 @@ export type Database = {
       refresh: { Args: never; Returns: string }
       refresh_log_recount: { Args: never; Returns: undefined }
       refresh_static: { Args: never; Returns: string }
+      relation_usage: {
+        Args: { p_name: string; p_schema: string }
+        Returns: {
+          detail: string
+          kind: string
+          ref: string
+          via: string
+        }[]
+      }
       run_function_runtime_probes: { Args: never; Returns: number }
       table_impact: {
         Args: { p_schema: string; p_table: string }
