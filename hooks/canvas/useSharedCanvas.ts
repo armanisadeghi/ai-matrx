@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
+import { recordUnavailable } from '@/lib/records/recordUnavailable';
 import { getUserId } from '@/utils/auth/getUserId';
 import { resolveSharedCanvas } from '@/features/canvas/shared/resolveSharedCanvas';
 import type { SharedCanvasItem } from '@/types/canvas-social';
@@ -13,7 +14,13 @@ export function useSharedCanvas(shareToken: string | null) {
             if (!shareToken) throw new Error('No share token provided');
 
             const canvas = await resolveSharedCanvas(shareToken, supabase);
-            if (!canvas) throw new Error('Canvas not found');
+            if (!canvas)
+                throw recordUnavailable({
+                    entity: 'shared canvas',
+                    reason: 'unknown',
+                    token: 'canvas_item',
+                    relation: 'canvas_items',
+                });
 
             // Increment view count (don't wait for it)
             trackView(canvas.id, canvas.organization_id ?? null);
