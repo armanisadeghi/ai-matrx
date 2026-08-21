@@ -498,7 +498,7 @@ export function ChatImportDialog({
                 <p className="text-xs text-muted-foreground">
                   {rejoining
                     ? "Picking this back up — it kept working while you were away."
-                    : "This keeps running on our servers even if you close this or reload — come back and it picks up where it left off."}
+                    : "Working — this takes a minute."}
                 </p>
               </div>
             ) : null}

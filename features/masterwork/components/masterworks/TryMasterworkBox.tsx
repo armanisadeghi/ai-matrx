@@ -455,7 +455,7 @@ export function TryMasterworkBox({
             ? "Starting…"
             : phase === "running"
               ? "Working…"
-              : "Run it"}
+              : "Do the work"}
         </Button>
         {/* One compare entry per Masterwork: it moves to the verdict
             (prefilled) the moment there is output to compare, so the two

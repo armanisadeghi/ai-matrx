@@ -164,7 +164,7 @@ export function useBuildRun(
       title: masterworkName,
       description: run.rejoinedTarget
         ? "This Build kept running while you were away — picking it back up."
-        : "This keeps running on our servers. Close this, reload, go somewhere else — it comes back to where it got to.",
+        : "Building — this takes about a minute.",
       items,
     };
   }, [run.status, run.result, run.rejoinedTarget, reached, parts, masterworkName]);

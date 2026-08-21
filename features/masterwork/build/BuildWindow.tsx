@@ -436,11 +436,6 @@ function BuildWindowInner({
       onClose={onClose}
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <p className="shrink-0 border-b border-border px-4 py-2 text-xs text-muted-foreground">
-          A working system that does this job the way you do it. It keeps
-          running on our servers — move this window, shrink it, reload the page,
-          go somewhere else; it comes back to where it got to.
-        </p>
         {body}
       </div>
     </WindowPanel>
