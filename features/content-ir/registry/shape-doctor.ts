@@ -674,21 +674,7 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       });
     }
 
-    // stale example — the example predates the kind definition's last change
-    // (schema may have moved under it). Grace window absorbs same-wave writes.
     const newestExample = canonical ?? examples[0] ?? null;
-    if (
-      newestExample &&
-      parseTime(newestExample.updatedAt) + STALE_EXAMPLE_GRACE_MS <
-        parseTime(kind.updatedAt)
-    ) {
-      yellows.push({
-        severity: "yellow",
-        code: "stale-example",
-        kind: kind.kind,
-        message: `kind "${kind.kind}" example is older than the kind definition (example ${newestExample.updatedAt} < kind ${kind.updatedAt}) — revalidate/recapture`,
-      });
-    }
 
     // gate_structural — RECOMPUTED, never read from validation_status/is_active.
     let gate: AssetCell;
@@ -730,6 +716,40 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
           });
         }
       }
+    }
+
+    // stale example — the example predates the kind definition's last change,
+    // so the SCHEMA MAY HAVE MOVED UNDER IT. Grace window absorbs same-wave
+    // writes (kind + example authored minutes apart in one migration).
+    //
+    // 🚨 The timestamp is a PROXY for "the schema moved", and it is a leaky
+    // one: `kind_definition.updated_at` is bumped by ANY write to the row,
+    // including ones that cannot touch the schema at all — most commonly
+    // `content_ir.set_kind_activation`, which flips `is_active` and stamps
+    // `metadata.activation_note`. Activating a wave of kinds therefore used to
+    // mint one false `stale-example` per kind (121 of them on 2026-08-21, when
+    // the 156 workflow node output contracts were activated), and a board full
+    // of findings nobody can close is how a board stops being read.
+    //
+    // So the proxy now defers to the direct evidence the doctor already
+    // computes one block up: the structural gate is RECOMPUTED against the
+    // kind's LIVE schema. A passing gate means the example still validates
+    // against the schema as it stands today — whatever the timestamps say, it
+    // is not stale in the only sense this rule cares about. The hard case is
+    // not lost: an example that genuinely stopped validating under an ACTIVE
+    // kind is already a RED (`active-gate-fail`), independent of any mtime.
+    if (
+      newestExample &&
+      gate.status !== "ok" &&
+      parseTime(newestExample.updatedAt) + STALE_EXAMPLE_GRACE_MS <
+        parseTime(kind.updatedAt)
+    ) {
+      yellows.push({
+        severity: "yellow",
+        code: "stale-example",
+        kind: kind.kind,
+        message: `kind "${kind.kind}" example is older than the kind definition (example ${newestExample.updatedAt} < kind ${kind.updatedAt}) and does not pass the recomputed gate — revalidate/recapture`,
+      });
     }
 
     // component — kind_component (platform web) or a compiled/legacy render path.

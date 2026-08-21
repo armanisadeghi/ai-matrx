@@ -313,6 +313,57 @@ describe("shape doctor", () => {
     ).toBe(false);
   });
 
+  /**
+   * `stale-example` keys on a TIMESTAMP, which is only a proxy for "the schema
+   * moved under this example". `kind_definition.updated_at` is bumped by any
+   * write to the row — `set_kind_activation` flips `is_active` and stamps
+   * `metadata.activation_note` without touching the schema — so the proxy is
+   * gated on the direct evidence: the RECOMPUTED structural gate. Both
+   * directions are pinned, the false positive first (that is the one that
+   * regressed: activating the 156 workflow node output contracts on
+   * 2026-08-21 minted 121 unclosable findings).
+   */
+  it("does NOT yellow stale-example when the older example still passes the recomputed gate", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        // Kind row touched long after the example — exactly what an activation
+        // flip looks like — but the example still validates against the schema.
+        kinds: [makeKind({ id: "k1", kind: "text_result", updatedAt: "2026-08-21T08:43:08Z" })],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+      }),
+    );
+
+    expect(report.rows[0].assets.gate_structural.status).toBe("ok");
+    expect(report.findings.some((f) => f.code === "stale-example")).toBe(false);
+  });
+
+  it("DOES yellow stale-example when the older example no longer passes the recomputed gate", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "text_result", updatedAt: "2026-08-21T08:43:08Z" })],
+        examples: [
+          {
+            id: "e1",
+            kindDefinitionId: "k1",
+            isCanonical: true,
+            // `cards` is required by STRICT_CARD_SCHEMA — the schema really did
+            // move out from under this one.
+            data: { title: "Set" },
+            updatedAt: T0,
+          },
+        ],
+      }),
+    );
+
+    expect(report.rows[0].assets.gate_structural.status).toBe("warn");
+    const stale = report.findings.find((f) => f.code === "stale-example");
+    expect(stale).toBeDefined();
+    expect(stale?.severity).toBe("yellow");
+    expect(stale?.kind).toBe("text_result");
+  });
+
   it("yellows unregistered detector tokens but never control tags", () => {
     const report = runShapeDoctor(
       baseInput({
