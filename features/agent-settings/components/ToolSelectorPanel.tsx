@@ -177,6 +177,7 @@ export function ToolSelectorPanel({
                       <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
                     </TooltipTrigger>
                     <TooltipContent className="text-xs">
+                      {/* access-errors: ok — in-memory check against the loaded tool catalog, a form hint not a record read */}
                       Tool not found in available tools list
                     </TooltipContent>
                   </Tooltip>

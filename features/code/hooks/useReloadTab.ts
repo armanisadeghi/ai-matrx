@@ -33,6 +33,7 @@ export function useReloadTab() {
       const state = store.getState();
       const tab = selectTabById(tabId)(state);
       if (!tab) {
+        // access-errors: ok — in-memory Redux tab lookup, no record read
         return { tabId, ok: false, error: "Tab not found" };
       }
       const adapter = getAdapterForTabId(tabId);

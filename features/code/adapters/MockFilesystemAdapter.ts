@@ -80,6 +80,7 @@ export class MockFilesystemAdapter implements FilesystemAdapter {
 
   async readFile(path: string): Promise<string> {
     const node = this.data[path];
+    // access-errors: ok — in-memory mock fixture for demos/tests, no real record read
     if (!node) throw new Error(`File not found: ${path}`);
     if (node.kind !== "file") throw new Error(`Not a file: ${path}`);
     return node.content ?? "";

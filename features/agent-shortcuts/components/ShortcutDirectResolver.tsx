@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ShortcutDirectoryMode } from "../utils/shortcut-directory-rows";
@@ -46,12 +48,19 @@ export function ShortcutDirectResolver({
       if (cancelled) return;
 
       if (fetchError) {
-        setError(fetchError.message);
+        setError(operationFailed("open this shortcut", fetchError).message);
         return;
       }
 
       if (!data) {
-        setError("Shortcut not found or you do not have access.");
+        setError(
+          recordUnavailable({
+            entity: "shortcut",
+            reason: "unknown",
+            recordId: shortcutId,
+            relation: "agent.shortcut",
+          }).message,
+        );
         return;
       }
 

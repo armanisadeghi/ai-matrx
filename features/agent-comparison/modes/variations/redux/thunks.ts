@@ -387,6 +387,7 @@ export const promoteVariationToAgent = createAsyncThunk<
     const col = state.agentComparisonVariations.columns.find(
       (c) => c.columnId === columnId,
     );
+    // access-errors: ok — in-memory Redux lookup of a local comparison column, no record read
     if (!col) throw new Error("Variation not found");
     const synthetic = state.agentDefinition.agents?.[col.syntheticAgentId];
     if (!synthetic) throw new Error("Variation agent not loaded");

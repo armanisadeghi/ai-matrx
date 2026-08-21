@@ -105,6 +105,7 @@ function readEnv(name: string): string {
     } catch {
         /* fall through to the loud throw */
     }
+    // access-errors: ok — dev-only CLI script; the message is read by the developer running it
     throw new Error(`[change-policy --check] ${name} not set and not found in .env.local`);
 }
 

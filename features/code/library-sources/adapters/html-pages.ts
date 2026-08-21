@@ -13,6 +13,7 @@ import type {
   SourceEntry,
 } from "../types";
 import { RemoteConflictError } from "../types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 /**
  * Library adapter for standalone `html_pages` (HTML CMS project).
@@ -94,7 +95,11 @@ export const htmlPagesAdapter: LibrarySourceAdapter = {
   ): Promise<LoadedSourceEntry> {
     const row = (await HTMLPageService.getPage(rowId)) as HtmlPageFullRow;
     if (!row?.id) {
-      throw new Error(`HTML page not found: ${rowId}`);
+      throw recordUnavailable({
+        entity: "HTML page",
+        reason: "unknown",
+        recordId: rowId,
+      });
     }
     const base = safeFilename(row.meta_title || "page");
     return {

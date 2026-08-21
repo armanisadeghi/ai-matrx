@@ -8,6 +8,7 @@ import {
   usePlanNode,
   useSitePlanIndex,
 } from "@/features/marketing/content-plan/data/hooks";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 export type CmsPagePlanContextStatus =
   "unlinked" | "loading" | "ready" | "error";
@@ -106,7 +107,12 @@ export function useCmsPagePlanContext(
   if (!nodeQuery.data) {
     return {
       status: "error",
-      error: "The linked plan page was not found.",
+      error: recordUnavailable({
+        entity: "plan page",
+        reason: "unknown",
+        recordId: planNodeId,
+        relation: "plan.node",
+      }).message,
       node: null,
     };
   }

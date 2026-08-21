@@ -158,6 +158,7 @@ function mapAuthError(
     code === "validation_failed"
   ) {
     return {
+      // access-errors: ok — provider-verified OAuth origin misconfiguration, not a record access state
       title: "Origin not authorized",
       message:
         `This page is being served from "${origin}" but the OAuth server ` +

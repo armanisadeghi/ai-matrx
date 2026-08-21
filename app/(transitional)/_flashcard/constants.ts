@@ -321,6 +321,7 @@ export async function getDataByDataName(dataName: FlashcardData[]) {
             }
         }
     }
+    // access-errors: ok — in-memory lookup over bundled flashcard constants, no record access involved
     throw new Error(`Data with name '${dataName}' does not exist.`);
 }
 

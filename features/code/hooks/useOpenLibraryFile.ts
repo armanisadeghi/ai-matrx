@@ -6,6 +6,7 @@ import { loadCodeFileFull } from "@/features/code-files/redux/thunks";
 import { selectCodeFileById } from "@/features/code-files/redux/selectors";
 import { openTab, setActiveTab } from "../redux/tabsSlice";
 import { languageFromFilename } from "../styles/file-icon";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 /** Tab id prefix for files backed by the `code_files` table.
  *  Tabs with this prefix are routed to `saveFileNow` on save. */
@@ -48,7 +49,12 @@ export function useOpenLibraryFile() {
       await dispatch(loadCodeFileFull({ id: codeFileId })).unwrap();
       const record = selectCodeFileById(store.getState(), codeFileId);
       if (!record) {
-        throw new Error(`Code file ${codeFileId} not found`);
+        throw recordUnavailable({
+          entity: "code file",
+          reason: "unknown",
+          recordId: codeFileId,
+          token: "code_file",
+        });
       }
 
       const language =

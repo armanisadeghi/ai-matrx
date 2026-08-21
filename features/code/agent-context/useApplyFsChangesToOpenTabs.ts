@@ -226,6 +226,7 @@ export function useApplyFsChangesToOpenTabs(
         for (const tab of matches) {
           dispatch(closeTab(tab.id));
           if (!silent) {
+            // access-errors: ok — deletion is proven by the filesystem change event that reported it
             toast.warning(`"${tab.name}" was deleted`, {
               description: tab.dirty
                 ? "Your unsaved local edits were discarded with the tab. Re-create the file from the explorer if you need to keep them."
