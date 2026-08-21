@@ -74,7 +74,7 @@ handler, not hit-testing.
 **Why it matters:** `features/crm/FEATURE.md` states the contacts-only default is load-bearing
 *because* "the Record column facet … is always rendered … Hidden is never unreachable". It is
 unreachable. That facet is the only door to the 1,449 `record_class='discovered'` parties
-(`projects/crm/STATE.md` §4.2 P14 confirms no dedicated surface exists). THE DOOR LAW fails here.
+(`systems/crm/STATE.md` §7 P14 confirms no dedicated surface exists). THE DOOR LAW fails here.
 
 Fix: `out.record_class` should take the LAST value, or the facet should be rendered as a
 single-select. Re-prove in the browser by switching to "Found by the platform" and seeing the
@@ -129,7 +129,7 @@ the existing record.
 `loadParsedData(parseDelimitedText(pastedText), null)` — `null` for the file name — so
 `fileName` is null, `commitImport`'s `sourceDetail` is `undefined` (`:205`), and every row lands
 with `source_detail = NULL`. Verified live: all 21 rows of a paste import had `source='import'`,
-`source_detail=NULL`, against `projects/crm/STATE.md` §4.1 P1's claim that "the import wizard
+`source_detail=NULL`, against `systems/crm/STATE.md` §7 P1's claim that "the import wizard
 stamps the uploaded file name as `source_detail`". One-literal fix (`"pasted text"`).
 
 ### D222 — enrolling into an outreach list from `/crm` never records where the list came from (2026-08-20)
@@ -165,7 +165,7 @@ the blocked-members query fall back to the party's media before declaring a bloc
 Verified live on `/crm/[partyId]`: toggling **Do not contact** ON set
 `crm.party.do_not_contact = true` and wrote nothing else — no `crm.interaction`, no timeline entry.
 Toggling it OFF wrote a `note` interaction *"Do-not-contact lifted / This record can be contacted
-again."* The consequential half of the pair is the unaudited one. `projects/crm/STATE.md` §3 claims
+again."* The consequential half of the pair is the unaudited one. `common-docs/systems/crm/STATE.md` §3 claims
 the reversible-suppression pair "leaves an audit trail on both sides" — it leaves one on one side.
 
 ### D225 — the floating "N assists" overlay covers the record page's activity **Log** button and swallows the click (2026-08-20)

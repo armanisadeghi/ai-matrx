@@ -4,7 +4,7 @@ updated: 2026-08-19
 repos: [matrx-frontend, aidream]
 scope: program
 feature: CRM
-vision: [/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/crm/VISION.md]
 ---
 
 # CRM record classification — the CRM is how they sell, not how they find backlinks
@@ -15,7 +15,7 @@ the pages that DO show them, and the human bulk-promotion path.
 **Scope:** Program
 **Feature:** CRM
 **Vision:** Arman's words, merged verbatim —
-[`common-docs/systems/crm/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md) §2.6
+[`common-docs/systems/crm/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/crm/VISION.md) § The CRM is how they sell
 
 > **Read `common-docs/systems/crm/STATE.md` first** — merged vision, verified state, the seam map,
 > and the question ledger. This doc carries the axis model and this program's remaining work.

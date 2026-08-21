@@ -2,7 +2,7 @@
 -- the `deal_pipeline` category dimension, the interaction seam, and the outcome seam.
 --
 -- Ruled by Arman twice (2026-08-14, 2026-08-19: "We build them now! Dispatch agent
--- chips and let's get it done. no waiting.") — projects/crm/STATE.md §4.1 P4 / Q2.
+-- chips and let's get it done. no waiting.") — common-docs/systems/crm/STATE.md §7 P4 / §8 Q2.
 --
 -- THE SHAPE, and why:
 --

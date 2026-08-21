@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-Cross-repo Public Relations program: /Users/armanisadeghi/code/common-docs/systems/public-relations/PLAN.md (+ RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
+Cross-repo Public Relations program: /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md (+ RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
 
 **Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-20`

@@ -124,7 +124,7 @@ export const GOOGLE_OUTREACH_INBOX_SCOPES = [
  * 🚨 SENSITIVE, and NOT in the approved campaign set — its own future campaign.
  *
  * CRM contact import through the Google People API (read-only). RULED BY ARMAN
- * 2026-08-19 (`common-docs/projects/crm/STATE.md` Q3): the Google People
+ * 2026-08-19 (`common-docs/systems/crm/STATE.md` Q3): the Google People
  * connector is the FIRST API contact connector — the consumer is real, so this
  * is registered here (and in the aidream mirror) like `gmail.readonly` was.
  *
