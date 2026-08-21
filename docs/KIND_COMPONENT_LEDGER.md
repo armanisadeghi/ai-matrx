@@ -168,10 +168,10 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `branch_result` | Branch Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `bulk_result` | Bulk Result (partial-failure batch) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `claim_evidence` | Claim Evidence | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
-| `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | unclaimed | | |
-| `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | unclaimed | | |
+| `competitor_opportunity_autopsy_v1` | Competitor Opportunity Autopsy | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `competitor_page_autopsy_v1` | Competitor Page Autopsy | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `criteria_gate_result` | Criteria Gate Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
-| `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | unclaimed | | |
+| `digital_pr_reputation_brief_v1` | Digital PR & Reputation Brief | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `entity_mention` | Entity Mention | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `evidence_source` | Evidence Source | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `gather_result` | Gather Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
@@ -180,7 +180,7 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `http_response` | HTTP Response | — | 1 | | unclaimed | | |
 | `items` | Items (list result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `json` | JSON (any value) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
-| `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | unclaimed | | |
+| `keyword_classification_batch_v1` | SEO Keyword Classification Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `map_result` | Map Result | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `notable_timestamp` | Notable Timestamp | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `number` | Number | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
@@ -188,8 +188,8 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `office_file_result` | Office File Result | — | 1 | | unclaimed | | |
 | `operation_result` | Operation Result (action receipt) | — | 1 | `generic_structured` | done | copy-B | explicit basic route LIVE (copy-B, migrations/content_ir_workflow_result_output_routes.sql) — no kind reaches the reader by silent fallback any more. copy-E claimed these for an engine-result family component AFTER the route landed; that work is an UPGRADE of component_key on these same rows, not a new registration. |
 | `page` | Page (paginated window) | — | 1 | | unclaimed | | |
-| `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | unclaimed | | |
-| `page_keyword_map_v1` | Page Keyword Map | — | 1 | | unclaimed | | |
+| `page_keyword_analysis_v1` | Page Keyword Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
+| `page_keyword_map_v1` | Page Keyword Map | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `regex_extract_result` | Regex Extract Result | — | 1 | | unclaimed | | |
 | `rendered_text` | Rendered Text | — | 1 | | claimed | copy-E | engine-result family (one shape family, one component); 16 live events |
 | `research_cross_cutting_tags` | Research Cross-Cutting Tags | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
@@ -198,13 +198,13 @@ primitive kinds below. Whoever owns that work: flip this row to `done` when the 
 | `research_tag_suggestions` | Research Tag Suggestions | — | 1 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `saved_row` | Saved Row | — | 1 | `generic_structured` | done | copy-B | explicit basic route; no bespoke display existed |
 | `scraped_page` | Scraped Page | — | 1 | | unclaimed | | |
-| `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | unclaimed | | |
+| `seo_authority_route_analysis` | SEO Authority Route Analysis | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `seo_finding_fix_context` | SEO Finding Fix Context | — | 1 | | unclaimed | | |
 | `seo_finding_fix_proposal` | SEO Finding Fix Proposal | — | 1 | | unclaimed | | |
 | `string_list` | String List | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `table_rows` | Table Rows | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
 | `text` | Text | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
-| `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | unclaimed | | |
+| `topic_assignment_batch_v1` | SEO Topic Assignment Batch | — | 1 | | claimed | copy-D | SEO analysis cluster — batch 3 |
 | `topic_relevance` | Topic Relevance | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `transcript_usage` | Transcript Usage | — | 0 | | claimed | copy-B | research/evidence cluster — batch 2 |
 | `value` | Value (single result) | — | 1 | `generic_structured` | **done** | copy-D | explicit basic route; live + tested |
