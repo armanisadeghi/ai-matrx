@@ -22,8 +22,6 @@ import type {
   Message,
   MessageWithSender,
   ConversationWithDetails,
-  ConversationType,
-  ParticipantRole,
   UserBasicInfo,
   SendMessageRequest,
   UseMessagesReturn,
@@ -37,17 +35,6 @@ import {
   fetchDmUserInfo,
   fetchDmUserInfoMap,
 } from "@/features/messaging/data/dmUserInfo";
-
-function toConversationType(value: string): ConversationType {
-  return value === "group" ? "group" : "direct";
-}
-
-function toParticipantRole(value: string | null | undefined): ParticipantRole {
-  if (value === "owner" || value === "admin" || value === "member") {
-    return value;
-  }
-  return "member";
-}
 
 // ============================================
 // useMessages Hook
