@@ -438,6 +438,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
           lastScanSignatureRef.current = "";
           addLog("received", {
             event: "discovery_failed",
+            // access-errors: ok — verified localhost port-scan result: every port in the range was probed and no engine answered; not a record read
             message: `Matrx Local not found on ports ${LOCAL_ENGINE_SCAN_LABEL}`,
           });
         }

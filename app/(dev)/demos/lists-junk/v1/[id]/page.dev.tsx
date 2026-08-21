@@ -77,7 +77,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
 export async function generateMetadata({ params }: ListDetailPageProps) {
   const { id } = await params;
   const { list } = await getListDetail(id);
-  if (!list) return { title: "List not found | AI Matrx" };
+  if (!list) return { title: "List | AI Matrx" };
   return {
     title: `${list.list_name} | AI Matrx`,
     description:

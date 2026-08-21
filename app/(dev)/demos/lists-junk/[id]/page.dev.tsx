@@ -36,7 +36,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const list = await getListWithItems(id);
-  if (!list) return { title: "List Not Found" };
+  if (!list) return { title: "List | AI Matrx" };
   return {
     title: `${list.list_name} | My Lists | AI Matrx`,
     description: list.description ?? undefined,

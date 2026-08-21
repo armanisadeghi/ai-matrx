@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AgentAppPublicRenderer } from "@/features/agent-apps/components/AgentAppPublicRenderer";
 import { PUBLIC_AGENT_APP_SURFACE_NAME } from "@/features/surfaces/manifests/public-agent-app.manifest";
 import { getAgentAppIconsMetadata } from "@/features/agent-apps/utils/favicon-metadata";
@@ -52,7 +53,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const agentAppMeta = await resolveAgentAppMetadata(slug);
-  if (!agentAppMeta) return { title: "App Not Found" };
+  if (!agentAppMeta) return { title: "App | AI Matrx", robots: { index: false } };
   return {
     title: `${agentAppMeta.name} | AI Matrx Apps`,
     description:
@@ -103,6 +104,13 @@ export default async function PublicAppPage({
   const rpcRow = rpcRows?.[0];
 
   if (!rpcRow) {
+    if (isId) {
+      return (
+        <div className="h-[calc(100dvh-var(--header-height,2.5rem))] bg-textured">
+          <AccessGate token="app" id={slug} fallbackHref="/" fallbackLabel="Home" />
+        </div>
+      );
+    }
     notFound();
   }
 

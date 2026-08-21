@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { getShareableResource } from "@/utils/permissions/registry";
+import { PUBLIC_LANE_TYPES } from "@/utils/permissions/publicLane";
+import { isFullUuid } from "@/utils/supabase-search";
 import { loadPublicResource } from "../../loadPublicResource";
 import { PublicResourceView } from "./PublicResourceView";
 
@@ -22,7 +26,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { resourceType, id } = await params;
   const resource = await loadPublicResource(resourceType, id);
   if (!resource) {
-    return { title: "Not found · AI Matrx", robots: { index: false } };
+    const entry = getShareableResource(resourceType);
+    return {
+      title: `${entry?.displayLabel ?? "Public resource"} · AI Matrx`,
+      robots: { index: false },
+    };
   }
   const description =
     resource.description ?? `A ${resource.displayLabel.toLowerCase()} shared publicly on AI Matrx.`;
@@ -45,6 +53,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PublicResourcePage({ params }: PageProps) {
   const { resourceType, id } = await params;
   const resource = await loadPublicResource(resourceType, id);
-  if (!resource) notFound();
+  if (!resource) {
+    const entry = getShareableResource(resourceType);
+    if (entry && PUBLIC_LANE_TYPES.has(entry.resourceType) && isFullUuid(id)) {
+      return (
+        <div className="h-[calc(100dvh-var(--header-height,2.5rem))] bg-textured">
+          <AccessGate
+            token={entry.resourceType}
+            id={id}
+            fallbackHref="/"
+            fallbackLabel="Home"
+          />
+        </div>
+      );
+    }
+    notFound();
+  }
   return <PublicResourceView resource={resource} />;
 }

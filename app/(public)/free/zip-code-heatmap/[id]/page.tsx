@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/utils/supabase/client';
+import { recordUnavailable, recordUnavailableMessage } from '@/lib/records/recordUnavailable';
 import ZipCodeMap from "../components/ZipCodeMap";
 import ColorLegend from "../components/ColorLegend";
 import type { ColorScaleOptions } from '../components/ColorScaleSelector';
@@ -55,17 +56,19 @@ export default function SharedHeatmapPage() {
         .eq('id', heatmapId)
         .single();
 
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          setError('Heatmap not found');
-        } else {
-          throw fetchError;
-        }
-        return;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
       }
 
-      if (!data) {
-        setError('Heatmap not found');
+      if (fetchError || !data) {
+        setError(
+          recordUnavailable({
+            entity: 'heatmap',
+            reason: 'unknown',
+            recordId: heatmapId,
+            relation: 'workbench.heatmap_saves',
+          }).message,
+        );
         return;
       }
 
@@ -74,8 +77,13 @@ export default function SharedHeatmapPage() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!user || user.id !== data.user_id) {
-          setError('You do not have permission to view this heatmap');
+        if (!user) {
+          setError('Sign in to open this heatmap.');
+          return;
+        }
+        if (user.id !== data.user_id) {
+          // access-errors: ok — verified denial: the row was read, its visibility is not public, and the signed-in caller is not its owner
+          setError("You don't have access to this heatmap.");
           return;
         }
       }
@@ -113,7 +121,7 @@ export default function SharedHeatmapPage() {
               <AlertCircle className="w-5 h-5" />
               <CardTitle>Error</CardTitle>
             </div>
-            <CardDescription>{error || 'Heatmap not found'}</CardDescription>
+            <CardDescription>{error || recordUnavailableMessage('heatmap', 'unknown')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={handleBackToEditor} className="w-full">

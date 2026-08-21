@@ -237,6 +237,7 @@ const errorEntry: ToolLifecycleEntry = {
   ...entry("knowledge_browse", { action: "chunk", chunk_id: "missing" }, null),
   status: "error",
   errorType: "NotFound",
+  // access-errors: ok — hard-coded demo fixture reproducing a captured server error payload so the error-state visualization can render; not live copy
   errorMessage: "chunk missing not found",
 };
 

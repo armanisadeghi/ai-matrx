@@ -44,6 +44,7 @@ const componentMap: Record<string, React.FC<any>> = {
 const renderDynamicComponent = (component: { name: string; props: any }) => {
     const Component = componentMap[component.name];
     if (!Component) {
+        // access-errors: ok — dev console log for a name absent from the static in-file componentMap; not a record read
         console.error(`Component ${component.name} not found in componentMap.`);
         return null;
     }

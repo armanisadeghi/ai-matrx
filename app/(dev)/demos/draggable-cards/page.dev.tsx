@@ -102,6 +102,7 @@ export default function DraggableCardsDemoPage() {
             <p className="text-xs text-muted-foreground">
               Live mounts for <code>TransformableCard</code> and{" "}
               <code>EnhancedDraggableCardBody</code>. Both lost their only
+              {/* // access-errors: ok — verified repo history describing two components whose consumer route group was removed; not record-access copy */}
               consumer when the <code>(legacy)</code> route group was deleted.
               Each card brings its own 320px frame — this page adds none.
             </p>

@@ -82,6 +82,7 @@ export const useDynamicGateway = () => {
         const registration = registryRef.current.get(key);
 
         if (!registration) {
+            // access-errors: ok — in-memory registry lookup; the handler key is absent from the browser-local Map, no record read involved
             throw new Error(`Handler not found: ${key}`);
         }
 

@@ -82,6 +82,7 @@ export default function SearchControl({
                 map.removeLayer(marker);
               }, 5000);
             } else {
+              // access-errors: ok — the external geocoding API returned zero matches for the typed search term; not a platform record read
               toast.error('Location not found. Please try a different search term.');
             }
           } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { operationFailed } from "@/utils/errors";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { FinalPayload } from "@/features/tool-call-visualization/testing/types";
 
@@ -53,8 +54,8 @@ export function useSaveSample(authToken?: string | null): UseSaveSampleReturn {
         if (!response.ok) {
           const err = await response
             .json()
-            .catch(() => ({ message: "Unknown error" }));
-          throw new Error(err.message ?? `HTTP ${response.status}`);
+            .catch(() => ({ message: `HTTP ${response.status}` }));
+          throw operationFailed("save this tool sample", err);
         }
 
         const data = await response.json();

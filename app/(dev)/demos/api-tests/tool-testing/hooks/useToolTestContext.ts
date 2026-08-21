@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectUserId } from '@/lib/redux/selectors/userSelectors';
 import { supabase } from '@/utils/supabase/client';
+import { operationFailed } from '@/utils/errors';
 import type { TestContext } from '@/features/tool-call-visualization/testing/types';
 
 const CONVERSATION_COOKIE_KEY = 'tool_test_conversation_id';
@@ -114,7 +115,7 @@ export function useToolTestContext(): UseToolTestContextReturn {
       const res = await fetch('/api/tool-testing/conversation', { method: 'POST', headers });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };
-        throw new Error(body.message ?? `HTTP ${res.status}`);
+        throw operationFailed('create a test conversation', body.message ?? `HTTP ${res.status}`);
       }
       const { conversation_id } = await res.json() as { conversation_id: string };
       setConversationId(conversation_id);

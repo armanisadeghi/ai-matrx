@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/utils/supabase/client';
+import { operationFailed } from '@/utils/errors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,7 +78,7 @@ export async function fetchAppInstances(): Promise<AppInstance[]> {
         .select('id,instance_id,instance_name,platform,os_version,hostname,username,cpu_model,cpu_cores,ram_total_gb,is_active,last_seen,created_at,updated_at,tunnel_url,tunnel_active,tunnel_updated_at,tunnel_ws_url')
         .is('deleted_at', null)
         .order('last_seen', { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throw operationFailed('load your Matrx Local machines', error);
     return data ?? [];
 }
 
@@ -307,7 +308,7 @@ export function useAppInstances() {
             })
             .eq('id', instanceId);
 
-        if (err) throw new Error(err.message);
+        if (err) throw operationFailed('save the tunnel address', err);
         await fetch_();
     }, [fetch_]);
 

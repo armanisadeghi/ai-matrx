@@ -124,6 +124,7 @@ const SlackManager: React.FC = () => {
             setError('Failed to join channel. This might be a private channel - please manually invite the bot using /invite @YourBotName');
           }
         } else if (err.message?.includes('channel_not_found')) {
+          // access-errors: ok — translates the Slack API's own channel_not_found error code; the provider verified the absence, not a platform record read
           setError('Channel not found. Please select a valid channel.');
         } else if (err.message?.includes('invalid_auth')) {
           setError('Authentication failed. Your token may be invalid or expired.');

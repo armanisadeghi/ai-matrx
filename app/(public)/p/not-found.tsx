@@ -3,11 +3,12 @@ import Link from 'next/link';
 
 /**
  * Custom 404 page for all /p/* routes.
- * 
- * Shown when:
- * - An app slug doesn't match any published app
- * - An app has been unpublished or deleted
- * - Invalid URL is accessed under /p/
+ *
+ * Reached only when the ADDRESS itself matched nothing public — a slug with no
+ * published app behind it, an unregistered resource type, or a malformed id.
+ * An id-addressed miss never lands here: those pages render `<AccessGate>`,
+ * which resolves whether the record is denied / deleted / missing / signed-out
+ * instead of guessing. This surface therefore only speaks about the address.
  */
 export default function PromptAppNotFound() {
     return (
@@ -20,11 +21,11 @@ export default function PromptAppNotFound() {
 
                 {/* Heading */}
                 <h1 className="text-2xl font-bold text-foreground mb-2">
-                    App not found
+                    Nothing is published at this address
                 </h1>
                 <p className="text-sm text-muted-foreground mb-8 max-w-sm mx-auto">
-                    The app you&apos;re looking for doesn&apos;t exist, may have been removed, 
-                    or is no longer published.
+                    This link didn&apos;t match a published app or shared resource.
+                    It may be mistyped, or it may be out of date.
                 </p>
 
                 {/* Actions */}

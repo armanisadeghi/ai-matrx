@@ -115,6 +115,7 @@ export default function SlackApp() {
   const handleConnect = (providerId: string) => {
     const providerConfig = OAUTH_PROVIDERS[providerId];
     if (!providerConfig) {
+      // access-errors: ok — dev console log for an id absent from the static OAUTH_PROVIDERS config object; not a record read
       console.error(`Provider ${providerId} not found in configuration`);
       return;
     }

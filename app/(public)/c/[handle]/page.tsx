@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // NEXT_PUBLIC_EDU_ORIGIN is set. See features/education/constants.ts#EDU_ORIGIN.
   const metadataBase = new URL(EDU_ORIGIN);
   if (!page) {
-    return { title: "Creator not found · AI Matrx", robots: { index: false }, metadataBase };
+    return { title: "Creator · AI Matrx", robots: { index: false }, metadataBase };
   }
   const description =
     page.tagline ??
