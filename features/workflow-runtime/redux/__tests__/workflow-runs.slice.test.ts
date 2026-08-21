@@ -438,6 +438,89 @@ describe("workflow-runs slice", () => {
     expect(state.byRunId[RUN_ID]?.nodes[k2]?.textTail).toBe("heartbeat tail");
   });
 
+  test("seedRunRow adopts a TERMINAL row over a non-terminal replayed status (watchdog force-fail)", () => {
+    // The lifecycle sweeper stamps workflow.run.status='failed' directly on the
+    // row and appends NO terminal event to the durable log — so replay ends on
+    // "running" while the row is terminal. Without adoption the run renders as
+    // forever-in-flight (live clock, Pause/Stop, no error card) and can never
+    // self-correct, because the adopter sees a terminal row and never follows
+    // live.
+    let state = attached();
+    state = apply(state, runStartedEvent());
+    expect(state.byRunId[RUN_ID]?.status).toBe("running");
+    expect(state.byRunId[RUN_ID]?.statusTs).not.toBeNull();
+
+    const row: RunRow = {
+      id: RUN_ID,
+      definition_id: "def-1",
+      status: "failed",
+      input: null,
+      output: null,
+      error: { message: "Watchdog force-failed run", error_type: "watchdog_timeout" },
+      created_at: "2026-08-16T00:00:00Z",
+      completed_at: null,
+      metadata: null,
+      conversation_id: null,
+    };
+
+    state = reducer(state, seedRunRow({ runId: RUN_ID, row }));
+    expect(state.byRunId[RUN_ID]?.status).toBe("failed");
+    expect(state.byRunId[RUN_ID]?.error).toEqual(row.error);
+    // The sweeper writes no completed_at — the replayed run_started stamp is
+    // left alone rather than invented.
+    expect(state.byRunId[RUN_ID]?.statusTs).toBe("2026-08-16T00:00:00Z");
+  });
+
+  test("seedRunRow adopts a terminal 'cancelled' row and takes completed_at as the end", () => {
+    let state = attached();
+    state = apply(state, runStartedEvent());
+
+    const row: RunRow = {
+      id: RUN_ID,
+      definition_id: "def-1",
+      status: "cancelled",
+      input: null,
+      output: null,
+      error: null,
+      created_at: "2026-08-16T00:00:00Z",
+      completed_at: "2026-08-16T00:04:00Z",
+      metadata: null,
+      conversation_id: null,
+    };
+
+    state = reducer(state, seedRunRow({ runId: RUN_ID, row }));
+    expect(state.byRunId[RUN_ID]?.status).toBe("cancelled");
+    expect(state.byRunId[RUN_ID]?.statusTs).toBe("2026-08-16T00:04:00Z");
+  });
+
+  test("seedRunRow never regresses a terminal replayed status to the row's stale 'running' (Bugbot #148)", () => {
+    let state = attached();
+    state = apply(state, runStartedEvent());
+    state = apply(state, {
+      event: "run_completed",
+      run_id: RUN_ID,
+      ts: "2026-08-16T00:00:05Z",
+    } as WorkflowRunEvent);
+
+    // The row is a PRE-replay snapshot: it still says running.
+    const row: RunRow = {
+      id: RUN_ID,
+      definition_id: "def-1",
+      status: "running",
+      input: null,
+      output: null,
+      error: null,
+      created_at: "2026-08-16T00:00:00Z",
+      completed_at: null,
+      metadata: null,
+      conversation_id: null,
+    };
+
+    state = reducer(state, seedRunRow({ runId: RUN_ID, row }));
+    expect(state.byRunId[RUN_ID]?.status).toBe("completed");
+    expect(state.byRunId[RUN_ID]?.statusTs).toBe("2026-08-16T00:00:05Z");
+  });
+
   test("refreshHeartbeatTails advances the tail on the poller and is inert on SSE", () => {
     // The bug this locks down: `node_stream` frames are SSE-only and never
     // replayed, and `seedRunRow` runs ONCE at attach — when the heartbeat is
