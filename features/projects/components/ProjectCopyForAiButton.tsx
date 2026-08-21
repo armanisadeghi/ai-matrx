@@ -3,6 +3,7 @@
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { fetchProjectExportBundle } from "@/features/tasks/services/aiExportService";
 import { serializeProjectForAi } from "@/features/tasks/utils/serializeProjectTaskForAi";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 export function ProjectCopyForAiButton({
   projectId,
@@ -33,7 +34,12 @@ export function ProjectCopyForAiButton({
       agent={async () => {
         const bundle = await fetchProjectExportBundle(projectId);
         if (!bundle) {
-          throw new Error("Project not found");
+          throw recordUnavailable({
+            entity: "project",
+            reason: "unknown",
+            recordId: projectId,
+            token: "project",
+          });
         }
         return serializeProjectForAi(bundle, location);
       }}

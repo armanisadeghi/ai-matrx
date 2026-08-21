@@ -111,6 +111,7 @@ export function buildProjectWriteHandlers({
   ): Promise<void> => {
     if (!canEdit) {
       throw new Error(
+        // access-errors: ok — `canEdit` is the viewer's already-resolved settings permission (the same gate the inline editors use), not a guess from a failed read; the sentence tells the agent why its write was refused
         `${target}: you don't have permission to change this project's settings.`,
       );
     }

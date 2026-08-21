@@ -5,6 +5,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Loader2 } from "lucide-react";
 import AiModelDetailPanel from "../components/AiModelDetailPanel";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { aiModelService } from "../service";
 import type { AiModel, AiProvider } from "../types";
 
@@ -65,11 +66,11 @@ export default function ModelDetailSheet({
           }}
           onDeleted={onClose}
         />
-      ) : (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          Model not found
-        </div>
-      )}
+      ) : modelId ? (
+        // The id came from the audit tables but isn't in the loaded registry —
+        // the gate resolves whether it was deleted, denied, or never existed.
+        <AccessGate token="ai_model" id={modelId} />
+      ) : null}
     </MatrxDynamicPanelHost>
   );
 }

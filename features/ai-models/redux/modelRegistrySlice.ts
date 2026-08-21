@@ -4,6 +4,7 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
 // Minimal local state type — avoids importing RootState from store.ts (which
 // transitively imports this slice via reduxTypes → modelRegistrySlice),
@@ -237,7 +238,14 @@ export const fetchModelIdentityById = createAsyncThunk<
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) throw new Error(`AI model ${modelId} was not found`);
+    if (!data)
+      throw recordUnavailable({
+        entity: "AI model",
+        reason: "unknown",
+        recordId: modelId,
+        token: "ai_model",
+        relation: "model_definition",
+      });
     return data;
   },
   {

@@ -97,6 +97,7 @@ export function useWarRoomThreadWriteHandlers(
       // shape of "applied" there is. Refuse and name the real fix.
       if (note.deleted_at)
         throw new Error(
+          // access-errors: ok — deletion is PROVEN: the note row loaded and its deleted_at is set; the sentence instructs the agent, not a guess from an empty read
           `${target}: the note this thread points at has been deleted, so writing to it would be invisible to the user. Ask them to add a new note from the thread's Notes tab first.`,
         );
       // `null` is a LOADED but empty body — distinct from `undefined` above.

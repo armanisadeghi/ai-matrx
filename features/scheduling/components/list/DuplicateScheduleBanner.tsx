@@ -72,6 +72,7 @@ function DuplicateGroupCard({
         redundant.length === 1
           ? "Paused the duplicate schedule"
           : `Paused ${redundant.length} duplicate schedules`,
+        // access-errors: ok — success toast after a verified pause (toggleTaskEnabled resolved); it states what the action did NOT do, not a verdict about a failed read
         { description: "The original keeps running. Nothing was deleted." },
       );
       onResolved?.();

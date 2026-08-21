@@ -10,17 +10,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  Podcast,
-  ArrowLeft,
   Plus,
   RefreshCw,
   Clapperboard,
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-media-ref";
 import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/UnifiedVideoBlockRenderer";
@@ -144,29 +142,17 @@ export function StudioRunView({ runId }: { runId: string }) {
   }
 
   if (notFound) {
+    // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
       <>
-        <EntityModeHeader
-          backHref="/podcast/studio"
-          entityLabel="Run not found"
+        <EntityModeHeader backHref="/podcast/studio" entityLabel="Studio run" />
+        <AccessGate
+          token="pc_studio_run"
+          id={runId}
+          onRetry={refresh}
+          fallbackHref="/podcast/studio"
+          fallbackLabel="Back to studio"
         />
-        <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-            <Podcast className="h-7 w-7" />
-          </span>
-          <h1 className="text-xl font-semibold text-foreground">
-            Run not found
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            This studio run doesn&apos;t exist or isn&apos;t yours.
-          </p>
-          <Button asChild variant="outline" className="gap-2">
-            <Link href="/podcast/studio">
-              <ArrowLeft className="h-4 w-4" />
-              Back to studio
-            </Link>
-          </Button>
-        </div>
       </>
     );
   }

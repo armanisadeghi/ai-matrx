@@ -19,7 +19,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
-  ArrowLeft,
   Save,
   Loader2,
   Globe,
@@ -53,6 +52,7 @@ import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AssetUploader, type AssetUrls } from "@/features/podcasts/components/admin/AssetUploader";
 import { podcastService } from "@/features/podcasts/service";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
@@ -132,6 +132,9 @@ export function ShowManageClient({ showId }: { showId: string }) {
   const [episodes, setEpisodes] = useState<PcEpisodeWithShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // The raw failure, never a sentence — the gate decides what it means.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // ── Basics form ──────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -185,12 +188,14 @@ export function ShowManageClient({ showId }: { showId: string }) {
         if (!found) {
           setNotFound(true);
         } else {
+          setLoadError(null);
+          setNotFound(false);
           hydrate(found);
           setEpisodes(eps);
         }
       } catch (e) {
         if (active) {
-          toast.error(e instanceof Error ? e.message : "Failed to load podcast");
+          setLoadError(e);
           setNotFound(true);
         }
       } finally {
@@ -200,7 +205,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
     return () => {
       active = false;
     };
-  }, [showId]);
+  }, [showId, reloadKey]);
 
   const handleAssetComplete = (urls: AssetUrls) => {
     if (urls.image_url !== undefined) setImageUrl(urls.image_url);
@@ -290,24 +295,18 @@ export function ShowManageClient({ showId }: { showId: string }) {
   }
 
   if (notFound || !show) {
+    // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
       <>
-        <EntityModeHeader backHref="/podcast/studio" entityLabel="Podcast not found" />
-        <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-            <Radio className="h-7 w-7" />
-          </span>
-          <h1 className="text-lg font-semibold text-foreground">Podcast not found</h1>
-          <p className="text-sm text-muted-foreground">
-            This podcast doesn&apos;t exist or you don&apos;t have access to it.
-          </p>
-          <Button asChild variant="outline" className="gap-2">
-            <Link href="/podcast/studio">
-              <ArrowLeft className="h-4 w-4" />
-              Back to studio
-            </Link>
-          </Button>
-        </div>
+        <EntityModeHeader backHref="/podcast/studio" entityLabel="Manage podcast" />
+        <AccessGate
+          token="pc_show"
+          id={showId}
+          error={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          fallbackHref="/podcast/studio"
+          fallbackLabel="Back to studio"
+        />
       </>
     );
   }

@@ -3,7 +3,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,8 +11,10 @@ import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   deleteScheduledTask,
+  fetchScheduledTask,
   runTaskNowThunk,
   toggleTaskEnabled,
   updateScheduledTask,
@@ -134,17 +135,17 @@ function ScheduleDetailBody({ taskId }: Props) {
   }
 
   if (status === "not-found") {
+    // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
-      <Alert>
-        <AlertTitle>Schedule not found</AlertTitle>
-        <AlertDescription>
-          The schedule you&apos;re looking for doesn&apos;t exist, or you
-          don&apos;t have access.{" "}
-          <Link href="/schedules" className="underline">
-            Back to schedules
-          </Link>
-        </AlertDescription>
-      </Alert>
+      <AccessGate
+        token="sch_task"
+        id={taskId}
+        onRetry={() => {
+          void dispatch(fetchScheduledTask(taskId)).catch(() => {});
+        }}
+        fallbackHref="/schedules"
+        fallbackLabel="All schedules"
+      />
     );
   }
 

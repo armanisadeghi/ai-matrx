@@ -24,6 +24,7 @@ import {
   serializeProjectForAi,
   serializeTaskForAi,
 } from "@/features/tasks/utils/serializeProjectTaskForAi";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   selectAssignmentsByContainer,
   selectSessionById,
@@ -96,11 +97,23 @@ export function ThreadCopyButtons({
             const location = `War Room — ${session?.title ?? "thread"} tile`;
             if (anchorTarget.kind === "project") {
               const bundle = await fetchProjectExportBundle(anchorTarget.id);
-              if (!bundle) throw new Error("Project not found");
+              if (!bundle)
+                throw recordUnavailable({
+                  entity: "project",
+                  reason: "unknown",
+                  recordId: anchorTarget.id,
+                  token: "project",
+                });
               return serializeProjectForAi(bundle, location);
             }
             const bundle = await fetchTaskExportBundle(anchorTarget.id);
-            if (!bundle) throw new Error("Task not found");
+            if (!bundle)
+              throw recordUnavailable({
+                entity: "task",
+                reason: "unknown",
+                recordId: anchorTarget.id,
+                token: "task",
+              });
             return serializeTaskForAi(bundle, location);
           },
         },

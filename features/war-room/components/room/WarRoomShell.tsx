@@ -27,6 +27,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { buildWarRoomRoomScope } from "@/features/war-room/lib/war-room-scope";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { RoomRecordingController } from "@/features/war-room/components/room/RoomRecordingController";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   selectOrderedGalleryThreadIds,
   selectSessionById,
@@ -190,7 +191,10 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
         {loading ? (
           <RoomSkeleton mode={mode} />
         ) : notFound ? (
-          <NotFoundState />
+          <NotFoundState
+            sessionId={sessionId}
+            onRetry={() => dispatch(loadWarRoomSession(sessionId))}
+          />
         ) : ready ? (
           mode === "stage" ? (
             <StageView sessionId={sessionId} />
@@ -228,17 +232,23 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   );
 }
 
-function NotFoundState() {
+function NotFoundState({
+  sessionId,
+  onRetry,
+}: {
+  sessionId: string;
+  onRetry: () => void;
+}) {
+  // Denied / deleted / never existed / signed-out all read as zero rows here.
   return (
-    <div className="h-full grid place-items-center text-center px-4">
-      <div>
-        <p className="text-sm font-medium text-foreground">
-          War Room not found
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          It may have been deleted.
-        </p>
-      </div>
+    <div className="h-full overflow-y-auto">
+      <AccessGate
+        token="war_room"
+        id={sessionId}
+        onRetry={onRetry}
+        fallbackHref="/war-room"
+        fallbackLabel="All War Rooms"
+      />
     </div>
   );
 }

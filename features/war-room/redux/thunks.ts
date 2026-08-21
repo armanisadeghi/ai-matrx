@@ -4,6 +4,7 @@
 // Optimistic where it helps; loud (toast) on failure.
 
 import { toast } from "@/lib/toast";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
@@ -403,8 +404,17 @@ export const loadWarRoomSession =
       ]);
 
       if (!session) {
+        // Zero rows is ambiguous (deleted / denied / signed-out / stale id).
+        // The room surface renders <AccessGate token="war_room"> on this
+        // status, so no toast asserts a reason; the capture keeps it loud.
+        recordUnavailable({
+          entity: "War Room",
+          reason: "unknown",
+          recordId: id,
+          token: "war_room",
+          relation: "war_rooms",
+        });
         dispatch(setThreadsStatus({ roomId: id, status: "error" }));
-        toast.error("War Room not found");
         return null;
       }
 

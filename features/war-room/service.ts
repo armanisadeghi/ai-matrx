@@ -4,6 +4,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { DEFAULT_SESSION_TITLE } from "./constants";
@@ -141,7 +142,13 @@ export async function updateSession(
   if (Object.keys(clean).length === 0) {
     const current = await getSession(id);
     if (!current) {
-      throw new Error(`[war-room] updateSession: room ${id} not found`);
+      throw recordUnavailable({
+        entity: "War Room",
+        reason: "unknown",
+        recordId: id,
+        token: "war_room",
+        relation: SESSIONS,
+      });
     }
     return current;
   }
