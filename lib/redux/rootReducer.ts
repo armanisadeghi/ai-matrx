@@ -143,6 +143,7 @@ import { default as agentListsReducer } from "@/features/agents/ui-first-tools/r
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import { activeToolsReducer } from "@/features/agents/redux/execution-system/active-tools/active-tools.slice";
 import { default as instanceModelOverridesReducer } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { default as instanceInputCapabilitiesReducer } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.slice";
 import { default as instanceVariableValuesReducer } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { default as instanceResourcesReducer } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { default as instanceUserInputReducer } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -324,6 +325,7 @@ export const slimReducerMap = {
   chatIncognito: chatIncognitoReducer,
   chatRoute: chatRouteReducer,
   instanceModelOverrides: instanceModelOverridesReducer,
+  instanceInputCapabilities: instanceInputCapabilitiesReducer,
   instanceVariableValues: instanceVariableValuesReducer,
   instanceResources: instanceResourcesReducer,
   instanceContext: instanceContextReducer,

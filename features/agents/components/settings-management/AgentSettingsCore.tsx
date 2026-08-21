@@ -1850,16 +1850,10 @@ export function AgentSettingsCore({
               ),
             )}
 
-            {/* Input capabilities — model-gated UI flags. These live in the
-                dedicated agent.uiGates column (NOT settings), so they have
-                their own editor that writes via setAgentUiGates. Only gates
-                the selected model declares are shown. */}
-            {!noControls && (
-              <UiGatesEditor
-                agentId={agentId}
-                normalizedControls={normalizedControls}
-              />
-            )}
+            {/* Frontend input capabilities live in agent.uiGates, never in
+                model settings. They remain editable regardless of model; the
+                server owns provider compatibility conversion. */}
+            <UiGatesEditor agentId={agentId} />
           </div>
         )}
 

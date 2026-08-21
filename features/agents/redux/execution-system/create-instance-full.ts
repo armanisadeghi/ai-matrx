@@ -26,6 +26,7 @@ import type {
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
 import type {
   ApiEndpointMode,
   ContextAnchor,
@@ -72,6 +73,11 @@ export interface CreateInstanceFullPayload {
   // ── Per-slice init bundles — omit a bundle to skip that slice's init ─────────
   /** Omit for manual mode (Agent Builder reads agent.settings live). */
   overrides?: { baseSettings?: Partial<FeLlmParams> };
+  /** Frontend-only attachment/input affordances. Never sent as config_overrides. */
+  inputCapabilities?: {
+    base?: UiGates;
+    overrides?: Partial<UiGates>;
+  };
   variables?: {
     definitions?: VariableDefinition[];
     scopeValues?: Record<string, unknown>;

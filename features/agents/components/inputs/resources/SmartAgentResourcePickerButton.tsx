@@ -17,7 +17,7 @@ import { Plus } from "lucide-react";
 import { useDialogContainer } from "@/components/ui/dialog";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
-import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import { PlusAttachMenu } from "@/features/agents/components/inputs/smart-input/PlusAttachMenu";
 import { useAttachResource } from "./attach-resource";
 import type { Resource } from "@/features/agents/resources/types";

@@ -17,18 +17,27 @@
  * "show X in the UI when the model supports it" affordance lands here.
  */
 
-export interface UiGates {
-  /** Model supports tool / function calling (UI affordance; the authoritative
-   *  gate is the model capability, enforced server-side). */
-  tools?: boolean;
-  /** Chat exposes the image-URL attachment input. */
-  image_urls?: boolean;
-  /** Chat exposes the file-URL attachment input. */
-  file_urls?: boolean;
-  /** Chat exposes the YouTube-URL attachment input. */
-  youtube_videos?: boolean;
-  // Extensible: future model-gated UI affordances are valid keys.
-  [key: string]: boolean | undefined;
+import { z } from "zod";
+
+/**
+ * UI-only agent/run configuration. This schema is the source of truth for the
+ * persisted `ui_gates` JSONB boundary; never mirror it with an interface.
+ * New product UI capabilities are added here, never to the Python parameter
+ * contract. Unknown persisted keys are stripped at this boundary.
+ */
+export const uiGatesSchema = z
+  .object({
+    tools: z.boolean().optional(),
+    image_urls: z.boolean().optional(),
+    file_urls: z.boolean().optional(),
+    youtube_videos: z.boolean().optional(),
+  });
+
+export type UiGates = z.infer<typeof uiGatesSchema>;
+
+/** Parse persisted/UI-boundary data. Invalid shapes fail loudly. */
+export function parseUiGates(value: unknown): UiGates {
+  return uiGatesSchema.parse(value ?? {});
 }
 
 /** Every gate key the UI currently understands. Extend here, nowhere else. */

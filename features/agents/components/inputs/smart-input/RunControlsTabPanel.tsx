@@ -44,14 +44,13 @@ import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
 import { RunSettingsEditor } from "@/features/agents/components/run-controls/RunSettingsEditor";
 import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
 import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
 import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
-import {
-  selectAttachmentCapabilities,
-  selectInstanceOverrideState,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import {
   selectBuilderAdvancedSettings,
   selectIsCreator,
@@ -369,6 +368,7 @@ export function RunControlsTabPanel({
           <div className={scrollClass}>
             <RunModelPicker conversationId={conversationId} />
             <RunConfigOverrides conversationId={conversationId} />
+            <RunInputCapabilities conversationId={conversationId} />
           </div>,
         )}
       {activeTab === "tools" &&

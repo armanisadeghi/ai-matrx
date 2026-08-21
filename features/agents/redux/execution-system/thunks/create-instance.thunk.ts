@@ -46,6 +46,9 @@ import {
 import { selectDisplayConversation } from "../conversation-focus/conversation-focus.selectors";
 import { initInstanceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
+import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
+import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
 import {
   initInstanceVariables,
   replaceSurfaceVariableValues,
@@ -91,6 +94,7 @@ function readAgentSnapshot(
   agentType: AgentType;
   variableDefinitions: VariableDefinition[];
   baseSettings: Partial<LLMParams>;
+  inputCapabilities: UiGates;
   contextPolicies: Array<{ key: string }>;
   isCreator: boolean;
 } {
@@ -110,15 +114,8 @@ function readAgentSnapshot(
   return {
     agentType: agent?.agentType ?? "user",
     variableDefinitions: agent?.variableDefinitions ?? [],
-    // Fold the agent's model + UI gates into the snapshot so the per-instance
-    // override layer owns them (see buildInstanceBaseSettings for the full
-    // invariant). uiGates carry the attachment/tool capability flags the chat
-    // surface gates on — flattened here, stripped before the API call.
-    baseSettings: buildInstanceBaseSettings(
-      agent?.settings,
-      agent?.modelId,
-      agent?.uiGates,
-    ),
+    baseSettings: buildInstanceBaseSettings(agent?.settings, agent?.modelId),
+    inputCapabilities: agent?.uiGates ?? {},
     contextPolicies: agent?.contextPolicies ?? [],
     isCreator: agent?.isOwner ?? false,
   };
@@ -248,6 +245,7 @@ export const createManualInstance = createAsyncThunk<
       ...(apiEndpointMode !== "manual"
         ? { overrides: { baseSettings: snapshot.baseSettings } }
         : {}),
+      inputCapabilities: { base: snapshot.inputCapabilities },
       variables: {
         definitions: snapshot.variableDefinitions,
         scopeValues: {},
@@ -389,6 +387,14 @@ export const createInstanceFromShortcut = createAsyncThunk<
     );
   }
 
+  const shortcutInputCapabilities = await fetchInputCapabilitiesSnapshot({
+    agentId,
+    agentVersionId:
+      !shortcut.useLatest && shortcut.agentVersionId
+        ? shortcut.agentVersionId
+        : null,
+  });
+
   dispatch(
     createInstance({
       conversationId,
@@ -429,6 +435,12 @@ export const createInstanceFromShortcut = createAsyncThunk<
       // path. If a runtime model/settings picker is ever shown on a
       // shortcut-launched instance, seed a real base model first.
       baseSettings: {},
+    }),
+  );
+  dispatch(
+    initInputCapabilities({
+      conversationId,
+      base: shortcutInputCapabilities,
     }),
   );
   dispatch(
@@ -648,6 +660,12 @@ export const createTestInstance = createAsyncThunk<
       }),
     );
     dispatch(
+      initInputCapabilities({
+        conversationId,
+        base: snapshot.inputCapabilities,
+      }),
+    );
+    dispatch(
       initInstanceVariables({
         conversationId,
         definitions: snapshot.variableDefinitions,
@@ -724,6 +742,7 @@ export const createManualInstanceNoAgent = createAsyncThunk<
     );
 
     dispatch(initInstanceOverrides({ conversationId, baseSettings }));
+    dispatch(initInputCapabilities({ conversationId, base: {} }));
     dispatch(
       initInstanceVariables({
         conversationId,
@@ -808,6 +827,12 @@ export const startNewConversation = createAsyncThunk<
       initInstanceOverrides({
         conversationId: newConversationId,
         baseSettings: snapshot?.baseSettings ?? {},
+      }),
+    );
+    dispatch(
+      initInputCapabilities({
+        conversationId: newConversationId,
+        base: snapshot?.inputCapabilities ?? {},
       }),
     );
     dispatch(
@@ -963,6 +988,12 @@ export const startNewConversationAndExecute = createAsyncThunk<
       initInstanceOverrides({
         conversationId: newConversationId,
         baseSettings: snapshot?.baseSettings ?? {},
+      }),
+    );
+    dispatch(
+      initInputCapabilities({
+        conversationId: newConversationId,
+        base: snapshot?.inputCapabilities ?? {},
       }),
     );
     dispatch(
@@ -1138,6 +1169,12 @@ export const splitInputIntoNewConversation = createAsyncThunk<
       initInstanceOverrides({
         conversationId: newConversationId,
         baseSettings: snapshot?.baseSettings ?? {},
+      }),
+    );
+    dispatch(
+      initInputCapabilities({
+        conversationId: newConversationId,
+        base: snapshot?.inputCapabilities ?? {},
       }),
     );
     dispatch(

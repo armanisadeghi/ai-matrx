@@ -30,4 +30,11 @@ describe("buildInstanceBaseSettings — model fold", () => {
       ),
     ).toEqual({ model: "fresh" });
   });
+
+  it("contains only model configuration", () => {
+    expect(buildInstanceBaseSettings({ temperature: 0.4 }, "m-1")).toEqual({
+      temperature: 0.4,
+      model: "m-1",
+    });
+  });
 });

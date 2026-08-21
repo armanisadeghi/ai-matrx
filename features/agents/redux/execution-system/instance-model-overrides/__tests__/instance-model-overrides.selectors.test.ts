@@ -7,7 +7,10 @@
  * for `model` too, which is folded into baseSettings at instance creation.
  */
 
-import { selectSettingsOverridesForApi } from "../instance-model-overrides.selectors";
+import {
+  selectSettingsForChatApi,
+  selectSettingsOverridesForApi,
+} from "../instance-model-overrides.selectors";
 import type { RootState } from "@/lib/redux/store";
 
 function makeState(entry: {
@@ -30,6 +33,7 @@ function makeState(entry: {
 }
 
 const api = (s: RootState) => selectSettingsOverridesForApi("c1")(s);
+const chatApi = (s: RootState) => selectSettingsForChatApi("c1")(s);
 
 describe("selectSettingsOverridesForApi — genuine-delta guard", () => {
   it("drops an override whose value equals the base (no defaults-as-override)", () => {
@@ -64,12 +68,6 @@ describe("selectSettingsOverridesForApi — genuine-delta guard", () => {
     ).toBeUndefined();
   });
 
-  it("strips UI-capability flags but keeps real deltas", () => {
-    expect(
-      api(makeState({ baseSettings: {}, overrides: { tools: true, temperature: 0.5 } })),
-    ).toEqual({ temperature: 0.5 });
-  });
-
   it("removals are sent as null", () => {
     expect(
       api(makeState({ baseSettings: { temperature: 1 }, removals: ["temperature"] })),
@@ -83,5 +81,23 @@ describe("selectSettingsOverridesForApi — genuine-delta guard", () => {
         instanceModelOverrides: { byConversationId: {} },
       } as unknown as RootState),
     ).toBeUndefined();
+  });
+});
+
+describe("selectSettingsForChatApi", () => {
+  it("merges model settings without a UI-gate filtering shim", () => {
+    const result = chatApi(
+      makeState({
+        baseSettings: {
+          model: "m-1",
+          temperature: 0.4,
+        },
+        overrides: {
+          temperature: 0.7,
+        },
+      }),
+    );
+
+    expect(result).toEqual({ model: "m-1", temperature: 0.7 });
   });
 });

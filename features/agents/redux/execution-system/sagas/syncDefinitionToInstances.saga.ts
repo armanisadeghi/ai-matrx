@@ -43,10 +43,12 @@ import {
   setAgentVariableDefinitions,
   setAgentSettings,
   setAgentField,
+  setAgentUiGates,
 } from "../../agent-definition/slice";
 import { updateInstanceDefinitions } from "../instance-variable-values/instance-variable-values.slice";
 import { updateBaseSettings } from "../instance-model-overrides/instance-model-overrides.slice";
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
+import { updateBaseInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -91,13 +93,10 @@ function* handleSettingsChanged(
   const { id: agentId, settings } = action.payload;
 
   const state = (yield select()) as RootState;
-  // updateBaseSettings REPLACES baseSettings wholesale, so we must re-fold the
-  // agent's current model AND uiGates — otherwise editing any setting silently
-  // drops `model` (defeating the override delta guard) or the flattened UI
-  // gates (breaking the chat attachment capability read) from the instance base.
+  // updateBaseSettings REPLACES baseSettings wholesale, so re-fold the current
+  // model to preserve the override delta guard.
   const agent = state.agentDefinition.agents?.[agentId];
   const modelId = agent?.modelId;
-  const uiGates = agent?.uiGates;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
 
@@ -106,7 +105,7 @@ function* handleSettingsChanged(
       yield put(
         updateBaseSettings({
           conversationId,
-          baseSettings: buildInstanceBaseSettings(settings, modelId, uiGates),
+          baseSettings: buildInstanceBaseSettings(settings, modelId),
         }),
       );
     }
@@ -137,8 +136,27 @@ function* handleModelChanged(
           baseSettings: buildInstanceBaseSettings(
             agent?.settings,
             agent?.modelId,
-            agent?.uiGates,
           ),
+        }),
+      );
+    }
+  }
+}
+
+function* handleUiGatesChanged(
+  action: ReturnType<typeof setAgentUiGates>,
+): Generator {
+  const { id: agentId, uiGates } = action.payload;
+  const state = (yield select()) as RootState;
+  const allIds = state.conversations.allConversationIds;
+  const byId = state.conversations.byConversationId;
+
+  for (const conversationId of allIds) {
+    if (byId[conversationId]?.agentId === agentId) {
+      yield put(
+        updateBaseInputCapabilities({
+          conversationId,
+          base: uiGates ?? {},
         }),
       );
     }
@@ -156,6 +174,7 @@ export function* watchDefinitionChanges(): Generator {
     handleVariableDefinitionsChanged,
   );
   yield debounce(DEBOUNCE_MS, setAgentSettings.type, handleSettingsChanged);
+  yield debounce(DEBOUNCE_MS, setAgentUiGates.type, handleUiGatesChanged);
   // setAgentField is a generic catch-all (normally NOT watched), but a model
   // swap flows through it and must keep the instance base model in sync. The
   // handler early-returns for every non-model field, so this is cheap.

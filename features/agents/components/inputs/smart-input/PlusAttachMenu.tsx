@@ -34,9 +34,10 @@ import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/
 import { ResourcePickerSubViewHeader } from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
@@ -255,6 +256,7 @@ export function PlusAttachMenu({
                 />
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                   <RunConfigOverrides conversationId={conversationId} />
+                  <RunInputCapabilities conversationId={conversationId} />
                 </div>
               </div>
             ) : view === "templates" ? (
