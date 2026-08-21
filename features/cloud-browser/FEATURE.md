@@ -76,6 +76,10 @@ Reconnect).
 
 ## Change log
 
+- **2026-08-20 — reconnect supersession:** reconnecting an expired live-control
+  canvas now requests the server's explicit takeover path, atomically revoking the
+  prior claimed ticket before exchanging the replacement. The first connection
+  remains non-takeover, so two ordinary controllers still fail closed.
 - **2026-08-19 — first-open settings:** loading a browser snapshot now selects the
   persisted profile returned by that snapshot. Profile-scoped settings therefore
   save against the browser the user is viewing, including on the very first open.

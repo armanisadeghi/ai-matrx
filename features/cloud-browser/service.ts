@@ -544,10 +544,11 @@ export async function loadSnapshot(
 export async function mintStreamTicket(
   runId: string,
   mode: StreamMode,
+  takeover = false,
 ): Promise<StreamTicketEnvelope> {
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/stream-ticket`,
-    { mode },
+    { mode, takeover },
   );
   const value = record(data);
   const control = value.control === null ? null : record(value.control);

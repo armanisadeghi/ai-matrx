@@ -81,11 +81,11 @@ export function CloudBrowserBody({
     : false;
   const canDelete = cb.activeProfile?.accessLevel === "admin";
 
-  const openStream = useCallback(async () => {
+  const openStream = useCallback(async (takeover = false) => {
     if (!cb.run) return;
     setConnecting(true);
     try {
-      const t = await mintStreamTicket(cb.run.id, "control");
+      const t = await mintStreamTicket(cb.run.id, "control", takeover);
       setTicket(t);
     } finally {
       setConnecting(false);
@@ -220,7 +220,7 @@ export function CloudBrowserBody({
                     controller={controller}
                     ticket={ticket}
                     connecting={connecting}
-                    onReconnect={openStream}
+                    onReconnect={() => void openStream(true)}
                   />
                 </div>
               ) : face === "screenshots" ? (
