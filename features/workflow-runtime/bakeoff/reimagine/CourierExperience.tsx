@@ -72,32 +72,44 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   const runId = searchParams.get("run");
 
   // ── The definition — the whole journey is known before frame one ────────
-  const [def, setDef] = useState<DefinitionState>({ phase: "loading" });
+  // State is keyed to the fetch it belongs to and reset DURING RENDER when
+  // the key changes (the React-sanctioned adjust-state-on-prop-change form —
+  // never a synchronous setState inside the effect body).
   const [formValues, setFormValues] = useState<
     Record<string, Record<string, unknown>>
   >({});
   const [reloadNonce, setReloadNonce] = useState(0);
+  const defKey = `${definitionId}:${reloadNonce}`;
+  const [defSlot, setDefSlot] = useState<{ key: string; state: DefinitionState }>(
+    { key: defKey, state: { phase: "loading" } },
+  );
+  if (defSlot.key !== defKey) {
+    setDefSlot({ key: defKey, state: { phase: "loading" } });
+  }
+  const def = defSlot.key === defKey ? defSlot.state : { phase: "loading" as const };
 
   useEffect(() => {
     let cancelled = false;
-    setDef({ phase: "loading" });
     fetchWorkflowDefinition(definitionId)
       .then((row) => {
         if (cancelled) return;
         if (!row) {
-          setDef({ phase: "missing" });
+          setDefSlot({ key: defKey, state: { phase: "missing" } });
           return;
         }
-        setDef({ phase: "ready", name: row.name, definition: row.definition });
+        setDefSlot({
+          key: defKey,
+          state: { phase: "ready", name: row.name, definition: row.definition },
+        });
         setFormValues(seedRunFormValues(deriveRunForm(row.definition)));
       })
       .catch((error: unknown) => {
-        if (!cancelled) setDef({ phase: "error", error });
+        if (!cancelled) setDefSlot({ key: defKey, state: { phase: "error", error } });
       });
     return () => {
       cancelled = true;
     };
-  }, [definitionId, reloadNonce]);
+  }, [definitionId, defKey]);
 
   // ── The run — canonical adoption; a refresh replays, never re-streams ───
   const { ensureLane } = useWorkflowRun(runId);
@@ -122,16 +134,22 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   // directly: the canonical run→definition read answers "missing / no
   // access" exactly. A transient probe failure stays "unknown" (never
   // asserted as anything) and the calm state persists.
-  const [runProbe, setRunProbe] = useState<"unknown" | "ok" | "unreachable">(
-    "unknown",
-  );
+  const [probeSlot, setProbeSlot] = useState<{
+    runId: string | null;
+    verdict: "unknown" | "ok" | "unreachable";
+  }>({ runId, verdict: "unknown" });
+  if (probeSlot.runId !== runId) {
+    setProbeSlot({ runId, verdict: "unknown" });
+  }
+  const runProbe = probeSlot.runId === runId ? probeSlot.verdict : "unknown";
   useEffect(() => {
-    setRunProbe("unknown");
     if (!runId) return;
     let cancelled = false;
     fetchRunDefinitionId(runId)
       .then((defId) => {
-        if (!cancelled) setRunProbe(defId ? "ok" : "unreachable");
+        if (!cancelled) {
+          setProbeSlot({ runId, verdict: defId ? "ok" : "unreachable" });
+        }
       })
       .catch(() => {
         // Transient read failure — leave it unknown; the adapter keeps trying.
