@@ -342,7 +342,7 @@ model overrides.
 - **Drift between a usage and the live agent is surfaced (Find Usages window + weekly scan + severity-tinted AgentsListHeader link), never auto-resolved.** Remediation is one-click, opt-in, permission-gated. See **Find Usages & Drift** above.
 - **Agent/project linkage is association-only.** `agent.definition` has no `project_id`; creation/duplication RPCs must not write one, and list/search/access RPCs must not read or expose one. Resolve project context through `platform.associations`.
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. Gate send (button + Enter) on `isRecording || isTranscribing` via `AgentMicrophoneButton.onRecordingStateChange` — wired in `SmartAgentInput*` and sibling composers.
-- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` to suppress context/resources/run controls without changing the execution contract; `components/ambient-assistant/ScrollAssistantLauncher` owns desktop scroll reveal, per-page dismissal, and the same-conversation Quick Chat handoff.
+- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` plus `ambientLayout="single-line" | "multiline"`; both suppress context/resources/run controls without changing the execution contract. `ScrollAssistantLauncher inputVariant` makes that choice per page and owns desktop scroll reveal, per-page dismissal, and the same-conversation Quick Chat handoff.
 
 ---
 
@@ -354,6 +354,11 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-21` — **Ambient Smart Agent Input supports two page-selectable forms.**
+  `inputVariant="single-line" | "multiline"` keeps the original compact launcher
+  and adds a taller form built from `SmartAgentInputStacked`; both share the same
+  execution/handoff, sparse controls, and primary-border focus treatment. Notes
+  and `ModuleLanding` use multiline; Data keeps single-line; mobile mounts neither.
 - `2026-08-21` — **Added the opt-in ambient Smart Agent Input.** The desktop-only
   `ScrollAssistantLauncher` waits for meaningful page scroll before loading the
   agent graph, renders `SmartAgentInput presentation="ambient"` with no visible
