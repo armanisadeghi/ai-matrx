@@ -198,7 +198,6 @@ export interface PressRoomData {
 
 const FORCED_ERROR = new Error(
   // access-errors: ok — deliberate ?data=error fixture string, not real page copy
-
   "seo.story_angle: permission denied for schema seo (RLS). This is the forced ?data=error state — no real read failed.",
 );
 

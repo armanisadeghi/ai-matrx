@@ -36,6 +36,7 @@ import { assertData } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 export const CRAWL_SCHEDULE_COLUMNS =
   "id, site_id, organization_id, name, enabled, cadence, timezone, next_run_at, last_run_at, last_session_id, last_outcome, last_error, consecutive_failures, preset_id, version, created_at, updated_at";
@@ -155,9 +156,12 @@ export async function saveSiteCrawlSchedule(
     case "conflict":
       return { status: "conflict", current: result.currentRow };
     case "not_found":
-      throw new Error(
-        "This crawl schedule was deleted while you were editing it. Reload the page to start a new one.",
-      );
+      throw recordUnavailable({
+        entity: "crawl schedule",
+        reason: "unknown",
+        recordId: scheduleId,
+        relation: "web.crawl_schedule",
+      });
   }
 }
 
