@@ -8,6 +8,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import type { Industry, IndustryFacet, OrgIndustry } from "./types";
 
 type IndustryRow = {
@@ -46,7 +47,7 @@ export async function fetchIndustries(
     .order("sort_order");
   if (!includeInactive) q = q.eq("is_active", true);
   const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load the industry list", error);
   return (data ?? []).map((r) => rowToIndustry(r as IndustryRow));
 }
 
@@ -58,7 +59,7 @@ export async function fetchOrgIndustries(
     .from("org_industries")
     .select("organization_id, industry_id, is_primary")
     .eq("organization_id", orgId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this organization's industries", error);
   return (data ?? []).map((r) => ({
     organizationId: (r as { organization_id: string }).organization_id,
     industryId: (r as { industry_id: string }).industry_id,
@@ -77,7 +78,7 @@ export async function fetchAllOrgIndustries(): Promise<OrgIndustry[]> {
     .schema("iam")
     .from("org_industries")
     .select("organization_id, industry_id, is_primary");
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load the industry assignments", error);
   return (data ?? []).map((r) => ({
     organizationId: r.organization_id,
     industryId: r.industry_id,
@@ -103,7 +104,7 @@ export async function upsertIndustry(input: {
     p_description: input.description ?? undefined,
     p_sort_order: input.sortOrder ?? 0,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save this industry", error);
   return rowToIndustry(data as IndustryRow);
 }
 
@@ -119,7 +120,7 @@ export async function setIndustryActive(
     p_industry: industryId,
     p_active: isActive,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("update this industry", error);
   return rowToIndustry(data as IndustryRow);
 }
 
@@ -133,7 +134,7 @@ export async function assignOrgIndustry(
     p_industry_id: industryId,
     p_is_primary: isPrimary,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("assign this industry", error);
 }
 
 export async function unassignOrgIndustry(
@@ -144,5 +145,5 @@ export async function unassignOrgIndustry(
     p_organization_id: orgId,
     p_industry_id: industryId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("remove this industry", error);
 }

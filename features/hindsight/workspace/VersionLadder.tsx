@@ -16,6 +16,7 @@ import { GitCommitVertical, History, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { operationFailed } from "@/utils/errors";
 import { supabase } from "@/utils/supabase/client";
 
 import type { Finding } from "../types";
@@ -51,7 +52,7 @@ export function VersionLadder({
         p_limit: SHOWN,
         p_offset: 0,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load the version history", error);
       return (data ?? []) as VersionRow[];
     },
   });

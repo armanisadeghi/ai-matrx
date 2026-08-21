@@ -13,6 +13,7 @@
  *   record (`platform.judge_verdict`) gets calibrated against later.
  */
 
+import { operationFailed } from "@/utils/errors";
 import { supabase } from "@/utils/supabase/client";
 
 export interface AuditionRunSummary {
@@ -47,7 +48,7 @@ export async function listAuditionRuns(
     .is("deleted_at", null)
     .order("started_at", { ascending: false })
     .limit(limit);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load the audition history", error);
   return (data ?? []).map((row) => {
     const result = (row.result ?? {}) as Record<string, unknown>;
     const beat = result.beat_vanilla_rules;
@@ -78,5 +79,5 @@ export async function saveExpertCall(
     .from("masterwork_run")
     .update({ expert_score: score, expert_verdict: why.trim() || null })
     .eq("id", runId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save your verdict", error);
 }

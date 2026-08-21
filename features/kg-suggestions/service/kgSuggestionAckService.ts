@@ -11,6 +11,7 @@
 // auth.uid()); there is no Next.js middle tier. Table: reg.kg_suggestion_ack.
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 
 /** Every suggestion id this user has permanently dismissed. */
 export async function fetchAckedSuggestionIds(
@@ -21,7 +22,7 @@ export async function fetchAckedSuggestionIds(
     .select("suggestion_id")
     .is("deleted_at", null)
     .eq("user_id", userId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load your dismissed suggestions", error);
   return new Set((data ?? []).map((r) => r.suggestion_id));
 }
 
@@ -41,5 +42,5 @@ export async function ackSuggestions(
       onConflict: "user_id,suggestion_id",
       ignoreDuplicates: true,
     });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("dismiss these suggestions", error);
 }

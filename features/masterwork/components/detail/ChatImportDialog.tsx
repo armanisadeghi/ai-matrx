@@ -21,6 +21,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { callApi } from "@/lib/api/call-api";
 import { useAppStore } from "@/lib/redux/hooks";
+import { operationFailed } from "@/utils/errors";
 import { supabase } from "@/utils/supabase/client";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
@@ -314,7 +315,7 @@ export function ChatImportDialog({
         .gt("message_count", 1)
         .order("updated_at", { ascending: false })
         .limit(200);
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load your conversations", error);
       setRows(
         (data ?? []).map((c) => ({
           key: c.id,

@@ -35,6 +35,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { operationFailed } from "@/utils/errors";
 import { supabase } from "@/utils/supabase/client";
 
 import { enroll, listToolSubjects } from "../api";
@@ -190,7 +191,7 @@ export function EnrollDialog({
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load your agents", error);
       return (data ?? []) as PickerRow[];
     },
     enabled: open && kind === "agent",
@@ -214,7 +215,7 @@ export function EnrollDialog({
         .eq("role", "orchestra")
         .is("deleted_at", null)
         .limit(200);
-      if (markerError) throw new Error(markerError.message);
+      if (markerError) throw operationFailed("load your orchestras", markerError);
       const ids = Array.from(
         new Set((markers ?? []).map((m) => m.source_id as string)),
       );
@@ -229,7 +230,7 @@ export function EnrollDialog({
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load your orchestras", error);
       return (data ?? []) as PickerRow[];
     },
     enabled: open && kind === "orchestra",
@@ -247,7 +248,7 @@ export function EnrollDialog({
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load your workflows", error);
       return (data ?? []) as PickerRow[];
     },
     enabled: open && (kind === "workflow" || kind === "workflow_node"),
@@ -268,7 +269,7 @@ export function EnrollDialog({
         .eq("id", subjectId)
         .is("deleted_at", null)
         .single();
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("load this workflow's steps", error);
       const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
       return nodes
         .filter((n): n is Record<string, unknown> => Boolean(n) && typeof n === "object")

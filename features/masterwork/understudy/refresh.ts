@@ -10,6 +10,7 @@
 // funnel (the Scout's rulebook tool) pokes it on its own for interview writes.
 
 import { callApi } from "@/lib/api/call-api";
+import { operationFailed } from "@/utils/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { paths } from "@/types/python-generated/api-types";
 
@@ -48,7 +49,7 @@ export async function refreshUnderstudy(
   );
   const error = (result as { error?: { message?: string } }).error;
   if (error) {
-    throw new Error(error.message ?? "The Understudy could not be refreshed.");
+    throw operationFailed("refresh the Understudy", error);
   }
   const data = (result as { data?: UnderstudyRefreshResult }).data;
   if (!data) throw new Error("The Understudy refresh returned no result.");

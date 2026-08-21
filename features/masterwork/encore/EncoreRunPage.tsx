@@ -21,6 +21,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
 import {
@@ -62,7 +63,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   const [masterwork, setMasterwork] = useState<EncoreMasterwork | null>(null);
   const [runs, setRuns] = useState<EncoreRun[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const refreshRuns = useCallback(() => {
     listMyEncoreRuns(masterworkId)
@@ -70,25 +71,31 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
       .catch(() => undefined); // History is enrichment — never blanks the page.
   }, [masterworkId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const load = useCallback(
+    async (isCancelled: () => boolean) => {
       try {
         const m = await getEncoreMasterwork(masterworkId);
-        if (cancelled) return;
+        if (isCancelled()) return;
         setMasterwork(m);
-        if (!m) setError("This isn't here, or you don't have access to it.");
+        setError(null);
       } catch (err) {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Could not load.");
+        // NEVER swallow this — the error is what tells AccessGate whether the
+        // Operator is denied, signed out, or looking at a real fault.
+        if (!isCancelled()) setError(err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!isCancelled()) setLoading(false);
       }
-    })();
+    },
+    [masterworkId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void load(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [masterworkId]);
+  }, [load]);
 
   useEffect(() => {
     refreshRuns();
@@ -102,13 +109,19 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     );
   }
   if (error || !masterwork) {
+    // NEVER hand-write "isn't here or no access" copy. Under RLS an empty read
+    // means four different things (denied · deleted · never existed · signed
+    // out); AccessGate resolves the TRUE state. A Masterwork is a
+    // workflow.definition row, so the workflow token resolves it.
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-muted-foreground">{error}</p>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/masterwork/encore">Back to Encore</Link>
-        </Button>
-      </div>
+      <AccessGate
+        token="workflow"
+        id={masterworkId}
+        error={error}
+        onRetry={() => void load(() => false)}
+        fallbackHref="/masterwork/encore"
+        fallbackLabel="Back to Encore"
+      />
     );
   }
 

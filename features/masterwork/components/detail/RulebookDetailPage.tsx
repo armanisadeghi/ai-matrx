@@ -536,7 +536,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<RulebookRule | undefined>();
@@ -777,19 +777,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           ),
         ]);
         if (cancelled) return;
-        if (!r) {
-          setError(
-            "This Rulebook doesn't exist, or you don't have access to it.",
-          );
-        } else {
+        if (r) {
           setRulebook(r);
           setMasterworks(m);
         }
       } catch (err) {
-        if (!cancelled)
-          setError(
-            err instanceof Error ? err.message : "Could not load the Rulebook",
-          );
+        // NEVER swallow this — the error is what tells AccessGate whether the
+        // Expert is denied, signed out, or looking at a real fault.
+        if (!cancelled) setError(err);
       } finally {
         if (!cancelled) setLoading(false);
       }

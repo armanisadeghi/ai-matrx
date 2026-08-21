@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { operationFailed } from "@/utils/errors";
 import { supabase } from "@/utils/supabase/client";
 
 import { getEnrollment } from "../api";
@@ -56,7 +57,7 @@ export function EnrollmentDetailPanel({
         .eq("name", enrollment?.subject_ref ?? "")
         .is("deleted_at", null)
         .maybeSingle();
-      if (error) throw new Error(error.message);
+      if (error) throw operationFailed("look up this tool", error);
       return data?.id ?? null;
     },
     enabled: enrollment?.subject_kind === "tool" && Boolean(enrollment?.subject_ref),

@@ -23,6 +23,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { scopesService } from "@/features/scopes/service/scopesService";
@@ -154,7 +155,7 @@ export async function listKgSuggestions(
     if (status !== "all") q = q.eq("status", status);
     if (opts.signal) q = q.abortSignal(opts.signal);
     const { data, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throw operationFailed("load these suggestions", error);
     const rows = (data ?? []).map(mapValueRow);
     return { rows, total: rows.length };
   }
@@ -190,8 +191,8 @@ export async function listKgSuggestions(
   }
 
   const [assocRes, valueRes] = await Promise.all([assocQ, valueQ]);
-  if (assocRes.error) throw new Error(assocRes.error.message);
-  if (valueRes.error) throw new Error(valueRes.error.message);
+  if (assocRes.error) throw operationFailed("load these suggestions", assocRes.error);
+  if (valueRes.error) throw operationFailed("load these suggestions", valueRes.error);
 
   const rows = [
     ...(assocRes.data ?? []).map(mapAssociationRow),
@@ -243,7 +244,7 @@ async function markDecided(
     .from(tableFor(row))
     .update(patch)
     .eq("id", row.id);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save your decision on this suggestion", error);
 }
 
 export async function rejectKgSuggestion(
@@ -289,7 +290,7 @@ export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
       suppressed_until: null,
     })
     .eq("id", row.id);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("restore this suggestion", error);
 }
 
 /** Star / unstar a row for follow-up (manager). */
@@ -302,7 +303,7 @@ export async function setKgSuggestionStarred(
     .from(tableFor(row))
     .update({ is_starred: starred })
     .eq("id", row.id);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("update this suggestion", error);
 }
 
 /**
@@ -531,7 +532,7 @@ export async function queryScopeSuggestions(
   if (opts.signal) query = query.abortSignal(opts.signal);
 
   const { data, error, count } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load your suggestions", error);
   const rows = (data ?? []).map(mapViewRow);
   return { rows, total: count ?? rows.length };
 }
@@ -555,7 +556,7 @@ export async function fetchScopeSuggestionStats(
   let query = supabase.from("v_scope_suggestion_stats").select("*");
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load the suggestion counts", error);
   return (data ?? []).map((r: SuggestionStatsView) => ({
     organization_id: r.organization_id,
     status: r.status as KgSuggestionStatus,

@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import type { RuleImproveResult } from "../../agent-context/ruleImprove";
@@ -63,7 +64,8 @@ export function AddRulePanel({
   onAdded,
 }: AddRulePanelProps) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   // AI first — the default tab, per the ruling.
   const [mode, setMode] = useState<Mode>("ai");
   const [describe, setDescribe] = useState("");
@@ -82,38 +84,43 @@ export function AddRulePanel({
     sections: rulebook?.sections ?? {},
   });
 
+  const loadRulebook = useCallback(
+    (isCancelled: () => boolean) =>
+      getRulebook(rulebookId)
+        .then((r) => {
+          if (isCancelled()) return;
+          if (!r) {
+            setLoadFailed(true);
+            return;
+          }
+          setLoadError(null);
+          setLoadFailed(false);
+          setRulebook(r);
+          setFields((prev) => ({
+            ...prev,
+            section:
+              defaultSection && Object.hasOwn(r.sections, defaultSection)
+                ? defaultSection
+                : Object.hasOwn(r.sections, prev.section)
+                  ? prev.section
+                  : (Object.keys(r.sections)[0] ?? "G"),
+          }));
+        })
+        .catch((err: unknown) => {
+          if (isCancelled()) return;
+          setLoadError(err);
+          setLoadFailed(true);
+        }),
+    [rulebookId, defaultSection],
+  );
+
   useEffect(() => {
     let cancelled = false;
-    void getRulebook(rulebookId)
-      .then((r) => {
-        if (cancelled) return;
-        if (!r) {
-          setLoadError(
-            "This Rulebook doesn't exist, or you don't have access to it.",
-          );
-          return;
-        }
-        setRulebook(r);
-        setFields((prev) => ({
-          ...prev,
-          section:
-            defaultSection && Object.hasOwn(r.sections, defaultSection)
-              ? defaultSection
-              : Object.hasOwn(r.sections, prev.section)
-                ? prev.section
-                : (Object.keys(r.sections)[0] ?? "G"),
-        }));
-      })
-      .catch((err: unknown) => {
-        if (!cancelled)
-          setLoadError(
-            err instanceof Error ? err.message : "Could not load the Rulebook",
-          );
-      });
+    void loadRulebook(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [rulebookId, defaultSection]);
+  }, [loadRulebook]);
 
   const landRule = useCallback(
     async (values: RuleFieldValues, opts: { draft: boolean; note?: string }) => {
@@ -226,11 +233,19 @@ export function AddRulePanel({
     }
   };
 
-  if (loadError) {
+  if (loadFailed) {
+    // NEVER hand-write "doesn't exist or you don't have access" copy. Under
+    // RLS an empty read means four different things (denied · deleted · never
+    // existed · signed out); AccessGate resolves the TRUE state.
     return (
-      <div className="flex h-full items-center justify-center px-6 text-center">
-        <p className="text-sm text-muted-foreground">{loadError}</p>
-      </div>
+      <AccessGate
+        token="rulebook"
+        id={rulebookId}
+        error={loadError}
+        onRetry={() => void loadRulebook(() => false)}
+        fallbackHref="/masterwork/all"
+        fallbackLabel="Back to Masterwork Studio"
+      />
     );
   }
   if (!rulebook) {
