@@ -96,27 +96,6 @@ function matchesVisibility(
   }
 }
 
-/** Visibility → display chip. */
-const VISIBILITY_LABEL: Record<FcSetRow["visibility"], string> = {
-  personal: "Personal",
-  internal: "Org",
-  link: "Link",
-  public: "Public",
-};
-
-function VisibilityChip({
-  visibility,
-}: {
-  visibility: FcSetRow["visibility"];
-}) {
-  const label = VISIBILITY_LABEL[visibility] ?? "Personal";
-  return (
-    <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-muted-foreground">
-      {label}
-    </span>
-  );
-}
-
 /** "3 days ago"-style relative time, falling back to a date. */
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
@@ -172,51 +151,48 @@ function SetRow({
     <div
       onClick={() => onOpen(set.id)}
       className={cn(
-        "group flex min-h-[72px] items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 cursor-pointer sm:min-h-[44px] sm:rounded-lg sm:py-2",
+        "group grid min-h-[88px] grid-cols-[36px_minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 cursor-pointer sm:min-h-[44px] sm:gap-y-0.5 sm:rounded-lg sm:px-3 sm:py-2",
         busy && "pointer-events-none opacity-60",
       )}
       aria-label={`Open flashcard set ${set.name}`}
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <h3 className="col-span-3 row-start-1 min-w-0 text-base font-semibold text-foreground sm:col-span-1 sm:col-start-2 sm:text-sm">
+        {/* THE DOOR LAW: the card's onClick is a mouse convenience; the
+            NAME is the real anchor. `fc_set` carries an `hrefFor` in the
+            registry, so the route is not hardcoded here. EntityRef already
+            stops propagation on its own anchor, so clicking the name does
+            not also fire the card's onOpen. */}
+        <EntityRef
+          token="fc_set"
+          id={set.id}
+          name={set.name}
+          showIcon={false}
+          fill
+          wrap
+          className="relative w-full [&>span]:absolute [&>span]:right-0 [&>span]:top-0 sm:[&>span]:static"
+          labelClassName="line-clamp-2 !break-normal sm:truncate"
+        />
+      </h3>
+
+      <div className="col-start-1 row-start-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:row-span-2 sm:row-start-1">
         <Layers className="h-4 w-4" />
       </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          {/* THE DOOR LAW: the card's onClick is a mouse convenience; the
-              NAME is the real anchor. The card is a `div role="button"` — that
-              gives keyboard Enter/Space but NO anchor at all, so there was no
-              cmd-click, no middle-click, no "open in new tab" and no
-              destination on hover. `flashcard_set` carries an `hrefFor` in the
-              registry, so the route is not hardcoded here. EntityRef already
-              stops propagation on its own anchor, so clicking the name does
-              not also fire the card's onOpen. */}
-          <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
-            <EntityRef
-              token="fc_set"
-              id={set.id}
-              name={set.name}
-              showIcon={false}
-            />
-          </h3>
-          <VisibilityChip visibility={set.visibility} />
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
-          {metaBits.length > 0 ? (
-            <span className="truncate capitalize">{metaBits.join(" · ")}</span>
-          ) : set.description ? (
-            <span className="truncate">{set.description}</span>
-          ) : null}
-          <span className="inline-flex shrink-0 items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {relativeTime(set.updated_at)}
-          </span>
-        </div>
+      <div className="col-start-2 row-start-2 flex min-w-0 flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-1.5 sm:gap-y-0.5 sm:text-[11px]">
+        {metaBits.length > 0 ? (
+          <span className="truncate capitalize">{metaBits.join(" · ")}</span>
+        ) : set.description ? (
+          <span className="truncate">{set.description}</span>
+        ) : null}
+        <span className="inline-flex shrink-0 items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {relativeTime(set.updated_at)}
+        </span>
       </div>
 
-      {/* Per-row actions. On narrow screens the row itself opens the set (Open);
-          Study / Fast Fire stay reachable as compact icon buttons. */}
-      <div className="flex shrink-0 items-center gap-1">
+      {/* Mobile keeps the title on its own full-width row; Study / Fast Fire
+          sit with the secondary details instead of permanently squeezing it. */}
+      <div className="col-start-3 row-start-2 flex shrink-0 items-center gap-1 sm:row-span-2 sm:row-start-1">
         <Button
           size="icon"
           variant="ghost"
