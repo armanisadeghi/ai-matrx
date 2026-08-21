@@ -43,20 +43,12 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import {
-  CONTROL_TAGS,
-  GENERATED_CONTRACT_FAMILIES,
-} from "../../features/content-ir/registry/shape-doctor";
+import { CONTROL_TAGS } from "../../features/content-ir/registry/shape-doctor";
 import { extractDetectorTokensFromTexts } from "../../features/content-ir/registry/shape-doctor-extract";
 import { readAllRows } from "../../lib/supabase/readAllRows";
-import {
-  parseContractManifestSnapshot,
-  type ContractManifestSnapshot,
-} from "./contract-manifest-format";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CROSSWALK_PATH = resolve(ROOT, "scripts/shape/content-vocab-crosswalk.json");
-const MANIFEST_PATH = resolve(ROOT, "scripts/shape/content-ir-contract-manifest.json");
 const AIDREAM_ROOT = process.env.AIDREAM_ROOT ?? resolve(ROOT, "..", "aidream");
 const BLOCKTYPE_PY = resolve(
   AIDREAM_ROOT,
@@ -528,29 +520,23 @@ async function build(): Promise<BuildResult> {
     for (const st of entry.surfaceTypes) items.push({ name: token, source: `db:kind_surface:${st}` });
   }
 
-  // 7. Contract manifest snapshot (all four generated families).
-  let manifest: ContractManifestSnapshot | null = null;
-  if (existsSync(MANIFEST_PATH)) {
-    try {
-      manifest = parseContractManifestSnapshot(readFileSync(MANIFEST_PATH, "utf8"));
-    } catch (err) {
-      problems.push(
-        `contract manifest snapshot unreadable: ${err instanceof Error ? err.message : String(err)} — run pnpm check:shapes:manifest:refresh`,
-      );
-    }
-  } else {
-    problems.push(
-      "contract manifest snapshot missing (scripts/shape/content-ir-contract-manifest.json) — run pnpm check:shapes:manifest:refresh",
-    );
-  }
-  if (manifest) {
-    inputs["aidream:contract_manifest"] = `${manifest.contracts.length} contracts (${manifest.generated_for})`;
-    for (const c of manifest.contracts) {
-      items.push({ name: c.kind, source: `aidream:contract_manifest:${c.family}` });
-    }
-  } else {
-    inputs["aidream:contract_manifest"] = "UNAVAILABLE — snapshot missing/unreadable (recorded as a problem)";
-  }
+  // 7. The aidream contract manifest is NO LONGER a vocabulary source.
+  //
+  // It used to contribute every generated `<family>_io_*_<hash8>_*` slug here,
+  // and those names classified as "shape" for exactly ONE reason: they were
+  // also live `content_ir.kind_definition` rows, so they fell through the
+  // `if (live)` branch below. The 2026-08-20 contract-artifact eviction moved
+  // all 986 of them to `content_ir.io_contract` and soft-deleted the registry
+  // rows (KINDS_EVERYWHERE_PLAN.md §10b item 5) — so the manifest kept
+  // supplying the names while the only rule that could classify them stopped
+  // matching, and this generator failed with 776 unclassified items.
+  //
+  // The fix is not a new rule, it is the correct scope: **a contract slug is
+  // not content vocabulary.** It names a TYPE SIGNATURE at a node/tool/agent
+  // boundary — nothing renders it, no detector token or surface can ever
+  // reference it, and it is not a Shape. Vocabulary is what the content system
+  // can NAME and SHOW. Contract inventory parity is checked where the
+  // contracts live: aidream's `sync_content_ir_contracts.py --check`.
 
   // ── Merge to unique names ──
   const sourcesByName = new Map<string, Set<string>>();
@@ -621,15 +607,16 @@ async function build(): Promise<BuildResult> {
       continue;
     }
     if (live) {
-      const generated = live.family !== null && GENERATED_CONTRACT_FAMILIES.has(live.family);
+      // No `generated contract` rationale any more: after the eviction a live
+      // kind can no longer legitimately BE a generated-family contract, and the
+      // shape doctor reds one that is (`contract-gap`). Classifying it as a
+      // normal Shape here would quietly contradict that detector.
       rows.push({
         ...base,
         classification: "shape",
         kind: name,
         registered: true,
-        rationale: generated
-          ? `generated ${live.family ?? ""} contract — data-only Shape published by the aidream contract publisher`
-          : `registered kind (content_ir.kind_definition${live.isActive ? ", active" : ", inactive"})`,
+        rationale: `registered kind (content_ir.kind_definition${live.isActive ? ", active" : ", inactive"})`,
       });
       continue;
     }

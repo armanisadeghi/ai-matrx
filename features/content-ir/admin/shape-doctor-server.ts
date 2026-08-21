@@ -31,8 +31,8 @@ import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
 import type { Json } from "@/types/database.types";
 import committedSnapshot from "@/scripts/shape/shapes-status.json";
-import committedCrosswalk from "@/scripts/shape/content-vocab-crosswalk.json";
 import committedContractManifest from "@/scripts/shape/content-ir-contract-manifest.json";
+import committedCrosswalk from "@/scripts/shape/content-vocab-crosswalk.json";
 import {
   ASSET_COLUMNS,
   attributeSkillsToKinds,
@@ -402,10 +402,6 @@ export async function runLiveShapeDoctor(): Promise<LiveDoctorRun> {
     // reads from disk), so the board raises the same vocab-unclassified /
     // contract-gap reds without filesystem access at runtime.
     crosswalkNames: new Set(committedCrosswalk.rows.map((r) => r.name)),
-    contractManifest: committedContractManifest.contracts.map((c) => ({
-      kind: c.kind,
-      family: c.family,
-    })),
   });
 
   return {

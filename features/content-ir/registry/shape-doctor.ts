@@ -115,6 +115,15 @@ export const WORKFLOW_IO_FAMILY = "workflow_io";
  * render-asset cells (component / surface / skill / content_block) are `n/a`.
  * `definition` / `example` / `gate_structural` stay fully enforced.
  */
+/**
+ * A machine-minted I/O contract slug: `<family>_<source>_<sha8>_<direction>`
+ * (matrx-graph `contract_kinds.contract_kind_slug`). This — not
+ * `metadata.family` — is what tells a generated contract apart from a curated
+ * Shape, because real shapes may legitimately sit in the same families.
+ */
+export const CONTRACT_SLUG_RE =
+  /^(?:action_io|tool_io|workflow_io|agent_io)_.+_[0-9a-f]{8}_(?:input|output)$/;
+
 export const GENERATED_CONTRACT_FAMILIES: ReadonlySet<string> = new Set([
   "action_io",
   "tool_io",
@@ -249,18 +258,6 @@ export interface ShapeDoctorInput {
    * legacy callers that cannot load the crosswalk (they lose the gate).
    */
   crosswalkNames?: ReadonlySet<string>;
-  /**
-   * The aidream generated-contract inventory snapshot
-   * (scripts/shape/content-ir-contract-manifest.json). Since the 2026-08-20
-   * contract-artifact eviction its only job here is to switch ON the re-drift
-   * detector: when supplied, ANY ACTIVE generated-family kind found in
-   * `content_ir.kind_definition` is a RED `contract-gap` finding, because I/O
-   * contracts live in `content_ir.io_contract` now and nothing may put one
-   * back in the Shape registry. Manifest↔registry parity is NOT checked here
-   * any more — aidream's `sync_content_ir_contracts.py --check` owns it,
-   * against the store that actually holds the contracts.
-   */
-  contractManifest?: DoctorContractManifestEntry[];
   /**
    * The detection HOSTS' full token surface per surface type (extracted via
    * `extractHostSurfaceTokensFromTexts`). When provided, every ACTIVE
@@ -926,34 +923,41 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
     }
   }
 
-  // Contract-family gap — ONE direction only since the 2026-08-20 eviction.
+  // Contract re-drift detector — the ONE thing left of the old `contract-gap`
+  // rule after the 2026-08-20 eviction (KINDS_EVERYWHERE_PLAN.md §10b item 5).
   //
-  // This used to check BOTH ways: every manifest contract had to have an ACTIVE
-  // live `kind_definition` row, and every ACTIVE generated-family kind had to be
-  // in the manifest. The first direction is now WRONG BY DESIGN — machine-minted
-  // I/O contracts were evicted out of the Shape registry into
-  // `content_ir.io_contract` (KINDS_EVERYWHERE_PLAN.md §10b item 5), so a
-  // manifest contract having no registry row is the CORRECT state, and asserting
-  // otherwise fired ~975 false reds. Its real replacement lives where the
-  // inventory lives: aidream's `scripts/sync_content_ir_contracts.py --check`
-  // compares the live runtime inventory against `content_ir.io_contract` and
-  // exits nonzero — derived, not snapshotted, and therefore authoritative. A
-  // second implementation here could only disagree with it.
+  // It used to check the aidream contract MANIFEST against this registry both
+  // ways. That is gone: machine-minted I/O contracts live in
+  // `content_ir.io_contract` now, so a manifest contract having no registry row
+  // is the CORRECT state, and asserting otherwise fired ~975 false reds. The
+  // authoritative parity check is aidream's
+  // `scripts/sync_content_ir_contracts.py --check`, which derives the inventory
+  // live instead of reading a snapshot; a second implementation here could only
+  // disagree with it.
   //
-  // The surviving direction inverts into the regression detector this eviction
-  // needs: a generated-family contract appearing in the Shape registry again
-  // means something re-minted one, which is exactly what was deleted.
-  if (input.contractManifest) {
-    for (const kind of kinds) {
-      const family = kindFamily(kind.metadata);
-      if (!kind.isActive || family === null || !GENERATED_CONTRACT_FAMILIES.has(family)) continue;
-      reds.push({
-        severity: "red",
-        code: "contract-gap",
-        kind: kind.kind,
-        message: `ACTIVE generated-family kind "${kind.kind}" (${family}) is in content_ir.kind_definition — machine-minted I/O contracts were EVICTED to content_ir.io_contract and nothing may put one back in the Shape registry`,
-      });
-    }
+  // What remains is the regression the eviction has to be able to see: a
+  // machine-minted contract getting back into the Shape registry.
+  //
+  // 🚨 MATCH ON THE SLUG, NEVER ON `metadata.family`. The first version of this
+  // rule keyed on the generated families and reded 48 REAL curated shapes —
+  // `agent_result`, `boolean`, `branch_result`, `json`, `text` and the rest of
+  // the hand-authored workflow-I/O set all legitimately carry
+  // `family: "workflow_io"`, and agent-authored kinds carry `agent_io`. That
+  // family-based heuristic had already been removed once as a bug (see
+  // `studio-catalog.ts`: "the old family-based heuristic wrongly hid them and is
+  // gone") and must not come back. What actually identifies a machine-minted
+  // contract is its FINGERPRINT NAME — `<family>_<source>_<sha8>_<direction>`
+  // (audit break #3: "the generated name is a fingerprint") — which no curated
+  // shape can collide with, because the naming rules forbid family prefixes and
+  // hashes outright (NOMENCLATURE.md).
+  for (const kind of kinds) {
+    if (!kind.isActive || !CONTRACT_SLUG_RE.test(kind.kind)) continue;
+    reds.push({
+      severity: "red",
+      code: "contract-gap",
+      kind: kind.kind,
+      message: `ACTIVE machine-minted contract slug "${kind.kind}" is in content_ir.kind_definition — I/O contracts were EVICTED to content_ir.io_contract and nothing may mint one back into the Shape registry`,
+    });
   }
 
   reds.sort(byKindThenMessage);

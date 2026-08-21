@@ -716,7 +716,6 @@ async function main(): Promise<number> {
       artifactKinds: artifactRegistryKindSlugs(),
     },
     crosswalkNames: crosswalk.names,
-    contractManifest: manifest.contracts,
     hostSurfaceTokens,
   });
 

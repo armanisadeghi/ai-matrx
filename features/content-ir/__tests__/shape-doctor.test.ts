@@ -746,16 +746,16 @@ describe("shape doctor — coverage gates", () => {
     expect(report.findings.filter((f) => f.code === "vocab-unclassified")).toHaveLength(0);
   });
 
-  it("reds an ACTIVE generated-family kind that re-entered the Shape registry", () => {
+  it("reds an ACTIVE machine-minted contract slug that re-entered the registry", () => {
     // Post-eviction (2026-08-20) this is the ONLY contract-gap direction: I/O
     // contracts live in content_ir.io_contract, so one showing up here means
-    // something re-minted it into the Shape registry.
+    // something minted it back into the Shape registry.
     const report = runShapeDoctor(
       baseInput({
         kinds: [
           makeKind({
             id: "k1",
-            kind: "tool_io_orphan_input",
+            kind: "tool_io_server_read_a1b2c3d4_input",
             isActive: true,
             emittedJsonSchema: { type: "object" },
             metadata: { family: "tool_io" },
@@ -764,19 +764,42 @@ describe("shape doctor — coverage gates", () => {
         examples: [
           { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
         ],
-        contractManifest: [
-          // A manifest contract with no registry row is now the CORRECT state
-          // and must produce NO finding — asserting otherwise fired ~975 false
-          // reds the moment the eviction landed.
-          { kind: "action_io_missing_output", family: "action_io" },
-        ],
       }),
     );
     const gaps = report.findings.filter((f) => f.code === "contract-gap");
     expect(gaps).toHaveLength(1);
-    expect(gaps[0].message).toContain("tool_io_orphan_input");
-    expect(gaps.map((f) => f.message).join("\n")).not.toContain("action_io_missing_output");
+    expect(gaps[0].message).toContain("tool_io_server_read_a1b2c3d4_input");
     expect(gaps[0].severity).toBe("red");
+  });
+
+  it("never reds a CURATED shape that shares a generated family", () => {
+    // The regression this guards: the first version of the rule keyed on
+    // `metadata.family` and reded 48 real hand-authored shapes. `agent_result`,
+    // `boolean`, `branch_result`, `json`, `text` all legitimately carry
+    // family "workflow_io"; agent-authored kinds carry "agent_io". Only the
+    // FINGERPRINT SLUG identifies a machine-minted contract.
+    const curated = ["agent_result", "boolean", "branch_result", "scraped_page"];
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: curated.map((kind, i) =>
+          makeKind({
+            id: `k${i}`,
+            kind,
+            isActive: true,
+            emittedJsonSchema: { type: "object" },
+            metadata: { family: "workflow_io" },
+          }),
+        ),
+        examples: curated.map((_, i) => ({
+          id: `e${i}`,
+          kindDefinitionId: `k${i}`,
+          isCanonical: true,
+          data: {},
+          updatedAt: T0,
+        })),
+      }),
+    );
+    expect(report.findings.filter((f) => f.code === "contract-gap")).toHaveLength(0);
   });
 
   it("does not gap-check INACTIVE generated kinds (deliberate deactivations)", () => {
@@ -785,7 +808,7 @@ describe("shape doctor — coverage gates", () => {
         kinds: [
           makeKind({
             id: "k1",
-            kind: "workflow_io_user_input_output",
+            kind: "workflow_io_user_input_58330011_output",
             isActive: false,
             emittedJsonSchema: { type: "object" },
             metadata: { family: "workflow_io" },
@@ -794,7 +817,6 @@ describe("shape doctor — coverage gates", () => {
         examples: [
           { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
         ],
-        contractManifest: [],
       }),
     );
     expect(report.findings.filter((f) => f.code === "contract-gap")).toHaveLength(0);
