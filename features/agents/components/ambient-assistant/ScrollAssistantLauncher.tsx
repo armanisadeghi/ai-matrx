@@ -71,6 +71,10 @@ export function ScrollAssistantLauncher({
       bottomIntentTimer = setTimeout(reveal, 600);
     };
 
+    const clearBottomIntentOnPointerExit = (event: PointerEvent) => {
+      if (!event.relatedTarget) clearBottomIntent();
+    };
+
     const shellMain = document.querySelector<HTMLElement>(".shell-main");
     window.addEventListener("scroll", revealOnScroll, { passive: true });
     shellMain?.addEventListener("scroll", revealOnScroll, { passive: true });
@@ -82,12 +86,23 @@ export function ScrollAssistantLauncher({
       capture: true,
       passive: true,
     });
+    document.addEventListener("pointerout", clearBottomIntentOnPointerExit, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("blur", clearBottomIntent);
     return () => {
       clearBottomIntent();
       window.removeEventListener("scroll", revealOnScroll);
       shellMain?.removeEventListener("scroll", revealOnScroll);
       document.removeEventListener("scroll", revealOnScroll, true);
       document.removeEventListener("pointermove", revealOnBottomIntent, true);
+      document.removeEventListener(
+        "pointerout",
+        clearBottomIntentOnPointerExit,
+        true,
+      );
+      window.removeEventListener("blur", clearBottomIntent);
     };
   }, [isMobile, revealed]);
 
