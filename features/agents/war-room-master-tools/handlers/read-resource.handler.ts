@@ -18,6 +18,7 @@
  * failures come back as clean `ok:false` results, never throws.
  */
 
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import type { WarRoomMasterToolHandler } from "./types";
 import {
   READ_RESOURCE_DEFAULT_MAX_CHARS,
@@ -137,7 +138,7 @@ export const readResourceHandler: WarRoomMasterToolHandler<
             ok: false,
             ...base,
             error: "not_found",
-            hint: "The document does not exist or is not accessible.",
+            hint: recordUnavailableMessage("working document", "unknown"),
           };
         }
         const { text, truncated } = clip(doc.content ?? "", maxChars);

@@ -263,6 +263,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_scope_text",
     label: "Selected scope content (not loaded here)",
     description:
+      // access-errors: ok — agent-facing value doc stating a verified code fact (no scope picker on this surface), not user-facing record copy
       "Inherited from PDF Extractor's scope picker, which does not exist in Analysis Studio — always empty on this surface.",
     valueType: "string",
     alwaysAvailable: false,

@@ -48,6 +48,7 @@ export type StreamDispatch = (action: unknown) => unknown;
 import { processStream } from "./process-stream";
 import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
 import { isStreamTransportLost } from "@/lib/api/errors";
 import type { JsonExtractionConfig } from "./process-stream";
@@ -500,7 +501,12 @@ export async function runAiStream(
         }
         throw new Error(`Conversation already exists: ${serverMessage}`);
       } else if (code === 404) {
-        throw new Error(`Conversation not found: ${serverMessage}`);
+        throw recordUnavailable({
+          entity: "conversation",
+          reason: "unknown",
+          recordId: conversationId,
+          token: "conversation",
+        });
       } else if (code === 422) {
         // 422 covers several distinct shapes from the backend:
         //   • Tool injection errors — capability resolution failed,

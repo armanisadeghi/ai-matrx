@@ -134,6 +134,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab_id",
     label: "Active tab id",
     description:
+      // access-errors: ok — agent-facing value doc; "does not exist" is a verified static tab-registry lookup, not a record-read guess shown to a user
       'Registry id of the open settings tab (dot-notation, e.g. "ai.textGeneration"). Empty on the /user-settings index landing (no tab selected) or when the URL names a tab that does not exist.',
     valueType: "string",
     alwaysAvailable: false,

@@ -92,6 +92,7 @@ import {
   type FillPreviewResult,
   type FillStatus,
   type FillStepCounts,
+  type ShellCheckSummary,
 } from "../bridge";
 import { setupKeys } from "../hooks";
 import { useCmsPageMap } from "../../hooks/useCmsPageMap";
@@ -286,7 +287,6 @@ export function SetupBridgeSection({
   const [savingTier, setSavingTier] = useState(false);
   const [fillStatus, setFillStatus] = useState<FillStatus | null>(null);
   const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
-
   const fillRunning = fillStatus?.status === "pending" || fillStatus?.status === "processing";
 
   // ESTIMATE BEFORE THE BUTTON — every tier priced for THIS site from measured
@@ -1050,6 +1050,48 @@ export function SetupBridgeSection({
   );
 }
 
+/** The on-demand rendered-page inspection result — same shape the automatic
+ * post-publish check renders inside PublishSummary. */
+function ShellSummaryBlock({ summary }: { summary: ShellCheckSummary }) {
+  const clean = summary.siteIssues.length === 0;
+  return (
+    <div
+      className={cn(
+        "mt-2 max-h-44 overflow-y-auto rounded-md border px-2.5 py-1.5 text-[11px]",
+        clean
+          ? "border-success/40 bg-success/10"
+          : "border-destructive/40 bg-destructive/10",
+      )}
+    >
+      <p className="font-medium text-foreground">
+        Rendered-page inspection: {summary.pagesPassed}/{summary.pagesChecked}{" "}
+        clean
+        {clean
+          ? " — header, menu, footer, brand and styling all present."
+          : ""}
+      </p>
+      {summary.siteIssues.map((issue) => (
+        <p key={issue.key} className="mt-0.5 text-warning">
+          {issue.message} ({issue.pagesAffected} page
+          {issue.pagesAffected === 1 ? "" : "s"})
+        </p>
+      ))}
+      {summary.pages
+        .filter((page) => !page.ok)
+        .slice(0, 15)
+        .map((page) => (
+          <p key={page.url} className="mt-0.5 text-muted-foreground">
+            {page.route || page.url}:{" "}
+            {page.issues.map((issue) => issue.message).join(" ")}
+          </p>
+        ))}
+      {summary.truncationNote ? (
+        <p className="mt-0.5 text-muted-foreground">{summary.truncationNote}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function Rung({
   index,
   done,
@@ -1349,6 +1391,32 @@ function PublishSummary({ result }: { result: BridgePublishResult }) {
         <p className="mt-0.5 text-muted-foreground">
           …and {result.items.length - 30} more rows with the same treatment.
         </p>
+      ) : null}
+      {result.shellCheck ? (
+        <div className="mt-1.5 border-t border-border/60 pt-1">
+          <p className="font-medium text-foreground">
+            Rendered-page inspection: {result.shellCheck.pagesPassed}/
+            {result.shellCheck.pagesChecked} clean
+            {result.shellCheck.siteIssues.length === 0
+              ? " — header, menu, footer, brand and styling all present."
+              : ""}
+          </p>
+          {result.shellCheck.siteIssues.map((issue) => (
+            <p key={issue.key} className="mt-0.5 text-warning">
+              {issue.message} ({issue.pagesAffected} page
+              {issue.pagesAffected === 1 ? "" : "s"})
+            </p>
+          ))}
+          {result.shellCheck.pages
+            .filter((page) => !page.ok)
+            .slice(0, 10)
+            .map((page) => (
+              <p key={page.url} className="mt-0.5 text-muted-foreground">
+                {page.route || page.url}:{" "}
+                {page.issues.map((issue) => issue.message).join(" ")}
+              </p>
+            ))}
+        </div>
       ) : null}
     </div>
   );

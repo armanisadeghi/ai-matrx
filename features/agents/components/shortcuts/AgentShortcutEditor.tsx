@@ -15,12 +15,11 @@
  *   missing RLS, etc.) an error card is shown with a link back to the list.
  */
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useTransition } from "react";
-import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -192,28 +191,17 @@ export function AgentShortcutEditor({
 
   if (!isCreate && !loadedShortcut) {
     return (
-      <Card className="mx-auto mt-12 w-full max-w-md border-destructive/30">
-        <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-          <div className="p-3 bg-destructive/10 rounded-full">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-foreground mb-1">
-              Shortcut not found
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              This shortcut doesn&apos;t exist, or isn&apos;t visible to you.
-              {fetchError ? ` (${fetchError})` : null}
-            </p>
-          </div>
-          <Link href={`${basePath}/${agentId}/shortcuts`}>
-            <Button size="sm" variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Back to shortcuts
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+      <AccessGate
+        token="agent_shortcut"
+        id={shortcutId}
+        error={fetchError}
+        onRetry={() => {
+          void userQuery.refetch();
+          void globalQuery.refetch();
+        }}
+        fallbackHref={`${basePath}/${agentId}/shortcuts`}
+        fallbackLabel="Back to shortcuts"
+      />
     );
   }
 

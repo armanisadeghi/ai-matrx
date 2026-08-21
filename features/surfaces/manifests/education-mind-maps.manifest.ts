@@ -242,6 +242,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "map_not_found",
     label: "Map unavailable",
     description:
+      // access-errors: ok — agent-facing value doc that names ALL of the zero-row possibilities without asserting one; not user-facing copy
       "True when the fetch finished and returned nothing — the map does not exist, was deleted, or the learner has no access. Absent on the happy path and outside the detail view. Present so an agent addresses the real situation instead of describing an empty map.",
     valueType: "boolean",
     alwaysAvailable: false,

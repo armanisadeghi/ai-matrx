@@ -237,6 +237,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "connection_error",
     label: "Connection error",
     description:
+      // access-errors: ok — agent-facing value doc naming literal error codes the transport emits, not a permission claim shown to a user
       "The last transport/token/microphone failure as { code, message } (e.g. mic-permission-denied, connect-timeout, token-unauthorized). Absent when there is no outstanding error.",
     valueType: "object",
     alwaysAvailable: false,

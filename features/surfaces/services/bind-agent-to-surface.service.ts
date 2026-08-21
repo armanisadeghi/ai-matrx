@@ -33,6 +33,7 @@ import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mapping
 import type { WritePolicyMap } from "@/features/surfaces/types";
 import type { Json, Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { ensureSharedWithOrg } from "@/utils/permissions/service";
 
 // ---------------------------------------------------------------------------
@@ -258,7 +259,13 @@ export async function bindAgentToSurface(
     if (cardError) throw cardError;
     agentCard = card;
     if (!agentCard) {
-      throw new Error(`Agent not found or inaccessible: ${agentId}`);
+      throw recordUnavailable({
+        entity: "agent",
+        reason: "unknown",
+        recordId: agentId,
+        token: "agent",
+        relation: "agent.card",
+      });
     }
   }
 

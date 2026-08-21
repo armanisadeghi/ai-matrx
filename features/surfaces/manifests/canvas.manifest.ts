@@ -173,6 +173,7 @@ export const canvasManifest: SurfaceManifest = {
   surfaceName: CANVAS_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
+    // access-errors: ok — internal readiness note about a removed editor's vocabulary, verified against the codebase; never rendered to a user as record state
     "Values re-authored against the live pane (2026-08-11) — the previous set declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor that does not exist in this codebase, and documented `render_mode` with an edit/preview enum it never had. Emitter now wired in CanvasSideSheetImpl. Remaining: no `data-surface-value` anchors, and no live non-matching-name binding test.",
   label: "Canvas",
   intro: `<surface_intro>

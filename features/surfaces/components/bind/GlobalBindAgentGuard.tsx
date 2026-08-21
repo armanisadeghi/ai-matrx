@@ -30,6 +30,7 @@ import { fetchLinkedCounterpart } from "@/features/agents/redux/agent-definition
 import type { LinkedAgentRef } from "@/features/agents/types/agent-definition.types";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { createClient } from "@/utils/supabase/client";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   Dialog,
   DialogContent,
@@ -86,7 +87,14 @@ export function GlobalBindAgentGuard({
         const counterpart = await dispatch(
           fetchLinkedCounterpart(agentId),
         ).unwrap();
-        if (!counterpart) throw new Error("Agent not found");
+        if (!counterpart) {
+          throw recordUnavailable({
+            entity: "agent",
+            reason: "unknown",
+            recordId: agentId,
+            token: "agent",
+          });
+        }
         const { self, source, derived } = counterpart;
 
         // Builtin agents need no guard — pass straight through.

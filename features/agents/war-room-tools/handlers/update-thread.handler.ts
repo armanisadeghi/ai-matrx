@@ -30,6 +30,7 @@ export const updateThreadHandler: WarRoomToolHandler<
 
     const tile = selectThreadById(threadId)(getState());
     if (!tile) {
+      // access-errors: ok — browser-local Redux lookup; the tile is absent from the loaded war-room state, no record read involved
       return { ok: false, message: "Tile not found." };
     }
 

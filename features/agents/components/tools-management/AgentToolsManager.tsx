@@ -1546,8 +1546,10 @@ function OrphanedToolsBanner({
             Unresolved Tools
           </span>
           <span className="ml-auto text-[10px] text-yellow-600 dark:text-yellow-500">
-            {orphanedTools.length} tool{orphanedTools.length !== 1 ? "s" : ""}{" "}
-            not found in registry
+            {
+              // access-errors: ok — count label for ids checked against the browser-local loaded tool registry set; the banner probes each id against the DB below
+              `${orphanedTools.length} tool${orphanedTools.length !== 1 ? "s" : ""} not found in registry`
+            }
           </span>
           {orphanedTools.length > 1 && (
             <Button

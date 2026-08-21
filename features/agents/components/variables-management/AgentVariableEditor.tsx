@@ -113,7 +113,10 @@ export function AgentVariableEditor({
   if (!variable) {
     return (
       <p className="text-sm text-muted-foreground italic">
-        Variable not found.
+        {
+          // access-errors: ok — name lookup in the browser-local Redux variable list of the loaded agent, no record read involved
+          "Variable not found."
+        }
       </p>
     );
   }

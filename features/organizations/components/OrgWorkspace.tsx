@@ -20,7 +20,6 @@
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Loader2,
   ExternalLink,
   Users,
@@ -93,6 +92,7 @@ import {
   createOrganizationsScope,
 } from "@/features/surfaces/manifests/organizations.manifest";
 import { OrgWorkspaceWriteTargets } from "@/features/organizations/components/OrgWorkspaceWriteTargets";
+import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
 
 export function OrgWorkspace() {
   const params = useParams();
@@ -122,12 +122,9 @@ export function OrgWorkspace() {
       try {
         setLoading(true);
         setError(null);
+        setOrganization(null);
         const org = await getOrganizationBySlugOrId(orgId);
-        if (!org) {
-          if (!cancelled) setError("Organization not found");
-          return;
-        }
-        if (cancelled) return;
+        if (!org || cancelled) return;
         setOrganization(org);
         const [role, orgMembers] = await Promise.all([
           getUserRole(org.id),
@@ -137,10 +134,8 @@ export function OrgWorkspace() {
         setUserRole(role);
         setMembers(orgMembers);
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Failed to load organization";
         console.error("Error loading organization:", err);
-        if (!cancelled) setError(msg);
+        if (!cancelled) setError(err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -148,7 +143,7 @@ export function OrgWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [orgId]);
+  }, [orgId, loadNonce]);
 
   const scopeTypes = useAppSelector((s) =>
     selectScopeTypesByOrg(s, organization?.id ?? ""),
@@ -221,24 +216,12 @@ export function OrgWorkspace() {
 
   if (error || !organization) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-textured p-4">
-        <Card className="max-w-lg w-full p-8 text-center">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold mb-2">Organization not found</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            {error || "This organization doesn't exist or has been removed."}
-          </p>
-          <Button
-            onClick={() => router.push("/organizations")}
-            variant="outline"
-            size="sm"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to organizations
-          </Button>
-        </Card>
+      <div className="h-dvh bg-textured">
+        <OrganizationAccessGate
+          orgSlugOrId={orgId}
+          error={error}
+          onRetry={() => setLoadNonce((n) => n + 1)}
+        />
       </div>
     );
   }

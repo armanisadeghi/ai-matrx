@@ -1,6 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 
 type WithTools = { tools: { tools: DatabaseTool[]; status: string } };
@@ -58,7 +59,15 @@ export const fetchToolById = createAsyncThunk<
       .maybeSingle();
 
     if (error) throw pgErrorToError(error);
-    if (!data) throw new Error(`Tool ${toolId} was not found`);
+    if (!data) {
+      throw recordUnavailable({
+        entity: "tool",
+        reason: "unknown",
+        recordId: toolId,
+        token: "tool",
+        relation: "tool.definition",
+      });
+    }
     return data;
   },
   {
