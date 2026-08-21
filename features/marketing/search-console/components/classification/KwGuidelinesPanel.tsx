@@ -65,6 +65,11 @@ Where we serve (and where we do not)
 - 
 `;
 
+const PLACEHOLDER =
+  'e.g. "We serve corporations, never consumers. CRT, TV and monitor repair ' +
+  "queries are consumer signals — they are never our customer, no matter how " +
+  'much traffic they bring."';
+
 function daysSince(iso: string | null): number | null {
   if (!iso) return null;
   const then = new Date(iso).getTime();
@@ -74,15 +79,9 @@ function daysSince(iso: string | null): number | null {
 
 export function KwGuidelinesPanel({
   siteId,
-  /** false in the value workbench — the document is authored in one place. */
-  editable = true,
-  /** Rendered under the editor when the host wants to point somewhere. */
-  footer,
   onSaved,
 }: {
   siteId: string;
-  editable?: boolean;
-  footer?: React.ReactNode;
   onSaved?: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -138,7 +137,9 @@ export function KwGuidelinesPanel({
     const when = new Date(row.updated_at);
     const who = row.updated_by_name ?? "someone on this site";
     return `v${row.guidelines_version} · last edited by ${who} on ${when.toLocaleDateString()}${
-      age !== null ? ` (${age === 0 ? "today" : `${age} day${age === 1 ? "" : "s"} ago`})` : ""
+      age !== null
+        ? ` (${age === 0 ? "today" : `${age} day${age === 1 ? "" : "s"} ago`})`
+        : ""
     }`;
   }, [stored.data, age]);
 
@@ -189,14 +190,9 @@ export function KwGuidelinesPanel({
       <Textarea
         value={value}
         onChange={(event) => setDraft(event.target.value)}
-        readOnly={!editable}
         disabled={stored.isLoading || save.isPending}
         spellCheck
-        placeholder={
-          editable
-            ? 'e.g. "We serve corporations, never consumers. CRT, TV and monitor repair queries are consumer signals — they are never our customer, no matter how much traffic they bring."'
-            : "No guidelines written for this site yet."
-        }
+        placeholder={PLACEHOLDER}
         className="min-h-[16rem] flex-1 resize-none font-mono text-xs leading-relaxed"
       />
 
@@ -218,58 +214,54 @@ export function KwGuidelinesPanel({
           )}
         </span>
 
-        {editable ? (
-          <span className="flex items-center gap-1.5">
-            {!savedText && !value ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs"
-                onClick={() => setDraft(STARTER_OUTLINE)}
-              >
-                Start an outline
-              </Button>
-            ) : null}
-            {dirty ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs"
-                disabled={save.isPending}
-                onClick={() => setDraft(null)}
-              >
-                <RotateCcw className="h-3.5 w-3.5" /> Discard
-              </Button>
-            ) : null}
+        <span className="flex items-center gap-1.5">
+          {!savedText && !value ? (
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              className="h-7 gap-1 px-2 text-xs"
-              disabled={!dirty || save.isPending}
-              onClick={() => void submit()}
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => setDraft(STARTER_OUTLINE)}
             >
-              {save.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Check className="h-3.5 w-3.5" />
-              )}
-              Save
+              Start an outline
             </Button>
-          </span>
-        ) : null}
+          ) : null}
+          {dirty ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 px-2 text-xs"
+              disabled={save.isPending}
+              onClick={() => setDraft(null)}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Discard
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 px-2 text-xs"
+            disabled={!dirty || save.isPending}
+            onClick={() => void submit()}
+          >
+            {save.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+            Save
+          </Button>
+        </span>
       </div>
 
-      {footer ?? (
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Used by: <span className="text-foreground">Classify with AI</span> on
-          this workbench, and every valuation agent that reasons about this
-          site&apos;s keywords. It never overrides your explicit rulings — a
-          keyword you ruled by hand always wins.
-        </p>
-      )}
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Used by: <span className="text-foreground">Classify with AI</span> on
+        this workbench, and every valuation agent that reasons about this
+        site&apos;s keywords. It never overrides your explicit rulings — a
+        keyword you ruled by hand always wins.
+      </p>
     </div>
   );
 }
