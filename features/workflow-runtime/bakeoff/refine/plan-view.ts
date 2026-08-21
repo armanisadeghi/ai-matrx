@@ -107,6 +107,7 @@ export function terminalStepIds(
 
 /** "12s" · "1m 04s" · "1h 02m" — a step duration in the reader's units. */
 export function formatDuration(ms: number): string {
+  if (ms < 950) return "<1s";
   const total = Math.max(0, Math.round(ms / 1000));
   if (total < 60) return `${total}s`;
   const minutes = Math.floor(total / 60);

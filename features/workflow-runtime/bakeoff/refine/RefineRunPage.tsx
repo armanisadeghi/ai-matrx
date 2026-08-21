@@ -135,7 +135,6 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoad({ state: "loading" });
     fetchWorkflowDefinition(definitionId)
       .then((row) => {
         if (cancelled) return;
@@ -177,7 +176,13 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
   const steps = ready?.steps ?? [];
   const stepViews = buildStepViews(steps, run);
   const status = run?.status ?? null;
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  // "Over" for COPY purposes: nothing more is coming without a human act.
+  // Wider than the generated TERMINAL set on purpose — an errored run is not
+  // engine-terminal (it can be resumed), but a promise card must stop saying
+  // "coming up" the moment the run stops producing.
+  const runOver =
+    status !== null &&
+    (TERMINAL_RUN_STATUSES.has(status) || status === "errored");
 
   // Keep the step under the spotlight streaming: promote its lane (single-
   // invocation steps only — fan-out deltas stay in the tracked tier).
@@ -286,7 +291,10 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
                 token="workflow"
                 id={definitionId}
                 error={load.state === "error" ? load.error : null}
-                onRetry={() => setRetryToken((token) => token + 1)}
+                onRetry={() => {
+                  setLoad({ state: "loading" });
+                  setRetryToken((token) => token + 1);
+                }}
                 fallbackHref="/workflows/all"
                 fallbackLabel="All workflows"
               />
@@ -351,6 +359,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
                       views={stepViews}
                       activity={activity}
                       stepLabels={stepLabels}
+                      startedAt={startedAt}
                       onStartAnother={() =>
                         router.replace(pathname, { scroll: false })
                       }
@@ -369,7 +378,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
                   </>
                 ) : (
                   <IntakePanel
-                    sections={deriveRunForm(ready!.definition)}
+                    sections={ready ? deriveRunForm(ready.definition) : []}
                     starting={starting}
                     deliverableNames={deliverableSteps(steps).map((step) =>
                       humanizeKind(step.outputKind ?? step.label),

@@ -72,15 +72,25 @@ function ToneIcon({ tone }: { tone: string }) {
   }
 }
 
-function timeOf(ts: string): string {
-  const parsed = new Date(ts);
-  return Number.isNaN(parsed.getTime())
-    ? ""
-    : parsed.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-        second: "2-digit",
-      });
+/** "+0:02" — each line stamped by how far into the run it happened. Reads
+ * like a match clock, never wraps, and means the same thing in every
+ * timezone. Falls back to a compact clock time when the start is unknown. */
+function timeOf(ts: string, startedAt: string | null): string {
+  const at = Date.parse(ts);
+  if (Number.isNaN(at)) return "";
+  const start = startedAt ? Date.parse(startedAt) : NaN;
+  if (!Number.isNaN(start)) {
+    const total = Math.max(0, Math.floor((at - start) / 1000));
+    const minutes = Math.floor(total / 60);
+    const seconds = String(total % 60).padStart(2, "0");
+    return minutes >= 60
+      ? `+${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}:${seconds}`
+      : `+${minutes}:${seconds}`;
+  }
+  return new Date(at).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 /**
@@ -91,10 +101,12 @@ function ActivityFeed({
   activity,
   stepLabels,
   quiet,
+  startedAt,
 }: {
   activity: RunActivityEntry[];
   stepLabels: Record<string, string>;
   quiet: boolean;
+  startedAt: string | null;
 }) {
   const scrollRef = useRef<HTMLOListElement | null>(null);
   const stickRef = useRef(true);
@@ -125,8 +137,8 @@ function ActivityFeed({
             const line = activityLine(entry, stepLabels);
             return (
               <li key={entry.id} className="flex items-baseline gap-1.5 text-xs">
-                <span className="w-14 shrink-0 text-[10px] tabular-nums text-muted-foreground/70">
-                  {timeOf(entry.ts)}
+                <span className="w-11 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground/70">
+                  {timeOf(entry.ts, startedAt)}
                 </span>
                 <ToneIcon tone={line.tone} />
                 <span className="min-w-0 flex-1 break-words text-foreground/90">
@@ -162,10 +174,12 @@ function Spotlight({
   runId,
   view,
   status,
+  stepLabels,
 }: {
   runId: string;
   view: StepView | null;
   status: WorkflowRunStatus | null;
+  stepLabels: Record<string, string>;
 }) {
   if (status === "interrupted") {
     return (
@@ -177,7 +191,7 @@ function Spotlight({
   if (status === "failed" || status === "errored") {
     return (
       <div className="scrollbar-thin h-full overflow-y-auto p-3">
-        <RunErrorCard runId={runId} />
+        <RunErrorCard runId={runId} nodeLabels={stepLabels} />
       </div>
     );
   }
@@ -266,6 +280,7 @@ export function LiveDesk({
   views,
   activity,
   stepLabels,
+  startedAt,
   onStartAnother,
 }: {
   runId: string;
@@ -273,6 +288,7 @@ export function LiveDesk({
   views: StepView[];
   activity: RunActivityEntry[];
   stepLabels: Record<string, string>;
+  startedAt: string | null;
   onStartAnother: () => void;
 }) {
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
@@ -284,20 +300,17 @@ export function LiveDesk({
   const live =
     status === "running" || status === "pending" || status === "pausing";
   const lastTs = activity.length > 0 ? activity[activity.length - 1].ts : null;
-  const [quiet, setQuiet] = useState(false);
+  // A ticking clock (interval = external system); quiet is DERIVED, so no
+  // setState runs synchronously inside the effect body.
+  const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
-    if (!live) {
-      setQuiet(false);
-      return;
-    }
-    const check = () => {
-      const last = lastTs ? Date.parse(lastTs) : NaN;
-      setQuiet(Number.isFinite(last) && Date.now() - last > QUIET_AFTER_MS);
-    };
-    check();
-    const id = setInterval(check, 5_000);
+    if (!live) return;
+    const id = setInterval(() => setNowTick(Date.now()), 5_000);
     return () => clearInterval(id);
-  }, [live, lastTs]);
+  }, [live]);
+  const lastMs = lastTs ? Date.parse(lastTs) : NaN;
+  const quiet =
+    live && Number.isFinite(lastMs) && nowTick - lastMs > QUIET_AFTER_MS;
 
   const verb = async (name: string, action: () => Promise<boolean>) => {
     setBusyVerb(name);
@@ -379,7 +392,7 @@ export function LiveDesk({
           </div>
         </header>
         <div className="min-h-0 flex-1">
-          <Spotlight runId={runId} view={spotlight} status={status} />
+          <Spotlight runId={runId} view={spotlight} status={status} stepLabels={stepLabels} />
         </div>
       </section>
 
@@ -393,7 +406,7 @@ export function LiveDesk({
             Play-by-play
           </h2>
         </header>
-        <ActivityFeed activity={activity} stepLabels={stepLabels} quiet={quiet} />
+        <ActivityFeed activity={activity} stepLabels={stepLabels} quiet={quiet} startedAt={startedAt} />
       </section>
     </div>
   );
