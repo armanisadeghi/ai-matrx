@@ -16,6 +16,11 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type { AdminUserUsageRow } from "../types";
+import {
+  originClassColor,
+  originClassLabel,
+  sortByOriginOrder,
+} from "@/lib/usage/originClass";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
 
@@ -31,6 +36,71 @@ function fmtCost(n: number): string {
 }
 function fmtDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleString() : "—";
+}
+
+/**
+ * One user's spend split by witnessed origin, ordered by the trust ladder
+ * rather than by size so a row reads the same way every time.
+ */
+function OriginBar({ row }: { row: AdminUserUsageRow }) {
+  const parts = sortByOriginOrder(row.by_origin, (o) => o.origin_class).filter(
+    (o) => o.total_cost > 0 || o.requests > 0,
+  );
+  if (parts.length === 0)
+    return <span className="text-xs text-muted-foreground">—</span>;
+
+  const total = parts.reduce((sum, o) => sum + o.total_cost, 0);
+  // With no settled cost anywhere, split by request count instead of
+  // collapsing the bar to nothing — the origin mix is still the answer.
+  const weight = (o: (typeof parts)[number]) =>
+    total > 0 ? o.total_cost / total : o.requests / (row.total_requests || 1);
+
+  return (
+    <div
+      className="flex h-2 w-full overflow-hidden rounded-full bg-muted"
+      title={parts
+        .map(
+          (o) =>
+            `${originClassLabel(o.origin_class)}: ${fmtCost(o.total_cost)} · ${fmtInt.format(o.requests)} reqs`,
+        )
+        .join("\n")}
+    >
+      {parts.map((o) => (
+        <div
+          key={o.origin_class}
+          className="h-full"
+          style={{
+            width: `${weight(o) * 100}%`,
+            backgroundColor: originClassColor(o.origin_class),
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Origin split as one scalar line — the copy/AI payload takes scalars only. */
+function originSummaryLine(
+  origins: readonly AdminUserUsageRow["by_origin"][number][],
+): string {
+  const parts = sortByOriginOrder(origins, (o) => o.origin_class).map(
+    (o) =>
+      `${originClassLabel(o.origin_class)} ${fmtCost(o.total_cost)}/${fmtInt.format(o.requests)} reqs`,
+  );
+  return parts.join(", ") || "none recorded";
+}
+
+/** The origin class carrying the most cost (falling back to request count). */
+function topOrigin(row: AdminUserUsageRow) {
+  if (row.by_origin.length === 0) return null;
+  return [...row.by_origin].sort(
+    (a, b) => b.total_cost - a.total_cost || b.requests - a.requests,
+  )[0];
+}
+
+function topOriginLabel(row: AdminUserUsageRow): string {
+  const top = topOrigin(row);
+  return top ? originClassLabel(top.origin_class) : "—";
 }
 
 export function UsageTableClient() {
@@ -84,6 +154,24 @@ export function UsageTableClient() {
         return acc;
       },
       { requests: 0, tokens: 0, cost: 0 },
+    );
+  }, [focused]);
+
+  // Origin split across every visible row — the same question as the per-user
+  // bar, asked of the whole view.
+  const originTotals = useMemo(() => {
+    const acc = new Map<string, { requests: number; cost: number }>();
+    for (const r of focused) {
+      for (const o of r.by_origin) {
+        const cur = acc.get(o.origin_class) ?? { requests: 0, cost: 0 };
+        cur.requests += o.requests;
+        cur.cost += o.total_cost;
+        acc.set(o.origin_class, cur);
+      }
+    }
+    return sortByOriginOrder(
+      [...acc.entries()].map(([origin_class, v]) => ({ origin_class, ...v })),
+      (o) => o.origin_class,
     );
   }, [focused]);
 
@@ -173,6 +261,27 @@ export function UsageTableClient() {
         width: 80,
       },
       {
+        id: "by_origin",
+        accessorKey: "by_origin",
+        header: "Origin mix",
+        sortable: false,
+        filter: false,
+        cell: (r) => <OriginBar row={r} />,
+        width: 140,
+      },
+      {
+        id: "top_origin",
+        // Sortable/filterable text answer to "what mostly drove this user's
+        // spend" — the bar shows the mix, this shows the headline.
+        accessorFn: (r: AdminUserUsageRow) => topOriginLabel(r),
+        header: "Top origin",
+        filter: "text",
+        cell: (r) => (
+          <span className="text-xs">{topOriginLabel(r)}</span>
+        ),
+        width: 120,
+      },
+      {
         id: "last_activity",
         accessorKey: "last_activity",
         header: "Last activity",
@@ -240,6 +349,45 @@ export function UsageTableClient() {
         </div>
       </div>
 
+      {originTotals.length > 0 ? (
+        <div className="rounded-lg border border-border bg-card p-3">
+          <div className="mb-2 text-[11px] text-muted-foreground">
+            Spend by origin — what kind of thing initiated it
+          </div>
+          <div className="mb-2 flex h-2 w-full overflow-hidden rounded-full bg-muted">
+            {originTotals.map((o) => (
+              <div
+                key={o.origin_class}
+                className="h-full"
+                style={{
+                  width: `${totals.cost > 0 ? (o.cost / totals.cost) * 100 : 0}%`,
+                  backgroundColor: originClassColor(o.origin_class),
+                }}
+                title={`${originClassLabel(o.origin_class)}: ${fmtCost(o.cost)}`}
+              />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+            {originTotals.map((o) => (
+              <div
+                key={o.origin_class}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                <div
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: originClassColor(o.origin_class) }}
+                />
+                <span>{originClassLabel(o.origin_class)}</span>
+                <span className="font-mono tabular-nums">{fmtCost(o.cost)}</span>
+                <span className="text-muted-foreground">
+                  ({fmtInt.format(o.requests)})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1">
         <MatrxDataTable
           urlState={{ id: "user-usage" }}
@@ -284,16 +432,25 @@ export function UsageTableClient() {
               [
                 `${r.email ?? r.user_id}: ${fmtInt.format(r.total_requests)} requests, ${fmtInt.format(r.total_tokens)} tokens, ${fmtCost(r.total_cost)}`,
                 `models=${r.distinct_models} last=${r.last_activity ?? "?"}`,
+                `by origin: ${originSummaryLine(r.by_origin)}`,
               ].join("\n"),
             rowAttributes: (r) => ({
               user_id: r.user_id,
               email: r.email,
               requests: r.total_requests,
               cost: r.total_cost,
+              top_origin: topOriginLabel(r),
+              by_origin: originSummaryLine(r.by_origin),
             }),
             listAttributes: (visible) => ({
               users: visible.length,
               timeframe,
+              by_origin: originTotals
+                .map(
+                  (o) =>
+                    `${originClassLabel(o.origin_class)} ${fmtCost(o.cost)}/${fmtInt.format(o.requests)}`,
+                )
+                .join(", "),
             }),
           }}
         />

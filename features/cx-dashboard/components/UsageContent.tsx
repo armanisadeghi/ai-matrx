@@ -22,6 +22,11 @@ import {
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import type { CxUsageAnalytics } from "@/features/cx-dashboard/types/cxDashboardTypes";
+import {
+  originClassColor,
+  originClassLabel,
+  sortByOriginOrder,
+} from "@/lib/usage/originClass";
 
 const COLORS = [
   "hsl(215, 70%, 55%)", "hsl(160, 60%, 45%)", "hsl(280, 60%, 55%)",
@@ -45,6 +50,16 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
   analytics.by_provider.forEach((p, i) => {
     providerChartConfig[p.provider] = { label: p.provider, color: COLORS[i % COLORS.length] };
   });
+
+  // Spend by witnessed origin, in the canonical trust order rather than by
+  // size — the ladder itself is the information (a person at the top, platform
+  // background work at the bottom), and a stable order keeps the bar readable
+  // as the timeframe changes.
+  const originRows = sortByOriginOrder(
+    analytics.by_origin,
+    (o) => o.origin_class,
+  );
+  const originCost = originRows.reduce((sum, o) => sum + o.total_cost, 0);
 
   const exportData = analytics.by_model.map((m) => ({
     model: m.model_name,
@@ -139,6 +154,60 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Origin breakdown — the witnessed trust axis */}
+          {originRows.length > 0 && (
+            <div className="border border-border rounded-md p-3 bg-card">
+              <h3 className="text-xs font-medium text-muted-foreground mb-3">
+                Cost by Origin
+                <span className="ml-2 font-normal">
+                  what kind of thing initiated the spend
+                </span>
+              </h3>
+
+              <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                {originRows.map((o) => (
+                  <div
+                    key={o.origin_class}
+                    className="h-full"
+                    style={{
+                      width: `${originCost > 0 ? (o.total_cost / originCost) * 100 : 0}%`,
+                      backgroundColor: originClassColor(o.origin_class),
+                    }}
+                    title={`${originClassLabel(o.origin_class)}: ${formatCost(o.total_cost)}`}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                {originRows.map((o) => (
+                  <div
+                    key={o.origin_class}
+                    className="flex items-center gap-3 text-xs"
+                  >
+                    <div
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: originClassColor(o.origin_class) }}
+                    />
+                    <span className="font-medium flex-1">
+                      {originClassLabel(o.origin_class)}
+                    </span>
+                    <span className="text-muted-foreground">{o.count} reqs</span>
+                    <span className="font-mono">{formatCost(o.total_cost)}</span>
+                    <span className="text-muted-foreground w-16 text-right">
+                      {formatTokens(o.total_tokens)} tok
+                    </span>
+                    <span className="w-10 text-right text-[10px]">
+                      {originCost > 0
+                        ? ((o.total_cost / originCost) * 100).toFixed(1)
+                        : "0.0"}
+                      %
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}

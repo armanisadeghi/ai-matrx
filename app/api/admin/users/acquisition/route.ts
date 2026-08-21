@@ -6,6 +6,7 @@ import {
   classifyAcquisitionTraffic,
   describeAcquisitionClient,
 } from "@/lib/product-analytics/user-acquisition";
+import { normalizeUsageOrigins } from "@/features/admin/users/lib/usageOrigins";
 import type {
   AdminUserAcquisitionRow,
   AdminUserUsageRow,
@@ -125,7 +126,12 @@ export async function GET(request: NextRequest) {
   if (usageError) return errorResponse(usageError);
   const usageById = new Map<string, AdminUserUsageRow>();
   for (const usage of usageData) {
-    usageById.set(usage.user_id, usage);
+    // by_origin is `Json` on the generated RPC type — coerce it through the one
+    // normalizer the usage route uses, so both admin surfaces read it the same.
+    usageById.set(usage.user_id, {
+      ...(usage as unknown as AdminUserUsageRow),
+      by_origin: normalizeUsageOrigins(usage.by_origin),
+    });
   }
 
   const guestByUserId = new Map<string, GuestRow>();

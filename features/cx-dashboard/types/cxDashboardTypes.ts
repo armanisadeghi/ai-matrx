@@ -274,5 +274,21 @@ export type CxUsageAnalytics = {
     total_cost: number;
     total_tokens: number;
   }[];
+  /**
+   * Spend split by the WITNESSED trust axis (chat.user_request.origin_class,
+   * reached from chat.request via user_request_id). Answers "what KIND of thing
+   * initiated this spend" — a person, client-side code, an API caller, a child
+   * agent, a workflow, the scheduler, or platform background work. `unknown` is
+   * the pre-provenance backfill value, not a defect.
+   */
+  by_origin: {
+    origin_class: string;
+    count: number;
+    total_cost: number;
+    total_input_tokens: number;
+    total_output_tokens: number;
+    total_cached_tokens: number;
+    total_tokens: number;
+  }[];
   total_requests: number;
 };

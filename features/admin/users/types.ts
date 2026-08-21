@@ -80,6 +80,23 @@ export interface AdminUserUsageRow {
   total_cost: number;
   distinct_models: number;
   last_activity: string | null;
+  /**
+   * This user's spend split by the WITNESSED trust axis
+   * (chat.user_request.origin_class). One entry per origin class present in the
+   * window, cost desc. Requests on the runtime spine with no chat.user_request
+   * twin carry no witnessed origin and are reported as `unknown` rather than
+   * guessed at — as are pre-provenance historic rows.
+   */
+  by_origin: AdminUserUsageOriginRow[];
+}
+
+export interface AdminUserUsageOriginRow {
+  origin_class: string;
+  requests: number;
+  total_cost: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
 }
 
 export type AcquisitionIdentityState =

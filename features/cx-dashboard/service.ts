@@ -32,12 +32,28 @@ function fetchError<T>(context: string, e: unknown): CxFetchResult<T> {
   return { ok: false, error: `${context}: ${message}` };
 }
 
+/** Format a PostgREST error — `message` can be empty (e.g. statement timeout), so include code/details. */
+function dbErr(error: {
+  message: string;
+  code?: string;
+  details?: string | null;
+}): string {
+  return (
+    [error.message, error.code && `code ${error.code}`, error.details]
+      .filter(Boolean)
+      .join(" — ") || "unknown database error"
+  );
+}
+
 /** Throw when a supabase query returned an error — never discard it. */
 function must<T>(
-  result: { data: T | null; error: { message: string } | null },
+  result: {
+    data: T | null;
+    error: { message: string; code?: string; details?: string | null } | null;
+  },
   label: string,
 ): T {
-  if (result.error) throw new Error(`${label}: ${result.error.message}`);
+  if (result.error) throw new Error(`${label}: ${dbErr(result.error)}`);
   if (result.data === null) throw new Error(`${label}: returned no data`);
   return result.data;
 }
@@ -217,7 +233,13 @@ type ToolUsageRow = {
 async function fetchOverviewKpisInner(
   filters: CxFilters,
 ): Promise<CxOverviewKpis> {
-  const supabase = await createClient();
+  // Whole-corpus aggregates over chat.* under per-row RLS evaluation blow the
+  // 8s statement timeout (measured: chat.message count alone). This is a
+  // super-admin-only dashboard, so — same pattern as the usage RPC and
+  // app/api/admin/users/usage/route.ts — gate here and read on the admin
+  // (service-role) client, where the same aggregates are index scans.
+  await requireSuperAdmin();
+  const supabase = createAdminClient();
   const { start, end } = timeframeBounds(filters);
 
   // Pure counts never fetch rows — head:true returns only the exact count.
@@ -231,7 +253,7 @@ async function fetchOverviewKpisInner(
       .is("deleted_at", null);
     if (start && end) q = q.gte("created_at", start).lte("created_at", end);
     const { count, error } = await q;
-    if (error) throw new Error(`chat.${table} count: ${error.message}`);
+    if (error) throw new Error(`chat.${table} count: ${dbErr(error)}`);
     return count ?? 0;
   };
 
@@ -250,9 +272,19 @@ async function fetchOverviewKpisInner(
           .is("deleted_at", null);
         if (start && end) q = q.gte("created_at", start).lte("created_at", end);
         if (filters.user_id) q = q.eq("created_by", filters.user_id);
-        return q.order("id", { ascending: true }).range(from, to);
+        // created_at first: appends land past the tail, so parallel pages
+        // stay stable under concurrent inserts; id breaks ties.
+        return q
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to);
       },
-      { label: "chat.user_request (overview KPIs)" },
+      {
+        label: "chat.user_request (overview KPIs)",
+        concurrency: 10,
+        // Aggregate-only read on an actively-written table (see rowKey docs).
+        rowKey: (row) => (row as UrStatRow).id,
+      },
     );
 
   const readToolUsage = () =>
@@ -266,9 +298,19 @@ async function fetchOverviewKpisInner(
           })
           .is("deleted_at", null);
         if (start && end) q = q.gte("created_at", start).lte("created_at", end);
-        return q.order("id", { ascending: true }).range(from, to);
+        // created_at first: appends land past the tail, so parallel pages
+        // stay stable under concurrent inserts; id breaks ties.
+        return q
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to);
       },
-      { label: "chat.tool_call (overview KPIs)" },
+      {
+        label: "chat.tool_call (overview KPIs)",
+        concurrency: 10,
+        // Aggregate-only read on an actively-written table (see rowKey docs).
+        rowKey: (row) => (row as ToolUsageRow & { id: string }).id,
+      },
     );
 
   const [
@@ -917,6 +959,7 @@ export async function fetchCxUsageAnalyticsRange(
     by_model?: Record<string, unknown>[];
     by_day?: Record<string, unknown>[];
     by_provider?: Record<string, unknown>[];
+    by_origin?: Record<string, unknown>[];
     total_requests?: unknown;
   };
   return {
@@ -944,6 +987,15 @@ export async function fetchCxUsageAnalyticsRange(
       count: num(p.count),
       total_cost: num(p.total_cost),
       total_tokens: num(p.total_tokens),
+    })),
+    by_origin: (raw.by_origin ?? []).map((o) => ({
+      origin_class: String(o.origin_class ?? "unknown"),
+      count: num(o.count),
+      total_cost: num(o.total_cost),
+      total_input_tokens: num(o.total_input_tokens),
+      total_output_tokens: num(o.total_output_tokens),
+      total_cached_tokens: num(o.total_cached_tokens),
+      total_tokens: num(o.total_tokens),
     })),
     total_requests: num(raw.total_requests),
   };
