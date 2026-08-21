@@ -36,11 +36,12 @@ import type {
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 
 const InteractiveDiagramBlock = dynamic(
-  () => import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"),
+  () =>
+    import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"),
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-72 items-center justify-center rounded-xl border border-border bg-card">
+      <div className="flex h-full min-h-72 items-center justify-center bg-textured">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     ),
@@ -58,13 +59,19 @@ function toDiagram(envelope: unknown): DiagramData | null {
 }
 
 /** Read the source-card fields stamped onto a node by linkCards.ts, if any. */
-function nodeCard(node: DiagramNode): { id: string; front: string; back: string } | null {
+function nodeCard(
+  node: DiagramNode,
+): { id: string; front: string; back: string } | null {
   const m = node.metadata;
   if (!m) return null;
   const id = m.cardId;
   const front = m.cardFront;
   const back = m.cardBack;
-  if (typeof id === "string" && typeof front === "string" && typeof back === "string") {
+  if (
+    typeof id === "string" &&
+    typeof front === "string" &&
+    typeof back === "string"
+  ) {
     return { id, front, back };
   }
   return null;
@@ -105,7 +112,10 @@ function NodePanel({
   const seed = seedForNode(node);
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+      >
         <SheetHeader className="space-y-0 border-b border-border px-4 py-3">
           <SheetTitle className="flex items-center gap-2 text-base">
             <Network className="h-4 w-4 text-primary" aria-hidden />
@@ -160,10 +170,13 @@ function NodePanel({
 export function MindMapView({
   envelope,
   mapTrust,
+  presentation = "card",
 }: {
   envelope: unknown;
   /** Map-level TrustEnvelope, threaded to the node panel's verify affordance. */
   mapTrust?: TrustEnvelope | null;
+  /** Dedicated routes use the canonical edge-to-edge graph workspace. */
+  presentation?: "card" | "workspace";
 }) {
   const [selected, setSelected] = useState<DiagramNode | null>(null);
   const diagram = toDiagram(envelope);
@@ -176,8 +189,16 @@ export function MindMapView({
     );
   }
   return (
-    <>
-      <InteractiveDiagramBlock diagram={diagram} onNodeClick={setSelected} />
+    <div
+      className={
+        presentation === "workspace" ? "h-full min-h-0 w-full" : undefined
+      }
+    >
+      <InteractiveDiagramBlock
+        diagram={diagram}
+        presentation={presentation}
+        onNodeClick={setSelected}
+      />
       {selected && (
         <NodePanel
           node={selected}
@@ -185,6 +206,6 @@ export function MindMapView({
           onClose={() => setSelected(null)}
         />
       )}
-    </>
+    </div>
   );
 }

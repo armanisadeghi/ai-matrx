@@ -17,6 +17,12 @@ import { SourceCitations } from "@/features/education/trust/components/SourceCit
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useAccess } from "@/utils/permissions/access";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
@@ -68,6 +74,7 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
   const router = useRouter();
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   const { isOwner } = useAccess("study_media", mediaId);
 
   useEffect(() => {
@@ -133,13 +140,17 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
                 ? { mind_map_description: media.description }
                 : {}),
               mind_map_status: media.status,
-              ...(media.source_kind ? { map_source_kind: media.source_kind } : {}),
+              ...(media.source_kind
+                ? { map_source_kind: media.source_kind }
+                : {}),
               ...(media.source_title
                 ? { map_source_title: media.source_title }
                 : {}),
               ...(media.source_id ? { map_source_id: media.source_id } : {}),
               ...(mapConfig.hint ? { map_focus_hint: mapConfig.hint } : {}),
-              ...(media.diagram_kind ? { diagram_kind: media.diagram_kind } : {}),
+              ...(media.diagram_kind
+                ? { diagram_kind: media.diagram_kind }
+                : {}),
               ...(diagram
                 ? {
                     node_count: diagram.nodeCount,
@@ -176,9 +187,12 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
         surfaceName="matrx-user/education-mind-maps"
         getScope={getScope}
       >
-        <div className="mx-auto w-full max-w-4xl space-y-4 p-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-80 w-full" />
+        <div className="relative h-full min-h-0 w-full overflow-hidden bg-textured">
+          <div className="absolute left-3 top-3 z-20 flex items-center gap-3 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-full w-full rounded-none" />
         </div>
       </SurfaceRuntimeProvider>
     );
@@ -212,76 +226,98 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
       surfaceName="matrx-user/education-mind-maps"
       getScope={getScope}
     >
-    <div className="mx-auto w-full max-w-4xl space-y-4 p-4">
-      <div className="flex items-start gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mt-0.5 shrink-0"
-          onClick={() => router.push("/education/mind-maps")}
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          {media.source_title && (
-            <span className="truncate text-xs text-muted-foreground">
-              from {media.source_title}
-            </span>
-          )}
-          <h1 className="truncate text-lg font-semibold text-foreground">
-            {media.title}
-          </h1>
-        </div>
-        {isOwner && (
-          <div className="flex shrink-0 items-center gap-1">
-            <ShareButton
-              resourceType="study_media"
-              resourceId={media.id}
-              resourceName={media.title}
-              isOwner
-              size="sm"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                router.push(
-                  media.source_kind === "topic"
-                    ? "/education/mind-maps/new?source=topic"
-                    : `/education/mind-maps/new?source=deck&deck=${media.source_id ?? ""}`,
-                )
-              }
-              aria-label="Regenerate"
-            >
-              <RefreshCw className="h-4 w-4 text-muted-foreground" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              aria-label="Delete"
-            >
-              <Trash2 className="h-4 w-4 text-muted-foreground" />
-            </Button>
+      <div className="relative h-full min-h-0 w-full overflow-hidden bg-textured">
+        <MindMapView
+          envelope={media.ir_envelope}
+          mapTrust={trust}
+          presentation="workspace"
+        />
+
+        <div className="absolute left-3 right-3 top-3 z-20 flex min-w-0 items-center gap-2 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl sm:right-auto sm:max-w-[calc(100%-5rem)]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => router.push("/education/mind-maps")}
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0 flex-1 sm:min-w-48">
+            {media.source_title && (
+              <span className="truncate text-xs text-muted-foreground">
+                from {media.source_title}
+              </span>
+            )}
+            <h1 className="truncate text-lg font-semibold text-foreground">
+              {media.title}
+            </h1>
           </div>
+          {isOwner && (
+            <div className="flex shrink-0 items-center gap-1">
+              <ShareButton
+                resourceType="study_media"
+                resourceId={media.id}
+                resourceName={media.title}
+                isOwner
+                size="sm"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  router.push(
+                    media.source_kind === "topic"
+                      ? "/education/mind-maps/new?source=topic"
+                      : `/education/mind-maps/new?source=deck&deck=${media.source_id ?? ""}`,
+                  )
+                }
+                aria-label="Regenerate"
+              >
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDelete}
+                aria-label="Delete"
+              >
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          )}
+          {trust && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-2"
+              onClick={() => setSourcesOpen(true)}
+            >
+              <ConfidenceBadge confidence={trust.confidence} />
+              <span className="hidden sm:inline">Sources</span>
+            </Button>
+          )}
+        </div>
+
+        {trust && (
+          <Sheet open={sourcesOpen} onOpenChange={setSourcesOpen}>
+            <SheetContent
+              side="right"
+              className="flex w-full flex-col p-0 sm:max-w-lg"
+            >
+              <SheetHeader className="border-b border-border px-4 py-3">
+                <SheetTitle className="flex items-center gap-2">
+                  Grounded in
+                  <ConfidenceBadge confidence={trust.confidence} />
+                </SheetTitle>
+              </SheetHeader>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <SourceCitations trust={trust} />
+              </div>
+            </SheetContent>
+          </Sheet>
         )}
       </div>
-
-      <MindMapView envelope={media.ir_envelope} mapTrust={trust} />
-
-      {trust && (
-        <div className="space-y-2 rounded-xl border border-border bg-card/60 p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">
-              Grounded in
-            </span>
-            <ConfidenceBadge confidence={trust.confidence} />
-          </div>
-          <SourceCitations trust={trust} />
-        </div>
-      )}
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

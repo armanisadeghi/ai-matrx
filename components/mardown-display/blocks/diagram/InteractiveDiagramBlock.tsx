@@ -1739,7 +1739,7 @@ const DiagramFlow: React.FC<{
       maxZoom={2}
       fitView={false}
       proOptions={{ hideAttribution: true }}
-      className={`bg-gray-50 dark:bg-gray-900 ${workspace ? "!w-[calc(100%-min(320px,48vw))] !overflow-visible" : ""} ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
+      className={`bg-gray-50 dark:bg-gray-900 ${workspace && editing ? "!w-[calc(100%-min(320px,48vw))] !overflow-visible" : ""} ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
     >
       <Background
         variant={backgroundVariant}
