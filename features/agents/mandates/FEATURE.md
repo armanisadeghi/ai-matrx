@@ -1,8 +1,8 @@
 # Mandates — client half (resolution + the user/org override surface)
 
-**Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` — read it before touching mandates in ANY repo.** Admin pin management lives in `features/admin/mandates/` (`/administration/agents/mandates`). This folder is the USER-facing half.
+**Cross-repo system-of-record: [`../../../../common-docs/systems/agents/mandates/FEATURE.md`](../../../../common-docs/systems/agents/mandates/FEATURE.md) (+ [`RUNTIME.md`](../../../../common-docs/systems/agents/mandates/RUNTIME.md)) — read it before touching mandates in ANY repo.** Admin pin management lives in `features/admin/mandates/` (`/administration/agents/mandates`). This folder is the USER-facing half. Server half: `aidream/aidream/services/mandates/FEATURE.md`.
 
-**Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before implementing the proposed individual Mandate workspace or personal, organization, administration, feature, test, compare, or Binding experience. It has no implementation authority until Arman approves it.**
+**Cross-repo master tracker: [`../../../../common-docs/projects/mandate-binding-surfaces/PLAN.md`](../../../../common-docs/projects/mandate-binding-surfaces/PLAN.md).** Its **Wave 0–4 core work is DONE** (closed out 2026-08-22 — see the Provision-era section below); the individual Mandate workspace and the personal/organization/administration/feature/test/compare/Binding experiences it proposes are **still proposed** and have no implementation authority until Arman approves them.
 
 ## What lives here
 
@@ -28,7 +28,17 @@
 
 Route: `app/(core)/agents/mandates/page.tsx` (+ `MandatesHeader` in the shell header center).
 
-## The Provision era (Wave 2, 2026-08-22) — inputs come from the PROVISION
+## The Provision era (2026-08-22) — inputs come from the PROVISION
+
+> ✅ **The rollout is CLOSED on the server side (Wave 4, 2026-08-22).** Every declared mandate
+> has an input contract: **298 declared, 0 uncovered** — 225 Provisions (7 generic-`json`-only)
+> and 73 explicit waivers, from **152 Provisions**. Both server ratchets are closed. Practically,
+> for this repo: **assume a mandate has a `provision_key`** — the provision-era paths below are
+> the normal path now, not the new one, and `types/python-generated/provision-offers.ts` carries
+> all 152 offer shapes. 🚨 **~118 client-invoked mandates are still invisible to server-side
+> static analysis**, so a matrx-frontend-side census of what each `POST /agents/mandates/{key}`
+> actually sends is the outstanding cross-repo item (decision (d) in
+> `aidream/docs/mandates/KIND_BACKFILL_TODO.md`, awaiting Arman).
 
 **A mandate carrying `provision_key` declares NO input variables of its own** — its
 Provision (`agent.provision`, code-declared server-side) lists every value available at the
@@ -76,7 +86,7 @@ through which channel (`variable` | `context`). SoR (rulings 2026-08-22):
 - A **spilled** variable is never counted missing: it arrives as user text. Structured content may never take that path.
 - **A surface that resolves-then-launches must pre-check**, so the user sees a real refusal instead of a thrown promise — call `missingRequiredVariables(mandate.contract, vars)` and render the message from `missingVariablesMessage`. Worked reference: `features/masterwork/conduct/ConductorPanel.tsx` and `features/masterwork/components/detail/ScoutInterviewPanel.tsx`.
 
-Law: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE COROLLARY · register: `/Users/armanisadeghi/code/common-docs/operations/agent-failure-diseases.md` § D4. Tests: `__tests__/document-variable-precondition.test.ts`.
+Law: `../../../../common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE COROLLARY · register: `../../../../common-docs/operations/agent-failure-diseases.md` § D4. Tests: `__tests__/document-variable-precondition.test.ts`.
 
 ## Invariants
 
@@ -165,6 +175,7 @@ count only goes DOWN, and `--write` never adds entries.
 
 ## Change Log
 
+- 2026-08-22 — **Wave 4 closeout — the Mandate Core Rollout is CLOSED server-side; this repo's Wave-2 surfaces are the normal path now.** Verified against the server this session: 298 declared mandates, 0 with no input contract (225 Provisions / 7 generic-`json`-only, 73 waivers), 152 Provisions, both ratchets closed (input baseline 289 → 0, blob-name 43 → 15), mandates suite 134 passed. `types/python-generated/provision-offers.ts` confirmed in sync at **152** offer shapes. Doc corrections only in this repo: the three `/Users/armanisadeghi/code/common-docs/...` pointers (system-of-record, master tracker, and the D4 law/register line) were broken absolute paths and are now repo-relative; the master-tracker line no longer calls the whole plan "proposed" (its Wave 0–4 core is done — only the workspace/UI experiences remain proposed); the Provision-era section leads with the final state. 🚨 **Outstanding cross-repo item, awaiting Arman:** ~118 client-invoked mandates cannot be classified from the server, so a matrx-frontend census of what each `POST /agents/mandates/{key}` actually sends is what closes their input contracts (4 carry explicit "frontend census pending" waivers rather than guessed Provisions). That, and four other decisions the fleet surfaced and could not make alone, are Arman's decision list at the top of `aidream/docs/mandates/KIND_BACKFILL_TODO.md`.
 - 2026-08-22 — **Wave 2 of the Mandate Core Rollout (Provision → consumption map → holder).** New: `provision-shapes.ts` (leaf shapes + the ONE consumption-map funnel + wave-1 column narrowing), `provisions.ts` (`agent.provision` reads; clearly-marked local DB type until `pnpm db-types` can run), `ConsumptionMapEditor` (the full-offer editor — unused values calm, structured kinds context-only, optional values demand `when_absent`), `EffectiveConfigLayers` (agent → binding → pins, pins locked). `ResolvedMandate` gained `inputKind/outputKind/provisionKey/pins/pinnedContext` (client + SSR twin). `putMandateBinding` gained `holderType` + `consumptionMap` (local extension beside the stale generated request type). Contract-compare retuned: provision mandates judge input fit by consumes-⊆-offered (`compareConsumptionAgainstOffer`); editor + picker skip the superset check for them. Admin drawer facts gained Provision / Pins / Pinned context rows; the test bench gained the offer-driven structured composer. The shared `ValueMapping` union gained the neutral `offered_value` branch (surface editor/resolver refuse it loudly). `buildBindingTargets` consolidation: both agent-shortcut forks (batchModel, ShortcutEditorNext) now use the ONE surfaces util (they had dropped `defaultValue`, hiding agent defaults).
 - 2026-08-21 — **THE DOOR LAW pass on the FEATURES that own mandates.** The platform's headline capability — swap the intelligence behind any step, no deploy — was reachable from exactly one feature surface (Podcast Studio); every other feature named `/agents/mandates` only in code comments, so its users had no way in. Added one deep-linked door per domain in the pattern each surface already uses — **15 domains** across two waves: flashcards, education, tasks, research, agent_apps, masterwork, crm, workflow, transcript_studio, war_room, notes, seo, content_plan, growth_loop; SMS's existing bare link upgraded to `?feature=sms`. Introduced `MandateDoorLink` so wave two (and every future door) composes the same primitive instead of forking a `<Link>` per surface, and retrofitted wave one onto it. See the DOOR invariant above — it names the live doors, the domains deliberately left doorless, and the seven that still need one.
 - 2026-08-21 — Added canonical Mandate fallback inheritance for ambient assistants, including cycle refusal and the database trigger that converts a changed inherited default into an explicit override.
