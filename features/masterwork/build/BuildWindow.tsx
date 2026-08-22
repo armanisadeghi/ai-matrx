@@ -2,14 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  BookOpen,
-  Hammer,
-  Layers,
-  PenLine,
-  RotateCcw,
-} from "lucide-react";
+import { Hammer, PenLine, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -246,36 +239,18 @@ function BuildWindowInner({
                   : "the reviewing and fixing"}
                 , every time, the way you said.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" asChild>
-                  <a href={studioHref} target="_blank" rel="noopener noreferrer">
-                    <ArrowUpRight className="h-4 w-4" />
-                    Open it in the studio
-                  </a>
-                </Button>
-                <Button size="sm" variant="outline" asChild>
-                  <Link
-                    href={`/masterwork/${rulebook.id}/masterworks`}
-                    target="_blank"
-                  >
-                    <Layers className="h-4 w-4" />
-                    All Masterworks from this Rulebook
-                  </Link>
-                </Button>
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={`/masterwork/${rulebook.id}`} target="_blank">
-                    <BookOpen className="h-4 w-4" />
-                    See what it was built from
-                  </Link>
-                </Button>
-              </div>
             </div>
 
-            {/* Run it. Here. Now. The SAME canonical run box the Masterworks
-                page and Encore use — never a second run surface. */}
+            {/* ONE next step (Arman, 2026-08-21, on the old three peer
+                buttons: "Confusing. Why am I getting those three options? I
+                just built this thing. Am I gonna do something with it?").
+                The obvious thing to do with a thing you just built is USE it,
+                so the run box IS the next step — the same canonical box the
+                Masterworks page and Encore use, never a second run surface.
+                Everything else is one quiet text link below the fold. */}
             <div>
               <p className="mb-2 text-sm font-medium text-foreground">
-                Try it right now
+                Try it on something real
               </p>
               <TryMasterworkBox
                 masterworkId={result.workflowId}
@@ -284,6 +259,25 @@ function BuildWindowInner({
                 onRunFinished={() => undefined}
               />
             </div>
+
+            <p className="text-xs text-muted-foreground">
+              It also lives with everything else you have built —{" "}
+              <Link
+                href={`/masterwork/${rulebook.id}/masterworks`}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                see what you&apos;ve built
+              </Link>
+              {" · "}
+              <a
+                href={studioHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                open the workings
+              </a>
+            </p>
           </div>
         </div>
       );
@@ -351,12 +345,19 @@ function BuildWindowInner({
 
           {chosenKind === "generate" ? (
             <div className="space-y-1.5">
-              <Label htmlFor="masterwork-deliverable">What should it make?</Label>
+              <Label htmlFor="masterwork-deliverable">
+                What does it hand you when it&apos;s done?
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Name the finished thing in your own words — the way you&apos;d
+                describe it to a client. This becomes what it makes every time
+                you run it.
+              </p>
               <ProTextarea
                 id="masterwork-deliverable"
                 value={deliverable}
                 onChange={(e) => setDeliverable(e.target.value)}
-                placeholder="e.g. a keyword plan for one page, advertising copy, a patient letter…"
+                placeholder="e.g. the primary keyword and supporting keywords for one page of content"
                 rows={3}
               />
             </div>

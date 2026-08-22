@@ -79,6 +79,7 @@ import {
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
+import { WhatsWhatDialog } from "./WhatsWhatDialog";
 import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import {
@@ -1497,6 +1498,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </TooltipContent>
                 </Tooltip>
               ) : null}
+              <WhatsWhatDialog />
             </div>
             {draftCount > 0 && canEdit ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
