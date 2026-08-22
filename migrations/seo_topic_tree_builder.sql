@@ -252,7 +252,7 @@ GRANT EXECUTE ON FUNCTION seo.gsc_topic_set_parent(uuid, uuid, uuid) TO authenti
 -- Create a topic, or rename / retype / redescribe one. Parent is NOT set here
 -- on update — pinning is its own named act (gsc_topic_set_parent); on create
 -- the parent travels with the new node so it never flashes as a root.
-DROP FUNCTION IF EXISTS seo.gsc_topic_save(uuid, uuid, text, text, text, uuid, boolean);
+DROP FUNCTION IF EXISTS seo.gsc_topic_save(uuid, uuid, text, text, text, uuid);
 CREATE FUNCTION seo.gsc_topic_save(
   p_site_id uuid,
   p_topic_id uuid DEFAULT NULL,
@@ -415,6 +415,9 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = seo, web, iam, platform, public, pg_temp
 AS $$
+-- The OUT parameter `keyword_id` shadows the column in ON CONFLICT without
+-- this — the same pragma gsc_set_keyword_value already carries.
+#variable_conflict use_column
 DECLARE
   v_org uuid;
 BEGIN

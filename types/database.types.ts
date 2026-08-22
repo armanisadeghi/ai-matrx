@@ -30055,6 +30055,21 @@ export type Database = {
         }
         Returns: Json
       }
+      lifecycle_archive_commit: {
+        Args: {
+          p_bucket: string
+          p_bytes: number
+          p_checksum?: string
+          p_entity_token: string
+          p_ids: string[]
+          p_object_key: string
+          p_owner_id: string
+          p_row_count: number
+          p_run_id: string
+          p_tier?: string
+        }
+        Returns: Json
+      }
       lifecycle_close_run: {
         Args: { p_entities_acted?: number; p_run_id: string; p_status?: string }
         Returns: Json

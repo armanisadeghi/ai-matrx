@@ -33,7 +33,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
-import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  InlineQueryError,
+  QueryError,
+} from "@/features/marketing/components/shared/MarketingUi";
 import { WhatIsADimension } from "./WhatIsADimension";
 import { DimensionCard } from "./DimensionCard";
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
@@ -135,25 +138,36 @@ export function DimensionManager() {
               the first (loading) render would always be false. */}
           <WhatIsADimension
             key={
-              catalog.isSuccess
+              catalog.data
                 ? mine.length === 0
                   ? "explainer-empty"
                   : "explainer-filled"
                 : "explainer-pending"
             }
-            defaultOpen={catalog.isSuccess && mine.length === 0}
+            defaultOpen={Boolean(catalog.data) && mine.length === 0}
           />
 
-          {catalog.isLoading ? <CatalogSkeleton /> : null}
+          {catalog.isPending && !catalog.isError ? <CatalogSkeleton /> : null}
 
-          {catalog.isError ? (
+          {/* Two honest failure shapes. Nothing to show -> the whole panel is
+              the error. Something to show but the REFRESH failed -> keep the
+              rows and say so out loud, because silently serving stale counts
+              on a screen whose whole job is "what is true" is a lie. */}
+          {catalog.isError && !catalog.data ? (
             <QueryError
               error={catalog.error}
               onRetry={() => void catalog.refetch()}
             />
           ) : null}
+          {catalog.isError && catalog.data ? (
+            <InlineQueryError
+              what="the latest dimensions — what you see below may be out of date"
+              error={catalog.error}
+              onRetry={() => void catalog.refetch()}
+            />
+          ) : null}
 
-          {catalog.isSuccess ? (
+          {catalog.data ? (
             <>
               <section className="space-y-2">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
@@ -169,6 +183,11 @@ export function DimensionManager() {
                 {creating ? (
                   <DimensionForm
                     mode="create"
+                    existing={dimensions.map((dimension) => ({
+                      slug: dimension.slug,
+                      label: dimension.label,
+                      scope: dimension.scope,
+                    }))}
                     pending={savingNew}
                     onCancel={() => setCreating(false)}
                     onSubmit={(draft) => void createDimension(draft)}

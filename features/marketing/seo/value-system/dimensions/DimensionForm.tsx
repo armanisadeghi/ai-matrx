@@ -53,12 +53,16 @@ const CARDINALITY_CHOICES: Array<{
 export function DimensionForm({
   mode,
   initial,
+  existing = [],
   pending,
   onCancel,
   onSubmit,
 }: {
   mode: "create" | "edit";
   initial?: Partial<DimensionFormValue>;
+  /** Dimensions already visible here — used to catch a name collision BEFORE
+      it silently rewrites a dimension that already exists. */
+  existing?: Array<{ slug: string; label: string; scope: "platform" | "site" }>;
   pending: boolean;
   onCancel: () => void;
   onSubmit: (value: DimensionFormValue) => void;
@@ -73,7 +77,19 @@ export function DimensionForm({
   const identity =
     mode === "edit" ? (initial?.slug ?? "") : toIdentitySlug(label);
   const identityOk = IDENTITY_PATTERN.test(identity);
-  const canSubmit = label.trim().length > 0 && identityOk && !pending;
+
+  // A COLLISION IS NOT A CREATE. `facet_dimension_upsert` is an upsert: typing
+  // a name that resolves to an existing identity would quietly RE-LABEL that
+  // dimension — and for a super admin it would do so to a dimension every
+  // tenant shares, under a toast that says "yours". The DB is still the
+  // authority on who may; this only stops an edit nobody asked for.
+  const collision =
+    mode === "create" && identityOk
+      ? existing.find((entry) => entry.slug === identity)
+      : undefined;
+
+  const canSubmit =
+    label.trim().length > 0 && identityOk && !collision && !pending;
 
   return (
     <form
@@ -122,6 +138,13 @@ export function DimensionForm({
             "Name it the way you would say it out loud."
           )}
         </p>
+        {collision ? (
+          <p className="text-[11px] leading-4 text-destructive">
+            {collision.scope === "platform"
+              ? `“${collision.label}” already exists as a dimension shared by every site. Pick a different name — renaming a shared one would change it for everybody.`
+              : `You already have a dimension called “${collision.label}”. Edit that one instead of creating a second.`}
+          </p>
+        ) : null}
         {mode === "create" && label.trim() && !identityOk ? (
           <p className="text-[11px] text-destructive">
             Start the name with a letter so it can be stored — &ldquo;Equipment

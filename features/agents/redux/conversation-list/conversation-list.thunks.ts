@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { getUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import type { AppThunk, RootState } from "@/lib/redux/store";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
@@ -252,8 +253,11 @@ export const fetchGlobalConversations = createAsyncThunk<
 
     dispatch(setGlobalListLoading());
 
-    // VIEW LAW: container-scoped via RLS on cx_conversation (user-filtered policy) — see docblock above
-    const { data, error } = await supabase
+    // VIEW LAW: the global list is MINE by default — declared scope, so the
+    // RLS ownership arm short-circuits without per-row has_access (measured
+    // 178 ms -> 21 ms on the sibling history query, 2026-08-22).
+    const viewerId = getUserId();
+    let listQuery = supabase
       .schema("chat").from("conversation")
       .select(
         "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg",
@@ -262,6 +266,10 @@ export const fetchGlobalConversations = createAsyncThunk<
       .eq("is_ephemeral", false)
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
+    if (viewerId) {
+      listQuery = listQuery.eq("created_by", viewerId);
+    }
+    const { data, error } = await listQuery;
 
     if (error) {
       dispatch(setGlobalListError(error.message));
