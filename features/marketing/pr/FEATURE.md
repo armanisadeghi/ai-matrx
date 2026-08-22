@@ -14,13 +14,9 @@ grafted, and from where, is listed at the bottom.
 
 ## Known gaps — the honest list
 
-**1. CLOSED — ingestion is built and the scoping is ruled** (Arman 2026-08-22: one row per
-matched site, no shared pool). "Add requests" in the Journalist requests rail takes a pasted
-HARO-style digest, streams the durable ingest command (`api.ts::ingestSourceRequests` →
-`POST /seo/press/source-requests/ingest`), and every row lands site-scoped — `site_id` is never
-NULL on an ingested row. The screen is loud: the dialog reports what was screened out and why.
-What still does not exist is standing provider webhooks that push digests automatically (a
-provider-access campaign, not a code gap).
+**1. `seo.source_request.site_id` is nullable** while every RLS policy keys on it, so a request
+ingested before it is matched to a site is invisible to users. Ingestion is unbuilt; this must be
+settled when it is (decision with Arman: per-site rows vs a shared pool with per-site match rows).
 
 **2. Not visually verified.** No dev server was run in this build (a hard constraint), so
 everything here is code + type-check + jest only. The sort control at narrow widths, the rationale
@@ -290,11 +286,6 @@ dense's four-tab shell (the consolidated surface shows all four things at once),
 and both losers' fixture files.
 
 ## Change Log
-
-- 2026-08-22 — Source-request ingestion UI: `IngestRequestsDialog` (paste a digest, platform picker,
-  score-now toggle, streamed milestones, loud screened-out report), `SourceRequestRail` header
-  `action` slot + honest empty-state copy, `api.ts::ingestSourceRequests` consuming the durable
-  streamed command. Regenerated `types/python-generated/api-types.ts` from the FastAPI schema.
 
 - 2026-08-21 — "Find my stories" consumes the durable streamed command: `api.ts` moved from
   `postJson` to `callApi` (`stream: true`) with milestone narration and a running banner in
