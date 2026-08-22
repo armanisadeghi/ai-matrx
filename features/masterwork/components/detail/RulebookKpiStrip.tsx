@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { Rulebook } from "../../types";
 import { ruleState } from "../../types";
+import type { Journey } from "../../journey";
 
 export interface RulebookKpis {
   total: number;
@@ -57,20 +58,38 @@ export function computeKpis(rulebook: Pick<Rulebook, "rules">): RulebookKpis {
   };
 }
 
-/** The one line under the bar — always forward-looking, always earned. */
-function nextStepLine(k: RulebookKpis): string {
+/**
+ * The one line under the bar — always forward-looking, always earned.
+ *
+ * 🚨 It is THE JOURNEY's headline (`features/masterwork/journey.ts`, mirroring
+ * aidream `masterwork_assists/journey.py`), not a private opinion. Before the
+ * journey existed this line stopped at "Ready to Build" — so a Rulebook with a
+ * finished Checkup nobody had looked at, three unanswered questions, three
+ * built Masterworks and zero Auditions was told it was all caught up, while
+ * the improvement chips right below it said something else entirely.
+ *
+ * `journey` is optional only so the KPI computation stays usable on its own
+ * (the module home renders counts without facts); when it is absent this falls
+ * back to the review-queue half of the same precedence, never to a claim about
+ * a life stage it cannot see.
+ */
+function nextStepLine(k: RulebookKpis, journey?: Journey): string {
+  if (journey) return journey.headline;
   if (k.total === 0)
     return "Start the interview — your first rules are one conversation away.";
   if (k.drafts === 0 && k.rejected === 0 && k.changeRequests === 0)
     return k.approved > 0
-      ? "All caught up — every rule is reviewed. Ready to Build."
+      ? `All caught up — ${k.approved} approved ${k.approved === 1 ? "rule" : "rules"} and nothing waiting on you.`
       : "No rules waiting on you.";
   if (k.drafts > 0 && k.drafts <= 3)
     return `Almost there — ${k.drafts} ${k.drafts === 1 ? "rule" : "rules"} left to review.`;
   if (k.drafts > 0)
     return `${k.drafts} suggested ${k.drafts === 1 ? "rule needs" : "rules need"} your call — approve, correct, or reject each one.`;
   if (k.rejected > 0)
-    return `${k.rejected} rejected ${k.rejected === 1 ? "rule is" : "rules are"} with the interviewer — they'll come back rewritten.`;
+    // Never "they'll come back rewritten": a rejected rule is rewritten by the
+    // Scout on its NEXT turn, so nothing is happening to it while nobody is
+    // talking to the interviewer. Same sentence as the journey's.
+    return `${k.rejected} rejected ${k.rejected === 1 ? "rule" : "rules"} will be rewritten the next time you talk to the interviewer.`;
   return `${k.changeRequests} change ${k.changeRequests === 1 ? "request is" : "requests are"} queued for the interviewer.`;
 }
 
@@ -108,9 +127,16 @@ function Tile({
 
 export function RulebookKpiStrip({
   kpis,
+  journey,
   live = false,
 }: {
   kpis: RulebookKpis;
+  /**
+   * Where this Rulebook is in its life. When given, its headline IS the next
+   * step line — the same computation the improvement brain raises chips from,
+   * so the page and the chips can never say different things.
+   */
+  journey?: Journey;
   /**
    * True when the Rulebook's Understudy exists — the system is already
    * running, and every approval visibly improves it (vision doc 13).
@@ -172,7 +198,7 @@ export function RulebookKpiStrip({
                 title="Your system is already running — every approval improves it"
               />
             ) : null}
-            <span className="truncate">{nextStepLine(kpis)}</span>
+            <span className="truncate">{nextStepLine(kpis, journey)}</span>
           </span>
           <span className="shrink-0 tabular-nums text-muted-foreground">
             {kpis.progressPct}%

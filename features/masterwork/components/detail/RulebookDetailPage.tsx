@@ -90,7 +90,14 @@ import { ImproveRuleDialog } from "./ImproveRuleDialog";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
-import { OpenQuestionsCard } from "@/features/masterwork/coherence/OpenQuestionsCard";
+import {
+  computeJourney,
+  journeyFactsFromRulebook,
+} from "@/features/masterwork/journey";
+import {
+  OpenQuestionsCard,
+  OPEN_QUESTIONS_ANCHOR,
+} from "@/features/masterwork/coherence/OpenQuestionsCard";
 import { UnderstudyCard } from "../../understudy/UnderstudyCard";
 import {
   buildRulebookSurfaceScope,
@@ -679,7 +686,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // an improvement-brain assist chip (?assist=<dedupe_key>) whose launch
   // contract stages a seeded interview or opens the ingest dialog. Seeding
   // only pre-fills; the Expert always presses send.
+  // Declared above the ?assist= effect below: a journey chip whose lane is the
+  // Final Checkup opens it directly.
+  const openCheckup = useOpenMasterworkCheckupWindow();
   const [interviewSeed, setInterviewSeed] = useState<string | undefined>();
+  // Set by the `tensions_open` journey chip: the open-questions card is
+  // already on the page, so the chip highlights it instead of opening a
+  // second surface over the same rows. Cleared on the first settle.
+  const [coherenceFlash, setCoherenceFlash] = useState(false);
   const assistKey = searchParams.get("assist");
   useEffect(() => {
     if (!assistKey) return;
@@ -709,15 +723,39 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         setApproachPickerOpen(true);
         return;
       }
+      // THE JOURNEY LANES (masterwork_assists/journey.py). Each one is a real
+      // door on this page already — the chip only has to open it.
+      if (launch.open === "checkup") {
+        openCheckup({ rulebookId });
+        return;
+      }
+      if (launch.open === "coherence") {
+        // The questions live in a card the page always renders; the chip
+        // scrolls to it and flags it, rather than forking a second surface
+        // for the same rows.
+        setCoherenceFlash(true);
+        window.setTimeout(() => {
+          document
+            .getElementById(OPEN_QUESTIONS_ANCHOR)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 0);
+        return;
+      }
+      if (launch.open === "conduct") {
+        // No seed: the Conductor opens with this Rulebook already attached and
+        // its whole job is to walk the method input by input. Staging words in
+        // its composer would be telling it what it already knows.
+        setConductorOpen(true);
+        return;
+      }
       if (launch.seed) setInterviewSeed(launch.seed);
       setInterviewOpen(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [assistKey, launchApproach]);
+  }, [assistKey, launchApproach, openCheckup, rulebookId]);
   const userId = useAppSelector(selectUserId);
-  const openCheckup = useOpenMasterworkCheckupWindow();
   const openAddRule = useOpenAddRuleWindow();
   const openBuild = useOpenBuildWindow();
   const openYourWords = useOpenMasterworkYourWordsWindow();
@@ -1242,6 +1280,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // Only approved rules power a Masterwork — the Build excludes drafts and
   // rejected rules, so the button must not promise what it will refuse.
   const kpis = computeKpis(rulebook);
+  // THE JOURNEY (features/masterwork/journey.ts) — where this Rulebook is in
+  // its life, from what this page already holds. No extra read, no endpoint:
+  // the Rulebook row (rules + metadata.coherence + metadata.checkup) and the
+  // Masterworks it was built into. It sees no runs and says so, so the
+  // run-dependent moves stay silent here rather than guessing; the improvement
+  // brain, which DOES read runs, raises those as chips below.
+  const journey = useMemo(
+    () => computeJourney(journeyFactsFromRulebook(rulebook, masterworks)),
+    [rulebook, masterworks],
+  );
   const draftCount = kpis.drafts;
   const approvedCount = kpis.approved;
   // The Understudy (running-from-minute-one) is rendered as its own card and
@@ -1415,7 +1463,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               </div>
             </div>
             <div className="mt-3">
-              <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
+              <RulebookKpiStrip
+                kpis={kpis}
+                journey={journey}
+                live={understudy !== null}
+              />
             </div>
             {/* CHECK & FINISH — the second action class (Arman, 2026-08-21).
                 These are what you do once something EXISTS, so they sit under
@@ -1571,7 +1623,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <OpenQuestionsCard
             rulebook={rulebook}
             canEdit={canEdit}
-            onSettled={reloadRulebook}
+            highlight={coherenceFlash}
+            onSettled={() => {
+              setCoherenceFlash(false);
+              return reloadRulebook();
+            }}
             onTalkItThrough={(seed) => {
               setInterviewSeed(seed);
               setInterviewOpen(true);

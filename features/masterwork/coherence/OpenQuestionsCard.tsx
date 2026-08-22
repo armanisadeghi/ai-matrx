@@ -52,7 +52,17 @@ export interface OpenQuestionsCardProps {
   onTalkItThrough: (seed: string) => void;
   /** Scroll/focus one of the Expert's own rules (THE DOOR LAW). */
   onOpenRule?: (ruleId: string) => void;
+  /**
+   * True when the Expert arrived here from the `tensions_open` journey chip
+   * (`masterwork_assists/journey.py`). The card is always on the page; the
+   * chip's job is only to say "these ones, here" — so it rings the card
+   * instead of opening a second surface over the same rows.
+   */
+  highlight?: boolean;
 }
+
+/** The scroll target the `tensions_open` assist chip lands on. */
+export const OPEN_QUESTIONS_ANCHOR = "masterwork-open-questions";
 
 function seedFor(tension: Tension): string {
   return `I want to settle this: ${tension.question}`;
@@ -64,6 +74,7 @@ export function OpenQuestionsCard({
   onSettled,
   onTalkItThrough,
   onOpenRule,
+  highlight = false,
 }: OpenQuestionsCardProps) {
   const questions = openTensions(rulebook);
   const [answering, setAnswering] = useState<string | null>(null);
@@ -113,7 +124,15 @@ export function OpenQuestionsCard({
       rulebookId={rulebook.id}
       rulebookName={rulebook.name}
     >
-    <section className="rounded-lg border border-border bg-card">
+    <section
+      id={OPEN_QUESTIONS_ANCHOR}
+      className={
+        "rounded-lg border bg-card transition-colors " +
+        (highlight
+          ? "border-primary ring-1 ring-primary/40"
+          : "border-border")
+      }
+    >
       <header className="flex items-center gap-2 border-b border-border px-4 py-2.5">
         <HelpCircle className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-sm font-medium">

@@ -19,12 +19,13 @@ function stamp(when: string): string {
   });
 }
 
-/** One contribution as plain text — headed by when it happened. */
+/** One contribution as plain text — headed by where it came from and when. */
 export function contributionHuman(c: ExpertContribution): string {
-  const head =
-    c.kind === "message"
-      ? `[${stamp(c.when)}]`
-      : `[${stamp(c.when)} — ${c.kind === "transcript" ? "recording" : "uploaded source"}]`;
+  // The LANE is the server's own phrasing ("from your published work") and the
+  // corpus spans nine of them — a hard-coded three-way guess here would tell
+  // the reader an imported chat was an interview.
+  const where = c.title ? `${c.laneLabel} — ${c.title}` : c.laneLabel;
+  const head = c.when ? `[${stamp(c.when)} — ${where}]` : `[${where}]`;
   // Say out loud that the words were SPOKEN and that the audio still exists —
   // a reader (human or agent) that only sees prose has no idea the voice is
   // one click away.
@@ -33,7 +34,10 @@ export function contributionHuman(c: ExpertContribution): string {
         c.dictations.length === 1 ? "" : "s"
       }: ${c.dictations.map((d) => d.title).join("; ")}]`
     : "";
-  return `${head}${voice}\n${c.text}`.trim();
+  const cut = c.truncated
+    ? "\n[…this piece continues beyond what was read here]"
+    : "";
+  return `${head}${voice}\n${c.text}${cut}`.trim();
 }
 
 /** The whole Record as plain text, oldest first. */
@@ -41,12 +45,30 @@ export function corpusHuman(
   corpus: ExpertCorpus,
   rulebookName: string,
 ): string {
+  const lanes = Object.entries(corpus.laneCounts)
+    .map(([lane, n]) => `${lane} ${n}`)
+    .join(" · ");
   const header = [
     `Everything I've said about: ${rulebookName}`,
     `${corpus.contributions.length} contributions across ${corpus.interviews.length} interview${
       corpus.interviews.length === 1 ? "" : "s"
     } · ${corpus.totalChars.toLocaleString()} characters`,
-  ].join("\n");
+    lanes ? `Ways of contributing: ${lanes}` : "",
+    // THE HONEST HOLE travels with the copy. A pasted document read as "this
+    // is everything the Expert said" is exactly how a partial record becomes a
+    // false premise downstream.
+    ...(corpus.limits.length
+      ? [
+          "",
+          "NOT included in this record:",
+          ...corpus.limits.map(
+            (l) => `- ${l.reason}${l.count > 1 ? ` (${l.count})` : ""}`,
+          ),
+        ]
+      : []),
+  ]
+    .filter(Boolean)
+    .join("\n");
   return [header, "", ...corpus.contributions.map(contributionHuman)].join(
     "\n\n---\n\n",
   );
@@ -62,7 +84,11 @@ export function contributionAgentPayload(
     description: `One thing the Expert said while building the Rulebook "${rulebookName}".`,
     summary: contributionHuman(c),
     data: c,
-    attributes: { rulebook: rulebookName, contribution_kind: c.kind },
+    attributes: {
+      rulebook: rulebookName,
+      contribution_kind: c.kind,
+      approach: c.lane,
+    },
   };
 }
 
@@ -73,7 +99,7 @@ export function corpusAgentPayload(
   return {
     kind: "expert-corpus",
     location: RECORD_LOCATION,
-    description: `Everything the Expert has contributed to the Rulebook "${rulebookName}" — every interview turn, uploaded source, and recording, oldest first.`,
+    description: `Everything the Expert has contributed to the Rulebook "${rulebookName}" — every interview turn, imported chat, published piece, handed-over resource, uploaded source and recording, oldest first, with what could NOT be read named explicitly.`,
     summary: corpusHuman(corpus, rulebookName),
     data: corpus,
     attributes: {
@@ -82,6 +108,8 @@ export function corpusAgentPayload(
       contributions: corpus.contributions.length,
       interviews: corpus.interviews.length,
       total_chars: corpus.totalChars,
+      lanes: Object.keys(corpus.laneCounts).join(","),
+      known_gaps: corpus.limits.length,
       recordings: corpus.contributions.reduce(
         (n, c) => n + (c.dictations?.length ?? 0),
         0,

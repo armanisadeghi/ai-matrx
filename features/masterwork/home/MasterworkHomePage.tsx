@@ -40,6 +40,8 @@ import {
   type MasterworkHomeData,
 } from "./service";
 import { HowItsImprovingPanel } from "./HowItsImprovingPanel";
+import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { MASTERWORK_RULEBOOK_SURFACE } from "../assists";
 
 function when(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -256,6 +258,16 @@ export function MasterworkHomePage() {
           </div>
         </section>
       ) : null}
+
+      {/* THE IMPROVEMENT BRAIN, VISIBLE FROM THE MODULE HOME
+          (aidream/services/masterwork_assists/). Same rows as the Rulebook
+          page's strip — one ledger, one slice, deciding in either place clears
+          both — but UNFILTERED, so the one thing worth doing next across ALL
+          your Rulebooks is on the landing page rather than behind a click into
+          the right one. Before this, an Expert with three Rulebooks could only
+          find the brain by guessing which Rulebook it had something to say
+          about. Renders nothing when it has nothing to say. */}
+      <AssistStrip surfaceName={MASTERWORK_RULEBOOK_SURFACE} />
 
       {/* Your Rulebooks */}
       <section className="space-y-2">

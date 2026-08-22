@@ -29,11 +29,42 @@
 // any consumer (this UI, the Final Checkup auditor, a future Hindsight pass)
 // gets "everything the Expert ever said about this Rulebook", ordered oldest
 // first. Never assemble it a second way.
+//
+// 🚨 THE ASSEMBLY LIVES ON THE SERVER (2026-08-19). This function no longer
+// assembles anything: it calls `GET /masterworks/{rulebook_id}/corpus`, which
+// runs `aidream/services/masterwork_corpus/corpus.py::load_expert_corpus` —
+// the exact function the Final Checkup judges rules against.
+//
+// WHY. The 2026-08-19 integration audit found TWO assemblies of this corpus
+// (this file and the Checkup's) that disagreed on FOUR of the nine
+// Distillation Approaches: body_of_work, dump, chat_import, and the Expert's
+// own AI Matrx conversations were invisible to one side or the other. The page
+// and the audit were reading different records of the same Expert. One
+// assembly, two readers, no drift.
+//
+// WHY THE SERVER AND NOT HERE. Assembling the corpus is WORK, not a DB read:
+// it captures pages through the scraper, reads processed-document pages, and
+// re-parses an uploaded chat export. "Clients go direct to Supabase" governs
+// CRUD; none of this is CRUD. What stays here is the AUDIO enrichment — which
+// recording backs which message is a presentation door over text the server
+// supplied, never a source of it.
 
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { parseRecordingOrigin } from "@/features/audio/recordingOrigin";
+import { callApi } from "@/lib/api/call-api";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import type { paths } from "@/types/python-generated/api-types";
 import type { RulebookRule } from "../types";
+
+/**
+ * The ONE corpus endpoint. The cast becomes a plain `satisfies keyof paths`
+ * the moment `pnpm sync-types` picks up the route against a deployed server
+ * (the CHECKUP_PATH / UNDERSTUDY_REFRESH_PATH precedent) — regenerating the
+ * types before the server ships would make the next release revert them.
+ */
+export const EXPERT_CORPUS_PATH =
+  "/masterworks/{rulebook_id}/corpus" as keyof paths;
 
 // =============================================================================
 // Types
@@ -90,11 +121,40 @@ export interface ExpertDictation {
  * handed to any auditing agent.
  */
 export interface ExpertContribution {
-  /** Stable id — the message / file / transcript row id. */
+  /** Stable id — the server's `segment_id` (message id, or a lane-scoped key). */
   id: string;
-  kind: "message" | "upload" | "transcript";
+  /**
+   * What it physically is, as the server classified it: `message` ·
+   * `chat_turn` · `web_page` · `document` · `recording`, or — for something
+   * handed over through the dump lane — that row's own entity token (`note`,
+   * `udt_document`, `fc_set`, …). Open-ended on purpose: the dump lane reads
+   * whatever the platform can read, and a closed union here would go stale the
+   * day a new resolver lands. Display uses `laneLabel`, never this.
+   */
+  kind: string;
+  /**
+   * Which Distillation Approach this came from (`platform.approach.key`):
+   * `interview` · `matrx_conversations` · `chat_import` · `body_of_work` ·
+   * `dump` · `file` · `monologue`.
+   */
+  lane: string;
+  /** How the lane reads in prose — "from your published work". Server-owned. */
+  laneLabel: string;
+  /** The piece's own name: a page title, a file name, a chat's subject. */
+  title?: string | null;
   /** The Expert's words (or the file's name, for an upload with no text). */
   text: string;
+  /** True when this piece was longer than one pass reads. Shown, never implied. */
+  truncated?: boolean;
+  /** True when a cleaned-up version of the words is what is being shown. */
+  cleaned?: boolean;
+  /** Door: the page this came from (body_of_work / dump web resources). */
+  url?: string | null;
+  /** Door: the platform row this came from (dump lane). */
+  entityToken?: string | null;
+  entityId?: string | null;
+  /** Door: the body-of-work frontier row (`platform.masterwork_corpus_item`). */
+  corpusItemId?: string | null;
   /** ISO timestamp — the corpus is ordered by this, oldest first. */
   when: string;
   /** Door: the conversation this came from. */
@@ -117,12 +177,33 @@ export interface ExpertContribution {
   dictations?: ExpertDictation[];
 }
 
+/**
+ * Something the corpus does NOT contain, said out loud.
+ *
+ * The load-bearing one is `lane: "source"` — text the Expert PASTED straight
+ * into the distiller was never stored anywhere, so those rules genuinely
+ * cannot be checked against what they actually wrote. A surface that hides
+ * this makes a partial record look complete, which is the exact failure the
+ * 2026-08-19 audit found. Render every one of these.
+ */
+export interface ExpertCorpusLimit {
+  lane: string;
+  reason: string;
+  count: number;
+  /** False = gone for good. True = a lane that failed and can be retried. */
+  recoverable: boolean;
+}
+
 export interface ExpertCorpus {
   rulebookId: string;
   interviews: RulebookInterview[];
   contributions: ExpertContribution[];
   /** Total characters the Expert contributed across every contribution. */
   totalChars: number;
+  /** How many contributions came from each Approach. */
+  laneCounts: Record<string, number>;
+  /** What could not be read — see `ExpertCorpusLimit`. Never hide these. */
+  limits: ExpertCorpusLimit[];
   /**
    * Interviews this Rulebook HAS that the current viewer cannot read (the
    * conversations belong to someone else and were never shared). The surface
@@ -130,6 +211,12 @@ export interface ExpertCorpus {
    * and the honest answer is "there is more here, it just isn't yours".
    */
   hiddenInterviewCount: number;
+  /**
+   * False when the viewer may see the Rulebook but not the raw material behind
+   * it. A Rulebook shared for viewing shares its RULES, never the unedited
+   * hours of dictation — and the page says so instead of rendering empty.
+   */
+  canReadMaterial: boolean;
 }
 
 // =============================================================================
@@ -577,9 +664,17 @@ function attachDictations(
     if (host) {
       host.dictations = [...(host.dictations ?? []), dictation];
     } else {
+      // A recording whose words are in NO message: the Expert spoke into an
+      // interview and the turn never landed (a lost send, an edited message).
+      // It is kept as its own contribution rather than guessed onto the
+      // nearest one — and it is the ONE contribution the server assembly
+      // cannot see, because there is no text row for it to read.
       unmatched.push({
         id: `transcript:${row.id}`,
-        kind: "transcript",
+        kind: "recording",
+        lane: "interview",
+        laneLabel: "said in an interview",
+        title: row.title,
         text,
         when: row.created_at,
         conversationId: origin?.conversationId,
@@ -601,88 +696,164 @@ function attachDictations(
   return [...contributions, ...unmatched];
 }
 
+// =============================================================================
+// THE CANONICAL CORPUS — one call, nine lanes
+// =============================================================================
+
+/** The wire shape of `GET /masterworks/{rulebook_id}/corpus`. */
+interface CorpusSegmentWire {
+  label: string;
+  segment_id: string;
+  lane: string;
+  lane_label: string;
+  kind: string;
+  text: string;
+  chars: number;
+  title: string | null;
+  when: string | null;
+  truncated: boolean;
+  cleaned: boolean;
+  conversation_id: string | null;
+  message_id: string | null;
+  file_id: string | null;
+  url: string | null;
+  entity_token: string | null;
+  entity_id: string | null;
+  corpus_item_id: string | null;
+}
+
+interface CorpusInterviewWire {
+  conversation_id: string;
+  title: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  message_count: number;
+  expert_turn_count: number;
+  expert_chars: number;
+  first_expert_line: string | null;
+  rules_produced: number;
+}
+
+interface ExpertCorpusWire {
+  rulebook_id: string;
+  segments: CorpusSegmentWire[];
+  interviews: CorpusInterviewWire[];
+  limits: ExpertCorpusLimit[];
+  lane_counts: Record<string, number>;
+  total_chars: number;
+  hidden_conversation_count: number;
+  can_read_material: boolean;
+}
+
+/**
+ * A segment with no honest timestamp (an uploaded source, a pasted note) still
+ * has to sort somewhere. The server already ordered the corpus oldest-first and
+ * put the undated pieces at the front; this keeps that order stable through the
+ * client's own sort rather than inventing a date the piece does not have.
+ */
+const NO_TIMESTAMP = "";
+
+function contributionFrom(segment: CorpusSegmentWire): ExpertContribution {
+  return {
+    id: segment.segment_id,
+    kind: segment.kind,
+    lane: segment.lane,
+    laneLabel: segment.lane_label,
+    title: segment.title,
+    text: segment.text,
+    when: segment.when ?? NO_TIMESTAMP,
+    truncated: segment.truncated,
+    cleaned: segment.cleaned,
+    conversationId: segment.conversation_id ?? undefined,
+    messageId: segment.message_id ?? undefined,
+    fileId: segment.file_id ?? undefined,
+    url: segment.url,
+    entityToken: segment.entity_token,
+    entityId: segment.entity_id,
+    corpusItemId: segment.corpus_item_id,
+  };
+}
+
 /**
  * THE CANONICAL CORPUS — everything the Expert has contributed to one
- * Rulebook, ordered oldest first, across every conversation and every
- * Approach. This is the ONE function any consumer calls; a second assembly of
- * the same corpus is a defect.
+ * Rulebook, across every Approach, oldest first. This is the ONE function any
+ * consumer calls; a second assembly of the same corpus is a defect.
  *
- * Sources, in the order they are merged:
- *   1. every USER message in every associated interview conversation;
- *   2. every uploaded source / recording that produced rules
- *      (`source_ref.file_id`), each with the extraction that read it and the
- *      time anchor when it came from a recording;
- *   3. every DICTATION — the audio of a spoken turn, found through the
- *      recording origin and attached to the message whose words it contains.
+ * It assembles NOTHING itself. The nine lanes are read by
+ * `GET /masterworks/{rulebook_id}/corpus` (aidream
+ * `services/masterwork_corpus/`) — the same function the Final Checkup judges
+ * rules against — so the page and the audit can never disagree about what the
+ * Expert said. See the module header for why the server owns it.
  *
- * Assistant turns are deliberately EXCLUDED — this is the Expert's record, not
- * a chat log. The conversation itself is one click away on every message.
+ * The ONE thing added here is the AUDIO: every dictation stamped with a
+ * recording origin pointing at one of the corpus's conversations, attached to
+ * the message whose words it contains verbatim. That is a door onto text the
+ * server supplied, not a tenth lane.
+ *
+ * Assistant turns are deliberately EXCLUDED at the source — this is the
+ * Expert's record, not a chat log. The conversation itself is one click away on
+ * every message.
  */
 export async function getExpertCorpus(
   rulebookId: string,
-  rules: RulebookRule[] = [],
 ): Promise<ExpertCorpus> {
-  const { interviews, hiddenCount } = await listRulebookInterviewsWithAccess(
-    rulebookId,
-    rules,
+  const store = getStoreSingleton();
+  if (!store) throw new Error("Store not ready");
+
+  const result = await store.dispatch(
+    callApi({
+      path: EXPERT_CORPUS_PATH,
+      method: "GET",
+      pathParams: { rulebook_id: rulebookId } as never,
+    }),
   );
-  const ids = interviews.map((i) => i.conversationId);
-  const [messages, dictationRows] = await Promise.all([
-    readExpertMessages(ids),
-    readDictations(ids),
-  ]);
-
-  let contributions: ExpertContribution[] = messages
-    .map((m) => {
-      const text = messageContentToText(m.content);
-      return {
-        id: m.id,
-        kind: "message" as const,
-        text,
-        when: m.created_at,
-        conversationId: m.conversation_id,
-        messageId: m.id,
-      };
-    })
-    .filter((c) => c.text.length > 0);
-
-  // 3. the AUDIO behind those words. Attached to the message that contains the
-  //    spoken words verbatim; anything that matches no message is kept as its
-  //    own contribution rather than guessed onto the nearest one.
-  contributions = attachDictations(contributions, dictationRows);
-
-  // Uploaded sources: one contribution per distinct file that produced rules.
-  const byFile = new Map<string, ExpertContribution>();
-  for (const rule of rules) {
-    const ref = rule.source_ref;
-    if (!ref?.file_id) continue;
-    const existing = byFile.get(ref.file_id);
-    if (existing) {
-      existing.rulesProduced = (existing.rulesProduced ?? 0) + 1;
-      continue;
-    }
-    byFile.set(ref.file_id, {
-      id: `file:${ref.file_id}`,
-      kind: ref.time_range ? "transcript" : "upload",
-      text: ref.note ?? "",
-      // Files carry no per-rule timestamp; anchor them before the first
-      // interview so an upload that seeded the Rulebook reads first.
-      when: interviews.at(-1)?.createdAt ?? new Date(0).toISOString(),
-      fileId: ref.file_id,
-      timeRange: ref.time_range,
-      pageExtractionJobId: ref.page_extraction_job_id,
-      rulesProduced: 1,
-    });
+  const error = (result as { error?: { message?: string } }).error;
+  if (error) {
+    throw new Error(
+      error.message ?? "We couldn't read what you've contributed to this Rulebook.",
+    );
   }
-  contributions.push(...byFile.values());
+  const wire = (result as { data?: ExpertCorpusWire }).data;
+  if (!wire) throw new Error("The corpus request returned no result.");
 
+  const interviews: RulebookInterview[] = wire.interviews.map((i) => ({
+    conversationId: i.conversation_id,
+    title: i.title,
+    createdAt: i.created_at ?? NO_TIMESTAMP,
+    updatedAt: i.updated_at,
+    messageCount: i.message_count,
+    expertTurnCount: i.expert_turn_count,
+    expertChars: i.expert_chars,
+    firstExpertLine: i.first_expert_line,
+    rulesProduced: i.rules_produced,
+  }));
+
+  let contributions = wire.segments.map(contributionFrom);
+
+  // THE AUDIO behind the words. Attached to the message that contains the
+  // spoken words verbatim; anything that matches no message is kept as its own
+  // contribution rather than guessed onto the nearest one.
+  const conversationIds = [
+    ...new Set(
+      contributions
+        .map((c) => c.conversationId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  contributions = attachDictations(
+    contributions,
+    await readDictations(conversationIds),
+  );
   contributions.sort((a, b) => a.when.localeCompare(b.when));
 
   return {
-    rulebookId,
+    rulebookId: wire.rulebook_id,
     interviews,
     contributions,
     totalChars: contributions.reduce((sum, c) => sum + c.text.length, 0),
-    hiddenInterviewCount: hiddenCount,
+    laneCounts: wire.lane_counts,
+    limits: wire.limits,
+    hiddenInterviewCount: wire.hidden_conversation_count,
+    canReadMaterial: wire.can_read_material,
   };
 }

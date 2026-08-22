@@ -18,6 +18,16 @@
  *                  could not have opened one even if it had ever run.
  *   `approach:<key>` — one named Approach straight into its lane, for a move
  *                  that already knows which one it wants.
+ *   `checkup`    — the Final Checkup window (its findings, or a fresh run)
+ *   `coherence`  — the open-questions card, scrolled to and flagged
+ *   `conduct`    — the Conductor, this Rulebook already attached
+ *
+ * The last three arrived with THE JOURNEY LAYER (2026-08-19,
+ * `masterwork_assists/journey.py`): the improvement brain learned the moves
+ * that are about a Rulebook's LIFE — a finished Checkup nobody decided on,
+ * questions only the Expert can settle, "you have rules and no Masterwork" —
+ * and every one of them opens a lane this contract could not name. A chip
+ * whose lane the page cannot open is a dead chip.
  *
  * One reader, one contract — the page never parses assist rows itself.
  */
@@ -28,7 +38,23 @@ import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/
 /** `<client>/<surface>` — must match the producer's RULEBOOK_SURFACE. */
 export const MASTERWORK_RULEBOOK_SURFACE = MASTERWORK_RULEBOOK_SURFACE_NAME;
 
-export type MasterworkAssistOpen = "interview" | "ingest" | "approaches";
+export type MasterworkAssistOpen =
+  | "interview"
+  | "ingest"
+  | "approaches"
+  | "checkup"
+  | "coherence"
+  | "conduct";
+
+/** Every value the parser accepts verbatim (the `approach:<key>` form aside). */
+const PLAIN_OPEN_TARGETS: readonly MasterworkAssistOpen[] = [
+  "interview",
+  "ingest",
+  "approaches",
+  "checkup",
+  "coherence",
+  "conduct",
+];
 
 export interface MasterworkAssistLaunch {
   open: MasterworkAssistOpen;
@@ -77,8 +103,8 @@ export async function fetchAssistLaunch(
   const raw = typeof rec.open === "string" ? rec.open : "";
   let open: MasterworkAssistOpen | null = null;
   let approachKey: string | null = null;
-  if (raw === "ingest" || raw === "interview" || raw === "approaches") {
-    open = raw;
+  if ((PLAIN_OPEN_TARGETS as readonly string[]).includes(raw)) {
+    open = raw as MasterworkAssistOpen;
   } else if (raw.startsWith("approach:")) {
     // NO DEAD ENDS: an unrecognised key still opens the picker, where the
     // Expert sees every Approach — never a chip that does nothing.

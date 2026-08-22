@@ -30,6 +30,8 @@ import dynamic from "next/dynamic";
 import {
   ExternalLink,
   FileText,
+  Globe,
+  Info,
   MessagesSquare,
   Mic,
   Quote,
@@ -76,24 +78,20 @@ function spokenFor(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+/**
+ * The corpus now spans nine Approaches, so the icon follows the SEGMENT KIND
+ * the server classified and the words follow its LANE LABEL. Neither is
+ * re-derived here: a second opinion about what a contribution is would drift
+ * from the assembly the Final Checkup reads.
+ */
 function KindIcon({ kind }: { kind: ExpertContribution["kind"] }) {
-  if (kind === "transcript")
+  if (kind === "recording")
     return <Mic className="h-3.5 w-3.5 text-primary" aria-hidden />;
-  if (kind === "upload")
-    return <FileText className="h-3.5 w-3.5 text-primary" aria-hidden />;
-  return <Quote className="h-3.5 w-3.5 text-primary" aria-hidden />;
-}
-
-function KindLabel({ kind }: { kind: ExpertContribution["kind"] }) {
-  return (
-    <span className="text-xs text-muted-foreground">
-      {kind === "transcript"
-        ? "You recorded this"
-        : kind === "upload"
-          ? "You uploaded this"
-          : "You said this"}
-    </span>
-  );
+  if (kind === "web_page")
+    return <Globe className="h-3.5 w-3.5 text-primary" aria-hidden />;
+  if (kind === "message" || kind === "chat_turn")
+    return <Quote className="h-3.5 w-3.5 text-primary" aria-hidden />;
+  return <FileText className="h-3.5 w-3.5 text-primary" aria-hidden />;
 }
 
 function ContributionCard({
@@ -109,8 +107,21 @@ function ContributionCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <KindIcon kind={c.kind} />
-          <KindLabel kind={c.kind} />
-          <span className="text-xs text-muted-foreground">· {when(c.when)}</span>
+          <span className="text-xs text-muted-foreground">
+            {/* The server's own phrasing for where this came from — "from your
+                published work", "said in an imported AI chat". */}
+            {c.laneLabel}
+          </span>
+          {c.title ? (
+            <span className="min-w-0 truncate text-xs font-medium text-foreground">
+              · {c.title}
+            </span>
+          ) : null}
+          {c.when ? (
+            <span className="text-xs text-muted-foreground">
+              · {when(c.when)}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center gap-1">
           {c.rulesProduced ? (
@@ -236,7 +247,10 @@ export function ExpertRecordPage({
     try {
       const rb = await getRulebook(rulebookId);
       setRulebook(rb);
-      setCorpus(await getExpertCorpus(rulebookId, rb?.rules ?? []));
+      // The corpus reads the Rulebook's own rules server-side (it IS the
+      // Checkup's assembly) — passing them from here would be a second,
+      // drifting copy of the provenance.
+      setCorpus(await getExpertCorpus(rulebookId));
     } catch (err) {
       console.error("[masterwork/record] failed to load the Record", err);
       setError(
@@ -390,7 +404,44 @@ export function ExpertRecordPage({
         </p>
       ) : null}
 
-      {corpus.contributions.length === 0 ? (
+      {/* WHAT WE COULD NOT READ. The Record used to show three of the nine ways
+          of contributing and said nothing about the rest, which made a partial
+          record look complete — the 2026-08-19 audit's finding. The assembly
+          now reports its own holes and every one of them is rendered. */}
+      {corpus.limits.length > 0 ? (
+        <div className="rounded-lg border border-border bg-muted/40 p-3">
+          <div className="flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+            <h3 className="text-xs font-medium text-foreground">
+              What isn&apos;t in here
+            </h3>
+          </div>
+          <ul className="mt-1.5 space-y-1">
+            {corpus.limits.map((limit) => (
+              <li
+                key={`${limit.lane}:${limit.reason}`}
+                className="text-xs text-muted-foreground"
+              >
+                {limit.reason}
+                {limit.count > 1 ? ` (${limit.count})` : ""}
+                {limit.recoverable
+                  ? " — we can try again."
+                  : " — this one is gone for good."}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {!corpus.canReadMaterial ? (
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            The rules here are shared with you, but the raw material behind them
+            — the interviews, recordings and sources — belongs to the Expert who
+            recorded it.
+          </p>
+        </div>
+      ) : corpus.contributions.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             You haven&apos;t said anything for this Rulebook yet. The fastest
