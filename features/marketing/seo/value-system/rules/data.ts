@@ -31,6 +31,7 @@ import type { Json } from "@/types/database.types";
 import type {
   FacetDimension,
   GeoAreaDraft,
+  MeaningUsageRow,
   RuleImpact,
 } from "./types";
 import type { SiteGeoArea } from "../types";
@@ -75,6 +76,8 @@ export const valueRulesQueryKey = (siteId: string) =>
   ["seo", "value-rules", "rules", siteId] as const;
 export const geoAreasQueryKey = (siteId: string) =>
   ["seo", "value-rules", "geo-areas", siteId] as const;
+export const meaningUsageQueryKey = (siteId: string, start: string, end: string) =>
+  ["seo", "value-rules", "usage", siteId, start, end] as const;
 
 /** Every query key the value workbench keeps in cache for this site. Saving a
  *  rule or an area changes what EVERY one of them says, so they invalidate
@@ -88,6 +91,7 @@ export function valueSurfaceQueryKeys(siteId: string) {
     ["marketing", "value-c", "geo-areas", siteId],
     ["marketing", "value-c", "summary", siteId],
     ["marketing", "value-c", "review", siteId],
+    ["seo", "value-rules", "usage", siteId],
     ["marketing", "value-b"],
     ["marketing", "value-d"],
   ];
@@ -107,6 +111,32 @@ export async function listFacetDimensions(
     response.error,
     "list your keyword dimensions",
   ) as unknown as FacetDimension[];
+}
+
+/**
+ * What every rule and area is CURRENTLY doing — read back out of the
+ * resolver's own reason chain in ONE call, never by re-matching per row. A
+ * rule that fires on nothing must be visibly different from a rule that
+ * carries the business.
+ */
+export async function getMeaningUsage(
+  siteId: string,
+  start: string,
+  end: string,
+  signal?: AbortSignal,
+): Promise<MeaningUsageRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_value_meaning_usage", {
+      p_site_id: siteId,
+      p_start: start,
+      p_end: end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(
+    response.data,
+    response.error,
+    "measure what your rules are doing",
+  ) as unknown as MeaningUsageRow[];
 }
 
 // ── Live match preview — SERVER-side banding, always ────────────────────────

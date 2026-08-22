@@ -491,3 +491,79 @@ GRANT EXECUTE ON FUNCTION seo.gsc_geo_area_preview(uuid, date, date, jsonb, text
 GRANT EXECUTE ON FUNCTION seo.assert_safe_match_token(text, text) TO authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
+
+-- ---------------------------------------------------------------------------
+-- 5. WHAT EACH RULE AND AREA IS ACTUALLY DOING, RIGHT NOW.
+--
+--    The rule ledger listed 22 rules and said nothing about whether any of
+--    them had ever fired.  A rule that matches nothing is indistinguishable
+--    from a rule that carries the business — the same class of defect as a
+--    tier rendered without its why.  (Measured on datadestruction.com the
+--    moment this shipped: 19 of 22 rules fire on 2,037 keywords; ZERO of the
+--    4 geo areas fire, because every one of them was adopted from a pack with
+--    empty match tokens.  That is the shell the geo editor exists to fill.)
+--
+--    ONE call, not one per row: the resolver already records every fired rule
+--    and the winning geo area in its `reasons` chain, so this reads that chain
+--    back rather than re-matching anything.  Live effect is free and exact.
+--    Applied 2026-08-22 via Supabase MCP as `seo_value_meaning_usage`.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION seo.gsc_value_meaning_usage(
+  p_site_id uuid,
+  p_start   date,
+  p_end     date
+)
+RETURNS TABLE (
+  kind text,          -- 'rule' | 'geo_area'
+  ref  text,          -- rule id (uuid text) | geo area label
+  band text,          -- geo band, for areas
+  keywords bigint,
+  clicks bigint,
+  impressions bigint
+)
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = seo, platform, pg_temp
+AS $fn$
+BEGIN
+  PERFORM seo.gsc_assert_site_access(p_site_id);
+
+  RETURN QUERY
+  WITH winner AS (
+    SELECT DISTINCT ON (spd.date) spd.date AS d, spd.run_id AS rid
+    FROM seo.search_performance_daily spd
+    WHERE spd.provider = 'gsc' AND spd.site_id = p_site_id
+      AND spd.dimension_profile = 'query' AND spd.date BETWEEN p_start AND p_end
+    ORDER BY spd.date, spd.created_at DESC, spd.run_id DESC
+  ),
+  vol AS (
+    SELECT spd.keyword_id AS kid, SUM(spd.clicks)::bigint AS c, SUM(spd.impressions)::bigint AS i
+    FROM seo.search_performance_daily spd
+    JOIN winner w ON w.d = spd.date AND w.rid = spd.run_id
+    WHERE spd.provider = 'gsc' AND spd.site_id = p_site_id
+      AND spd.dimension_profile = 'query' AND spd.keyword_id IS NOT NULL
+    GROUP BY spd.keyword_id
+  ),
+  ids AS (SELECT array_agg(kid) AS a FROM vol),
+  vm AS (SELECT * FROM seo.keyword_value_map(p_site_id, (SELECT a FROM ids))),
+  reasons AS (
+    SELECT v.c, v.i, r AS reason
+    FROM vol v
+    JOIN vm m ON m.keyword_id = v.kid
+    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(m.reasons, '[]'::jsonb)) r
+  )
+  SELECT 'rule'::text, reason->>'rule_id', NULL::text,
+         count(*)::bigint, COALESCE(sum(c),0)::bigint, COALESCE(sum(i),0)::bigint
+  FROM reasons WHERE reason->>'kind' = 'rule'
+  GROUP BY reason->>'rule_id'
+  UNION ALL
+  SELECT 'geo_area'::text, reason->>'area', reason->>'band',
+         count(*)::bigint, COALESCE(sum(c),0)::bigint, COALESCE(sum(i),0)::bigint
+  FROM reasons WHERE reason->>'kind' = 'geo'
+  GROUP BY reason->>'area', reason->>'band';
+END;
+$fn$;
+
+REVOKE ALL ON FUNCTION seo.gsc_value_meaning_usage(uuid, date, date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION seo.gsc_value_meaning_usage(uuid, date, date) TO authenticated, service_role;
+
+NOTIFY pgrst, 'reload schema';

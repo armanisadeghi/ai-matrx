@@ -49580,6 +49580,10 @@ export type Database = {
         }
         Returns: Json
       }
+      assert_safe_match_token: {
+        Args: { p_token: string; p_what: string }
+        Returns: undefined
+      }
       facet_check_values: { Args: { p_facet: string }; Returns: string[] }
       facet_dimension_catalog: {
         Args: { p_site_id?: string }
@@ -49829,6 +49833,18 @@ export type Database = {
           p_metric: string
         }
         Returns: number
+      }
+      gsc_geo_area_preview: {
+        Args: {
+          p_area_id?: string
+          p_end: string
+          p_geo_band: string
+          p_sample?: number
+          p_site_id: string
+          p_start: string
+          p_tokens: Json
+        }
+        Returns: Json
       }
       gsc_ingestion_health: {
         Args: { p_site_id: string }
@@ -50380,6 +50396,19 @@ export type Database = {
           traffic_class: string
         }[]
       }
+      gsc_set_keyword_topic: {
+        Args: {
+          p_keyword_ids: string[]
+          p_site_id: string
+          p_topic_id?: string
+        }
+        Returns: {
+          keyword_id: string
+          value_band: string
+          value_score: number
+          value_source: string
+        }[]
+      }
       gsc_set_keyword_value: {
         Args: {
           p_keyword_ids: string[]
@@ -50403,6 +50432,18 @@ export type Database = {
           updated_by_name: string
         }[]
       }
+      gsc_set_topic_value: {
+        Args: {
+          p_clear?: boolean
+          p_lead_quality?: string
+          p_notes?: string
+          p_service_match?: string
+          p_site_id: string
+          p_topic_id: string
+          p_weight?: number
+        }
+        Returns: string
+      }
       gsc_site_kw_guidelines: {
         Args: { p_site_id: string }
         Returns: {
@@ -50411,6 +50452,59 @@ export type Database = {
           updated_at: string
           updated_by: string
           updated_by_name: string
+        }[]
+      }
+      gsc_topic_offering_split: {
+        Args: { p_end: string; p_site_id: string; p_start: string }
+        Returns: {
+          bucket: string
+          clicks: number
+          impressions: number
+          keywords: number
+          root_type: string
+        }[]
+      }
+      gsc_topic_save: {
+        Args: {
+          p_description?: string
+          p_name?: string
+          p_node_type?: string
+          p_parent_id?: string
+          p_site_id: string
+          p_topic_id?: string
+        }
+        Returns: string
+      }
+      gsc_topic_set_parent: {
+        Args: { p_parent_id?: string; p_site_id: string; p_topic_id: string }
+        Returns: string
+      }
+      gsc_topic_stats: {
+        Args: { p_end: string; p_site_id: string; p_start: string }
+        Returns: {
+          clicks: number
+          impressions: number
+          keywords: number
+          topic_id: string
+          value_band: string
+        }[]
+      }
+      gsc_topic_unassigned_keywords: {
+        Args: {
+          p_end: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          impressions: number
+          keyword_id: string
+          phrase: string
+          total_count: number
+          value_band: string
         }[]
       }
       gsc_value_band_preview: {
@@ -50428,6 +50522,41 @@ export type Database = {
           moved_out: number
           value_band: string
         }[]
+      }
+      gsc_value_meaning_usage: {
+        Args: { p_end: string; p_site_id: string; p_start: string }
+        Returns: {
+          band: string
+          clicks: number
+          impressions: number
+          keywords: number
+          kind: string
+          ref: string
+        }[]
+      }
+      gsc_value_preview_summarize: {
+        Args: {
+          p_rows: Json
+          p_sample: number
+          p_site_id: string
+          p_window_keywords: number
+        }
+        Returns: Json
+      }
+      gsc_value_rule_preview: {
+        Args: {
+          p_end: string
+          p_match_facet?: string
+          p_match_facet_value?: string
+          p_match_kind?: string
+          p_multiplier: number
+          p_pattern?: string
+          p_rule_id?: string
+          p_sample?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: Json
       }
       gsc_value_vocabulary: {
         Args: { p_kind?: string; p_site_id: string }

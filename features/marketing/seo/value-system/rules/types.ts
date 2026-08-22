@@ -75,6 +75,17 @@ export interface RuleImpact {
   samples: RuleImpactSample[];
 }
 
+/** One row of `seo.gsc_value_meaning_usage` — a rule or area's live effect. */
+export interface MeaningUsageRow {
+  kind: "rule" | "geo_area";
+  /** rule id for a rule; the area's label for an area. */
+  ref: string;
+  band: string | null;
+  keywords: number;
+  clicks: number;
+  impressions: number;
+}
+
 // ── Drafts ──────────────────────────────────────────────────────────────────
 
 export type RuleMatchMode = "phrase" | "fact";

@@ -296,7 +296,7 @@ export function ValueRuleEditor({
       title: "Archive this rule?",
       description:
         "Keywords it was scoring re-resolve immediately without it — some will change band. Your explicit keyword rulings are untouched.",
-      confirmText: "Archive rule",
+      confirmLabel: "Archive rule",
       variant: "destructive",
     });
     if (ok) archive.mutate();

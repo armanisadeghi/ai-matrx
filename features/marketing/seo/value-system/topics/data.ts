@@ -162,7 +162,7 @@ export async function setTopicParent(
 ): Promise<string> {
   const response = await (await seoDb()).rpc("gsc_topic_set_parent", {
     p_site_id: siteId,
-    p_topic_id: topicId,
+    p_topic_id: topicId ?? undefined,
     p_parent_id: parentId ?? undefined,
   });
   return assertGoverned(response.data, response.error, "pin the parent") as string;
@@ -235,7 +235,7 @@ export async function setKeywordPrimaryTopic(
   const response = await (await seoDb()).rpc("gsc_set_keyword_topic", {
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
-    p_topic_id: topicId ?? undefined,
+    p_topic_id: topicId,
   });
   return assertGoverned(
     response.data,

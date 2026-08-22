@@ -189,7 +189,7 @@ DROP FUNCTION IF EXISTS seo.gsc_topic_set_parent(uuid, uuid, uuid);
 CREATE FUNCTION seo.gsc_topic_set_parent(
   p_site_id uuid,
   p_topic_id uuid,
-  p_parent_id uuid
+  p_parent_id uuid DEFAULT NULL
 )
 RETURNS uuid
 LANGUAGE plpgsql
