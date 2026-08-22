@@ -27185,6 +27185,20 @@ export type Database = {
             foreignKeyName: "association_types_source_type_fkey"
             columns: ["source_type"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_types_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "association_types_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -27193,6 +27207,20 @@ export type Database = {
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "association_types_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_types_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -27287,6 +27315,20 @@ export type Database = {
             foreignKeyName: "associations_source_type_fkey"
             columns: ["source_type"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -27295,6 +27337,20 @@ export type Database = {
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -27716,6 +27772,20 @@ export type Database = {
             foreignKeyName: "entity_relationships_child_type_fkey"
             columns: ["child_type"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relationships_child_type_fkey"
+            columns: ["child_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_relationships_child_type_fkey"
+            columns: ["child_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -27724,6 +27794,20 @@ export type Database = {
             columns: ["parent_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_relationships_parent_type_fkey"
+            columns: ["parent_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relationships_parent_type_fkey"
+            columns: ["parent_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -27759,6 +27843,8 @@ export type Database = {
           is_module: boolean
           is_versioned: boolean
           label: string
+          lifecycle_enlisted: boolean
+          lifecycle_hot_days: number | null
           notes: string | null
           reference_candidate_predicates: Json
           reference_category: string | null
@@ -27800,6 +27886,8 @@ export type Database = {
           is_module?: boolean
           is_versioned?: boolean
           label: string
+          lifecycle_enlisted?: boolean
+          lifecycle_hot_days?: number | null
           notes?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
@@ -27841,6 +27929,8 @@ export type Database = {
           is_module?: boolean
           is_versioned?: boolean
           label?: string
+          lifecycle_enlisted?: boolean
+          lifecycle_hot_days?: number | null
           notes?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
@@ -28343,6 +28433,20 @@ export type Database = {
             columns: ["entity_token"]
             isOneToOne: true
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -28875,6 +28979,20 @@ export type Database = {
             foreignKeyName: "org_module_config_module_token_fkey"
             columns: ["module_token"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_module_config_module_token_fkey"
+            columns: ["module_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "org_module_config_module_token_fkey"
+            columns: ["module_token"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -29061,6 +29179,20 @@ export type Database = {
             foreignKeyName: "output_feedback_corrected_ref_type_fkey"
             columns: ["corrected_ref_type"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "output_feedback_corrected_ref_type_fkey"
+            columns: ["corrected_ref_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_corrected_ref_type_fkey"
+            columns: ["corrected_ref_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -29069,6 +29201,20 @@ export type Database = {
             columns: ["subject_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_subject_type_fkey"
+            columns: ["subject_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "output_feedback_subject_type_fkey"
+            columns: ["subject_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -29228,6 +29374,20 @@ export type Database = {
             foreignKeyName: "reference_declaration_parent_token_fkey"
             columns: ["parent_token"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_declaration_parent_token_fkey"
+            columns: ["parent_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "reference_declaration_parent_token_fkey"
+            columns: ["parent_token"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -29339,6 +29499,20 @@ export type Database = {
             columns: ["entity_token"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "retention_policy_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retention_policy_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -29726,6 +29900,20 @@ export type Database = {
             foreignKeyName: "associations_source_type_fkey"
             columns: ["source_type"]
             isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
           },
@@ -29734,6 +29922,20 @@ export type Database = {
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["token"]
           },
           {
@@ -29825,6 +30027,19 @@ export type Database = {
           mode: string | null
           scored: number | null
           subject_kind: string | null
+        }
+        Relationships: []
+      }
+      v_lifecycle_enlisted: {
+        Row: {
+          archive_objects: number | null
+          entity_ref: string | null
+          id: string | null
+          lifecycle_hot_days: number | null
+          schema_name: string | null
+          table_name: string | null
+          taxonomy_node: string | null
+          token: string | null
         }
         Relationships: []
       }
