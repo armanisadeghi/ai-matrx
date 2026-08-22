@@ -11,7 +11,7 @@
  * user a guaranteed failure.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Check, Loader2, Search, Slash } from "lucide-react";
 import {
   Dialog,
@@ -56,7 +56,8 @@ export function TopicPickerDialog({
 }) {
   const [search, setSearch] = useState("");
 
-  const options = useMemo(() => {
+  // React Compiler is on — no manual memoization (CLAUDE.md core invariants).
+  const options = (() => {
     const needle = search.trim().toLowerCase();
     const rows = [...tree.byId.values()]
       .filter((node) => !request.forbidden.has(node.topic.id))
@@ -79,7 +80,7 @@ export function TopicPickerDialog({
       (a, b) => b.keywords - a.keywords || a.topic.name.localeCompare(b.topic.name),
     );
     return rows.slice(0, 200);
-  }, [request.forbidden, search, tree]);
+  })();
 
   return (
     <Dialog open onOpenChange={(open) => (!open ? onCancel() : undefined)}>
@@ -131,6 +132,13 @@ export function TopicPickerDialog({
                   key={row.topic.id}
                   type="button"
                   disabled={busy}
+                  // The name is spread across three spans; screen readers (and
+                  // automation) need it as one label.
+                  aria-label={
+                    row.lineage
+                      ? `${row.topic.name}, under ${row.lineage}`
+                      : row.topic.name
+                  }
                   onClick={() => request.onChoose(row.topic.id)}
                   className={cn(
                     "flex w-full items-start gap-2 border-b border-border px-2.5 py-2 text-left last:border-b-0 hover:bg-muted/60",
