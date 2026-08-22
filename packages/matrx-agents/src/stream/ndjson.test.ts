@@ -53,6 +53,23 @@ describe("normalizeMatrxStreamEnvelope", () => {
 });
 
 describe("readMatrxNdjsonStream", () => {
+  it("preserves delivery sequence on full and compact envelopes", async () => {
+    const events = await collect(
+      bodyFromChunks([
+        '{"e":"c","t":"hello","stream_seq":7}\n',
+        '{"event":"phase","data":{"phase":"working"},"stream_seq":8}\n',
+      ]),
+    );
+
+    expect(events).toEqual([
+      { event: "chunk", data: { text: "hello" }, stream_seq: 7 },
+      {
+        event: "phase",
+        data: { phase: "working" },
+        stream_seq: 8,
+      },
+    ]);
+  });
   it("preserves split UTF-8 and line boundaries", async () => {
     const bytes = new TextEncoder().encode(
       '{"e":"c","t":"café"}\n{"event":"end","data":{}}',

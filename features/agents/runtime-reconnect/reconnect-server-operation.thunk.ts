@@ -34,6 +34,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { setRequestStatus } from "../redux/execution-system/active-requests/active-requests.slice";
+import { createRequest } from "../redux/execution-system/active-requests/active-requests.slice";
 import {
   patchConversation,
   setInstanceStatus,
@@ -42,6 +43,10 @@ import { selectLatestRequestId } from "../redux/execution-system/selectors/aggre
 import { hasAbortController } from "../redux/execution-system/thunks/abort-registry";
 import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
 import { recoverDroppedStream } from "../redux/execution-system/thunks/recover-dropped-stream.thunk";
+import {
+  runAiStream,
+  StreamRejoinUnavailableError,
+} from "../redux/execution-system/thunks/run-ai-stream";
 import { resolveBackendForConversation } from "../redux/execution-system/thunks/resolve-base-url";
 import { surfaceColdPendingCalls } from "../redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { resumeInstance } from "../redux/execution-system/thunks/resume-instance.thunk";
@@ -269,6 +274,86 @@ export const reconnectServerOperation = createAsyncThunk<
       op.waiting_input,
       op.waiting_input ? "checking_for_prompt" : undefined,
     );
+
+    // Fast path: the detached task may still own its original NDJSON emitter.
+    // Rejoin that exact wire first so replayed text appears immediately and
+    // new chunks continue through the ONE canonical processStream pipeline.
+    // Every frame is sequence-stamped; a same-page reconnect drops frames it
+    // already rendered, while a cold page replays the response from frame one.
+    if (!op.waiting_input && op.request_id) {
+      const activeRequests = getState().activeRequests.byRequestId;
+      const hintedRequest = requestId ? activeRequests[requestId] : undefined;
+      const matchingRequest = Object.values(activeRequests).find(
+        (candidate) =>
+          candidate.conversationId === conversationId &&
+          (candidate.requestId === op.request_id ||
+            candidate.serverRequestId === op.request_id),
+      );
+      const localRequestId =
+        hintedRequest?.conversationId === conversationId
+          ? hintedRequest.requestId
+          : (matchingRequest?.requestId ?? op.request_id);
+      dispatch(createRequest({ requestId: localRequestId, conversationId }));
+      dispatch(
+        setRequestStatus({ requestId: localRequestId, status: "connecting" }),
+      );
+      try {
+        await runAiStream({
+          requestId: localRequestId,
+          conversationId,
+          url: `${backend.baseUrl}/runtime/operations/${op.request_id}/rejoin`,
+          headers: backend.headers,
+          body: {},
+          channel: backend.channel,
+          dispatch,
+          getState,
+          submitAt: performance.now(),
+          kind: "rejoin",
+          clearInputOnError: false,
+          onStreamOpen: () => {
+            dispatch(
+              patchConversation({ conversationId, serverOperation: null }),
+            );
+          },
+        });
+
+        const refreshed = await fetchOperationsByLink(backend, conversationId);
+        const stillLive = refreshed?.operations.find(
+          (operation) => !operation.is_terminal,
+        );
+        if (stillLive) {
+          if (followers.get(conversationId) === ctrl) {
+            followers.delete(conversationId);
+          }
+          void dispatch(
+            reconnectServerOperation({ conversationId, source: "cold-load" }),
+          );
+          return { followed: true, finalStatus: null };
+        }
+
+        await dispatch(loadConversation({ conversationId })).unwrap();
+        if (followers.get(conversationId) === ctrl) {
+          followers.delete(conversationId);
+        }
+        dispatch(patchConversation({ conversationId, serverOperation: null }));
+        return { followed: true, finalStatus: "completed" };
+      } catch (error) {
+        if (!(error instanceof StreamRejoinUnavailableError)) {
+          // runAiStream owns transport-loss recovery and has already launched
+          // a fresh reconnect when appropriate. This stale attempt must not
+          // race it or erase its banner.
+          if (followers.get(conversationId) === ctrl) {
+            followers.delete(conversationId);
+          }
+          return noFollow;
+        }
+        console.warn(
+          "[runtime-reconnect] live response replay unavailable — following durable lifecycle instead.",
+          { conversationId, executionId: op.execution_id },
+        );
+      }
+    }
+
     if (op.waiting_input) {
       void recoverWaitingInput();
     }
@@ -344,8 +429,7 @@ export const reconnectServerOperation = createAsyncThunk<
       dispatch(setInstanceStatus({ conversationId, status: "complete" }));
       if (source === "stream-loss") {
         toast.success("Connection recovered", {
-          description:
-            "The stream dropped mid-response, but the server finished the turn. The full response has been loaded.",
+          description: "The full response has been restored.",
         });
       }
     } else if (finalStatus === "failed") {

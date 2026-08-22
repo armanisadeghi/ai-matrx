@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * ServerOperationBanner — the persistent "still working on the server"
- * indicator, driven by SERVER state (`conversation.serverOperation`, stamped
+ * ServerOperationBanner — the persistent reconnect indicator, driven by
+ * runtime state (`conversation.serverOperation`, stamped
  * from the `/runtime` reconnect surface) so it survives a page refresh.
  *
  * Renders above the composer beside PendingAsksZone. Four evidence-backed faces:
@@ -82,7 +82,7 @@ export function ServerOperationBanner({
     operation.recoveryState === "pending_tool";
 
   let message =
-    "Still working on the server — the response will appear here when it finishes.";
+    "Reconnecting to your response…";
   if (waiting && hasQuestion) {
     message =
       pendingAsks.length === 1
