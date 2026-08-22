@@ -8,10 +8,10 @@ import { rulebookListConfig } from "../listConfig";
 
 export function MasterworkStudioPage() {
   const newBtn = (
-    <Button asChild size="sm" className="h-11 lg:h-7" aria-label="New Rulebook">
+    <Button asChild size="sm" className="h-11 lg:h-7" aria-label="New Masterwork">
       <Link href="/masterwork/new">
         <Plus className="h-4 w-4" />
-        <span className="max-sm:sr-only">New Rulebook</span>
+        <span className="max-sm:sr-only">New Masterwork</span>
       </Link>
     </Button>
   );
