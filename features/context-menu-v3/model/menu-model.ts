@@ -249,14 +249,18 @@ function compactNodes(nodes: Array<MenuNode | null>): MenuNode[] {
   return nodes.filter((node) => node !== null);
 }
 
+// Surface ids are namespaced (`x:`) so they can never collide with a core
+// node id — notes' "export" item vs the core "export" submenu was a duplicate
+// React key the moment both rendered in one list.
 function fromExtraItem(item: ContextMenuExtraItem): MenuNode {
+  const id = `x:${item.id}`;
   switch (item.kind) {
     case "separator":
-      return { kind: "separator", id: item.id };
+      return { kind: "separator", id };
     case "submenu":
       return {
         kind: "submenu",
-        id: item.id,
+        id,
         label: item.label,
         icon: item.icon,
         disabled: item.disabled,
@@ -265,7 +269,7 @@ function fromExtraItem(item: ContextMenuExtraItem): MenuNode {
     case "checkbox":
       return {
         kind: "checkbox",
-        id: item.id,
+        id,
         label: item.label,
         icon: item.icon,
         description: item.description,
@@ -277,7 +281,7 @@ function fromExtraItem(item: ContextMenuExtraItem): MenuNode {
     case "link":
       return {
         kind: "link",
-        id: item.id,
+        id,
         label: item.label,
         icon: item.icon,
         description: item.description,
@@ -290,7 +294,7 @@ function fromExtraItem(item: ContextMenuExtraItem): MenuNode {
     default:
       return {
         kind: "item",
-        id: item.id,
+        id,
         label: item.label,
         icon: item.icon,
         description: item.description,
