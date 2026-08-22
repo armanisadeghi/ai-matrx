@@ -17,6 +17,7 @@
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
 import { isKnownThirdPartyNoise } from "@/lib/console-noise";
+import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 
 let installed = false;
 /** Guards against capturing a console.error that fires from inside capture. */
@@ -54,6 +55,7 @@ export function installGlobalErrorCapture(): void {
       // object and an empty message — skip those, they aren't JS exceptions.
       if (!event.message && !event.error) return;
       const err = event.error;
+      if (isChunkLoadError(err ?? { message: event.message })) return;
       const scriptUrl = event.filename || undefined;
       const scriptLine = event.lineno || undefined;
       const scriptColumn = event.colno || undefined;
@@ -92,6 +94,7 @@ export function installGlobalErrorCapture(): void {
     (event: PromiseRejectionEvent) => {
       try {
         const reason = event.reason;
+        if (isChunkLoadError(reason)) return;
         captureError({
           source: "unhandled-rejection",
           message: extractErrorMessage(reason) || "Unhandled promise rejection",
@@ -123,6 +126,7 @@ export function installGlobalErrorCapture(): void {
       if (inConsoleCapture) return; // never recurse into our own capture
       try {
         if (isKnownThirdPartyNoise(args)) return;
+        if (args.some((arg) => isChunkLoadError(arg))) return;
         inConsoleCapture = true;
         const message = args
           .map((a) =>
