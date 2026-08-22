@@ -25,7 +25,6 @@ import type {
   FindingEffectiveness,
   FindingRevert,
   HindsightCosts,
-  PendingExamples,
   RegressionCase,
   Replay,
   ReplayRunResult,
@@ -78,36 +77,10 @@ export async function archiveEnrollment(id: string): Promise<{ status: string }>
  * window. Minutes, not seconds. Callers must show real progress, never a
  * spinner that looks hung.
  */
-/**
- * `exampleIds` is the "review THIS conversation" door: the automatic window
- * excludes anything from the last 30 min (still settling), which is exactly
- * wrong for a person staring at a bad run right now. Naming ids reviews those
- * and only those, and never advances the watermark.
- */
-export async function triggerReview(
-  id: string,
-  exampleIds?: string[],
-): Promise<ReviewRunResult> {
-  const { data } = await postJson<
-    ReviewRunResult,
-    { example_ids: string[] } | undefined
-  >(
+export async function triggerReview(id: string): Promise<ReviewRunResult> {
+  const { data } = await postJson<ReviewRunResult, undefined>(
     `/hindsight/enrollments/${encodeURIComponent(id)}/review`,
-    exampleIds?.length ? { example_ids: exampleIds } : undefined,
-  );
-  return data;
-}
-
-/**
- * What the next review WOULD read — each ref flagged settled/unsettled. An
- * unsettled ref is the subject's NEWEST activity, which "Review now" silently
- * skips; surfaces must warn and offer the focused door instead.
- */
-export async function getPendingExamples(id: string): Promise<PendingExamples> {
-  const { data } = await apiGet(
-    buildPath("/hindsight/enrollments/{enrollment_id}/pending-examples", {
-      enrollment_id: id,
-    }),
+    undefined,
   );
   return data;
 }
