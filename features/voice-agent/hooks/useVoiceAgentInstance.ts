@@ -55,6 +55,7 @@ import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks"
 import type { RootState } from "@/lib/redux/store";
 import { readInstructionsFromAgent } from "../agentInstructions";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;
@@ -167,20 +168,25 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
         if (!instructions) {
           // Loud recovery: there is nothing to recover TO. Say which agent and
           // why rather than opening a session on an empty or borrowed persona.
+          // A zero-row agent read is the four-cause ambiguity — never assert
+          // absence; recordUnavailableMessage says both possibilities.
           const why = fetchFailed
             ? "could not be loaded"
             : agent
               ? "has no system message"
-              : "was not found";
+              : recordUnavailableMessage("voice agent", "unknown");
           console.error(
-            `[voice-agent] agent ${o.agentId} ${why} — the voice session has no instructions and will refuse to start.`,
+            `[voice-agent] agent ${o.agentId}: ${why} — the voice session has no instructions and will refuse to start.`,
           );
           dispatch(
             setError({
               instanceId,
               error: {
                 code: "agent-instructions-missing",
-                message: `This voice agent ${why}. Its instructions live in the agent record, so the session cannot start until that resolves.`,
+                message:
+                  fetchFailed || agent
+                    ? `This voice agent ${why}. Its instructions live in the agent record, so the session cannot start until that resolves.`
+                    : why,
               },
             }),
           );

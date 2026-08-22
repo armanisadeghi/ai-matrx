@@ -9,6 +9,7 @@
 
 "use client";
 
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -374,7 +375,7 @@ export function SetDetailView({ setId }: { setId: string }) {
       const res = await fcService.getSetWithCards(setId);
       if (cancelled) return;
       if (!res.data) {
-        setError(res.error ?? "Flashcard set not found");
+        setError(res.error ?? recordUnavailableMessage("flashcard set", "unknown"));
         setData(null);
         setLoading(false);
       } else {

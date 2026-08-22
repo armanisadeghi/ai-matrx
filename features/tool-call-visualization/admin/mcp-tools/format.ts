@@ -326,9 +326,9 @@ export function toolEditorAgentPayload(
       save_blockers: blockers,
       form: {
         note:
-          // access-errors: ok — create-mode form hint about an unsaved draft, a verified local state
           view.mode === "create"
-            ? "LIVE input values at copy time — this tool does NOT exist yet."
+            ? // access-errors: ok — create-mode form hint about an unsaved draft, a verified local state
+              "LIVE input values at copy time — this tool does NOT exist yet."
             : 'LIVE input values at copy time — NOT written until "Save Tool" succeeds.',
         name: view.draft.name,
         description: view.draft.description,

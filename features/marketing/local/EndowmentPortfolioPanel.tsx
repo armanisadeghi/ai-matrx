@@ -92,6 +92,7 @@ export function EndowmentPortfolioPanel({
   // The cached registry LABELS rows ("already tracked"); it never DECIDES.
   // `addDiscoveredPublisher` re-runs the dedup against a complete read at write
   // time, so a stale or short cache costs a click, never a duplicate row.
+  // access-errors: ok — labeling cache only; a failed read costs a duplicate-looking row label, and addDiscoveredPublisher re-dedupes at write time
   const publishersQuery = useListingPublishers();
   const [addedRows, setAddedRows] = useState<ListingPublisher[]>([]);
   const matches = matchPlatformsToRegistry(portfolio.platforms, [

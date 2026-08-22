@@ -147,7 +147,9 @@ const MATCHING =
  * The reason is REQUIRED and is printed in the summary, so a suppression is a
  * sentence someone has to defend, not a silent `--fix`.
  */
-const PRAGMA = /\/\/\s*access-errors:\s*ok\s*[—-]\s*\S/;
+// `{/* access-errors: ok — … */}` is the same pragma in the only comment
+// syntax JSX children allow.
+const PRAGMA = /(?:\/\/|\{\/\*)\s*access-errors:\s*ok\s*[—-]\s*\S/;
 
 function listFiles(): string[] {
   const out = execSync(

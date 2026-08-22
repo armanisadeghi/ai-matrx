@@ -19,6 +19,7 @@ import {
   fetchSessionsThunk,
 } from "./thunks";
 import { sessionUpserted } from "./slice";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 interface PromoteThunkArgs {
   transcript: Transcript;
@@ -78,7 +79,13 @@ export const saveAsTranscriptThunk = createAsyncThunk<
     try {
       const session = await getSession(args.sessionId);
       if (!session) {
-        const error = "Session not found.";
+        const error = recordUnavailable({
+          entity: "studio session",
+          reason: "unknown",
+          recordId: args.sessionId,
+          token: "studio_session",
+          relation: "transcripts.studio_sessions",
+        }).message;
         toast.error(error);
         return rejectWithValue(error);
       }

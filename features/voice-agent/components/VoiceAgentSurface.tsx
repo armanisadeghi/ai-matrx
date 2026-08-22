@@ -199,6 +199,7 @@ export function VoiceAgentSurface({
     if (!liveError) return;
     const code = liveError.code;
     if (code === "mic-permission-denied") {
+      // access-errors: ok — the browser's own getUserMedia permission verdict, not a record read
       toast.error("Microphone access denied", {
         description:
           "Allow microphone access in your browser settings, then tap the mic to try again.",

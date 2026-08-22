@@ -90,6 +90,7 @@ import {
 } from "../../utils/cardVariants";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { CardImageSlot } from "./CardImageSlot";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -190,7 +191,7 @@ export function EditSetView({ setId }: { setId: string }) {
       const res = await fcService.getSetWithCards(setId);
       if (cancelled) return;
       if (!res.data) {
-        setError(res.error ?? "Flashcard set not found");
+        setError(res.error ?? recordUnavailableMessage("flashcard set", "unknown"));
         setData(null);
       } else {
         setData(res.data);
