@@ -43,6 +43,7 @@ that is the exit-test surface.
 | Hooks | `hooks/useWorkflowRun.ts`, `hooks/useWorkflowRunControls.ts` | Adoption is refcounted per runId (two watchers share one adapter). Controls are the ONLY lifecycle verbs — start/pause/resume/cancel/answer-interrupt/retry/skip via `callApi`. |
 | **THE LIVE RUN EXPERIENCE** | `components/run/RunStage.tsx` | The surface a person actually watches, composed like the podcast studio: hero + promise → journey rail + activity feed → authored readouts → deliverables. Hoists the authored progress rails into the always-visible journey (`hideProgressRails`) and renders the failure/interrupt cards itself (`hideRunStatusCards`), so nothing is drawn twice. Falls back to `deriveDefaultSurfaceConfig` when a workflow has no authored surface. |
 | **The catalog** | `browse/` → `app/(core)/workflows/all/page.tsx` | `/workflows/all` on the CANONICAL entity-list shell (`lib/entity-list`) — not a bespoke grid. Config in `browse/listConfig.tsx`; rows from `public.wfx_list_scoped` read DIRECT via supabase-js (`browse/service.ts`), never through the Python server. Table-first with every column sorting AND filtering server-side, card + dense views, Mine / My Orgs / Shared / Public with true server counts, relevance-ranked search. ONE `ItemMenuConfig` builder (`browse/workflowActionRegistry.tsx`) feeds the table kebab, the card kebab, the dense-row kebab and right-click, so the three-drifting-action-lists failure that hit agents cannot happen here. |
+| **The front door** | `app/(core)/workflows/page.tsx` → `features/auth/components/module-landing/landings/WorkflowsLanding.tsx` | `/workflows` is the PUBLIC marketing page for the product (module-landing-pages doctrine): a guest never hits a login wall, a signed-in visitor is redirected to `/workflows/all`. Built on the shared `<ModuleLanding>` — no hero clone — and registered in `MODULE_LANDING_DIRECTORY`, which is what puts it on `/features` and now, via `app/sitemap.xml/route.ts`, in the sitemap. The old placeholder's destination-preserving login bounce survives as the landing's `signInDestination` (`loginHref('/workflows/all')`). |
 | Catalog RPCs | `migrations/wfx_list_scoped.sql` | `wfx_list_scoped` / `wfx_list_scope_counts` / `wfx_list_facets` / `wfx_bucket_matches`, hand-written from the template in `lib/list-scope/FEATURE.md`. Owner column is `created_by` (agents use `user_id`); `iam.permissions.resource_type` is `'workflow'`. Relevance comes from `public.mtx_search_score` — the GENERIC scorer, not a fourth copy of `agx_search_score`: it reproduces agx's tiers exactly on the shared parity fixture (12/12 MATCH), with the per-feature extras passed as `p_extra_300` / `p_extra_100` arrays. |
 | **Sharing — the card** | `migrations/wfx_card.sql`, `migrations/wfx_duplicate.sql` | Workflows use the AGENT sharing model verbatim (Arman, 2026-08-20): **anything you can view, you may duplicate and run.** `workflow.card` is a view over the definition — the public face — gated by `card_visibility`, which is INDEPENDENT of the body's `visibility`. `wfx_duplicate_definition` / `wfx_duplicate_version` mirror `agx_duplicate_agent` / `agx_duplicate_version`, including the `iam.has_access_for(..., 'viewer')` gate; they carry no `p_as_system` because workflows have no builtin tier. The card is a PROJECTION of the workflow, not a second entity — `platform._enforce_entity_is_table` forbids registering a view as an entity, so there is **no card-only per-person grant**; broadcast reach is `card_visibility`. |
 | Run status vocabulary | `run-status.tsx` | THE one place a `workflow.run.status` becomes words and an icon (`RUN_STATUS_LABEL`, `RUN_STATUS_PHASE`, `runStatusLabel`, `RunStatusChip`). There were two disagreeing copies before it — `ReadoutView`'s and the old catalog's ("completed" was "Done" in one and "Finished" in the other) — and the list page would have been a third. Both now import from here. |
@@ -151,6 +152,19 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-08-22 — **`/workflows` is a real marketing page, not a redirect.** The reserved route now
+  serves the public pitch for the run product to guests (signed-in visitors still land on
+  `/workflows/all`), built on the shared `<ModuleLanding>` and registered in the landing
+  directory. The copy sells only what shipped — the library, the promise chips, THE PLAN, the
+  live activity feed, real deliverable components, run permalinks, and the run-page designer —
+  in the Expert's language (no "node", "stream", "kind", or "readout"). Three platform fixes
+  rode along, since they were the same door: `ModuleLanding` gained a `signInDestination` prop
+  so EVERY landing offers a destination-preserving "Already have an account? Sign in"
+  (`loginHref`), the two guest conversion components stopped hand-writing the read-only
+  `returnUrl` alias and now build their CTAs with `loginHref`/`signUpHref`, and the sitemap
+  derives every module landing from `MODULE_LANDING_DIRECTORY` instead of listing none of them.
+  Verified signed-out in the browser at desktop and 390px, light and dark.
 
 - 2026-08-22 — Added canonical shell-header clearance to the workflow bake-off picker so its search field and instructions no longer render underneath the transparent AppShell header.
 - 2026-08-21 — **Programmatic workflows stream into visible readouts, terminal results land
