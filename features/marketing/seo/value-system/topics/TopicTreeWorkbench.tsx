@@ -34,7 +34,9 @@ import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
 import {
+  confirmKeywordTopics,
   getOfferingSplit,
+  getProposedKeywords,
   getTopicStats,
   getUnassignedKeywords,
   listAllTopics,
@@ -54,6 +56,8 @@ import {
   type TopicTreeNode,
 } from "./lib";
 import { OfferingSplitHeadline } from "./OfferingSplitHeadline";
+import { ProposedQueue } from "./ProposedQueue";
+import { TopicPlacementStrip } from "./TopicPlacementStrip";
 import { TopicTreeRow } from "./TopicTreeRow";
 import { TopicEditDialog, type TopicEditDraft } from "./TopicEditDialog";
 import { TopicWorthDialog } from "./TopicWorthDialog";
@@ -78,6 +82,8 @@ export function TopicTreeWorkbench() {
   const [picker, setPicker] = useState<TopicPickerRequest | null>(null);
   const [queueSearch, setQueueSearch] = useState("");
   const [queuePage, setQueuePage] = useState(0);
+  const [proposedSearch, setProposedSearch] = useState("");
+  const [proposedPage, setProposedPage] = useState(0);
 
   // ── Reads ─────────────────────────────────────────────────────────────────
   const topics = useQuery({
@@ -119,6 +125,32 @@ export function TopicTreeWorkbench() {
         window28.start,
         window28.end,
         { search: queueSearch || null, limit: PAGE_SIZE, offset: queuePage * PAGE_SIZE },
+        signal,
+      ),
+    placeholderData: keepPreviousData,
+  });
+
+  const proposed = useQuery({
+    queryKey: [
+      "seo",
+      "topics",
+      "proposed",
+      siteId,
+      window28.start,
+      window28.end,
+      proposedSearch,
+      proposedPage,
+    ],
+    queryFn: ({ signal }) =>
+      getProposedKeywords(
+        siteId,
+        window28.start,
+        window28.end,
+        {
+          search: proposedSearch || null,
+          limit: PAGE_SIZE,
+          offset: proposedPage * PAGE_SIZE,
+        },
         signal,
       ),
     placeholderData: keepPreviousData,
@@ -223,11 +255,29 @@ export function TopicTreeWorkbench() {
     onError: failed("place those keywords"),
   });
 
+  // The human half of P12: a proposal becomes this site's own ruling.
+  const confirmPlacements = useMutation({
+    mutationFn: (input: { keywordIds: string[] }) =>
+      confirmKeywordTopics(siteId, input.keywordIds),
+    onSuccess: (results) => {
+      refreshTree();
+      toast.success(
+        `${results.length} placement${results.length === 1 ? "" : "s"} confirmed`,
+        {
+          description:
+            "The assigner will not revisit them, and they now read as your ruling.",
+        },
+      );
+    },
+    onError: failed("confirm those placements"),
+  });
+
   const busy =
     pinParent.isPending ||
     upsertTopic.isPending ||
     saveWorth.isPending ||
-    placeKeywords.isPending;
+    placeKeywords.isPending ||
+    confirmPlacements.isPending;
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const loadingTree = topics.isPending || worth.isPending || stats.isPending;
@@ -421,6 +471,30 @@ export function TopicTreeWorkbench() {
           </p>
         ) : null}
       </section>
+
+      <TopicPlacementStrip
+        siteId={siteId}
+        siteName={siteId}
+        onPassFinished={refreshTree}
+      />
+
+      <ProposedQueue
+        rows={proposed.data?.rows ?? []}
+        total={proposed.data?.total ?? 0}
+        metas={metas}
+        loading={proposed.isPending}
+        page={proposedPage}
+        pageSize={PAGE_SIZE}
+        search={proposedSearch}
+        onSearch={(next) => {
+          setProposedSearch(next);
+          setProposedPage(0);
+        }}
+        onPage={setProposedPage}
+        onConfirm={(keywordIds) => confirmPlacements.mutate({ keywordIds })}
+        onPlace={openKeywordPicker}
+        busy={busy}
+      />
 
       <UnplacedQueue
         rows={queue.data?.rows ?? []}

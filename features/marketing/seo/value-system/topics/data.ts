@@ -30,6 +30,8 @@ import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { SiteTopicValue, TopicNode } from "../types";
 import type {
   OfferingSplitRow,
+  ProposedKeywordRow,
+  TopicPlacementStatus,
   TopicStatRow,
   UnassignedKeywordRow,
   KeywordTopicResult,
@@ -241,5 +243,73 @@ export async function setKeywordPrimaryTopic(
     response.data,
     response.error,
     "assign the topic",
+  ) as KeywordTopicResult[];
+}
+
+// ── The placement backfill (ledger-backed) ─────────────────────────────────
+
+/**
+ * The ONE server-state read the placement strip renders
+ * (`seo.topic_placement_status`). It is SERVER state on purpose: a closed tab
+ * returns to the true number, which a browser loop could never promise.
+ */
+export async function getTopicPlacementStatus(
+  siteId: string,
+  minImpressions: number,
+  signal?: AbortSignal,
+): Promise<TopicPlacementStatus> {
+  const response = await (await seoDb())
+    .rpc("topic_placement_status", {
+      p_site_id: siteId,
+      p_min_impressions: minImpressions,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error, "read the placement status");
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return row as TopicPlacementStatus;
+}
+
+/**
+ * Agent placements the confidence floor left unconfirmed. They ARE on the tree
+ * — the queue exists so a machine ruling is never mistaken for an expert one.
+ */
+export async function getProposedKeywords(
+  siteId: string,
+  start: string,
+  end: string,
+  query: { search?: string | null; limit?: number; offset?: number } = {},
+  signal?: AbortSignal,
+): Promise<{ rows: ProposedKeywordRow[]; total: number }> {
+  const response = await (await seoDb())
+    .rpc("gsc_topic_proposed_keywords", {
+      p_site_id: siteId,
+      p_start: start,
+      p_end: end,
+      p_search: query.search ?? undefined,
+      p_limit: query.limit ?? 50,
+      p_offset: query.offset ?? 0,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error) as ProposedKeywordRow[];
+  return { rows, total: rows[0]?.total_count ?? 0 };
+}
+
+/**
+ * The human half of P12: a proposal becomes the site's own ruling. Replacing
+ * one instead is the EXISTING write (`setKeywordPrimaryTopic`), which stamps
+ * `assigned_by='human'` and takes the keyword off the agent's list for good.
+ */
+export async function confirmKeywordTopics(
+  siteId: string,
+  keywordIds: string[],
+): Promise<KeywordTopicResult[]> {
+  const response = await (await seoDb()).rpc("gsc_confirm_keyword_topic", {
+    p_site_id: siteId,
+    p_keyword_ids: keywordIds,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "confirm the placement",
   ) as KeywordTopicResult[];
 }

@@ -32,6 +32,70 @@ export interface UnassignedKeywordRow {
   total_count: number;
 }
 
+/**
+ * `seo.topic_placement_status` — the ONE server-state read the placement strip
+ * renders. Clicks first: 8,455 keywords and 457 clicks are both true numbers,
+ * and only one of them describes the business.
+ */
+export interface TopicPlacementStatus {
+  demand_keywords: number;
+  demand_keywords_placed: number;
+  demand_clicks: number;
+  demand_clicks_placed: number;
+  demand_impressions: number;
+  demand_impressions_placed: number;
+  placed_by_human: number;
+  placed_by_agent: number;
+  proposals_pending: number;
+  proposal_clicks: number;
+  queue_pending: number;
+  queue_running: number;
+  queue_failed: number;
+  queue_deferred: number;
+  pending_clicks: number;
+  next_phrase: string | null;
+  last_error: string | null;
+  demand_window_days: number | null;
+  demand_as_of: string | null;
+  queue_refreshed_at: string | null;
+  last_placed_at: string | null;
+}
+
+/** One agent placement waiting for a human — `seo.gsc_topic_proposed_keywords`. */
+export interface ProposedKeywordRow {
+  keyword_id: string;
+  phrase: string;
+  topic_id: string;
+  topic_name: string;
+  confidence: number | null;
+  clicks: number;
+  impressions: number;
+  value_band: string;
+  total_count: number;
+}
+
+/** What one bounded placement pass did — aidream's `PlacementPassResult`. */
+export interface TopicPlacementPassResult {
+  site_id: string;
+  territory: string;
+  claimed: number;
+  placed: number;
+  proposed: number;
+  human_protected: number;
+  topics_created: string[];
+  returned_to_queue: number;
+  quarantined: number;
+  placed_today: number;
+  daily_ceiling: number;
+  ceiling_reached: boolean;
+  queue_pending: number;
+  queue_deferred: number;
+  pending_clicks: number;
+  confidence_floor: number;
+  error: string | null;
+  top_phrases: string[];
+}
+
 export interface KeywordTopicResult {
   keyword_id: string;
   value_band: string;

@@ -227,3 +227,4 @@ comment on function seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, 
 
 grant execute on function seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, jsonb)
   to authenticated, service_role;
+
