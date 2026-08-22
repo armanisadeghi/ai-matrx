@@ -1746,3 +1746,14 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D102** — `callApi` surfaces server messages instead of bare "HTTP 422". 2026-07-28.
 - **D97** — Univer autosave filtered to mutations; scrolling no longer writes snapshots. 2026-07-28.
 - **D99 / D98 / D75 / D73c / D72 / D68 / D69 / D109 / D82 / D71** — assorted one-file fixes, 2026-07-28 (git history has the detail).
+
+## SEO topic reads disagree with the facet queue about which collection run counts (2026-08-22)
+
+`seo.gsc_topic_stats`, `gsc_topic_offering_split`, `gsc_topic_unassigned_keywords` and the new
+`seo.topic_placement_queue` rollup all sum `seo.search_performance_daily` directly, while
+`seo.keyword_classification_queue` (and `gsc_perf_class_summary`) first resolve ONE winning
+collection run per (site, date). A re-collected day therefore double-counts demand on the topic
+side. The placement ledger deliberately matches the screen it renders on rather than the facet
+queue — a strip that disagreed with the headline directly above it would read as a lie — so the
+fix is to move every seo topic read onto winner-run dedupe in ONE change, not to flip the ledger
+alone. Not mine to do inside the placement build; the numbers are internally consistent today.

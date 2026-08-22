@@ -3938,6 +3938,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/destination/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Destination
+         * @description Normalize and header-check a public login destination. No body is read.
+         */
+        post: operations["check_destination_vault_destination_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/browser-login/matches": {
         parameters: {
             query?: never;
@@ -5794,6 +5814,39 @@ export interface paths {
          *     tree it loaded, its own token output, and what landed).
          */
         post: operations["keyword_assign_topics_seo_keywords_assign_topics_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/keywords/topics/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyword Topic Placement Backfill
+         * @description Advance one site's topic-placement backfill by one bounded, demand-ordered
+         *     pass.
+         *
+         *     This is the product flow the hand-driven unplaced queue was standing in for:
+         *     the ledger (`seo.topic_placement_queue`) remembers what has been placed and
+         *     what is owed, so pressing this twenty times finishes the job and closing the
+         *     tab loses nothing. Progress is SERVER state — the strip reads
+         *     `seo.topic_placement_status()`, not this response.
+         *
+         *     P12 holds on this path: a keyword a human placed is never claimed and never
+         *     overwritten, and a placement below the `confidence_floor` knob lands as a
+         *     PROPOSAL a person confirms. Ceilings come from the `seo.topic_placement`
+         *     knobs; a pass that hits the daily ceiling says so instead of quietly doing
+         *     nothing. Rejoin a live pass with `POST /seo/collections/{run_id}/rejoin`.
+         */
+        post: operations["keyword_topic_placement_backfill_seo_keywords_topics_backfill_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10717,6 +10770,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -35772,6 +35849,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -62055,6 +62159,8 @@ export interface components {
              * @default 50
              */
             limit?: number;
+            /** Site Id */
+            site_id?: string | null;
         };
         /** TopicAssignResult */
         TopicAssignResult: {
@@ -62075,6 +62181,16 @@ export interface components {
              * @default 0
              */
             keywords_assigned?: number;
+            /**
+             * Keywords Proposed
+             * @default 0
+             */
+            keywords_proposed?: number;
+            /**
+             * Human Protected
+             * @default 0
+             */
+            human_protected?: number;
             /**
              * Unassignable
              * @default 0
@@ -62243,6 +62359,35 @@ export interface components {
             } | null;
             /** Keywords */
             keywords?: string[] | null;
+        };
+        /** TopicPlacementBackfillBody */
+        TopicPlacementBackfillBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /**
+             * Refresh
+             * @default true
+             */
+            refresh?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /** Territory */
+            territory?: string | null;
         };
         /** TopicResponse */
         TopicResponse: {
@@ -64530,6 +64675,41 @@ export interface components {
              * @default false
              */
             can_manage?: boolean;
+        };
+        /**
+         * VaultDestinationCheckRequest
+         * @description One user-entered login destination. Secret values never belong here.
+         */
+        VaultDestinationCheckRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Url */
+            url: string;
+        };
+        /** VaultDestinationCheckResponse */
+        VaultDestinationCheckResponse: {
+            /** Normalized Url */
+            normalized_url: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "reachable" | "not_found" | "responded" | "unreachable" | "invalid";
+            /** Http Status */
+            http_status?: number | null;
         };
         /** VaultEffectiveEnvResponse */
         VaultEffectiveEnvResponse: {
@@ -74599,6 +74779,39 @@ export interface operations {
             };
         };
     };
+    check_destination_vault_destination_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultDestinationCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultDestinationCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     browser_login_matches_vault_browser_login_matches_post: {
         parameters: {
             query?: never;
@@ -77590,6 +77803,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TopicAssignBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keyword_topic_placement_backfill_seo_keywords_topics_backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicPlacementBackfillBody"];
             };
         };
         responses: {
@@ -85800,6 +86046,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
