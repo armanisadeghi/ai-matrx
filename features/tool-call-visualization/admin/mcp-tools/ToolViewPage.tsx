@@ -34,7 +34,7 @@ import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidC
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { mcpServerHref } from "@/features/tool-registry/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { toolBrief, toolSummary } from "./format";
+import { formatToolTimestamp, toolBrief, toolSummary } from "./format";
 import type { Database, Json } from "@/types/database.types";
 import {
   SurfaceRuntimeProvider,
@@ -199,16 +199,12 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
           </InfoRow>
           <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Created">
             <span className="text-xs">
-              {tool.created_at
-                ? new Date(tool.created_at).toLocaleString()
-                : "—"}
+              {formatToolTimestamp(tool.created_at) || "—"}
             </span>
           </InfoRow>
           <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Updated">
             <span className="text-xs">
-              {tool.updated_at
-                ? new Date(tool.updated_at).toLocaleString()
-                : "—"}
+              {formatToolTimestamp(tool.updated_at) || "—"}
             </span>
           </InfoRow>
         </div>

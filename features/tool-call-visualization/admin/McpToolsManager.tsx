@@ -90,7 +90,12 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import type { AiOptionValues } from "@/components/agent-copy/AiCopyMenu";
-import { toolBrief, toolSummary, toolsListSummary } from "./mcp-tools/format";
+import {
+  formatToolTimestamp,
+  toolBrief,
+  toolSummary,
+  toolsListSummary,
+} from "./mcp-tools/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
@@ -127,13 +132,6 @@ function hasAnnotations(tool: Tool): boolean {
 
 function paramCount(tool: Tool): number {
   return Object.keys(tool.parameters ?? {}).length;
-}
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toISOString().slice(0, 19).replace("T", " ");
 }
 
 type TestFilter =
@@ -655,7 +653,7 @@ export function McpToolsManager() {
             className="font-mono text-[11px] text-muted-foreground"
             title={t.created_at ?? ""}
           >
-            {formatDate(t.created_at) || "—"}
+            {formatToolTimestamp(t.created_at) || "—"}
           </span>
         ),
       },
@@ -670,7 +668,7 @@ export function McpToolsManager() {
             className="font-mono text-[11px] text-muted-foreground"
             title={t.updated_at ?? ""}
           >
-            {formatDate(t.updated_at) || "—"}
+            {formatToolTimestamp(t.updated_at) || "—"}
           </span>
         ),
       },
@@ -685,7 +683,7 @@ export function McpToolsManager() {
             className="font-mono text-[11px] text-muted-foreground"
             title={t.deactivated_at ?? ""}
           >
-            {formatDate(t.deactivated_at) || "—"}
+            {formatToolTimestamp(t.deactivated_at) || "—"}
           </span>
         ),
       },

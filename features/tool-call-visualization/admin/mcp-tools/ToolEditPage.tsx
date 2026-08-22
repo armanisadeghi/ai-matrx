@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { formatToolTimestamp } from "./format";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { listServers, type McpServerRow } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
@@ -373,7 +374,7 @@ export function ToolEditPage({ tool }: Props) {
           <span className="block font-medium text-foreground mb-1">
             Created
           </span>
-          {tool.created_at ? new Date(tool.created_at).toLocaleString() : "N/A"}
+          {formatToolTimestamp(tool.created_at) || "N/A"}
         </div>
       </div>
     </div>

@@ -30,6 +30,20 @@ export interface ToolLike {
   updated_at?: string | null;
 }
 
+/**
+ * Render a timestamp identically during SSR and browser hydration.
+ * Locale-dependent formatting can produce different text on the server and
+ * client, which React treats as a hydration error.
+ */
+export function formatToolTimestamp(
+  value: string | null | undefined,
+): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
 /** Count of `properties` on a JSON-schema-ish parameters blob. */
 function paramCountOf(params: unknown): number {
   if (params && typeof params === "object" && !Array.isArray(params)) {
