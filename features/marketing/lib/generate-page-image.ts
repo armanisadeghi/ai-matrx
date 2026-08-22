@@ -160,8 +160,17 @@ export async function waitForAnswerText(
   return selectAnswerText(requestId)(getState());
 }
 
-export interface HeadlessRunArgs {
-  agentId: string;
+/**
+ * WHO runs: either an exact agent id, or — the mandate-first form — a mandate
+ * key the launch thunk resolves itself (agent AND the binding's
+ * `config_overrides`; resolving the mandate here and passing `agentId` would
+ * silently drop the settings half). Mutually exclusive.
+ */
+export type HeadlessRunTarget =
+  | { agentId: string; mandateKey?: undefined }
+  | { mandateKey: string; agentId?: undefined };
+
+export type HeadlessRunArgs = HeadlessRunTarget & {
   surfaceKey: string;
   /** User-message text (some agents key entirely off runtime variables). */
   userText: string;
@@ -175,7 +184,7 @@ export interface HeadlessRunArgs {
    * the image appear — in one place, with the page underneath never moving.
    */
   live?: { instanceId: string; label: string };
-}
+};
 
 /**
  * The instance a live run deliberately kept alive so its finished output stays
@@ -213,7 +222,9 @@ export async function runHeadlessAgent<T>(
   try {
     const launch = await dispatch(
       launchAgentExecution({
-        agentId: args.agentId,
+        ...(args.mandateKey
+          ? { mandateKey: args.mandateKey }
+          : { agentId: args.agentId }),
         surfaceKey: args.surfaceKey,
         sourceFeature: "marketing",
         isEphemeral: false,

@@ -19,28 +19,15 @@ import {
 } from "@/features/marketing/lib/generate-page-image";
 
 /**
- * 🚨 CONFIRMED LIVE VIOLATION — a raw agent UUID passed as `agentId:` to a real
- * run below. Tracked as row **F1** of
- * /Users/armanisadeghi/code/common-docs/systems/mandates/ROLLOUT.md.
- *
- * The old description of this constant as a "permanent latest-version pointer"
- * described `declare_floating_agent`, a construct that was DELETED on
- * 2026-08-10 along with the rest of the pin-upgrade machinery. Nothing makes
- * this id float: it is frozen, it is not a mandate, it is not declared in
- * aidream's `client_slots.py`, and it is in no allowlist. Repointing the
- * "Marketing Video Metadata Writer" in the DB does not change what runs here.
- *
- * **Fix (do not do it comment-only — it needs the aidream half):** declare
- * `marketing.video_metadata` in aidream `services/mandates/client_mandates.py`
- * seeded on this id, resolve it here (`useMandate` /
- * `launchAgentExecution({mandateKey})`), then delete this constant.
- *
- * What the agent is expected to do: take runtime variables `video_context` +
- * `site_context` and answer with the finished metadata wrapped in
- * `<video_metadata>…</video_metadata>`. That contract is the AGENT's, declared
- * in the DB — this note mirrors it and can drift.
+ * The Mandate that decides WHICH agent writes video metadata (system default:
+ * "Marketing Video Metadata Writer"; users rebind it at `/agents/mandates`).
+ * Declared server-side in aidream `services/mandates/client_mandates.py`; its
+ * Provision offers `video_context` + `site_context`. The launch thunk resolves
+ * it — never resolve here and pass an `agentId` (that drops the binding's
+ * `config_overrides`). The agent answers inside `<video_metadata>…</video_metadata>`;
+ * that contract is the AGENT's, declared in the DB — this note mirrors it.
  */
-export const VIDEO_METADATA_AGENT_ID = "18d17eed-03c2-404d-a505-3a4531c66b9d";
+export const VIDEO_METADATA_MANDATE_KEY = "marketing.video_metadata";
 
 export interface VideoMetadataResult {
   title: string;
@@ -113,7 +100,7 @@ export function generateVideoMetadata(args: GenerateVideoMetadataArgs) {
       const answer = await runHeadlessAgent(
         dispatch,
         {
-          agentId: VIDEO_METADATA_AGENT_ID,
+          mandateKey: VIDEO_METADATA_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
           userText: "Write the video metadata now.",
           variables: {
