@@ -270,6 +270,19 @@ can't live in the agent's head"). Two planes, two paths:
   go. Coherence is enforced by ONE DB predicate (`gsc_assert_vocabulary_coherent`) — the
   client checks in `vocabulary/lib.ts` exist only to keep the preview honest, and the
   database is right when they disagree.
+- **Platform places (the gazetteer, I3, 2026-08-22)** — `seo.geo_place`: the 50 states +
+  DC, the 1,000 largest US cities by population, and the local-grammar phrases ("near me").
+  A geo area now names PLACES (`site_geo_area.place_ids`, picked via `GeoPlacePicker` over
+  `seo.geo_place_search`) rather than only words typed from memory; typed `match_tokens`
+  stay for whatever the gazetteer lacks. A keyword reaches an area through its DETECTED
+  places (`seo.keyword_place`, written by `seo.stamp_keyword_places`), and the derived fact
+  `local_intent = explicit_local` is stamped through the existing `seo.keyword_facet_set`
+  path — a place is never a facet value, because places are not a closed vocabulary. THE
+  AMBIGUITY RULE and the precedence (human > gazetteer > classifier) are in the SoR under
+  THE GAZETTEER. **Both halves of a geo match can be inert**: an area with nothing in it,
+  and keywords never read for places — the second is what `PlaceDetectionStrip` (reading
+  `seo.keyword_place_status`) exists to say out loud, with a bounded pass sized by the
+  `seo.keyword_place_detection` knobs.
 - **Platform facets** — `/administration/knowledge/seo-facets` (super-admin), over
   `platform.categories` dimensions `seo_facet` / `seo_value_band` / `seo_geo_band`.
   Labels and descriptions only; **adding a facet value requires widening
@@ -648,6 +661,17 @@ deliberately not a Popover (opening one from a closing Radix Select loses
 its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
+
+- 2026-08-22 — **The geo gazetteer (I3).** Geo areas name real places instead of only
+  typed words: `seo.geo_place` (51 states + 1,000 cities + 8 grammar phrases, each row
+  carrying its own aliases and an ambiguity flag), `seo.keyword_place` for detections,
+  deterministic detection stamping `local_intent` through the existing fact store, and a
+  demand-ordered bounded backfill on the EXISTING classification ledger rather than a
+  second one. Verified live on datadestruction.com: `explicit_local` 17 → 155 after 3,600
+  keywords, and an area referencing four gazetteer places puts a `geo` reason on
+  "hard drive shredding los angeles". The 7-argument `gsc_geo_area_preview` was replaced
+  by its 8-argument successor and DROPPED — two overloads differing only by a defaulted
+  argument make every PostgREST call ambiguous.
 
 - 2026-08-21 — **Universal-facet backfill strip** (§ above): the classification
   workbench gained a server-state band for the 13-facet plane, reading
