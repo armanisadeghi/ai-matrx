@@ -18,6 +18,7 @@ import {
   BookOpenCheck,
   Boxes,
   Landmark,
+  Layers,
   ListChecks,
   MapPin,
   MapPinned,
@@ -228,6 +229,26 @@ export function MeaningPanel({
               Topic worth, qualifier rules and band vocabularies proposed from the
               real demand of other companies in your industry. Adopt one, then prune
               it — nothing it writes is permanent.
+            </span>
+          </span>
+        </Link>
+
+        {/* THE DOOR to the dimension manager. The expert reading this panel is
+            asking "what does the system know about my keywords?" — the honest
+            answer includes "whatever you tell it", and that is one click. */}
+        <Link
+          href={`${marketingRoutes.site(brandId, siteId, "/value/dimensions")}`}
+          className="flex items-start gap-2 rounded-md border border-border bg-card px-2.5 py-2 transition-colors hover:bg-accent"
+        >
+          <Layers className="mt-px h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0">
+            <span className="block text-[11px] font-semibold text-foreground">
+              Keyword dimensions
+            </span>
+            <span className="mt-0.5 block text-[10px] leading-4 text-muted-foreground">
+              The questions every keyword is sorted by, and the only answers
+              allowed. Add one your business needs — equipment class, payer
+              type, whatever decides whether a job is worth having.
             </span>
           </span>
         </Link>
