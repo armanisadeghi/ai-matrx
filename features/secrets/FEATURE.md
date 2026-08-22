@@ -133,8 +133,9 @@ Personal and organization credentials render through the same
   screens import them instead of inventing nearby synonyms. Familiar list and
   detail identity headers use title + supporting metadata without repeating
   database-form labels such as "Credential name" and "Credential type."
-- Text metadata wraps and is shown in full. The vault may not use truncation,
-  line-clamping, or “+N more” collapsing.
+- **Detail is complete; lists are concise.** Detail metadata wraps and is shown
+  in full. List rows use exactly two lines—name plus one deduplicated supporting
+  value—and truncate each line instead of growing vertically.
 - A protected value has exactly two human-visible states: **Hidden**, or the
   complete transiently revealed value. `value_hint` is transport metadata and
   must never be rendered as a partial mask. The shared `SecretValue` keeps
@@ -165,10 +166,12 @@ Personal and organization credentials render through the same
   responsive Credenza. Embedded window/org hosts keep the compact presentation
   of the same workspace because they do not own a full viewport. The former
   settings host redirects to `/vault` instead of embedding the compact card grid.
-- A list row carries compact identity only: title, one deduplicated kind/meta
-  line, and login URLs when applicable. Encrypted fields are shown in the
-  detail pane, avoiding both repeated labels and a card-grid wall of reveal
-  controls.
+- A list row carries compact identity only: icon, title, and one deduplicated
+  supporting line. It never adds a third URL/type line or renders credential
+  fields. Full metadata and encrypted fields stay in the detail pane.
+- Every scope loads `credential_items` by `created_at DESC` with `id DESC` as
+  the stable tie-breaker, so a newly created credential appears first after
+  the mutation refresh.
 - New credential starts with four plain-purpose choices: Website login, API
   key, Environment value, Secure file, and Custom credential. The full catalog remains
   searchable behind **Browse all**.
@@ -292,6 +295,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-22** — Sorted every Vault scope newest-created first and replaced
+  expanding list cards with one shared two-line identity treatment: icon,
+  truncated name, and one truncated supporting line; fields and verbose
+  metadata remain complete in detail.
 
 - **2026-08-22** — Completed the Vault route identity follow-up with a
   Vault-specific document title and semantic H1 in the shared route header.

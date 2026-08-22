@@ -17,9 +17,45 @@ const componentSource = [
   .join("\n");
 
 describe("shared vault UI contract", () => {
-  test("does not use visual truncation or collapsed-line utilities", () => {
-    expect(componentSource).not.toMatch(
+  test("keeps full detail metadata complete while compact list rows truncate", () => {
+    const detailSource = [
+      "SecretValue.tsx",
+      "VaultHandlingControl.tsx",
+      "VaultItemDetail.tsx",
+      "VaultCreateDialog.tsx",
+    ]
+      .map((file) =>
+        readFileSync(
+          join(process.cwd(), "features/secrets/components", file),
+          "utf8",
+        ),
+      )
+      .join("\n");
+    const workspaceSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultWorkspace.tsx"),
+      "utf8",
+    );
+
+    expect(detailSource).not.toMatch(
       /className=(?:"[^"]*|\{[^}]*)(?:\btruncate\b|\bline-clamp-\d+\b|\btext-ellipsis\b)/,
+    );
+    expect(workspaceSource).toContain(
+      'className="mt-0.5 truncate text-xs leading-4 text-muted-foreground"',
+    );
+    expect(workspaceSource).not.toContain("item.login_urls.join");
+  });
+
+  test("loads newest-created credentials first", () => {
+    const serviceSource = readFileSync(
+      join(process.cwd(), "features/secrets/vault-service.ts"),
+      "utf8",
+    );
+
+    expect(serviceSource).toContain(
+      '.order("created_at", { ascending: false })',
+    );
+    expect(serviceSource).not.toContain(
+      '.order("display_name", { ascending: true })',
     );
   });
 
@@ -91,8 +127,10 @@ describe("shared vault UI contract", () => {
       "lg:grid-cols-[14rem_20rem_minmax(0,1fr)]",
     );
     expect(workspaceSource).toContain("VaultWorkspaceListRow");
-    expect(workspaceSource).toContain("VAULT_LABELS.credentialName");
-    expect(workspaceSource).toContain("VAULT_LABELS.credentialType");
+    expect(workspaceSource).toContain("identity.subtitle ??");
+    expect(workspaceSource).toContain(
+      "Values and full metadata belong in detail",
+    );
   });
 
   test("keeps the legacy settings URL on the canonical full Vault", () => {

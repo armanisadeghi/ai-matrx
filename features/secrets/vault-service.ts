@@ -544,8 +544,8 @@ export async function fetchVaultItems(
     .from("credential_items")
     .select(CREDENTIAL_ITEM_COLUMNS)
     .is("deleted_at", null)
-    .order("display_name", { ascending: true })
-    .order("id", { ascending: true });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
   if (scope.kind === "organization") {
     itemsQuery = itemsQuery.eq("organization_id", scope.organizationId);
   } else if (scope.kind === "shared") {
