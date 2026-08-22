@@ -100,7 +100,8 @@ export function RunFailureCard({
     typeof error?.step_label === "string" && error.step_label.trim()
       ? error.step_label
       : null;
-  const namedSteps = failedSteps.length > 0 ? failedSteps : recordedStep ? [recordedStep] : [];
+  const namedSteps =
+    failedSteps.length > 0 ? failedSteps : recordedStep ? [recordedStep] : [];
   const totalSteps = Object.keys(stepLabels).length;
   const completedSteps = Object.values(phases).filter(
     (phase) => phase === "settled" || phase === "skipped",

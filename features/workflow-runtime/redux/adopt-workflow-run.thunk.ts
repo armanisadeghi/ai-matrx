@@ -213,7 +213,10 @@ export function adoptWorkflowRun(
      * lanes stay empty — budget burnt on invisible content (adversarial
      * finding 1).
      */
-    const laneKeyForNodeStream = (runId: string, nodeId: string): string | null => {
+    const laneKeyForNodeStream = (
+      runId: string,
+      nodeId: string,
+    ): string | null => {
       const run = getState().workflowRuns.byRunId[runId];
       const aggregate = run?.nodeAggregates[nodeId];
       const keys = aggregate?.invocationKeys ?? [];
@@ -370,7 +373,9 @@ export function adoptWorkflowRun(
             })
             .catch((error: unknown) => {
               const message =
-                error instanceof Error ? error.message : "final run read failed";
+                error instanceof Error
+                  ? error.message
+                  : "final run read failed";
               captureError({
                 source: "durable-run",
                 message: `[adopt-workflow-run] run ${runId} ended, but its final result could not be hydrated: ${message}`,
@@ -392,8 +397,12 @@ export function adoptWorkflowRun(
     ): void => {
       const key = invocationKeyOf(
         nodeId,
-        "dispatch_id" in event ? ((event.dispatch_id as string | null) ?? null) : null,
-        "item_index" in event ? ((event.item_index as number | null) ?? null) : null,
+        "dispatch_id" in event
+          ? ((event.dispatch_id as string | null) ?? null)
+          : null,
+        "item_index" in event
+          ? ((event.item_index as number | null) ?? null)
+          : null,
       );
       const message =
         outcome === "error" && "error_message" in event
@@ -443,7 +452,10 @@ export function adoptWorkflowRun(
       }
     };
 
-    const replayDurableLog = async (runId: string, depth: number): Promise<number | null> => {
+    const replayDurableLog = async (
+      runId: string,
+      depth: number,
+    ): Promise<number | null> => {
       let cursor: number | null = null;
       let total = 0;
       for (;;) {
@@ -451,7 +463,10 @@ export function adoptWorkflowRun(
           `/runs/${runId}/events?after_seq=${cursor ?? 0}&limit=${REPLAY_PAGE_SIZE}`,
         );
         for (const record of page) {
-          const payload: unknown = { ...record.payload, event: record.event_type };
+          const payload: unknown = {
+            ...record.payload,
+            event: record.event_type,
+          };
           if (isWorkflowRunEvent(payload)) {
             routeDurableEvent(runId, depth, payload, record.seq, true);
           }
@@ -464,7 +479,11 @@ export function adoptWorkflowRun(
       return cursor;
     };
 
-    const attachOne = (runId: string, parentRunId: string | null, depth: number): void => {
+    const attachOne = (
+      runId: string,
+      parentRunId: string | null,
+      depth: number,
+    ): void => {
       if (tree.stopped || tree.stops.has(runId)) return;
       dispatch(
         attachRun({
@@ -557,7 +576,8 @@ export function adoptWorkflowRun(
             void (async () => {
               try {
                 const fresh = await fetchJson<RunRow>(`/runs/${runId}`);
-                if (!stopped) dispatch(refreshHeartbeatTails({ runId, row: fresh }));
+                if (!stopped)
+                  dispatch(refreshHeartbeatTails({ runId, row: fresh }));
               } catch {
                 // Narration is best-effort: a failed tail refresh must never
                 // disturb the durable event poller that shares this run.
@@ -605,7 +625,11 @@ export function adoptWorkflowRun(
         tree.laneManager.disposeRun();
       },
       ensureLane: (runId, invocationKey, seedText) => {
-        const lane = tree.laneManager.ensureLane(runId, invocationKey, seedText);
+        const lane = tree.laneManager.ensureLane(
+          runId,
+          invocationKey,
+          seedText,
+        );
         return lane?.requestId ?? null;
       },
     };

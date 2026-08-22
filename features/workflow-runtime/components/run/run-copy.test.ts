@@ -1,7 +1,4 @@
-import {
-  workflowFailureAgentInput,
-  workflowFailureHuman,
-} from "./run-copy";
+import { workflowFailureAgentInput, workflowFailureHuman } from "./run-copy";
 
 const VIEW = {
   kind: "run" as const,

@@ -172,7 +172,10 @@ export function WorkflowRunPage({
     <RouteHeader
       left={
         <div className="flex min-w-0 items-center">
-          <ChevronLeftTapButton href="/workflows/all" ariaLabel="All workflows" />
+          <ChevronLeftTapButton
+            href="/workflows/all"
+            ariaLabel="All workflows"
+          />
           <span className="ml-1 min-w-0 truncate text-sm font-medium text-foreground">
             {workflow?.name ?? "Workflow"}
           </span>

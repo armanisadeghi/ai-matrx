@@ -138,7 +138,8 @@ function KindShapeDriftNote({
   const emitted = invocation.outputKind;
   const mismatched =
     declared !== null && emitted !== null && declared !== emitted;
-  const checkFailed = invocation.outputKindOk === false && !verdictShownElsewhere;
+  const checkFailed =
+    invocation.outputKindOk === false && !verdictShownElsewhere;
   if (!mismatched && !checkFailed) return null;
 
   return (
@@ -297,11 +298,12 @@ export function InvocationBody({
   // while the heartbeat tail keeps arriving. So the lane speaks only once it
   // has actually carried a chunk; otherwise the tail gets its turn below.
   const laneCarriedContent = invocation.chunksReceived > 0;
-  const laneOwnsDisplay = Boolean(invocation.laneRequestId) && !documentWins;
+  const laneRequestId = invocation.laneRequestId;
+  const laneOwnsDisplay = laneRequestId !== null && !documentWins;
   if (laneOwnsDisplay && laneCarriedContent) {
     return (
       <LiveRunDisplay
-        requestId={invocation.laneRequestId!}
+        requestId={laneRequestId}
         label={invocation.nodeId}
         variant="bare"
       />
