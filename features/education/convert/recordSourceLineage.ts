@@ -64,6 +64,13 @@ export async function recordSourceLineage(
       targetKind: result.targetKind,
       href: result.href,
       detail: result.detail ?? null,
+      // THE KIT'S NAME, carried on every edge. `source.title` is resolved once
+      // per kit (`onboard/kitTitle.ts`) and is the same for every sibling, so
+      // the kit hub can name itself from ANY one edge without a second read and
+      // without a kit table. A per-artifact title may legitimately differ from
+      // it (a single-pass agent may title its own artifact better) — this is
+      // the name of the MATERIAL, which is what the hub is about.
+      sourceTitle: source.title ?? null,
     },
   });
   if (!edge.ok) {

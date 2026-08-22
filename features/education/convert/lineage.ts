@@ -27,6 +27,14 @@ export interface GeneratedArtifact {
   title: string;
   href: string;
   detail: string | null;
+  /**
+   * The name of the MATERIAL this came from — the kit's name, identical on
+   * every sibling edge (written by `recordSourceLineage` from the once-resolved
+   * `onboard/kitTitle.ts` value). Null on edges written before kits were named.
+   */
+  sourceTitle: string | null;
+  /** When the artifact was linked — the kit's own chronology. */
+  createdAt: string;
 }
 
 function metaString(meta: Json | undefined, key: string): string | null {
@@ -57,6 +65,8 @@ export async function listGeneratedFrom(
         title: e.label ?? "Study artifact",
         href: metaString(e.metadata, "href") ?? hrefFallback(e.otherType, e.otherId),
         detail: metaString(e.metadata, "detail"),
+        sourceTitle: metaString(e.metadata, "sourceTitle"),
+        createdAt: e.createdAt,
       };
     });
 }

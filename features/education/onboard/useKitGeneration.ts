@@ -8,7 +8,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { getGenerator } from "@/features/education/convert/registry";
+import { resolveKitTitle, type KitTitle } from "./kitTitle";
 import type {
   ConvertOptions,
   TargetKind,
@@ -36,6 +38,12 @@ export interface UseKitGeneration {
   targets: KitTargetState[];
   /** The normalized source, once ingest completes. */
   source: NormalizedIngest | null;
+  /**
+   * The kit's ONE name, resolved after ingest and carried by every artifact.
+   * Null until ingest completes. `named: false` means the namer was unavailable
+   * and this is the cleaned-up filename.
+   */
+  kitTitle: KitTitle | null;
   /** Top-level error (ingest failure sinks the whole run). */
   error: string | null;
   busy: boolean;
@@ -55,7 +63,10 @@ export interface UseKitGeneration {
 export function useKitGeneration(): UseKitGeneration {
   const { normalize } = useIngest();
   const { convertMany } = useContentConverter();
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
 
+  const [kitTitle, setKitTitle] = useState<KitTitle | null>(null);
   const [phase, setPhase] = useState<KitPhase>("idle");
   const [ingestProgress, setIngestProgress] = useState<IngestProgress | null>(null);
   const [targets, setTargets] = useState<KitTargetState[]>([]);
@@ -66,6 +77,7 @@ export function useKitGeneration(): UseKitGeneration {
 
   const reset = useCallback(() => {
     setPhase("idle");
+    setKitTitle(null);
     setIngestProgress(null);
     setTargets([]);
     setSource(null);
@@ -99,6 +111,7 @@ export function useKitGeneration(): UseKitGeneration {
       }
       setError(null);
       setSource(null);
+      setKitTitle(null);
       setPhase("ingesting");
       setIngestProgress(null);
       setStartedAt(Date.now());
@@ -124,6 +137,18 @@ export function useKitGeneration(): UseKitGeneration {
         return false;
       }
 
+      // NAME THE KIT ONCE, here, between ingest and fan-out. Every generator
+      // resolves its own title from `source.title`, and on a multi-section run
+      // `source.title` WINS over the agent's title — so this single value is
+      // what all eight artifacts end up called. Best-effort by construction:
+      // `resolveKitTitle` never throws and always returns a usable name.
+      const resolvedTitle = await resolveKitTitle(dispatch, store, {
+        text: normalized.text,
+        rawTitle: normalized.title,
+        focus: options?.focus,
+      });
+      setKitTitle(resolvedTitle);
+
       setPhase("generating");
       const generationStartedAt = Date.now();
       setTargets((prev) =>
@@ -135,7 +160,12 @@ export function useKitGeneration(): UseKitGeneration {
       );
 
       await convertMany(
-        { text: normalized.text, title: normalized.title, ref: normalized.ref },
+        {
+          text: normalized.text,
+          // THE kit name — not the raw filename. Every generator reads this.
+          title: resolvedTitle.title,
+          ref: normalized.ref,
+        },
         kinds,
         options,
         (outcome) => {
@@ -166,7 +196,7 @@ export function useKitGeneration(): UseKitGeneration {
       setPhase("done");
       return true;
     },
-    [convertMany, normalize, patchTarget],
+    [convertMany, normalize, patchTarget, dispatch, store],
   );
 
   return {
@@ -176,6 +206,7 @@ export function useKitGeneration(): UseKitGeneration {
     ingestProgress,
     targets,
     source,
+    kitTitle,
     error,
     busy: phase === "ingesting" || phase === "generating",
     run,
