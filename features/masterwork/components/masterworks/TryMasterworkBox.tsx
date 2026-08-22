@@ -42,7 +42,9 @@ import {
 } from "@/features/workflow-runtime/run-failure-explanation";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import {
+  getMasterworkAsk,
   getMasterworkRunVerdict,
+  type MasterworkAskSpec,
   type MasterworkRunVerdict,
 } from "../../service";
 
@@ -162,8 +164,13 @@ export function TryMasterworkBox({
   onCompare?: (candidateText: string) => void;
 }) {
   const dispatch = useAppDispatch();
-  const [text, setText] = useState("");
-  const [notes, setNotes] = useState("");
+  // THE BUILDER'S OWN FIELDS (Arman, 2026-08-21): every Build writes an `ask`
+  // node with labelled inputs, and this box used to throw that away and show
+  // a generic "Try it now" textarea. The spec is read off the definition; the
+  // generic pair below is only the fallback while it loads (or for a
+  // hand-authored workflow with no legible ask node).
+  const [askSpec, setAskSpec] = useState<MasterworkAskSpec | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<StageRow[]>([]);
   const [verdict, setVerdict] = useState<MasterworkRunVerdict | null>(null);
@@ -178,6 +185,38 @@ export function TryMasterworkBox({
   const isEdit = masterworkKind !== "generate";
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  useEffect(() => {
+    let alive = true;
+    void getMasterworkAsk(masterworkId).then((spec) => {
+      if (alive && spec) setAskSpec(spec);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [masterworkId]);
+
+  // The fields to render: the builder's own, or the generic pair.
+  const fields = askSpec?.fields ?? [
+    {
+      key: isEdit ? "document" : "job_brief",
+      label: isEdit
+        ? "Paste the text to check against your rules"
+        : "Describe the job — what should it produce, for whom?",
+      required: true,
+    },
+    ...(isEdit
+      ? [
+          {
+            key: "notes",
+            label: "Facts that must not change (names, numbers, claims) — optional",
+            required: false,
+          },
+        ]
+      : []),
+  ];
+  const setField = (key: string, value: string) =>
+    setValues((prev) => ({ ...prev, [key]: value }));
 
   // THE ONE FAILURE DOOR. Every path that can stop a run goes through here, so
   // there is exactly one place that decides what a stopped run says — and it
@@ -361,10 +400,9 @@ export function TryMasterworkBox({
       : null;
 
   const start = async () => {
-    if (!text.trim()) {
-      toast.error(
-        isEdit ? "Paste the text to check first." : "Describe the job first.",
-      );
+    const missing = fields.find((f) => f.required && !(values[f.key] ?? "").trim());
+    if (missing) {
+      toast.error(`${missing.label.split("(")[0].trim()} — fill this in first.`);
       return;
     }
     setPhase("starting");
@@ -414,9 +452,9 @@ export function TryMasterworkBox({
       }),
     );
 
-    const fieldPayload = isEdit
-      ? { document: text, notes }
-      : { job_brief: text };
+    const fieldPayload = Object.fromEntries(
+      fields.map((f) => [f.key, values[f.key] ?? ""]),
+    );
     try {
       const result = await dispatch(
         callApi({
@@ -448,29 +486,29 @@ export function TryMasterworkBox({
 
   return (
     <div className="space-y-2">
-      <ProTextarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        className="text-base sm:text-sm"
-        rows={3}
-        enableTextStats={isEdit}
-        placeholder={
-          isEdit
-            ? "Paste the text to check against your rules…"
-            : "Describe the job — what should it produce, for whom?"
-        }
-        disabled={phase === "starting" || phase === "running"}
-      />
-      {isEdit ? (
-        <ProTextarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="text-base sm:text-sm"
-          rows={1}
-          placeholder="Facts that must not change (names, numbers, claims) — optional"
-          disabled={phase === "starting" || phase === "running"}
-        />
+      {askSpec?.description ? (
+        <p className="text-xs text-muted-foreground">{askSpec.description}</p>
       ) : null}
+      {fields.map((f, i) => (
+        <div key={f.key} className="space-y-1">
+          <label className="text-xs font-medium text-foreground">
+            {f.label}
+            {f.required ? null : (
+              <span className="ml-1 font-normal text-muted-foreground">
+                (optional)
+              </span>
+            )}
+          </label>
+          <ProTextarea
+            value={values[f.key] ?? ""}
+            onChange={(e) => setField(f.key, e.target.value)}
+            className="text-base sm:text-sm"
+            rows={i === 0 ? 3 : 1}
+            enableTextStats={isEdit && i === 0}
+            disabled={phase === "starting" || phase === "running"}
+          />
+        </div>
+      ))}
       <div className="flex items-center gap-2">
         <Button
           size="sm"

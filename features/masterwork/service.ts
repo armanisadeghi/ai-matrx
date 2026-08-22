@@ -676,3 +676,65 @@ export async function setMasterworkReleased(opts: {
   }
   throw new Error("This Masterwork no longer exists.");
 }
+
+/** One input the Masterwork's own builder declared it needs. */
+export interface MasterworkAskField {
+  key: string;
+  label: string;
+  required: boolean;
+}
+
+/** What a Masterwork asks for before it runs — its `ask` node, verbatim. */
+export interface MasterworkAskSpec {
+  description: string | null;
+  fields: MasterworkAskField[];
+}
+
+/**
+ * The inputs a Masterwork actually wants, read off its OWN definition.
+ *
+ * Arman, 2026-08-21, staring at a bare "Try it now" box: "Whichever agent did
+ * this was building something. Whatever it was building, HE KNOWS WHAT HIS
+ * INPUT NEEDS TO BE. So why isn't that here?" It always was — every Build
+ * writes an `ask` node with titled, labelled fields — and the run box threw
+ * it away and showed a generic textarea. This read is the fix: the builder's
+ * knowledge, rendered back to the person the builder wrote it for.
+ *
+ * Returns null when the definition has no legible `ask` node (hand-authored
+ * workflows); callers fall back to their generic wording.
+ */
+export async function getMasterworkAsk(
+  masterworkId: string,
+): Promise<MasterworkAskSpec | null> {
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("definition")
+    .select("nodes")
+    .eq("id", masterworkId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const nodes = Array.isArray(data.nodes) ? (data.nodes as unknown[]) : [];
+  const ask = nodes.find(
+    (n): n is Record<string, unknown> =>
+      typeof n === "object" &&
+      n !== null &&
+      (n as Record<string, unknown>).id === "ask",
+  );
+  if (!ask) return null;
+  const nodeData = (ask.data ?? {}) as Record<string, unknown>;
+  const config = (nodeData.config ?? {}) as Record<string, unknown>;
+  const rawFields = Array.isArray(config.fields) ? config.fields : [];
+  const fields: MasterworkAskField[] = [];
+  for (const raw of rawFields) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const f = raw as Record<string, unknown>;
+    if (typeof f.key !== "string" || typeof f.label !== "string") continue;
+    fields.push({ key: f.key, label: f.label, required: f.required === true });
+  }
+  if (fields.length === 0) return null;
+  return {
+    description:
+      typeof config.description === "string" ? config.description : null,
+    fields,
+  };
+}
