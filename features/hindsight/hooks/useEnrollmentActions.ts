@@ -29,12 +29,9 @@ export function useEnrollmentActions(
   };
 
   const runReview = useMutation({
-    // `exampleIds` is the "review THIS conversation" door — named ids bypass
-    // the settle window and never advance the watermark. Undefined = the
-    // normal window review. Callers pass ids via runReview.mutate(ids).
-    mutationFn: (exampleIds?: string[]) => {
+    mutationFn: () => {
       setReviewStartedAt(Date.now());
-      return triggerReview(enrollmentId, exampleIds);
+      return triggerReview(enrollmentId);
     },
     onSuccess: (res) => {
       if (res.status === "completed") {

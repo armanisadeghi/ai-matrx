@@ -9,13 +9,7 @@
  * `postJson` escape hatch with a contract-DERIVED response type — the same
  * pattern `features/rag/api/search-lab.ts` uses for `/knowledge/search-lab/inventory`.
  */
-import {
-  apiDelete,
-  apiGet,
-  apiPatch,
-  apiPost,
-  buildPath,
-} from "@/lib/api/typed-client";
+import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
 import { postJson } from "@/lib/python-client";
 
 import type {
@@ -31,7 +25,6 @@ import type {
   FindingEffectiveness,
   FindingRevert,
   HindsightCosts,
-  PendingExamples,
   RegressionCase,
   Replay,
   ReplayRunResult,
@@ -72,9 +65,7 @@ export async function updateEnrollment(
   return data;
 }
 
-export async function archiveEnrollment(
-  id: string,
-): Promise<{ status: string }> {
+export async function archiveEnrollment(id: string): Promise<{ status: string }> {
   const { data } = await apiDelete(
     buildPath("/hindsight/enrollments/{enrollment_id}", { enrollment_id: id }),
   );
@@ -85,36 +76,11 @@ export async function archiveEnrollment(
  * Runs the whole review inline — reviewer agent reads every transcript in the
  * window. Minutes, not seconds. Callers must show real progress, never a
  * spinner that looks hung.
- *
- * `exampleIds` is the "review THIS conversation" door: the automatic window
- * excludes anything from the last 30 min (still settling), which is exactly
- * wrong for a person staring at a bad run right now. Naming ids reviews those
- * and only those, and never advances the watermark.
  */
-export async function triggerReview(
-  id: string,
-  exampleIds?: string[],
-): Promise<ReviewRunResult> {
-  const { data } = await postJson<
-    ReviewRunResult,
-    { example_ids: string[] } | undefined
-  >(
+export async function triggerReview(id: string): Promise<ReviewRunResult> {
+  const { data } = await postJson<ReviewRunResult, undefined>(
     `/hindsight/enrollments/${encodeURIComponent(id)}/review`,
-    exampleIds?.length ? { example_ids: exampleIds } : undefined,
-  );
-  return data;
-}
-
-/**
- * What the next review WOULD read — each ref flagged settled/unsettled. An
- * unsettled ref is the subject's NEWEST activity, which "Review now" silently
- * skips; surfaces must warn and offer the focused door instead.
- */
-export async function getPendingExamples(id: string): Promise<PendingExamples> {
-  const { data } = await apiGet(
-    buildPath("/hindsight/enrollments/{enrollment_id}/pending-examples", {
-      enrollment_id: id,
-    }),
+    undefined,
   );
   return data;
 }
@@ -149,9 +115,7 @@ export async function discussReview(
   message: string,
 ): Promise<DiscussResult> {
   const { data } = await apiPost(
-    buildPath("/hindsight/reviews/{review_id}/discuss", {
-      review_id: reviewId,
-    }),
+    buildPath("/hindsight/reviews/{review_id}/discuss", { review_id: reviewId }),
     { message },
   );
   return data;
@@ -163,9 +127,7 @@ export async function discussFinding(
   message: string,
 ): Promise<DiscussResult> {
   const { data } = await apiPost(
-    buildPath("/hindsight/findings/{finding_id}/discuss", {
-      finding_id: findingId,
-    }),
+    buildPath("/hindsight/findings/{finding_id}/discuss", { finding_id: findingId }),
     { message },
   );
   return data;
@@ -230,9 +192,7 @@ export async function getReplay(id: string): Promise<Replay> {
 }
 
 export async function listToolSubjects(hours = 168): Promise<ToolSubject[]> {
-  const { data } = await apiGet("/hindsight/subjects/tools", {
-    query: { hours },
-  });
+  const { data } = await apiGet("/hindsight/subjects/tools", { query: { hours } });
   return data;
 }
 
@@ -255,17 +215,15 @@ export async function triggerDrain(): Promise<DrainResult> {
 // no write here: a governed unit is changed only through the agent write path,
 // and a finding is decided only through apply / reject / revert above.
 
-export async function getChangeHistory(
-  params: {
-    unitToken?: UnitToken;
-    unitId?: string;
-    changeRole?: ChangeRole;
-    actorTier?: "code" | "ai" | "human";
-    withFindingsOnly?: boolean;
-    limit?: number;
-    offset?: number;
-  } = {},
-): Promise<ChangeHistory> {
+export async function getChangeHistory(params: {
+  unitToken?: UnitToken;
+  unitId?: string;
+  changeRole?: ChangeRole;
+  actorTier?: "code" | "ai" | "human";
+  withFindingsOnly?: boolean;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<ChangeHistory> {
   const { data } = await apiGet("/hindsight/change-history", {
     query: {
       ...(params.unitToken ? { unit_token: params.unitToken } : {}),
@@ -280,12 +238,10 @@ export async function getChangeHistory(
   return data;
 }
 
-export async function getFindingEffectiveness(
-  params: {
-    unitToken?: UnitToken;
-    unitId?: string;
-  } = {},
-): Promise<FindingEffectiveness[]> {
+export async function getFindingEffectiveness(params: {
+  unitToken?: UnitToken;
+  unitId?: string;
+} = {}): Promise<FindingEffectiveness[]> {
   const { data } = await apiGet("/hindsight/finding-effectiveness", {
     query: {
       ...(params.unitToken ? { unit_token: params.unitToken } : {}),
@@ -303,19 +259,15 @@ export async function getFindingEffectiveness(
 // retention pin protects, so a case built from one stays reproducible.
 // Admin-only, like wire replay: every later re-check spends real money.
 
-export async function listRegressionCases(
-  params: {
-    snapshotId?: string;
-    originFindingId?: string;
-    status?: string;
-  } = {},
-): Promise<RegressionCase[]> {
+export async function listRegressionCases(params: {
+  snapshotId?: string;
+  originFindingId?: string;
+  status?: string;
+} = {}): Promise<RegressionCase[]> {
   const { data } = await apiGet("/hindsight/regression-cases", {
     query: {
       ...(params.snapshotId ? { snapshot_id: params.snapshotId } : {}),
-      ...(params.originFindingId
-        ? { origin_finding_id: params.originFindingId }
-        : {}),
+      ...(params.originFindingId ? { origin_finding_id: params.originFindingId } : {}),
       ...(params.status ? { status: params.status } : {}),
     },
   });
