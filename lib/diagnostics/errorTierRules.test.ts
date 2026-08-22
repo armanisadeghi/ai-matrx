@@ -381,6 +381,47 @@ describe("classifyTier", () => {
     expect(c.ruleId).toBe("cms-write-policy-denial-toast");
   });
 
+  it("keeps the expected Rulebook stale-version toast local", () => {
+    const c = classifyTier(
+      captured({
+        source: "user-toast",
+        route: "/masterwork/8d1d4f08-c4c0-4e1d-ba9a-51d5d7bf69fb",
+        message:
+          "This Rulebook changed while you were editing (someone else saved a newer version). Reload to get the latest rules — your changes are still on screen.",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("rulebook-stale-version-toast");
+  });
+
+  it.each([
+    [
+      "user-toast",
+      "/settings",
+      "This Rulebook changed while you were editing (someone else saved a newer version).",
+    ],
+    ["user-toast", "/masterwork/rulebook-1", "Could not save this Rulebook."],
+    [
+      "runtime-exception",
+      "/masterwork/rulebook-1",
+      "This Rulebook changed while you were editing (someone else saved a newer version).",
+    ],
+  ])(
+    "keeps unrelated concurrency failures red (%s on %s)",
+    (source, route, message) => {
+      const c = classifyTier(
+        captured({
+          source: source as CapturedError["source"],
+          route,
+          message,
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+    },
+  );
+
   it("keeps unrelated API 403s and toast errors RED", () => {
     const api = classifyTier(
       captured({

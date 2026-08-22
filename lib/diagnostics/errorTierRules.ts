@@ -245,6 +245,19 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "rulebook-stale-version-toast",
+    tier: "yellow",
+    reason:
+      "The Rulebook compare-and-swap correctly refused a stale overwrite, preserved the Expert's unsaved changes on screen, and told them to reload. This is expected optimistic-concurrency feedback, not a repair-queue failure.",
+    addedAt: "2026-08-22",
+    match: {
+      source: "user-toast",
+      routeIncludes: "/masterwork/",
+      messageIncludes:
+        "This Rulebook changed while you were editing (someone else saved a newer version).",
+    },
+  },
+  {
     id: "outreach-draft-unresolved-variables",
     tier: "yellow",
     reason:

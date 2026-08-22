@@ -214,8 +214,11 @@ local diagnostic remains visible without duplicating that alarm into the repair
 queue. CMS `cms_write_policy_denied` 403s and their explicit `site policy ...
 forbids ...` toasts are yellow: the policy is working and the toast remains
 visible, while neither expected signal enters the repair queue. CMS 5xx and
-unrelated 4xx responses stay red. Everything else stays red until tuned. Promote a specific
-tool/slice to red with a `relation` rule ABOVE the broad source rule.
+unrelated 4xx responses stay red. **Rulebook stale-version feedback stays
+local:** the route-scoped toast means compare-and-swap prevented an overwrite
+and preserved the Expert's draft; other save failures and concurrency messages
+remain red. Everything else stays red until tuned. Promote a specific tool/slice
+to red with a `relation` rule ABOVE the broad source rule.
 
 **To quiet an error**, add a rule to `DOWNGRADE_RULES` in `errorTierRules.ts`
 pointing a match at `orange`/`yellow`. Rules are evaluated top-down, first match
@@ -305,6 +308,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-22 — **Expected Rulebook concurrency feedback stays local.** The exact `/masterwork/` stale-version toast is yellow because compare-and-swap prevented an overwrite and kept the draft on screen; unrelated save failures and concurrency messages remain red.
 - 2026-08-19 — **Guests and first-seven-day accounts retain every diagnostic tier.** Existing Supabase Auth `created_at` and `is_anonymous` fields now flow into Redux, making eligibility a zero-query local check; established accounts remain red-only.
 - 2026-08-19 — **Guest red errors survive the browser session.** Known guest fingerprints now persist through the internal diagnostics endpoint into `public.system_error`, retaining the same red-only, production, dedupe, and throttle boundaries as authenticated capture.
 - 2026-08-18 — **Guarded Hindsight transcript delimiters stay local.** Raw model/tool transcript tokens can legitimately form malformed Markdown pairs; the renderer guard still neutralizes and records them locally, while only this route is yellow so ordinary answer delimiter defects remain red.
