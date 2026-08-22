@@ -111,7 +111,7 @@ export function UnplacedQueue({
   const lastPage = Math.max(0, Math.ceil(total / pageSize) - 1);
 
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+    <section className="flex shrink-0 flex-col rounded-lg border border-border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <h2 className="text-sm font-semibold text-foreground">
           Not placed on the tree
@@ -225,7 +225,7 @@ export function UnplacedQueue({
         </p>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="max-h-[50vh] overflow-y-auto">
         {loading ? (
           <p className="p-6 text-center text-sm text-muted-foreground">
             Reading the unplaced queue…

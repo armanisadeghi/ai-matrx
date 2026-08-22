@@ -290,7 +290,7 @@ export function TopicTreeWorkbench() {
         <OfferingSplitHeadline rows={split.data ?? []} windowLabel={windowLabel} />
       )}
 
-      <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+      <section className="flex shrink-0 flex-col rounded-lg border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
           <ListTree className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">Topic tree</h2>
@@ -348,7 +348,7 @@ export function TopicTreeWorkbench() {
             it from the queue below.
           </div>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="max-h-[55vh] overflow-y-auto">
             {rows.map((node) => (
               <TopicTreeRow
                 key={node.topic.id}

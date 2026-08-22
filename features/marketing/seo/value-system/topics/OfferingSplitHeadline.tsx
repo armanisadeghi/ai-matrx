@@ -122,7 +122,7 @@ export function OfferingSplitHeadline({
   const unplaced = buckets[2];
 
   return (
-    <section className="rounded-lg border border-border bg-card">
+    <section className="shrink-0 rounded-lg border border-border bg-card">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-3 py-2">
         <h2 className="text-sm font-semibold text-foreground">
           Where this site&apos;s search traffic leads
