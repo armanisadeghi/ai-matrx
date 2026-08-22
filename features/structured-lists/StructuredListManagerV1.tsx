@@ -356,12 +356,14 @@ export function StructuredListManagerV1({
             .from("udt_structured_lists")
             .select("*")
             .eq("id", forcedListId)
+            .is("deleted_at", null)
             .maybeSingle(),
           supabase
             .schema("workbench")
             .from("udt_structured_list_items")
             .select("*")
-            .eq("list_id", forcedListId),
+            .eq("list_id", forcedListId)
+            .is("deleted_at", null),
         ]);
         if (cancelled) return;
         if (listRes.error || !listRes.data) {
@@ -384,6 +386,7 @@ export function StructuredListManagerV1({
         .from("udt_structured_lists")
         .select("*")
         .eq("user_id", userId)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false });
 
       if (listsErr) {
@@ -403,7 +406,8 @@ export function StructuredListManagerV1({
           .schema("workbench")
           .from("udt_structured_list_items")
           .select("*")
-          .eq("list_id", first);
+          .eq("list_id", first)
+          .is("deleted_at", null);
         if (!cancelled && !itemsErr) setItems(itemsData ?? []);
       }
       setLoading(false);
@@ -426,7 +430,8 @@ export function StructuredListManagerV1({
         .schema("workbench")
         .from("udt_structured_list_items")
         .select("*")
-        .eq("list_id", activeId);
+        .eq("list_id", activeId)
+        .is("deleted_at", null);
       if (!cancelled && !error) setItems(data ?? []);
     })();
     return () => {
@@ -522,7 +527,7 @@ export function StructuredListManagerV1({
       const { error } = await supabase
         .schema("workbench")
         .from("udt_structured_lists")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) {
         setLists((prev) => [snapshotList, ...prev]);
@@ -634,7 +639,7 @@ export function StructuredListManagerV1({
       const { error } = await supabase
         .schema("workbench")
         .from("udt_structured_list_items")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) {
         setItems((prev) => [...prev, snapshot]);

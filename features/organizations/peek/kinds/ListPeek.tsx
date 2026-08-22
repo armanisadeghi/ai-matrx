@@ -32,6 +32,7 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
         .from("udt_structured_lists")
         .select("description, created_at")
         .eq("id", id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (!cancelled) {
         setRow((data as ListRow) ?? null);

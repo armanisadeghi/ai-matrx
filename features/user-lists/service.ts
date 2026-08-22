@@ -43,6 +43,7 @@ export async function getAccessibleLists(): Promise<UserList[]> {
     .schema("workbench")
     .from("udt_structured_lists")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load lists: ${error.message}`);
   return (data as UserList[]) ?? [];
@@ -110,13 +111,27 @@ export async function updateList(input: UpdateListInput) {
 
 // ─── Delete ────────────────────────────────────────────────────────────────────
 
+/**
+ * Soft delete. The row is tombstoned, not destroyed — every read path filters
+ * `deleted_at is null` (the three list RPCs do it server-side; see aidream
+ * migration 0454). Pair with restoreList for undo.
+ */
 export async function deleteList(listId: string): Promise<void> {
   const { error } = await supabase
     .schema("workbench")
     .from("udt_structured_lists")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", listId);
   if (error) throw new Error(`Failed to delete list: ${error.message}`);
+}
+
+export async function restoreList(listId: string): Promise<void> {
+  const { error } = await supabase
+    .schema("workbench")
+    .from("udt_structured_lists")
+    .update({ deleted_at: null })
+    .eq("id", listId);
+  if (error) throw new Error(`Failed to restore list: ${error.message}`);
 }
 
 // ─── Item-level mutations (partial, no full replace) ─────────────────────────
@@ -173,11 +188,21 @@ export async function updateItem(
   return data;
 }
 
+/** Soft delete — see deleteList. */
 export async function deleteItem(itemId: string): Promise<void> {
   const { error } = await supabase
     .schema("workbench")
     .from("udt_structured_list_items")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", itemId);
   if (error) throw new Error(`Failed to delete item: ${error.message}`);
+}
+
+export async function restoreItem(itemId: string): Promise<void> {
+  const { error } = await supabase
+    .schema("workbench")
+    .from("udt_structured_list_items")
+    .update({ deleted_at: null })
+    .eq("id", itemId);
+  if (error) throw new Error(`Failed to restore item: ${error.message}`);
 }

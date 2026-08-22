@@ -49,6 +49,7 @@ const loadList = cache(
         .from("udt_structured_lists")
         .select("user_id")
         .eq("id", listId)
+        .is("deleted_at", null)
         .maybeSingle();
       return { ...list, user_id: ownerRow?.user_id ?? undefined };
     } catch {

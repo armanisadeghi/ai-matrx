@@ -60,6 +60,7 @@ async function getResourceDetails(
           .from("udt_structured_lists")
           .select("list_name")
           .eq("id", resourceId)
+          .is("deleted_at", null)
           .single();
 
         return data

@@ -23,7 +23,8 @@
  *   - Group sections can be collapsed via the caret.
  * - Autosave with 500ms debounce on text fields; immediate writes on discrete actions.
  * - Optimistic UI; rollback on error.
- * - Delete (row or list) is undoable for 5 seconds via sonner toast.
+ * - Delete (row or list) is a real soft delete (`deleted_at`); the sonner toast's
+ *   Undo clears the tombstone. Closing the tab no longer decides the outcome.
  *
  * Wire `supabase` and `userId` from your existing Matrx Admin helpers.
  */
@@ -346,6 +347,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
         .from("udt_structured_lists")
         .select("*")
         .eq("user_id", userId)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false });
 
       if (listsErr) {
@@ -365,7 +367,8 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
           .schema("workbench")
           .from("udt_structured_list_items")
           .select("*")
-          .eq("list_id", first);
+          .eq("list_id", first)
+          .is("deleted_at", null);
         if (!cancelled && !itemsErr) setItems(itemsData ?? []);
       }
       setLoading(false);
@@ -388,7 +391,8 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
         .schema("workbench")
         .from("udt_structured_list_items")
         .select("*")
-        .eq("list_id", activeId);
+        .eq("list_id", activeId)
+        .is("deleted_at", null);
       if (!cancelled && !error) {
         setItems(data ?? []);
         setExpanded(new Set());
@@ -479,31 +483,41 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       setActiveId(remaining[0]?.id ?? null);
     }
 
-    let undone = false;
-    const timer = setTimeout(async () => {
-      if (undone) return;
-      const { error } = await supabase
-        .schema("workbench")
-        .from("udt_structured_lists")
-        .delete()
-        .eq("id", id);
-      if (error) {
-        setLists((prev) => [snapshotList, ...prev]);
-        toast.error("Delete failed");
-      }
-    }, 5000);
+    // Real soft delete: the row is tombstoned NOW and stays recoverable. Every
+    // read path (get_user_lists_summary / get_user_list_with_items /
+    // get_structured_list_for_selection, and getAccessibleLists) filters
+    // `deleted_at is null`, so it disappears everywhere immediately.
+    const { error } = await supabase
+      .schema("workbench")
+      .from("udt_structured_lists")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) {
+      setLists((prev) => [snapshotList, ...prev]);
+      setActiveId(id);
+      toast.error("Delete failed");
+      return;
+    }
 
     toast(`Deleted "${snapshotList.list_name || "Untitled list"}"`, {
       action: {
         label: "Undo",
-        onClick: () => {
-          undone = true;
-          clearTimeout(timer);
+        onClick: async () => {
+          const { error: undoError } = await supabase
+            .schema("workbench")
+            .from("udt_structured_lists")
+            .update({ deleted_at: null })
+            .eq("id", id);
+          if (undoError) {
+            toast.error("Undo failed");
+            return;
+          }
           setLists((prev) => [snapshotList, ...prev]);
           setActiveId(id);
         },
       },
-      duration: 5000,
+      duration: 8000,
     });
   };
 
@@ -594,31 +608,38 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       return n;
     });
 
-    let undone = false;
-    const timer = setTimeout(async () => {
-      if (undone) return;
+    void (async () => {
       const { error } = await supabase
         .schema("workbench")
         .from("udt_structured_list_items")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
+
       if (error) {
         setItems((prev) => [...prev, snapshot]);
         toast.error("Delete failed");
+        return;
       }
-    }, 5000);
 
-    toast(`Deleted "${snapshot.label || "item"}"`, {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          undone = true;
-          clearTimeout(timer);
-          setItems((prev) => [...prev, snapshot]);
+      toast(`Deleted "${snapshot.label || "item"}"`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const { error: undoError } = await supabase
+              .schema("workbench")
+              .from("udt_structured_list_items")
+              .update({ deleted_at: null })
+              .eq("id", id);
+            if (undoError) {
+              toast.error("Undo failed");
+              return;
+            }
+            setItems((prev) => [...prev, snapshot]);
+          },
         },
-      },
-      duration: 5000,
-    });
+        duration: 8000,
+      });
+    })();
   };
 
   const renameGroup = async (oldName: string, newName: string) => {
@@ -1061,8 +1082,8 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
             <DialogDescription>
               "{activeList?.list_name || "Untitled list"}" and all{" "}
               {items.length} item
-              {items.length === 1 ? "" : "s"} will be deleted. You'll have a few
-              seconds to undo.
+              {items.length === 1 ? "" : "s"} will be moved to the trash. Undo
+              from the toast, and it comes straight back.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

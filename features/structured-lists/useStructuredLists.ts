@@ -58,6 +58,7 @@ export function useStructuredLists() {
           .schema("workbench")
           .from("udt_structured_lists")
           .select("*, udt_structured_list_items(count)")
+          .is("deleted_at", null)
           .order("updated_at", { ascending: false, nullsFirst: false });
         if (err) throw err;
         if (cancelled) return;
@@ -106,6 +107,7 @@ export function useStructuredLists() {
           .from("udt_structured_list_items")
           .select("*")
           .eq("list_id", activeListId)
+          .is("deleted_at", null)
           .order("group_name", { ascending: true, nullsFirst: false })
           .order("created_at", { ascending: true });
         if (err) throw err;

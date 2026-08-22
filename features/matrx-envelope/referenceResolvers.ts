@@ -170,6 +170,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .from("udt_structured_lists")
         .select("list_name, description")
         .eq("id", ref.list_id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (error || !data) return undefined;
       const row = data as {
@@ -201,6 +202,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .from("udt_structured_list_items")
         .select("description, label")
         .eq("id", ref.item_id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (error || !data) return undefined;
       const row = data as {

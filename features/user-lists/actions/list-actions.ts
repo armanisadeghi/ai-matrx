@@ -78,7 +78,7 @@ export async function deleteListAction(listId: string) {
   const { error } = await supabase
     .schema("workbench")
     .from("udt_structured_lists")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", listId)
     .eq("user_id", user.id);
 
@@ -171,7 +171,7 @@ export async function deleteItemAction(itemId: string, listId: string) {
   const { error } = await supabase
     .schema("workbench")
     .from("udt_structured_list_items")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", itemId)
     .eq("user_id", user.id);
 
