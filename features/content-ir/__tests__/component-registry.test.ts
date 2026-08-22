@@ -84,9 +84,7 @@ describe("compiled bootstrap (system-components)", () => {
   });
 
   it("covers every known bridge by name", () => {
-    const byKind = new Map(
-      OUTPUT_ENTRIES.map((e) => [e.kind, e.componentKey]),
-    );
+    const byKind = new Map(OUTPUT_ENTRIES.map((e) => [e.kind, e.componentKey]));
     expect(Object.fromEntries(byKind)).toEqual({
       flashcard_set: "flashcards",
       quiz_set: "quiz",
@@ -111,6 +109,7 @@ describe("compiled bootstrap (system-components)", () => {
       questionnaire: "questionnaire",
       video_prompt_options: "video_prompt_options",
       keyword_relationship_research: "keyword_research",
+      seo_keyword_relationship_research_result: "seo_keyword_research_result",
       keyword_classification_batch_v1: "keyword_classification_batch",
       page_brief: "page_brief",
       media_chapters: "media_chapters",
@@ -174,7 +173,9 @@ describe("resolveComponent — compiled floor (pre-warm)", () => {
 
   it("misses are null: un-bridged output, other platforms, unknowns (both roles)", () => {
     expect(resolveComponent("flashcard", "web", "output")).toBeNull();
-    expect(resolveComponent("flashcard_set", "react-native", "output")).toBeNull();
+    expect(
+      resolveComponent("flashcard_set", "react-native", "output"),
+    ).toBeNull();
     expect(resolveComponent("never_heard_of_it", "web", "output")).toBeNull();
     expect(resolveComponent("never_heard_of_it", "web", "input")).toBeNull();
   });
@@ -264,9 +265,10 @@ describe("ComponentRegistry — warm tier", () => {
 
       await registry.ensureWarm();
       // Compiled fallback still answers.
-      expect(
-        registry.resolve("flashcard_set", "web", "output"),
-      ).toMatchObject({ componentKey: "flashcards", resolvedBy: "compiled" });
+      expect(registry.resolve("flashcard_set", "web", "output")).toMatchObject({
+        componentKey: "flashcards",
+        resolvedBy: "compiled",
+      });
 
       // Failure reset the promise — the next call retries the fetch...
       await registry.ensureWarm();
@@ -294,9 +296,8 @@ describe("ComponentRegistry — warm tier", () => {
 
 describe("D115 inversion — module init registers the kind-components invalidation", () => {
   it("fireInvalidation(kindComponents) forces a resolver refresh with no import edge from the firer", async () => {
-    const { fireInvalidation, INVALIDATION_KEYS } = await import(
-      "@/lib/invalidation/invalidation-registry"
-    );
+    const { fireInvalidation, INVALIDATION_KEYS } =
+      await import("@/lib/invalidation/invalidation-registry");
     mockList.mockClear();
     mockList.mockResolvedValue([]);
 
