@@ -83,6 +83,41 @@ individually "works". Verified ground truth below is from a three-way full-featu
 - **Deploy:** aidream `./scripts/release.sh`; matrx-local `./scripts/release.sh --message` (signed);
   frontend on push. Verify prod: `https://server.app.matrxserver.com/health/version`.
 
+## 2026-08-21 session delta (owner: Coding Integrations take)
+
+- **Titles/pins/categories unification SHIPPED end-to-end** (Arman's ruling: label drift
+  is the killer; favorites = pinned). Sources found: titles/archived in
+  `~/.claude/claude-code-sidebar-state.json` (the sync-agent ledger); pins + custom
+  groups in the desktop app's localStorage LevelDB (`dframe-local-slice`,
+  `dframe-group-scopes`). Pipeline: `~/.claude/claude-code-pins-extract.py` (venv
+  `~/.claude/.sync-venv`, ccl-chromium-reader) → ledger (extended by
+  `sync-claude-code-sessions.py`, wipe-guarded) → matrx-local
+  `claude_session_index.py` (`is_pinned`/`pinned_rank`/`category` in
+  `metadata_payload`, 8012fbfa2) → aidream SessionMetadata
+  (`apply_provider_pin_and_category` → `conversation.is_favorite` +
+  `metadata.coding_session_bridge.category`, bc2e7d98c + tests dca9686f0) → AI Work
+  Category column + facet (ada53cf00).
+- **Backfills applied to live DB (verified by query):** 193 drifted titles corrected
+  with ladder precedence (0 user renames touched); 95 favorites; 24 categories.
+- **Pin restore INTO Claude works:** `~/.claude/claude-code-pins-writeback.mjs`
+  (classic-level; refuses while app runs; full backup; keep-unknown pins). Arman ran it
+  2026-08-22; app adopted the pin list on relaunch (verified in LevelDB seq history).
+  **Category cross-account replication is impossible locally** — the app restored
+  per-account group scopes from Anthropic's server 12s after launch; categories are
+  server-synced per account. Ledger/AI Matrx still unify them read-side.
+- **Outbox 401 ROOT CAUSE FOUND (supersedes the MXL-D-079-only theory):** the packaged
+  app ships the retired Supabase project's publishable key — CI secret
+  `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` was never rotated at the East cutover
+  (URL secret was). Engine GoTrue introspection + all direct PostgREST reads 401 on
+  every install since 08-20; the stored pre-East JWT can't be replaced because token
+  verification itself uses the dead key. Fixed: secret rotated + `app/config.py` /
+  `app/bundled_config.py` (bbdc48b01). **Release v1.4.43 pending** (blocked on a
+  concurrent session's uncommitted matrx-local work), then Arman signs out/in once →
+  outbox drains (token save auto-unpauses the publisher). MXL-D-079 (large-envelope
+  TLS) remains latent beneath and may resurface during the drain.
+- Independent macOS TCC finding: Files & Folders denies the Documents watcher
+  (`~/Documents/Matrx/Notes`) since the reboot — Arman toggles it in System Settings.
+
 ## Remaining work (priority order)
 
 0. **THE BLOCKER (found 2026-08-21): the desktop engine's auth broke on the Supabase East
