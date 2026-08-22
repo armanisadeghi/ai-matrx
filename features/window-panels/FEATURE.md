@@ -58,6 +58,7 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ## Change Log
 
+- 2026-08-22 — **Smart Code Editor tiles carry a MANDATE KEY, never an agent id.** `tools-grid/toolsGridTiles.ts` deleted `SMART_CODE_EDITOR_DEFAULT_AGENT_ID` (a personal "Code Editor" clone — forbidden as a default): `tile.smart-code-editor` seeds `agents: [GENERIC_CODE_EDITOR_AGENT]` + `defaultPickerMandateKey` (the window's real contract — its stale `agentId`/`variables` seed was being silently dropped), and `tile.smart-multi-file` seeds `mandateKey: "code_editor.code_edit"`; `MultiFileSmartCodeEditorWindow` / `useOpenMultiFileSmartCodeEditorWindow` / the OverlayController wiring took `mandateKey` in place of `agentId` and launch via `launchAgentExecution({ mandateKey })`.
 - 2026-08-21 — **Completed conversation-backed live runs expose the canonical
   assistant actions.** `LiveRunDisplay` now hands a request-backed assistant
   row to `AgentAssistantMessage`, so the floating window gains the same copy,

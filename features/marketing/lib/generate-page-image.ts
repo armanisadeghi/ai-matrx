@@ -19,20 +19,22 @@
  * them; never fork a second launch/execute/destroy loop.
  *
  * THREE generation paths (the card picks):
- * 1. `generatePageImageTwoStep` — the DEFAULT. Mini-pipeline: the prompt
- *    generator agent turns the plan entry's spec + style preset into a
- *    polished image prompt (wrapped in `<image_prompt>…</image_prompt>` in
- *    its TEXT answer), then Matrx Image Ultra renders it. One click for the
- *    user, two cheap runs instead of one expensive all-in-one call.
- * 2. `generatePageImageAllInOne` — the premium single agent that does both
- *    steps internally. Available, never the default.
+ * 1. `generatePageImageTwoStep` — the DEFAULT. Mini-pipeline: the
+ *    `marketing.image_prompt` mandate turns the plan entry's spec + style
+ *    preset into a polished image prompt (wrapped in
+ *    `<image_prompt>…</image_prompt>` in its TEXT answer), then
+ *    `marketing.page_image` renders it. One click for the user, two cheap
+ *    runs instead of one expensive all-in-one call.
+ * 2. `generatePageImageAllInOne` — `marketing.page_image_all_in_one`, one
+ *    agent doing both steps internally. Available, never the default;
+ *    refuses loudly while the mandate is unbound.
  * 3. `generatePageImage` — the surface's `image_producer` role binding
  *    (role-agnostic: caller resolves the agentId via useSurfaceAgentRoles).
  *
  * NOTE (2026-08-08): a direct non-agent render path now exists —
  * `generateImage()` (features/image-studio/api/python.ts → aidream
  * POST /images/generate, streaming over execute_ai_request). It is a
- * candidate replacement for the Matrx Image Ultra render step when a
+ * candidate replacement for the `marketing.page_image` render step when a
  * caller already holds a finished prompt and needs no agent behavior;
  * the two-step default here stays because the prompt-generator step is
  * the product value. Consolidate deliberately, not by drift.
@@ -49,30 +51,35 @@ import {
   selectAnswerText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { resolveMandate } from "@/features/agents/mandates/service";
 
 /**
- * System agent "GPT Image Prompt Generator" — permanent latest-version
- * pointer. Takes runtime variables `intent_or_content` + `style` and answers
- * with the finished prompt wrapped in `<image_prompt>…</image_prompt>`.
+ * WHO runs each step is a MANDATE (`agent.mandate`), never an agent id in this
+ * file — the database decides which agent does the job (system default, or
+ * the user's own binding), and `runHeadlessAgent` passes the key straight
+ * into `launchAgentExecution({ mandateKey })` so BOTH halves of the binding
+ * (agent AND `config_overrides`) apply. Inputs ride as the provision's
+ * offered values. Recipe: `features/agents/mandates/FEATURE.md`
+ * §"Migrating a hardcoded call site".
  */
-export const IMAGE_PROMPT_GENERATOR_AGENT_ID =
-  "175cd409-cb7e-4c53-83e6-1dbf0ec24ed1";
+
+/** Prompt engineering step — provision offers `intent_or_content`, `style`;
+ *  the agent answers with the prompt wrapped in `<image_prompt>…</image_prompt>`. */
+export const IMAGE_PROMPT_MANDATE_KEY = "marketing.image_prompt";
+
+/** Render step — provision offers `image_description`; the agent returns the
+ *  rendered image as an `image_output` block. */
+export const PAGE_IMAGE_MANDATE_KEY = "marketing.page_image";
 
 /**
- * System agent "Matrx Image Ultra" (gpt-image-2) — permanent latest-version
- * pointer. Takes runtime variable `image_description` and returns the
- * rendered image as an `image_output` block.
+ * The premium single-run job: prompt-engineers AND renders in one run —
+ * provision offers `intent_or_content`, `style`, `count`. Deliberately NOT
+ * the default path, and currently SEEDLESS (declared, no system default):
+ * until an agent is bound at /agents/mandates the path refuses with a typed
+ * `step: "mandate"` outcome naming this key — it never silently falls back
+ * to the two-step pipeline.
  */
-export const MATRX_IMAGE_ULTRA_AGENT_ID =
-  "bcc69216-d4fa-4e28-a090-8a7749123bc5";
-
-/**
- * System agent "GPT Image all-in-one" — permanent latest-version pointer.
- * Prompt-engineers AND renders in one (expensive) run. Runtime variables:
- * `intent_or_content`, `style`, `count`. Deliberately NOT the default path.
- */
-export const IMAGE_ALL_IN_ONE_AGENT_ID =
-  "6bc1d330-40b5-49f8-8895-e5b55ec95ae9";
+export const PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY = "marketing.page_image_all_in_one";
 
 // The REAL RequestStatus terminal values (features/agents/types/request.types
 // RequestStatus). The old set carried "completed"/"failed" — statuses that do
@@ -353,10 +360,38 @@ export function generatePageImage(args: GeneratePageImageArgs) {
   };
 }
 
-/** Loud, step-attributed outcome — the card toasts WHICH step failed. */
+/** Loud, step-attributed outcome — the card toasts WHICH step failed.
+ *  `step: "mandate"` = the job's mandate could not resolve (unbound / disabled),
+ *  so NOTHING ran; `mandateKey` names the job to bind at /agents/mandates. */
 export type PageImageResult =
   | { ok: true; fileId: string }
-  | { ok: false; step: "prompt" | "image"; message: string };
+  | { ok: false; step: "prompt" | "image"; message: string }
+  | { ok: false; step: "mandate"; mandateKey: string; message: string };
+
+/**
+ * Gate for a path that must refuse LOUDLY when its mandate has no agent
+ * (the seedless all-in-one job). Resolution is cached, so the launch thunk's
+ * own `mandateKey` resolution a moment later is free — the agent id is never
+ * passed into the launch (that would drop the binding's settings half).
+ */
+async function mandateGate(
+  mandateKey: string,
+): Promise<Extract<PageImageResult, { step: "mandate" }> | null> {
+  try {
+    await resolveMandate(mandateKey);
+    return null;
+  } catch (error) {
+    console.error(`[generatePageImage] mandate "${mandateKey}" unresolved:`, error);
+    return {
+      ok: false,
+      step: "mandate",
+      mandateKey,
+      message: `No agent is bound to the "${mandateKey}" job — bind one at /agents/mandates. ${
+        error instanceof Error ? error.message : ""
+      }`.trim(),
+    };
+  }
+}
 
 export interface GeneratePageImageTwoStepArgs {
   /** The plan entry's built spec (description + alt + placement + page). */
@@ -371,7 +406,7 @@ export interface GeneratePageImageTwoStepArgs {
 /**
  * The DEFAULT one-click pipeline: (1) the prompt generator agent turns the
  * spec + style into a polished image prompt (extracted from its
- * `<image_prompt>` answer wrapper), (2) Matrx Image Ultra renders it. Each
+ * `<image_prompt>` answer wrapper), (2) `marketing.page_image` renders it. Each
  * step fails loudly with its own step tag.
  */
 export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
@@ -389,7 +424,7 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
       const answer = await runHeadlessAgent(
         dispatch,
         {
-          agentId: IMAGE_PROMPT_GENERATOR_AGENT_ID,
+          mandateKey: IMAGE_PROMPT_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
           userText: "Write the image prompt now.",
           variables: {
@@ -421,12 +456,12 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
       };
     }
 
-    // Step 2 — render with Matrx Image Ultra.
+    // Step 2 — render (`marketing.page_image`).
     try {
       const fileId = await runHeadlessAgent(
         dispatch,
         {
-          agentId: MATRX_IMAGE_ULTRA_AGENT_ID,
+          mandateKey: PAGE_IMAGE_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
           userText: "Generate the image now.",
           variables: { image_description: imagePrompt },
@@ -462,19 +497,22 @@ export interface GeneratePageImageAllInOneArgs {
 }
 
 /**
- * The premium single-run path: "GPT Image all-in-one" prompt-engineers and
- * renders internally. Never the default — offered from the card's menu.
+ * The premium single-run path: `marketing.page_image_all_in_one`
+ * prompt-engineers and renders internally. Never the default — offered from
+ * the card's menu; refuses with `step: "mandate"` while unbound.
  */
 export function generatePageImageAllInOne(args: GeneratePageImageAllInOneArgs) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<PageImageResult> => {
+    const gate = await mandateGate(PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY);
+    if (gate) return gate;
     try {
       const fileId = await runHeadlessAgent(
         dispatch,
         {
-          agentId: IMAGE_ALL_IN_ONE_AGENT_ID,
+          mandateKey: PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
           userText: "Generate the image now.",
           variables: {

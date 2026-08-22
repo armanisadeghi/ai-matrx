@@ -3,12 +3,15 @@ import type { WelcomeAgent } from "@/features/cx-chat/components/ChatWelcomeServ
 /**
  * The default cx-chat agent is a MANDATE — resolved at request time via
  * `resolveMandateServer` (system default → the user's own binding). The
- * demo root page resolves it; `DEFAULT_AGENT_ID` below is the mandate's SEED
- * MIRROR, kept only as the loud-fallback display seed (`getDefaultAgent`)
- * when resolution fails on this dev surface.
+ * demo root page resolves it.
  */
 export const CX_DEFAULT_MANDATE_KEY = "chat.cx_default";
 
+/**
+ * SEED MIRROR of the `chat.cx_default` mandate's system default — kept only
+ * as the loud-fallback display seed (`getDefaultAgent`) when resolution fails
+ * on this dev surface. Nothing launches from it.
+ */
 export const DEFAULT_AGENT_ID = "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8";
 
 export const MATRX_CHAT_AGENT: WelcomeAgent = {
@@ -101,7 +104,13 @@ export const MATRX_CHAT_AGENT: WelcomeAgent = {
   ],
 };
 
-/** Hardcoded built-in agents for instant SSR. */
+/**
+ * Hardcoded built-in agents for instant SSR — the DISPLAY seed (name,
+ * description, variable defaults) of the user-selected picker roster, keyed by
+ * the id the user picked (`/demos/chat/a/[agentId]`). Not an automatic
+ * selector: nothing here decides which agent runs. Allowlisted in
+ * `scripts/hardcoded-agents-allowlist.json` as a picker roster.
+ */
 export const BUILTIN_AGENTS: Record<string, WelcomeAgent> = {
   "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8": MATRX_CHAT_AGENT,
   "3ca61863-43cf-49cd-8da5-7e0a4b192867": {

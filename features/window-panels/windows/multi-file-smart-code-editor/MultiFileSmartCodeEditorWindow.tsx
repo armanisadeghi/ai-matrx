@@ -75,8 +75,10 @@ export interface MultiFileSmartCodeEditorWindowProps {
   callbackGroupId?: string | null;
 
   // From overlay `data`:
-  /** Agent UUID to launch. Required. */
-  agentId: string;
+  /** The JOB to launch (`agent.mandate` key, e.g. `code_editor.code_edit`) —
+   *  resolved by `launchAgentExecution` so the binding's agent AND settings
+   *  apply. Never an agent id. Required. */
+  mandateKey: string;
   /** Initial file set. */
   files: CodeFile[];
   /** Optionally pin which file starts active. Defaults to `files[0]`. */
@@ -96,7 +98,7 @@ export interface MultiFileSmartCodeEditorWindowProps {
 export function MultiFileSmartCodeEditorWindow({
   windowInstanceId,
   callbackGroupId,
-  agentId,
+  mandateKey,
   files: initialFiles,
   initialActiveFile = null,
   title,
@@ -286,7 +288,7 @@ export function MultiFileSmartCodeEditorWindow({
       try {
         const result = await dispatch(
           launchAgentExecution({
-            agentId,
+            mandateKey,
             surfaceKey: SMART_CODE_EDITOR_SURFACE_KEY,
             sourceFeature: "code-editor",
             apiEndpointMode: "agent",
@@ -335,20 +337,20 @@ export function MultiFileSmartCodeEditorWindow({
         dispatch(destroyInstanceIfAllowed(id));
       }
     };
-  }, [agentId, widgetHandleId, dispatch, emit]);
+  }, [mandateKey, widgetHandleId, dispatch, emit]);
 
   // ── Persistence collect (ephemeral, but called by WindowPanel) ───────────
   const collectData = useCallback(
     (): Record<string, unknown> => ({
       // callbackGroupId + agent conversation state are deliberately omitted
-      // (they cannot survive a reload). We keep the file shape + agent id so
-      // the row — if it ever becomes non-ephemeral — is self-describing.
-      agentId,
+      // (they cannot survive a reload). We keep the file shape + mandate key
+      // so the row — if it ever becomes non-ephemeral — is self-describing.
+      mandateKey,
       files,
       activeFile: activeTab,
       title: title ?? null,
     }),
-    [agentId, files, activeTab, title],
+    [mandateKey, files, activeTab, title],
   );
 
   // ── Derived editor props ─────────────────────────────────────────────────

@@ -209,9 +209,11 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
       );
       if (!result.ok) {
         toast.error(
-          result.step === "prompt"
-            ? "Image generation failed at the prompt step"
-            : "Image generation failed at the image step",
+          result.step === "mandate"
+            ? `No agent is bound to "${result.mandateKey}"`
+            : result.step === "prompt"
+              ? "Image generation failed at the prompt step"
+              : "Image generation failed at the image step",
           { description: result.message },
         );
         return;

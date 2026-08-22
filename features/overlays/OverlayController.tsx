@@ -4672,7 +4672,9 @@ export default function OverlayController() {
                 ? data.callbackGroupId
                 : null
             }
-            agentId={typeof data?.agentId === "string" ? data.agentId : ""}
+            mandateKey={
+              typeof data?.mandateKey === "string" ? data.mandateKey : ""
+            }
             files={
               (Array.isArray(data?.files) ||
               (typeof data?.files === "object" && data?.files !== null)

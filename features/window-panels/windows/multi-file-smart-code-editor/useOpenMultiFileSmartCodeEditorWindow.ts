@@ -26,8 +26,8 @@ export interface OpenMultiFileSmartCodeEditorWindowOptions extends MultiFileSmar
    */
   windowInstanceId?: string;
 
-  /** Agent UUID to launch. Required. */
-  agentId: string;
+  /** The JOB to launch (`agent.mandate` key) — never an agent id. Required. */
+  mandateKey: string;
   /** Initial file set. */
   files: CodeFile[];
   /** Which file starts active (defaults to `files[0]`). */
@@ -91,7 +91,7 @@ export function useOpenMultiFileSmartCodeEditorWindow() {
 
       const data: Record<string, unknown> = {
         callbackGroupId,
-        agentId: options.agentId,
+        mandateKey: options.mandateKey,
         files: options.files,
         initialActiveFile: options.initialActiveFile ?? null,
         title: options.title ?? null,

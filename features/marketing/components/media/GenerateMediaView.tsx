@@ -188,9 +188,11 @@ export function GenerateMediaView({
       ]);
       if (!result.ok) {
         toast.error(
-          result.step === "prompt"
-            ? "Generation failed at the prompt step"
-            : "Generation failed at the image step",
+          result.step === "mandate"
+            ? `No agent is bound to "${result.mandateKey}"`
+            : result.step === "prompt"
+              ? "Generation failed at the prompt step"
+              : "Generation failed at the image step",
           { description: result.message },
         );
         return;

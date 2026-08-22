@@ -96,6 +96,7 @@ import { selectOwnedAgents } from "@/features/agents/redux/agent-definition/sele
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { resolveMandate } from "@/features/agents/mandates/service";
+import { GENERIC_CODE_EDITOR_AGENT } from "@/features/code-editor/agent-code-editor/agents";
 
 /**
  * Grid-tab buckets. "admin" is gated on `isAdmin`; the rest show for every
@@ -250,11 +251,9 @@ const CODE_EDITOR_DEMO_FILES = [
 const SMART_CODE_EDITOR_STARTER =
   '// Start typing, then ask the agent to refactor.\n\nasync function getUser(id) {\n  const res = await fetch("/api/users/" + id);\n  return res.json();\n}\n';
 
-// Default agent for Smart Code Editor tiles — the legacy "Code Editor"
-// builtin-prompt clone. Seeds `current_code` so the tile is fireable with
-// no extra wiring.
-const SMART_CODE_EDITOR_DEFAULT_AGENT_ID =
-  "55cc4ad1-bafd-4b82-af0b-4b4f40406ca3";
+// Smart Code Editor tiles name the JOB — the `code_editor.code_edit` mandate
+// (`GENERIC_CODE_EDITOR_AGENT`) — never an agent id; the window resolves it at
+// launch so the user's own binding wins.
 
 export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   // ── Voice ──────────────────────────────────────────────────────────────
@@ -336,11 +335,11 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "smartCodeEditorWindow",
     instanceStrategy: "fresh-per-click",
     seedData: () => ({
-      agentId: SMART_CODE_EDITOR_DEFAULT_AGENT_ID,
+      agents: [GENERIC_CODE_EDITOR_AGENT],
+      defaultPickerMandateKey: GENERIC_CODE_EDITOR_AGENT.mandateKey,
       language: "typescript",
       initialCode: SMART_CODE_EDITOR_STARTER,
       title: "Smart Code Editor",
-      variables: { current_code: SMART_CODE_EDITOR_STARTER },
     }),
   },
   {
@@ -351,7 +350,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "multiFileSmartCodeEditorWindow",
     instanceStrategy: "fresh-per-click",
     seedData: () => ({
-      agentId: SMART_CODE_EDITOR_DEFAULT_AGENT_ID,
+      mandateKey: GENERIC_CODE_EDITOR_AGENT.mandateKey,
       title: "Smart Multi-file Editor",
       files: CODE_EDITOR_DEMO_FILES,
     }),
