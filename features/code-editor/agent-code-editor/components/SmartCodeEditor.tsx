@@ -44,7 +44,7 @@ import {
   smartCodeEditorManifest,
 } from "@/features/surfaces/manifests/smart-code-editor.manifest";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandates } from "@/features/agents/mandates/useMandates";
+import { useMandateSet } from "@/features/agents/mandates/useMandateSet";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
@@ -150,18 +150,25 @@ export function SmartCodeEditor({
 
   // ── Mandate resolution (which agent runs each job — the DB decides) ───────
   const mandateKeys = useMemo(() => agents.map((a) => a.mandateKey), [agents]);
-  const {
-    byKey: resolvedMandates,
-    errors: mandateErrors,
-    loading: mandatesLoading,
-  } = useMandates(mandateKeys);
+  const mandateSet = useMandateSet(mandateKeys);
+  const mandatesLoading = mandateKeys.some(
+    (key) => mandateSet[key]?.loading ?? true,
+  );
+  const mandateErrors = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const key of mandateKeys) {
+      const err = mandateSet[key]?.error;
+      if (err) out[key] = err;
+    }
+    return out;
+  }, [mandateKeys, mandateSet]);
   /** Resolved agent ids for the roster — drives history merge only. */
   const rosterAgentIds = useMemo(
     () =>
       agents
-        .map((a) => resolvedMandates[a.mandateKey]?.agentId)
+        .map((a) => mandateSet[a.mandateKey]?.mandate?.agentId)
         .filter((id): id is string => typeof id === "string"),
-    [agents, resolvedMandates],
+    [agents, mandateSet],
   );
 
   // ── Picker state ──────────────────────────────────────────────────────────
@@ -185,10 +192,10 @@ export function SmartCodeEditor({
     if (!activeAgentId) return null;
     return (
       agents.find(
-        (a) => resolvedMandates[a.mandateKey]?.agentId === activeAgentId,
+        (a) => mandateSet[a.mandateKey]?.mandate?.agentId === activeAgentId,
       ) ?? null
     );
-  }, [agents, activeMandateKey, activeAgentId, resolvedMandates]);
+  }, [agents, activeMandateKey, activeAgentId, mandateSet]);
 
   // ── File state (shared CodeEditorWindow hook) ─────────────────────────────
   const isMultiFile = (files?.length ?? 0) > 0;
