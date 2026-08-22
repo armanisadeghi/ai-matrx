@@ -126,6 +126,19 @@ interface CauseCopy {
  * this and the legacy table below.
  */
 const CAUSE_COPY: Record<string, CauseCopy> = {
+  // The server's honest "something inside us broke". NEVER "try again —
+  // these usually clear": an engine defect is deterministic, and telling the
+  // user to retry a deterministic failure is a lie that costs them a second
+  // run and their trust (Arman hit exactly this on 2026-08-21: a KeyError
+  // billed as "most of these clear on a second try" — it never could have).
+  engine_error: {
+    headline: (what, where) =>
+      where
+        ? `Something broke inside “${where}” — a fault in the system, not in what you entered.`
+        : `${what} hit a fault in the system — not in what you entered.`,
+    nextStep:
+      "This one is on us: running it again will most likely stop at the same place. Send us the technical detail below and we'll fix the cause.",
+  },
   missing_input: {
     // Headline is generated per-field by `fieldHeadline` before this is
     // consulted; this fires only when the server had no field name.
