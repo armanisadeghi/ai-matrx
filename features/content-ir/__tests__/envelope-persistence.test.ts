@@ -54,6 +54,7 @@ function makeRequest(overrides: Partial<ActiveRequest>): ActiveRequest {
     parentConversationId: null,
     status: "complete",
     chunkCount: 0,
+    lastTransportSeq: 0,
     editedText: null,
     reasoningChunks: [],
     accumulatedReasoning: "",
