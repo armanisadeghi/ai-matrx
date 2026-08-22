@@ -157,6 +157,7 @@ function renderBlockToContentType(type: string): ContentType | null {
   if (type === "text" || type === "markdown") return "text";
   return null;
 }
+import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
 import {
   fromMediaBlock,
   isMediaBlockData,
@@ -191,8 +192,11 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { patchAgentConversationMetadata } from "@/features/agents/redux/conversation-list/conversation-list.slice";
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
-import { makePartialKindStalenessGate } from "@/features/content-ir/core/partial-kind";
-import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
+import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
+import {
+  makePartialKindStalenessGate,
+  sanitizeInboundPartialKindMetadata,
+} from "@/features/content-ir/core/partial-kind";
 import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
@@ -1549,18 +1553,63 @@ export async function processStream({
         }
       } else if (isRenderBlockEvent(event)) {
         renderBlockEvents++;
-        // Every wire-boundary rule — the `__ir` envelope guard, the
-        // `__ir_partial` guard, the staleness carry-forward and the canonical
-        // image adapter — lives in ONE funnel, because a workflow run's
-        // node_stream transport receives the same server events and must
-        // apply the same rules. Why each rule exists:
-        // `utils/inbound-render-block.ts`. Note these events never feed the
-        // StreamBlockAccumulator (only chunk text does), so no FE shadow
-        // parse region ever opens for them.
-        const { block, sanitized: eventBlock } = prepareInboundRenderBlock(
-          event.data,
-          gatePartialKindStaleness,
+        // content-ir Phase 5: server render_blocks may arrive with a
+        // pre-built CanonicalBlockIR on metadata.__ir (engine
+        // "py-block-detector" — see features/content-ir/docs/
+        // PYTHON_ENVELOPE_CONTRACT.md). A VALID envelope flows into Redux
+        // UNTOUCHED (same metadata reference — the idempotence law; the
+        // guard also seeds it so any later re-split reuses instead of
+        // parsing). A malformed __ir is stripped LOUDLY (captureError) so it
+        // can never poison kind routing or the persistence cache. Note these
+        // events never feed the StreamBlockAccumulator (only chunk text
+        // does), so no FE shadow parse region ever opens for them.
+        // The partial channel (metadata.__ir_partial) is gated at the SAME
+        // wire boundary and for the same reason: a malformed server event is
+        // stripped here, loudly, instead of being carried into Redux for every
+        // later reader to re-decide. The two channels never touch — __ir means
+        // "validated against the registered schema" and is seeded into the
+        // envelope memo; a partial is provisional by definition and is seeded
+        // nowhere. Contract: common-docs/systems/content-ir-system/
+        // STREAMING_PARTIAL_KINDS.md.
+        const sanitizedMetadata = sanitizeInboundPartialKindMetadata(
+          sanitizeInboundEnvelopeMetadata(event.data.metadata, {
+            blockId: event.data.blockId,
+          }),
+          { blockId: event.data.blockId },
+          {
+            reportMalformed: ({ blockId, raw }) => {
+              captureError({
+                source: "content-ir",
+                message: `render_block "${blockId}" carried a malformed metadata.__ir_partial event — dropped before Redux so it can never drive a provisional render`,
+                relation: "partial-kind",
+                raw,
+              });
+            },
+          },
         );
+        const gatedMetadata = gatePartialKindStaleness(
+          event.data.blockId,
+          sanitizedMetadata,
+        );
+        const eventBlock =
+          gatedMetadata === event.data.metadata
+            ? event.data
+            : { ...event.data, metadata: gatedMetadata };
+
+        // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
+        // canonical UnifiedImageBlock adapter so the rest of the system sees
+        // the same shape as data-event image_output blocks. The adapter takes
+        // the loose `RenderBlockPayload` directly and validates internally —
+        // no force-cast to `ImageRenderBlock` needed.
+        let block = eventBlock;
+        if (block.type === "image") {
+          const unified = fromRenderBlock(block);
+          block = {
+            ...block,
+            type: "image_output",
+            data: unified as unknown as Record<string, unknown>,
+          };
+        }
 
         // ── Render-time capability guard (warn-only, Step 3d) ──
         // Surfaces data bugs: a model that claims it doesn't produce
