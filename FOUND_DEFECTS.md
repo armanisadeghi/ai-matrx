@@ -15,6 +15,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D249 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
+
+**Measured live 2026-08-22** as the real non-admin `test@test.com` (owns 3 files), under `SET LOCAL ROLE authenticated` + `request.jwt.claims`, with `statement_timeout = 25s`:
+
+| query | time |
+|---|---|
+| `select id, file_name from files.files where created_by = auth.uid() limit 3` | **TIMED OUT at 25s** |
+| `select id from runtime.global_request where created_by = auth.uid() limit 3` (81k rows) | 18.8s |
+| `select id from chat.conversation where created_by = auth.uid() limit 3` (17.8k rows) | 2.1s |
+| `select id, file_id, version_number from files.file_versions limit 3` | 7.5s |
+
+**Not caused by, and not specific to, `files.files`.** It is the shape `iam.apply_rls` emits for EVERY `entity`:
+
+```sql
+std_select USING (created_by = (select auth.uid()) OR iam.has_access('<token>', id, 'viewer'))
+```
+
+`iam.has_access` is a `SECURITY DEFINER` function and is not `LEAKPROOF`, so Postgres must apply the RLS qual before the user's own `WHERE`; the `OR` means no index can serve it, and the planner falls back to a sequential scan calling `has_access` **once per row**. That is the D146 per-row-definer class — already recognised for the `ledger` variant (whose `std_select` was rewritten to a set-wise uncorrelated subquery for exactly this reason, `aidream/db/migrations/0439`) — but the `entity` lane still has it, on the biggest tables the platform owns.
+
+**Why it matters more than a slow query:** `files.files` is the user's file list. A first-party user cannot enumerate their own files inside a normal request timeout. Under db-rules §6a that is as serious as a leak — *"a legitimate user blocked from their own data is as serious a bug as a stranger let in"*.
+
+**Found in passing** while re-locking `storage_uri` on the same table (D231). Confirmed pre-existing and NOT caused by that work: the policy text is byte-identical to what `apply_rls` emits, the table already carried exactly the generator's six policies before it ran, and `runtime.global_request` — untouched — shows the same behaviour at the same shape.
+
+**The fix is a generator change, not a per-table one**, so it is filed rather than patched: the `entity` `std_select` needs the same treatment the `ledger` lane got — an owner arm that can index-scan, plus a set-wise arm that resolves once per query rather than once per row (`iam.accessible_entity_ids`-shaped, the way the `component` lane already does it). That is a change to every entity table's read policy on the platform and needs its own measurement + adjudication. **Do not "fix" it by widening a policy.**
+
 ### D213 — `edu_coppa_gate` is called before auth resolves and 42501s for anon (2026-08-22)
 
 Console on every `(core)` education page load before the session hydrates: `[study] coppa.getGate: permission denied for function edu_coppa_gate (42501)`. The RPC is granted `authenticated` + `service_role` only (correct — `edu_coppa_gate_for` is service-role-only by design), but the client gate fires while the page is still anon, so the first call is a guaranteed permission error that reads like a real failure. Either grant `anon` EXECUTE on the zero-arg `edu_coppa_gate` (it already returns a verdict for an anonymous session — STATE §3 says anon-with-no-band is refused by policy, not by grant) or have the client wait for `userId` before the first gate call. Seen during WP6's live assignment-loop walk; child-safety lane owns the call.
