@@ -27,6 +27,10 @@ async function isDatasetNameTaken(
     .select("id")
     .eq("user_id", userId)
     .eq("table_name", name)
+    // Must mirror udt_datasets_user_id_table_name_live_uniq exactly (migration
+    // 0455): a trashed dataset does not reserve its name, so probing without
+    // this would refuse names that are actually free.
+    .is("deleted_at", null)
     .maybeSingle();
   return !!data;
 }

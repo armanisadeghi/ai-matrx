@@ -32,6 +32,7 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
         .from("udt_datasets")
         .select("description, created_at")
         .eq("id", id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (!cancelled) {
         setRow((data as DatasetRow) ?? null);

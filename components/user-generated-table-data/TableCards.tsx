@@ -315,7 +315,7 @@ export default function TableCards() {
       toast({
         title: "Table deleted",
         // access-errors: ok — success confirmation after the delete_user_table RPC returned without error; the deletion was performed here, not inferred from an empty read
-        description: `"${tableToDelete.table_name}" has been deleted successfully`,
+        description: `"${tableToDelete.table_name}" was moved to the trash`,
       });
     } catch (err) {
       console.error("Error deleting table:", err);
@@ -850,8 +850,8 @@ export default function TableCards() {
               <span className="font-medium text-gray-900 dark:text-gray-200">
                 {tableToDelete?.table_name}
               </span>
-              ? This action cannot be undone and will permanently delete all
-              data in this table.
+              ? It will be moved to the trash — its rows and columns are kept,
+              and the name becomes free to reuse.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

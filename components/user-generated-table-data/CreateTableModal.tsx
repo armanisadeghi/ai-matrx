@@ -76,6 +76,9 @@ export default function CreateTableModal({
         .select("id")
         .eq("table_name", name)
         .eq("user_id", userId)
+        // Mirrors udt_datasets_user_id_table_name_live_uniq (migration 0455) —
+        // a trashed dataset no longer reserves its name.
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (data) {

@@ -16,6 +16,7 @@ const fetchOwned = async (orgId: string) => {
     .from("udt_datasets")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   return (res.data ?? []) as Array<Record<string, unknown>>;
 };

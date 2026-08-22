@@ -77,6 +77,7 @@ async function getResourceDetails(
           .from("udt_datasets")
           .select("table_name")
           .eq("id", resourceId)
+          .is("deleted_at", null)
           .single();
 
         return data

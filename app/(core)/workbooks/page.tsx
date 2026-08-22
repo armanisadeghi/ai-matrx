@@ -29,6 +29,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import {
   createWorkbook,
   deleteWorkbook,
+  discardFailedWorkbook,
   listAccessibleWorkbooks,
   saveSnapshot,
 } from "@/features/data-tables/workbook-service";
@@ -189,8 +190,10 @@ export default function WorkbooksLandingPage() {
         });
         if (isServiceFailure(saved)) {
           // Roll back the workbook so we don't leave an empty husk on import
-          // failure. Best-effort.
-          await deleteWorkbook(created.data.id);
+          // failure. Best-effort, and a HARD delete on purpose: this row was
+          // created seconds ago by this same flow and never reached the user, so
+          // tombstoning it would leave invisible litter instead of cleaning up.
+          await discardFailedWorkbook(created.data.id);
           throw new Error(saved.error);
         }
 
@@ -284,7 +287,7 @@ export default function WorkbooksLandingPage() {
     async (wb: Workbook) => {
       const ok = await confirm({
         title: "Delete workbook?",
-        description: `"${wb.workbook_name}" and all of its saved snapshots will be permanently removed.`,
+        description: `"${wb.workbook_name}" and all of its saved snapshots will be moved to the trash.`,
         confirmLabel: "Delete",
         variant: "destructive",
       });

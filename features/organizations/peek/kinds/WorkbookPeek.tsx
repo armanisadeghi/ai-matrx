@@ -32,6 +32,7 @@ export default function WorkbookPeek({ id, open, onClose }: PeekProps) {
         .from("udt_workbooks")
         .select("description, created_at")
         .eq("id", id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (!cancelled) {
         setRow((data as WorkbookRow) ?? null);

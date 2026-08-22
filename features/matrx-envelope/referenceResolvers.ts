@@ -225,6 +225,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .from("udt_datasets")
         .select("table_name, description")
         .eq("id", ref.table_id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (error || !data) return undefined;
       const row = data as {
@@ -623,6 +624,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .from("udt_workbooks")
         .select("workbook_name")
         .eq("id", ref.workbook_id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (error || !data) return hint;
       const wbName = stringify(

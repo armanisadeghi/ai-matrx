@@ -104,6 +104,7 @@ export async function listAccessibleWorkbooks(): Promise<
     .schema("workbench")
     .from("udt_workbooks")
     .select("*")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) return { success: false, error: error.message };
   return { success: true, data: (data ?? []) as Workbook[] };
@@ -117,6 +118,7 @@ export async function getWorkbook(
     .from("udt_workbooks")
     .select("*")
     .eq("id", workbookId)
+    .is("deleted_at", null)
     .single();
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as Workbook };
@@ -165,13 +167,48 @@ export async function updateWorkbookDescription(
   return { success: true, data: data as Workbook };
 }
 
+/**
+ * Soft delete — the workbook is tombstoned, not destroyed, and its snapshots stay
+ * with it. Every read path filters `deleted_at is null`. Pair with
+ * restoreWorkbook for undo.
+ */
 export async function deleteWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<true>> {
   const { error } = await supabase
     .schema("workbench")
     .from("udt_workbooks")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", workbookId);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: true };
+}
+
+/**
+ * HARD delete — only for rolling back a workbook this very flow just created and
+ * failed to populate (see the import path in app/(core)/workbooks/page.tsx).
+ * Never use this for a user-initiated delete: that is deleteWorkbook, which
+ * tombstones and stays recoverable.
+ */
+export async function discardFailedWorkbook(
+  workbookId: string,
+): Promise<ServiceResult<true>> {
+  const { error } = await supabase
+    .schema("workbench")
+    .from("udt_workbooks")
     .delete()
+    .eq("id", workbookId);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: true };
+}
+
+export async function restoreWorkbook(
+  workbookId: string,
+): Promise<ServiceResult<true>> {
+  const { error } = await supabase
+    .schema("workbench")
+    .from("udt_workbooks")
+    .update({ deleted_at: null })
     .eq("id", workbookId);
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
