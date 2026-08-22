@@ -1,6 +1,6 @@
 ---
-status: blocked
-updated: 2026-08-15
+status: active
+updated: 2026-08-21
 repos: [matrx-frontend]
 vision: [/Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md]
 ---
@@ -95,7 +95,19 @@ rows (each page resolves its file, then that file's folder) at ~0.55 ms each.
 `platform.entity_row_access_attrs` (~1.35 s) plus the parent-FK `execute
 format(...)` in the containment loop (~0.9 s).
 
-## Decisions needed
+## Decisions — RULED by Arman, 2026-08-21 (in chat, this session)
+
+**Q1 (merge row-attribute read with parent-FK fetch): APPROVED — option (a).**
+Merge, and let latent registry drift surface as real errors.
+**Q2 (parallel-safe kernel): APPROVED to pursue.** Arman's words: "I definitely
+think we need to push to do whatever we can do to speed things up because right
+now, it is incredibly slow." The equivalence bar below still applies in full.
+**Context for whoever executes:** Arman reports SYSTEM-WIDE sluggishness since
+the database + server move (chat side panel, marketing surfaces "almost
+unbearable") and wants MEASUREMENTS. Do not assume this handoff's scan is the
+cause — measure first; this doc's scope is the kernel, not the whole regression.
+
+## Decisions needed (original framing, kept for the executor)
 
 **1. Merge the row-attribute read with the parent-FK fetch?**
 
