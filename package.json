@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.1042",
+  "version": "0.4.1043",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -242,6 +242,7 @@
     "@emotion/is-prop-valid": "^1.4.0",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
+    "@ai-matrx/agents": "0.1.0",
     "@matrx/agents": "workspace:*",
     "@mermaid-js/layout-elk": "^0.2.2",
     "@modelcontextprotocol/sdk": "1.29.0",
