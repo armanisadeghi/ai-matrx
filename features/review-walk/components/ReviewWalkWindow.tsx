@@ -26,9 +26,10 @@ import {
   ChevronRight,
   ChevronsDown,
   ChevronsUp,
-  Crosshair,
   ExternalLink,
+  Flag,
   Loader2,
+  X,
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -58,6 +59,8 @@ import {
   TurnDiagnosisView,
   type ExpandBaseline,
   type ExpandState,
+  type FlagEntry,
+  type FlagsApi,
 } from "./TurnDiagnosis";
 
 export interface ReviewWalkWindowProps {
@@ -94,6 +97,8 @@ interface FilingState {
   /** Hop answer recorded for the CURRENT layer when filing opened. */
   currentLayerAnswer: "inputs_fine" | "input_wrong";
   currentLayerNote: string | null;
+  /** Human labels of everything flagged — shown in the report form. */
+  flaggedLabels: string[];
 }
 
 export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
@@ -114,7 +119,6 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   const [title, setTitle] = useState("");
   const [reasoning, setReasoning] = useState("");
   const [lever, setLever] = useState<WalkLever | "">("");
-  const [filingNote, setFilingNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<FindingFromWalkOut | null>(null);
 
@@ -218,6 +222,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     setHops([]);
     setFiling(null);
     setReceipt(null);
+    setFlagged({});
     setOverrides({});
     setBaseline("default");
     setActiveRootId(turn.rootAssistantMessageId);
@@ -229,49 +234,91 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     setLayers((prev) => prev.slice(0, index + 1));
     setHops((prev) => prev.slice(0, index));
     setFiling(null);
+    setFlagged({});
   };
 
-  const handleInputWrong = (input: DescendInput, note: string | null) => {
+  // ── flags — any number of items marked wrong, on the CURRENT layer ──────
+  const [flagged, setFlagged] = useState<Record<string, FlagEntry>>({});
+  const toggleFlag = useCallback((entry: FlagEntry) => {
+    setFlagged((prev) => {
+      if (prev[entry.id]) {
+        const next = { ...prev };
+        delete next[entry.id];
+        return next;
+      }
+      return { ...prev, [entry.id]: entry };
+    });
+  }, []);
+  const flags: FlagsApi = { flagged, toggle: toggleFlag };
+  const flagEntries = Object.values(flagged);
+  const flaggedSummary =
+    flagEntries.length > 0
+      ? `Flagged: ${flagEntries.map((e) => e.label).join(" · ")}`
+      : null;
+
+  /** Descend into one item's producer. Flags belong to the layer being left —
+   * their summary rides along as the hop note, then the new layer starts
+   * clean. Any kind the SERVER declares descendable is descendable here (the
+   * ref's type is the server's own `UnitKind`); re-listing kinds locally is
+   * how a walk silently stops one hop short the day a new one lands. */
+  const handleTrace = (input: DescendInput) => {
     if (!current || current.status !== "loaded" || !current.out) return;
-    const snapshotId = current.out.producer?.snapshot_id ?? null;
     const ref = input.producer.descend_ref;
-    // Any kind the SERVER declares descendable is descendable here — the ref's
-    // type is the server's own `UnitKind`. Re-listing the kinds locally is how
-    // a walk silently stops one hop short the day a new one lands (it did:
-    // workflow steps were unreachable for a day after the server served them).
-    if (ref?.unit_kind) {
-      // Record the answer at this layer, then descend into the producer.
-      setHops((prev) => [
-        ...prev,
-        {
-          unitKind: current.unitKind,
-          unitId: current.unitId,
-          answer: "input_wrong",
-          note,
-          snapshotId,
-        },
-      ]);
-      void loadLayer(ref.unit_kind, ref.unit_id, layers.length);
-      return;
-    }
-    // No descent path — the fault stops AT this input's producer. File here.
-    setFiling({
-      faultUnitKind: input.producer.kind,
-      faultUnitId: input.producer.id ?? current.unitId,
-      currentLayerAnswer: "input_wrong",
-      currentLayerNote: note,
-    });
-    if (input.producer.kind === "tool_call" && lever === "") setLever("tools");
+    if (!ref?.unit_kind) return;
+    const snapshotId = current.out.producer?.snapshot_id ?? null;
+    setHops((prev) => [
+      ...prev,
+      {
+        unitKind: current.unitKind,
+        unitId: current.unitId,
+        answer: "input_wrong",
+        note: flaggedSummary,
+        snapshotId,
+      },
+    ]);
+    setFlagged({});
+    void loadLayer(ref.unit_kind, ref.unit_id, layers.length);
   };
 
-  const handleFaultHere = () => {
+  /** Open the report form. The fault location falls out of what's flagged:
+   * exactly one flagged recorded input with a producer id → pin the fault on
+   * that producer; anything else (none, several, or agent-side parts) → the
+   * fault sits on the unit being inspected. */
+  const openReport = () => {
     if (!current || current.status !== "loaded") return;
-    setFiling({
-      faultUnitKind: current.unitKind,
-      faultUnitId: current.unitId,
-      currentLayerAnswer: "inputs_fine",
-      currentLayerNote: null,
-    });
+    const inputEntries = flagEntries.filter((e) => e.input);
+    if (
+      flagEntries.length === 1 &&
+      inputEntries.length === 1 &&
+      inputEntries[0].input?.producer.id
+    ) {
+      const input = inputEntries[0].input;
+      setFiling({
+        faultUnitKind: input.producer.kind,
+        faultUnitId: input.producer.id ?? current.unitId,
+        currentLayerAnswer: "input_wrong",
+        currentLayerNote: flaggedSummary,
+        flaggedLabels: flagEntries.map((e) => e.label),
+      });
+    } else {
+      setFiling({
+        faultUnitKind: current.unitKind,
+        faultUnitId: current.unitId,
+        currentLayerAnswer: inputEntries.length > 0 ? "input_wrong" : "inputs_fine",
+        currentLayerNote: flaggedSummary,
+        flaggedLabels: flagEntries.map((e) => e.label),
+      });
+    }
+    if (lever === "") {
+      const keys = inputEntries.map((e) => e.input?.key ?? "");
+      if (
+        keys.some((k) => k.startsWith("tool_result:")) ||
+        inputEntries.some((e) => e.input?.producer.kind === "tool_call")
+      ) {
+        setLever("tools");
+      } else if (keys.includes("system_prompt")) setLever("instructions");
+      else if (keys.some((k) => k.startsWith("context:"))) setLever("resources");
+    }
   };
 
   const handleSubmitFinding = async () => {
@@ -290,9 +337,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
           unitKind: current.unitKind,
           unitId: current.unitId,
           answer: filing.currentLayerAnswer,
-          note:
-            filing.currentLayerNote ??
-            (filingNote.trim() ? filingNote.trim() : null),
+          note: filing.currentLayerNote,
           snapshotId,
         },
       ];
@@ -533,7 +578,8 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                   expand={expand}
                   onToggle={handleToggle}
                   disabled={submitting || filing !== null}
-                  onInputWrong={handleInputWrong}
+                  flags={flags}
+                  onTrace={handleTrace}
                 />
               ) : (
                 <GroupedInputsView
@@ -542,11 +588,12 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                   expand={expand}
                   onToggle={handleToggle}
                   disabled={submitting || filing !== null}
-                  onInputWrong={handleInputWrong}
+                  flags={flags}
+                  onTrace={handleTrace}
                 />
               )}
 
-              {filing ? (
+              {filing && (
                 <FilingPanel
                   filing={filing}
                   title={title}
@@ -555,32 +602,49 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                   setReasoning={setReasoning}
                   lever={lever}
                   setLever={setLever}
-                  filingNote={filingNote}
-                  setFilingNote={setFilingNote}
                   submitting={submitting}
                   onSubmit={handleSubmitFinding}
                   onCancel={() => setFiling(null)}
                 />
-              ) : (
-                <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row">
-                  <Button
-                    type="button"
-                    className="h-10 w-full gap-1.5 rounded-full sm:w-auto"
-                    onClick={handleFaultHere}
-                  >
-                    <Crosshair className="h-4 w-4" aria-hidden />
-                    These inputs are fine — the fault is HERE
-                  </Button>
-                  <div className="self-center text-[11px] text-muted-foreground">
-                    …or mark the wrong item above to trace where it came from.
-                  </div>
-                </div>
               )}
 
               <TechnicalDetails out={current.out} />
             </div>
           ) : null}
         </div>
+
+        {/* ── the ONE action bar — always visible, never a paragraph ────── */}
+        {!receipt && !filing && current?.status === "loaded" && (
+          <div className="flex items-center gap-2 border-t border-border px-3 py-2">
+            {flagEntries.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setFlagged({})}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                title="Clear all flags"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                {flagEntries.length} flagged
+              </button>
+            ) : (
+              <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+                Flag anything that looks wrong — as many items as apply.
+              </span>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              className="ml-auto h-8 shrink-0 gap-1.5 rounded-full px-4 text-xs"
+              disabled={submitting}
+              onClick={openReport}
+            >
+              <Flag className="h-3.5 w-3.5" aria-hidden />
+              {flagEntries.length > 0
+                ? `Report ${flagEntries.length} flagged item${flagEntries.length === 1 ? "" : "s"}`
+                : "Report a problem"}
+            </Button>
+          </div>
+        )}
       </div>
     </WindowPanel>
   );
@@ -764,8 +828,6 @@ function FilingPanel({
   setReasoning,
   lever,
   setLever,
-  filingNote,
-  setFilingNote,
   submitting,
   onSubmit,
   onCancel,
@@ -777,8 +839,6 @@ function FilingPanel({
   setReasoning: (v: string) => void;
   lever: WalkLever | "";
   setLever: (v: WalkLever | "") => void;
-  filingNote: string;
-  setFilingNote: (v: string) => void;
   submitting: boolean;
   onSubmit: () => void;
   onCancel: () => void;
@@ -786,27 +846,38 @@ function FilingPanel({
   return (
     <div className="space-y-3 rounded-md border border-primary/40 bg-card p-3">
       <div className="text-sm font-semibold text-foreground">
-        File the finding —{" "}
-        {filing.currentLayerAnswer === "inputs_fine"
-          ? "the fault is at this layer"
-          : `the fault is in a ${filing.faultUnitKind.replace(/_/g, " ")} this layer received`}
+        Report the problem
       </div>
+      {filing.flaggedLabels.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground">You flagged:</span>
+          {filing.flaggedLabels.map((label, i) => (
+            <span
+              key={`${label}-${i}`}
+              className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/5 px-2 py-0.5 text-[11px] text-amber-800 dark:text-amber-200"
+            >
+              <Flag className="h-3 w-3" aria-hidden />
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
       <label className="block">
         <span className="text-xs font-medium text-muted-foreground">
-          What went wrong? (title, required)
+          What went wrong? (required)
         </span>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={300}
-          placeholder="e.g. Answer cites a document the user never attached"
+          placeholder="e.g. The answer cites a document I never attached"
           className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-base text-foreground placeholder:text-muted-foreground"
           style={{ fontSize: "16px" }}
         />
       </label>
       <label className="block">
         <span className="text-xs font-medium text-muted-foreground">
-          Why do you think so? (optional)
+          Anything else worth knowing? (optional)
         </span>
         <textarea
           value={reasoning}
@@ -816,19 +887,6 @@ function FilingPanel({
           style={{ fontSize: "16px" }}
         />
       </label>
-      {filing.currentLayerAnswer === "inputs_fine" && (
-        <label className="block">
-          <span className="text-xs font-medium text-muted-foreground">
-            Note on this layer (optional)
-          </span>
-          <input
-            value={filingNote}
-            onChange={(e) => setFilingNote(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-base text-foreground placeholder:text-muted-foreground"
-            style={{ fontSize: "16px" }}
-          />
-        </label>
-      )}
       <div>
         <span className="text-xs font-medium text-muted-foreground">
           Which lever should the fix pull? (optional — the system picks when
@@ -866,7 +924,7 @@ function FilingPanel({
           ) : (
             <CheckCircle2 className="h-4 w-4" aria-hidden />
           )}
-          File the finding
+          Send report
         </Button>
         <Button
           type="button"
@@ -875,7 +933,7 @@ function FilingPanel({
           disabled={submitting}
           onClick={onCancel}
         >
-          Keep walking
+          Cancel
         </Button>
       </div>
     </div>
