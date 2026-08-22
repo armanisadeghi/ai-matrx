@@ -23,10 +23,7 @@ import type { CloudFilesState } from "@/features/files/types";
 type StateWithCloudFiles = { cloudFiles: CloudFilesState };
 type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
-import {
-  filesDb,
-  FILE_VERSIONS_TABLE_COLUMNS,
-} from "@/features/files/filesDb";
+import { filesDb, FILE_VERSIONS_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 import * as Files from "@/features/files/api/files";
@@ -148,223 +145,251 @@ const TREE_PAGE_SIZE = 5000;
 // 20 * 5000 = 100,000 rows, well above any realistic user.
 const TREE_MAX_PAGES = 20;
 
+/**
+ * Shared promise for an in-progress full-tree load, so concurrent mounts
+ * collapse onto one `get_user_file_tree` RPC. Session-local, not Redux state.
+ */
+let _treeInFlight: Promise<void> | null = null;
+let _treeInFlightUserId: string | null = null;
+
 export const loadUserFileTree = createAsyncThunk<
   void,
   { userId: string },
   ThunkApi
 >("cloudFiles/loadUserFileTree", async ({ userId }, { dispatch, getState }) => {
-  dispatch(setTreeStatus({ status: "loading" }));
+  // In-flight dedupe. Several surfaces hydrate the tree on mount
+  // (CloudFilesRealtimeProvider + every useCloudTree consumer), and their
+  // effects all run in the same commit, so a status check in the component
+  // can't see a sibling's fetch. Sharing the promise collapses them to one
+  // RPC while keeping `.unwrap()` working for every caller (unlike a
+  // `condition` guard, which rejects the losers).
+  if (_treeInFlight && _treeInFlightUserId === userId) return _treeInFlight;
 
-  // RPC contract (migration 014, 2026-05-17): identity-locked to
-  // `auth.uid()`, returns owner OR explicit-grant rows only (no public
-  // leak), excludes `parent_file_id IS NOT NULL` + `system-files/%`
-  // paths. So we can consume the response raw — no FE-side ownership
-  // or system-path filtering needed. See from_python/UPDATES.md §9
-  // (2026-05-17 "Phase 1d.5" entry).
-  //
-  // Pagination: server caps p_limit at 5000. We loop on `p_offset`
-  // until a partial page comes back. Sequential pages — Postgres
-  // handles them fast and parallelism would just contend for the
-  // same connection.
-  const rows: ReturnType<typeof parseCloudTreeRows> = [];
-  for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
-    const { data, error } = await supabase.rpc("get_user_file_tree", {
-      p_user_id: userId,
-      p_limit: TREE_PAGE_SIZE,
-      p_offset: page * TREE_PAGE_SIZE,
-      p_include_folders: true,
-      p_include_deleted: false,
-    });
+  const run = (async () => {
+    dispatch(setTreeStatus({ status: "loading" }));
 
-    if (error) {
-      dispatch(setTreeStatus({ status: "error", error: error.message }));
-      throw error;
-    }
-
-    const pageRows = parseCloudTreeRows(data);
-    rows.push(...pageRows);
-    if (pageRows.length < TREE_PAGE_SIZE) break;
-  }
-
-  // Every field pushed below is always set from the non-optional
-  // `CloudTreeRow` columns — narrowed here so the tree-spine reconstruction
-  // (below) doesn't need a non-null assertion on `f.id` or a nullish-default
-  // fallback on `f.ownerId`, which would otherwise silently paper over a
-  // real parse gap.
-  type PartialCloudFileWithId = Partial<CloudFile> &
-    Pick<
-      CloudFile,
-      | "id"
-      | "ownerId"
-      | "filePath"
-      | "fileName"
-      | "visibility"
-      | "currentVersion"
-      | "createdAt"
-      | "updatedAt"
-      | "deletedAt"
-    >;
-  type PartialCloudFolderWithId = Partial<CloudFolder> &
-    Pick<
-      CloudFolder,
-      | "id"
-      | "ownerId"
-      | "folderPath"
-      | "folderName"
-      | "visibility"
-      | "createdAt"
-      | "updatedAt"
-      | "deletedAt"
-    >;
-  const files: PartialCloudFileWithId[] = [];
-  const folders: PartialCloudFolderWithId[] = [];
-  for (const row of rows) {
-    if (row.kind === "file") {
-      if (isHiddenFromUserTree(row.file_path)) continue;
-      files.push({
-        id: row.id,
-        ownerId: row.owner_id,
-        filePath: row.file_path,
-        fileName: row.file_name,
-        parentFolderId: row.parent_folder_id,
-        mimeType: row.mime_type,
-        // Phase 0 rename: `file_size` → `size_bytes`. The
-        // `CloudTreeFileRow` shape and Supabase row both carry the new
-        // name now. See docs/PYTHON_UPDATES.md §3.
-        fileSize: row.size_bytes,
-        visibility: row.visibility,
-        currentVersion: row.current_version,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        deletedAt: row.deleted_at,
+    // RPC contract (migration 014, 2026-05-17): identity-locked to
+    // `auth.uid()`, returns owner OR explicit-grant rows only (no public
+    // leak), excludes `parent_file_id IS NOT NULL` + `system-files/%`
+    // paths. So we can consume the response raw — no FE-side ownership
+    // or system-path filtering needed. See from_python/UPDATES.md §9
+    // (2026-05-17 "Phase 1d.5" entry).
+    //
+    // Pagination: server caps p_limit at 5000. We loop on `p_offset`
+    // until a partial page comes back. Sequential pages — Postgres
+    // handles them fast and parallelism would just contend for the
+    // same connection.
+    const rows: ReturnType<typeof parseCloudTreeRows> = [];
+    for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
+      const { data, error } = await supabase.rpc("get_user_file_tree", {
+        p_user_id: userId,
+        p_limit: TREE_PAGE_SIZE,
+        p_offset: page * TREE_PAGE_SIZE,
+        p_include_folders: true,
+        p_include_deleted: false,
       });
-    } else {
-      if (isHiddenFromUserTree(row.folder_path)) continue;
-      folders.push({
-        id: row.id,
-        ownerId: row.owner_id,
-        folderPath: row.folder_path,
-        folderName: row.folder_name,
-        parentId: row.parent_id,
-        visibility: row.visibility,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        deletedAt: row.deleted_at,
-      });
-    }
-  }
 
-  dispatch(upsertFiles(files));
-  dispatch(upsertFolders(folders));
+      if (error) {
+        dispatch(setTreeStatus({ status: "error", error: error.message }));
+        throw error;
+      }
 
-  // Drop side-product rows that were hydrated before the hide predicate
-  // existed (FastFire captures, system paths that slipped via realtime).
-  const prior = getState().cloudFiles;
-  for (const [id, rec] of Object.entries(prior.filesById)) {
-    if (rec && isHiddenFromUserTree(rec.filePath)) {
-      dispatch(removeFile({ id }));
+      const pageRows = parseCloudTreeRows(data);
+      rows.push(...pageRows);
+      if (pageRows.length < TREE_PAGE_SIZE) break;
     }
-  }
-  for (const [id, rec] of Object.entries(prior.foldersById)) {
-    if (
-      rec &&
-      rec.source.kind === "real" &&
-      isHiddenFromUserTree(rec.folderPath)
-    ) {
-      dispatch(removeFolder({ id }));
-    }
-  }
 
-  // Build tree spine directly from the just-parsed rows.
-  // the normalized slice back out, and avoids any race with batched dispatch.
-  const fileIds = files.map((f) => f.id).filter(Boolean);
-  const folderIds = folders.map((f) => f.id).filter(Boolean);
-  const tree = buildTreeState({
-    fileIds,
-    folderIds,
-    filesById: Object.fromEntries(
-      files.map((f) => [
-        f.id,
-        {
-          id: f.id,
-          ownerId: f.ownerId,
-          filePath: f.filePath,
-          fileName: f.fileName,
-          mimeType: f.mimeType ?? null,
-          fileSize: f.fileSize ?? null,
-          checksum: null,
-          visibility: f.visibility,
-          currentVersion: f.currentVersion,
-          parentFolderId: f.parentFolderId ?? null,
-          metadata: {},
-          createdAt: f.createdAt,
-          updatedAt: f.updatedAt,
-          deletedAt: f.deletedAt,
-          // Tree-spine reconstruction is internal — the computed URL fields
-          // and the Phase-1b backend thumbnail_url are only populated when
-          // records arrive via the REST API. Default all to null here; the
-          // file grid (`MediaThumbnail`) falls through to `useFileAsset` →
-          // `Asset.variants["thumbnail_url"]` when these are absent.
-          publicUrl: null,
-          url: null,
-          cdnUrl: null,
-          signedUrl: null,
-          downloadUrl: null,
-          thumbnailUrl: null,
-          source: { kind: "real" },
-          _dirty: false,
-          _dirtyFields: {},
-          _fieldHistory: {},
-          _loadedFields: {},
-          _loading: false,
-          _error: null,
-          _pendingRequestIds: [],
-        },
-      ]),
-    ),
-    foldersById: Object.fromEntries(
-      folders.map((f) => [
-        f.id,
-        {
-          id: f.id,
-          ownerId: f.ownerId,
-          folderPath: f.folderPath,
-          folderName: f.folderName,
-          parentId: f.parentId ?? null,
-          visibility: f.visibility,
-          metadata: {},
-          createdAt: f.createdAt,
-          updatedAt: f.updatedAt,
-          deletedAt: f.deletedAt,
-          // Tree-spine reconstruction is internal — public_url is only
-          // populated when records arrive via the API. Default to null
-          // here; surfaces that need a CDN URL fetch via useFileSrc.
-          publicUrl: null,
-          source: { kind: "real" },
-          _dirty: false,
-          _dirtyFields: {},
-          _fieldHistory: {},
-          _loadedFields: {},
-          _loading: false,
-          _error: null,
-          _pendingRequestIds: [],
-        },
-      ]),
-    ),
-  });
-  dispatch(
-    replaceTree({
-      rootFolderIds: tree.rootFolderIds,
-      rootFileIds: tree.rootFileIds,
-      childrenByFolderId: tree.childrenByFolderId,
-      // This RPC returns the complete discoverable tree, not one lazy level.
-      // Mark every real folder so navigation never re-downloads up to 100k
-      // rows merely because the user opened a different folder.
-      fullyLoadedFolderIds: Object.fromEntries(
-        folderIds.map((id) => [id, true] as const),
+    // Every field pushed below is always set from the non-optional
+    // `CloudTreeRow` columns — narrowed here so the tree-spine reconstruction
+    // (below) doesn't need a non-null assertion on `f.id` or a nullish-default
+    // fallback on `f.ownerId`, which would otherwise silently paper over a
+    // real parse gap.
+    type PartialCloudFileWithId = Partial<CloudFile> &
+      Pick<
+        CloudFile,
+        | "id"
+        | "ownerId"
+        | "filePath"
+        | "fileName"
+        | "visibility"
+        | "currentVersion"
+        | "createdAt"
+        | "updatedAt"
+        | "deletedAt"
+      >;
+    type PartialCloudFolderWithId = Partial<CloudFolder> &
+      Pick<
+        CloudFolder,
+        | "id"
+        | "ownerId"
+        | "folderPath"
+        | "folderName"
+        | "visibility"
+        | "createdAt"
+        | "updatedAt"
+        | "deletedAt"
+      >;
+    const files: PartialCloudFileWithId[] = [];
+    const folders: PartialCloudFolderWithId[] = [];
+    for (const row of rows) {
+      if (row.kind === "file") {
+        if (isHiddenFromUserTree(row.file_path)) continue;
+        files.push({
+          id: row.id,
+          ownerId: row.owner_id,
+          filePath: row.file_path,
+          fileName: row.file_name,
+          parentFolderId: row.parent_folder_id,
+          mimeType: row.mime_type,
+          // Phase 0 rename: `file_size` → `size_bytes`. The
+          // `CloudTreeFileRow` shape and Supabase row both carry the new
+          // name now. See docs/PYTHON_UPDATES.md §3.
+          fileSize: row.size_bytes,
+          visibility: row.visibility,
+          currentVersion: row.current_version,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deletedAt: row.deleted_at,
+        });
+      } else {
+        if (isHiddenFromUserTree(row.folder_path)) continue;
+        folders.push({
+          id: row.id,
+          ownerId: row.owner_id,
+          folderPath: row.folder_path,
+          folderName: row.folder_name,
+          parentId: row.parent_id,
+          visibility: row.visibility,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deletedAt: row.deleted_at,
+        });
+      }
+    }
+
+    dispatch(upsertFiles(files));
+    dispatch(upsertFolders(folders));
+
+    // Drop side-product rows that were hydrated before the hide predicate
+    // existed (FastFire captures, system paths that slipped via realtime).
+    const prior = getState().cloudFiles;
+    for (const [id, rec] of Object.entries(prior.filesById)) {
+      if (rec && isHiddenFromUserTree(rec.filePath)) {
+        dispatch(removeFile({ id }));
+      }
+    }
+    for (const [id, rec] of Object.entries(prior.foldersById)) {
+      if (
+        rec &&
+        rec.source.kind === "real" &&
+        isHiddenFromUserTree(rec.folderPath)
+      ) {
+        dispatch(removeFolder({ id }));
+      }
+    }
+
+    // Build tree spine directly from the just-parsed rows.
+    // the normalized slice back out, and avoids any race with batched dispatch.
+    const fileIds = files.map((f) => f.id).filter(Boolean);
+    const folderIds = folders.map((f) => f.id).filter(Boolean);
+    const tree = buildTreeState({
+      fileIds,
+      folderIds,
+      filesById: Object.fromEntries(
+        files.map((f) => [
+          f.id,
+          {
+            id: f.id,
+            ownerId: f.ownerId,
+            filePath: f.filePath,
+            fileName: f.fileName,
+            mimeType: f.mimeType ?? null,
+            fileSize: f.fileSize ?? null,
+            checksum: null,
+            visibility: f.visibility,
+            currentVersion: f.currentVersion,
+            parentFolderId: f.parentFolderId ?? null,
+            metadata: {},
+            createdAt: f.createdAt,
+            updatedAt: f.updatedAt,
+            deletedAt: f.deletedAt,
+            // Tree-spine reconstruction is internal — the computed URL fields
+            // and the Phase-1b backend thumbnail_url are only populated when
+            // records arrive via the REST API. Default all to null here; the
+            // file grid (`MediaThumbnail`) falls through to `useFileAsset` →
+            // `Asset.variants["thumbnail_url"]` when these are absent.
+            publicUrl: null,
+            url: null,
+            cdnUrl: null,
+            signedUrl: null,
+            downloadUrl: null,
+            thumbnailUrl: null,
+            source: { kind: "real" },
+            _dirty: false,
+            _dirtyFields: {},
+            _fieldHistory: {},
+            _loadedFields: {},
+            _loading: false,
+            _error: null,
+            _pendingRequestIds: [],
+          },
+        ]),
       ),
-    }),
-  );
+      foldersById: Object.fromEntries(
+        folders.map((f) => [
+          f.id,
+          {
+            id: f.id,
+            ownerId: f.ownerId,
+            folderPath: f.folderPath,
+            folderName: f.folderName,
+            parentId: f.parentId ?? null,
+            visibility: f.visibility,
+            metadata: {},
+            createdAt: f.createdAt,
+            updatedAt: f.updatedAt,
+            deletedAt: f.deletedAt,
+            // Tree-spine reconstruction is internal — public_url is only
+            // populated when records arrive via the API. Default to null
+            // here; surfaces that need a CDN URL fetch via useFileSrc.
+            publicUrl: null,
+            source: { kind: "real" },
+            _dirty: false,
+            _dirtyFields: {},
+            _fieldHistory: {},
+            _loadedFields: {},
+            _loading: false,
+            _error: null,
+            _pendingRequestIds: [],
+          },
+        ]),
+      ),
+    });
+    dispatch(
+      replaceTree({
+        rootFolderIds: tree.rootFolderIds,
+        rootFileIds: tree.rootFileIds,
+        childrenByFolderId: tree.childrenByFolderId,
+        // This RPC returns the complete discoverable tree, not one lazy level.
+        // Mark every real folder so navigation never re-downloads up to 100k
+        // rows merely because the user opened a different folder.
+        fullyLoadedFolderIds: Object.fromEntries(
+          folderIds.map((id) => [id, true] as const),
+        ),
+      }),
+    );
+  })();
+
+  _treeInFlight = run;
+  _treeInFlightUserId = userId;
+  try {
+    await run;
+  } finally {
+    if (_treeInFlight === run) {
+      _treeInFlight = null;
+      _treeInFlightUserId = null;
+    }
+  }
 });
 
 /**
@@ -393,7 +418,8 @@ export const loadFolderContents = createAsyncThunk<
   // one canonical list contract for roots and nested folders alike.
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
-  if (!data.user?.id) throw new Error("Cannot load folder contents without a user");
+  if (!data.user?.id)
+    throw new Error("Cannot load folder contents without a user");
   await dispatch(loadUserFileTree({ userId: data.user.id })).unwrap();
   dispatch(markFolderFullyLoaded({ folderId }));
 });
@@ -460,7 +486,9 @@ export const loadShareLinks = createAsyncThunk<
     const links = await listCanonicalShareLinks(resourceType, resourceId);
     const shareLinks: CloudShareLink[] = links
       .filter((l) => l.isActive)
-      .map((l) => canonicalShareLinkToCloudShareLink(l, resourceType, resourceId));
+      .map((l) =>
+        canonicalShareLinkToCloudShareLink(l, resourceType, resourceId),
+      );
     dispatch(upsertShareLinksForResource({ resourceId, shareLinks }));
   },
 );
@@ -1410,7 +1438,6 @@ function toCloudFilePartial(record: CloudFileRecord): Partial<CloudFile> {
   return domain;
 }
 
-
 /** Folder twin of `toCloudFilePartial` — same frozen-runtime-fields hazard. */
 function toCloudFolderPartial(record: CloudFolderRecord): Partial<CloudFolder> {
   const {
@@ -1640,7 +1667,7 @@ export const restoreVersion = createAsyncThunk<
       // next preview reads the restored version, not the in-memory
       // copy of the version that was active before restore.
       invalidateBlobCache(fileId);
-    invalidateOfficeExtraction(fileId);
+      invalidateOfficeExtraction(fileId);
       // Reload version list to pick up the new synthetic version row.
       await dispatch(loadFileVersions({ fileId })).unwrap();
     } finally {
