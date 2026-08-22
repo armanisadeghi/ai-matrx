@@ -243,6 +243,7 @@
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
     "@ai-matrx/agents": "0.1.0",
+    "@ai-matrx/design-system": "0.1.0",
     "@matrx/agents": "workspace:*",
     "@mermaid-js/layout-elk": "^0.2.2",
     "@modelcontextprotocol/sdk": "1.29.0",

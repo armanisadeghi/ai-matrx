@@ -1,6 +1,7 @@
 /* globals.css */
 
 @import "tailwindcss";
+@source "../node_modules/@ai-matrx/design-system/dist";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
