@@ -30,6 +30,10 @@ export type DrainResult = components["schemas"]["DrainResult"];
 export type ReviewThread = components["schemas"]["ReviewThreadOut"];
 export type ThreadMessage = components["schemas"]["ThreadMessageOut"];
 export type DiscussResult = components["schemas"]["DiscussOut"];
+// What the next review WOULD read; `unsettled_count > 0` is the warning that
+// "Review now" excludes the subject's newest activity (the settle window).
+export type PendingExamples = components["schemas"]["PendingExamplesOut"];
+export type PendingExample = components["schemas"]["PendingExampleOut"];
 
 // Internal Affairs (C-19) — the change-history + effectiveness substrate.
 export type ChangeHistoryRow = components["schemas"]["ChangeHistoryRow"];

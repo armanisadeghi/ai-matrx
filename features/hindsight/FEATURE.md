@@ -210,6 +210,7 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- 2026-08-22 — Review calls may name exact example IDs for an immediate focused review without advancing the automatic watermark; `getPendingExamples` exposes the next automatic window with settled-state evidence so surfaces can warn when recent activity would otherwise be skipped.
 - **2026-08-18** — The product workspace now clears the glass Agent header,
   keeps the reviewer conversation usable at ordinary desktop/tablet widths,
   and moves both secondary rails into named `MobilePanelShell` drawers below
