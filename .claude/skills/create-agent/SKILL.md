@@ -213,6 +213,37 @@ What the Keyword Analysis Master shows, and every agent you create should have:
   `tool_config.auto_tools_disabled = true`, or it pauses forever calling
   `apply_surface_write` instead of returning JSON.
 
+## Rescuing a blob agent — the proven conversion recipe
+
+Many existing agents were built lazily: one or two `digest` / `*_json` variables the call
+site `json.dumps`es a whole dict into — plausible at first glance, awful in practice.
+Converting one is a two-sided operation (agent + call site). This recipe was proven live
+on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
+
+1. **Read the call site FIRST.** The Provision declared beside the mandate already names
+   the granular offer — that IS your variable list. The census of blob sites lives at
+   `aidream/docs/mandates/INPUT_CHANNEL_VIOLATIONS.md`; update the row when you convert.
+2. **Hunt for prompt lies while you're in there.** Blob agents routinely claim inputs
+   they never receive (the Selector's prompt promised "Audition results" no call site
+   sends) and carry enums out of sync with the code's contract. The prompt must describe
+   exactly what arrives; code contracts win on enums and keys.
+3. **Update the agent first, then the call site, in the same session.** New agent + old
+   code fails LOUD (missing required variables, retried next run); new code + old agent
+   fails QUIET (an empty `{{blob}}` and granular values reaching nothing). Loud beats
+   quiet — agent first.
+4. **Pass raw dicts and lists as separate variables at the call site** — the prompt door
+   (`prompt_safe_value`) canonicalizes them, so delete every `json.dumps`. An offered
+   value the agent doesn't consume simply stays offered; unused offers are normal.
+5. **Don't rewrite what's working.** Delivery is often the whole crime while the system
+   prompt is genuinely good (the Coherence Partner's was). Judge each part separately:
+   name, description, variables + help text, system prompt, user message, delivery.
+6. **Test with trapped scenarios, never happy paths**: a recency/ledger block it must
+   honor, a maturity gate, false candidates it must drop, settled memory it must not
+   re-raise, and a case where the honest answer is zero/empty. Tune the prompt from what
+   real runs show (a leaked id, a jargon slip), then re-run to confirm the fix.
+7. **Close the loop**: run the guards (`check_user_input_law.py`) and the owning
+   service's tests, update the register row, and commit agent + code changes together.
+
 ## Anti-patterns — reject on sight
 
 | Anti-pattern | Why it's a defect |
