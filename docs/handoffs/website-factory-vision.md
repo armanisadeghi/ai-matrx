@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-20
+updated: 2026-08-21
 repos: [matrx-frontend, aidream, my-matrx]
 scope: program
 feature: Content Planning
@@ -33,9 +33,14 @@ stated before the run. All four page agents are DATABASE agents behind mandates
 2026-08-20). A human edits any page's words without HTML, and a human revision supersedes the
 agent's.
 
-**What it is NOT yet:** *published* at scale, deep, or specialized. Scale itself HAS run — a
-100-item fill job completed 2026-08-19 and one site carries 25 nodes with steps (19 written,
-21 built) — but **`p7_publish` has fired 3 times ever**, and no single site has gone p1→p7.
+**Publish is PROVEN (2026-08-21):** cosmeticinjectables (`baa61391`) went p1→p7 — 28/29 pages
+bulk-published, URLs verified 200 with full shell on
+`https://www.mymatrx.com/c/cosmeticinjectables-com/…`. The rail's seven steps all RUN now (p1
+runner + p2/p6/p7 arrows), the same eight steps exist at the SITE level
+(`GET /content-plan/sites/{id}/pipeline` → `SitePipelineStrip`), and every real publish is
+shell-inspected (`cms_verify/shell_check.py`). **What it is NOT yet:** deep (p2 is not real
+content research), specialized (no per-page-type builders), or robust at the publish seam —
+see the new defects below.
 
 🚨 **Templates are an OPTION, never a requirement.** Never build a required/opt-out flag; there is
 nothing to opt out of. The standing requirement is the THEME. Canonical ruling and Arman's
@@ -45,13 +50,15 @@ retraction: STATE.md §2.4.
 
 Full detail, with evidence and row counts, in **STATE.md §4.3**. In priority order:
 
-1. **Take one 25-page site all the way through PUBLISH.** Not "prove scale" — scale ran. Fill every
-   node, human review, bulk publish, verify every URL live. Use a throwaway or `cosmeticinjectables`
-   (`baa61391…`), never `iopbm` / `prp-injection-md`.
-2. **Give p1 and p2 a RUNNER.** Both producers already exist and have fired 22 times each
-   (`page_seo_plan.assign_primary_keyword`, `generator.deepen_node`), but `RUNNABLE_STEPS` in
-   `page_pipeline.py` is family/write/review only, so neither is re-runnable from the rail. Then
-   deepen p2 into real content research (extend `features/research/`, don't fork).
+1. **Publish-seam defects from the 2026-08-21 p1→p7 proof** (detail: STATE.md §4.3.1):
+   (a) bulk `/cms-publish` must STREAM — 29 pages exceeds the gateway timeout and the request died
+   mid-loop; (b) 🚨 `live_url` lies for un-activated custom domains — post-publish inspection
+   fetched the client's REAL external site; verify on `/c/{slug}` until activation is proven;
+   (c) content leakage — `/certified-hard-drive-destruction` (All Green) published inside the
+   med-spa plan; (d) one page (`b51cad8d`) unpublished + one published page with no plan link.
+2. **Deepen p2 into real content research** (extend `features/research/`, don't fork). The runner
+   half is DONE — all seven rail steps run (p1 via the step route; p2/p6/p7 arrows via their own
+   producers).
 3. **Specialist builders routed by page type.** Mandate keys are hardcoded constants; `page_type` is
    a payload variable, never a routing key. Needs no pipeline change — DB agents plus a routing
    seam. Decide the seam (per-page-type mandate binding vs a dispatcher agent) before authoring the
