@@ -77,6 +77,7 @@ import {
   type ProfileSuggestion,
 } from "@/features/marketing/local/profile-autofill";
 import { checkGoogleListing } from "@/features/marketing/local/data";
+import { EndowmentAnalysisCard } from "@/features/marketing/local/EndowmentAnalysisCard";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -378,6 +379,11 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
       <OnSiteSchemaCard location={location} />
       <ListingsMatrix organizationId={location.organization_id} location={location} matrix={matrix} />
       <JsonLdCard location={location} />
+      <EndowmentAnalysisCard
+        brandId={location.brand_id}
+        defaultCompany={location.name}
+        defaultIndustry={location.business_type ?? ""}
+      />
     </div>
   );
 }
