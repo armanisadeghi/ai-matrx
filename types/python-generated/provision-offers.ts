@@ -1134,7 +1134,7 @@ export interface ResearchClientReportOutputOffer {
 
 /** Offered shape of provision `scraper.page_analysis` (kind `scraper.page_analysis.offer`). */
 export interface ScraperPageAnalysisOffer {
-  content: string;
+  page_content: string;
 }
 
 /** Offered shape of provision `seo.ai_visibility_analysis` (kind `seo.ai_visibility_analysis.offer`). */
