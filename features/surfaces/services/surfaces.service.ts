@@ -776,6 +776,57 @@ export async function remediateBrokenMapping(args: {
   return body.result;
 }
 
+/** Mirrors `MirrorTable` in manifest-sync.service.ts (server-only module). */
+export type MirrorTable =
+  | "ui_surface_value"
+  | "ui_surface_agent_role"
+  | "ui_surface_write_target"
+  | "ui_surface_client_tool";
+
+/** Stable prefix the server puts on the "row was written recently" refusal. */
+export const RECENT_ROW_REFUSAL_PREFIX = "Recently updated:";
+
+export interface DeleteMirrorRowResult {
+  ok: true;
+  table: MirrorTable;
+  surfaceName: string;
+  name: string;
+  updatedAt: string;
+  /** `ui_surface_agent_pref` rows swept by CASCADE — only ever non-zero for roles. */
+  sweptPrefCount: number;
+}
+
+/**
+ * Delete ONE stale mirror row listed by the drift report. Never a sweep — the
+ * global "delete stale rows" path is `syncManifests({deleteStale:true})` and
+ * stays separate on purpose.
+ *
+ * Unlike `remediateBrokenMapping` above this parses the `{error}` envelope
+ * rather than surfacing `res.text()` raw: the caller has to READ the message
+ * to tell the recency refusal (which a human may confirm past) apart from a
+ * real failure, and raw JSON in a toast would defeat that.
+ */
+export async function deleteMirrorRow(args: {
+  table: MirrorTable;
+  surfaceName: string;
+  name: string;
+  acknowledgeRecent?: boolean;
+}): Promise<DeleteMirrorRowResult> {
+  const res = await fetch("/api/admin/surfaces/delete-mirror-row", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new Error(body?.error || `Delete failed (${res.status})`);
+  }
+  const body = (await res.json()) as { result: DeleteMirrorRowResult };
+  return body.result;
+}
+
 export function tierFor(sortOrder: number): SurfaceTier {
   return (
     SURFACE_TIERS.find((t) => sortOrder >= t.min && sortOrder <= t.max) ??

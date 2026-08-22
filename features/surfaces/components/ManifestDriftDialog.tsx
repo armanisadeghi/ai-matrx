@@ -28,9 +28,12 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import {
+  deleteMirrorRow,
   getDriftReport,
   listSurfaceValues,
   remediateBrokenMapping,
+  RECENT_ROW_REFUSAL_PREFIX,
+  type MirrorTable,
 } from "@/features/surfaces/services/surfaces.service";
 import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 import type {
@@ -44,6 +47,18 @@ interface Props {
   onClose: () => void;
   onSyncClick: () => void;
 }
+
+/**
+ * Appended to every stale (`db_only`) section, so the recency guard is
+ * announced BEFORE an admin clicks rather than discovered as a refusal. The
+ * per-row age itself is not in the drift report — adding it would mean widening
+ * four drift row types on the most collision-prone file in this feature — so
+ * the guard states its RULE up front and the server states the actual age when
+ * it fires. That is the part an operator needs in advance: that a fresh row
+ * will push back.
+ */
+const GLOBAL_SWEEP_NOTE =
+  "Rows written in the last 24h are treated as probably in-flight and need a second, explicit confirm.";
 
 export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
   const [report, setReport] = useState<SurfaceDriftReport | null>(null);
@@ -128,13 +143,21 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB values without a code manifest"
                 count={report.dbValuesNotInManifest.length}
                 tone="rose"
-                description='Stale rows. Sync with "Delete stale rows" to clean up.'
+                description={`Stale rows. Use "Delete this row" to remove ONE you have read and judged. ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbValuesNotInManifest.map((d) => (
                   <DriftRow
                     key={`d-${d.surfaceName}-${d.valueName}`}
                     surfaceName={d.surfaceName}
                     name={d.valueName}
+                    action={
+                      <DeleteMirrorRowButton
+                        table="ui_surface_value"
+                        surfaceName={d.surfaceName}
+                        name={d.valueName}
+                        onDeleted={() => void load()}
+                      />
+                    }
                   />
                 ))}
               </Section>
@@ -175,13 +198,21 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB roles without a code manifest"
                 count={report.dbRolesNotInManifest.length}
                 tone="rose"
-                description='Stale agent roles. Sync with "Delete stale rows" to clean up — user/org agent prefs for these roles are swept too.'
+                description={`Stale agent roles. Deleting one — here or by sweep — CASCADES its user/org agent prefs. ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbRolesNotInManifest.map((d) => (
                   <DriftRow
                     key={`rd-${d.surfaceName}-${d.roleName}`}
                     surfaceName={d.surfaceName}
                     name={d.roleName}
+                    action={
+                      <DeleteMirrorRowButton
+                        table="ui_surface_agent_role"
+                        surfaceName={d.surfaceName}
+                        name={d.roleName}
+                        onDeleted={() => void load()}
+                      />
+                    }
                   />
                 ))}
               </Section>
@@ -222,13 +253,21 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB write targets without a code manifest"
                 count={report.dbWriteTargetsNotInManifest.length}
                 tone="rose"
-                description='Stale write-target rows — a removed target, or a sync from a branch whose manifest never merged. READ THIS LIST BEFORE ACTING: "Delete stale rows" is a GLOBAL sweep and will delete rows belonging to work that is still in flight.'
+                description={`Stale write-target rows — a removed target, or a sync from a branch whose manifest never merged. READ THIS LIST BEFORE ACTING: "Delete stale rows" is a GLOBAL sweep and will delete rows belonging to work that is still in flight. ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbWriteTargetsNotInManifest.map((d) => (
                   <DriftRow
                     key={`wtd-${d.surfaceName}-${d.targetName}`}
                     surfaceName={d.surfaceName}
                     name={d.targetName}
+                    action={
+                      <DeleteMirrorRowButton
+                        table="ui_surface_write_target"
+                        surfaceName={d.surfaceName}
+                        name={d.targetName}
+                        onDeleted={() => void load()}
+                      />
+                    }
                   />
                 ))}
               </Section>
@@ -269,13 +308,21 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="DB client tools without a code manifest"
                 count={report.dbClientToolsNotInManifest.length}
                 tone="rose"
-                description="Stale client-tool rows — a removed tool, or a sync from a branch whose manifest never merged. Same warning as write targets: read the list before any global sweep."
+                description={`Stale client-tool rows — a removed tool, or a sync from a branch whose manifest never merged. Same warning as write targets: read the list before any global sweep. ${GLOBAL_SWEEP_NOTE}`}
               >
                 {report.dbClientToolsNotInManifest.map((d) => (
                   <DriftRow
                     key={`ctd-${d.surfaceName}-${d.toolName}`}
                     surfaceName={d.surfaceName}
                     name={d.toolName}
+                    action={
+                      <DeleteMirrorRowButton
+                        table="ui_surface_client_tool"
+                        surfaceName={d.surfaceName}
+                        name={d.toolName}
+                        onDeleted={() => void load()}
+                      />
+                    }
                   />
                 ))}
               </Section>
@@ -517,11 +564,14 @@ function DriftRow({
   name,
   diff,
   showDiff = false,
+  action,
 }: {
   surfaceName: string;
   name: string;
   diff?: Partial<Record<string, { manifest: unknown; db: unknown }>>;
   showDiff?: boolean;
+  /** Optional per-row action (the stale sections pass a delete button). */
+  action?: React.ReactNode;
 }) {
   return (
     <div className="px-2 py-1.5 text-[11px] space-y-0.5">
@@ -530,6 +580,7 @@ function DriftRow({
         <span className="text-muted-foreground">·</span>
         <span className="font-mono">{name}</span>
       </div>
+      {action}
       {showDiff && diff && (
         <div className="text-[10px] text-muted-foreground space-y-0.5 mt-0.5">
           {Object.entries(diff).map(([field, vals]) => (
@@ -546,6 +597,156 @@ function DriftRow({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Per-row "Delete this row" for a stale mirror row, following the `BrokenRow`
+ * precedent above: an inline action on ONE drift row, resolved without leaving
+ * the report, with the report re-run afterwards.
+ *
+ * The confirm is deliberately a two-step inline block rather than a one-click
+ * button or a `window.confirm`. It has to NAME the surface and row it is about
+ * to remove and say plainly that it removes ONE row, because the failure this
+ * whole feature exists to prevent is an admin reaching for a GLOBAL sweep and
+ * destroying a sibling branch's live rows. A button whose blast radius is
+ * ambiguous would just move that problem.
+ *
+ * The `ui_surface_agent_role` CASCADE warning is shown BEFORE the click, not
+ * reported after: deleting a role takes its `ui_surface_agent_pref` rows —
+ * real user and org agent picks — with it, and that is exactly the kind of
+ * consequence an operator has to know about while deciding, not discover in a
+ * success toast.
+ */
+function DeleteMirrorRowButton({
+  table,
+  surfaceName,
+  name,
+  onDeleted,
+}: {
+  table: MirrorTable;
+  surfaceName: string;
+  name: string;
+  onDeleted: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // Set when the server refuses because the row was written recently. Holds
+  // that refusal's own message, so the second confirm states the real age
+  // rather than a number the client guessed at.
+  const [recentWarning, setRecentWarning] = useState<string | null>(null);
+
+  const cascades = table === "ui_surface_agent_role";
+
+  const reset = () => {
+    setConfirming(false);
+    setRecentWarning(null);
+  };
+
+  const runDelete = async (acknowledgeRecent: boolean) => {
+    setBusy(true);
+    try {
+      const result = await deleteMirrorRow({
+        table,
+        surfaceName,
+        name,
+        ...(acknowledgeRecent ? { acknowledgeRecent: true } : {}),
+      });
+      toast.success(
+        result.sweptPrefCount > 0
+          ? `Deleted 1 row — ${surfaceName} · ${name}. ${result.sweptPrefCount} agent pref row(s) swept by cascade.`
+          : `Deleted 1 row — ${surfaceName} · ${name}.`,
+      );
+      reset();
+      onDeleted();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Delete failed";
+      if (message.startsWith(RECENT_ROW_REFUSAL_PREFIX)) {
+        // Not a failure — the guard asking for a deliberate second press.
+        setRecentWarning(message.slice(RECENT_ROW_REFUSAL_PREFIX.length).trim());
+      } else {
+        toast.error(message);
+        reset();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!confirming) {
+    return (
+      <div className="pt-0.5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setConfirming(true)}
+          className="h-6 text-[11px] gap-1 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-3 w-3" />
+          Delete this row
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 space-y-1.5">
+      <div className="text-[10px] text-foreground space-y-1">
+        <p>
+          Delete{" "}
+          <code className="font-mono text-destructive">
+            {surfaceName} · {name}
+          </code>{" "}
+          from <code className="font-mono">ui.{table}</code>?
+        </p>
+        <p className="text-muted-foreground">
+          This deletes <strong>this one row and nothing else</strong> — no other
+          surface, no other row, and no global sweep. It cannot be undone from
+          here; the row comes back only if a manifest declaring it is synced.
+        </p>
+        {cascades && (
+          <p className="text-destructive flex items-start gap-1">
+            <AlertTriangle className="h-3 w-3 mt-px shrink-0" />
+            <span>
+              Deleting an agent role also CASCADES its{" "}
+              <code className="font-mono">ui_surface_agent_pref</code> rows —
+              the user and org agent picks for this role go with it.
+            </span>
+          </p>
+        )}
+        {recentWarning && (
+          <p className="text-destructive flex items-start gap-1">
+            <AlertTriangle className="h-3 w-3 mt-px shrink-0" />
+            <span>{recentWarning}</span>
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => void runDelete(recentWarning !== null)}
+          disabled={busy}
+          className="h-6 text-[11px] gap-1"
+        >
+          {busy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Trash2 className="h-3 w-3" />
+          )}
+          {recentWarning ? "Delete anyway" : "Delete row"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          disabled={busy}
+          className="h-6 text-[11px]"
+        >
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }

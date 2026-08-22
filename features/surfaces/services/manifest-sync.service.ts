@@ -1170,6 +1170,221 @@ function rewriteToSurfaceValue(prev: unknown, newTarget: string): ValueMapping {
   };
 }
 
+// ---------------------------------------------------------------------------
+// deleteMirrorRow — remove exactly ONE stale mirror row
+// ---------------------------------------------------------------------------
+//
+// WHY THIS EXISTS, and why it is not a smaller `applyManifestSync`.
+//
+// The drift report LISTS stale mirror rows, but the only lever that could act
+// on one was `applyManifestSync({deleteStale: true})` — a GLOBAL sweep across
+// every managed surface in all four mirror tables. That sweep cannot tell "a
+// target deleted from code" apart from "a row a sibling branch synced, whose
+// manifest has not merged yet", and in a repo with many concurrent branches
+// the second case is the common one. Measured 2026-08-13:
+// `ui.ui_surface_write_target` held 375 rows against main's manifest-declared
+// set, and several of the extras had been synced minutes earlier by work still
+// in flight. So the honest admin response to the report was to do nothing, and
+// the report bought nothing. This function is the missing per-row lever: an
+// admin reads ONE row, decides about THAT row, and deletes THAT row.
+//
+// Three properties make it safe to hand an admin, and all three are enforced
+// here rather than in the UI, because a server that trusts its client has no
+// guard at all:
+//   1. It deletes ONE row, addressed by the table's full composite primary key
+//      (`surface_name`, `name`). Never a filter that could match two rows —
+//      the delete asserts it affected exactly one.
+//   2. It refuses to delete a row the CODE still declares. Staleness is
+//      recomputed from `ALL_MANIFESTS` with the same key sets
+//      `computeDriftReport` builds, so this button can only ever remove a row
+//      the report itself calls stale. A live row stays live even if a caller
+//      hand-crafts the request.
+//   3. It refuses a row touched inside `RECENT_ROW_WINDOW_HOURS` unless the
+//      caller explicitly acknowledges the age (see the note on that constant).
+//
+// There is deliberately NO "delete all stale" convenience wrapper. The global
+// sweep already exists and staying hard to reach is its point.
+
+export const MIRROR_TABLES = [
+  "ui_surface_value",
+  "ui_surface_agent_role",
+  "ui_surface_write_target",
+  "ui_surface_client_tool",
+] as const;
+
+/** The four `ui.*` tables that mirror a manifest, keyed `(surface_name, name)`. */
+export type MirrorTable = (typeof MIRROR_TABLES)[number];
+
+export function isMirrorTable(value: unknown): value is MirrorTable {
+  return (
+    typeof value === "string" &&
+    (MIRROR_TABLES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * A row updated this recently is treated as probably-in-flight rather than
+ * probably-dead.
+ *
+ * THE DECISION, and the reasoning, because this was an open question:
+ * a fresh `updated_at` is good evidence a row belongs to work still running —
+ * it is exactly the signal that separates "an agent synced this twenty minutes
+ * ago" from "this has been dead since a refactor last month" — but it is
+ * EVIDENCE, not proof, and it points both ways. The admin most likely to have
+ * a legitimate reason to delete a row minutes old is the person who just
+ * created it by mistake. So a recent row is WARNED ON, not BLOCKED: the first
+ * attempt is refused with the row's actual age in the message, and the caller
+ * may repeat it with `acknowledgeRecent: true`. That keeps the accident
+ * expensive and the deliberate act possible, which a hard block does not.
+ * 24h is chosen to cover a working session, not tuned to anything.
+ */
+export const RECENT_ROW_WINDOW_HOURS = 24;
+
+/**
+ * Stable prefix on the recency refusal so a caller can distinguish "you need
+ * to confirm this one" from a genuine failure without parsing prose.
+ */
+export const RECENT_ROW_REFUSAL_PREFIX = "Recently updated:";
+
+export interface DeleteMirrorRowArgs {
+  table: MirrorTable;
+  surfaceName: string;
+  /** The row's `name` — target name, value name, role name or tool name. */
+  name: string;
+  /** Set only after a human has been shown, and accepted, the recency warning. */
+  acknowledgeRecent?: boolean;
+}
+
+export interface DeleteMirrorRowResult {
+  ok: true;
+  table: MirrorTable;
+  surfaceName: string;
+  name: string;
+  /** The deleted row's `updated_at`, so the caller can report what it removed. */
+  updatedAt: string;
+  /**
+   * `ui_surface_agent_pref` rows swept by FK CASCADE. Only ever non-zero for
+   * `ui_surface_agent_role`; reported the way `applyManifestSync` reports
+   * `sweptPrefCount`, so a cascade is never silent.
+   */
+  sweptPrefCount: number;
+}
+
+/**
+ * Build the `surface::name` key set the manifests declare for one mirror
+ * table — the same construction `computeDriftReport` uses for its `db_only`
+ * walks, so "stale" means precisely what the report means by it.
+ */
+function manifestKeysForTable(table: MirrorTable): Set<string> {
+  const keys = new Set<string>();
+  for (const m of ALL_MANIFESTS) {
+    const names =
+      table === "ui_surface_value"
+        ? m.values.map((v) => v.name)
+        : table === "ui_surface_agent_role"
+          ? (m.agentRoles ?? []).map((r) => r.name)
+          : table === "ui_surface_write_target"
+            ? (m.writeTargets ?? []).map((t) => t.name)
+            : (m.clientTools ?? []).map((t) => t.name);
+    for (const name of names) keys.add(`${m.surfaceName}::${name}`);
+  }
+  return keys;
+}
+
+/**
+ * Delete ONE stale mirror row. Super-admin only (gated at the route).
+ *
+ * Throws — rather than returning an error envelope — so the route's
+ * `errorResponse` reports the reason verbatim to the admin who clicked.
+ */
+export async function deleteMirrorRow(
+  sb: Sb,
+  args: DeleteMirrorRowArgs,
+): Promise<DeleteMirrorRowResult> {
+  const { table, surfaceName, name, acknowledgeRecent = false } = args;
+
+  // 1. Read the row first. This both proves it exists and gives us the
+  //    `updated_at` the recency guard and the result report need.
+  const read = await sb
+    .schema("ui")
+    .from(table)
+    .select("surface_name, name, updated_at")
+    .eq("surface_name", surfaceName)
+    .eq("name", name)
+    .maybeSingle();
+  if (read.error) throw read.error;
+  if (!read.data) {
+    throw new Error(
+      `No ${table} row for ${surfaceName} · ${name}. It may already be gone — re-run the drift report.`,
+    );
+  }
+
+  // 2. Staleness is recomputed from code, never taken from the caller. A row
+  //    the manifests still declare is live; deleting it would only create the
+  //    drift the next sync re-fixes, and this button is not the tool for it.
+  if (manifestKeysForTable(table).has(`${surfaceName}::${name}`)) {
+    throw new Error(
+      `${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
+    );
+  }
+
+  // 3. Recency guard — warn, do not block. See RECENT_ROW_WINDOW_HOURS.
+  const updatedAt = read.data.updated_at;
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  const ageHours = ageMs / 3_600_000;
+  if (!acknowledgeRecent && ageHours < RECENT_ROW_WINDOW_HOURS) {
+    const rounded =
+      ageHours < 1
+        ? `${Math.max(1, Math.round(ageHours * 60))} minute(s)`
+        : `${Math.round(ageHours)} hour(s)`;
+    throw new Error(
+      `${RECENT_ROW_REFUSAL_PREFIX} ${surfaceName} · ${name} was written ${rounded} ago, which usually means a branch that has not merged yet is still using it. Confirm again to delete it anyway.`,
+    );
+  }
+
+  // 4. An agent role CASCADES its `ui_surface_agent_pref` rows (user/org agent
+  //    picks). Count them BEFORE the delete so the result can say what went
+  //    with it — the same contract `applyManifestSync` honours.
+  let sweptPrefCount = 0;
+  if (table === "ui_surface_agent_role") {
+    const prefCount = await sb
+      .schema("ui")
+      .from("ui_surface_agent_pref")
+      .select("*", { count: "exact", head: true })
+      .eq("surface_name", surfaceName)
+      .eq("role_name", name);
+    if (prefCount.error) throw prefCount.error;
+    sweptPrefCount = prefCount.count ?? 0;
+  }
+
+  // 5. The delete, addressed by the full composite PK, and asserted to have
+  //    hit exactly one row. `.select()` makes the affected set observable —
+  //    without it a filter that matched two rows would succeed silently.
+  const del = await sb
+    .schema("ui")
+    .from(table)
+    .delete()
+    .eq("surface_name", surfaceName)
+    .eq("name", name)
+    .select("surface_name, name");
+  if (del.error) throw del.error;
+  const affected = del.data ?? [];
+  if (affected.length !== 1) {
+    throw new Error(
+      `Refusing to report success: expected to delete exactly 1 ${table} row for ${surfaceName} · ${name}, but the database reported ${affected.length}.`,
+    );
+  }
+
+  return {
+    ok: true,
+    table,
+    surfaceName,
+    name,
+    updatedAt,
+    sweptPrefCount,
+  };
+}
+
 export async function applyManifestSync(
   sb: Sb,
   opts: ApplyManifestSyncOptions = {},

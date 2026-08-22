@@ -1839,6 +1839,69 @@ just read.
 `/api/admin/surfaces/drift-report` returns `computeDriftReport` verbatim, so it
 needed no change — verified by reading the route, not assumed.
 
+### Deleting ONE stale mirror row (2026-08-22)
+
+The section above ends on "**Reporting is the remedy; deleting is not**". That
+was right about the GLOBAL sweep and wrong as a permanent conclusion: an admin
+who reads a stale row and judges it dead still had no way to act on it, so the
+report changed nothing. `deleteMirrorRow`
+([services/manifest-sync.service.ts](./services/manifest-sync.service.ts)) is
+the missing per-row lever, wired to `POST /api/admin/surfaces/delete-mirror-row`
+and to a **Delete this row** button on every `db_only` row in all four sections.
+
+It follows the `remediateBrokenMapping` precedent exactly — act on ONE drift row
+from inside the report, then re-run the report (`onResolved` / `onDeleted` →
+`load()`). It is deliberately NOT a smaller `applyManifestSync`, and there is
+**no "delete all stale" convenience button**: the destructive global path
+already exists and staying hard to reach is its entire point.
+
+**Four guards, all server-side**, because a server that trusts its client has no
+guard at all:
+
+1. **One row, asserted.** Addressed by the full composite PK
+   (`surface_name`, `name`); the delete `.select()`s its affected rows and
+   throws unless exactly one came back, so a filter that matched two could
+   never report success.
+2. **Only the four mirror tables.** `isMirrorTable` narrows the `table` field
+   before it reaches a query builder — an arbitrary table name is a 400.
+3. **Staleness is recomputed from code, never trusted from the caller.**
+   `manifestKeysForTable` rebuilds the same key set `computeDriftReport` uses,
+   so the button can only remove a row the report itself calls stale. A
+   manifest-declared row is refused by name.
+4. **Recent rows are warned on, not blocked** — see below.
+
+**The cascade is warned BEFORE the click, not reported after.** Deleting a
+`ui_surface_agent_role` row takes its `ui_surface_agent_pref` rows (real user
+and org agent picks) with it via FK CASCADE, so the confirm block says so
+up front; the prefs are counted before the delete and the success toast reports
+the swept count, matching `applyManifestSync`'s `sweptPrefCount` contract.
+
+**The 24h recency decision, and why it is a warning rather than a block.** A
+fresh `updated_at` is the single best signal separating "an agent synced this
+twenty minutes ago" from "this has been dead since a refactor" — it is exactly
+the evidence the global sweep lacks. But it is evidence, not proof, and it
+points both ways: the admin most likely to have a legitimate reason to delete a
+minutes-old row is the person who just created it by mistake. So a row inside
+`RECENT_ROW_WINDOW_HOURS` is refused **once**, with its real age in the message,
+and the same call succeeds with `acknowledgeRecent: true`. The button relabels
+itself **Delete anyway**. That keeps the accident expensive and the deliberate
+act possible; a hard block would only teach admins to go back to the sweep.
+The refusal carries the stable `RECENT_ROW_REFUSAL_PREFIX` so the client can
+tell "confirm this one" from a real failure without parsing prose.
+
+**The per-row age is deliberately NOT in the drift report.** Putting it there
+would mean widening four drift row types on the most collision-prone file in
+this feature, for a number only the confirm step uses. Instead each `db_only`
+section states the RULE up front (rows under 24h need a second confirm) and the
+server states the actual age when the guard fires.
+
+**One deliberate wart, kept for consistency:** the route copies
+`remediate-mapping`'s `errorResponse` mapping verbatim, which only special-cases
+`Unauthorized` / `Forbidden` — so "row not found" and "still declared in a
+manifest" come back as 500s with an accurate message. Diverging here would have
+made this the one admin surfaces route with its own status vocabulary; if that
+mapping is ever improved, improve it for all four routes at once.
+
 ### The `manual`-holdout backlog (verified 2026-08-11)
 
 A sweep for surfaces still worth making agent-writable went stale within a day
@@ -1908,6 +1971,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-08-22 — The drift report's stale mirror rows can now be deleted ONE AT A TIME. The global sweep is untouched and stays hard to reach; no "delete all stale" button was added.** **(1) The gap this closes.** The 2026-08-13 entry below shipped `db_only` reporting for all four mirrors and concluded "reporting is the remedy; deleting is not" — correct about the sweep, but it left the report inert: an admin could now SEE a stale row and still had exactly one lever, `applyManifestSync({deleteStale: true})`, which is global across every managed surface and cannot tell "a target removed from code" from "a row a sibling branch synced whose manifest has not merged". Measured live during this task, `ui.ui_surface_write_target` held **26 stale rows on latest main**, including four on `matrx-user/education-learn-authoring` that a previous session recorded as live in-flight work. So the correct admin response was still to do nothing. `deleteMirrorRow` + `POST /api/admin/surfaces/delete-mirror-row` + a **Delete this row** button on every `db_only` row is the per-row lever; see the section above for the full design. **(2) It copies `remediateBrokenMapping`, deliberately.** Same shape end to end — service function, super-admin route with the identical `errorResponse` mapping, inline two-step confirm on the drift row, re-run the report on success. The one departure is that the browser wrapper parses the `{error}` envelope instead of surfacing `res.text()` raw, because the confirm flow has to READ the message to tell the recency refusal apart from a real failure. **(3) Four server-side guards, because a client-side guard is not one.** Exactly-one-row (asserted via `.select()` on the delete, not assumed from the filter); table name narrowed by `isMirrorTable` before it reaches a query builder; **staleness recomputed from `ALL_MANIFESTS`**, so a manifest-declared row is refused by name and the button can only ever remove what the report itself calls stale; and the 24h recency guard. **(4) The recency question was ASKED and the answer is warn-not-block, with a reason.** A fresh `updated_at` is the best available evidence that a row belongs to running work — but it is evidence, not proof, and the admin most likely to legitimately delete a minutes-old row is whoever just created it by mistake. So the first attempt is refused with the row's real age and the button relabels to **Delete anyway**; a hard block would just push people back to the sweep. The age itself is NOT added to the drift report — that would widen four drift row types on this feature's most collision-prone file for a number only the confirm uses — so each section states the rule and the server states the age. **(5) The agent-role CASCADE is warned about BEFORE the click**, not reported after: deleting a role takes real user/org `ui_surface_agent_pref` picks with it, which is a fact an operator needs while deciding. Prefs are counted before the delete and the toast reports the swept count, matching `applyManifestSync`. **(6) LIVE-VERIFIED against the real database on `/administration/ui/surfaces`, on rows I created as fixtures and on nothing else.** Three fixtures on `matrx-admin/lookups`, all namespaced `zz_fixture_*`: a backdated `ui_surface_write_target` row deleted through the real dialog in one confirm (toast `Deleted 1 row — matrx-admin/lookups · zz_fixture_stale_probe.`); a fresh one that hit the recency guard exactly as designed (`was written 4 minute(s) ago …`), relabelled to **Delete anyway**, and deleted on the second press; and a `ui_surface_agent_role` row carrying one real `ui_surface_agent_pref` child, whose confirm block rendered the cascade warning before the click and whose toast reported `1 agent pref row(s) swept by cascade` — `ui_surface_agent_pref` went 4 → 3, so the cascade is proven, not claimed. Four negative tests through the route: a manifest-declared row (`matrx-user/marketing-authority · authority_guidance`) **refused and still present afterwards**, `table: "auth.users"` rejected 400, a missing `name` rejected 400, and a nonexistent row answered with a clear message. **(7) NOT ONE of the 26 real stale rows was touched.** They belong to other agents' unmerged branches — the `education-learn-authoring`, `education-practice-oral`, `education-mind-maps`, `marketing-competitors`, `education-memory` and `content-plan-node` rows are all exactly as they were; the drift report was re-read after every delete to confirm the count of non-fixture stale rows never moved. `check:surface-drift` green (184 surfaces, 4402 values, 372 write targets, 6 client tools) and `type-check` clean on latest `main`. **(8) Environment notes for the next agent, all of which cost real time here.** `NEXT_PUBLIC_*` vars come from the container environment, and **Next gives those precedence over `.env.local`** — writing the documented `.env.local` does nothing if the var is already exported, so override at launch (`NEXT_PUBLIC_SUPABASE_URL=… pnpm dev`). `db.matrxserver.com` began rejecting BOTH the publishable and legacy anon keys with `Invalid API key` mid-session while the canonical `https://txzxabzwovsujtloxrus.supabase.co` accepted both — point at the canonical URL. And **a `pkill` of the dev server mid-write corrupts `.next` in a way that 404s entire route trees**: every `/api/admin/**` route returned the HTML 404 page even unauthenticated, which reads exactly like a missing route file; `rm -rf .next` fixed it. A route that 404s while UNAUTHENTICATED is a build-state bug, not an auth bug — an existing gated route returns 401 JSON.
 
 - **2026-08-21 — NO NULL ORG: the scope-tier model re-founded on `ui_surface_agent_pref` +
   `ui_surface_config`.** Both tables encoded the tier as "which scope column is non-NULL", with
