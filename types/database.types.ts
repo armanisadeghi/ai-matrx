@@ -34281,6 +34281,7 @@ export type Database = {
           binding_last_seen_at: string
           binding_origin: string
           binding_status: string
+          category: string
           conversation_type: string
           created_at: string
           created_by: string
