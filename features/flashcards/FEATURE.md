@@ -83,9 +83,32 @@ own fresh conversation):
   survives as evidence for judge accuracy. The set refetches after the run so badges and
   thumbnails match.
 - **Editor slot:** [`components/editor/CardImageSlot.tsx`](./components/editor/CardImageSlot.tsx)
-  — per-face Find (web agent) / Generate (verified) / Remove in `EditSetView`, streaming
-  the aidream doors `/education/images/source-card|generate-card|source-set`. Agent
-  refusals surface with their reasoning; never forced, never silent.
+  — one compact icon row per face in `EditSetView` with FIVE actions. Two are FREE
+  (no entitlement guard, no AI spend, added 2026-08-19) and two are METERED:
+  - **Upload** (free) — the learner's own picture through the canonical
+    [`useFileUpload`](../files/handler/hooks/useFileUpload.ts). Uploaded with
+    `visibility:"public"` ON PURPOSE ("images are born public", VISION_AND_PLAN §2.1):
+    cards are shareable and public sets render for anonymous visitors, so the face needs
+    a permanent CDN URL. The lane stamps BOTH `image_file_id` and the durable
+    `image_url`, and **refuses to persist a signed URL** (`isSignedUrl` guard →
+    file_id-only + a console warning + an honest toast, never silent rot).
+  - **Photo** (free) — Unsplash stock via
+    [`UnsplashPickDialog`](./components/editor/UnsplashPickDialog.tsx) on THE shared
+    primitive [`lib/media/unsplash.ts`](../../lib/media/unsplash.ts) (`/api/unsplash`
+    proxy; the slide-deck `slide-images.ts` is a thin re-export of the same module —
+    never fork a second Unsplash client). Stores Unsplash's permanent CDN URL plus
+    `metadata.credit {name,url}`, and fires `trackUnsplashUse` on ATTACH (ToS: on use,
+    not on browse).
+  - **Find** / **Generate** (metered) — stream the aidream doors
+    `/education/images/source-card|generate-card`. Agent refusals surface with their
+    reasoning; never forced, never silent. **Remove** soft-deletes the face's rows.
+  - **ALT TEXT IS REQUIRED on both free lanes** — pre-filled (Unsplash's own description,
+    else the face text) in a dialog the user confirms; the attach button stays disabled
+    while it is empty. Education is unusable without it.
+- **Attribution renders, it is not just stored:** `metadata.credit` flows
+  `cardImages.toCredit` → `FaceImageRef.credit` → a small "Photo: <name>" caption under
+  the face image (linked, UTM-tagged). Unsplash requires the photographer to be credited
+  wherever the photo is displayed.
 - **Metered, structurally (Arman 2026-08-18):** capabilities
   `education.card_image_source` / `card_image_generate` — FE
   `useEntitlementGuard` (guard before spend, commit on success, paywall on cap);
@@ -109,8 +132,6 @@ own fresh conversation):
 
 ### Known limits (images)
 
-- The editor slot's UPLOAD and UNSPLASH lanes aren't wired yet (Find/Generate/Remove
-  are live) — chipped; `docs/handoffs/flashcard-images.md`.
 - The set run is not durable across a page refresh: every attached image is already
   committed to the DB card by card, but the REVIEW pass lives in page state, so a
   refresh mid-run loses the keep/reject list (the images stay, and per-card Remove in
@@ -122,15 +143,31 @@ own fresh conversation):
 - A print window is a fresh, UNAUTHENTICATED document, so only a durable `image_url`
   can travel into it. A `file_id`-only face image is skipped and counted
   (`skippedImageCount` → a toast naming how many), never silently dropped — the same
-  constraint the anon public-deck lane lives under. It disappears for good once the
-  upload lane stamps a public URL beside every `image_file_id`.
+  constraint the anon public-deck lane lives under. New uploads no longer create such
+  rows (the upload lane stamps the public URL beside every `image_file_id`), but rows
+  written before 2026-08-19 still can — no backfill sweep exists yet.
 - Hotlinked `image_url` rot has a graceful render fallback but no re-source sweep yet —
   chipped.
-- Uploaded stored-file images (`image_file_id`, future upload lane) must also stamp the
-  public CDN URL into `image_url` or they won't reach ANON pages (the generation lane
-  already writes both).
+- The anon public-deck RPC and print lanes can only use `image_url`, so any face image
+  carrying a bare `image_file_id` is invisible to them. Every writer stamps both today;
+  the residue is historical rows, which have no backfill sweep yet.
+- Attribution reaches the face renderer through the `cardImages` adapter only. Surfaces
+  fed the flattened `front_image_url`/`back_image_url` shape (the anon public-deck RPC,
+  print) carry the URL and alt text but not the credit caption.
 
 ## Change log
+
+- **2026-08-19 — The editor's two FREE image lanes shipped (upload + Unsplash stock).**
+  `CardImageSlot` is now a compact 5-icon row per face. Upload goes through the canonical
+  `useFileUpload` at public visibility and stamps BOTH `image_file_id` and the durable CDN
+  `image_url` (signed URLs are refused, loudly). Unsplash goes through the new SHARED
+  primitive `lib/media/unsplash.ts` — `slide-images.ts` was collapsed into a re-export of
+  it, so one client, one cache, one ToS contract — stores `metadata.credit {name,url}`,
+  and fires the download event on attach. Both lanes require alt text. Credit now RENDERS
+  under the face image (`cardImages` → `FaceImageRef.credit` → `FlashcardFaceImage`).
+  Neither free lane is metered. Live-verified in the browser on the Volcanology set: an
+  Unsplash attach (durable `images.unsplash.com` URL + credit row) and an upload attach
+  (public `cdn.matrxserver.com` URL + `image_file_id`, file visibility `public`).
 
 - **2026-08-21 — Collapse-on-mastery (Q15 #4b, spec 26a).** The other half of
   `expands_into`: ONE pure resolver ([data/collapse.ts](./data/collapse.ts), pinned by
