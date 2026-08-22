@@ -170,7 +170,11 @@ export function VaultWorkspace({
     ? (vault.items.find((i) => i.id === selectedId) ?? null)
     : null;
   const detailItem =
-    presentation === "full" ? (selected ?? filtered[0] ?? null) : selected;
+    presentation === "full"
+      ? selectedId
+        ? selected
+        : (filtered[0] ?? null)
+      : selected;
   const selectedIdentity = detailItem
     ? credentialIdentity(detailItem, defsByKey.get(detailItem.definition_key))
     : null;

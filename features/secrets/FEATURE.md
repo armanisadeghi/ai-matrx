@@ -157,6 +157,10 @@ Personal and organization credentials render through the same
   are forbidden. The code-first Authenticator list has one deliberate compact
   exception: its row menu may rename the same credential directly so a person
   does not have to leave an active six-digit-code task just to fix its label.
+- **Edit is dense, not card-within-card.** Name and description edit inline
+  without a redundant “Credential details” container; save/delete actions use
+  accessible icon buttons beside the content they affect. Full-width action
+  rows that merely repeat “Save field changes” or “Delete field” are forbidden.
 - Website metadata renders only for `website_login`, an item with existing
   login URLs, or a legacy credential whose URL can be promoted. A generic API
   or environment credential must not be presented as a website login.
@@ -166,6 +170,9 @@ Personal and organization credentials render through the same
   responsive Credenza. Embedded window/org hosts keep the compact presentation
   of the same workspace because they do not own a full viewport. The former
   settings host redirects to `/vault` instead of embedding the compact card grid.
+- `/vault/[itemId]` is the canonical credential route. Selection navigates
+  between path segments and closing returns to `/vault`; credential identity
+  never rides a query parameter.
 - A list row carries compact identity only: icon, title, and one deduplicated
   supporting line. It never adds a third URL/type line or renders credential
   fields. Full metadata and encrypted fields stay in the detail pane.
@@ -253,7 +260,7 @@ the sealed setup seed has no reveal path at any privilege.
   or Vault and use its Two-factor section; never create a sibling
   authenticator-only credential.
 - **Every entry is a door.** The account name and its row menu open THAT
-  credential via `/vault?item=<id>` (the deep link `VaultPage` now owns); the
+  credential via `/vault/[itemId]` (the deep link `VaultPage` now owns); the
   menu also offers Rename login and a new-tab door without cluttering the
   code-first list. Renaming updates the credential item's `display_name`, so the
   Authenticator and Vault never diverge.
@@ -295,6 +302,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-22** — Replaced `?item=<id>` with canonical `/vault/[itemId]`
+  credential routes across Vault and Authenticator, then began the focused edit
+  density pass: removed the redundant credential-details card and replaced
+  full-width credential/field save-delete rows with labeled icon actions.
 
 - **2026-08-22** — Sorted every Vault scope newest-created first and replaced
   expanding list cards with one shared two-line identity treatment: icon,
@@ -350,7 +362,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   and every saved authenticator leads with its site/account name and rotating
   code instead of protocol metadata. The setup seed remains sealed.
 
-- **2026-08-20** — Rebuilt authenticator enrollment against what the best password managers actually ship: one intake control for paste / drop / file / camera scan, local QR decoding (`lib/qr/decode.ts` + the reusable `<QrCodeInput>`), an instant parsed preview, inline "A new login" creation, every vault item eligible (not just `website_login` — the empty-picker dead end), page copy cut to one sentence, and consent moved to its own confirm step. `/vault?item=<id>` deep-links a credential.
+- **2026-08-20** — Rebuilt authenticator enrollment against what the best password managers actually ship: one intake control for paste / drop / file / camera scan, local QR decoding (`lib/qr/decode.ts` + the reusable `<QrCodeInput>`), an instant parsed preview, inline "A new login" creation, every vault item eligible (not just `website_login` — the empty-picker dead end), page copy cut to one sentence, and consent moved to its own confirm step. Credential deep links now use `/vault/[itemId]`.
 
 - **2026-08-18** — Closed two Vault navigation hazards: scope results are now
   request-ordered and keyed to the active scope so stale credentials cannot

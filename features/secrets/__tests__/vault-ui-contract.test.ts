@@ -133,6 +133,45 @@ describe("shared vault UI contract", () => {
     );
   });
 
+  test("uses a canonical item route instead of query-parameter selection", () => {
+    const pageSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultPage.tsx"),
+      "utf8",
+    );
+    const itemRouteSource = readFileSync(
+      join(process.cwd(), "app/(core)/vault/[itemId]/page.tsx"),
+      "utf8",
+    );
+    const authenticatorSource = readFileSync(
+      join(
+        process.cwd(),
+        "features/secrets/components/authenticator/AuthenticatorWorkspace.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(pageSource).toContain("/vault/${encodeURIComponent(id)}");
+    expect(pageSource).not.toContain("useSearchParams");
+    expect(itemRouteSource).toContain("<VaultPage itemId={itemId}");
+    expect(authenticatorSource).toContain(
+      "/vault/${encodeURIComponent(entry.credential_item_id)}",
+    );
+  });
+
+  test("keeps initial edit actions compact and icon-only", () => {
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+
+    expect(detailSource).not.toContain("Credential details");
+    expect(detailSource).not.toContain("Save credential details");
+    expect(detailSource).not.toContain("Save field changes");
+    expect(detailSource).toContain('aria-label="Save credential"');
+    expect(detailSource).toContain("<Save");
+    expect(detailSource).toContain("<Trash2");
+  });
+
   test("keeps the legacy settings URL on the canonical full Vault", () => {
     const settingsEntrySource = readFileSync(
       join(process.cwd(), "app/(transitional)/settings/secrets/page.tsx"),

@@ -89,7 +89,7 @@ function EntryRow({
         part && part.trim().toLowerCase() !== title.trim().toLowerCase(),
     )
     ?.trim();
-  const vaultHref = `/vault?item=${encodeURIComponent(entry.credential_item_id)}`;
+  const vaultHref = `/vault/${encodeURIComponent(entry.credential_item_id)}`;
 
   return (
     <div className="grid min-h-28 grid-cols-[44px_minmax(0,1fr)_44px] items-start gap-x-3 border-b border-border px-4 py-3 sm:min-h-20 sm:grid-cols-[44px_minmax(0,1fr)_auto_44px] sm:items-center sm:px-5">

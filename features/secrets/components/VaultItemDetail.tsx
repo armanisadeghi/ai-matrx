@@ -28,6 +28,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Save,
   ShieldCheck,
   Trash2,
   TriangleAlert,
@@ -248,50 +249,49 @@ export function VaultItemDetail({
       </div>
 
       {editingCredential && (
-        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <p className="text-sm font-semibold">Credential details</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor={`credential-name-${item.id}`}>
-                {VAULT_LABELS.credentialName}
-              </Label>
-              <Input
-                id={`credential-name-${item.id}`}
-                value={nameDraft}
-                onChange={(event) => setNameDraft(event.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor={`credential-description-${item.id}`}>
-                {VAULT_LABELS.description}
-              </Label>
-              <Input
-                id={`credential-description-${item.id}`}
-                value={descriptionDraft}
-                onChange={(event) => setDescriptionDraft(event.target.value)}
-                placeholder="What is this credential used for?"
-              />
-            </div>
+        <div className="grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div className="space-y-1">
+            <Label htmlFor={`credential-name-${item.id}`}>
+              {VAULT_LABELS.credentialName}
+            </Label>
+            <Input
+              id={`credential-name-${item.id}`}
+              value={nameDraft}
+              onChange={(event) => setNameDraft(event.target.value)}
+            />
           </div>
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              disabled={
-                busy ||
-                !nameDraft.trim() ||
-                (nameDraft.trim() === item.display_name &&
-                  descriptionDraft.trim() === (item.description ?? ""))
-              }
-              onClick={() =>
-                void actions.updateItem(item.id, {
-                  display_name: nameDraft.trim(),
-                  description: descriptionDraft.trim() || null,
-                })
-              }
-            >
-              Save credential details
-            </Button>
+          <div className="space-y-1">
+            <Label htmlFor={`credential-description-${item.id}`}>
+              {VAULT_LABELS.description}
+            </Label>
+            <Input
+              id={`credential-description-${item.id}`}
+              value={descriptionDraft}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              placeholder="What is this credential used for?"
+            />
           </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-11 w-11 sm:h-9 sm:w-9"
+            aria-label="Save credential"
+            title="Save credential"
+            disabled={
+              busy ||
+              !nameDraft.trim() ||
+              (nameDraft.trim() === item.display_name &&
+                descriptionDraft.trim() === (item.description ?? ""))
+            }
+            onClick={() =>
+              void actions.updateItem(item.id, {
+                display_name: nameDraft.trim(),
+                description: descriptionDraft.trim() || null,
+              })
+            }
+          >
+            <Save className="h-4 w-4" />
+          </Button>
         </div>
       )}
 
@@ -966,7 +966,57 @@ function FieldRow({
 
       {editMode && caps.can_edit && (
         <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/40 p-3">
-          <p className="text-xs font-semibold">Edit {displayLabel}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold">Edit {displayLabel}</p>
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                aria-label={`Save ${displayLabel}`}
+                title="Save field"
+                disabled={
+                  busy ||
+                  !fieldTextChanged ||
+                  (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft))
+                }
+                onClick={async () => {
+                  if (valueDraft) {
+                    await actions.updateFieldValue(
+                      item.id,
+                      field.id,
+                      valueDraft,
+                    );
+                    setValueDraft("");
+                  }
+                  if (
+                    envDraft !== (field.env_key ?? "") ||
+                    descDraft !== (field.description ?? "")
+                  ) {
+                    await actions.updateFieldMeta(item.id, field.id, {
+                      ...(envDraft
+                        ? { env_key: envDraft }
+                        : { clear_env_key: true }),
+                      description: descDraft || null,
+                    });
+                  }
+                }}
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                aria-label={`Delete ${displayLabel}`}
+                title="Delete field"
+                disabled={busy}
+                onClick={() => void actions.deleteField(item.id, field.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
           {field.editable && (
             <div className="space-y-1">
               <Label htmlFor={`replacement-value-${field.id}`}>
@@ -1016,35 +1066,6 @@ function FieldRow({
               placeholder="What is this field?"
               className="h-8 text-xs"
             />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              disabled={
-                busy ||
-                !fieldTextChanged ||
-                (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft))
-              }
-              onClick={async () => {
-                if (valueDraft) {
-                  await actions.updateFieldValue(item.id, field.id, valueDraft);
-                  setValueDraft("");
-                }
-                if (
-                  envDraft !== (field.env_key ?? "") ||
-                  descDraft !== (field.description ?? "")
-                ) {
-                  await actions.updateFieldMeta(item.id, field.id, {
-                    ...(envDraft
-                      ? { env_key: envDraft }
-                      : { clear_env_key: true }),
-                    description: descDraft || null,
-                  });
-                }
-              }}
-            >
-              Save field changes
-            </Button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-xs">
@@ -1104,17 +1125,6 @@ function FieldRow({
                 });
               }}
             />
-          </div>
-          <div className="flex justify-end border-t border-border pt-3">
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={busy}
-              onClick={() => void actions.deleteField(item.id, field.id)}
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Delete field
-            </Button>
           </div>
         </div>
       )}
