@@ -563,17 +563,19 @@ const DenseView: React.FC<
           )}
           {status === "loading" ? (
             <LoadingTapButton
-              variant="transparent"
+              variant="group"
               disabled
               ariaLabel="Refreshing conversations"
-              className="h-6 w-6"
+              className="text-muted-foreground"
+              tooltipSide="bottom"
             />
           ) : (
             <RefreshCwTapButton
-              variant="transparent"
+              variant="group"
               onClick={onRefresh}
               ariaLabel="Refresh conversations"
-              className="h-6 w-6"
+              className="text-muted-foreground"
+              tooltipSide="bottom"
             />
           )}
           {surfaceId && (
@@ -802,17 +804,19 @@ const ConsumerView: React.FC<
           <div className="flex items-center gap-1">
             {status === "loading" ? (
               <LoadingTapButton
-                variant="transparent"
+                variant="group"
                 disabled
                 ariaLabel="Refreshing conversations"
-                className="h-7 w-7"
+                className="text-muted-foreground"
+                tooltipSide="bottom"
               />
             ) : (
               <RefreshCwTapButton
-                variant="transparent"
+                variant="group"
                 onClick={onRefresh}
                 ariaLabel="Refresh conversations"
-                className="h-7 w-7"
+                className="text-muted-foreground"
+                tooltipSide="bottom"
               />
             )}
             <ConversationSourceFilterTree
