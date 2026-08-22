@@ -46310,6 +46310,98 @@ export type Database = {
         }
         Relationships: []
       }
+      geo_place: {
+        Row: {
+          aliases: Json
+          ambiguity: string
+          ambiguity_reason: string | null
+          country_code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          latitude: number | null
+          longitude: number | null
+          match_tokens: Json
+          metadata: Json
+          name: string
+          normalized_name: string
+          organization_id: string
+          parent_place_id: string | null
+          place_kind: string
+          population: number | null
+          slug: string
+          state_code: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          aliases?: Json
+          ambiguity?: string
+          ambiguity_reason?: string | null
+          country_code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          match_tokens?: Json
+          metadata?: Json
+          name: string
+          normalized_name: string
+          organization_id: string
+          parent_place_id?: string | null
+          place_kind: string
+          population?: number | null
+          slug: string
+          state_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          aliases?: Json
+          ambiguity?: string
+          ambiguity_reason?: string | null
+          country_code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          match_tokens?: Json
+          metadata?: Json
+          name?: string
+          normalized_name?: string
+          organization_id?: string
+          parent_place_id?: string | null
+          place_kind?: string
+          population?: number | null
+          slug?: string
+          state_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geo_place_parent_fk"
+            columns: ["parent_place_id"]
+            isOneToOne: false
+            referencedRelation: "geo_place"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_dig_rule: {
         Row: {
           base_filters: Json
@@ -46580,6 +46672,9 @@ export type Database = {
           enqueued_at: string
           keyword_id: string
           last_error: string | null
+          place_detector_version: string | null
+          place_scanned_at: string | null
+          places_found: number | null
           priority_clicks: number
           priority_impressions: number
           site_count: number
@@ -46596,6 +46691,9 @@ export type Database = {
           enqueued_at?: string
           keyword_id: string
           last_error?: string | null
+          place_detector_version?: string | null
+          place_scanned_at?: string | null
+          places_found?: number | null
           priority_clicks?: number
           priority_impressions?: number
           site_count?: number
@@ -46612,6 +46710,9 @@ export type Database = {
           enqueued_at?: string
           keyword_id?: string
           last_error?: string | null
+          place_detector_version?: string | null
+          place_scanned_at?: string | null
+          places_found?: number | null
           priority_clicks?: number
           priority_impressions?: number
           site_count?: number
@@ -46987,6 +47088,81 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_place: {
+        Row: {
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detector_version: string
+          id: string
+          keyword_id: string
+          match_kind: string
+          matched_text: string | null
+          metadata: Json
+          organization_id: string
+          place_id: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detector_version: string
+          id?: string
+          keyword_id: string
+          match_kind: string
+          matched_text?: string | null
+          metadata?: Json
+          organization_id: string
+          place_id: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detector_version?: string
+          id?: string
+          keyword_id?: string
+          match_kind?: string
+          matched_text?: string | null
+          metadata?: Json
+          organization_id?: string
+          place_id?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_place_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_place_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "geo_place"
             referencedColumns: ["id"]
           },
         ]
@@ -48699,6 +48875,7 @@ export type Database = {
           metadata: Json
           notes: string | null
           organization_id: string
+          place_ids: string[]
           site_id: string
           updated_at: string
           updated_by: string | null
@@ -48716,6 +48893,7 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           organization_id: string
+          place_ids?: string[]
           site_id: string
           updated_at?: string
           updated_by?: string | null
@@ -48733,6 +48911,7 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           organization_id?: string
+          place_ids?: string[]
           site_id?: string
           updated_at?: string
           updated_by?: string | null
@@ -49474,6 +49653,65 @@ export type Database = {
           },
         ]
       }
+      topic_placement_queue: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          completed_at: string | null
+          demand_as_of: string
+          demand_window_days: number
+          enqueued_at: string
+          keyword_id: string
+          last_error: string | null
+          placement_source: string | null
+          priority_clicks: number
+          priority_impressions: number
+          site_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          completed_at?: string | null
+          demand_as_of: string
+          demand_window_days: number
+          enqueued_at?: string
+          keyword_id: string
+          last_error?: string | null
+          placement_source?: string | null
+          priority_clicks?: number
+          priority_impressions?: number
+          site_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          completed_at?: string | null
+          demand_as_of?: string
+          demand_window_days?: number
+          enqueued_at?: string
+          keyword_id?: string
+          last_error?: string | null
+          placement_source?: string | null
+          priority_clicks?: number
+          priority_impressions?: number
+          site_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_placement_queue_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       web_analytics_daily: {
         Row: {
           campaign: string | null
@@ -49733,6 +49971,19 @@ export type Database = {
         Args: { p_token: string; p_what: string }
         Returns: undefined
       }
+      detect_keyword_places: {
+        Args: { p_keyword_ids: string[] }
+        Returns: {
+          confidence: number
+          keyword_id: string
+          match_kind: string
+          matched_text: string
+          place_id: string
+          place_kind: string
+          place_name: string
+          state_code: string
+        }[]
+      }
       facet_check_values: { Args: { p_facet: string }; Returns: string[] }
       facet_dimension_archive: {
         Args: {
@@ -49837,6 +50088,20 @@ export type Database = {
         Args: { p_keyword_ids: string[]; p_reason?: string }
         Returns: number
       }
+      fn_backfill_keyword_places: {
+        Args: {
+          p_detector_version?: string
+          p_limit: number
+          p_min_impressions: number
+        }
+        Returns: {
+          claimed: number
+          human_protected: number
+          keywords_with_places: number
+          local_intent_stamped: number
+          places_written: number
+        }[]
+      }
       fn_claim_keyword_classification_batch: {
         Args: {
           p_limit: number
@@ -49851,11 +50116,39 @@ export type Database = {
           priority_impressions: number
         }[]
       }
+      fn_claim_topic_placement_batch: {
+        Args: {
+          p_limit: number
+          p_max_attempts: number
+          p_min_impressions: number
+          p_site_id: string
+          p_stale_claim_minutes: number
+        }
+        Returns: {
+          keyword_id: string
+          phrase: string
+          priority_clicks: number
+          priority_impressions: number
+        }[]
+      }
       fn_complete_keyword_classification_batch: {
         Args: {
           p_error: string
           p_keyword_ids: string[]
           p_max_attempts: number
+        }
+        Returns: {
+          marked_done: number
+          marked_pending: number
+          quarantined: number
+        }[]
+      }
+      fn_complete_topic_placement_batch: {
+        Args: {
+          p_error: string
+          p_keyword_ids: string[]
+          p_max_attempts: number
+          p_site_id: string
         }
         Returns: {
           marked_done: number
@@ -49881,6 +50174,14 @@ export type Database = {
           scanned: number
         }[]
       }
+      fn_refresh_topic_placement_queue: {
+        Args: { p_site_id: string; p_window_days: number }
+        Returns: {
+          now_done: number
+          now_pending: number
+          scanned: number
+        }[]
+      }
       fn_reject_keyword_edge: {
         Args: { p_edge_id: string; p_reason: string }
         Returns: undefined
@@ -49888,6 +50189,28 @@ export type Database = {
       fn_restore_keywords: {
         Args: { p_keyword_ids: string[] }
         Returns: number
+      }
+      fn_topic_placement_counts: {
+        Args: { p_min_impressions: number; p_site_id: string }
+        Returns: {
+          pending_clicks: number
+          queue_deferred: number
+          queue_pending: number
+        }[]
+      }
+      fn_topic_placement_settled_since: {
+        Args: { p_since: string; p_site_id: string }
+        Returns: {
+          placed: number
+        }[]
+      }
+      fn_topic_placement_sites_owing: {
+        Args: { p_limit: number }
+        Returns: {
+          pending: number
+          pending_clicks: number
+          site_id: string
+        }[]
       }
       fn_upsert_keyword: {
         Args: { p_language?: string; p_phrase: string }
@@ -49899,6 +50222,20 @@ export type Database = {
           input_index: number
           o_created: boolean
           o_id: string
+        }[]
+      }
+      geo_place_search: {
+        Args: { p_kinds: string[]; p_limit: number; p_query: string }
+        Returns: {
+          ambiguity: string
+          ambiguity_reason: string
+          id: string
+          keyword_count: number
+          label: string
+          name: string
+          place_kind: string
+          population: number
+          state_code: string
         }[]
       }
       gsc_adopt_value_vocabulary: {
@@ -50009,6 +50346,15 @@ export type Database = {
         Args: { p_keyword_ids: string[]; p_site_id: string }
         Returns: number
       }
+      gsc_confirm_keyword_topic: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          keyword_id: string
+          value_band: string
+          value_score: number
+          value_source: string
+        }[]
+      }
       gsc_dig_condition_passes: {
         Args: { p_op: string; p_threshold: number; p_value: number }
         Returns: boolean
@@ -50032,6 +50378,7 @@ export type Database = {
           p_area_id?: string
           p_end: string
           p_geo_band: string
+          p_place_ids?: string[]
           p_sample?: number
           p_site_id: string
           p_start: string
@@ -50667,6 +51014,27 @@ export type Database = {
           root_type: string
         }[]
       }
+      gsc_topic_proposed_keywords: {
+        Args: {
+          p_end: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          confidence: number
+          impressions: number
+          keyword_id: string
+          phrase: string
+          topic_id: string
+          topic_name: string
+          total_count: number
+          value_band: string
+        }[]
+      }
       gsc_topic_save: {
         Args: {
           p_description?: string
@@ -50817,6 +51185,32 @@ export type Database = {
           value: string
         }[]
       }
+      keyword_place_status: {
+        Args: { p_min_impressions: number; p_site_id: string }
+        Returns: {
+          areas_empty: number
+          areas_total: number
+          areas_with_places: number
+          demand_window_days: number
+          keywords_explicit_local: number
+          keywords_with_places: number
+          last_scanned_at: string
+          next_phrase: string
+          pending_clicks: number
+          pending_impressions: number
+          queue_clicks: number
+          queue_deferred: number
+          queue_pending: number
+          queue_scanned: number
+          queue_total: number
+          scanned_clicks: number
+          site_clicks: number
+          site_keywords: number
+          site_keywords_local: number
+          site_keywords_scanned: number
+          site_local_clicks: number
+        }[]
+      }
       keyword_value_map: {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: {
@@ -50905,6 +51299,17 @@ export type Database = {
           workflow_status: string
         }[]
       }
+      stamp_keyword_places: {
+        Args: { p_detector_version?: string; p_keyword_ids: string[] }
+        Returns: {
+          human_protected: number
+          keywords_scanned: number
+          keywords_with_places: number
+          local_intent_stamped: number
+          places_retired: number
+          places_written: number
+        }[]
+      }
       starter_pack_catalog: {
         Args: { p_status?: string }
         Returns: {
@@ -50933,6 +51338,32 @@ export type Database = {
         Returns: Json
       }
       starter_pack_detail: { Args: { p_pack_id: string }; Returns: Json }
+      topic_placement_status: {
+        Args: { p_min_impressions?: number; p_site_id: string }
+        Returns: {
+          demand_as_of: string
+          demand_clicks: number
+          demand_clicks_placed: number
+          demand_impressions: number
+          demand_impressions_placed: number
+          demand_keywords: number
+          demand_keywords_placed: number
+          demand_window_days: number
+          last_error: string
+          last_placed_at: string
+          next_phrase: string
+          pending_clicks: number
+          placed_by_agent: number
+          placed_by_human: number
+          proposal_clicks: number
+          proposals_pending: number
+          queue_deferred: number
+          queue_failed: number
+          queue_pending: number
+          queue_refreshed_at: string
+          queue_running: number
+        }[]
+      }
       update_backlink_human_ruling: {
         Args: { p_backlink_id: string; p_ruling: Json }
         Returns: {
