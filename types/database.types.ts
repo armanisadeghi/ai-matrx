@@ -49585,6 +49585,17 @@ export type Database = {
         Returns: undefined
       }
       facet_check_values: { Args: { p_facet: string }; Returns: string[] }
+      facet_dimension_archive: {
+        Args: {
+          p_dimension: string
+          p_drop_facts?: boolean
+          p_site_id?: string
+        }
+        Returns: {
+          facts_dropped: number
+          values_retired: number
+        }[]
+      }
       facet_dimension_catalog: {
         Args: { p_site_id?: string }
         Returns: {
@@ -49627,6 +49638,19 @@ export type Database = {
           facet: string
           keywords: number
           value_key: string
+        }[]
+      }
+      facet_value_archive: {
+        Args: {
+          p_dimension: string
+          p_drop_facts?: boolean
+          p_reassign_to?: string
+          p_site_id?: string
+          p_value: string
+        }
+        Returns: {
+          facts_dropped: number
+          facts_moved: number
         }[]
       }
       facet_value_upsert: {
