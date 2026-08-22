@@ -61569,18 +61569,6 @@ export interface components {
              * @default
              */
             text?: string;
-            /**
-             * Truncated
-             * @description True when `text` is only the head of the message.
-             * @default false
-             */
-            truncated?: boolean;
-            /**
-             * Full Chars
-             * @description The message's real length in characters, whether or not it was capped.
-             * @default 0
-             */
-            full_chars?: number;
         };
         /** ThreadMessageView */
         ThreadMessageView: {

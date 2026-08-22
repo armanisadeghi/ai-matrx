@@ -26,14 +26,14 @@ must never outrun the deploy) forbids a clean swap here: production runs a build
 straight rename would break the live Orchestras list the moment it applied. The function
 therefore returns BOTH spellings for one release cycle.
 
-**The fix:** once a build containing `conductor_id`/`label` is deployed to all three Vercel
-projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and from
-the select body. Nothing else reads them — verified by grep across both repos.
+**APPLIED AND VERIFIED LIVE 2026-08-22.** `pg_get_function_result` on the live DB returns all
+ten columns (`conductor_id`, `orchestrator_id`, `name`, `description`, `label`, `set_label`,
+`metadata`, `member_count`, `created_at`, `updated_at`), and `types/database.types.ts` was
+regenerated against it. Old and new builds both read successfully — no deploy coupling remains.
 
-🚨 **The migration was NOT applied** — the auto-mode classifier refused the DDL twice. Until it
-is applied, the frontend reads `conductor_id` from a function that still returns
-`orchestrator_id`, so **the Orchestras list is broken on any build shipped before it lands**.
-Apply `migrations/orchestra_list_conductor_rename.sql` before the next release.
+**The remaining fix:** once a build containing `conductor_id`/`label` is deployed to all three
+Vercel projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and
+from the select body. Nothing else reads them — verified by grep across both repos.
 
 ### D249 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
 
