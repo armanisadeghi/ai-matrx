@@ -137,6 +137,14 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-21 — handoff bounded exit (server D-pair):** the handoff card gains
+  "Dismiss — let the agent continue" (`dismissHandoff` → `POST
+  /runs/{id}/dismiss-handoff`) beside "Step in and help". Server side, an
+  unclaimed handoff now also EXPIRES (lazy `expires_at` enforcement) and the
+  agent can withdraw its own via `cloud_browser action="dismiss_handoff"` — a
+  run can no longer be stranded in `handoff_requested`. Only an unclaimed
+  handoff is dismissible; a claimed episode exits via Return control.
+
 - **2026-08-21 — the D-11 credential capture card (both halves):** `credential_login
   action="capture"` on the cloud browser used to return `human_required` guidance
   because the private value box existed only in the Chrome extension. It now raises

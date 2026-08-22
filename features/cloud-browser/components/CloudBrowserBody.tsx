@@ -28,7 +28,7 @@ import { CLOUD_BROWSER_ASSIST_SURFACE } from "../constants";
 import { useCloudBrowser } from "../hooks/useCloudBrowser";
 import { useCloudBrowserTakeover } from "../hooks/useCloudBrowserTakeover";
 import { useScreenshotSession } from "../hooks/useScreenshotSession";
-import { mintStreamTicket } from "../service";
+import { dismissHandoff, mintStreamTicket } from "../service";
 import type { StreamTicketEnvelope } from "../types";
 
 import { WrittenProgressFace } from "./WrittenProgressFace";
@@ -300,13 +300,29 @@ export function CloudBrowserBody({
                 <BellRing className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                 <div className="flex-1">
                   <p className="text-foreground">{cb.handoff.message}</p>
-                  <div className="mt-1.5">
+                  <div className="mt-1.5 flex items-center gap-2">
                     <Button
                       size="sm"
                       onClick={takeover.begin}
                       disabled={busy || takeover.phase === "claiming"}
                     >
                       Step in and help
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                      disabled={busy}
+                      onClick={() => {
+                        if (!cb.run) return;
+                        void dismissHandoff(cb.run.id)
+                          .then(() => cb.reload())
+                          .catch(() =>
+                            toast.error("Could not dismiss the request."),
+                          );
+                      }}
+                    >
+                      Dismiss — let the agent continue
                     </Button>
                   </div>
                 </div>
