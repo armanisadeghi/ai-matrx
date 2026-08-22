@@ -20,6 +20,12 @@
 --   4. reports geo_areas_pending / geo_areas_filled so the UI can put a
 --      persistent door in front of the unfinished ones.
 --
+-- I3 (the gazetteer) landed the same day: an area may name PLACES from
+-- seo.geo_place as well as typed words, so p_geo_place_ids sits beside
+-- p_geo_places and "pending" means neither. A picked place is preferred — it
+-- carries its state, aliases and ambiguity rule, so "columbus" stops meaning
+-- four cities.
+--
 -- Tokens are normalized (trim/lower/dedupe) and pass through the existing
 -- site_geo_area_assert_tokens BEFORE trigger — THE REGEX WALL is the one
 -- authority on what a place name may contain, and this function does not fork it.
@@ -35,9 +41,11 @@
 -- site_geo_area_assert_tokens BEFORE trigger, which this never re-implements.
 create or replace function seo._pack_geo_archetypes(
   p_pack_id uuid,
-  p_geo_places jsonb
+  p_geo_places jsonb,
+  p_geo_place_ids jsonb default null::jsonb
 )
-returns table(item_id uuid, label text, area_kind text, geo_band text, notes text, tokens jsonb)
+returns table(item_id uuid, label text, area_kind text, geo_band text, notes text,
+              tokens jsonb, place_ids uuid[])
 language sql
 stable
 set search_path to 'seo', 'pg_temp'
@@ -53,16 +61,24 @@ as $function$
                      coalesce(p_geo_places -> i.id::text, '[]'::jsonb)) raw(tok0)
               cross join lateral (select lower(btrim(raw.tok0)) as tok) t
              where t.tok <> ''),
-           '[]'::jsonb)
+           '[]'::jsonb),
+         coalesce(
+           (select array_agg(distinct pid::uuid)
+              from jsonb_array_elements_text(
+                     coalesce(p_geo_place_ids -> i.id::text, '[]'::jsonb)) pid
+             where pid <> ''),
+           '{}'::uuid[])
   from seo.starter_pack_item i
   where i.pack_id = p_pack_id and i.item_kind = 'geo_area' and i.deleted_at is null;
 $function$;
 
-grant execute on function seo._pack_geo_archetypes(uuid, jsonb) to authenticated, service_role;
+drop function if exists seo._pack_geo_archetypes(uuid, jsonb);
+grant execute on function seo._pack_geo_archetypes(uuid, jsonb, jsonb) to authenticated, service_role;
 
--- A 6th parameter is a NEW overload, and a 5-argument call would then be
--- ambiguous — so the old signature goes.
+-- Extra parameters make a NEW overload, and a call with the old argument count
+-- would then be ambiguous — so the older signatures go.
 drop function if exists seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean);
+drop function if exists seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, jsonb);
 
 create or replace function seo.adopt_starter_pack(
   p_site_id uuid,
@@ -70,7 +86,8 @@ create or replace function seo.adopt_starter_pack(
   p_include text[] default null::text[],
   p_topic_ids uuid[] default null::uuid[],
   p_seed_guidelines boolean default true,
-  p_geo_places jsonb default null::jsonb
+  p_geo_places jsonb default null::jsonb,
+  p_geo_place_ids jsonb default null::jsonb
 )
 returns jsonb
 language plpgsql
@@ -145,17 +162,19 @@ begin
   if 'geo_areas' = any(v_want) then
     with ins as (
       insert into seo.site_geo_area
-        (site_id, label, area_kind, match_tokens, geo_band, notes,
+        (site_id, label, area_kind, match_tokens, place_ids, geo_band, notes,
          organization_id, created_by, updated_by, metadata)
-      select p_site_id, a.label, a.area_kind, a.tokens, a.geo_band, a.notes,
+      select p_site_id, a.label, a.area_kind, a.tokens, a.place_ids, a.geo_band, a.notes,
              v_org, v_uid, v_uid,
              jsonb_build_object(
                'adopted_from_pack', v_pack.slug,
                'pack_item_id', a.item_id,
                -- Loud, persistent, and machine-readable: this area was created
                -- as a labelled shell and has never been told what it stands for.
-               'places_pending', jsonb_array_length(a.tokens) = 0)
-      from seo._pack_geo_archetypes(p_pack_id, p_geo_places) a
+               'places_pending',
+               jsonb_array_length(a.tokens) = 0
+                 and coalesce(array_length(a.place_ids, 1), 0) = 0)
+      from seo._pack_geo_archetypes(p_pack_id, p_geo_places, p_geo_place_ids) a
       on conflict do nothing
       returning 1)
     select count(*)::int into v_areas from ins;
@@ -166,15 +185,18 @@ begin
     with upd as (
       update seo.site_geo_area g
          set match_tokens = a.tokens,
+             place_ids = a.place_ids,
              metadata = (coalesce(g.metadata, '{}'::jsonb) - 'places_pending')
                         || jsonb_build_object('places_filled_at', now()),
              updated_by = v_uid
-        from seo._pack_geo_archetypes(p_pack_id, p_geo_places) a
+        from seo._pack_geo_archetypes(p_pack_id, p_geo_places, p_geo_place_ids) a
        where g.site_id = p_site_id
          and g.deleted_at is null
          and g.label = a.label
          and coalesce(jsonb_array_length(g.match_tokens), 0) = 0
-         and jsonb_array_length(a.tokens) > 0
+         and coalesce(array_length(g.place_ids, 1), 0) = 0
+         and (jsonb_array_length(a.tokens) > 0
+              or coalesce(array_length(a.place_ids, 1), 0) > 0)
       returning 1)
     select count(*)::int into v_filled from upd;
   end if;
@@ -212,7 +234,8 @@ begin
   select count(*) into v_pending
   from seo.site_geo_area g
   where g.site_id = p_site_id and g.deleted_at is null
-    and coalesce(jsonb_array_length(g.match_tokens), 0) = 0;
+    and coalesce(jsonb_array_length(g.match_tokens), 0) = 0
+    and coalesce(array_length(g.place_ids, 1), 0) = 0;
 
   return jsonb_build_object(
     'pack', v_pack.slug, 'site_id', p_site_id,
@@ -222,9 +245,9 @@ begin
 end;
 $function$;
 
-comment on function seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, jsonb) is
-  'Adopt an industry starter pack onto a site. Additive and idempotent: never overwrites a ruling the site has already made. p_geo_places maps a pack geo_area item id to the business''s own place names; an archetype adopted without places is stamped metadata.places_pending=true and reported in geo_areas_pending, and a later adoption with places fills it.';
+comment on function seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, jsonb, jsonb) is
+  'Adopt an industry starter pack onto a site. Additive and idempotent: never overwrites a ruling the site has already made. p_geo_place_ids (gazetteer places, preferred) and p_geo_places (typed words) each map a pack geo_area item id to what that archetype stands for on THIS business; an archetype adopted with neither is stamped metadata.places_pending=true and reported in geo_areas_pending, and a later adoption fills it.';
 
-grant execute on function seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, jsonb)
+grant execute on function seo.adopt_starter_pack(uuid, uuid, text[], uuid[], boolean, jsonb, jsonb)
   to authenticated, service_role;
 

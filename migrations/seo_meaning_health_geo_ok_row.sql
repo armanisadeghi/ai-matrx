@@ -27,7 +27,11 @@ DECLARE
 BEGIN
   PERFORM seo.gsc_assert_site_access(p_site_id);
 
-  SELECT count(*), count(*) FILTER (WHERE COALESCE(jsonb_array_length(g.match_tokens), 0) = 0)
+  -- An area is finished when it names gazetteer places OR typed words (I3);
+  -- only an area with neither is a shell that matches nothing.
+  SELECT count(*),
+         count(*) FILTER (WHERE COALESCE(jsonb_array_length(g.match_tokens), 0) = 0
+                            AND COALESCE(array_length(g.place_ids, 1), 0) = 0)
     INTO v_geo_total, v_geo_inert
   FROM seo.site_geo_area g WHERE g.site_id = p_site_id AND g.deleted_at IS NULL;
 
@@ -60,7 +64,7 @@ BEGIN
   IF v_geo_inert > 0 THEN
     RETURN QUERY SELECT 'geo', 'inert',
       format('%s of your %s service areas match nothing', v_geo_inert, v_geo_total),
-      'They have a name and a band but no place names in them, so no keyword has ever matched one. Until you add the towns, cities or regions each stands for, geography counts for nothing in your value tiers.',
+      'They have a name and a band but no places in them — no picked place, no typed name — so no keyword has ever matched one. Until you say which towns, cities or regions each stands for, geography counts for nothing in your value tiers.',
       v_geo_inert;
   ELSIF v_geo_total = 0 THEN
     RETURN QUERY SELECT 'geo', 'gap',
@@ -73,7 +77,7 @@ BEGIN
     -- sent here to fix visibly turns over instead of silently disappearing.
     RETURN QUERY SELECT 'geo', 'ok',
       format('%s service areas, all with places in them', v_geo_total),
-      'Every area names the towns, cities or regions it stands for, so location counts in the value of every search that mentions one. When several areas match the same search the lowest multiplier wins — a place you never serve beats a place you love.',
+      'Every area names the places it stands for, so location counts in the value of every search that mentions one. When several areas match the same search the lowest multiplier wins — a place you never serve beats a place you love.',
       v_geo_total;
   END IF;
 

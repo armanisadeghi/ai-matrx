@@ -47,7 +47,7 @@ import {
 } from "../data";
 import { geoAreasQueryKey } from "../rules/data";
 import { areaNeedsPlaces, incompleteAreasHref } from "../lib";
-import { GeoPlacesStep, type GeoPlacesByItem } from "./GeoPlacesStep";
+import { GeoPlacesStep, type GeoPlacesDraft } from "./GeoPlacesStep";
 import type {
   StarterPackBandItem,
   StarterPackDetail,
@@ -366,8 +366,14 @@ function PackDetail({
   const [askingPlaces, setAskingPlaces] = useState(false);
 
   const adopt = useMutation({
-    mutationFn: (geoPlaces: GeoPlacesByItem) =>
-      adoptStarterPack(siteId, detail.pack.id, undefined, geoPlaces),
+    mutationFn: (places: GeoPlacesDraft) =>
+      adoptStarterPack(
+        siteId,
+        detail.pack.id,
+        undefined,
+        places.tokens,
+        places.placeIds,
+      ),
     onSuccess: (result) => {
       const written =
         result.topics +
@@ -396,7 +402,7 @@ function PackDetail({
   /** A pack that carries archetypes asks for the places BEFORE it writes. */
   const startAdoption = () => {
     if (detail.geo_areas.length > 0) setAskingPlaces(true);
-    else adopt.mutate({});
+    else adopt.mutate({ tokens: {}, placeIds: {} });
   };
 
   return (
