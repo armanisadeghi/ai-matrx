@@ -30093,6 +30093,11 @@ export type Database = {
         }
         Returns: Json
       }
+      lifecycle_user_keep: {
+        Args: { p_entity_token: string; p_ids?: string[] }
+        Returns: Json
+      }
+      lifecycle_user_notice: { Args: { p_user_id?: string }; Returns: Json }
       list_my_presentable_assists: {
         Args: { p_limit?: number }
         Returns: {

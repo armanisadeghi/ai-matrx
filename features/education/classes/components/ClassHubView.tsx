@@ -29,6 +29,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClasses } from "../hooks/useClasses";
 import { useClassContent } from "../hooks/useClassContent";
 import { useClassAccess } from "../hooks/useClassAccess";
+import { useMyClasses } from "../hooks/useMyClasses";
 import { useClassAssignments } from "../hooks/useClassAssignments";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AddClassContentSheet } from "./AddClassContentSheet";
@@ -63,12 +64,22 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
   );
 
   // The access layer is the authoritative source for role/access_mode. For an
-  // OWNED class we have its id from useClasses; for a JOINED class the param IS
-  // the scope id (joined classes link by id).
-  const resolvedId = cls?.id ?? (UUID_RE.test(classParam) ? classParam : null);
+  // OWNED class we have its id from useClasses; for a JOINED class the param is
+  // either the scope id or its slug — a student arriving on the teacher's slug
+  // link (the URL the owner copies from their own address bar) must resolve
+  // too, so joined classes (edu_my_classes, cross-org) are the slug fallback.
+  const { joined: myClasses, loading: myClassesLoading } = useMyClasses();
+  const joinedMatch = UUID_RE.test(classParam)
+    ? undefined
+    : myClasses.find((c) => c.slug === classParam || c.classId === classParam);
+  const resolvedId =
+    cls?.id ?? joinedMatch?.classId ?? (UUID_RE.test(classParam) ? classParam : null);
   const access = useClassAccess(resolvedId);
 
-  const stillLoading = (loading && !cls) || (access.loading && !access.state);
+  const stillLoading =
+    (loading && !cls) ||
+    (!cls && !resolvedId && myClassesLoading) ||
+    (access.loading && !access.state);
 
   if (stillLoading) {
     return (

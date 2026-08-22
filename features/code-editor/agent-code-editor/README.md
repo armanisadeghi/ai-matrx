@@ -99,7 +99,7 @@ function MyApp() {
         onOpenChange={setOpen}
         currentCode={code}
         language="typescript"
-        agentId="THE-CODE-EDITOR-AGENT-UUID"
+        agents={[GENERIC_CODE_EDITOR_AGENT]} // mandate keys — never an agent UUID
         onCodeChange={setCode}
         title="AI Code Editor"
       />
@@ -139,7 +139,7 @@ Note: when embedding directly, the widget handle must be registered BEFORE `laun
 ## Migration from `AICodeEditorModal`
 
 1. Change the import: `@/features/code-editor/components/AICodeEditorModal` → `@/features/code-editor/agent-code-editor`.
-2. Replace `promptKey` / `builtinId` with `agentId` (the agent UUID).
+2. Replace `promptKey` / `builtinId` with `agents` (a roster of `CodeEditorAgentConfig` — mandate keys from `agents.ts`, never agent UUIDs).
 3. Remove `allowPromptSelection` — the agent system doesn't use prompt builtins; it uses specific agents.
 4. Everything else (`currentCode`, `language`, `onCodeChange`, `title`) is identical.
 

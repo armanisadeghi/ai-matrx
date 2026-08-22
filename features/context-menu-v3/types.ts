@@ -47,6 +47,26 @@ export type PlacementKey =
 export type PlacementMode = Partial<Record<PlacementKey, PlacementVisibility>>;
 
 // ---------------------------------------------------------------------------
+// Presentation knobs — how the ONE model is arranged and how dense it draws.
+// Behaviour never changes with these; see `model/layouts.ts`.
+// ---------------------------------------------------------------------------
+
+/**
+ * `classic`  — the historical flat column (every section at the top level).
+ * `tiered`   — icon strip for the universal verbs + ≤ ~8 grouped rows; the
+ *              long tail folds into a few named submenus.
+ * `command`  — tiered + a type-to-filter box over every leaf in the menu.
+ */
+export type ContextMenuLayout = "classic" | "tiered" | "command";
+
+/** Row height / font / icon size. */
+export type ContextMenuDensity = "comfortable" | "compact";
+
+/** The defaults every surface inherits unless it passes a knob. */
+export const DEFAULT_MENU_LAYOUT: ContextMenuLayout = "classic";
+export const DEFAULT_MENU_DENSITY: ContextMenuDensity = "comfortable";
+
+// ---------------------------------------------------------------------------
 // Surface passthrough — the declarative contract for surface-specific items.
 // ---------------------------------------------------------------------------
 
@@ -254,6 +274,10 @@ export interface ContextMenuV3CoreProps {
   // ── Presentation ────────────────────────────────────────────────────────
   enableFloatingIcon?: boolean;
   className?: string;
+  /** Arrangement of the menu body. Default `DEFAULT_MENU_LAYOUT`. */
+  menuLayout?: ContextMenuLayout;
+  /** Row density. Default `DEFAULT_MENU_DENSITY`. */
+  menuDensity?: ContextMenuDensity;
 
   /**
    * While true, right-click / long-press yield to the NATIVE browser menu —
@@ -361,6 +385,10 @@ export interface MenuContentProps {
 
   // surface passthrough
   extraSections?: ContextMenuExtraSection[];
+
+  // presentation
+  menuLayout: ContextMenuLayout;
+  menuDensity: ContextMenuDensity;
 
   // editable
   isEditable: boolean;

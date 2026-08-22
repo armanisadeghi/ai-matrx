@@ -36,10 +36,7 @@ import {
   useAICodeEditor,
   type UseAICodeEditorProps,
 } from "@/features/code-editor/hooks/useAICodeEditor";
-import {
-  PROMPT_BUILTINS,
-  type PromptBuiltin,
-} from "@/features/agents/constants/system-agent-registry";
+import { CODE_EDITOR_AGENTS } from "@/features/code-editor/agent-code-editor/agents";
 
 export type AICodeEditorProps = UseAICodeEditorProps & {
   title?: string;
@@ -53,7 +50,7 @@ export function AICodeEditor({
   onOpenChange,
   currentCode,
   language: rawLanguage,
-  builtinId,
+  mandateKey,
   promptKey = "generic-code-editor",
   onCodeChange,
   title = "AI Code Editor",
@@ -71,8 +68,8 @@ export function AICodeEditor({
     errorMessage,
     rawAIResponse,
     isCopied,
-    selectedBuiltinId,
-    setSelectedBuiltinId,
+    selectedMandateKey,
+    setSelectedMandateKey,
     isExecuting,
     isLoadingPrompt,
     diffStats,
@@ -90,15 +87,15 @@ export function AICodeEditor({
     onOpenChange,
     currentCode,
     language: rawLanguage,
-    builtinId,
+    mandateKey,
     promptKey,
     onCodeChange,
     selection,
     context,
   });
 
-  // Get available builtins for the selector
-  const availableBuiltins = Object.values(PROMPT_BUILTINS) as PromptBuiltin[];
+  // The editing jobs available in the selector (mandate keys — the DB picks the agent).
+  const availableJobs = CODE_EDITOR_AGENTS;
 
   // Memoize CodeBlock to prevent re-rendering
   const memoizedCodeDisplay = useMemo(
@@ -137,21 +134,21 @@ export function AICodeEditor({
             <div className="flex items-center gap-2 ml-auto">
               {allowPromptSelection && (
                 <Select
-                  value={selectedBuiltinId}
-                  onValueChange={setSelectedBuiltinId}
+                  value={selectedMandateKey}
+                  onValueChange={setSelectedMandateKey}
                   disabled={isLoadingPrompt}
                 >
                   <SelectTrigger className="w-[160px] h-7 text-xs">
                     <SelectValue placeholder="Select mode" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableBuiltins.map((builtin) => (
+                    {availableJobs.map((job) => (
                       <SelectItem
-                        key={builtin.id}
-                        value={builtin.id}
+                        key={job.mandateKey}
+                        value={job.mandateKey}
                         className="text-xs"
                       >
-                        {builtin.name} ({builtin.key})
+                        {job.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -16,13 +16,10 @@ import {
   WrapText,
   Maximize2,
   ListOrdered,
-  Atom,
-  Rocket,
   Zap,
   Paintbrush,
   Code2,
   Brain,
-  FileText,
   FileCode,
   SquareArrowOutUpRight,
   MoreHorizontal,
@@ -39,15 +36,21 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
-import { getBuiltinInfoByKey } from "@/features/agents/constants/system-agent-registry";
+import {
+  DYNAMIC_CONTEXT_CODE_EDITOR_AGENT,
+  GENERIC_CODE_EDITOR_AGENT,
+  PROMPT_APP_UI_EDITOR_AGENT,
+  agentForPromptKey,
+} from "@/features/code-editor/agent-code-editor/agents";
+import type { CodeEditorAgentConfig } from "@/features/code-editor/agent-code-editor/types";
 import AdvancedMenu, {
   type MenuItem,
 } from "@/components/official/AdvancedMenu";
 import { useAdvancedMenu } from "@/hooks/use-advanced-menu";
 
 type AIModalConfig = {
-  version: "v2" | "v3";
-  builtinId: string;
+  /** The editing job (mandate key) — the DB decides which agent runs it. */
+  mandateKey: string;
   title: string;
 };
 
@@ -234,18 +237,11 @@ interface CodeBlockButtonsProps {
   extraMenuItems?: CodeBlockMenuItem[];
 }
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  Rocket,
-  Zap,
-  Paintbrush,
-  Code2,
-  Brain,
-  FileText,
-  Atom,
-};
-
-const getIconComponent = (iconName: string): LucideIcon => {
-  return ICON_MAP[iconName] || Atom;
+/** Menu icon per code-editor job (keyed by mandate key). */
+const AI_EDIT_ICONS: Record<string, LucideIcon> = {
+  [GENERIC_CODE_EDITOR_AGENT.mandateKey]: Code2,
+  [DYNAMIC_CONTEXT_CODE_EDITOR_AGENT.mandateKey]: Brain,
+  [PROMPT_APP_UI_EDITOR_AGENT.mandateKey]: Paintbrush,
 };
 
 /**
@@ -330,12 +326,17 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
     }
   };
 
-  const defaultKeys = ["generic-code-editor", "code-editor-dynamic-context"];
-  const allKeys = [...defaultKeys, ...customBuiltinKeys];
-  const uniqueKeys = Array.from(new Set(allKeys));
-  const builtins = uniqueKeys
-    .map((key) => getBuiltinInfoByKey(key))
-    .filter((b): b is NonNullable<typeof b> => b !== undefined);
+  // AI-edit jobs: the two defaults plus any caller-supplied keys (legacy
+  // promptKey strings or mandate keys), deduped by mandate key.
+  const aiEditJobs: CodeEditorAgentConfig[] = [];
+  for (const cfg of [
+    GENERIC_CODE_EDITOR_AGENT,
+    DYNAMIC_CONTEXT_CODE_EDITOR_AGENT,
+    ...customBuiltinKeys.map((key) => agentForPromptKey(key)),
+  ]) {
+    if (!aiEditJobs.some((j) => j.mandateKey === cfg.mandateKey))
+      aiEditJobs.push(cfg);
+  }
 
   // Build the unified menu items list. Order here determines section order
   // because `AdvancedMenu` preserves insertion order when grouping.
@@ -453,38 +454,17 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   });
 
   if (allowEdit && onAIEdit) {
-    for (const builtin of builtins) {
-      const IconComp = getIconComponent(builtin.icon);
+    for (const job of aiEditJobs) {
       menuItems.push({
-        key: `ai-${builtin.key}`,
-        icon: IconComp,
+        key: `ai-${job.mandateKey}`,
+        icon: AI_EDIT_ICONS[job.mandateKey] ?? Code2,
         iconColor: "text-purple-600 dark:text-purple-400",
-        label: builtin.name,
+        label: job.name,
         category: "AI",
         showToast: false,
         action: () =>
-          onAIEdit({
-            version: "v2",
-            builtinId: builtin.id,
-            title: builtin.name,
-          }),
+          onAIEdit({ mandateKey: job.mandateKey, title: job.name }),
       });
-      if (builtin.context) {
-        menuItems.push({
-          key: `ai-${builtin.key}-ctx`,
-          icon: IconComp,
-          iconColor: "text-purple-600 dark:text-purple-400",
-          label: `${builtin.name} (Context)`,
-          category: "AI",
-          showToast: false,
-          action: () =>
-            onAIEdit({
-              version: "v3",
-              builtinId: builtin.id,
-              title: `${builtin.name} (Context)`,
-            }),
-        });
-      }
     }
   }
 

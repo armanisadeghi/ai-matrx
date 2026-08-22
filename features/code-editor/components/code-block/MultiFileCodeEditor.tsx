@@ -23,8 +23,8 @@ import {
 } from "@/features/code-editor/config/languages";
 
 type AIModalConfig = {
-  version: "v2" | "v3";
-  builtinId: string;
+  /** The editing job (mandate key) — the DB decides which agent runs it. */
+  mandateKey: string;
   title: string;
 };
 
@@ -275,11 +275,11 @@ export default function MultiFileCodeEditor({
   };
 
   const handleOpenAIModal = (config: AIModalConfig) => {
-    const agent = agentForPromptKey(config.builtinId);
+    const agent = agentForPromptKey(config.mandateKey);
     const targetFile = activeFile;
     openSmartCodeEditorWindow({
       agents: [agent],
-      defaultPickerAgentId: agent.id,
+      defaultPickerMandateKey: agent.mandateKey,
       initialCode: code,
       language: monacoLanguage,
       title: config.title,

@@ -18,26 +18,19 @@ import type {
   CodeEditorAgentConfig,
   CodeFile,
 } from "@/features/code-editor/agent-code-editor/types";
+import {
+  DYNAMIC_CONTEXT_CODE_EDITOR_AGENT,
+  GENERIC_CODE_EDITOR_AGENT,
+  PROMPT_APP_UI_EDITOR_AGENT,
+} from "@/features/code-editor/agent-code-editor/agents";
 import { TYPESCRIPT_SNIPPET, ADDITIONAL_CONTEXT_SNIPPET } from "./snippets";
 
-// ── Agent registry ───────────────────────────────────────────────────────────
+// ── Editing jobs (mandate keys — the DB decides which agent runs each) ──────
 
 const AGENTS: CodeEditorAgentConfig[] = [
-  {
-    id: "55cc4ad1-bafd-4b82-af0b-4b4f40406ca3",
-    name: "Code Editor",
-    codeVariableKey: "current_code",
-  },
-  {
-    id: "eede051c-d450-4f01-a6de-b282a7ebb581",
-    name: "Code Editor (Dynamic Context)",
-    codeVariableKey: "dynamic_context",
-  },
-  {
-    id: "f6649577-aa9e-4b81-afef-47f11a6bef1b",
-    name: "Prompt App Code Editor",
-    codeVariableKey: "current_code",
-  },
+  GENERIC_CODE_EDITOR_AGENT,
+  DYNAMIC_CONTEXT_CODE_EDITOR_AGENT,
+  PROMPT_APP_UI_EDITOR_AGENT,
 ];
 
 const LANGUAGES = [

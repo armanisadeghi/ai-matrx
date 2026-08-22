@@ -19,7 +19,7 @@ export interface SmartCodeEditorModalProps {
   onOpenChange: (open: boolean) => void;
 
   agents: CodeEditorAgentConfig[];
-  defaultPickerAgentId?: string;
+  defaultPickerMandateKey?: string;
 
   initialCode?: string;
   language?: string;
@@ -44,7 +44,7 @@ export function SmartCodeEditorModal({
   open,
   onOpenChange,
   agents,
-  defaultPickerAgentId,
+  defaultPickerMandateKey,
   initialCode = "",
   language = "plaintext",
   onCodeChange,
@@ -67,7 +67,7 @@ export function SmartCodeEditorModal({
       <DialogContent className="max-w-[95vw] w-full h-[90dvh] p-0 gap-0">
         <SmartCodeEditor
           agents={agents}
-          defaultPickerAgentId={defaultPickerAgentId}
+          defaultPickerMandateKey={defaultPickerMandateKey}
           initialCode={initialCode}
           language={language}
           onCodeChange={onCodeChange}

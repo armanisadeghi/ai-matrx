@@ -2,12 +2,17 @@
  * Programmatic one-shot agent execution with response extraction.
  *
  * Replaces the deleted `lib/redux/prompt-execution/thunks/executeBuiltinWith*`
- * thunks. Same UUIDs / keys; runs through `launchAgentExecution`.
+ * thunks. The `builtinKey` names a JOB (→ a mandate key via the system-agent
+ * registry); the launch funnel resolves the mandate itself so the binding's
+ * agent AND config_overrides both apply — never a resolved agent id here.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { getBuiltinId } from "@/features/agents/constants/system-agent-registry";
+import {
+  mandateKeyForBuiltin,
+  type SystemAgentKey,
+} from "@/features/agents/constants/system-agent-registry";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import {
   selectLatestAnswerText,
@@ -19,8 +24,8 @@ import { launchAgentExecution } from "./launch-agent-execution.thunk";
 import { runHeadlessAgentJson } from "./run-headless-agent-json";
 
 interface BaseExtractionPayload {
-  /** System agent key (e.g. `prompt-app-auto-create`) or UUID */
-  builtinKey: string;
+  /** System agent key (e.g. `prompt-app-auto-create`) — maps to a mandate key. */
+  builtinKey: SystemAgentKey;
   variables: Record<string, string>;
   timeoutMs?: number;
   pollingIntervalMs?: number;
@@ -125,11 +130,11 @@ async function runBuiltinAgent(
   getState: () => RootState,
   jsonExtractionEnabled: boolean,
 ): Promise<{ conversationId: string; requestId?: string }> {
-  const agentId = getBuiltinId(payload.builtinKey);
+  const mandateKey = mandateKeyForBuiltin(payload.builtinKey);
 
   const launch = await dispatch(
     launchAgentExecution({
-      agentId,
+      mandateKey,
       surfaceKey: `programmatic-extraction:${payload.builtinKey}`,
       sourceFeature: "agent-app",
       // NOT ephemeral: these runs are expensive (up to 5 minutes) and their
@@ -251,9 +256,9 @@ export const executeBuiltinWithJsonExtraction = createAsyncThunk<
   "agentExecution/executeBuiltinWithJsonExtraction",
   async (payload, { dispatch, getState }) => {
     // Delegates to the ONE headless JSON primitive (D126) — this thunk only
-    // resolves the builtin key and adapts the legacy result field names.
+    // maps the builtin key to its mandate and adapts the legacy result field names.
     const result = await runHeadlessAgentJson(dispatch, getState, {
-      agentId: getBuiltinId(payload.builtinKey),
+      mandateKey: mandateKeyForBuiltin(payload.builtinKey),
       surfaceKey: `programmatic-extraction:${payload.builtinKey}`,
       sourceFeature: "agent-app",
       variables: payload.variables,

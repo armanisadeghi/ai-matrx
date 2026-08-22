@@ -48,7 +48,12 @@ import {
   type CapturedSelection,
   type SelectionRange,
 } from "./utils/selection-tracking";
-import type { ContextMenuV3Props, MenuContentProps } from "./types";
+import {
+  DEFAULT_MENU_DENSITY,
+  DEFAULT_MENU_LAYOUT,
+  type ContextMenuV3Props,
+  type MenuContentProps,
+} from "./types";
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 
@@ -150,6 +155,8 @@ export function ContextMenuV3({
   scopeId = null,
   enableFloatingIcon = true,
   className,
+  menuLayout = DEFAULT_MENU_LAYOUT,
+  menuDensity = DEFAULT_MENU_DENSITY,
   suppressed = false,
   onMenuOpenChange,
   onCloseAutoFocus,
@@ -590,6 +597,8 @@ export function ContextMenuV3({
     scope,
     scopeId,
     extraSections,
+    menuLayout,
+    menuDensity,
     isEditable,
     editorId,
     getTextarea,
@@ -741,8 +750,12 @@ export function ContextMenuV3({
           {children}
         </ContextMenuTrigger>
         {/* z-[9999]: menus must layer above floating WindowPanels (z >= 1000). */}
+        {/* max-h + overflow-y-auto: a long menu (30 rows on /notes measured
+            1136px in a 900px viewport) used to run off the bottom of the
+            screen with its tail unreachable — Radix only flips/shifts, it
+            never shrinks. The available-height var is what Radix leaves us. */}
         <ContextMenuContent
-          className={`z-[9999] w-64 ${className ?? ""}`}
+          className={`z-[9999] w-64 max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto ${className ?? ""}`}
           onCloseAutoFocus={onCloseAutoFocus}
         >
           <MenuContent variant="context" {...menuContentProps} />
@@ -770,7 +783,7 @@ export function ContextMenuV3({
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="z-[9999] w-64"
+            className="z-[9999] w-64 max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto"
             align="center"
             side="bottom"
             sideOffset={5}

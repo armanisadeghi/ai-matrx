@@ -32,8 +32,8 @@ import {
 const SyntaxHighlighter = SyntaxHighlighterBase as any;
 
 type AIModalConfig = {
-  version: "v2" | "v3";
-  builtinId: string;
+  /** The editing job (mandate key) — the DB decides which agent runs it. */
+  mandateKey: string;
   title: string;
 };
 
@@ -304,10 +304,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   };
 
   const handleOpenAIModal = (config: AIModalConfig) => {
-    const agent = agentForPromptKey(config.builtinId);
+    const agent = agentForPromptKey(config.mandateKey);
     openSmartCodeEditorWindow({
       agents: [agent],
-      defaultPickerAgentId: agent.id,
+      defaultPickerMandateKey: agent.mandateKey,
       initialCode: editedCode ?? initialCode ?? "",
       language: monacoLanguage,
       title: config.title,

@@ -26,6 +26,10 @@
  *     conversation's `instanceContext` on every relevant change.
  *   - First-turn variable is seeded from the active file's code per agent
  *     (`codeVariableKey`).
+ *   - Every job in the picker is a MANDATE KEY; the DB decides the agent.
+ *     Drafts launch through `launchMandate` (both halves of the binding apply);
+ *     the roster's resolved agent ids exist only to merge conversation history
+ *     and to map an existing conversation back to its job config.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +44,7 @@ import {
   smartCodeEditorManifest,
 } from "@/features/surfaces/manifests/smart-code-editor.manifest";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useMandates } from "@/features/agents/mandates/useMandates";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
@@ -84,10 +89,10 @@ function fileContextKey(filePath: string, fileName: string): string {
 // ── Props ────────────────────────────────────────────────────────────────────
 
 export interface SmartCodeEditorProps {
-  /** The set of agents the editor supports. First agent is the picker default. */
+  /** The editing jobs (mandates) the editor supports. First is the picker default. */
   agents: CodeEditorAgentConfig[];
-  /** Initial picker-selected agent id. Defaults to `agents[0]`. */
-  defaultPickerAgentId?: string;
+  /** Initial picker-selected mandate key. Defaults to `agents[0]`. */
+  defaultPickerMandateKey?: string;
 
   /** Single-file content (ignored when `files` is provided). */
   initialCode?: string;
@@ -120,7 +125,7 @@ export interface SmartCodeEditorProps {
 
 export function SmartCodeEditor({
   agents,
-  defaultPickerAgentId,
+  defaultPickerMandateKey,
   initialCode = "",
   language,
   onCodeChange,
@@ -141,11 +146,27 @@ export function SmartCodeEditor({
 
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const { launchAgent } = useAgentLauncher();
+  const { launchMandate } = useAgentLauncher();
+
+  // ── Mandate resolution (which agent runs each job — the DB decides) ───────
+  const mandateKeys = useMemo(() => agents.map((a) => a.mandateKey), [agents]);
+  const {
+    byKey: resolvedMandates,
+    errors: mandateErrors,
+    loading: mandatesLoading,
+  } = useMandates(mandateKeys);
+  /** Resolved agent ids for the roster — drives history merge only. */
+  const rosterAgentIds = useMemo(
+    () =>
+      agents
+        .map((a) => resolvedMandates[a.mandateKey]?.agentId)
+        .filter((id): id is string => typeof id === "string"),
+    [agents, resolvedMandates],
+  );
 
   // ── Picker state ──────────────────────────────────────────────────────────
-  const [pickerAgentId, setPickerAgentId] = useState<string>(
-    defaultPickerAgentId ?? agents[0]?.id ?? "",
+  const [pickerMandateKey, setPickerMandateKey] = useState<string>(
+    defaultPickerMandateKey ?? agents[0]?.mandateKey ?? "",
   );
 
   // ── Active conversation ───────────────────────────────────────────────────
@@ -153,11 +174,21 @@ export function SmartCodeEditor({
     string | null
   >(null);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
+  const [activeMandateKey, setActiveMandateKey] = useState<string | null>(null);
 
-  const activeAgent = useMemo(
-    () => agents.find((a) => a.id === activeAgentId) ?? null,
-    [agents, activeAgentId],
-  );
+  // The job config for the active conversation: the launched mandate when we
+  // minted it, else whichever roster job currently resolves to its agent.
+  const activeAgent = useMemo(() => {
+    if (activeMandateKey) {
+      return agents.find((a) => a.mandateKey === activeMandateKey) ?? null;
+    }
+    if (!activeAgentId) return null;
+    return (
+      agents.find(
+        (a) => resolvedMandates[a.mandateKey]?.agentId === activeAgentId,
+      ) ?? null
+    );
+  }, [agents, activeMandateKey, activeAgentId, resolvedMandates]);
 
   // ── File state (shared CodeEditorWindow hook) ─────────────────────────────
   const isMultiFile = (files?.length ?? 0) > 0;
@@ -304,12 +335,14 @@ export function SmartCodeEditor({
   });
 
   // ── Draft creation ────────────────────────────────────────────────────────
+  // `launchMandate` resolves the key INSIDE the launch funnel so the binding's
+  // agent AND config_overrides both apply — never pass a resolved agent id.
   const handleCreateDraft = useCallback(
-    async (agentId: string) => {
-      const agent = agents.find((a) => a.id === agentId);
+    async (mandateKey: string) => {
+      const agent = agents.find((a) => a.mandateKey === mandateKey);
       if (!agent) return;
       try {
-        const result = await launchAgent(agentId, {
+        const result = await launchMandate(mandateKey, {
           surfaceKey: SMART_CODE_EDITOR_SURFACE_KEY,
           sourceFeature: "code-editor",
           apiEndpointMode: "agent",
@@ -323,14 +356,17 @@ export function SmartCodeEditor({
             widgetHandleId,
           },
         });
+        const launchedAgentId =
+          store.getState().conversations?.byConversationId[result.conversationId]
+            ?.agentId ?? null;
         setActiveConversationId(result.conversationId);
-        setActiveAgentId(agentId);
+        setActiveAgentId(launchedAgentId);
+        setActiveMandateKey(mandateKey);
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("[SmartCodeEditor] launchAgent failed", err);
+        console.error("[SmartCodeEditor] launchMandate failed", err);
       }
     },
-    [agents, code, launchAgent, widgetHandleId],
+    [agents, code, launchMandate, widgetHandleId, store],
   );
 
   // ── Select an existing conversation (mirrors AgentRunnerPage URL-sync) ────
@@ -338,6 +374,7 @@ export function SmartCodeEditor({
     async (conversationId: string, agentId: string) => {
       setActiveConversationId(conversationId);
       setActiveAgentId(agentId);
+      setActiveMandateKey(null);
 
       // Mirror of AgentRunnerPage's URL-sync pattern — direct lookup on the
       // store snapshot instead of a curried selector call.
@@ -602,8 +639,11 @@ export function SmartCodeEditor({
           >
             <CodeEditorHistoryPanel
               agents={agents}
-              pickerAgentId={pickerAgentId}
-              onPickerAgentChange={setPickerAgentId}
+              rosterAgentIds={rosterAgentIds}
+              mandateErrors={mandateErrors}
+              mandatesLoading={mandatesLoading}
+              pickerMandateKey={pickerMandateKey}
+              onPickerMandateKeyChange={setPickerMandateKey}
               activeConversationId={activeConversationId}
               onSelectConversation={handleSelectConversation}
               onCreateDraft={handleCreateDraft}

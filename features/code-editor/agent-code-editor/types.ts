@@ -11,15 +11,15 @@ import type { ParseResult } from "./utils/parseCodeEdits";
 export type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
 /**
- * Minimal config the editor needs for each agent in the picker.
+ * Minimal config the editor needs for each editing job in the picker.
  *
- * `codeVariableKey` is the agent's variable name that should receive the
- * editor's current code on the first turn (e.g. "current_code",
- * "dynamic_context"). Manual for now; in production this mapping comes from
- * a Shortcut's scopeMappings.
+ * `mandateKey` names the JOB (`agent.mandate`); the database decides which
+ * agent runs it — the editor never carries an agent id. `codeVariableKey` is
+ * the offered value (provision `code_editor.session`) that receives the
+ * editor's current code on the first turn ("current_code" | "dynamic_context").
  */
 export interface CodeEditorAgentConfig {
-  id: string;
+  mandateKey: string;
   name: string;
   codeVariableKey: string;
 }

@@ -52,6 +52,16 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     status: "wip",
   },
   {
+    slug: "layouts",
+    title: "Menu Layouts",
+    tagline:
+      "The SAME notes menu four ways: current, compact, tiered (icon strip + folds), command (type-to-filter).",
+    description:
+      "Pick the arrangement of the universal menu. Every panel is the exact /notes wiring (matrx-user/notes + the full notes extraSections) — only the layout / density knobs differ. Right-click each textarea and compare. Behaviour is identical across all four; they share one engine and one model.",
+    icon: "layout-grid",
+    status: "wip",
+  },
+  {
     slug: "inline-edit",
     title: "Inline Agent Editing",
     tagline:

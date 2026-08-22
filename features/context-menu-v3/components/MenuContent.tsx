@@ -9,6 +9,13 @@
 // shared 1:1 with the mobile renderer. Do NOT add a handler here — add it to
 // the hook so both renderers inherit it.
 //
+// Since 2026-08-22 the renderer is MODEL-DRIVEN:
+//   engine → `buildMenuModel` (WHAT exists, one declarative tree)
+//          → `arrangeMenu` (HOW it is laid out: classic / tiered / command)
+//          → this file (draws nodes at the chosen density).
+// A layout or density change is a pure function over the model, never a
+// second renderer; the menu's behaviour is identical across all of them.
+//
 // Two failure classes are killed structurally in the hook:
 //   1. "Fake menu" — Copy is source-gated on `resolveActionText`, which falls
 //      back to the DOM-captured content, so right-clicking read-only content
@@ -20,7 +27,7 @@
 // Modals/windows are dispatched through the OverlayController (no modal code
 // here).
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ContextMenuCheckboxItem,
   ContextMenuItem,
@@ -39,57 +46,18 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { ChevronRight, Loader2, Search, Type } from "lucide-react";
+import { cn } from "@/styles/themes/utils";
+import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import {
-  StickyNote,
-  CheckSquare,
-  MessageSquare,
-  Database,
-  FolderOpen,
-  Zap,
-  Scissors,
-  Copy,
-  Clipboard,
-  Type,
-  Undo2,
-  Redo2,
-  History,
-  GitCompareArrows,
-  Clipboard as ClipboardIcon,
-  Pin,
-  Shield,
-  Eye,
-  EyeOff,
-  Save,
-  Trash2,
-  Mic,
-  Download,
-  Replace,
-  Search,
-  Share2,
-  Link2,
-  Bug,
-  Braces,
-} from "lucide-react";
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import type { RichDocumentAction } from "@/features/rich-document/types";
-import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
-import { BoundAgentsMenuSection } from "./BoundAgentsMenuSection";
-import { jsonSectionLabel } from "../utils/json-menu-actions";
-import {
-  useContextMenuActions,
-  getPlacementIcon,
-  getPlacementLabel,
-  resolveIcon,
-  hasItemsRecursive,
-  resolveRichActionView,
-  PLACEMENT_COLOR,
-} from "../hooks/useContextMenuActions";
-import type {
-  MenuContentProps,
-  PlacementKey,
-  ExtraSectionAnchor,
-  ContextMenuExtraItem,
-} from "../types";
+  buildMenuModel,
+  type MenuLeafNode,
+  type MenuNode,
+  type MenuSection,
+  type MenuSubmenuNode,
+} from "../model/menu-model";
+import { arrangeMenu, collectAllLeaves, filterLeaves } from "../model/layouts";
+import type { ContextMenuDensity, MenuContentProps } from "../types";
 
 function truncatePreview(text: string): string {
   const t = text.trim();
@@ -97,44 +65,51 @@ function truncatePreview(text: string): string {
   return `"${t.substring(0, 20)}...${t.substring(t.length - 20)}"`;
 }
 
-export default function MenuContent(props: MenuContentProps) {
-  const {
-    variant,
-    surfaceName: _surfaceName,
-    extraSections,
-    isEditable,
-    onSave,
-    onDelete,
-    onUndo,
-    onRedo,
-    canUndo,
-    canRedo,
-    undoHint,
-    redoHint,
-    onViewHistory,
-    hasHistory,
-  } = props;
+// ── Density tokens ──────────────────────────────────────────────────────────
+// One object per density; every row / icon / label reads from it so the two
+// densities can never drift apart in a single row.
+interface DensityTokens {
+  row: string;
+  icon: string;
+  label: string;
+  hint: string;
+  description: string;
+  subWidth: string;
+  stripBtn: string;
+  stripIcon: string;
+  filter: string;
+}
+const DENSITY: Record<ContextMenuDensity, DensityTokens> = {
+  comfortable: {
+    row: "",
+    icon: "h-4 w-4 mr-2",
+    label: "px-2 py-1.5 text-xs text-muted-foreground",
+    hint: "ml-auto pl-3 text-xs text-muted-foreground",
+    description: "text-xs text-muted-foreground",
+    subWidth: "w-60",
+    stripBtn: "h-8",
+    stripIcon: "h-4 w-4",
+    filter: "h-8 text-[13px]",
+  },
+  compact: {
+    row: "py-1 text-[13px] leading-5",
+    icon: "h-3.5 w-3.5 mr-2",
+    label: "px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/80",
+    hint: "ml-auto pl-3 text-[11px] text-muted-foreground",
+    description: "text-[11px] text-muted-foreground",
+    subWidth: "w-56",
+    stripBtn: "h-7",
+    stripIcon: "h-3.5 w-3.5",
+    filter: "h-7 text-xs",
+  },
+};
 
+export default function MenuContent(props: MenuContentProps) {
+  const { variant, menuLayout, menuDensity } = props;
   const m = useContextMenuActions(props);
-  const {
-    actionText,
-    resolvedPlacementMode,
-    grouped,
-    loading,
-    boundAgentSections,
-    boundAgentsLoading,
-    richDocCtx,
-    copyVariantActions,
-    exportActions,
-    convertActions,
-    hasCompareBase,
-    isAdmin,
-    isDebugMode,
-    isAdminIndicatorOpen,
-    canNativeUndo,
-    quickActions,
-  } = m;
-  const entity = props.entity;
+  const model = buildMenuModel(m, props);
+  const arranged = arrangeMenu(model, menuLayout);
+  const d = DENSITY[menuDensity];
 
   // ── Variant-aware menu primitives ────────────────────────────────────────
   const Item = variant === "context" ? ContextMenuItem : DropdownMenuItem;
@@ -149,604 +124,324 @@ export default function MenuContent(props: MenuContentProps) {
     variant === "context" ? ContextMenuSubContent : DropdownMenuSubContent;
   const Label = variant === "context" ? ContextMenuLabel : DropdownMenuLabel;
 
-  // ── Render helpers ────────────────────────────────────────────────────────
-  const renderExtraItem = (item: ContextMenuExtraItem): React.ReactElement => {
-    if (item.kind === "separator") return <Separator key={item.id} />;
-    if (item.kind === "checkbox") {
-      return (
-        <CheckboxItem
-          key={item.id}
-          checked={item.checked}
-          disabled={item.disabled}
-          // preventDefault keeps the menu OPEN across toggles (checkbox UX).
-          onSelect={(e: Event) => e.preventDefault()}
-          onCheckedChange={(next: boolean) => item.onCheckedChange(next)}
-        >
-          {item.icon && <item.icon className="h-4 w-4 mr-2" />}
-          {item.description ? (
-            <div className="flex flex-col">
-              <span>{item.label}</span>
-              <span className="text-xs text-muted-foreground">
-                {item.description}
-              </span>
-            </div>
-          ) : (
-            item.label
-          )}
-          {item.hint && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              {item.hint}
-            </span>
-          )}
-        </CheckboxItem>
-      );
-    }
-    if (item.kind === "link") {
-      return (
-        <Item key={item.id} asChild disabled={item.disabled}>
-          <a
-            href={item.href}
-            target={item.target}
-            rel={item.target === "_blank" ? "noopener noreferrer" : undefined}
-          >
-            {item.icon && <item.icon className="h-4 w-4 mr-2" />}
-            {item.description ? (
-              <div className="flex flex-col">
-                <span>{item.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {item.description}
-                </span>
-              </div>
-            ) : (
-              item.label
-            )}
-            {item.hint && (
-              <span className="ml-auto text-xs text-muted-foreground">
-                {item.hint}
-              </span>
-            )}
-          </a>
-        </Item>
-      );
-    }
-    if (item.kind === "submenu") {
-      return (
-        <Sub key={item.id}>
-          <SubTrigger
-            disabled={item.disabled}
-            className={item.disabled ? "opacity-50 cursor-not-allowed" : ""}
-          >
-            {item.icon && <item.icon className="h-4 w-4 mr-2" />}
-            {item.label}
-          </SubTrigger>
-          <SubContent className="z-[9999] w-60">
-            {item.children.map(renderExtraItem)}
-          </SubContent>
-        </Sub>
-      );
-    }
-    return (
-      <Item
-        key={item.id}
-        onSelect={item.onSelect}
-        disabled={item.disabled}
-        className={
-          item.destructive
-            ? "text-destructive focus:text-destructive"
-            : undefined
-        }
-      >
-        {item.icon && <item.icon className="h-4 w-4 mr-2" />}
-        {item.description ? (
-          <div className="flex flex-col">
-            <span>{item.label}</span>
-            <span className="text-xs text-muted-foreground">
-              {item.description}
-            </span>
-          </div>
-        ) : (
-          item.label
-        )}
-        {item.hint && (
-          <span className="ml-auto text-xs text-muted-foreground">
-            {item.hint}
-          </span>
-        )}
-      </Item>
-    );
+  // ── Generic node renderer ────────────────────────────────────────────────
+  const renderIcon = (node: MenuLeafNode | MenuSubmenuNode) => {
+    if (!node.icon) return null;
+    const Icon = node.icon;
+    const iconClassName = "iconClassName" in node ? node.iconClassName : undefined;
+    const iconStyle = "iconStyle" in node ? node.iconStyle : undefined;
+    return <Icon className={cn(d.icon, iconClassName)} style={iconStyle} />;
   };
 
-  const renderExtraSections = (anchor: ExtraSectionAnchor) => {
-    const sections = (extraSections ?? []).filter(
-      (s) => (s.anchor ?? "after-compare") === anchor,
-    );
-    if (sections.length === 0) return null;
-    return (
-      <>
-        {sections.map((section) => (
-          <React.Fragment key={section.id}>
-            {section.label && (
-              <Label className="text-xs text-muted-foreground">
-                {section.label}
-              </Label>
-            )}
-            {section.items.map(renderExtraItem)}
-          </React.Fragment>
-        ))}
-        <Separator />
-      </>
-    );
-  };
-
-  const renderCategoryGroup = (
-    group: AgentMenuCategoryGroup,
-    placementType: string,
-  ): React.ReactElement => {
-    const { category, items, children } = group;
-    const CategoryIcon = resolveIcon(category.iconName);
-    const hasContent = items.length > 0 || children.length > 0;
-    return (
-      <Sub key={category.id}>
-        <SubTrigger
-          className={!hasContent ? "opacity-50 cursor-not-allowed" : ""}
-        >
-          <CategoryIcon
-            className="h-4 w-4 mr-2"
-            style={{ color: category.color || "currentColor" }}
-          />
-          {category.label}
-        </SubTrigger>
-        <SubContent className="z-[9999] w-64">
-          {!hasContent && (
-            <div className="px-2 py-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                No items in {category.label}
-              </p>
-            </div>
-          )}
-          {items.map((entry) => {
-            const ItemIcon = resolveIcon(entry.iconName);
-            const isDisabled =
-              entry.entryType === "agent_shortcut" && !entry.agentId;
-            const isLegacy = entry.legacyMatch === true;
-            return (
-              <Item
-                key={entry.id}
-                onSelect={() => m.handleEntrySelect(entry)}
-                disabled={isDisabled}
-                title={
-                  isLegacy
-                    ? "Legacy match: shown via enabledFeatures/untagged, not surfaceName. Needs backfill."
-                    : undefined
-                }
-              >
-                <ItemIcon
-                  className={`h-4 w-4 mr-2 ${
-                    isLegacy ? "text-red-600 dark:text-red-400" : ""
-                  }`}
-                />
-                {entry.label}
-                {entry.entryType === "agent_shortcut" &&
-                  entry.keyboardShortcut && (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {entry.keyboardShortcut}
-                    </span>
-                  )}
-                {isDisabled && (
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    Not configured
-                  </span>
-                )}
-              </Item>
-            );
-          })}
-          {children.length > 0 && (
-            <>
-              {items.length > 0 && <Separator />}
-              {children.map((child) =>
-                renderCategoryGroup(child, placementType),
-              )}
-            </>
-          )}
-        </SubContent>
-      </Sub>
-    );
-  };
-
-  const renderRichAction = (action: RichDocumentAction): React.ReactElement => {
-    const { label, disabled } = resolveRichActionView(action, richDocCtx);
-    const ActionIcon = action.icon;
-    return (
-      <Item
-        key={action.id}
-        onSelect={() => void action.run(richDocCtx)}
-        disabled={disabled}
-      >
-        <ActionIcon className={`h-4 w-4 mr-2 ${action.iconColor ?? ""}`} />
-        {label}
-      </Item>
-    );
-  };
-
-  const renderPlacementSubmenu = (placementType: string) => {
-    const mode = resolvedPlacementMode[placementType as PlacementKey];
-    if (mode === "hide") return null;
-    const groups = grouped[placementType] || [];
-    const hasItems = groups.length > 0 && groups.some(hasItemsRecursive);
-    const isDisabled = mode === "disable" || !hasItems || loading;
-    const PlacementIcon = getPlacementIcon(placementType);
-    const color = PLACEMENT_COLOR[placementType];
-    const label = getPlacementLabel(placementType);
-    return (
-      <Sub key={placementType}>
-        <SubTrigger
-          disabled={isDisabled}
-          className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
-        >
-          <PlacementIcon
-            className="h-4 w-4 mr-2"
-            style={color ? { color } : undefined}
-          />
-          {label}
-        </SubTrigger>
-        <SubContent className="z-[9999] w-64">
-          {groups.length === 0 || !hasItems ? (
-            <div className="px-2 py-6 text-center">
-              <p className="text-sm text-muted-foreground">No {label}</p>
-            </div>
-          ) : (
-            groups.map((g) => renderCategoryGroup(g, placementType))
-          )}
-        </SubContent>
-      </Sub>
-    );
-  };
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  const headerLabel =
-    actionText.source === "selection"
-      ? "Selected"
-      : actionText.source === "content"
-        ? "Content"
-        : null;
-
-  return (
+  const renderBody = (node: MenuLeafNode) => (
     <>
-      {headerLabel && (
-        <div className="px-2 py-2 border-b border-border bg-primary/5">
-          <div className="flex items-start gap-2">
-            <Type className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-primary mb-0.5">
-                {headerLabel} ({actionText.text.length} char
-                {actionText.text.length !== 1 ? "s" : ""})
-              </div>
-              <div className="text-xs text-muted-foreground font-mono break-all leading-tight">
-                {truncatePreview(actionText.text)}
-              </div>
-            </div>
-          </div>
+      {renderIcon(node)}
+      {node.description ? (
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate">{node.label}</span>
+          <span className={d.description}>{node.description}</span>
         </div>
+      ) : (
+        <span className="truncate">{node.label}</span>
       )}
+      {node.hint && <span className={d.hint}>{node.hint}</span>}
+    </>
+  );
 
-      {/* Clipboard */}
-      <Item
-        onSelect={() => void m.handleCopy()}
-        disabled={actionText.source === "none"}
-      >
-        <Copy className="h-4 w-4 mr-2 text-emerald-500" />
-        Copy
-      </Item>
-      {copyVariantActions.length > 0 && (
-        <Sub>
-          <SubTrigger>
-            <Copy className="h-4 w-4 mr-2 text-emerald-500" />
-            Copy as
-          </SubTrigger>
-          <SubContent className="z-[9999] w-60">
-            {copyVariantActions.map(renderRichAction)}
-          </SubContent>
-        </Sub>
-      )}
-      {/* JSON — appears only when the acted-on text parses as JSON (fenced or
-          bare). Built by the shared engine hook; both renderers show the same
-          verbs, and the formatting is `lib/json-format`, never a local copy. */}
-      {m.jsonSection && (
-        <Sub>
-          <SubTrigger>
-            <Braces className="h-4 w-4 mr-2 text-amber-500" />
-            {jsonSectionLabel(m.jsonSection)}
-          </SubTrigger>
-          <SubContent className="z-[9999] w-72">
-            {m.jsonSection.actions.map((action) => (
-              <Item
-                key={action.id}
-                disabled={action.disabled}
-                onSelect={() => void action.run()}
-              >
-                <span className="flex-1 truncate">{action.label}</span>
-                {action.hint && (
-                  <span className="ml-2 shrink-0 text-[0.6875rem] text-muted-foreground">
-                    {action.hint}
-                  </span>
-                )}
-              </Item>
-            ))}
-          </SubContent>
-        </Sub>
-      )}
-      <Item
-        onSelect={() => void m.handleCut()}
-        disabled={!isEditable || !props.selectedText}
-      >
-        <Scissors className="h-4 w-4 mr-2 text-emerald-500" />
-        Cut
-      </Item>
-      <Item onSelect={() => void m.handlePaste()} disabled={!isEditable}>
-        <Clipboard className="h-4 w-4 mr-2 text-emerald-500" />
-        Paste
-      </Item>
-      <Item onSelect={m.handleSelectAll}>
-        <Type className="h-4 w-4 mr-2 text-muted-foreground" />
-        Select All
-      </Item>
-
-      <Item onSelect={m.handleFind}>
-        <Search className="h-4 w-4 mr-2 text-muted-foreground" />
-        Find &amp; Replace
-      </Item>
-
-      {renderExtraSections("after-clipboard")}
-
-      <Separator />
-
-      {/* Core platform panels */}
-      <Item onSelect={() => quickActions.openChatWindow()}>
-        <MessageSquare className="h-4 w-4 mr-2 text-primary" />
-        Chat
-      </Item>
-
-      <Separator />
-
-      {/* History (Undo / Redo / View History / Compare) */}
-      <Item
-        onSelect={m.handleUndo}
-        disabled={onUndo ? !canUndo : !canNativeUndo}
-      >
-        <Undo2 className="h-4 w-4 mr-2 text-sky-500" />
-        Undo
-        {undoHint && (
-          <span className="ml-auto text-xs text-muted-foreground">
-            {undoHint}
-          </span>
-        )}
-      </Item>
-      <Item
-        onSelect={m.handleRedo}
-        disabled={onRedo ? !canRedo : !canNativeUndo}
-      >
-        <Redo2 className="h-4 w-4 mr-2 text-sky-500" />
-        Redo
-        {redoHint && (
-          <span className="ml-auto text-xs text-muted-foreground">
-            {redoHint}
-          </span>
-        )}
-      </Item>
-      <Item
-        onSelect={() => onViewHistory?.()}
-        disabled={!onViewHistory || !hasHistory}
-      >
-        <History className="h-4 w-4 mr-2 text-violet-500" />
-        View History
-      </Item>
-      <Sub>
-        <SubTrigger>
-          <GitCompareArrows className="h-4 w-4 mr-2 text-amber-500" />
-          Compare
-        </SubTrigger>
-        <SubContent className="z-[9999] w-60">
-          <Item onSelect={() => void m.handleCompareClipboard()}>
-            <ClipboardIcon className="h-4 w-4 mr-2" />
-            Compare with clipboard
-          </Item>
-          <Item onSelect={m.handleSetCompareBase}>
-            <Pin className="h-4 w-4 mr-2" />
-            <div className="flex flex-col">
-              <span>Set as compare base</span>
-              <span className="text-xs text-muted-foreground">
-                {actionText.source === "selection"
-                  ? "Use selection"
-                  : "Use content"}
-              </span>
-            </div>
-          </Item>
-          <Item
-            onSelect={() => void m.handleCompareWithBase()}
-            disabled={!hasCompareBase}
+  const renderNode = (node: MenuNode): React.ReactElement => {
+    switch (node.kind) {
+      case "separator":
+        return <Separator key={node.id} />;
+      case "label":
+        return (
+          <Label key={node.id} className={d.label}>
+            {node.label}
+          </Label>
+        );
+      case "checkbox":
+        return (
+          <CheckboxItem
+            key={node.id}
+            checked={node.checked}
+            disabled={node.disabled}
+            className={d.row}
+            // preventDefault keeps the menu OPEN across toggles (checkbox UX).
+            onSelect={(e: Event) => e.preventDefault()}
+            onCheckedChange={(next: boolean) => node.onCheckedChange(next)}
           >
-            <GitCompareArrows className="h-4 w-4 mr-2" />
-            <div className="flex flex-col">
-              <span>Compare with base</span>
-              {!hasCompareBase && (
-                <span className="text-xs text-muted-foreground">
-                  No base set yet
-                </span>
-              )}
-            </div>
-          </Item>
-        </SubContent>
-      </Sub>
-
-      {exportActions.length > 0 && (
-        <Sub>
-          <SubTrigger>
-            <Download className="h-4 w-4 mr-2 text-amber-500" />
-            Export
-          </SubTrigger>
-          <SubContent className="z-[9999] w-60">
-            {exportActions.map(renderRichAction)}
-          </SubContent>
-        </Sub>
-      )}
-      {convertActions.length > 0 && (
-        <Sub>
-          <SubTrigger>
-            <Replace className="h-4 w-4 mr-2 text-violet-500" />
-            Convert
-          </SubTrigger>
-          <SubContent className="z-[9999] w-60">
-            {convertActions.map(renderRichAction)}
-          </SubContent>
-        </Sub>
-      )}
-
-      {entity && (
-        <Item onSelect={m.handleAttach}>
-          <Link2 className="h-4 w-4 mr-2 text-sky-500" />
-          Attach To
-        </Item>
-      )}
-      {entity?.resourceType && (
-        <Item onSelect={m.handleShare}>
-          <Share2 className="h-4 w-4 mr-2 text-emerald-500" />
-          Share
-        </Item>
-      )}
-
-      <Separator />
-
-      {renderExtraSections("after-compare")}
-
-      {/* Dynamic, data-driven placements (from the single fetch). */}
-      {renderPlacementSubmenu(PLACEMENT_TYPES.AI_ACTION)}
-      {resolvedPlacementMode["bound-agent"] !== "hide" && (
-        <BoundAgentsMenuSection
-          variant={variant}
-          loading={boundAgentsLoading}
-          sections={boundAgentSections}
-          onSelect={(entry) => void m.handleBoundAgentExecute(entry)}
-          disabled={resolvedPlacementMode["bound-agent"] === "disable"}
-        />
-      )}
-      {renderPlacementSubmenu(PLACEMENT_TYPES.CONTENT_BLOCK)}
-      {renderPlacementSubmenu(PLACEMENT_TYPES.USER_TOOL)}
-      {renderPlacementSubmenu(PLACEMENT_TYPES.ORGANIZATION_TOOL)}
-
-      {renderExtraSections("after-placements")}
-
-      {/* Quick Actions */}
-      {resolvedPlacementMode["quick-action"] !== "hide" && (
-        <Sub>
-          <SubTrigger
-            disabled={resolvedPlacementMode["quick-action"] === "disable"}
-            className={
-              resolvedPlacementMode["quick-action"] === "disable"
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }
-          >
-            <Zap className="h-4 w-4 mr-2 text-pink-500" />
-            Quick Actions
-          </SubTrigger>
-          <SubContent className="z-[9999] w-56">
-            <Item onSelect={() => quickActions.openQuickNotes()}>
-              <StickyNote className="h-4 w-4 mr-2" />
-              Notes
-            </Item>
-            <Item onSelect={() => quickActions.openQuickTasks()}>
-              <CheckSquare className="h-4 w-4 mr-2" />
-              Tasks
-            </Item>
-            <Item onSelect={() => quickActions.openQuickChat()}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Chat
-            </Item>
-            <Item onSelect={() => quickActions.openQuickData()}>
-              <Database className="h-4 w-4 mr-2" />
-              Data
-            </Item>
-            <Item onSelect={() => quickActions.openQuickFiles()}>
-              <FolderOpen className="h-4 w-4 mr-2" />
-              Files
-            </Item>
-            <Item onSelect={() => quickActions.openVoicePad()}>
-              <Mic className="h-4 w-4 mr-2" />
-              Voice Input
-            </Item>
-          </SubContent>
-        </Sub>
-      )}
-
-      {/* Editable-only: Save / Delete */}
-      {isEditable && (onSave || onDelete) && (
-        <>
-          <Separator />
-          {onSave && (
-            <Item onSelect={() => onSave()}>
-              <Save className="h-4 w-4 mr-2 text-emerald-500" />
-              Save
-            </Item>
-          )}
-          {onDelete && (
-            <Item
-              onSelect={() => void m.handleDelete()}
-              className="text-destructive focus:text-destructive"
+            {renderBody(node)}
+          </CheckboxItem>
+        );
+      case "link":
+        return (
+          <Item key={node.id} asChild disabled={node.disabled} className={d.row}>
+            <a
+              href={node.href}
+              target={node.target}
+              rel={node.target === "_blank" ? "noopener noreferrer" : undefined}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Item>
-          )}
-        </>
-      )}
-
-      {/* Admin Tools */}
-      {isAdmin && (
-        <>
-          <Separator />
-          <Sub>
-            <SubTrigger>
-              <Shield className="h-4 w-4 mr-2 text-rose-500" />
-              Admin Tools
-            </SubTrigger>
-            <SubContent className="z-[9999] w-56">
-              <Item onSelect={m.handleToggleDebugMode}>
-                {isDebugMode ? (
-                  <EyeOff className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <Eye className="h-4 w-4 mr-2" />
-                )}
-                {isDebugMode ? "Disable" : "Enable"} Debug Mode
-              </Item>
-              <Item
-                onSelect={m.handleInspectValues}
-                className="text-amber-600 dark:text-amber-400"
-              >
-                <Bug className="h-4 w-4 mr-2" />
-                Context Values
-              </Item>
-              {isDebugMode && (
-                <Item
-                  onSelect={m.handleInspectState}
-                  className="text-amber-600 dark:text-amber-400"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Redux State
-                </Item>
+              {renderBody(node)}
+            </a>
+          </Item>
+        );
+      case "submenu": {
+        const empty = node.children.length === 0;
+        return (
+          <Sub key={node.id}>
+            <SubTrigger
+              disabled={node.disabled}
+              className={cn(d.row, node.disabled && "opacity-50 cursor-not-allowed")}
+            >
+              {renderIcon(node)}
+              <span className="truncate">{node.label}</span>
+              {node.loading && (
+                <Loader2 className="ml-auto h-3 w-3 animate-spin opacity-50" />
               )}
-              <Separator />
-              <Item onSelect={m.handleToggleAdminIndicator}>
-                {isAdminIndicatorOpen ? (
-                  <Eye className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
-                ) : (
-                  <EyeOff className="h-4 w-4 mr-2" />
-                )}
-                {isAdminIndicatorOpen ? "Hide" : "Show"} Admin Indicator
-              </Item>
+            </SubTrigger>
+            <SubContent
+              className={cn(
+                "z-[9999] max-h-[70dvh] overflow-y-auto",
+                node.width ?? d.subWidth,
+              )}
+            >
+              {empty ? (
+                <div className="px-2 py-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {node.emptyLabel ?? "Nothing here"}
+                  </p>
+                </div>
+              ) : (
+                node.children.map(renderNode)
+              )}
             </SubContent>
           </Sub>
-        </>
+        );
+      }
+      case "item":
+      default:
+        return (
+          <Item
+            key={node.id}
+            onSelect={node.onSelect}
+            disabled={node.disabled}
+            title={node.title}
+            className={cn(
+              d.row,
+              node.destructive && "text-destructive focus:text-destructive",
+              node.className,
+            )}
+          >
+            {renderBody(node)}
+          </Item>
+        );
+    }
+  };
+
+  const renderSections = (sections: MenuSection[]) => {
+    const out: React.ReactElement[] = [];
+    sections.forEach((section, idx) => {
+      if (section.nodes.length === 0) return;
+      if (out.length > 0 && !section.joinPrevious) {
+        out.push(<Separator key={`sep:${section.id}:${idx}`} />);
+      }
+      if (section.label) {
+        out.push(
+          <Label key={`label:${section.id}`} className={d.label}>
+            {section.label}
+          </Label>,
+        );
+      }
+      out.push(...section.nodes.map(renderNode));
+    });
+    return out;
+  };
+
+  // ── Strip (tiered / command): icon-only universal verbs in one row ───────
+  const strip =
+    arranged.strip.length > 0 ? (
+      <div className="flex items-stretch gap-0.5 px-1 pb-1" role="group" aria-label="Quick edit">
+        {arranged.strip.map((node) =>
+          node.kind === "item" ? (
+            <Item
+              key={node.id}
+              onSelect={node.onSelect}
+              disabled={node.disabled}
+              title={node.hint ? `${node.label} (${node.hint})` : node.label}
+              aria-label={node.label}
+              className={cn(
+                "flex-1 justify-center rounded-md px-0",
+                d.stripBtn,
+              )}
+            >
+              {node.icon && (
+                <node.icon className={cn(d.stripIcon, node.iconClassName)} />
+              )}
+            </Item>
+          ) : null,
+        )}
+      </div>
+    ) : null;
+
+  // ── Header (selection / content preview) ─────────────────────────────────
+  const header = model.header ? (
+    <div
+      className={cn(
+        "border-b border-border bg-primary/5",
+        menuDensity === "compact" ? "px-2 py-1.5" : "px-2 py-2",
       )}
-    </>
+    >
+      <div className="flex items-start gap-2">
+        <Type className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
+          <div className="mb-0.5 text-xs font-medium text-primary">
+            {model.header.label} ({model.header.text.length} char
+            {model.header.text.length !== 1 ? "s" : ""})
+          </div>
+          {menuDensity !== "compact" && (
+            <div className="break-all font-mono text-xs leading-tight text-muted-foreground">
+              {truncatePreview(model.header.text)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  // ── Command layout: type-to-filter over every leaf in the model ──────────
+  const isCommand = menuLayout === "command";
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isCommand) return;
+    // Radix focuses the menu content on open; take the input after that tick.
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [isCommand]);
+
+  const menuRoot = () =>
+    rootRef.current?.closest<HTMLElement>("[data-radix-menu-content]") ?? null;
+
+  const focusFirstResult = () => {
+    const root = menuRoot();
+    const first = root?.querySelector<HTMLElement>(
+      '[role="menuitem"]:not([data-disabled]), [role="menuitemcheckbox"]:not([data-disabled])',
+    );
+    first?.focus();
+  };
+
+  const onFilterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Escape closes the menu (let Radix see it). Everything else stays in the
+    // input — Radix's typeahead must not eat the keystrokes.
+    if (e.key === "Escape") return;
+    if (e.key === "ArrowDown" || (e.key === "Enter" && query.trim())) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        const root = menuRoot();
+        const first = root?.querySelector<HTMLElement>(
+          '[data-menu-result] [role="menuitem"]:not([data-disabled]), [data-menu-result] [role="menuitemcheckbox"]:not([data-disabled])',
+        );
+        // Radix runs an item's onSelect from its click handler (Enter is
+        // itself implemented as `.click()`), so this goes through Radix's own
+        // select path — the menu closes exactly as a mouse click would.
+        first?.click();
+        return;
+      }
+      focusFirstResult();
+      return;
+    }
+    e.stopPropagation();
+  };
+
+  // Hovering an item moves Radix focus off the input; a printable key then
+  // would hit the menu's typeahead instead. Catch it at the root and route it
+  // back into the query so "keep typing" always works.
+  const onRootKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isCommand) return;
+    if (e.target === inputRef.current) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key.length === 1 || e.key === "Backspace") {
+      e.preventDefault();
+      e.stopPropagation();
+      setQuery((q) => (e.key === "Backspace" ? q.slice(0, -1) : q + e.key));
+      inputRef.current?.focus();
+    }
+  };
+
+  const results = isCommand && query.trim()
+    ? filterLeaves(collectAllLeaves(model), query)
+    : null;
+
+  const filterBox = isCommand ? (
+    <div className="px-1 pb-1">
+      <div
+        className={cn(
+          "flex items-center gap-1.5 rounded-md border border-border bg-background px-2",
+          d.filter,
+        )}
+      >
+        <Search className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={onFilterKeyDown}
+          placeholder="Type to find an action…"
+          aria-label="Filter menu actions"
+          className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/70"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        {query && (
+          <span className="text-[10px] text-muted-foreground">
+            {results?.length ?? 0}
+          </span>
+        )}
+      </div>
+    </div>
+  ) : null;
+
+  const resultsList = results ? (
+    results.length === 0 ? (
+      <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+        No actions match “{query.trim()}”
+      </div>
+    ) : (
+      results.map(({ node, path }) => {
+        const crumb = path.join(" › ");
+        const leaf: MenuLeafNode =
+          node.kind === "item"
+            ? { ...node, description: crumb || node.description }
+            : node;
+        return (
+          <div key={`result:${node.id}`} data-menu-result="">
+            {renderNode(leaf)}
+          </div>
+        );
+      })
+    )
+  ) : null;
+
+  return (
+    <div ref={rootRef} onKeyDownCapture={onRootKeyDownCapture}>
+      {header}
+      <div className={cn(header && "pt-1")}>
+        {filterBox}
+        {resultsList ?? (
+          <>
+            {strip}
+            {strip && <Separator />}
+            {renderSections(arranged.sections)}
+          </>
+        )}
+      </div>
+      {isCommand && !results && (
+        <div className="flex items-center gap-1 px-2 pt-1 text-[10px] text-muted-foreground/70">
+          <ChevronRight className="h-3 w-3" /> type to filter · ↵ runs the first match
+        </div>
+      )}
+    </div>
   );
 }

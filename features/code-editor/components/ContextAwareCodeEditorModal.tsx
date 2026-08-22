@@ -10,7 +10,7 @@
  *   - ContextAwarePromptRunner → AgentRunner (conversationId-keyed)
  *   - getBuiltinPrompt / selectCachedPrompt → dropped; agent loads via shortcut
  *   - PromptData → dropped; agent definitions live in agentDefinition slice
- *   - runId/sessionKey machinery → conversationId from useShortcutTrigger
+ *   - runId/sessionKey machinery → conversationId from launchMandate
  *   - handleContextUpdateReady/handleContextChange → setUserVariableValues
  *   - completeExecutionThunk → dropped (agent stream handles completion natively)
  *   - selectStreamPhase === "complete" replaces selectIsResponseEndedForInstance
@@ -46,7 +46,7 @@ import { Badge } from "@/components/ui/badge";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
@@ -54,7 +54,10 @@ import {
   selectLatestAccumulatedText,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
+import {
+  agentForPromptKey,
+  type CodeEditorPromptKey,
+} from "@/features/code-editor/agent-code-editor/agents";
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
 import {
   parseCodeEdits,
@@ -64,26 +67,14 @@ import { applyCodeEdits } from "@/features/code-editor/utils/applyCodeEdits";
 import { getDiffStats } from "@/features/code-editor/utils/generateDiff";
 import { DYNAMIC_CONTEXT_VARIABLE } from "@/features/code-editor/utils/ContextVersionManager";
 
-// Shortcut IDs that map to code-editor agents (same mapping as useAICodeEditor)
-const SHORTCUT_FOR_AGENT: Record<string, string> = {
-  "87efa869-9c11-43cf-b3a8-5b7c775ee415":
-    "00836ba6-10af-4a95-8c7e-6b5a03c0b3e4",
-  "970856c5-3b9d-4034-ac9d-8d8a11fb3dba":
-    "2c301ba1-e870-4a3f-abe6-8148c72a7425",
-  "c1c1f092-ba0d-4d6c-b352-b22fe6c48272":
-    "6231578b-a52d-47c5-a41d-831000ddfa9e",
-};
-
 export interface ContextAwareCodeEditorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   code: string;
   language: string;
-  builtinId?: string;
-  promptKey?:
-    | "prompt-app-ui-editor"
-    | "generic-code-editor"
-    | "code-editor-dynamic-context";
+  /** Explicit editing job (mandate key). Overrides `promptKey`. */
+  mandateKey?: string;
+  promptKey?: CodeEditorPromptKey;
   onCodeChange: (newCode: string, version: number) => void;
   selection?: string;
   context?: string;
@@ -97,7 +88,7 @@ export function ContextAwareCodeEditorModal({
   onOpenChange,
   code,
   language: rawLanguage,
-  builtinId,
+  mandateKey,
   promptKey = "generic-code-editor",
   onCodeChange,
   selection,
@@ -107,7 +98,7 @@ export function ContextAwareCodeEditorModal({
   countdownSeconds,
 }: ContextAwareCodeEditorModalProps) {
   const dispatch = useAppDispatch();
-  const trigger = useShortcutTrigger();
+  const { launchMandate } = useAgentLauncher();
   const { open: openCanvas, close: closeCanvas } = useCanvas();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -117,7 +108,9 @@ export function ContextAwareCodeEditorModal({
   const language = normalizeLanguage(rawLanguage);
   const currentCodeRef = useRef(code);
   const currentVersionRef = useRef(1);
-  const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
+  // The editing job is a MANDATE KEY; the DB decides which agent runs it.
+  const defaultMandateKey =
+    mandateKey || agentForPromptKey(promptKey).mandateKey;
 
   useEffect(() => {
     currentCodeRef.current = code;
@@ -150,20 +143,14 @@ export function ContextAwareCodeEditorModal({
   useEffect(() => {
     if (!open || hasLaunchedRef.current) return;
 
-    const shortcutId = SHORTCUT_FOR_AGENT[defaultBuiltinId];
-    if (!shortcutId) {
-      console.error(
-        `[ContextAwareCodeEditorModal] No shortcut registered for agent id "${defaultBuiltinId}".`,
-      );
-      return;
-    }
-
     hasLaunchedRef.current = true;
     setIsLaunching(true);
 
-    trigger(shortcutId, {
+    // Resolved INSIDE the launch funnel (agent + config_overrides); an
+    // unresolvable mandate rejects loudly below — no hardcoded fallback.
+    launchMandate(defaultMandateKey, {
       sourceFeature: "code-editor",
-      surfaceKey: `code-editor-modal:${shortcutId}`,
+      surfaceKey: `code-editor-modal:${defaultMandateKey}`,
       config: {
         displayMode: "direct",
         autoRun: false,
@@ -202,7 +189,15 @@ export function ContextAwareCodeEditorModal({
       setIsLaunching(false);
       hasLaunchedRef.current = false;
     });
-  }, [open, defaultBuiltinId, code, selection, context, language, trigger]);
+  }, [
+    open,
+    defaultMandateKey,
+    code,
+    selection,
+    context,
+    language,
+    launchMandate,
+  ]);
 
   // ─── Watch for stream completion → parse and show canvas ────────────────────
 

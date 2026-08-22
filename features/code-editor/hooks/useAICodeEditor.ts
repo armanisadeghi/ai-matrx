@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { shallowEqual } from "react-redux";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
@@ -30,30 +30,10 @@ import {
   type CodeEditorContext,
 } from "@/features/code-editor/utils/specialVariables";
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
-import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
-
-// A hardcoded agent-UUID → shortcut-UUID lookup: a SECOND frozen pin layered on
-// top of the frozen agent ids in `agent-code-editor/agents.ts`. Both halves are
-// the known gap tracked as row F6 of
-// /Users/armanisadeghi/code/common-docs/systems/mandates/ROLLOUT.md — the
-// canonical form is a declared mandate resolved at run time, after which
-// this map and its keys both disappear.
-//
-// The labels below name the DB rows these ids pointed at when the map was
-// written; the DB owns those names and this comment cannot follow a rename.
-// Nothing verifies either id still resolves, so an unknown key surfaces as a
-// loud error state rather than a silent fallback (see the launch effect).
-const SHORTCUT_FOR_AGENT: Record<string, string> = {
-  // "Code Editor" agent → "Master Code Editor" shortcut
-  "87efa869-9c11-43cf-b3a8-5b7c775ee415":
-    "00836ba6-10af-4a95-8c7e-6b5a03c0b3e4",
-  // "Code Editor (Dynamic Context)" agent → "Dynamic Context Code Editor" shortcut
-  "970856c5-3b9d-4034-ac9d-8d8a11fb3dba":
-    "2c301ba1-e870-4a3f-abe6-8148c72a7425",
-  // "Prompt App Code Editor" agent → "Update Prompt App Code" shortcut
-  "c1c1f092-ba0d-4d6c-b352-b22fe6c48272":
-    "6231578b-a52d-47c5-a41d-831000ddfa9e",
-};
+import {
+  agentForPromptKey,
+  type CodeEditorPromptKey,
+} from "@/features/code-editor/agent-code-editor/agents";
 
 export type EditorState =
   | "input"
@@ -68,11 +48,9 @@ export interface UseAICodeEditorProps {
   onOpenChange: (open: boolean) => void;
   currentCode: string;
   language: string;
-  builtinId?: string;
-  promptKey?:
-    | "prompt-app-ui-editor"
-    | "generic-code-editor"
-    | "code-editor-dynamic-context";
+  /** Explicit editing job (mandate key). Overrides `promptKey`. */
+  mandateKey?: string;
+  promptKey?: CodeEditorPromptKey;
   onCodeChange: (newCode: string) => void;
   selection?: string;
   context?: string;
@@ -82,7 +60,8 @@ export interface UseAICodeEditorProps {
  * Hook for AI Code Editor logic — agent-execution system version.
  *
  * Rewired from the legacy prompt-execution slice onto the agent execution system:
- *  - startPromptInstance → useShortcutTrigger (displayMode: "direct")
+ *  - startPromptInstance → launchMandate (displayMode: "direct"); the job is a
+ *    MANDATE KEY resolved inside the launch funnel — never an agent id
  *  - selectStreamingTextForInstance → selectLatestAccumulatedText
  *  - selectIsResponseEndedForInstance → selectStreamPhase === "complete"
  *  - selectMessages → selectConversationMessages (MessageRecord[])
@@ -101,14 +80,14 @@ export function useAICodeEditor({
   onOpenChange,
   currentCode,
   language: rawLanguage,
-  builtinId,
+  mandateKey,
   promptKey = "generic-code-editor",
   onCodeChange,
   selection,
   context,
 }: UseAICodeEditorProps) {
   const dispatch = useAppDispatch();
-  const trigger = useShortcutTrigger();
+  const { launchMandate } = useAgentLauncher();
 
   // Get user preferences
   const promptsPreferences = useAppSelector(selectPromptsPreferences);
@@ -117,11 +96,13 @@ export function useAICodeEditor({
   // Normalize the language for consistent syntax highlighting
   const language = normalizeLanguage(rawLanguage);
 
-  // Use explicit builtinId if provided, otherwise derive from promptKey
-  const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
+  // Use the explicit mandate key if provided, otherwise derive from promptKey
+  const defaultMandateKey =
+    mandateKey || agentForPromptKey(promptKey).mandateKey;
 
-  // State for agent selection (replaces selectedBuiltinId)
-  const [selectedBuiltinId, setSelectedBuiltinId] = useState(defaultBuiltinId);
+  // State for job selection (the picker swaps mandate keys)
+  const [selectedMandateKey, setSelectedMandateKey] =
+    useState(defaultMandateKey);
 
   // State for submit on enter (defaults to user preference)
   const [submitOnEnter, setSubmitOnEnter] = useState(
@@ -199,20 +180,7 @@ export function useAICodeEditor({
 
   useEffect(() => {
     if (!open || hasLaunchedRef.current) return;
-    if (!selectedBuiltinId) return;
-
-    const shortcutId = SHORTCUT_FOR_AGENT[selectedBuiltinId];
-    if (!shortcutId) {
-      console.error(
-        `[useAICodeEditor] No shortcut registered for agent id "${selectedBuiltinId}". ` +
-          `Add it to SHORTCUT_FOR_AGENT in useAICodeEditor.ts.`,
-      );
-      setState("error");
-      setErrorMessage(
-        `No shortcut registered for agent id "${selectedBuiltinId}".`,
-      );
-      return;
-    }
+    if (!selectedMandateKey) return;
 
     hasLaunchedRef.current = true;
     setIsLaunching(true);
@@ -231,9 +199,12 @@ export function useAICodeEditor({
       ...(context ? { context } : {}),
     };
 
-    trigger(shortcutId, {
+    // The mandate resolves INSIDE the launch funnel (agent + config_overrides).
+    // An unresolvable mandate rejects loudly — the error state below is the
+    // only "fallback".
+    launchMandate(selectedMandateKey, {
       sourceFeature: "code-editor",
-      surfaceKey: `code-editor:${shortcutId}`,
+      surfaceKey: `code-editor:${selectedMandateKey}`,
       config: {
         displayMode: "direct",
         autoRun: false,
@@ -269,12 +240,12 @@ export function useAICodeEditor({
     });
   }, [
     open,
-    selectedBuiltinId,
+    selectedMandateKey,
     currentCode,
     selection,
     context,
     language,
-    trigger,
+    launchMandate,
   ]);
 
   // ─── Update special variables when code context changes ─────────────────────
@@ -415,24 +386,24 @@ export function useAICodeEditor({
       setErrorMessage("");
       setRawAIResponse("");
       setIsCopied(false);
-      setSelectedBuiltinId(defaultBuiltinId);
+      setSelectedMandateKey(defaultMandateKey);
       setSubmitOnEnter(submitOnEnterPreference);
     }
   }, [
     open,
-    defaultBuiltinId,
+    defaultMandateKey,
     submitOnEnterPreference,
     conversationId,
     dispatch,
   ]);
 
-  // ─── Update selected agent when default changes ──────────────────────────────
+  // ─── Update selected job when default changes ────────────────────────────────
 
   useEffect(() => {
     if (open) {
-      setSelectedBuiltinId(defaultBuiltinId);
+      setSelectedMandateKey(defaultMandateKey);
     }
-  }, [open, defaultBuiltinId]);
+  }, [open, defaultMandateKey]);
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
 
@@ -505,8 +476,8 @@ export function useAICodeEditor({
     errorMessage,
     rawAIResponse,
     isCopied,
-    selectedBuiltinId,
-    setSelectedBuiltinId,
+    selectedMandateKey,
+    setSelectedMandateKey,
     submitOnEnter,
     isExecuting,
     isLoadingPrompt,

@@ -1,8 +1,3 @@
-// Phase 6 wrapper — replaced in Phase 15
-//
-// prompt_builtins fetch dropped: the fetched data was never used in launch
-// params (only as a load gate). The agent id is 1:1 with the old builtin id
-// so `launchAgent(defaultBuiltinId, …)` is correct as-is.
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -10,7 +5,10 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
+import {
+  agentForPromptKey,
+  type CodeEditorPromptKey,
+} from "@/features/code-editor/agent-code-editor/agents";
 
 /**
  * AICodeEditorModalV2
@@ -32,11 +30,9 @@ export interface AICodeEditorModalV2Props {
   onOpenChange: (open: boolean) => void;
   currentCode: string;
   language: string;
-  builtinId?: string;
-  promptKey?:
-    | "prompt-app-ui-editor"
-    | "generic-code-editor"
-    | "code-editor-dynamic-context";
+  /** Explicit editing job (mandate key). Overrides `promptKey`. */
+  mandateKey?: string;
+  promptKey?: CodeEditorPromptKey;
   onCodeChange: (newCode: string) => void;
   selection?: string;
   context?: string;
@@ -48,20 +44,21 @@ export interface AICodeEditorModalV2Props {
 export function AICodeEditorModalV2({
   open,
   currentCode,
-  builtinId,
+  mandateKey,
   promptKey = "generic-code-editor",
   selection,
   context,
 }: AICodeEditorModalV2Props) {
   const dispatch = useAppDispatch();
-  const { launchAgent } = useAgentLauncher();
+  const { launchMandate } = useAgentLauncher();
   const { close: closeCanvas } = useCanvas();
 
   const [hasOpened, setHasOpened] = useState(false);
   const conversationIdRef = useRef<string | null>(null);
 
-  // Agent id equals the old prompt_builtins id — migration preserved UUIDs 1:1
-  const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
+  // The editing job is a MANDATE KEY; the DB decides which agent runs it.
+  const defaultMandateKey =
+    mandateKey || agentForPromptKey(promptKey).mandateKey;
 
   const closePrompt = useCallback(() => {
     if (conversationIdRef.current) {
@@ -77,8 +74,8 @@ export function AICodeEditorModalV2({
 
       (async () => {
         try {
-          const result = await launchAgent(defaultBuiltinId, {
-            surfaceKey: `code-editor:${defaultBuiltinId}`,
+          const result = await launchMandate(defaultMandateKey, {
+            surfaceKey: `code-editor:${defaultMandateKey}`,
             sourceFeature: "code-editor",
             config: {
               displayMode: "modal-full",
@@ -104,11 +101,11 @@ export function AICodeEditorModalV2({
   }, [
     open,
     hasOpened,
-    defaultBuiltinId,
+    defaultMandateKey,
     currentCode,
     selection,
     context,
-    launchAgent,
+    launchMandate,
   ]);
 
   // Reset when modal closes

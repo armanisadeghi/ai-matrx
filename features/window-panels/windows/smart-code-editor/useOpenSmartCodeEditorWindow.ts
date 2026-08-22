@@ -12,10 +12,8 @@
  *
  *   const open = useOpenSmartCodeEditorWindow();
  *   const handle = open({
- *     agents: [
- *       { id: "…", name: "Code Editor", codeVariableKey: "current_code" },
- *       { id: "…", name: "Code Editor (Dynamic Context)", codeVariableKey: "dynamic_context" },
- *     ],
+ *     agents: [GENERIC_CODE_EDITOR_AGENT, DYNAMIC_CONTEXT_CODE_EDITOR_AGENT],
+ *     // each entry is { mandateKey, name, codeVariableKey } — never an agent id
  *     initialCode,
  *     language: "typescript",
  *     onCodeChange: (e) => setCode(e.code),
@@ -44,8 +42,8 @@ export interface OpenSmartCodeEditorWindowOptions
 
   /** Agents available in the history picker. First entry is the default. */
   agents: CodeEditorAgentConfig[];
-  /** Picker-default agent. Defaults to `agents[0]`. */
-  defaultPickerAgentId?: string;
+  /** Picker-default job (mandate key). Defaults to `agents[0]`. */
+  defaultPickerMandateKey?: string;
 
   // Single-file
   initialCode?: string;
@@ -120,8 +118,8 @@ export function useOpenSmartCodeEditorWindow() {
         language: options.language ?? "plaintext",
         initialCode: options.initialCode ?? "",
       };
-      if (options.defaultPickerAgentId !== undefined)
-        data.defaultPickerAgentId = options.defaultPickerAgentId;
+      if (options.defaultPickerMandateKey !== undefined)
+        data.defaultPickerMandateKey = options.defaultPickerMandateKey;
       if (options.files !== undefined) data.files = options.files;
       if (options.initialActiveFilePath !== undefined)
         data.initialActiveFilePath = options.initialActiveFilePath;

@@ -6046,9 +6046,9 @@ export default function OverlayController() {
                 ? data.agents
                 : []) as CodeEditorAgentConfig[]
             }
-            defaultPickerAgentId={
-              typeof data?.defaultPickerAgentId === "string"
-                ? data.defaultPickerAgentId
+            defaultPickerMandateKey={
+              typeof data?.defaultPickerMandateKey === "string"
+                ? data.defaultPickerMandateKey
                 : undefined
             }
             initialCode={

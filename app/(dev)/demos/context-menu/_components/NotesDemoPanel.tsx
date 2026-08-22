@@ -85,6 +85,10 @@ export function NotesDemoPanel({
   }, [content, contextData, selectionEnd, selectionStart]);
 
   // Demo handlers — illustrative only (this panel has no real persistence).
+  // The config mirrors EXACTLY what `NoteContentEditor` passes on /notes for a
+  // persisted, owned note viewed by a super-admin (incl. "Convert blocks to
+  // artifacts", "New folder…" and "Permanently Delete"), so the demo menu is
+  // row-for-row the live one.
   const notesExtras = createNotesEditorExtraSections({
     isDirty,
     allFolders: DEMO_NOTE_FOLDERS,
@@ -100,10 +104,15 @@ export function NotesDemoPanel({
     onShareClipboard: () => toast.success("Copied to clipboard (demo)"),
     onMoveToFolder: (folder) => toast.success(`Moved to ${folder} (demo)`),
     onMoveDialog: () => toast.success("Move dialog (demo)"),
+    onCreateFolder: () => toast.success("New folder (demo)"),
     onCloseTab: () => toast.success("Close tab (demo)"),
     onCloseOtherTabs: () => toast.success("Close other tabs (demo)"),
     onCloseAllTabs: () => toast.success("Close all tabs (demo)"),
+    onConvertBlocksToArtifacts: () =>
+      toast.success("Convert blocks to artifacts (demo)"),
     onDelete: () => toast.error("Delete note (demo)"),
+    isSuperAdmin: true,
+    onPermanentDelete: () => toast.error("Permanently delete (demo)"),
   });
 
   const replaceContent = (next: string) => {
@@ -143,6 +152,12 @@ export function NotesDemoPanel({
         onTextInsertAfter={(t) => insertAtCursor(t, "after")}
         onContentInserted={() => setIsDirty(true)}
         contextData={contextData}
+        // Live /notes wires its own undo stack with ⌘Z / ⇧⌘Z hints; mirror the
+        // hints so the history rows read identically (the demo has no stack).
+        canUndo={isDirty}
+        canRedo={false}
+        undoHint="⌘Z"
+        redoHint="⇧⌘Z"
         {...menuOverrides}
       >
         <DemoProTextarea

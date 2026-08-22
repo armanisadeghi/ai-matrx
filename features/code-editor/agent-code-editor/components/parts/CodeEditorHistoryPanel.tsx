@@ -3,8 +3,10 @@
 /**
  * CodeEditorHistoryPanel — the leftmost column.
  *
- * Header: "Create for" agent dropdown + [+] button.
- * Body:   merged list of all conversations + drafts across the configured agents.
+ * Header: "Create for" job (mandate) dropdown + [+] button — the button is
+ *         GATED on the picked mandate resolving (loud, no hardcoded fallback).
+ * Body:   merged list of all conversations + drafts across the roster's
+ *         resolved agents.
  *         Click a row → caller sets it active. Delete button on drafts only.
  *
  * This panel owns NO launch / conversation lifecycle. It just dispatches
@@ -36,37 +38,55 @@ import { renameConversation } from "@/features/agents/redux/conversation-list/co
 
 interface CodeEditorHistoryPanelProps {
   agents: CodeEditorAgentConfig[];
-  /** Which agent the [+] button will create a draft for. */
-  pickerAgentId: string;
-  onPickerAgentChange: (agentId: string) => void;
+  /** Resolved agent ids for the roster (history merge only). */
+  rosterAgentIds: string[];
+  /** Mandate resolution failures by mandate key. */
+  mandateErrors: Record<string, string>;
+  mandatesLoading: boolean;
+  /** Which job (mandate key) the [+] button will create a draft for. */
+  pickerMandateKey: string;
+  onPickerMandateKeyChange: (mandateKey: string) => void;
   activeConversationId: string | null;
   onSelectConversation: (conversationId: string, agentId: string) => void;
-  onCreateDraft: (agentId: string) => void;
+  onCreateDraft: (mandateKey: string) => void;
 }
 
 export function CodeEditorHistoryPanel({
   agents,
-  pickerAgentId,
-  onPickerAgentChange,
+  rosterAgentIds,
+  mandateErrors,
+  mandatesLoading,
+  pickerMandateKey,
+  onPickerMandateKeyChange,
   activeConversationId,
   onSelectConversation,
   onCreateDraft,
 }: CodeEditorHistoryPanelProps) {
   const dispatch = useAppDispatch();
-  const agentIds = React.useMemo(() => agents.map((a) => a.id), [agents]);
-  const { rows, status, errorMessages } = useMergedAgentConversations(agentIds);
+  const { rows, status, errorMessages } =
+    useMergedAgentConversations(rosterAgentIds);
+  const pickerError = mandateErrors[pickerMandateKey];
+  const createDisabled =
+    mandatesLoading || !pickerMandateKey || pickerError !== undefined;
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background border-r border-border">
       {/* Header */}
       <div className="shrink-0 p-2 border-b border-border space-y-2">
-        <Select value={pickerAgentId} onValueChange={onPickerAgentChange}>
+        <Select
+          value={pickerMandateKey}
+          onValueChange={onPickerMandateKeyChange}
+        >
           <SelectTrigger className="w-full h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {agents.map((a) => (
-              <SelectItem key={a.id} value={a.id} className="text-xs">
+              <SelectItem
+                key={a.mandateKey}
+                value={a.mandateKey}
+                className="text-xs"
+              >
                 {a.name}
               </SelectItem>
             ))}
@@ -74,12 +94,22 @@ export function CodeEditorHistoryPanel({
         </Select>
         <Button
           size="sm"
-          onClick={() => onCreateDraft(pickerAgentId)}
+          onClick={() => onCreateDraft(pickerMandateKey)}
+          disabled={createDisabled}
           className="w-full h-8 gap-1.5"
         >
-          <Plus className="w-3.5 h-3.5" />
+          {mandatesLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Plus className="w-3.5 h-3.5" />
+          )}
           New
         </Button>
+        {pickerError && (
+          <p className="text-[10px] text-destructive leading-snug">
+            {pickerError}
+          </p>
+        )}
       </div>
 
       {/* List */}

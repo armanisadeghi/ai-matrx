@@ -30,8 +30,8 @@ export interface SmartCodeEditorWindowProps {
 
   /** The agents available in the history-panel picker. Required. */
   agents: CodeEditorAgentConfig[];
-  /** Picker-default agent. Defaults to `agents[0]`. */
-  defaultPickerAgentId?: string;
+  /** Picker-default job (mandate key). Defaults to `agents[0]`. */
+  defaultPickerMandateKey?: string;
 
   /** Single-file mode: starting editor content. */
   initialCode?: string;
@@ -60,7 +60,7 @@ export function SmartCodeEditorWindow({
   windowInstanceId,
   callbackGroupId,
   agents,
-  defaultPickerAgentId,
+  defaultPickerMandateKey,
   initialCode = "",
   language = "plaintext",
   files,
@@ -100,7 +100,7 @@ export function SmartCodeEditorWindow({
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({
-      agents: agents.map((a) => ({ id: a.id, name: a.name })),
+      agents: agents.map((a) => ({ mandateKey: a.mandateKey, name: a.name })),
       language,
       title: title ?? null,
     }),
@@ -123,7 +123,7 @@ export function SmartCodeEditorWindow({
     >
       <SmartCodeEditor
         agents={agents}
-        defaultPickerAgentId={defaultPickerAgentId}
+        defaultPickerMandateKey={defaultPickerMandateKey}
         initialCode={initialCode}
         language={language}
         onCodeChange={handleCodeChange}

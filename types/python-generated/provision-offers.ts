@@ -43,6 +43,12 @@ export interface AgentFactoryBuildRequestOffer {
   prompt_purpose: string;
 }
 
+/** Offered shape of provision `code_editor.session` (kind `code_editor.session.offer`). */
+export interface CodeEditorSessionOffer {
+  current_code?: string;
+  dynamic_context?: string;
+}
+
 /** Offered shape of provision `content_ir.component_target` (kind `content_ir.component_target.offer`). */
 export interface ContentIrComponentTargetOffer {
   kind_slug: string;
@@ -619,6 +625,12 @@ export interface MarketingLocalEndowmentOffer {
   context_notes?: string;
 }
 
+/** Offered shape of provision `marketing.video_metadata` (kind `marketing.video_metadata.offer`). */
+export interface MarketingVideoMetadataOffer {
+  video_context: unknown;
+  site_context: unknown;
+}
+
 /** Offered shape of provision `masterwork.approach_select` (kind `masterwork.approach_select.offer`). */
 export interface MasterworkApproachSelectOffer {
   rulebook_name: string;
@@ -1057,6 +1069,11 @@ export interface ResearchClientReportOutputOffer {
   voice_lens: string;
 }
 
+/** Offered shape of provision `scraper.page_analysis` (kind `scraper.page_analysis.offer`). */
+export interface ScraperPageAnalysisOffer {
+  content: string;
+}
+
 /** Offered shape of provision `seo.ai_visibility_analysis` (kind `seo.ai_visibility_analysis.offer`). */
 export interface SeoAiVisibilityAnalysisOffer {
   query: string;
@@ -1391,6 +1408,7 @@ export interface WorkflowRunRecoveryOffer {
 /** provision_key → its whole offered shape. */
 export interface ProvisionOffers {
   "agent_factory.build_request": AgentFactoryBuildRequestOffer;
+  "code_editor.session": CodeEditorSessionOffer;
   "content_ir.component_target": ContentIrComponentTargetOffer;
   "content_ir.kind_authoring": ContentIrKindAuthoringOffer;
   "content_plan.entity_attachment": ContentPlanEntityAttachmentOffer;
@@ -1452,6 +1470,7 @@ export interface ProvisionOffers {
   "knowledge.section_derivation": KnowledgeSectionDerivationOffer;
   "knowledge.section_qa": KnowledgeSectionQaOffer;
   "marketing.local_endowment": MarketingLocalEndowmentOffer;
+  "marketing.video_metadata": MarketingVideoMetadataOffer;
   "masterwork.approach_select": MasterworkApproachSelectOffer;
   "masterwork.audition_judgment": MasterworkAuditionJudgmentOffer;
   "masterwork.bad_draft_write": MasterworkBadDraftWriteOffer;
@@ -1515,6 +1534,7 @@ export interface ProvisionOffers {
   "research.tagged_pages": ResearchTaggedPagesOffer;
   "research.topic_setup": ResearchTopicSetupOffer;
   "research_client.report_output": ResearchClientReportOutputOffer;
+  "scraper.page_analysis": ScraperPageAnalysisOffer;
   "seo.ai_visibility_analysis": SeoAiVisibilityAnalysisOffer;
   "seo.authority_routing": SeoAuthorityRoutingOffer;
   "seo.competitor_classification": SeoCompetitorClassificationOffer;
@@ -1553,6 +1573,7 @@ export type ProvisionKey = keyof ProvisionOffers;
 /** provision_key → its registered derived input kind slug. */
 export const PROVISION_OFFER_KINDS = {
   "agent_factory.build_request": "agent_factory.build_request.offer",
+  "code_editor.session": "code_editor.session.offer",
   "content_ir.component_target": "content_ir.component_target.offer",
   "content_ir.kind_authoring": "content_ir.kind_authoring.offer",
   "content_plan.entity_attachment": "content_plan.entity_attachment.offer",
@@ -1614,6 +1635,7 @@ export const PROVISION_OFFER_KINDS = {
   "knowledge.section_derivation": "knowledge.section_derivation.offer",
   "knowledge.section_qa": "knowledge.section_qa.offer",
   "marketing.local_endowment": "marketing.local_endowment.offer",
+  "marketing.video_metadata": "marketing.video_metadata.offer",
   "masterwork.approach_select": "masterwork.approach_select.offer",
   "masterwork.audition_judgment": "masterwork.audition_judgment.offer",
   "masterwork.bad_draft_write": "masterwork.bad_draft_write.offer",
@@ -1677,6 +1699,7 @@ export const PROVISION_OFFER_KINDS = {
   "research.tagged_pages": "research.tagged_pages.offer",
   "research.topic_setup": "research.topic_setup.offer",
   "research_client.report_output": "research_client.report_output.offer",
+  "scraper.page_analysis": "scraper.page_analysis.offer",
   "seo.ai_visibility_analysis": "seo.ai_visibility_analysis.offer",
   "seo.authority_routing": "seo.authority_routing.offer",
   "seo.competitor_classification": "seo.competitor_classification.offer",
