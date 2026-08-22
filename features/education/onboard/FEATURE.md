@@ -26,8 +26,19 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   PDF via the pdf-extractor stream, text/markdown read inline, a generic URL via the scraper, a
   YouTube link via the real spoken-transcript endpoint (`fetchYouTubeTranscript`); every input is ALSO
   uploaded through `fileHandler` so the user owns it (and lineage is uniform).
-- **`useKitGeneration`** (`useKitGeneration.ts`) sequences ingest → the converter fan-out
-  (`convertMany`), exposing live per-target state (pending → running → success/error).
+- **`useKitGeneration`** (`useKitGeneration.ts`) sequences ingest → **naming** → the converter
+  fan-out (`convertMany`), exposing live per-target state (pending → running → success/error).
+- **`kitTitle.ts`** names the kit ONCE, between ingest and fan-out, and that one value is what
+  every generator receives as `source.title`. This is load-bearing, not cosmetic: each generator
+  resolves its title as `singlePass ? agentTitle || source.title : source.title || agentTitle`,
+  so on any MULTI-SECTION run (i.e. any long document) `source.title` wins on all of them at
+  once — which is why a kit used to come out with the raw filename
+  (`MatterandMeasurements`) on every artifact except the audio study, whose podcast agent titles
+  its own episode. Two layers: `humanizeSourceTitle` (deterministic — extensions, separators,
+  camelCase, junk tokens, casing; 8 pinned tests) is the floor and always runs, and the
+  `education.kit_title` mandate names the SUBJECT from the material's opening, which is the only
+  way to recover a name the filename does not contain. Naming never blocks a kit: the namer is
+  best-effort and degrades to the humanized filename.
 - **The converter** (`features/education/convert/`) is the shared dispatch — see its `FEATURE.md`.
   This feature is a CONSUMER; it does not own generation. Targets light up as their generators
   register (audio P3, quiz/test P1, notes P4) — no change here.
@@ -227,6 +238,19 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
   `### Chunk cN` markers before sending so cards ground + cite.
 
 ## Change log
+
+- **2026-08-22** — **A kit gets ONE name, and the kit became a place.** Naming: `kitTitle.ts`
+  resolves the kit's name once between ingest and fan-out (`education.kit_title` over a
+  deterministic filename humanizer that is never skipped) and passes it as `source.title`, so all
+  eight artifacts inherit one clean human title with zero generator changes — the multi-section
+  path used to stamp the raw filename on every one of them. Proven live: a paste titled
+  `KrebsCycleandOxidativePhosphorylation_final_v2` produced the kit
+  "Krebs Cycleand Oxidative Phosphorylation" from the humanizer alone (the namer closes the
+  remaining word split once deployed). The kit: `recordSourceLineage` now carries `sourceTitle` on
+  every edge, and `features/education/kits` turns the lineage this feature already wrote into a
+  real surface — `/education/kits` and `/education/kits/[sourceId]`, with the door added here as
+  **Open your kit** on the finished board (`KitBoard`), which is the first time a kit outlived
+  the tab that made it.
 
 - **2026-08-21** — Cleaned-document guarantee + `notes` default-on. Image OCR and audio/video
   transcription now keep a durable `(extracted).md` sibling edged to the anchor (`keepCleanCopy`),
