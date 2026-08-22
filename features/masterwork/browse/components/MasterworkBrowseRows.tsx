@@ -57,18 +57,34 @@ export function MasterworkBrowseRows({
                 </span>
               )}
               {density === "comfortable" && row.description ? (
-                <span className="block truncate text-xs text-muted-foreground">
+                <span className="hidden truncate text-xs text-muted-foreground sm:block">
                   {row.description}
                 </span>
               ) : null}
+              {/* Mobile: the counts sit UNDER the name instead of squeezing it
+                  down to three characters. */}
+              <span className="flex items-center gap-2 text-xs text-muted-foreground sm:hidden">
+                <span className="tabular-nums">
+                  {row.rule_count} {row.rule_count === 1 ? "rule" : "rules"}
+                </span>
+                {built.length > 0 ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Play className="h-3 w-3" />
+                    {built.length} built
+                    {released > 0 ? ` · ${released} released` : ""}
+                  </span>
+                ) : (
+                  <span>not built yet</span>
+                )}
+              </span>
             </div>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            <span className="hidden shrink-0 text-xs tabular-nums text-muted-foreground sm:block">
               {row.rule_count} {row.rule_count === 1 ? "rule" : "rules"}
             </span>
             {built.length > 0 ? (
               <Link
                 href={`/masterwork/${row.id}/masterworks`}
-                className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline sm:inline-flex"
                 title="The systems built from this Rulebook"
               >
                 <Play className="h-3 w-3" />
@@ -76,7 +92,7 @@ export function MasterworkBrowseRows({
                 {released > 0 ? ` · ${released} released` : ""}
               </Link>
             ) : (
-              <span className="shrink-0 text-xs text-muted-foreground">
+              <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">
                 not built yet
               </span>
             )}
