@@ -12,6 +12,7 @@ import {
   type RulebookSections,
   type RulebookSource,
   type RulebookStatus,
+  type RulebookVisibility,
 } from "./types";
 
 /**
@@ -68,6 +69,22 @@ function slugify(name: string): string {
     .slice(0, 60);
 }
 
+/**
+ * THE INTAKE ANSWERS DO WORK (Arman, 2026-08-21) — "who will actually run
+ * this?" decides who can see the Rulebook from the moment it exists, instead
+ * of every Rulebook being born personal and needing a share later.
+ *
+ * `personal` means "belongs to one individual" (db-rules §6); anything that
+ * names other people is org work, so it is born `internal`. Widening past the
+ * org (link / public) stays a deliberate act in the sharing UI — an intake
+ * answer must never publish anything.
+ */
+export function visibilityFromWhoRunsIt(
+  whoRunsIt: string | undefined,
+): RulebookVisibility {
+  return whoRunsIt && whoRunsIt !== "Just me" ? "internal" : "personal";
+}
+
 export async function createDraftRulebook(
   input: CreateRulebookInput,
 ): Promise<Rulebook> {
@@ -85,6 +102,7 @@ export async function createDraftRulebook(
         rules: [] as never,
         status: "draft",
         organization_id: input.organizationId,
+        visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
         ...(input.intake
           ? { metadata: { intake: input.intake } as never }
           : {}),

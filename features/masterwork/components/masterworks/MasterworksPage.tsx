@@ -442,6 +442,10 @@ export function MasterworksPage({
             if (!open) setAuditionCandidate(null);
           }}
           rulebookId={rulebookId}
+          benchmarkClaim={
+            (rulebook.metadata as { intake?: { benchmark?: string } } | null)
+              ?.intake?.benchmark
+          }
           initialCandidate={auditionCandidate ?? undefined}
         />
       ) : null}
