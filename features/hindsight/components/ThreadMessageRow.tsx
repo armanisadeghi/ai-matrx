@@ -27,12 +27,17 @@ import { fmtDate } from "./tokens";
  * what the reviewer was given, which is the one thing this panel exists to show.
  */
 function TruncationNotice({ message }: { message: ThreadMessage }) {
-  if (!message.truncated) return null;
+  const truncated = "truncated" in message && message.truncated === true;
+  if (!truncated) return null;
   const shown = (message.text ?? "").length;
+  const fullChars =
+    "full_chars" in message && typeof message.full_chars === "number"
+      ? message.full_chars
+      : shown;
   return (
     <p className="mt-1.5 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
       Showing the first {shown.toLocaleString()} of{" "}
-      {(message.full_chars ?? 0).toLocaleString()} characters. This turn is the
+      {fullChars.toLocaleString()} characters. This turn is the
       review bundle the reviewer was given — evidence, not a chat message.
     </p>
   );

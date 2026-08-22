@@ -651,6 +651,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .from("udt_documents")
         .select("document_name")
         .eq("id", ref.document_id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (error || !data) return stringify(ref.label);
       const name = stringify(

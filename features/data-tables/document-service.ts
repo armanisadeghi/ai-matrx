@@ -92,6 +92,7 @@ export async function listAccessibleDocuments(): Promise<
     .schema("workbench")
     .from("udt_documents")
     .select("*")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) return { success: false, error: error.message };
   return { success: true, data: (data ?? []) as DocumentRow[] };
@@ -105,6 +106,7 @@ export async function getDocument(
     .from("udt_documents")
     .select("*")
     .eq("id", documentId)
+    .is("deleted_at", null)
     .single();
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as DocumentRow };
@@ -155,13 +157,47 @@ export async function updateDocumentDescription(
   return { success: true, data: data as DocumentRow };
 }
 
-export async function deleteDocument(
+/**
+ * Soft delete — the document is tombstoned, not destroyed, and its snapshots stay
+ * with it. Every read path filters `deleted_at is null`. Pair with
+ * restoreDocument for undo. (aidream migration 0458.)
+ */
+export async function restoreDocument(
+  documentId: string,
+): Promise<ServiceResult<true>> {
+  const { error } = await supabase
+    .schema("workbench")
+    .from("udt_documents")
+    .update({ deleted_at: null })
+    .eq("id", documentId);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: true };
+}
+
+/**
+ * HARD delete — only for rolling back a document this very flow just created and
+ * failed to populate. Never use for a user-initiated delete: that is
+ * deleteDocument, which tombstones and stays recoverable.
+ */
+export async function discardFailedDocument(
   documentId: string,
 ): Promise<ServiceResult<true>> {
   const { error } = await supabase
     .schema("workbench")
     .from("udt_documents")
     .delete()
+    .eq("id", documentId);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: true };
+}
+
+export async function deleteDocument(
+  documentId: string,
+): Promise<ServiceResult<true>> {
+  const { error } = await supabase
+    .schema("workbench")
+    .from("udt_documents")
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", documentId);
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };

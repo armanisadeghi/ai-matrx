@@ -42,7 +42,7 @@ describe("ThreadMessageRow truncation notice", () => {
   });
 
   it("states BOTH the shown and the true length when capped", () => {
-    const message: ThreadMessage = {
+    const message = {
       ...base,
       text: "x".repeat(6000),
       truncated: true,
@@ -58,7 +58,7 @@ describe("ThreadMessageRow truncation notice", () => {
   });
 
   it("says nothing at all when the message is whole", () => {
-    const message: ThreadMessage = {
+    const message = {
       ...base,
       role: "assistant",
       text: "The hosts are voice-interchangeable.",
@@ -72,7 +72,7 @@ describe("ThreadMessageRow truncation notice", () => {
   });
 
   it("shows the notice in the chat variant too", () => {
-    const message: ThreadMessage = {
+    const message = {
       ...base,
       text: "y".repeat(6000),
       truncated: true,

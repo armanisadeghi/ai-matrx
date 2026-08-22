@@ -111,7 +111,7 @@ export default function DocumentsLandingPage() {
     async (doc: DocumentRow) => {
       const ok = await confirm({
         title: "Delete document?",
-        description: `"${doc.document_name}" and all of its saved snapshots will be permanently removed.`,
+        description: `"${doc.document_name}" and all of its saved snapshots will be moved to the trash.`,
         confirmLabel: "Delete",
         variant: "destructive",
       });
