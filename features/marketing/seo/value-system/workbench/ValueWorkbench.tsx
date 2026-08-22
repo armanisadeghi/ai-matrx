@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * THE KEYWORD VALUE WORKBENCH — the one workbench for this feature.
  *
