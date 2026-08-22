@@ -154,6 +154,26 @@ export const MARKETING_SITE_SUBVIEWS = [
     ],
   },
   {
+    // THE KEYWORD VALUE FAMILY. Five real routes, one job each, and before
+    // 2026-08-22 no navigation between them at all: each was linked ad hoc
+    // from whatever happened to be built at the time, which is precisely how
+    // Arman ended up unable to find his own features ("in each UI, it says
+    // though there's something different. And I just can't seem to figure out
+    // what's missing"). They are sub-views, not filters — each changes what
+    // the page IS, reads different tables, and writes through different RPCs.
+    //
+    // `workbench` is first, so it renders at the bare `/value` URL.
+    section: "value",
+    views: [
+      { id: "workbench", label: "Workbench" },
+      { id: "dimensions", label: "Dimensions" },
+      { id: "rules", label: "Rules & Geo" },
+      { id: "topics", label: "Topics" },
+      { id: "packs", label: "Starter Packs" },
+    ],
+    hrefStyle: "path",
+  },
+  {
     section: "ai-visibility",
     views: AI_VISIBILITY_SUBVIEWS,
     hrefStyle: "path",

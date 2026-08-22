@@ -22,8 +22,8 @@ import {
   TreePine,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import type { ValueReason, ValueSource } from "../../types";
-import { humanizeSlug } from "./lib";
+import type { ValueReason, ValueSource } from "../types";
+import { humanizeSlug } from "../lib";
 
 function multiplierText(multiplier: number): string {
   return `×${Number.isInteger(multiplier) ? multiplier : multiplier.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}`;

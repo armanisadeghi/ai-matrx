@@ -32,7 +32,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { getValueVocabulary } from "../data";
-import { buildBandMeta, reviewWindow } from "../variants/c/lib";
+import { buildBandMeta, reviewWindow } from "../lib";
 import {
   getOfferingSplit,
   getTopicStats,
@@ -297,7 +297,7 @@ export function TopicTreeWorkbench() {
           <ListTree className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">Topic tree</h2>
           <Link
-            href={`/marketing/brands/${brandId}/sites/${siteId}/value/c`}
+            href={`/marketing/brands/${brandId}/sites/${siteId}/value`}
             className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
             Value workbench

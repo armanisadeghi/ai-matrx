@@ -1,13 +1,25 @@
-"use client";
-
 /**
- * Keyword Value Workbench — variant C (ui-refine seat, ui-bakeoff 2026-08-21).
+ * THE KEYWORD VALUE WORKBENCH — the one workbench for this feature.
  *
- * Posture: keep the mental model the expert already has from the keyword
- * classification workbench (scoreboard tiles that filter the table, the chip
- * IS the control, one write path) and execute it better. Reference product:
- * Google Search Console's Performance report — a decomposition band over a
- * query table — because that is the report this user reads every week.
+ * It was variant C of a four-way bake-off (ui-refine seat, 2026-08-21) and it
+ * won because it is built on the platform's canonical primitives: MatrxDataTable
+ * with URL-backed state, the scoreboard tiles that filter the table, the chip
+ * IS the control, ONE write path, and the keyword-intel door. On 2026-08-22 the
+ * four variants converged here and A/B/D were deleted — they had frozen at the
+ * bake-off while five more surfaces were wired into C only, so they were telling
+ * a story about this feature that had stopped being true.
+ *
+ * Two ideas were GRAFTED from variant B before it went, and they are marked as
+ * such where they render:
+ *   • the VERDICT SENTENCE (`buildVerdict` in ../lib) — the page opens with
+ *     composed English naming the band that diverges most from the site's own
+ *     direction, because a flat total can hide a band that moved 160%.
+ *   • the RULING SESSION (./RulingSession) — the unvalued queue as a focused
+ *     one-at-a-time card flow, biggest traffic first.
+ *
+ * Reference product: Google Search Console's Performance report — a
+ * decomposition band over a query table — because that is the report this user
+ * reads every week.
  *
  * The three laws this page renders (value-system.md):
  *  1. The expert always wins — the band chip is a dropdown; a ruling lands
@@ -15,10 +27,13 @@
  *  2. Meaning is data — the "How value is computed" panel shows the exact
  *     bands, rules, geo areas, and topic worth the arithmetic uses.
  *  3. Every number explains itself — the Why column renders each row's
- *     reasons chain; a tier without its why never renders.
+ *     reasons chain on EVERY row, never behind a click; a tier without its
+ *     why never renders.
  *
  * Unvalued is the loudest tile and the default working filter target: it is
- * the work queue, never a silently-guessed middle tier.
+ * the work queue, never a silently-guessed middle tier. And "Your setup, as it
+ * actually stands" (./MeaningHealth) says what is unfinished about THIS site's
+ * meaning — measured live, never a score.
  */
 
 import { useState } from "react";
@@ -60,24 +75,29 @@ import { InlineQueryError } from "@/features/marketing/components/shared/Marketi
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import {
+  getSiteMeaningHealth,
   getValueReview,
   getValueSummary,
   getValueVocabulary,
   setKeywordValue,
-} from "../../data";
-import type { ValueReviewRow, ValueSource } from "../../types";
+} from "../data";
+import type { ValueReviewRow, ValueSource } from "../types";
 import {
   bandMetaFor,
   buildBandMeta,
+  buildVerdict,
   formatScore,
   humanizeSlug,
   reviewWindow,
   type BandMeta,
-} from "./lib";
+} from "../lib";
+import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
 import { ReasonChainDetail, ReasonChainInline } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
+import { MeaningHealth } from "./MeaningHealth";
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
+import { RulingSession } from "./RulingSession";
 
 const REVIEW_SORTS = new Set(["clicks", "impressions", "score", "keyword"]);
 
@@ -207,7 +227,7 @@ function SourceChip({ source }: { source: ValueSource }) {
   );
 }
 
-export function ValueWorkbenchC() {
+export function ValueWorkbench() {
   const { site, brandId } = useMarketingSite();
   const siteId = site.id;
   const queryClient = useQueryClient();
@@ -220,9 +240,12 @@ export function ValueWorkbenchC() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [meaningOpen, setMeaningOpen] = useState(false);
   const [draft, setDraft] = useState<RulingDraft | null>(null);
+  // The ruling session is a MODE, not an overlay: it replaces the table so the
+  // one keyword in front of you is the only thing to answer.
+  const [sessionOpen, setSessionOpen] = useState(false);
 
   const vocab = useQuery({
-    queryKey: ["marketing", "value-c", "vocab", siteId, "value_band"],
+    queryKey: ["marketing", "value", "vocab", siteId, "value_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
     staleTime: 5 * 60_000,
   });
@@ -230,7 +253,7 @@ export function ValueWorkbenchC() {
   const bandsAreTemplate = Boolean(vocab.data?.[0]?.is_template);
 
   const summary = useQuery({
-    queryKey: ["marketing", "value-c", "summary", siteId, window],
+    queryKey: ["marketing", "value", "summary", siteId, window],
     queryFn: ({ signal }) =>
       getValueSummary(
         siteId,
@@ -243,6 +266,23 @@ export function ValueWorkbenchC() {
     staleTime: 60_000,
   });
 
+  // What is unfinished about THIS site's meaning. Metadata counts only — the
+  // DB writes the sentences, this page never paraphrases them.
+  const health = useQuery({
+    queryKey: ["marketing", "value", "meaning-health", siteId],
+    queryFn: ({ signal }) => getSiteMeaningHealth(siteId, signal),
+    staleTime: 60_000,
+  });
+
+  const summaryRows = summary.data ?? [];
+  const verdict = buildVerdict(summaryRows, metas);
+  const unvaluedQueries = summaryRows
+    .filter((row) => row.value_band === "unvalued")
+    .reduce((total, row) => total + row.queries, 0);
+  const unvaluedClicks = summaryRows
+    .filter((row) => row.value_band === "unvalued")
+    .reduce((total, row) => total + row.clicks, 0);
+
   const state = table.queryState;
   const bandFilter = singleSelectValue(state.columnFilters.value_band);
   const sourceFilter = singleSelectValue(state.columnFilters.value_source);
@@ -252,7 +292,7 @@ export function ValueWorkbenchC() {
   const review = useQuery({
     queryKey: [
       "marketing",
-      "value-c",
+      "value",
       "review",
       siteId,
       window.start,
@@ -316,7 +356,7 @@ export function ValueWorkbenchC() {
       setSelectedIds([]);
       setDraft(null);
       void queryClient.invalidateQueries({
-        queryKey: ["marketing", "value-c"],
+        queryKey: ["marketing", "value"],
       });
     },
     onError: (error) => {
@@ -478,18 +518,111 @@ export function ValueWorkbenchC() {
             {window.start} → {window.end}, compared to the 28 days before.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 gap-1.5 text-xs"
-          onClick={() => setMeaningOpen((open) => !open)}
-        >
-          <BookOpenText className="h-3.5 w-3.5" />
-          How value is computed
-        </Button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ValueDoors brandId={brandId} siteId={siteId} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 text-xs"
+            onClick={() => setMeaningOpen((open) => !open)}
+          >
+            <BookOpenText className="h-3.5 w-3.5" />
+            How value is computed
+          </Button>
+        </div>
       </div>
 
+      {/* THE VERDICT — grafted from variant B. Composed English that names the
+          divergence the totals hide. Renders only when there is a verdict to
+          give; the contrast band is clickable because the sentence is a claim
+          the user must be able to inspect. */}
+      {verdict ? (
+        <p className="shrink-0 text-xs leading-5 text-foreground">
+          <span className="font-medium">{verdict.headline}</span>
+          {verdict.detail ? (
+            verdict.contrastBand ? (
+              <button
+                type="button"
+                className="ml-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                title={`Filter the table to ${bandMetaFor(metas, verdict.contrastBand).label}`}
+                onClick={() =>
+                  table.onStateChange({
+                    ...table.state,
+                    page: 1,
+                    columnFilters: {
+                      ...table.state.columnFilters,
+                      value_band: {
+                        kind: "select",
+                        value: verdict.contrastBand,
+                      } as ColumnFilterValue,
+                    },
+                  })
+                }
+              >
+                {verdict.detail}
+              </button>
+            ) : (
+              <span className="ml-1 text-muted-foreground">
+                {verdict.detail}
+              </span>
+            )
+          ) : null}
+        </p>
+      ) : null}
+
+      <MeaningHealth
+        rows={health.data}
+        isLoading={health.isPending}
+        error={health.isError ? health.error : null}
+        onRetry={() => void health.refetch()}
+        brandId={brandId}
+        siteId={siteId}
+      />
+
+      {/* THE WORK QUEUE — grafted from variant B. 4,524 of this site's keywords
+          carry no meaning at all, and a table is the wrong shape for a pile
+          that size: the useful motion is one question, one answer, next. */}
+      {!sessionOpen && unvaluedQueries > 0 ? (
+        <button
+          type="button"
+          onClick={() => setSessionOpen(true)}
+          className="flex w-full shrink-0 flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-left transition-colors hover:border-warning/70"
+        >
+          <Gavel className="h-3.5 w-3.5 shrink-0 text-warning" />
+          <span className="min-w-0 flex-1 text-xs text-foreground">
+            <span className="font-semibold">
+              {formatCount(unvaluedQueries)} keywords
+            </span>{" "}
+            — carrying {formatCount(unvaluedClicks)} clicks — have no value
+            yet. Until you rule on them, the totals above understate what you
+            know.
+          </span>
+          <span className="shrink-0 text-[11px] font-semibold text-warning">
+            Start a ruling session →
+          </span>
+        </button>
+      ) : null}
+
+      {sessionOpen ? (
+        <RulingSession
+          siteId={siteId}
+          window={window}
+          metas={metas}
+          totalUnvalued={unvaluedQueries}
+          rulingPending={ruling.isPending}
+          onRule={(input) =>
+            ruling.mutate({
+              keywordIds: input.keywordIds,
+              tier: input.tier,
+              notes: input.notes,
+              label: input.label,
+            })
+          }
+          onExit={() => setSessionOpen(false)}
+        />
+      ) : (
+        <>
       {/* Decomposition scoreboard */}
       {vocab.isError ? (
         <InlineQueryError
@@ -734,6 +867,9 @@ export function ValueWorkbenchC() {
           className="min-h-0 flex-1"
         />
       </div>
+
+        </>
+      )}
 
       {meaningOpen ? (
         <MeaningPanel

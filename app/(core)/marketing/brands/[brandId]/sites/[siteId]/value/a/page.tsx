@@ -1,11 +1,19 @@
-import { Suspense } from "react";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { ValueWorkbenchA } from "@/features/marketing/seo/value-system/variants/a/ValueWorkbenchA";
+import { redirect } from "next/navigation";
 
-export default function ValueWorkbenchVariantAPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading keyword value workbench…" />}>
-      <ValueWorkbenchA />
-    </Suspense>
-  );
+/**
+ * Retired bake-off variant "a" (2026-08-21 → 2026-08-22).
+ *
+ * Four variants ran live on real data; C won and became the one workbench at
+ * `../` (`features/marketing/seo/value-system/workbench/`). A, B and D were
+ * deleted rather than left rendering a version of this feature that had stopped
+ * being true — git keeps them. This route survives only so a bookmark from the
+ * bake-off week still lands on the real workbench.
+ */
+export default async function RetiredValueVariantAPage({
+  params,
+}: {
+  params: Promise<{ brandId: string; siteId: string }>;
+}) {
+  const { brandId, siteId } = await params;
+  redirect(`/marketing/brands/${brandId}/sites/${siteId}/value`);
 }

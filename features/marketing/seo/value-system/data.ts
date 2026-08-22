@@ -116,6 +116,47 @@ export async function setKeywordValue(
   return assertGoverned(response.data, response.error, "save the ruling");
 }
 
+/**
+ * What is UNFINISHED about this site's own meaning setup — measured, never
+ * guessed and never scored.
+ *
+ * `seo.gsc_site_meaning_health` counts metadata only (no corpus scan, no
+ * resolver call, ~88ms). It returns sentences already written for a
+ * non-technical reader, so the UI renders `headline` and `detail` verbatim —
+ * paraphrasing them here would fork the copy from the rule that produced it.
+ *
+ * `severity`:
+ *   inert — expressed but doing nothing. The worst state, because it LOOKS
+ *           configured (4 service areas that match no place name).
+ *   gap   — never expressed at all.
+ *   ok    — working; reported so the screen can be honest about what IS done.
+ */
+export type MeaningHealthArea =
+  | "geo"
+  | "rules"
+  | "topics"
+  | "dimensions"
+  | "bands";
+export type MeaningHealthSeverity = "inert" | "gap" | "ok";
+
+export interface MeaningHealthRow {
+  area: MeaningHealthArea;
+  severity: MeaningHealthSeverity;
+  headline: string;
+  detail: string;
+  count_value: number;
+}
+
+export async function getSiteMeaningHealth(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<MeaningHealthRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_site_meaning_health", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as MeaningHealthRow[];
+}
+
 // ── Site meaning tables (small, site-scoped, direct under RLS) ──────────────
 
 export async function listSiteVocabulary(siteId: string, kind: "value_band" | "geo_band") {

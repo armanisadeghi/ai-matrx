@@ -63,7 +63,7 @@ import {
   updateValueRule,
   type ValueRuleDraft,
 } from "@/features/marketing/search-console/data-class-rules";
-import type { BandMeta } from "../variants/c/lib";
+import type { BandMeta } from "../lib";
 import type { ValueRule } from "../types";
 import { ImpactPanel } from "./ImpactPanel";
 import {

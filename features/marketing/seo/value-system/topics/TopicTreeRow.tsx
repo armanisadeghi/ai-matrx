@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/styles/themes/utils";
 import { formatCount } from "@/features/marketing/search-console/types";
-import { bandMetaFor, type BandMeta } from "../variants/c/lib";
+import { bandMetaFor, type BandMeta } from "../lib";
 import { rootTypeMeta } from "./types";
 import { DEFAULT_TOPIC_WEIGHT, formatWeight, type TopicTreeNode } from "./lib";
 

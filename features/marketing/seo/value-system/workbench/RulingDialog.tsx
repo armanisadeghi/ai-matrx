@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/styles/themes/utils";
-import type { BandMeta } from "./lib";
+import type { BandMeta } from "../lib";
 
 export interface RulingDraft {
   keywordIds: string[];

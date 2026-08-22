@@ -26,7 +26,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
-import { bandMetaFor, type BandMeta } from "../variants/c/lib";
+import { bandMetaFor, type BandMeta } from "../lib";
 import type { UnassignedKeywordRow } from "./types";
 
 const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";

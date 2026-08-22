@@ -48,10 +48,10 @@ import {
   listGeoAreas,
   listSiteTopicValues,
   listValueRules,
-} from "../../data";
-import { BandVocabularyEditor } from "../../vocabulary/BandVocabularyEditor";
-import { ValueRuleEditor } from "../../rules/ValueRuleEditor";
-import { GeoAreaEditor } from "../../rules/GeoAreaEditor";
+} from "../data";
+import { BandVocabularyEditor } from "../vocabulary/BandVocabularyEditor";
+import { ValueRuleEditor } from "../rules/ValueRuleEditor";
+import { GeoAreaEditor } from "../rules/GeoAreaEditor";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import type {
   SiteGeoArea,
@@ -59,8 +59,8 @@ import type {
   TopicNode,
   ValueRule,
   VocabKind,
-} from "../../types";
-import { humanizeSlug, type BandMeta } from "./lib";
+} from "../types";
+import { humanizeSlug, type BandMeta } from "../lib";
 
 function SectionHeader({
   icon: Icon,
@@ -204,22 +204,22 @@ export function MeaningPanel({
     staleTime: 5 * 60_000,
   });
   const geoBands = useQuery({
-    queryKey: ["marketing", "value-c", "vocab", siteId, "geo_band"],
+    queryKey: ["marketing", "value", "vocab", siteId, "geo_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "geo_band", signal),
     staleTime: 5 * 60_000,
   });
   const rules = useQuery({
-    queryKey: ["marketing", "value-c", "rules", siteId],
+    queryKey: ["marketing", "value", "rules", siteId],
     queryFn: () => listValueRules(siteId),
     staleTime: 5 * 60_000,
   });
   const geoAreas = useQuery({
-    queryKey: ["marketing", "value-c", "geo-areas", siteId],
+    queryKey: ["marketing", "value", "geo-areas", siteId],
     queryFn: () => listGeoAreas(siteId),
     staleTime: 5 * 60_000,
   });
   const topicValues = useQuery({
-    queryKey: ["marketing", "value-c", "topic-values", siteId],
+    queryKey: ["marketing", "value", "topic-values", siteId],
     queryFn: () => listSiteTopicValues(siteId),
     staleTime: 5 * 60_000,
   });
@@ -233,7 +233,7 @@ export function MeaningPanel({
       title="How value is computed"
       description="Deterministic arithmetic over meaning you ratified — never the system's opinion. Your explicit ruling always beats it."
       onClose={onClose}
-      storageKey="value-workbench-c-meaning-panel"
+      storageKey="value-workbench-meaning-panel"
       defaultWidth={480}
     >
       <div className="space-y-5 overflow-y-auto p-3 scrollbar-thin">

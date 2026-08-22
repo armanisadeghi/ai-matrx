@@ -20,7 +20,7 @@ import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
-import { bandMetaFor, type BandMeta } from "../variants/c/lib";
+import { bandMetaFor, type BandMeta } from "../lib";
 import type { RuleImpact } from "./types";
 
 function BandChip({ band, metas }: { band: string; metas: BandMeta[] }) {

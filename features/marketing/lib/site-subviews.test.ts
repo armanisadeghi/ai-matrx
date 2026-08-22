@@ -139,15 +139,23 @@ describe("marketing site sub-view registry", () => {
     // this suite was already red) and `ai-visibility:panels` (a saved prompt
     // set asked on a cadence, `seo.ai_visibility_panel`). 41 + 2 = 43,
     // 62 + 2 + the keyword-value section = 65.
+    //
+    // 2026-08-22 — the KEYWORD VALUE family declared its five sub-views
+    // (workbench, dimensions, rules, topics, packs). Nothing moved and nothing
+    // went dark: all five routes already existed and were already live, they
+    // simply had no declared navigation between them, so the site header could
+    // not render them and a user could not find four of the five. The bake-off
+    // variants /value/a /b /c /d are redirects to the workbench, not
+    // destinations. 43 + 5 = 48, 65 + 5 = 70.
     expect(MARKETING_SITE_SECTIONS.length).toBe(22);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(43);
+    ).toBe(48);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      65,
+      70,
     );
   });
 });

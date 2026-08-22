@@ -12,14 +12,14 @@ import { ArrowDownRight, ArrowUpRight, Minus, Sparkle } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCount } from "@/features/marketing/search-console/types";
-import type { ValueSummaryRow } from "../../types";
+import type { ValueSummaryRow } from "../types";
 import {
   aggregateSummary,
   computeDelta,
   formatPct,
   type BandMeta,
   type Delta,
-} from "./lib";
+} from "../lib";
 
 function DeltaBadge({ delta, label }: { delta: Delta; label: string }) {
   if (delta.dir === "none") return null;

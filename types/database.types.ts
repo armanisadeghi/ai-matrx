@@ -50498,6 +50498,16 @@ export type Database = {
           updated_by_name: string
         }[]
       }
+      gsc_site_meaning_health: {
+        Args: { p_site_id: string }
+        Returns: {
+          area: string
+          count_value: number
+          detail: string
+          headline: string
+          severity: string
+        }[]
+      }
       gsc_topic_offering_split: {
         Args: { p_end: string; p_site_id: string; p_start: string }
         Returns: {

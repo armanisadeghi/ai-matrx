@@ -1,13 +1,20 @@
 /**
- * Keyword Value Workbench — variant C (ui-refine seat) shared helpers.
+ * Keyword Value System — the ONE shared helper module.
  *
  * Pure functions only: the review window, band metadata (site vocabulary +
  * the two reserved resolver slugs), tone assignment from OUR semantic
- * tokens, and compare-delta math. Never re-derives a band or score — that
- * is the resolver's job (value-system.md, law 3).
+ * tokens, compare-delta math, and the verdict sentence. Never re-derives a
+ * band or a score — that is the resolver's job (value-system.md, law 3).
+ *
+ * Lived at `variants/c/lib.ts` during the 2026-08-21 bake-off. The workbench,
+ * the rules bench and the topic tree all imported it across a directory named
+ * for a losing seat, so on 2026-08-22 it moved here when the four variants
+ * converged into one workbench. Everything under this feature imports from
+ * `../lib` (or `./lib`); nothing imports from a variant, because there are
+ * none.
  */
 
-import type { ValueBandDef, ValueSummaryRow } from "../../types";
+import type { ValueBandDef, ValueSummaryRow } from "./types";
 
 // ── Review window ────────────────────────────────────────────────────────────
 
@@ -219,4 +226,96 @@ export function formatPct(pct: number): string {
 export function formatScore(score: number | null): string {
   if (score === null || score === undefined) return "—";
   return Number.isInteger(score) ? String(score) : score.toFixed(1);
+}
+
+// ── The verdict sentence ─────────────────────────────────────────────────────
+
+/**
+ * GRAFTED FROM VARIANT B (the "Value Ledger" seat, 2026-08-21) — the single
+ * best idea the bake-off produced, and the headline this whole feature exists
+ * to print.
+ *
+ * A totals row can hold perfectly still while the traffic underneath it moves:
+ * the site is flat, and its best-value band is up 160%. Averages hide exactly
+ * the thing the expert is paying us to see. So the page opens by naming the
+ * band whose direction diverges MOST from the site's own, in composed English:
+ *
+ *   "Search traffic held steady over the last 28 days. But look closer:
+ *    Platinum traffic is up 160% — the totals don't tell that story."
+ *
+ * When nothing diverges, it says nothing rather than manufacturing drama —
+ * `detail` comes back empty and the caller renders only the headline.
+ */
+export interface Verdict {
+  headline: string;
+  detail: string;
+  /** The band the detail sentence is about, so the caller can filter to it. */
+  contrastBand: string | null;
+}
+
+/** Divergence below this reads as noise, not a story. */
+const VERDICT_DIVERGENCE_FLOOR = 5;
+
+export function buildVerdict(
+  rows: ValueSummaryRow[],
+  metas: BandMeta[],
+): Verdict | null {
+  const byBand = aggregateSummary(rows);
+  let siteClicks = 0;
+  let siteCompare = 0;
+  for (const totals of byBand.values()) {
+    siteClicks += totals.clicks;
+    siteCompare += totals.cmpClicks;
+  }
+  if (siteClicks === 0 && siteCompare === 0) return null;
+
+  const siteDelta = computeDelta(siteClicks, siteCompare);
+  const sitePct = siteDelta.pct ?? 0;
+  const siteMove =
+    siteDelta.dir === "new"
+      ? "has its first recorded clicks"
+      : siteDelta.dir === "none"
+        ? "recorded nothing"
+        : Math.abs(Math.round(sitePct)) === 0
+          ? "held steady"
+          : `is ${sitePct > 0 ? "up" : "down"} ${Math.abs(Math.round(sitePct))}%`;
+
+  let contrast: { band: string; pct: number; divergence: number } | null = null;
+  let valuedBands = 0;
+  for (const [band, totals] of byBand) {
+    if (band === "unvalued") continue;
+    if (totals.clicks === 0 && totals.cmpClicks === 0) continue;
+    valuedBands += 1;
+    const delta = computeDelta(totals.clicks, totals.cmpClicks);
+    if (delta.pct === null) continue;
+    const divergence = Math.abs(delta.pct - sitePct);
+    if (!contrast || divergence > contrast.divergence) {
+      contrast = { band, pct: delta.pct, divergence };
+    }
+  }
+
+  const headline = `Search traffic ${siteMove} over the last 28 days.`;
+  let detail = "";
+  let contrastBand: string | null = null;
+  if (contrast && contrast.divergence >= VERDICT_DIVERGENCE_FLOOR) {
+    const label = bandMetaFor(metas, contrast.band).label;
+    const dir = contrast.pct > 0 ? "up" : "down";
+    detail = `But look closer: ${label} traffic is ${dir} ${Math.abs(Math.round(contrast.pct))}% — the totals don't tell that story.`;
+    contrastBand = contrast.band;
+  } else if (valuedBands === 0) {
+    detail =
+      "None of that traffic carries a value yet — the totals can't tell you what it's worth until you rule on it.";
+  }
+  return { headline, detail, contrastBand };
+}
+
+/** "Aug 1 – Aug 28" for a window, in the reader's locale. */
+export function formatWindowLabel(window: ValueWindow): string {
+  const fmt = (day: string) =>
+    new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  return `${fmt(window.start)} – ${fmt(window.end)}`;
 }

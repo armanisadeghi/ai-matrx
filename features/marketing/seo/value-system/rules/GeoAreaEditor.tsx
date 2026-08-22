@@ -55,7 +55,7 @@ import { InlineQueryError } from "@/features/marketing/components/shared/Marketi
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { getValueVocabulary } from "../data";
 import type { SiteGeoArea } from "../types";
-import type { BandMeta } from "../variants/c/lib";
+import type { BandMeta } from "../lib";
 import { ImpactPanel } from "./ImpactPanel";
 import {
   archiveGeoArea,

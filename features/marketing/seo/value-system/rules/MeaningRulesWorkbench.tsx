@@ -42,7 +42,7 @@ import {
   listValueRules,
 } from "../data";
 import type { SiteGeoArea, ValueRule } from "../types";
-import { buildBandMeta, humanizeSlug, reviewWindow } from "../variants/c/lib";
+import { buildBandMeta, humanizeSlug, reviewWindow } from "../lib";
 import { ValueRuleEditor } from "./ValueRuleEditor";
 import { GeoAreaEditor } from "./GeoAreaEditor";
 import {
@@ -136,7 +136,7 @@ export function MeaningRulesWorkbench() {
       <div className="shrink-0 border-b border-border bg-card px-3 py-2.5 sm:px-4">
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href={marketingRoutes.site(brandId, siteId, "/value/c")}
+            href={marketingRoutes.site(brandId, siteId, "/value")}
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" aria-hidden />
