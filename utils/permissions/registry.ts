@@ -533,7 +533,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "pdf_redaction_audits",
     schemaName: "pdf",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Redaction Audit",
     urlPathTemplate: "/files/{id}",
