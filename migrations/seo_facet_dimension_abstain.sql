@@ -70,26 +70,35 @@ $fn$;
 -- ---------------------------------------------------------------------------
 -- 3. Readiness, reported by the catalogue.
 -- ---------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS seo.facet_dimension_readiness(uuid);
 CREATE OR REPLACE FUNCTION seo.facet_dimension_readiness(p_dimension_id uuid)
-RETURNS TABLE (is_ready boolean, readiness_note text)
+RETURNS TABLE (is_ready boolean, can_abstain boolean, readiness_note text)
 LANGUAGE sql STABLE
 SET search_path = seo, platform, pg_temp
 AS $$
+  -- TWO different questions, deliberately not merged.
+  --   is_ready    -- a HARD gate. Fewer than two real choices is the garbage
+  --                  case: the model is forced to stamp the only value it has
+  --                  on everything. Such a dimension is not offered at all.
+  --   can_abstain -- a QUALITY flag, reported and never enforced. Six of the
+  --                  13 platform dimensions have no "not clear" member, and
+  --                  gating on it would silently switch off classification
+  --                  that has worked for months. Whether each of those SHOULD
+  --                  gain one is a judgement about the vocabulary, which
+  --                  belongs to the person who owns it -- not to this function.
   WITH v AS (
-    SELECT count(*) AS n,
-           count(*) FILTER (WHERE (c.metadata->>'abstain')::boolean) AS abstains,
+    SELECT count(*) FILTER (WHERE COALESCE((c.metadata->>'abstain')::boolean, false)) AS abstains,
            count(*) FILTER (WHERE NOT COALESCE((c.metadata->>'abstain')::boolean, false)) AS real_vals
     FROM platform.categories c
     WHERE c.parent_id = p_dimension_id AND c.deleted_at IS NULL
   )
-  SELECT v.abstains > 0 AND v.real_vals >= 2,
+  SELECT v.real_vals >= 2,
+         v.abstains > 0,
          CASE
-           WHEN v.abstains = 0 AND v.real_vals < 2 THEN
-             'Needs at least two real choices and a way to say "not clear". Until then the AI would be forced to pick something.'
-           WHEN v.abstains = 0 THEN
-             'Needs a "not clear" choice. Without one the AI must pick a value even when the words do not say — a confident wrong answer.'
            WHEN v.real_vals < 2 THEN
-             'Needs at least two real choices. With only one, every keyword either gets it or gets nothing, which is a yes/no question wearing a dimension''s clothes.'
+             'Needs at least two real choices. With only one, the AI is forced to stamp it on everything — so this dimension is not being applied yet.'
+           WHEN v.abstains = 0 THEN
+             'Working, but it has no "not clear" choice — so the AI must pick something even when the words do not say. Consider adding one.'
            ELSE 'Ready — the AI can answer this honestly, including declining to.'
          END
   FROM v;
@@ -108,6 +117,7 @@ RETURNS TABLE (
   value_count bigint, keyword_count bigint, rule_count bigint,
   facet_values jsonb,
   is_ready boolean,
+  can_abstain boolean,
   readiness_note text
 )
 LANGUAGE plpgsql STABLE SECURITY DEFINER
@@ -162,6 +172,7 @@ BEGIN
            ORDER BY v.position NULLS LAST, v.value_label
          ) FILTER (WHERE v.value_id IS NOT NULL), '[]'::jsonb),
          (SELECT r.is_ready FROM seo.facet_dimension_readiness(d.id) r),
+         (SELECT r.can_abstain FROM seo.facet_dimension_readiness(d.id) r),
          (SELECT r.readiness_note FROM seo.facet_dimension_readiness(d.id) r)
   FROM dims d
   LEFT JOIN vals v ON v.dim_id = d.id
