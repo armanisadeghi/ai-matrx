@@ -285,7 +285,12 @@ BEGIN
       RAISE EXCEPTION 'seo_topic_type_required: choose what this topic is — that is what decides whether its traffic can ever become money';
     END IF;
 
-    v_base := btrim(both '-' from regexp_replace(lower(v_name), '[^a-z0-9]+', '-', 'g'));
+    v_base := regexp_replace(
+      regexp_replace(lower(v_name), '[^a-z0-9]+', '-', 'g'),
+      '(^-+|-+$)',
+      '',
+      'g'
+    );
     IF v_base = '' THEN v_base := 'topic'; END IF;
     v_slug := v_base;
     WHILE EXISTS (SELECT 1 FROM seo.topic t WHERE t.slug = v_slug) LOOP

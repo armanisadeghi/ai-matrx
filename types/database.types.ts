@@ -28143,6 +28143,71 @@ export type Database = {
         }
         Relationships: []
       }
+      lifecycle_archive: {
+        Row: {
+          bucket: string
+          bytes: number
+          checksum: string | null
+          created_at: string
+          cutoff: string
+          entity_ref: string
+          entity_token: string
+          format: string
+          id: string
+          object_key: string
+          owner_id: string | null
+          restored_at: string | null
+          row_count: number
+          run_id: string | null
+          storage_tier: string
+          trigger_kind: string
+        }
+        Insert: {
+          bucket: string
+          bytes: number
+          checksum?: string | null
+          created_at?: string
+          cutoff: string
+          entity_ref: string
+          entity_token: string
+          format?: string
+          id?: string
+          object_key: string
+          owner_id?: string | null
+          restored_at?: string | null
+          row_count: number
+          run_id?: string | null
+          storage_tier?: string
+          trigger_kind: string
+        }
+        Update: {
+          bucket?: string
+          bytes?: number
+          checksum?: string | null
+          created_at?: string
+          cutoff?: string
+          entity_ref?: string
+          entity_token?: string
+          format?: string
+          id?: string
+          object_key?: string
+          owner_id?: string | null
+          restored_at?: string | null
+          row_count?: number
+          run_id?: string | null
+          storage_tier?: string
+          trigger_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifecycle_archive_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifecycle_audit: {
         Row: {
           created_at: string
@@ -29982,6 +30047,14 @@ export type Database = {
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
       heal_reachability_drift: { Args: never; Returns: Json }
+      lifecycle_archive_candidates: {
+        Args: {
+          p_entity_token: string
+          p_max_rows?: number
+          p_owner_id: string
+        }
+        Returns: Json
+      }
       lifecycle_close_run: {
         Args: { p_entities_acted?: number; p_run_id: string; p_status?: string }
         Returns: Json

@@ -116,7 +116,9 @@ CREATE TRIGGER site_geo_area_assert_tokens
 --    resolution, and a per-keyword proposed (score, matched) pair, band the
 --    proposal server-side and summarise the movement.
 --
---    p_proposed rows: (kw_id uuid, matched boolean, next_raw numeric)
+--    p_rows carries ONLY the keywords the proposal touches (matched, or the
+--    row being edited fired on them before): kw_id, keyword, clicks,
+--    impressions, band, source, score, matched, next_raw.
 --      next_raw NULL  -> the keyword stays exactly where it is
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION seo.gsc_value_preview_summarize(
