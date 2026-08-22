@@ -2,23 +2,6 @@ import Link from "next/link";
 import { ArrowRight, ScrollText, Scale, ShieldCheck } from "lucide-react";
 import { EducationPricing } from "@/features/pricing/education/EducationPricing";
 import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
-import { createRouteMetadata } from "@/utils/route-metadata";
-
-export const metadata = createRouteMetadata("/pricing", {
-  title: "Pricing",
-  description:
-    "Simple, honest pricing for AI Matrx study tools. A generous free tier, limits visible up front, one-click cancel, and no silent charges — ever.",
-  canonicalPath: "/pricing",
-  additionalMetadata: {
-    openGraph: {
-      title: "Pricing | AI Matrx",
-      description:
-        "A generous free tier, limits visible up front, one-click cancel, and no silent charges — ever.",
-      url: "/pricing",
-      type: "website",
-    },
-  },
-});
 
 // P8 F5: /pricing is now EDUCATION-FIRST and DB-BACKED — Free-tier caps from
 // billing.capability_limit, Premium from billing.product/price (the seeded TEST
