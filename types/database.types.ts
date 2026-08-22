@@ -26810,7 +26810,22 @@ export type Database = {
           updated_by?: string | null
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "_base_entity_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "_base_entity_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       activity_log: {
         Row: {
@@ -26915,7 +26930,22 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
           what_it_needs?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "approach_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approach_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assist_producer_policy: {
         Row: {
@@ -26984,7 +27014,22 @@ export type Database = {
           version?: number
           working_message?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assist_producer_policy_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assist_producer_policy_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assist_producer_policy_history: {
         Row: {
@@ -27298,6 +27343,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "associations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "associations_payload_kind_fkey"
             columns: ["payload_kind"]
             isOneToOne: false
@@ -27428,10 +27480,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "categories_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "categories_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
             referencedColumns: ["id"]
           },
         ]
@@ -27532,10 +27598,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "comments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
             referencedColumns: ["id"]
           },
         ]
@@ -27670,7 +27750,22 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "domain_classification_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "domain_classification_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       edge_payload_kind: {
         Row: {
@@ -28081,6 +28176,20 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "flexible_data_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flexible_data_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
         ]
       }
       guided_checklist_run: {
@@ -28135,7 +28244,22 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "guided_checklist_run_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guided_checklist_run_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       judge_verdict: {
         Row: {
@@ -28252,7 +28376,22 @@ export type Database = {
           verdict?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "judge_verdict_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "judge_verdict_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lifecycle_archive: {
         Row: {
@@ -28665,10 +28804,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "masterwork_corpus_item_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "masterwork_corpus_item_rulebook_id_fkey"
             columns: ["rulebook_id"]
             isOneToOne: false
             referencedRelation: "rulebook"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "masterwork_corpus_item_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
             referencedColumns: ["id"]
           },
         ]
@@ -29095,7 +29248,22 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "outcome_event_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outcome_event_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       output_feedback: {
         Row: {
@@ -29197,6 +29365,13 @@ export type Database = {
             referencedColumns: ["token"]
           },
           {
+            foreignKeyName: "output_feedback_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "output_feedback_subject_type_fkey"
             columns: ["subject_type"]
             isOneToOne: false
@@ -29223,6 +29398,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_lifecycle_registry_drift"
             referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -29281,7 +29463,22 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "purpose_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purpose_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reachability: {
         Row: {
@@ -29421,6 +29618,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          effective_from: string
           enabled: boolean
           entity_token: string | null
           id: string
@@ -29447,6 +29645,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          effective_from?: string
           enabled?: boolean
           entity_token?: string | null
           id?: string
@@ -29473,6 +29672,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          effective_from?: string
           enabled?: boolean
           entity_token?: string | null
           id?: string
@@ -29589,7 +29789,22 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rulebook_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rulebook_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schemas: {
         Row: {
@@ -29664,7 +29879,15 @@ export type Database = {
           token?: string
           use_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "share_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shareable_resource_registry: {
         Row: {
@@ -29819,10 +30042,54 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_entity_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
+      admin_auth_user: {
+        Row: {
+          banned_until: string | null
+          created_at: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          id: string | null
+          last_sign_in_at: string | null
+          raw_app_meta_data: Json | null
+          raw_user_meta_data: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          banned_until?: string | null
+          created_at?: string | null
+          email?: string | null
+          email_confirmed_at?: string | null
+          id?: string | null
+          last_sign_in_at?: string | null
+          raw_app_meta_data?: Json | null
+          raw_user_meta_data?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          banned_until?: string | null
+          created_at?: string | null
+          email?: string | null
+          email_confirmed_at?: string | null
+          id?: string | null
+          last_sign_in_at?: string | null
+          raw_app_meta_data?: Json | null
+          raw_user_meta_data?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       associations_live: {
         Row: {
           created_at: string | null
@@ -29882,6 +30149,13 @@ export type Database = {
           target_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "associations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "associations_payload_kind_fkey"
             columns: ["payload_kind"]
