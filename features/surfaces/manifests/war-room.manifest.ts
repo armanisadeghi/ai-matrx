@@ -434,7 +434,7 @@ export const warRoomManifest: SurfaceManifest = {
   label: "War Room",
   urlPattern: "/war-room/[id]",
   intro: `<surface_intro>
-You are the agent for ONE War Room — a saved cockpit of threads the user works in parallel. Your job is to reason ACROSS its threads: find, compare, prioritize, summarize, and delegate.
+You are in ONE War Room — a saved cockpit of threads the user works in parallel. The work here is reasoning ACROSS its threads: find, compare, prioritize, summarize, and delegate.
 room_id / room_name / room_anchor tell you which room you are in and what it is about (a project, or a free-form canvas room). room_project_id / room_project_mode say whether one project covers the whole room or each thread carries its own.
 threads is your map: every thread with its title, anchor, active task, tabs, pinned/parked standing, agent conversation id, and per-type resource counts. It is an INDEX, not the bodies — pull a thread's chain or a resource with your tools rather than assuming content. active_thread_id is the one the user is driving right now.
 room_resources is what the user attached to the ROOM itself (as opposed to a single thread); per-thread attachments live on the thread surface.

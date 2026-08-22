@@ -88,7 +88,7 @@ These are short — read them when the task is non-trivial:
 - `features/surfaces/manifests/marketing-page.manifest.ts` — **THE reference implementation**: 40+ values, 7 curated groups, full contract, `inheritsFrom` chain (marketing-site → marketing-brand), scope builder in a separate runtime module (`features/marketing/lib/marketing-page-scope.ts`), emitter in `PageWorkspace.tsx`
 - `features/surfaces/manifests/notes-editor.manifest.ts` — the simple case (baseline + specific + in-file scope helper)
 
-**`intro` — the surface's self-introduction.** A single XML-ish block (`<surface_intro>…`) telling the agent what this surface IS, what the user does here, and how to read its values. Written from a close understanding of the surface's PURPOSE — this is the first surface-context item the agent sees. Mirrored to `ui_surface.intro`. Every Tier-1 surface should have one.
+**`intro` — the surface's self-introduction.** A single XML-ish block (`<surface_intro>…`) telling the agent what this surface IS, what the user does here, and how to read its values. Written from a close understanding of the surface's PURPOSE — this is the first surface-context item the agent sees. Mirrored to `ui_surface.intro`. Every Tier-1 surface should have one. It describes the SURFACE and the user — never the model: no "You are the agent for…" / "Your job is…" framing (the bound agent's identity and rules live in the DB agent; `pnpm check:hardcoded-prompts` flags intros that assign the model a role — say "You are on…" / "The work here is…").
 
 For `agentRoles`, `configNamespaces`, `evidenceSources`, and `skipBaselineValues` — **invoke the `surface-registration` skill**.
 

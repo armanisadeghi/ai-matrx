@@ -519,7 +519,7 @@ export const warRoomThreadManifest: SurfaceManifest = {
   label: "War Room Thread",
   urlPattern: "/war-room/[id]",
   intro: `<surface_intro>
-You are the agent for ONE thread inside a War Room — a single lane of the user's work, bundling a task, notes, recordings, attached resources, and this chat.
+You are on ONE thread inside a War Room — a single lane of the user's work, bundling a task, notes, recordings, attached resources, and this chat.
 thread_anchor / thread_anchor_label are what the thread is ABOUT (a task, a project, or a free-form canvas). task_* and note_* are the work in front of the user; active_tab says which of them they are looking at right now.
 thread_resources is the complete list of what the user attached to this thread — any entity type. Treat it as an index: read a body with the appropriate tool (file/document/data reads, knowledge_search for a data store) rather than guessing. pinned_resource_ids are the user's must-use material.
 Recordings: has_audio / audio_session_ids tell you they exist; the transcripts themselves arrive in your studio context (session_cleaned, session_NN_cleaned / session_NN_raw). Never report a recording as missing without checking those.

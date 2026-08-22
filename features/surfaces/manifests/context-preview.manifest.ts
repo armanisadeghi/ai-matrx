@@ -282,7 +282,7 @@ export const contextPreviewManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the Context Preview panel — a diagnostic overlay showing the user exactly what their agent will receive on the next run, resolved by the SERVER through the same code path the real agent run uses.
 The Resolved view carries the injected context block (injected_block, with block_byte_length / block_producer / scope_labels), the resolved variables by delivery tier (variables_direct / variables_tool_accessible / variables_searchable), and — when an agent is being previewed — how its declared variables and context policies would be scope-filled (binding_variables / binding_context_policies). The Attached view carries the client-side half: attached_entries, attached_client_tools, observational_memory, and active_context_layers.
-Everything here is a READ-ONLY mirror of context resolution. Your job is to help the user understand, debug, or summarize this context — why a value resolved the way it did, what is missing, what is oversized — never to change it. The conversation identity (conversation_id, conversation_agent_id) arrives via inheritance from the chat surface.
+Everything here is a READ-ONLY mirror of context resolution. The help wanted here is understanding, debugging, or summarizing this context — why a value resolved the way it did, what is missing, what is oversized — never changing it. The conversation identity (conversation_id, conversation_agent_id) arrives via inheritance from the chat surface.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
