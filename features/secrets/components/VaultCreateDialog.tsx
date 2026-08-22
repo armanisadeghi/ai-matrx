@@ -20,7 +20,7 @@
  *    recipient resolved SERVER-SIDE by exact email (`onAssign`), optionally
  *    with a server-generated password the creator never sees.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -74,6 +74,7 @@ import {
   parseEnrollmentInput,
 } from "../authenticator-otpauth";
 import { enrollAuthenticator } from "../authenticator-service";
+import { checkVaultDestination } from "../vault-service";
 import { toast } from "@/lib/toast";
 import { recommendedHandlingForFieldKey } from "../credential-identity";
 import { VaultHandlingControl } from "./VaultHandlingControl";
@@ -102,6 +103,11 @@ import {
   type VaultItemCreateRequest,
   type VaultPrincipal,
 } from "../types";
+
+type DestinationFeedback = {
+  tone: "checking" | "success" | "warning" | "error";
+  message: string;
+};
 
 interface VaultCreateDialogProps {
   open: boolean;
@@ -854,6 +860,10 @@ function DefinitionForm({
   const [loginUrls, setLoginUrls] = useState<string[]>(() =>
     showDestination ? [""] : [],
   );
+  const [destinationFeedback, setDestinationFeedback] = useState<
+    Record<number, DestinationFeedback>
+  >({});
+  const destinationCheckSequence = useRef<Record<number, number>>({});
   const [uriMatchMode, setUriMatchMode] = useState<UriMatchMode>("host");
   const [browserFill, setBrowserFill] = useState(true);
   // Two-factor is part of the ONE create recipe for a website login (Arman
@@ -889,6 +899,79 @@ function DefinitionForm({
     setDrafts((current) =>
       current.map((d, i) => (i === index ? { ...d, ...patch } : d)),
     );
+
+  const normalizeAndCheckDestination = async (index: number, value: string) => {
+    const sequence = (destinationCheckSequence.current[index] ?? 0) + 1;
+    destinationCheckSequence.current[index] = sequence;
+    if (!value.trim()) {
+      setDestinationFeedback((current) => {
+        const next = { ...current };
+        delete next[index];
+        return next;
+      });
+      return;
+    }
+
+    const normalized = normalizeVaultLoginUrlInput(value);
+    if (!normalized) {
+      setDestinationFeedback((current) => ({
+        ...current,
+        [index]: {
+          tone: "error",
+          message: "Enter a website such as npmjs.com.",
+        },
+      }));
+      return;
+    }
+
+    setLoginUrls((current) =>
+      current.map((url, currentIndex) =>
+        currentIndex === index ? normalized : url,
+      ),
+    );
+    setDestinationFeedback((current) => ({
+      ...current,
+      [index]: { tone: "checking", message: "Checking website…" },
+    }));
+
+    try {
+      const result = await checkVaultDestination(normalized);
+      if (destinationCheckSequence.current[index] !== sequence) return;
+      const feedback: DestinationFeedback =
+        result.state === "reachable"
+          ? { tone: "success", message: "Website confirmed." }
+          : result.state === "not_found"
+            ? {
+                tone: "warning",
+                message: "Website responded, but this page was not found.",
+              }
+            : result.state === "responded"
+              ? {
+                  tone: "warning",
+                  message: `Website responded with status ${result.http_status ?? "unknown"}.`,
+                }
+              : result.state === "invalid"
+                ? {
+                    tone: "error",
+                    message: "This is not a valid public website.",
+                  }
+                : {
+                    tone: "warning",
+                    message:
+                      "Could not reach this website. You can still save.",
+                  };
+      setDestinationFeedback((current) => ({ ...current, [index]: feedback }));
+    } catch {
+      if (destinationCheckSequence.current[index] !== sequence) return;
+      setDestinationFeedback((current) => ({
+        ...current,
+        [index]: {
+          tone: "warning",
+          message: "Could not verify right now. You can still save.",
+        },
+      }));
+    }
+  };
 
   const enteredUrls = loginUrls.map((url) => url.trim()).filter(Boolean);
   const urls = enteredUrls.flatMap((url) => {
@@ -1274,42 +1357,76 @@ function DefinitionForm({
           </p>
 
           {loginUrls.map((url, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                value={url}
-                onChange={(e) =>
-                  setLoginUrls((current) =>
-                    current.map((u, i) => (i === index ? e.target.value : u)),
-                  )
-                }
-                placeholder={
-                  loginUrlDef?.placeholder_example ??
-                  "https://example.com/login"
-                }
-                className="h-8 font-mono text-xs"
-                inputMode="url"
-                autoComplete="off"
-                aria-label={`Login URL ${index + 1}`}
-                aria-invalid={
-                  Boolean(url.trim()) &&
-                  normalizeVaultLoginUrlInput(url) === null
-                }
-              />
-              {loginUrls.length > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0"
-                  onClick={() =>
+            <div key={index} className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={url}
+                  onChange={(e) => {
+                    destinationCheckSequence.current[index] =
+                      (destinationCheckSequence.current[index] ?? 0) + 1;
+                    setDestinationFeedback((current) => {
+                      const next = { ...current };
+                      delete next[index];
+                      return next;
+                    });
                     setLoginUrls((current) =>
-                      current.filter((_, i) => i !== index),
-                    )
+                      current.map((u, i) => (i === index ? e.target.value : u)),
+                    );
+                  }}
+                  onBlur={() => void normalizeAndCheckDestination(index, url)}
+                  placeholder={
+                    loginUrlDef?.placeholder_example ??
+                    "https://example.com/login"
                   }
-                  aria-label={`Remove login URL ${index + 1}`}
+                  className="h-11 font-mono text-base sm:h-8 sm:text-xs"
+                  inputMode="url"
+                  autoComplete="off"
+                  aria-label={`Login URL ${index + 1}`}
+                  aria-invalid={
+                    Boolean(url.trim()) &&
+                    normalizeVaultLoginUrlInput(url) === null
+                  }
+                />
+                {loginUrls.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => {
+                      setLoginUrls((current) =>
+                        current.filter((_, i) => i !== index),
+                      );
+                      setDestinationFeedback({});
+                    }}
+                    aria-label={`Remove login URL ${index + 1}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                )}
+              </div>
+              {destinationFeedback[index] && (
+                <p
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs",
+                    destinationFeedback[index].tone === "success" &&
+                      "text-emerald-600 dark:text-emerald-400",
+                    destinationFeedback[index].tone === "error" &&
+                      "text-destructive",
+                    destinationFeedback[index].tone === "warning" &&
+                      "text-amber-700 dark:text-amber-400",
+                    destinationFeedback[index].tone === "checking" &&
+                      "text-muted-foreground",
+                  )}
+                  aria-live="polite"
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+                  {destinationFeedback[index].tone === "checking" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : destinationFeedback[index].tone === "success" ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : null}
+                  {destinationFeedback[index].message}
+                </p>
               )}
             </div>
           ))}

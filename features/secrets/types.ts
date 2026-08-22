@@ -377,6 +377,15 @@ export interface CredentialDefinition {
 
 export type CredentialFamily = CredentialDefinitionPayload["family"];
 
+export type VaultDestinationCheckState =
+  "reachable" | "not_found" | "responded" | "unreachable" | "invalid";
+
+export interface VaultDestinationCheck {
+  normalized_url: string;
+  state: VaultDestinationCheckState;
+  http_status: number | null;
+}
+
 export const FAMILY_LABELS: Record<CredentialFamily, string> = {
   generic: "Generic",
   ai_providers: "AI & model providers",

@@ -9,7 +9,7 @@
  * Revealed plaintext is component-local via `useTransientSecret` with a
  * ~30s auto-clear — never Redux, storage, or query caches.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   Building2,
@@ -62,14 +62,14 @@ import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
-import { safeVaultLoginUrl } from "../utils";
+import { normalizeVaultLoginUrlInput, safeVaultLoginUrl } from "../utils";
 
 import {
   useVaultAudit,
   useVaultGrants,
   type VaultActions,
 } from "../vault-hooks";
-import { resolveVaultFields } from "../vault-service";
+import { checkVaultDestination, resolveVaultFields } from "../vault-service";
 import {
   deleteAuthenticator,
   enrollAuthenticator,
@@ -1700,6 +1700,11 @@ function DestinationSection({
 }) {
   const [adding, setAdding] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
+  const [urlFeedback, setUrlFeedback] = useState<{
+    tone: "checking" | "success" | "warning" | "error";
+    message: string;
+  } | null>(null);
+  const urlCheckSequence = useRef(0);
   const [promoting, setPromoting] = useState<string | null>(null);
 
   // Definitions that predate destination-login keep their URL in an ENCRYPTED
@@ -1714,17 +1719,59 @@ function DestinationSection({
   );
 
   const addUrl = async (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    if (!safeVaultLoginUrl(trimmed)) {
-      toast.error("Enter a complete http:// or https:// login URL");
+    const normalized = normalizeVaultLoginUrlInput(value);
+    if (!value.trim()) return;
+    if (!normalized) {
+      toast.error("Enter a website such as npmjs.com");
       return;
     }
     await actions.updateItem(item.id, {
-      login_urls: [...item.login_urls, trimmed],
+      login_urls: [...item.login_urls, normalized],
     });
     setUrlDraft("");
+    setUrlFeedback(null);
     setAdding(false);
+  };
+
+  const normalizeAndCheckUrlDraft = async () => {
+    const sequence = ++urlCheckSequence.current;
+    if (!urlDraft.trim()) {
+      setUrlFeedback(null);
+      return;
+    }
+    const normalized = normalizeVaultLoginUrlInput(urlDraft);
+    if (!normalized) {
+      setUrlFeedback({
+        tone: "error",
+        message: "Enter a website such as npmjs.com.",
+      });
+      return;
+    }
+    setUrlDraft(normalized);
+    setUrlFeedback({ tone: "checking", message: "Checking website…" });
+    try {
+      const result = await checkVaultDestination(normalized);
+      if (urlCheckSequence.current !== sequence) return;
+      setUrlFeedback(
+        result.state === "reachable"
+          ? { tone: "success", message: "Website confirmed." }
+          : result.state === "invalid"
+            ? { tone: "error", message: "This is not a valid public website." }
+            : {
+                tone: "warning",
+                message:
+                  result.state === "not_found"
+                    ? "Website responded, but this page was not found."
+                    : "Could not confirm this website. You can still add it.",
+              },
+      );
+    } catch {
+      if (urlCheckSequence.current !== sequence) return;
+      setUrlFeedback({
+        tone: "warning",
+        message: "Could not verify right now. You can still add it.",
+      });
+    }
   };
 
   const removeUrl = async (url: string) => {
@@ -1744,12 +1791,17 @@ function DestinationSection({
         toast.error("Could not read that field's value");
         return;
       }
-      if (item.login_urls.includes(url)) {
+      const normalized = normalizeVaultLoginUrlInput(url);
+      if (!normalized) {
+        toast.error("That field does not contain a valid website");
+        return;
+      }
+      if (item.login_urls.includes(normalized)) {
         toast.info("That URL is already a login URL");
         return;
       }
       await actions.updateItem(item.id, {
-        login_urls: [...item.login_urls, url],
+        login_urls: [...item.login_urls, normalized],
       });
       toast.success(
         "Login URL added — this item can now be matched in the browser",
@@ -1850,39 +1902,68 @@ function DestinationSection({
       {editMode && caps.can_edit && (
         <>
           {adding ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={urlDraft}
-                onChange={(e) => setUrlDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void addUrl(urlDraft);
-                  }
-                }}
-                placeholder="https://example.com/login"
-                className="h-7 text-xs"
-                autoFocus
-              />
-              <Button
-                size="sm"
-                className="h-7"
-                disabled={busy || !urlDraft.trim()}
-                onClick={() => void addUrl(urlDraft)}
-              >
-                Add
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7"
-                onClick={() => {
-                  setAdding(false);
-                  setUrlDraft("");
-                }}
-              >
-                Cancel
-              </Button>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={urlDraft}
+                  onChange={(e) => {
+                    urlCheckSequence.current += 1;
+                    setUrlFeedback(null);
+                    setUrlDraft(e.target.value);
+                  }}
+                  onBlur={() => void normalizeAndCheckUrlDraft()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void addUrl(urlDraft);
+                    }
+                  }}
+                  placeholder="example.com/login"
+                  className="h-11 text-base sm:h-7 sm:text-xs"
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  className="h-7"
+                  disabled={busy || !urlDraft.trim()}
+                  onClick={() => void addUrl(urlDraft)}
+                >
+                  Add
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7"
+                  onClick={() => {
+                    setAdding(false);
+                    setUrlDraft("");
+                    setUrlFeedback(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+              {urlFeedback && (
+                <p
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs",
+                    urlFeedback.tone === "success" &&
+                      "text-emerald-600 dark:text-emerald-400",
+                    urlFeedback.tone === "error" && "text-destructive",
+                    urlFeedback.tone === "warning" &&
+                      "text-amber-700 dark:text-amber-400",
+                    urlFeedback.tone === "checking" && "text-muted-foreground",
+                  )}
+                  aria-live="polite"
+                >
+                  {urlFeedback.tone === "checking" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : urlFeedback.tone === "success" ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : null}
+                  {urlFeedback.message}
+                </p>
+              )}
             </div>
           ) : (
             <Button

@@ -41,6 +41,7 @@ import {
   type VaultAssignResponse,
   type VaultAuditEntry,
   type VaultCapabilities,
+  type VaultDestinationCheck,
   type VaultField,
   type VaultFieldIn,
   type VaultFieldMaskedRow,
@@ -107,6 +108,17 @@ async function vaultFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (resp.status === 204) return undefined as T;
   return (await resp.json()) as T;
+}
+
+/** Advisory destination validation. It never reads a response body and callers
+ * must never make Vault saving depend on a remote site's availability. */
+export function checkVaultDestination(
+  url: string,
+): Promise<VaultDestinationCheck> {
+  return vaultFetch<VaultDestinationCheck>("/destination/check", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
 }
 
 export function createVaultItem(

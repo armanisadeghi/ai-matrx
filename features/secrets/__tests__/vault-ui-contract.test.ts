@@ -226,6 +226,25 @@ describe("shared vault UI contract", () => {
     expect(credenzaSource).toContain("[&_textarea]:text-base");
   });
 
+  test("normalizes and checks bare destinations without blocking save", () => {
+    const createSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
+      "utf8",
+    );
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+
+    for (const source of [createSource, detailSource]) {
+      expect(source).toContain("normalizeVaultLoginUrlInput");
+      expect(source).toContain("checkVaultDestination");
+      expect(source).toContain("onBlur");
+      expect(source).toContain("You can still");
+      expect(source).toContain('aria-live="polite"');
+    }
+  });
+
   test("offers authenticator rename without leaving the manage surface", () => {
     const workspaceSource = readFileSync(
       join(
