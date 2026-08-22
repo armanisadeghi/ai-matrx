@@ -53,6 +53,7 @@ Compression ≠ deletion.
 - [ ] Depth pushed to a pointer if the section was bloating.
 - [ ] Word count rose only as much as the new rule genuinely needs.
 - [ ] If this is a `FEATURE.md`, the Change Log got a dated one-line entry.
+- [ ] If this is `FOUND_DEFECTS.md`: the new entry's ID is the ledger MAXIMUM + 1 (`D<n>` here, `AD<n>` in aidream), it sits under `## OPEN`, and no existing ID was renumbered. Body: `../common-docs/policies/defect-ownership.md` § Entry IDs.
 
 ## Anti-patterns
 
@@ -61,3 +62,4 @@ Compression ≠ deletion.
 - Narrating the journey ("originally A, then B, now C") instead of stating the current rule.
 - Inlining a 15-row reference table into `CLAUDE.md` when it belongs in a `FEATURE.md`.
 - "Cleaning up" by dropping a rule you didn't understand.
+- Claiming a `FOUND_DEFECTS.md` ID off the END of the file instead of the highest number — that produced four live collisions here (D193/D194/D195/D219).
