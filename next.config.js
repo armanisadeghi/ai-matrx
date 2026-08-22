@@ -280,10 +280,11 @@ const nextConfig = {
     // code-splitting skill's rule-6 caveat). With the bombs out, Next
     // defaults got to prove themselves. Two consecutive 60 GB Vercel builds
     // (v0.4.1015/1016) later completed compilation, then OOMed only when page
-    // data collection spawned 29 workers. This evidence supports bounding that
-    // post-compile fan-out; compile-phase OOMs still require hunting the import
-    // edge first (code-splitting skill, "Build-time bloat" section).
-    cpus: 12,
+    // data collection spawned 29 workers. Bounding that fan-out at 12 still
+    // produced consecutive post-compile OOMs in v0.4.1032/1035, so eight is the
+    // current evidence-backed ceiling. Compile-phase OOMs still require hunting
+    // the import edge first (code-splitting skill, "Build-time bloat" section).
+    cpus: 8,
     serverActions: {
       bodySizeLimit: "10mb",
     },
