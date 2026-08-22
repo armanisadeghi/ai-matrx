@@ -14,6 +14,16 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D247 — DM inbox loads every conversation with no pagination (2026-08-22)
+
+`public.get_dm_conversations_with_details(p_user_id)` returns ALL of a user's DM
+conversations (505 rows for the owner, ~74 ms warm / ~600 ms observed in-browser)
+and is called on ordinary page loads (seen on /marketing/sites). Fix: page it
+(limit/offset or keyset on last_message_at) and have the client fetch the first
+~30; the messaging panel already renders incrementally. Found during the
+2026-08-22 slowness investigation; unrelated to that session's access scope.
+
+
 ### D239 — 48,493 `scheduler.sch_run` rows are un-updatable by anyone (NOT VALID check constraint) (2026-08-21)
 
 `scheduler.sch_run_claim_protocol_by_claimed_at_chk` is
