@@ -64,6 +64,8 @@ import PlanPageReviewBlock from "../../blocks/page-pipeline/PlanPageReviewBlock"
 import CmsPageBuildBlock from "../../blocks/page-pipeline/CmsPageBuildBlock";
 import IngestedSourcesBlock from "../../blocks/ingested-sources/IngestedSourcesBlock";
 import StudyNotesBlock from "../../blocks/study-notes/StudyNotesBlock";
+import LessonScriptsBlock from "../../blocks/lesson-scripts/LessonScriptsBlock";
+import StudyPackBlock from "../../blocks/study-pack/StudyPackBlock";
 import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
 import Slideshow from "../../blocks/presentations/Slideshow";
 import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
@@ -373,6 +375,18 @@ export const BlockComponents = {
       <StudyNotesBlock {...props} />
     </LazyBlockWrapper>
   ),
+  LessonScriptsBlock: (
+    props: React.ComponentProps<typeof LessonScriptsBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <LessonScriptsBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  StudyPackBlock: (props: React.ComponentProps<typeof StudyPackBlock>) => (
+    <LazyBlockWrapper>
+      <StudyPackBlock {...props} />
+    </LazyBlockWrapper>
+  ),
   AgentResultBlock: (props: React.ComponentProps<typeof AgentResultBlock>) => (
     <LazyBlockWrapper>
       <AgentResultBlock {...props} />
@@ -451,7 +465,9 @@ export const BlockComponents = {
       <WebResultBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  NewsResultBlock: (props: React.ComponentProps<typeof NewsResultBlockImpl>) => (
+  NewsResultBlock: (
+    props: React.ComponentProps<typeof NewsResultBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <NewsResultBlockImpl {...props} />
     </LazyBlockWrapper>
@@ -475,12 +491,16 @@ export const BlockComponents = {
       <DiscussionResultBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  LocalPlaceBlock: (props: React.ComponentProps<typeof LocalPlaceBlockImpl>) => (
+  LocalPlaceBlock: (
+    props: React.ComponentProps<typeof LocalPlaceBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <LocalPlaceBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  EntityCardBlock: (props: React.ComponentProps<typeof EntityCardBlockImpl>) => (
+  EntityCardBlock: (
+    props: React.ComponentProps<typeof EntityCardBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <EntityCardBlockImpl {...props} />
     </LazyBlockWrapper>

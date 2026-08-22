@@ -54,7 +54,8 @@ export const glossaryTermKindSchema: KindSchema = {
     term: {
       type: "string",
       required: true,
-      description: "The word or phrase being defined, exactly as it appears in the material.",
+      description:
+        "The word or phrase being defined, exactly as it appears in the material.",
     },
     definition: {
       type: "string",
@@ -71,7 +72,8 @@ export const studyNotesSectionKindSchema: KindSchema = {
     heading: {
       type: "string",
       required: true,
-      description: "What this part of the material is about — a short, plain title.",
+      description:
+        "What this part of the material is about — a short, plain title.",
     },
     summary: {
       type: "string",
@@ -271,6 +273,11 @@ export const STUDY_NOTES_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: studyNotesMarkdownFromValue,
     persistence: { persistStructured: true },
     loadingComponent: "list",
+    // Streaming partial kinds: a provisional study_notes document routes to
+    // the real StudyNotesBlock and builds section by section — the component
+    // is streaming-first (`coerceStudyNotes` tolerates every partial state).
+    // The bridge is hand-written and never gates on status.
+    partialReady: true,
     schema: studyNotesKindSchema,
   },
   {

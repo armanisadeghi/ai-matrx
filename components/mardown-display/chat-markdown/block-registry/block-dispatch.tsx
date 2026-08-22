@@ -335,6 +335,13 @@ export function isBlockLoading(block: {
  *    tag/fence surface); never emitted upstream. STREAMING bridges: chunks and
  *    sections are child-kind arrays, so sources and sections appear one at a
  *    time.
+ *  - `lesson_scripts` / `study_pack` — study_pack_v2: the spoken lessons and
+ *    the composed pack, produced ONLY by `applyIrKindRoute`'s compiled-bridge
+ *    flips for `lesson_script_set` / `study_pack_set` (`__kind` JSON arrival
+ *    only — no tag/fence surface); never emitted upstream. STREAMING bridges:
+ *    lesson sections appear one at a time, and the pack renders whichever
+ *    member artifacts have arrived (StudyPackBlock DELEGATES each member back
+ *    to its own kind's component — never a second flashcards/quiz/notes view).
  *  - `web_search_results` + its item kinds (`web_result`, `news_result`,
  *    `video_result`, `faq_item`, `discussion_result`, `local_place`,
  *    `entity_card`, `ai_answer`) + the primitives (`rating`, `opening_hours`,
@@ -374,6 +381,8 @@ export type FeSynthesizedBlockType =
   | "cms_page_build"
   | "ingested_sources"
   | "study_notes"
+  | "lesson_scripts"
+  | "study_pack"
   | "web_search_results"
   | "web_result"
   | "news_result"
@@ -484,6 +493,8 @@ export type ShapeBlockType =
   | "cms_page_build"
   | "ingested_sources"
   | "study_notes"
+  | "lesson_scripts"
+  | "study_pack"
   | "web_search_results"
   | "web_result"
   | "news_result"
@@ -1618,7 +1629,11 @@ const SHAPE_BLOCK_DISPATCH = {
       return <MatrxMiniLoader key={index} />;
     }
     return (
-      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
     );
   },
 
@@ -1635,7 +1650,11 @@ const SHAPE_BLOCK_DISPATCH = {
       return <MatrxMiniLoader key={index} />;
     }
     return (
-      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
     );
   },
 
@@ -1652,7 +1671,11 @@ const SHAPE_BLOCK_DISPATCH = {
       return <MatrxMiniLoader key={index} />;
     }
     return (
-      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
     );
   },
 
@@ -1669,7 +1692,11 @@ const SHAPE_BLOCK_DISPATCH = {
       return <MatrxMiniLoader key={index} />;
     }
     return (
-      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
     );
   },
 
@@ -2000,6 +2027,55 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.StudyNotesBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (lesson_script_set → lesson_scripts): STREAMING bridge —
+  // lesson sections appear as their objects close; a section whose narration
+  // is still streaming shows its own in-card skeleton.
+  lesson_scripts: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.LessonScriptsBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (study_pack_set → study_pack): STREAMING bridge — the pack
+  // header renders immediately and each member artifact is DELEGATED to its
+  // own kind's component as it arrives (skeletons from the kind loading
+  // registry for the rest).
+  study_pack: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.StudyPackBlock
           key={index}
           serverData={block.serverData}
         />

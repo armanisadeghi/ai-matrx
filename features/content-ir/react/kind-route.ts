@@ -293,7 +293,8 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
   // (`inactive`). Ruling R6 sends exactly this case to the generic structured
   // viewer with an "unverified shape" affordance — the disposition that
   // retires the permanently-red "no-component root" kinds (q_and_a_set,
-  // study_pack_set, schema_showcase) without pretending they have renderers.
+  // schema_showcase — and study_pack_set until study_pack_v2 gave it a
+  // compiled bridge) without pretending they have renderers.
   if (def) {
     return routeToGeneric(block, resolution ? "inactive" : "no-component");
   }

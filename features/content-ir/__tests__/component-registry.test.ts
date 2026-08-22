@@ -122,6 +122,9 @@ describe("compiled bootstrap (system-components)", () => {
       agent_result: "agent_result",
       ingested_sources: "ingested_sources",
       study_notes: "study_notes",
+      // study_pack_v2: the spoken lessons + the composed pack root.
+      lesson_script_set: "lesson_scripts",
+      study_pack_set: "study_pack",
       seo_package: "seo_package",
       keyword_serp_intent_analysis_v1: "keyword_serp_intent_analysis",
       memory_aid: "memory_aid",

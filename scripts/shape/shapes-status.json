@@ -1,5 +1,5 @@
 {
-  "generated_for": "614-kinds+d74bad155b8a",
+  "generated_for": "616-kinds+2f1c0453c413",
   "columns": [
     "definition",
     "example",
@@ -1495,6 +1495,20 @@
       }
     },
     {
+      "kind": "education.study_pack_v2.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "education.study_pack.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -2643,9 +2657,23 @@
       }
     },
     {
+      "kind": "keyword_list",
+      "is_active": false,
+      "family": "seo",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "keyword_relationship_research",
       "is_active": true,
-      "family": "user_authored",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -9095,6 +9123,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "education.study_pack_v2.offer",
+      "message": "kind \"education.study_pack_v2.offer\" has no content block referencing \"__kind\": \"education.study_pack_v2.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "education.study_pack.offer",
       "message": "kind \"education.study_pack.offer\" has no content block referencing \"__kind\": \"education.study_pack.offer\""
     },
@@ -11585,6 +11619,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "education.study_pack_v2.offer",
+      "message": "kind \"education.study_pack_v2.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "education.study_pack.offer",
       "message": "kind \"education.study_pack.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -11719,6 +11759,12 @@
       "code": "no-example",
       "kind": "iteration.thinking_display_narration.offer",
       "message": "kind \"iteration.thinking_display_narration.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "keyword_list",
+      "message": "kind \"keyword_list\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -13243,6 +13289,12 @@
       "code": "no-skill",
       "kind": "education.spoken_practice_review.offer",
       "message": "kind \"education.spoken_practice_review.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "education.study_pack_v2.offer",
+      "message": "kind \"education.study_pack_v2.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",

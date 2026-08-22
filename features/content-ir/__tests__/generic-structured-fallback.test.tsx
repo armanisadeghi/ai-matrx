@@ -9,8 +9,9 @@
  * and these tests pin THAT, because the old banner is exactly the developer
  * artifact the floor exists to stop showing a non-technical reader.
  *
- * The three kinds this retires (`q_and_a_set`, `study_pack_set`,
- * `schema_showcase`) live ONLY in `content_ir.kind_definition` — they have a
+ * The kinds this retires (`q_and_a_set`, `schema_showcase` — and, until
+ * study_pack_v2 gave it a real composed renderer, `study_pack_set`) live ONLY
+ * in `content_ir.kind_definition` — they have a
  * schema but no compiled bridge and no component. Warm arrival is simulated
  * the way the real loader does it: `kindRegistry.upsertDefinition` for the
  * definition, `componentRegistry.ingestDbRows` for `kind_component`.
@@ -48,7 +49,10 @@ import {
 } from "../react/kind-route";
 import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
-import { envelopeFromCompleteValue, normalizeJsonRegion } from "../core/normalize";
+import {
+  envelopeFromCompleteValue,
+  normalizeJsonRegion,
+} from "../core/normalize";
 import { IR_ENVELOPE_KEY } from "../core/ir-types";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
@@ -136,17 +140,23 @@ describe("R6 generic fallback at the render seam", () => {
   });
 
   it("[inactive] a KNOWN kind whose component row is held inactive routes to the generic viewer with reason 'inactive'", () => {
-    registerWarmDefinition("study_pack_set");
+    // NB: study_pack_set used to be this fixture; study_pack_v2 gave it a
+    // compiled bridge (kinds/study-pack.ts), so it now routes for real and a
+    // still-generic root plays the inactive case instead.
+    registerWarmDefinition("q_and_a_set_inactive_case");
     componentRegistry.ingestDbRows([
       dbRow({
-        kind: "study_pack_set",
+        kind: "q_and_a_set_inactive_case",
         componentKey: GENERIC_STRUCTURED_COMPONENT_KEY,
         isActive: false,
       }),
     ]);
 
     const routed = applyIrKindRoute(
-      kindBlock("study_pack_set", { title: "Biology 101", included_sets: [] }),
+      kindBlock("q_and_a_set_inactive_case", {
+        title: "Biology 101",
+        included_sets: [],
+      }),
     );
 
     expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);

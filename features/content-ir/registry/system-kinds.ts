@@ -89,6 +89,8 @@ import { PLAN_PAGE_REVIEW_KIND_DEFINITIONS } from "../kinds/plan-page-review";
 import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
 import { INGESTED_SOURCES_KIND_DEFINITIONS } from "../kinds/ingested-sources";
 import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
+import { LESSON_SCRIPTS_KIND_DEFINITIONS } from "../kinds/lesson-scripts";
+import { STUDY_PACK_KIND_DEFINITIONS } from "../kinds/study-pack";
 import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
@@ -144,6 +146,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...CMS_PAGE_BUILD_KIND_DEFINITIONS,
   ...INGESTED_SOURCES_KIND_DEFINITIONS,
   ...STUDY_NOTES_KIND_DEFINITIONS,
+  // study_pack_v2 (2026-08-22): the spoken-lesson artifact + the composed
+  // pack root that delegates each member to its own kind's component.
+  ...LESSON_SCRIPTS_KIND_DEFINITIONS,
+  ...STUDY_PACK_KIND_DEFINITIONS,
   // Search kind family (Search Kinds Pilot, 2026-08-20): the merged
   // provider-agnostic web-search collection + item kinds + primitives.
   // Python-owned models: aidream/aidream/services/search_kinds/models.py.
@@ -157,6 +163,13 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: flashcardsMarkdownFromValue,
     artifact: { canvasType: "flashcards" },
     persistence: { persistStructured: true },
+    loadingComponent: "deck",
+    // Streaming partial kinds: a provisional flashcard_set routes to the real
+    // FlashcardsBlock and grows card by card (the component was streaming-
+    // first from day one — a card whose back hasn't arrived renders its
+    // per-card loader). The bridge is hand-written and never gates on
+    // status, so no `{ provisional: true }` wrapper option applies.
+    partialReady: true,
     schema: {
       kind: "flashcard_set",
       fields: {
