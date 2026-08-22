@@ -48,7 +48,7 @@ over the model, never a second renderer.
 | `menuLayout`  | What the user sees |
 | ------------- | ------------------ |
 | `classic`     | The historical flat column — every section top-level (~30 rows on a full note). **Default** (`DEFAULT_MENU_LAYOUT`). |
-| `tiered`      | Icon strip (Copy · Cut · Paste · Undo · Redo · Find) + ≤ ~8 grouped rows: AI Actions / Agents / **Library** (content blocks + my/org items as labelled groups) · the surface's own section · **Share & Export** (Copy-as / Export / Convert groups + Attach / Share / Compare) · **More** (Select All, View History, Chat, Quick Actions) · Save/Delete · Admin. Rows the surface can **never** do (`inapplicable`) are hidden, not greyed. |
+| `tiered`      | Compact one-line header (hover shows the text) + icon strip (Copy · Cut · Paste · Undo · Redo · Find). **Every other Classic row stays, by its own name:** Copy as / JSON / Select All · AI Actions / Agents / Content Blocks / My Items / Org Items · the surface's section folded under the surface's label (notes → "Note") · **History** (Undo / Redo / View History / Compare — the ONE approved grouping) · Export / Convert / Attach To / Share · Chat / Quick Actions · Save / Delete · Admin Tools. Greyed when unavailable exactly like Classic — never hidden. |
 | `command`     | Tiered + a type-to-filter box. Typing flattens EVERY leaf in the model (nested agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb; ↵ runs the first match. Printable keys typed while an item has focus are routed back into the box. |
 
 `menuDensity` = `comfortable` (default) | `compact` (tighter rows / icons /
@@ -56,6 +56,8 @@ labels). Both knobs are props on the wrappers (`ContextMenuV3CoreProps`); the
 defaults are CAPS constants in `types.ts` — flipping the platform default is a
 one-line change, and a per-user preference (settings-system) is the natural
 next step once a layout is chosen.
+
+🚨 **THE LOSSLESS LAW (Arman, 2026-08-22):** no layout may hide, rename, drop, or fold a Classic row under a coined heading. A new arrangement may only *group* rows Arman has explicitly approved (today: History). Disabled = greyed, like Classic. Verify any new layout by diffing its leaf set against Classic's — it must be identical.
 
 **Surface sections stay "minor local changes":** in tiered/command a section
 with ≤ `INLINE_SURFACE_MAX` (3) rows renders inline; a longer one folds into
@@ -300,6 +302,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-22` (later) — **Tiered made lossless + compact header with hover text.** Arman's review: keep the compact "Content (N chars)" header but put the text one hover away (Tooltip); keep the icon strip exactly; NEVER remove a feature — the first tiered cut folded Copy as / Export / Convert / Compare / Attach / Share under "Share & Export" and Select All / View History / Chat / Quick Actions under "More", and hid "inapplicable" rows, which read as deletion. Rewritten: every Classic row by name; the only grouping is **History** (Undo / Redo / View History / Compare), which he suggested; `inapplicable` removed from the model. Law recorded above.
 
 - `2026-08-22` — **Model-driven desktop renderer + layout/density knobs + overflow fix.** (1) `MenuContent.tsx` no longer hand-renders ~30 rows: `model/menu-model.ts` builds ONE declarative `MenuNode` tree from the engine (every handler bound), `model/layouts.ts` arranges it (`classic` = byte-identical historical column; `tiered` = icon strip + ≤ 8 grouped rows with Library / Share & Export / More / surface folds; `command` = tiered + type-to-filter over every leaf incl. nested agents and content blocks, ↵ runs the first match), and the renderer draws nodes at `comfortable` | `compact` density. Knobs: `menuLayout` / `menuDensity` props; defaults `DEFAULT_MENU_LAYOUT` / `DEFAULT_MENU_DENSITY` (classic / comfortable — unchanged UX by default). (2) Desktop menus cap at the Radix available height and scroll — the /notes menu measured 1136px in a 900px viewport with Agents / Library / Quick Actions / Admin unreachable, and Radix never shrinks. (3) Surface `extraSections` ids are namespaced `x:` in the model — notes' `export` item vs the core `export` submenu was a duplicate React key. (4) `ContextMenuExtraSection.icon` (optional) names the fold's icon; notes passes `StickyNote`. (5) `components/BoundAgentsMenuSection.tsx` deleted — its rendering lives in the model (`boundAgentsNode`), and it had no other consumer. (6) Proving ground `/demos/context-menu/layouts`: the exact /notes menu (incl. super-admin rows, ⌘Z hints) in all four arrangements; `NotesDemoPanel` gained parity with the live editor. Live-verified on /notes: classic identical + scrolls; tiered 1136px → ~220px; command filter `mark` → 4 ranked hits with breadcrumbs, ↵ ran the first match. Mobile renderer untouched (its 70dvh drill-down is already tiered by construction).
 

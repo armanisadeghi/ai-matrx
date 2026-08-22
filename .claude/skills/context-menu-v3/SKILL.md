@@ -46,7 +46,7 @@ A surface with both modes (editor + preview) uses **both** — one per mode.
 
 ## Layout & density knobs (2026-08-22)
 
-The desktop menu is model-driven: `model/menu-model.ts` (what exists) → `model/layouts.ts` (`classic` | `tiered` | `command`) → `MenuContent.tsx` (density `comfortable` | `compact`). Pass `menuLayout` / `menuDensity` on the wrapper only when a surface must deviate; the platform defaults are the CAPS constants in `types.ts`. A surface's `extraSections` need NO layout awareness — a long section folds into one submenu named by its `label` (+ optional `icon`) in tiered/command. Never add a layout by writing JSX in the renderer — add an arrangement in `layouts.ts`. Compare all four on `/demos/context-menu/layouts`.
+The desktop menu is model-driven: `model/menu-model.ts` (what exists) → `model/layouts.ts` (`classic` | `tiered` | `command`) → `MenuContent.tsx` (density `comfortable` | `compact`). Pass `menuLayout` / `menuDensity` on the wrapper only when a surface must deviate; the platform defaults are the CAPS constants in `types.ts`. A surface's `extraSections` need NO layout awareness — a long section folds into one submenu named by its `label` (+ optional `icon`) in tiered/command. Never add a layout by writing JSX in the renderer — add an arrangement in `layouts.ts`. 🚨 THE LOSSLESS LAW: a layout may never hide, rename, or drop a row Classic shows; grouping needs Arman's explicit approval (History is the only one today). Compare all four on `/demos/context-menu/layouts`.
 
 ## Doctrine
 

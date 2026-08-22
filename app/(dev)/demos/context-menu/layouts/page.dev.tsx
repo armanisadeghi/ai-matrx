@@ -11,8 +11,11 @@
  *
  *   1. Current  — classic / comfortable  (what /notes ships today)
  *   2. Compact  — classic / compact      (same rows, tighter)
- *   3. Tiered   — icon strip + ≤ 8 grouped rows; the tail folds into named submenus
+ *   3. Tiered   — compact header (hover = text) + icon strip; EVERY classic row
+ *                 stays by name (History groups Undo/Redo/View History/Compare)
  *   4. Command  — tiered + type-to-filter across every action in the menu
+ *
+ * THE LOSSLESS LAW: no layout may hide, rename, or drop a row Classic shows.
  */
 
 import { useState } from "react";
@@ -89,15 +92,15 @@ export default function MenuLayoutsDemoPage() {
             menuOverrides={{ menuLayout: "classic", menuDensity: "compact" }}
           />
           <NotesDemoPanel
-            title="3. Tiered — icon strip + folds"
-            description="Copy/Cut/Paste/Undo/Redo/Find become an icon strip; AI stays on top; Note ops, Share & Export, and More fold into one submenu each. Rows the surface can never do are hidden, not greyed."
+            title="3. Tiered — icon strip, nothing lost"
+            description="Hover the header to see the text. Copy/Cut/Paste/Undo/Redo/Find become the icon strip; every other row keeps its Classic name and place — only History groups Undo/Redo/View History/Compare, and the notes rows fold under Note. Greyed when unavailable, never hidden."
             initialContent={SAMPLE}
             minHeightClass="min-h-[240px]"
             menuOverrides={{ menuLayout: "tiered", menuDensity: density }}
           />
           <NotesDemoPanel
             title="4. Command — tiered + type-to-filter"
-            description="Tiered, plus a filter box: typing flattens EVERY action in the menu (agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb. ↵ runs the first match."
+            description="Tiered, plus a filter box: typing flattens EVERY action in the menu (agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb. ↵ runs the first match. Start typing the moment the menu opens."
             initialContent={SAMPLE}
             minHeightClass="min-h-[240px]"
             menuOverrides={{ menuLayout: "command", menuDensity: density }}
