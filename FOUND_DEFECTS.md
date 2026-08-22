@@ -14,6 +14,39 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D248 — Every expert value ruling fails on a large site: `seo.gsc_set_keyword_value` re-runs the whole resolver inside the write (2026-08-22)
+
+**"The expert always wins" does not currently work on datadestruction.com.** Clicking
+any tier in the value workbench shows "Could not save the ruling" and the write is
+rolled back — verified live 2026-08-22 on
+`/marketing/brands/52a7eea1…/sites/38eff4c9…/value` (ruling session, keyword
+`dod 5220.22-m`, band `informational`).
+
+Cause is the RPC's tail, not the UI. `seo.gsc_set_keyword_value` does its INSERT
+correctly and then returns:
+
+```sql
+RETURN QUERY
+SELECT vm.keyword_id, vm.value_band, vm.value_source
+FROM seo.keyword_value_map(p_site_id) vm
+WHERE vm.keyword_id = ANY (p_keyword_ids);
+```
+
+`seo.keyword_value_map(site)` resolves the site's ENTIRE corpus and the filter is
+applied afterwards. Measured on this site: **18,223 ms, 19,808 rows scanned** to
+return at most one. `authenticated` has `statement_timeout=8s`, so the statement is
+killed, the transaction rolls back, and the ruling is lost. Small sites are under
+the timeout, which is why this was not caught in the bake-off.
+
+**Fix (DB only — one migration, no UI change):** push the keyword filter INTO the
+resolver rather than filtering its output — either a `keyword_value_map(p_site_id,
+p_keyword_ids uuid[])` overload, or resolve the ruled keywords directly. The write
+itself is already correct and cheap.
+
+Found while converging the value workbench (2026-08-22). Not fixed there because
+that task was explicitly scoped "do NOT change any SQL/RPC".
+
+
 ### D247 — DM inbox loads every conversation with no pagination (2026-08-22)
 
 `public.get_dm_conversations_with_details(p_user_id)` returns ALL of a user's DM
