@@ -1,11 +1,12 @@
 "use client";
 
-import { ShieldCheck, Eye, Lightbulb } from "lucide-react";
+import { ShieldCheck, Eye, Lightbulb, DatabaseZap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { useSetting } from "../hooks/useSetting";
 import { useAutoRagPreference } from "@/features/kg-suggestions/hooks/useAutoRagPreference";
 
@@ -44,8 +45,9 @@ export default function PrivacyTab() {
       />
 
       <SettingsCallout tone="info">
-        Granular telemetry and export settings aren't implemented yet. This tab
-        surfaces the two capture-related preferences that exist today.
+        Granular telemetry settings aren't implemented yet. This tab surfaces the
+        capture-related preferences that exist today, plus the door onto your
+        data's deletion schedule.
       </SettingsCallout>
 
       <SettingsSection title="Assistant" icon={Eye}>
@@ -65,6 +67,16 @@ export default function PrivacyTab() {
           description="Show OS-level banners for new messages."
           checked={showDesktopNotifications}
           onCheckedChange={setShowDesktopNotifications}
+          last
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Your data" icon={DatabaseZap}>
+        <SettingsLink
+          label="What's scheduled to be deleted"
+          description="Anything of yours on its way to permanent deletion, when it goes, and a one-click way to keep it."
+          href="/settings/data"
+          actionLabel="Open"
           last
         />
       </SettingsSection>

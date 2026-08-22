@@ -22,6 +22,7 @@ import {
   DatabaseZap,
   Trash2,
   CloudOff,
+  CalendarClock,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -269,6 +270,27 @@ export function DataOwnershipPage() {
         busy={deletingStudy}
         onConfirm={onDeleteStudy}
       />
+
+      {/* The platform-wide deletion clock. Deleting above starts a countdown;
+          this is the only page that shows when it runs out and lets a learner
+          call it off (THE DOOR LAW). Same surface the weekly digest links to. */}
+      <section className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-3">
+          <CalendarClock className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">
+              What&apos;s scheduled to be deleted
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Anything you&apos;ve deleted, when it goes for good, and a
+              one-click way to keep it after all.
+            </p>
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/settings/data">Open</Link>
+        </Button>
+      </section>
 
       {/* Per-deck export */}
       <section className="space-y-2">
