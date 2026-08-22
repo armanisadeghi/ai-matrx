@@ -831,6 +831,9 @@ export type Database = {
           metadata: Json
           organization_id: string
           output_kind: string | null
+          pinned_context: Json
+          pins: Json
+          provision_key: string | null
           updated_at: string
           updated_by: string | null
           use_latest: boolean
@@ -854,6 +857,9 @@ export type Database = {
           metadata?: Json
           organization_id: string
           output_kind?: string | null
+          pinned_context?: Json
+          pins?: Json
+          provision_key?: string | null
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
@@ -877,6 +883,9 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           output_kind?: string | null
+          pinned_context?: Json
+          pins?: Json
+          provision_key?: string | null
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
@@ -912,9 +921,11 @@ export type Database = {
           agent_id: string | null
           agent_version_id: string | null
           config_overrides: Json | null
+          consumption_map: Json | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          holder_type: string
           id: string
           is_enabled: boolean
           mandate_id: string
@@ -932,9 +943,11 @@ export type Database = {
           agent_id?: string | null
           agent_version_id?: string | null
           config_overrides?: Json | null
+          consumption_map?: Json | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          holder_type?: string
           id?: string
           is_enabled?: boolean
           mandate_id: string
@@ -952,9 +965,11 @@ export type Database = {
           agent_id?: string | null
           agent_version_id?: string | null
           config_overrides?: Json | null
+          consumption_map?: Json | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          holder_type?: string
           id?: string
           is_enabled?: boolean
           mandate_id?: string
@@ -1137,6 +1152,66 @@ export type Database = {
           organization_id?: string
           role?: Database["public"]["Enums"]["message_role"] | null
           tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provision: {
+        Row: {
+          code_path: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          derived_input_kind: string | null
+          description: string | null
+          id: string
+          is_enabled: boolean
+          label: string
+          metadata: Json
+          offered_values: Json
+          organization_id: string
+          provision_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          derived_input_kind?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          label: string
+          metadata?: Json
+          offered_values?: Json
+          organization_id: string
+          provision_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          derived_input_kind?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          metadata?: Json
+          offered_values?: Json
+          organization_id?: string
+          provision_key?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
