@@ -22,9 +22,12 @@ import {
   ArrowDown,
   Braces,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   ChevronsDown,
   ChevronsUp,
   Crosshair,
+  ExternalLink,
   Loader2,
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -350,7 +353,11 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   return (
     <WindowPanel
       id={instanceId}
-      title={`Diagnose — ${UNIT_LABELS[unitKind] ?? unitKind}`}
+      title={
+        unitKind === "assistant_message"
+          ? "Diagnose"
+          : `Diagnose — ${UNIT_LABELS[unitKind] ?? unitKind}`
+      }
       initialRect={rect}
       onClose={onClose}
       overlayId="reviewWalkWindow"
@@ -492,22 +499,29 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
             />
           ) : current.out ? (
             <div className="space-y-3 p-3">
-              <LayerHeader out={current.out} />
-
-              {(current.out.notes ?? []).length > 0 && (
-                <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                  {(current.out.notes ?? []).map((note, i) => (
-                    <div key={i}>{note}</div>
-                  ))}
+              {/* Deep layers get a one-line orientation label; the root turn
+                  view needs none — the turn tabs already say where you are.
+                  Identifiers live in Technical details at the BOTTOM. */}
+              {!showTurnView && layers.length > 1 && (
+                <div className="text-xs font-medium text-muted-foreground">
+                  Looking at the {UNIT_LABELS[current.out.unit.kind] ?? current.out.unit.kind} that produced the item you marked wrong.
+                </div>
+              )}
+              {current.out.unit.error != null && (
+                <div className="rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-[11px] text-red-700 dark:text-red-300">
+                  This step recorded an error:{" "}
+                  {typeof current.out.unit.error === "string"
+                    ? current.out.unit.error
+                    : JSON.stringify(current.out.unit.error)}
                 </div>
               )}
 
               {!current.out.capturable && (
                 <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-                  No request snapshot was captured for this turn, so the exact
-                  wire payload (system prompt included) can't be shown. The
-                  recorded message-level inputs below are still real.
+                  We don't have an exact copy of this call's full setup (the
+                  system prompt won't appear below). Everything shown is still
+                  real recorded data.
                 </div>
               )}
 
@@ -562,6 +576,8 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                   </div>
                 </div>
               )}
+
+              <TechnicalDetails out={current.out} />
             </div>
           ) : null}
         </div>
@@ -570,63 +586,110 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   );
 }
 
-function LayerHeader({ out }: { out: DescendOut }) {
+/**
+ * TechnicalDetails — every identifier and internals chip, in ONE collapsed
+ * card at the BOTTOM of the view. A user who just thumbs-downed a bad answer
+ * is never greeted with UUIDs, provider names, statuses or iteration counts;
+ * an admin who wants them opens this card and gets each one with a copy
+ * affordance and a real door.
+ */
+function TechnicalDetails({ out }: { out: DescendOut }) {
+  const [open, setOpen] = useState(false);
   const producer = out.producer;
+
+  const row = (label: string, value: React.ReactNode, key?: string) => (
+    <div key={key} className="flex items-center gap-2">
+      <span className="w-28 shrink-0 text-[11px] text-muted-foreground">
+        {label}
+      </span>
+      <span className="flex min-w-0 items-center gap-1 text-[11px] text-foreground">
+        {value}
+      </span>
+    </div>
+  );
+
+  const mono = (id: string, tooltip: string) => (
+    <>
+      <span className="truncate font-mono">{id}</span>
+      <CopyButton content={id} size="xs" tooltip={tooltip} />
+    </>
+  );
+
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span className="font-semibold text-foreground">
-          {UNIT_LABELS[out.unit.kind] ?? out.unit.kind}
-        </span>
-        {out.unit.status && (
-          <span className="text-muted-foreground">status: {out.unit.status}</span>
+    <div className="rounded-md border border-border/60">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-9 w-full items-center gap-1.5 px-3 text-[11px] text-muted-foreground hover:text-foreground"
+      >
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
         )}
-        {typeof out.unit.position === "number" && (
-          <span className="text-muted-foreground">
-            message #{out.unit.position}
-          </span>
-        )}
-        {producer && (
-          <>
-            <span className="text-muted-foreground">
-              {producer.model ?? "unknown model"}
-              {producer.provider ? ` · ${producer.provider}` : ""}
-              {typeof producer.iteration === "number"
-                ? ` · iteration ${producer.iteration}`
-                : ""}
-            </span>
-            <ConfidenceBadge confidence={producer.confidence} />
-          </>
-        )}
-      </div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-        {out.unit.conversation_id && (
-          <EntityRef
-            token="conversation"
-            id={out.unit.conversation_id}
-            name="Open the conversation"
-            openInNewTab
-          />
-        )}
-        {(out.snapshot_refs ?? []).map((snapshotId) => (
-          <span
-            key={snapshotId}
-            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
-            title="Request snapshot id — the pinned wire payload. No snapshot viewer surface exists yet; copy the id."
-          >
-            <span className="font-mono">
-              snapshot {snapshotId.slice(0, 8)}…
-            </span>
-            <CopyButton content={snapshotId} size="xs" tooltip="Copy snapshot id" />
-          </span>
-        ))}
-      </div>
-      {out.unit.error != null && (
-        <div className="mt-1.5 rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-[11px] text-red-700 dark:text-red-300">
-          This unit recorded an error:{" "}
-          {typeof out.unit.error === "string"
-            ? out.unit.error
-            : JSON.stringify(out.unit.error)}
+        Technical details
+      </button>
+      {open && (
+        <div className="space-y-1.5 border-t border-border/60 px-3 py-2">
+          {row(
+            "Record",
+            <>
+              <span>{UNIT_LABELS[out.unit.kind] ?? out.unit.kind}</span>
+              {out.unit.status && (
+                <span className="text-muted-foreground">
+                  · {out.unit.status}
+                </span>
+              )}
+              {typeof out.unit.position === "number" && (
+                <span className="text-muted-foreground">
+                  · message #{out.unit.position}
+                </span>
+              )}
+            </>,
+          )}
+          {row("Message ID", mono(out.unit.id, "Copy message id"))}
+          {out.unit.conversation_id &&
+            row(
+              "Conversation",
+              <>
+                <a
+                  href={`/chat/${out.unit.conversation_id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+                >
+                  Open in a new tab
+                  <ExternalLink className="h-3 w-3" aria-hidden />
+                </a>
+                <CopyButton
+                  content={out.unit.conversation_id}
+                  size="xs"
+                  tooltip="Copy conversation id"
+                />
+              </>,
+            )}
+          {producer &&
+            row(
+              "Provider call",
+              <>
+                <span className="truncate">
+                  {producer.model ?? "unknown model"}
+                  {producer.provider ? ` · ${producer.provider}` : ""}
+                  {typeof producer.iteration === "number"
+                    ? ` · iteration ${producer.iteration}`
+                    : ""}
+                </span>
+                <ConfidenceBadge confidence={producer.confidence} />
+              </>,
+            )}
+          {(out.snapshot_refs ?? []).map((snapshotId) =>
+            row("Snapshot", mono(snapshotId, "Copy snapshot id"), snapshotId),
+          )}
+          {(out.notes ?? []).map((note, i) => (
+            <div key={i} className="text-[11px] text-muted-foreground">
+              {note}
+            </div>
+          ))}
         </div>
       )}
     </div>
