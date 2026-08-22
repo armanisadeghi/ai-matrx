@@ -255,7 +255,28 @@ export function DimensionCard({
                 Several answers allowed
               </Badge>
             ) : null}
+            {/* A dimension that is not being applied must SAY so here. The
+                whole reason this screen exists is that a setting which
+                silently does nothing looked exactly like one that works. */}
+            {!dimension.is_ready ? (
+              <Badge
+                variant="outline"
+                className="h-4 gap-1 border-amber-500/40 px-1.5 text-[10px] text-amber-700 dark:text-amber-400"
+              >
+                Not being applied yet
+              </Badge>
+            ) : !dimension.can_abstain ? (
+              <Badge variant="outline" className="h-4 px-1.5 text-[10px] text-muted-foreground">
+                No “not clear” option
+              </Badge>
+            ) : null}
           </div>
+
+          {dimension.readiness_note && (!dimension.is_ready || !dimension.can_abstain) ? (
+            <p className="mt-1 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
+              {dimension.readiness_note}
+            </p>
+          ) : null}
 
           {dimension.description ? (
             <p className="mt-1 text-[11px] leading-4 text-muted-foreground">

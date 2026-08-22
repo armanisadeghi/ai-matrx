@@ -68,6 +68,11 @@ export interface FacetValue {
   label: string;
   description: string | null;
   keyword_count: number;
+  /**
+   * The honest-decline option. The AI picks this instead of guessing, and the
+   * DB refuses to retire the last one on a dimension.
+   */
+  abstain: boolean;
 }
 
 export interface FacetDimension {
@@ -82,6 +87,21 @@ export interface FacetDimension {
   value_count: number;
   keyword_count: number;
   rule_count: number;
+  /**
+   * HARD GATE. False when a dimension has fewer than two real choices: the AI
+   * would be forced to stamp its only value on everything, so the classifier
+   * is not offered it at all. (D37 follow-up 2 — found live, when a one-value
+   * `equipment_class` put `crt_monitor` on `dod 5220.22-m`.)
+   */
+  is_ready: boolean;
+  /**
+   * QUALITY FLAG, never a gate. False when the dimension has no "not clear"
+   * option, so the AI must pick even when the words do not say. Six platform
+   * dimensions are in this state; gating on it would switch them off.
+   */
+  can_abstain: boolean;
+  /** Plain-language sentence from the DB. Render as-is; do not paraphrase. */
+  readiness_note: string;
   values: FacetValue[];
 }
 
@@ -97,6 +117,9 @@ interface CatalogRow {
   value_count: number;
   keyword_count: number;
   rule_count: number;
+  is_ready: boolean;
+  can_abstain: boolean;
+  readiness_note: string | null;
   facet_values: Json;
 }
 
@@ -117,6 +140,7 @@ function toFacetValues(raw: Json): FacetValue[] {
           typeof row.description === "string" ? row.description : null,
         keyword_count:
           typeof row.keyword_count === "number" ? row.keyword_count : 0,
+        abstain: row.abstain === true,
       },
     ];
   });
@@ -150,6 +174,9 @@ export async function getFacetDimensionCatalog(
     value_count: Number(row.value_count ?? 0),
     keyword_count: Number(row.keyword_count ?? 0),
     rule_count: Number(row.rule_count ?? 0),
+    is_ready: row.is_ready !== false,
+    can_abstain: row.can_abstain === true,
+    readiness_note: row.readiness_note ?? "",
     values: toFacetValues(row.facet_values),
   }));
 }
