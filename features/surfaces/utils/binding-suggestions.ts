@@ -261,5 +261,9 @@ export function describeSuggestion(s: BindingSuggestion): string {
       return `Ask the user: "${s.mapping.prompt}"`;
     case "unmapped":
       return "Deliberately left empty (agent default applies)";
+    case "offered_value":
+      // Mandate consumption entries never appear in surface suggestions —
+      // present, not silently absent, if data ever routes one here.
+      return `Mandate consumption entry for "${s.mapping.target}" (not a surface mapping)`;
   }
 }

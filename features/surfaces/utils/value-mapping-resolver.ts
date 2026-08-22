@@ -282,6 +282,16 @@ function resolveOne(
       return;
     }
 
+    case "offered_value": {
+      // The Mandate consumption map's neutral type — resolved server-side by
+      // aidream's materialize_consumption, NEVER by the surface resolver. One
+      // landing here means a consumption entry leaked into a surface binding.
+      warnings.push(
+        `"offered_value" mapping refused for "${targetName}" — consumption entries belong to mandate bindings, not surface bindings.`,
+      );
+      return;
+    }
+
     default: {
       // Exhaustive check — TS will flag if a new map type is added without a case.
       const _exhaustive: never = mapping;
