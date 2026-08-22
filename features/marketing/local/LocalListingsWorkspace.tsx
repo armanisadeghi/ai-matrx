@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   Building2,
@@ -69,7 +69,10 @@ import {
   type PublisherTier,
 } from "@/features/marketing/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { marketingKeys, useBusinessFacts } from "@/features/marketing/data/hooks";
+import {
+  marketingKeys,
+  useBusinessFacts,
+} from "@/features/marketing/data/hooks";
 import {
   AUTOFILL_SOURCE_LABELS,
   buildProfileSuggestions,
@@ -80,6 +83,7 @@ import { checkGoogleListing } from "@/features/marketing/local/data";
 import { EndowmentAnalysisCard } from "@/features/marketing/local/EndowmentAnalysisCard";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
   critical: "bg-primary/15 text-primary",
@@ -95,49 +99,46 @@ function scoreTone(score: number): string {
   return "text-destructive";
 }
 
-/** URL-synced brand + location selection: shareable, reload-safe. */
-function useUrlSelection() {
+/** Path-backed brand + location selection: shareable, reload-safe, and canonical. */
+function useRouteSelection(fixedBrandId?: string, fixedLocationId?: string) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const brandId = searchParams.get("brand") ?? "";
-  const locationId = searchParams.get("location") ?? "";
-  const set = (next: { brand?: string; location?: string }) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (next.brand !== undefined) {
-      if (next.brand) params.set("brand", next.brand);
-      else params.delete("brand");
-      params.delete("location");
-    }
-    if (next.location !== undefined) {
-      if (next.location) params.set("location", next.location);
-      else params.delete("location");
-    }
-    router.replace(`?${params.toString()}`, { scroll: false });
+  const brandId = fixedBrandId ?? "";
+  const locationId = fixedLocationId ?? "";
+  return {
+    brandId,
+    locationId,
+    selectBrand: (nextBrandId: string) =>
+      router.push(marketingRoutes.brandLocal(nextBrandId)),
+    selectLocation: (nextLocationId: string) => {
+      if (brandId)
+        router.push(marketingRoutes.brandLocation(brandId, nextLocationId));
+    },
   };
-  return { brandId, locationId, set };
 }
 
-export default function LocalListingsWorkspace() {
-  const { brandId, locationId, set } = useUrlSelection();
+export default function LocalListingsWorkspace({
+  brandId: fixedBrandId,
+  locationId: fixedLocationId,
+}: {
+  brandId?: string;
+  locationId?: string;
+} = {}) {
+  const { brandId, locationId, selectBrand, selectLocation } =
+    useRouteSelection(fixedBrandId, fixedLocationId);
   const brandsQuery = useVisibleBrandOptions();
-
-  // Default to the first brand once options load (URL wins when present).
-  useEffect(() => {
-    if (!brandId && brandsQuery.data && brandsQuery.data.length > 0) {
-      set({ brand: brandsQuery.data[0].id });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- default once per load; `set` identity churns with searchParams
-  }, [brandId, brandsQuery.data]);
 
   return (
     <div className="h-full overflow-y-auto bg-textured">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 p-3">
+      <div className="flex w-full flex-col gap-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+1rem)]">
         <div className="flex flex-wrap items-center gap-2">
           <Building2 className="size-4 text-muted-foreground" aria-hidden />
-          <Label htmlFor="local-brand-picker" className="text-xs text-muted-foreground">
+          <Label
+            htmlFor="local-brand-picker"
+            className="text-xs text-muted-foreground"
+          >
             Brand
           </Label>
-          <Select value={brandId} onValueChange={(value) => set({ brand: value })}>
+          <Select value={brandId} onValueChange={selectBrand}>
             <SelectTrigger id="local-brand-picker" className="h-8 w-64">
               <SelectValue placeholder="Pick a brand" />
             </SelectTrigger>
@@ -150,7 +151,12 @@ export default function LocalListingsWorkspace() {
             </SelectContent>
           </Select>
           {brandId ? (
-            <Button asChild variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 px-2 text-xs"
+            >
               <Link href={`/marketing/brands/${brandId}`}>
                 Open brand
                 <ArrowUpRight className="size-3.5" aria-hidden />
@@ -159,22 +165,30 @@ export default function LocalListingsWorkspace() {
           ) : null}
         </div>
         {brandsQuery.isError ? (
-          <InlineQueryError what="brands" error={brandsQuery.error} onRetry={() => void brandsQuery.refetch()} />
+          <InlineQueryError
+            what="brands"
+            error={brandsQuery.error}
+            onRetry={() => void brandsQuery.refetch()}
+          />
         ) : null}
         {brandId ? (
           <BrandLocations
             organizationId={
-              (brandsQuery.data ?? []).find((brand) => brand.id === brandId)?.organization_id ?? ""
+              (brandsQuery.data ?? []).find((brand) => brand.id === brandId)
+                ?.organization_id ?? ""
             }
             brandId={brandId}
             locationId={locationId}
-            onSelectLocation={(id) => set({ location: id })}
+            onSelectLocation={selectLocation}
           />
         ) : brandsQuery.isSuccess && (brandsQuery.data ?? []).length === 0 ? (
           <SectionCard title="No brands yet">
             <p className="text-sm text-muted-foreground">
               Locations belong to a brand. Create one under{" "}
-              <Link className="text-primary underline-offset-2 " href="/marketing/brands">
+              <Link
+                className="text-primary underline-offset-2 "
+                href="/marketing/brands"
+              >
                 Brands &amp; Websites
               </Link>{" "}
               first, then manage its locations and listings here.
@@ -197,27 +211,46 @@ function BrandLocations({
   locationId: string;
   onSelectLocation: (id: string) => void;
 }) {
+  const router = useRouter();
   const locationsQuery = useBusinessLocations(brandId);
   const createLocation = useCreateBusinessLocation();
   const [newName, setNewName] = useState("");
 
   const locations = locationsQuery.data ?? [];
-  const selected = locations.find((location) => location.id === locationId) ?? locations[0] ?? null;
+  const selected = locationId
+    ? (locations.find((location) => location.id === locationId) ?? null)
+    : (locations[0] ?? null);
+  const selectedId = selected?.id;
+
+  useEffect(() => {
+    if (!locationId && selectedId) {
+      router.replace(marketingRoutes.brandLocation(brandId, selectedId));
+    }
+  }, [brandId, locationId, router, selectedId]);
 
   const handleCreate = async () => {
     const name = newName.trim();
     if (!name) return;
     try {
-      const created = await createLocation.mutateAsync({ organizationId, brandId, name });
+      const created = await createLocation.mutateAsync({
+        organizationId,
+        brandId,
+        name,
+      });
       setNewName("");
       onSelectLocation(created.id);
       toast.success(`Location "${created.name}" created`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create the location.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not create the location.",
+      );
     }
   };
 
-  if (locationsQuery.isPending) return <LoadingSurface label="Loading locations…" />;
+  if (locationsQuery.isPending)
+    return <LoadingSurface label="Loading locations…" />;
   if (locationsQuery.isError) {
     return (
       <InlineQueryError
@@ -228,9 +261,27 @@ function BrandLocations({
     );
   }
 
+  if (locationId && !selected) {
+    return (
+      <SectionCard title="Location unavailable" className="min-w-0 flex-1">
+        <div className="p-3">
+          <p className="text-sm text-muted-foreground">
+            This location is not part of the brand named in the URL, or you no
+            longer have access to it.
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-3">
+            <Link href={marketingRoutes.brandLocal(brandId)}>
+              Open this brand&apos;s locations
+            </Link>
+          </Button>
+        </div>
+      </SectionCard>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 lg:flex-row">
-      <div className="flex w-full shrink-0 flex-col gap-2 lg:w-64">
+      <div className="flex w-full shrink-0 flex-col gap-2 lg:w-56 xl:w-64">
         <div className="flex items-center gap-1.5">
           <Input
             value={newName}
@@ -263,22 +314,31 @@ function BrandLocations({
                   : "border-border bg-card text-foreground hover:bg-muted"
               }`}
             >
-              <MapPin className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <MapPin
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
               <span className="min-w-0 flex-1 truncate">{location.name}</span>
               {location.is_primary ? (
-                <Star className="size-3 shrink-0 text-amber-500" aria-label="Primary location" />
+                <Star
+                  className="size-3 shrink-0 text-amber-500"
+                  aria-label="Primary location"
+                />
               ) : null}
             </button>
           ))}
           {locations.length === 0 ? (
             <p className="rounded-md border border-dashed border-border px-2 py-3 text-xs text-muted-foreground">
-              No locations yet. Add the first physical or service location above — it becomes the
-              canonical profile every directory listing is checked against.
+              No locations yet. Add the first physical or service location above
+              — it becomes the canonical profile every directory listing is
+              checked against.
             </p>
           ) : null}
         </nav>
       </div>
-      {selected ? <LocationWorkspace key={selected.id} location={selected} /> : null}
+      {selected ? (
+        <LocationWorkspace key={selected.id} location={selected} />
+      ) : null}
     </div>
   );
 }
@@ -298,9 +358,12 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
       ? parseSnapshotStructuredData(evidenceQuery.data.structuredData)
       : null;
     const siteObserved = parsed
-      ? findLocalBusinessJsonLd(
-          asJsonLdBlocks([...parsed.jsonLd, ...parsed.blocks.map((b) => b.data)]),
-        )?.observed ?? null
+      ? (findLocalBusinessJsonLd(
+          asJsonLdBlocks([
+            ...parsed.jsonLd,
+            ...parsed.blocks.map((b) => b.data),
+          ]),
+        )?.observed ?? null)
       : null;
     return buildProfileSuggestions(location, {
       googleObserved: observedFromListings(listingsQuery.data ?? []),
@@ -310,7 +373,8 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
   }, [location, listingsQuery.data, factsQuery.data, evidenceQuery.data]);
 
   const matrix = useMemo(
-    () => buildListingMatrix(publishersQuery.data ?? [], listingsQuery.data ?? []),
+    () =>
+      buildListingMatrix(publishersQuery.data ?? [], listingsQuery.data ?? []),
     [publishersQuery.data, listingsQuery.data],
   );
   const coverage = useMemo(() => computeCitationCoverage(matrix), [matrix]);
@@ -326,7 +390,11 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
     return scores;
   }, [matrix, location]);
   const napAverage =
-    napScores.length === 0 ? null : Math.round(napScores.reduce((sum, score) => sum + score, 0) / napScores.length);
+    napScores.length === 0
+      ? null
+      : Math.round(
+          napScores.reduce((sum, score) => sum + score, 0) / napScores.length,
+        );
 
   // The listing matrix and its KPI tiles are the point of this workspace — a
   // failed read rendering "0% coverage" would assert a gap nobody verified.
@@ -426,7 +494,9 @@ function KpiTile({
 }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
       <p className={`text-xl font-semibold tabular-nums ${tone}`}>{value}</p>
       <p className="truncate text-xs text-muted-foreground">{detail}</p>
     </div>
@@ -501,12 +571,14 @@ function ProfileEditor({
 
   const field = (key: keyof ProfileDraft) => ({
     value: draft[key],
-    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setDraft((current) => ({ ...current, [key]: event.target.value })),
+    onChange: (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => setDraft((current) => ({ ...current, [key]: event.target.value })),
   });
 
   const handleSave = async () => {
-    const toNullable = (value: string) => (value.trim() === "" ? null : value.trim());
+    const toNullable = (value: string) =>
+      value.trim() === "" ? null : value.trim();
     try {
       await updateLocation.mutateAsync({
         locationId: location.id,
@@ -529,7 +601,9 @@ function ProfileEditor({
       });
       toast.success("Location profile saved");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the profile.");
+      toast.error(
+        error instanceof Error ? error.message : "Could not save the profile.",
+      );
     }
   };
 
@@ -548,90 +622,116 @@ function ProfileEditor({
         </Button>
       }
     >
-      {applicable.length > 0 ? (
-        <div className="mb-2 flex flex-wrap items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
-          <p className="mr-1 text-xs font-medium text-foreground">
-            Found data for {applicable.length} empty field{applicable.length === 1 ? "" : "s"}:
-          </p>
-          {applicable.map((s) => (
-            <button
-              key={s.field}
-              type="button"
-              onClick={() => applySuggestions([s])}
-              className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] text-foreground hover:bg-muted"
-              title={`From ${AUTOFILL_SOURCE_LABELS[s.source]}`}
-            >
-              {s.field.replace(/_/g, " ")}: {s.value.length > 28 ? `${s.value.slice(0, 28)}…` : s.value}
-            </button>
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
-            onClick={() => applySuggestions(applicable)}
-          >
-            Apply all
-          </Button>
-          <p className="w-full text-[10px] text-muted-foreground">
-            Sources: live Google listing, your site&apos;s structured data, confirmed brand facts.
-            Nothing saves until you review and hit Save.
-          </p>
-        </div>
-      ) : null}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <LabeledInput label="Location name" required {...field("name")} />
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Status</Label>
-          <Select
-            value={draft.status}
-            onValueChange={(value) => setDraft((current) => ({ ...current, status: value }))}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LOCATION_STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {LOCATION_STATUS_LABELS[status]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <LabeledInput label="Business type (schema.org)" placeholder="e.g. MedicalClinic, Restaurant" {...field("business_type")} />
-        <LabeledInput label="Street address" {...field("street_address")} />
-        <LabeledInput label="Suite / line 2" {...field("address_line2")} />
-        <LabeledInput label="City" {...field("locality")} />
-        <LabeledInput label="State / region" {...field("region")} />
-        <LabeledInput label="Postal code" {...field("postal_code")} />
-        <LabeledInput label="Country code" placeholder="US" {...field("country_code")} />
-        <LabeledInput label="Phone" placeholder="+1 555 555 5555" {...field("phone")} />
-        <LabeledInput label="Email" {...field("email")} />
-        <LabeledInput label="Website URL" {...field("website_url")} />
-      </div>
-      <div className="mt-2 flex flex-col gap-1">
-        <Label className="text-xs text-muted-foreground">Description (used for submissions)</Label>
-        <Textarea rows={2} className="text-sm" {...field("description")} />
-      </div>
-      {gaps.length > 0 ? (
-        <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
-          <p className="text-xs font-medium text-foreground">
-            Before submitting anywhere, complete {gaps.length} field{gaps.length === 1 ? "" : "s"}:
-          </p>
-          <ul className="mt-1 space-y-0.5">
-            {gaps.map((gap) => (
-              <li key={gap.field} className="text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{gap.label}</span> — {gap.why}
-              </li>
+      <div className="p-3">
+        {applicable.length > 0 ? (
+          <div className="mb-2 flex flex-wrap items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
+            <p className="mr-1 text-xs font-medium text-foreground">
+              Found data for {applicable.length} empty field
+              {applicable.length === 1 ? "" : "s"}:
+            </p>
+            {applicable.map((s) => (
+              <button
+                key={s.field}
+                type="button"
+                onClick={() => applySuggestions([s])}
+                className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] text-foreground hover:bg-muted"
+                title={`From ${AUTOFILL_SOURCE_LABELS[s.source]}`}
+              >
+                {s.field.replace(/_/g, " ")}:{" "}
+                {s.value.length > 28 ? `${s.value.slice(0, 28)}…` : s.value}
+              </button>
             ))}
-          </ul>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => applySuggestions(applicable)}
+            >
+              Apply all
+            </Button>
+            <p className="w-full text-[10px] text-muted-foreground">
+              Sources: live Google listing, your site&apos;s structured data,
+              confirmed brand facts. Nothing saves until you review and hit
+              Save.
+            </p>
+          </div>
+        ) : null}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <LabeledInput label="Location name" required {...field("name")} />
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">Status</Label>
+            <Select
+              value={draft.status}
+              onValueChange={(value) =>
+                setDraft((current) => ({ ...current, status: value }))
+              }
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LOCATION_STATUSES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {LOCATION_STATUS_LABELS[status]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <LabeledInput
+            label="Business type (schema.org)"
+            placeholder="e.g. MedicalClinic, Restaurant"
+            {...field("business_type")}
+          />
+          <LabeledInput label="Street address" {...field("street_address")} />
+          <LabeledInput label="Suite / line 2" {...field("address_line2")} />
+          <LabeledInput label="City" {...field("locality")} />
+          <LabeledInput label="State / region" {...field("region")} />
+          <LabeledInput label="Postal code" {...field("postal_code")} />
+          <LabeledInput
+            label="Country code"
+            placeholder="US"
+            {...field("country_code")}
+          />
+          <LabeledInput
+            label="Phone"
+            placeholder="+1 555 555 5555"
+            {...field("phone")}
+          />
+          <LabeledInput label="Email" {...field("email")} />
+          <LabeledInput label="Website URL" {...field("website_url")} />
         </div>
-      ) : (
-        <p className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-          <Check className="size-3.5" aria-hidden />
-          Profile is submission-ready — every field publishers require is filled.
-        </p>
-      )}
+        <div className="mt-2 flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">
+            Description (used for submissions)
+          </Label>
+          <Textarea rows={2} className="text-sm" {...field("description")} />
+        </div>
+        {gaps.length > 0 ? (
+          <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+            <p className="text-xs font-medium text-foreground">
+              Before submitting anywhere, complete {gaps.length} field
+              {gaps.length === 1 ? "" : "s"}:
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {gaps.map((gap) => (
+                <li key={gap.field} className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {gap.label}
+                  </span>{" "}
+                  — {gap.why}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+            <Check className="size-3.5" aria-hidden />
+            Profile is submission-ready — every field publishers require is
+            filled.
+          </p>
+        )}
+      </div>
     </SectionCard>
   );
 }
@@ -664,7 +764,9 @@ function ListingsMatrix({
   matrix: ListingMatrixRow[];
 }) {
   const upsertListing = useUpsertLocationListing();
-  const [savingPublisherId, setSavingPublisherId] = useState<string | null>(null);
+  const [savingPublisherId, setSavingPublisherId] = useState<string | null>(
+    null,
+  );
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [checkingGoogle, setCheckingGoogle] = useState(false);
@@ -682,10 +784,16 @@ function ListingsMatrix({
           `No Google listing found for "${result.snapshot.keyword}". Recorded as not listed; try a different search phrase from the location profile if the business exists under another name.`,
         );
       }
-      void queryClient.invalidateQueries({ queryKey: [...marketingKeys.root, "location"] });
-      void queryClient.invalidateQueries({ queryKey: [...marketingKeys.root, "brand"] });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "location"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brand"],
+      });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Google listing check failed.");
+      toast.error(
+        error instanceof Error ? error.message : "Google listing check failed.",
+      );
     } finally {
       setCheckingGoogle(false);
     }
@@ -701,24 +809,39 @@ function ListingsMatrix({
         status,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the listing status.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not save the listing status.",
+      );
     } finally {
       setSavingPublisherId(null);
     }
   };
 
-  const handleUrl = async (publisherId: string, currentStatus: ListingStatus, listingUrl: string) => {
+  const handleUrl = async (
+    publisherId: string,
+    currentStatus: ListingStatus,
+    listingUrl: string,
+  ) => {
     setSavingPublisherId(publisherId);
     try {
       await upsertListing.mutateAsync({
         organizationId,
         locationId: location.id,
         publisherId,
-        status: currentStatus === "unknown" || currentStatus === "not_listed" ? "listed" : currentStatus,
+        status:
+          currentStatus === "unknown" || currentStatus === "not_listed"
+            ? "listed"
+            : currentStatus,
         listingUrl: listingUrl.trim() === "" ? null : listingUrl.trim(),
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the listing URL.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not save the listing URL.",
+      );
     } finally {
       setSavingPublisherId(null);
     }
@@ -726,8 +849,8 @@ function ListingsMatrix({
 
   return (
     <SectionCard title="Listings by publisher" anchor="local-listings-matrix">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+      <div className="overflow-x-auto p-3">
+        <table className="w-full min-w-[760px] border-collapse text-sm xl:min-w-0">
           <thead>
             <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
               <th className="py-1.5 pr-2 font-medium">Publisher</th>
@@ -741,13 +864,21 @@ function ListingsMatrix({
           <tbody>
             {matrix.map(({ publisher, listing }) => {
               const status: ListingStatus =
-                listing && isListingStatus(listing.status) ? listing.status : "unknown";
+                listing && isListingStatus(listing.status)
+                  ? listing.status
+                  : "unknown";
               const tier = publisher.tier as PublisherTier;
               return (
-                <tr key={publisher.id} className="border-b border-border/60 last:border-b-0">
+                <tr
+                  key={publisher.id}
+                  className="border-b border-border/60 last:border-b-0"
+                >
                   <td className="py-1.5 pr-2">
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate font-medium text-foreground" title={publisher.api_notes ?? undefined}>
+                      <span
+                        className="truncate font-medium text-foreground"
+                        title={publisher.api_notes ?? undefined}
+                      >
                         {publisher.name}
                       </span>
                       {publisher.slug === GOOGLE_PUBLISHER_SLUG ? (
@@ -758,7 +889,9 @@ function ListingsMatrix({
                           onClick={() => void handleGoogleCheck()}
                           disabled={checkingGoogle}
                         >
-                          {checkingGoogle ? "Checking live…" : "Fetch live data"}
+                          {checkingGoogle
+                            ? "Checking live…"
+                            : "Fetch live data"}
                         </Button>
                       ) : null}
                       {publisher.manage_url ? (
@@ -773,22 +906,34 @@ function ListingsMatrix({
                         </a>
                       ) : null}
                     </div>
-                    {listing && listing.observed && Object.keys(listing.observed as object).length > 0 ? (
-                      <ObservedVerdictLine location={location} listing={listing} />
+                    {listing &&
+                    listing.observed &&
+                    Object.keys(listing.observed as object).length > 0 ? (
+                      <ObservedVerdictLine
+                        location={location}
+                        listing={listing}
+                      />
                     ) : publisher.api_notes ? (
-                      <p className="mt-0.5 line-clamp-1 max-w-96 text-[11px] text-muted-foreground" title={publisher.api_notes}>
+                      <p
+                        className="mt-0.5 line-clamp-1 max-w-96 text-[11px] text-muted-foreground"
+                        title={publisher.api_notes}
+                      >
                         {publisher.api_notes}
                       </p>
                     ) : null}
                   </td>
                   <td className="py-1.5 pr-2">
-                    <Badge variant="outline" className={`border-transparent text-[11px] ${TIER_BADGE_CLASS[tier] ?? "bg-muted"}`}>
+                    <Badge
+                      variant="outline"
+                      className={`border-transparent text-[11px] ${TIER_BADGE_CLASS[tier] ?? "bg-muted"}`}
+                    >
                       {PUBLISHER_TIER_LABELS[tier] ?? publisher.tier}
                       {publisher.is_aggregator ? " · feeds others" : ""}
                     </Badge>
                   </td>
                   <td className="py-1.5 pr-2 text-xs text-muted-foreground">
-                    {PUBLISHER_API_ACCESS_LABELS[publisher.api_access] ?? publisher.api_access}
+                    {PUBLISHER_API_ACCESS_LABELS[publisher.api_access] ??
+                      publisher.api_access}
                   </td>
                   <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">
                     {publisher.citation_weight}
@@ -797,11 +942,12 @@ function ListingsMatrix({
                     <Select
                       value={status}
                       onValueChange={(value) => {
-                        if (isListingStatus(value)) void handleStatus(publisher.id, value);
+                        if (isListingStatus(value))
+                          void handleStatus(publisher.id, value);
                       }}
                       disabled={savingPublisherId === publisher.id}
                     >
-                      <SelectTrigger className="h-7 w-36 text-xs">
+                      <SelectTrigger className="h-7 w-32 text-xs xl:w-36">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -818,7 +964,7 @@ function ListingsMatrix({
                       <Input
                         defaultValue={listing?.listing_url ?? ""}
                         placeholder="https://…"
-                        className="h-7 w-56 text-xs"
+                        className="h-7 w-full min-w-40 max-w-72 text-xs"
                         onBlur={(event) => {
                           const next = event.target.value;
                           if ((listing?.listing_url ?? "") !== next.trim()) {
@@ -845,9 +991,10 @@ function ListingsMatrix({
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Impact is each publisher&apos;s relative citation weight (0–100). Aggregators feed dozens of
-        secondary directories, so covering them closes long-tail gaps automatically.
+      <p className="px-3 pb-3 text-xs text-muted-foreground">
+        Impact is each publisher&apos;s relative citation weight (0–100).
+        Aggregators feed dozens of secondary directories, so covering them
+        closes long-tail gaps automatically.
       </p>
     </SectionCard>
   );
@@ -867,11 +1014,21 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
 
   const verdict = useMemo(() => {
     if (!evidenceQuery.data) return null;
-    const parsed = parseSnapshotStructuredData(evidenceQuery.data.structuredData);
-    const declared = findLocalBusinessJsonLd(
-      asJsonLdBlocks([...parsed.jsonLd, ...parsed.blocks.map((block) => block.data)]),
+    const parsed = parseSnapshotStructuredData(
+      evidenceQuery.data.structuredData,
     );
-    if (!declared) return { declared: null, audit: null, capturedAt: evidenceQuery.data.capturedAt };
+    const declared = findLocalBusinessJsonLd(
+      asJsonLdBlocks([
+        ...parsed.jsonLd,
+        ...parsed.blocks.map((block) => block.data),
+      ]),
+    );
+    if (!declared)
+      return {
+        declared: null,
+        audit: null,
+        capturedAt: evidenceQuery.data.capturedAt,
+      };
     return {
       declared,
       audit: auditListingNap(location, declared.observed),
@@ -880,24 +1037,40 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
   }, [evidenceQuery.data, location]);
 
   return (
-    <SectionCard title="On-site structured data (crawled evidence)" anchor="local-onsite-schema">
+    <SectionCard
+      title="On-site structured data (crawled evidence)"
+      anchor="local-onsite-schema"
+    >
       {!site ? (
         <p className="text-sm text-muted-foreground">
-          This brand has no website in the platform yet, so there is nothing to check. Add one under{" "}
-          <Link className="text-primary underline-offset-2 " href="/marketing/sites">
+          This brand has no website in the platform yet, so there is nothing to
+          check. Add one under{" "}
+          <Link
+            className="text-primary underline-offset-2 "
+            href="/marketing/sites"
+          >
             Websites
           </Link>
           .
         </p>
       ) : evidenceQuery.isPending ? (
-        <p className="text-sm text-muted-foreground">Reading the latest homepage crawl…</p>
+        <p className="text-sm text-muted-foreground">
+          Reading the latest homepage crawl…
+        </p>
       ) : evidenceQuery.isError ? (
-        <InlineQueryError what="homepage evidence" error={evidenceQuery.error} onRetry={() => void evidenceQuery.refetch()} />
+        <InlineQueryError
+          what="homepage evidence"
+          error={evidenceQuery.error}
+          onRetry={() => void evidenceQuery.refetch()}
+        />
       ) : !evidenceQuery.data ? (
         <p className="text-sm text-muted-foreground">
-          {site.root_url ?? site.name} has never had its homepage crawled, so there is no evidence to
-          check yet. Run a crawl from{" "}
-          <Link className="text-primary underline-offset-2 " href={`/marketing/sites/${site.id}`}>
+          {site.root_url ?? site.name} has never had its homepage crawled, so
+          there is no evidence to check yet. Run a crawl from{" "}
+          <Link
+            className="text-primary underline-offset-2 "
+            href={`/marketing/sites/${site.id}`}
+          >
             the site workspace
           </Link>
           .
@@ -905,12 +1078,17 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
       ) : !verdict?.declared ? (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-sm">
           <p className="font-medium text-foreground">
-            The homepage of {site.root_url ?? site.name} declares NO LocalBusiness structured data.
+            The homepage of {site.root_url ?? site.name} declares NO
+            LocalBusiness structured data.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Google cannot connect the site to this location without it. Fix: copy the generated
-            LocalBusiness JSON-LD below onto the site. Evidence: latest crawl
-            {verdict?.capturedAt ? ` (${new Date(verdict.capturedAt).toLocaleDateString()})` : ""}.
+            Google cannot connect the site to this location without it. Fix:
+            copy the generated LocalBusiness JSON-LD below onto the site.
+            Evidence: latest crawl
+            {verdict?.capturedAt
+              ? ` (${new Date(verdict.capturedAt).toLocaleDateString()})`
+              : ""}
+            .
           </p>
         </div>
       ) : (
@@ -921,18 +1099,22 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
           </p>
           {verdict.audit && verdict.audit.score !== null ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              Declared NAP matches the canonical profile {verdict.audit.score}% (
+              Declared NAP matches the canonical profile {verdict.audit.score}%
+              (
               {verdict.audit.mismatches.length === 0
                 ? "no mismatches"
                 : verdict.audit.mismatches
-                    .map((m) => `${m.field}: site says "${m.observed}", profile says "${m.canonical}"`)
+                    .map(
+                      (m) =>
+                        `${m.field}: site says "${m.observed}", profile says "${m.canonical}"`,
+                    )
                     .join("; ")}
               ).
             </p>
           ) : (
             <p className="mt-1 text-xs text-muted-foreground">
-              The declared block carries no comparable NAP fields — enrich it with the generated
-              JSON-LD below.
+              The declared block carries no comparable NAP fields — enrich it
+              with the generated JSON-LD below.
             </p>
           )}
         </div>
@@ -956,13 +1138,20 @@ function ObservedVerdictLine({
   if (audit.score === null) {
     return (
       <p className="mt-0.5 text-[11px] text-muted-foreground">
-        Live data captured{checked ? ` ${checked}` : ""} ({listing.source}) — no comparable NAP fields yet.
+        Live data captured{checked ? ` ${checked}` : ""} ({listing.source}) — no
+        comparable NAP fields yet.
       </p>
     );
   }
   return (
     <p className="mt-0.5 max-w-96 text-[11px]">
-      <span className={audit.mismatches.length === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+      <span
+        className={
+          audit.mismatches.length === 0
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-amber-600 dark:text-amber-400"
+        }
+      >
         Live NAP match {audit.score}%
       </span>
       <span className="text-muted-foreground">
@@ -971,7 +1160,10 @@ function ObservedVerdictLine({
         {checked ? `, ${checked}` : ""})
         {audit.mismatches.length > 0
           ? ` — ${audit.mismatches
-              .map((m) => `${m.field}: listing says "${m.observed}", profile says "${m.canonical}"`)
+              .map(
+                (m) =>
+                  `${m.field}: listing says "${m.observed}", profile says "${m.canonical}"`,
+              )
               .join("; ")}`
           : " — every comparable field agrees"}
       </span>
@@ -1001,15 +1193,25 @@ function JsonLdCard({ location }: { location: BusinessLocation }) {
       title="LocalBusiness structured data"
       anchor="local-jsonld"
       headerExtra={
-        <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => void handleCopy()}>
-          {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => void handleCopy()}
+        >
+          {copied ? (
+            <Check className="size-3.5" aria-hidden />
+          ) : (
+            <Copy className="size-3.5" aria-hidden />
+          )}
           {copied ? "Copied" : "Copy"}
         </Button>
       }
     >
       <p className="mb-2 text-xs text-muted-foreground">
-        Paste this on the location&apos;s page. It is generated from the canonical profile above, so
-        it can never drift from the record — update the profile and re-copy.
+        Paste this on the location&apos;s page. It is generated from the
+        canonical profile above, so it can never drift from the record — update
+        the profile and re-copy.
       </p>
       <pre className="max-h-64 overflow-auto rounded-md border border-border bg-muted/50 p-2 text-xs leading-relaxed">
         {script}

@@ -72,7 +72,10 @@ import { extractErrorMessage, operationFailed } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
-import { parseSiteCoverageMatrix } from "@/features/marketing/lib/coverage";
+import {
+  parseSiteCoverageMatrix,
+  parseSiteOverviewPageCounts,
+} from "@/features/marketing/lib/coverage";
 import {
   parseSnapshotImages,
   parseSnapshotResources,
@@ -690,16 +693,10 @@ export async function getSiteOverview(
   const abortSignal = signal ?? new AbortController().signal;
   const [
     score,
-    pages,
-    unconfirmedCandidates,
-    resourceUrls,
+    pageRollup,
     findings,
     snapshots,
     latestCrawl,
-    targetKeywordPages,
-    pagesInGsc,
-    blockedPages,
-    serpIssues,
     sitemaps,
     crawlSessions,
   ] = await Promise.all([
@@ -709,31 +706,8 @@ export async function getSiteOverview(
       .eq("site_id", siteId)
       .abortSignal(abortSignal)
       .maybeSingle(),
-    // The headline is evidence-backed. The durable registry also retains
-    // aliases, resources, and never-confirmed crawl candidates; those remain
-    // inspectable without being presented as pages.
     db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", false)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", true)
+      .rpc("site_page_coverage", { p_site_id: siteId })
       .abortSignal(abortSignal),
     db
       .from("finding")
@@ -761,39 +735,6 @@ export async function getSiteOverview(
       .abortSignal(abortSignal)
       .maybeSingle(),
     db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .not("target_keyword", "is", null)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("in_gsc", true)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("indexability_verdict", "blocked")
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("serp_ok", false)
-      .abortSignal(abortSignal),
-    db
       .from("sitemap")
       .select("id", { count: "exact", head: true })
       .eq("site_id", siteId)
@@ -808,32 +749,23 @@ export async function getSiteOverview(
   ]);
 
   if (score.error) throw score.error;
-  if (pages.error) throw pages.error;
-  if (unconfirmedCandidates.error) throw unconfirmedCandidates.error;
-  if (resourceUrls.error) throw resourceUrls.error;
+  if (pageRollup.error) throw pageRollup.error;
   if (findings.error) throw findings.error;
   if (snapshots.error) throw snapshots.error;
   if (latestCrawl.error) throw latestCrawl.error;
-  if (targetKeywordPages.error) throw targetKeywordPages.error;
-  if (pagesInGsc.error) throw pagesInGsc.error;
-  if (blockedPages.error) throw blockedPages.error;
-  if (serpIssues.error) throw serpIssues.error;
   if (sitemaps.error) throw sitemaps.error;
   if (crawlSessions.error) throw crawlSessions.error;
+  const pageCounts = parseSiteOverviewPageCounts(
+    assertData(pageRollup.data, pageRollup.error),
+  );
 
   return {
     siteScore: score.data?.site_score ?? null,
     scoredPages: Number(score.data?.scored_pages ?? 0),
-    canonicalPages: pages.count ?? 0,
-    unconfirmedCandidates: unconfirmedCandidates.count ?? 0,
-    resourceUrls: resourceUrls.count ?? 0,
+    ...pageCounts,
     openFindings: findings.count ?? 0,
     snapshots: snapshots.count ?? 0,
     latestCrawl: latestCrawl.data,
-    targetKeywordPages: targetKeywordPages.count ?? 0,
-    pagesInGsc: pagesInGsc.count ?? 0,
-    blockedPages: blockedPages.count ?? 0,
-    serpIssues: serpIssues.count ?? 0,
     sitemaps: sitemaps.count ?? 0,
     crawlSessions: crawlSessions.count ?? 0,
   };

@@ -87,7 +87,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/local",
       label: "Local & Listings",
       description:
-        "Location profiles (canonical NAP), the publisher listings matrix with weighted citation coverage, and LocalBusiness JSON-LD. Workspace: features/marketing/local/LocalListingsWorkspace.tsx.",
+        "Portfolio entry for location profiles. Brand and location detail use /marketing/brands/[brandId]/local/[locationId], with the publisher listings matrix, weighted citation coverage, and LocalBusiness JSON-LD.",
       filePath: "app/(core)/marketing/local/page.tsx",
       status: "Live",
     },

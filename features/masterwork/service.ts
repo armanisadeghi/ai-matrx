@@ -580,6 +580,36 @@ export async function listMasterworksForRulebook(
 }
 
 /**
+ * Masterworks for MANY Rulebooks in one read — the list surface needs every
+ * visible Rulebook's built systems without N round trips. Understudies are
+ * excluded: they are the always-there crude twin, shown on the Rulebook page,
+ * never as one of the systems the Expert deliberately built.
+ */
+export async function listMasterworksForRulebooks(
+  rulebookIds: string[],
+): Promise<Record<string, Masterwork[]>> {
+  const ids = [...new Set(rulebookIds)].filter(Boolean);
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("definition")
+    .select(MASTERWORK_SELECT_COLUMNS)
+    .in("metadata->>built_from_rulebook", ids)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const out: Record<string, Masterwork[]> = {};
+  for (const row of data ?? []) {
+    const mw = parseMasterworkRow(row);
+    if (mw.understudy) continue;
+    const key = mw.built_from_rulebook;
+    if (!key) continue;
+    (out[key] ??= []).push(mw);
+  }
+  return out;
+}
+
+/**
  * Release / un-release a Masterwork (the Studio action). Released = an
  * Operator can find and run it on /masterwork/encore; draft = Studio-only. The stamp is
  * `metadata.released_at`, written with a guarded compare-and-swap on the

@@ -17,7 +17,14 @@ const COVERAGE = {
   byProvenance: { sitemap: 3707, crawl: 80, gsc: 214, manual: 0 },
 };
 
-const abortSignal = jest.fn(async () => ({ data: COVERAGE, error: null }));
+const PAGE_ROLLUP = {
+  ...COVERAGE,
+  targetKeywordPages: 212,
+  blockedPages: 19,
+  serpIssues: 31,
+};
+
+const abortSignal = jest.fn(async () => ({ data: PAGE_ROLLUP, error: null }));
 const rpc = jest.fn(() => ({ abortSignal }));
 const from = jest.fn();
 
