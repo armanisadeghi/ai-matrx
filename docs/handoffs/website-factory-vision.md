@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-21
+updated: 2026-08-22
 repos: [matrx-frontend, aidream, my-matrx]
 scope: program
 feature: Content Planning
@@ -55,7 +55,28 @@ Full detail, with evidence and row counts, in **STATE.md §4.3**. In priority or
    mid-loop; (b) 🚨 `live_url` lies for un-activated custom domains — post-publish inspection
    fetched the client's REAL external site; verify on `/c/{slug}` until activation is proven;
    (c) content leakage — `/certified-hard-drive-destruction` (All Green) published inside the
-   med-spa plan; (d) one page (`b51cad8d`) unpublished + one published page with no plan link.
+   med-spa plan; (d) ~~one page (`b51cad8d`) unpublished~~ **CLOSED 2026-08-22** — the page had all
+   four artifacts and a successful `p6_build`; the bulk publish had simply run BEFORE its build
+   finished. A second `/cms-publish {only_plan_linked:true}` published it (`requested 1,
+   published 1, remaining_candidates 0`) — idempotent re-run is the correct fix, no code change.
+   Still open in (d): one published page with no plan link.
+
+   **Second full-scale run, 2026-08-22 (independent re-proof, 25 pages):** job
+   `2e919770-83df-46d8-ad88-9541f7095810` seeded 100 items (25 pages × 4 steps),
+   **83 succeeded / 17 skipped / 0 failed / 0 dead-letter, $3.51** against a $1.73 pre-estimate
+   (the estimate is a ceiling per page-count, but per-call cost ran ~2× — `p3_family` on Opus is
+   the driver at ~$0.08/call). All 17 skips are readable and CORRECT: 1 family already done,
+   6 write (3 no brief: `/`, `/contact`, `/services`; 3 no keyword or page role:
+   `/privacy-policy`, `/safety`, `/terms`), 6 review cascading from those, 4 build already live.
+   Artifacts reconcile exactly: 25 `outline`, 19 `draft`, 19 `review`, 21 `final`.
+   **28/28 plan-linked pages now published and verified HTTP 200 with a real `<h1>` and body
+   content on `https://www.mymatrx.com/c/cosmeticinjectables-com/…`.** Reconcile is clean:
+   0 ghosts, 0 orphans, 0 conflicts, 0 warnings, 1 retired.
+   🚨 **Fresh evidence for (b):** the post-publish `shell_check` on that publish reported
+   `http_status 404` and `meta_description_missing` for `/services/prp` — BOTH false. It had
+   fetched `https://cosmeticinjectables.com/services/prp`, the client's real external site. The
+   same page on `/c/{slug}` returns 200 with its meta description present. Until domain activation
+   is proven, shell_check's verdicts on custom-domain sites are noise, not signal.
 2. **Deepen p2 into real content research** (extend `features/research/`, don't fork). The runner
    half is DONE — all seven rail steps run (p1 via the step route; p2/p6/p7 arrows via their own
    producers).
