@@ -223,6 +223,13 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 1. **Read the call site FIRST.** The Provision declared beside the mandate already names
    the granular offer — that IS your variable list. The census of blob sites lives at
    `aidream/docs/mandates/INPUT_CHANNEL_VIOLATIONS.md`; update the row when you convert.
+   🚨 If the call site is a factory-generated NamedAgent (imported from
+   `internal_agents/_generated/`), STOP — its typed `Inputs` class and spec govern the
+   variables, and rebuilding via `scripts/build_agents.py` re-runs the trained builder,
+   which CLOBBERS hand-tuned live prompts. That family converts through the factory spec
+   with the prompt-preservation question settled first, never by a DB-side agent edit.
+   Likewise stop if the mandate is client-invoked from matrx-frontend and the census for
+   it hasn't run — renaming variables would break callers you cannot see from aidream.
 2. **Hunt for prompt lies while you're in there.** Blob agents routinely claim inputs
    they never receive (the Selector's prompt promised "Audition results" no call site
    sends) and carry enums out of sync with the code's contract. The prompt must describe
