@@ -76,7 +76,7 @@ or narrow the constraint so it only governs rows written after the protocol-v2 c
 and enforce the claim protocol in the writer. Whichever: an un-updatable row class is not a
 migration detail — it silently fails any future repair pass over this table.
 
-### D240 — `files.files.created_by` is NOT NULL under an `ON DELETE SET NULL` FK that can therefore never fire (2026-08-21)
+### D240 — 116 FKs are `ON DELETE SET NULL` on a `NOT NULL` column, so they can never fire (2026-08-21; scope measured 2026-08-22)
 
 `files_created_by_fkey` is `FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
 NOT VALID` — but `files.files.created_by` is **NOT NULL**. The declared cleanup action is
@@ -93,6 +93,28 @@ is at the parent. `files.file_versions.created_by` is nullable and carries the s
 **Fix (needs a decision on ownership semantics):** either make `files.files.created_by` nullable so
 `ON DELETE SET NULL` is executable and then `VALIDATE`, or re-point the 21 rows at a surviving owner
 (the org's admin) and validate. Do not validate as-is — it will fail on those 21 rows.
+
+**THIS IS NOT ONE TABLE — it is 116 constraints across 114 tables** (measured live 2026-08-22 while
+fixing D241): **80** point at `iam.organizations`, **36** at `auth.users`, 1 at `chat.conversation`.
+`platform._base_entity` itself carries the shape, which is why it is everywhere — the provisioner
+propagates it, so every new canonical table is born with it.
+
+**The failure mode is proven, not theorised** (live, rolled-back transaction): a child row with
+`parent_id NOT NULL REFERENCES parent ON DELETE SET NULL` makes `DELETE FROM parent` fail with
+`23502 null value in column "parent_id" ... violates not-null constraint`. So today **deleting an
+organization, or deleting an auth user, errors** wherever a child row exists — account deletion and
+org deletion are the user-facing surfaces of this.
+
+Most of the 116 are `NOT VALID`, which is the only reason it is quiet: unvalidated constraints let
+the orphan rows persist instead of erroring at write time, and the delete path is simply never
+exercised.
+
+**Do not fix these one at a time, and do not "fix" it by making every owner column nullable** — that
+collides with THE NO NULL ORG ruling (§2/§6e) for the 80 org FKs. The org lane and the user lane
+almost certainly want different answers (org: `RESTRICT`/`NO ACTION` so the delete is refused
+loudly; user: a deliberate reassignment or anonymisation step before delete). It is a base-entity
+contract change and an owner ruling — `platform.create_entity_table` is where it stops being
+reproduced.
 
 ### D238 — two `is_public` cuts are code-complete and DEPLOY-GATED: `legal.wc_claim` and `canvas.canvas_items` (2026-08-21)
 
