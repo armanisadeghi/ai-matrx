@@ -8,9 +8,9 @@
 //
 // Zero data loss: `reconstructRegionValue` merges every node's residue extras
 // (keys the active schema didn't declare) back into the value before mapping,
-// so a transition-shape payload (`set_title`, undeclared card fields) still
-// persists correctly whichever schema — compiled bootstrap or flexible_data —
-// was live during the parse.
+// so undeclared card fields still persist correctly whichever schema —
+// compiled bootstrap or flexible_data — was live during the parse. The set
+// title is read from the kind's `title` key only.
 
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import {
@@ -63,11 +63,7 @@ export function generatedSetFromEnvelope(
   const reconstructed = stripKindDeep(reconstructRegionValue(envelope));
   if (!isRecord(reconstructed)) return null;
 
-  const set_title =
-    optionalString(reconstructed.title) ??
-    // Transition alias: the OLD agent payload key.
-    optionalString(reconstructed.set_title) ??
-    "";
+  const title = optionalString(reconstructed.title) ?? "";
 
   const rawCards = Array.isArray(reconstructed.cards)
     ? reconstructed.cards
@@ -93,5 +89,5 @@ export function generatedSetFromEnvelope(
     });
   }
 
-  return { set_title, cards };
+  return { title, cards };
 }

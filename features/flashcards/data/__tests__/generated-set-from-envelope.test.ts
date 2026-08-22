@@ -2,7 +2,7 @@
  * The typed save path: one content-ir parse drives BOTH the live preview and
  * persistence. These tests prove generatedSetFromEnvelope maps a canonical
  * flashcard_set envelope to the persistable GeneratedCardSet — including the
- * title/set_title transition tolerance and zero-loss residue recovery (data
+ * kind `title` read and zero-loss residue recovery (data
  * the active schema didn't declare still reaches the persisted cards).
  */
 
@@ -53,7 +53,7 @@ describe("generatedSetFromEnvelope", () => {
 
     const set = generatedSetFromEnvelope(envelope);
     expect(set).not.toBeNull();
-    expect(set?.set_title).toBe("Mixed Deck");
+    expect(set?.title).toBe("Mixed Deck");
     expect(set?.cards).toHaveLength(3);
     expect(set?.cards[0]).toEqual({
       front: "Q1?",
@@ -70,44 +70,10 @@ describe("generatedSetFromEnvelope", () => {
     }
   });
 
-  it("tolerates the OLD set_title key (transition alias) when an old-shape schema is live", () => {
-    // A stale schema (old compiled build / cached warm rows) may still
-    // declare set_title as THE title key — the mapper must read it.
-    const oldShapeSchemas: Record<string, KindSchema> = {
-      flashcard_set: {
-        kind: "flashcard_set",
-        fields: {
-          set_title: { type: "string", required: true },
-          cards: { type: "array", itemKinds: ["flashcard"], required: true },
-        },
-      },
-      flashcard: {
-        kind: "flashcard",
-        fields: {
-          front: { type: "string", required: true },
-          back: { type: "string", required: true },
-        },
-      },
-    };
-
-    const envelope = envelopeFor(
-      JSON.stringify({
-        set_title: "Old Shape",
-        cards: [{ __kind: "flashcard", front: "Q?", back: "A" }],
-      }),
-      oldShapeSchemas,
-    );
-
-    const set = generatedSetFromEnvelope(envelope);
-    expect(set?.set_title).toBe("Old Shape");
-    expect(set?.cards).toHaveLength(1);
-  });
-
   it("returns null (→ extraction fallback) when an old-shape payload fails the NEW schema's required title", () => {
     // Against the canonical schema `title` is required — a payload carrying
-    // only set_title degrades to a raw root, so the typed path steps aside
-    // and the caller's extraction fallback (which also tolerates set_title)
-    // persists the set.
+    // only the retired set_title key degrades to a raw root, so the typed
+    // path steps aside (null) rather than inventing a title.
     const envelope = envelopeFor(
       JSON.stringify({
         set_title: "Old Shape",
@@ -166,7 +132,7 @@ describe("generatedSetFromEnvelope", () => {
     ).toEqual({ topic: "residue-only", difficulty: "hard" });
 
     const set = generatedSetFromEnvelope(envelope);
-    expect(set?.set_title).toBe("Residue Deck");
+    expect(set?.title).toBe("Residue Deck");
     expect(set?.cards[0]).toEqual({
       front: "Q?",
       back: "A",
@@ -174,17 +140,6 @@ describe("generatedSetFromEnvelope", () => {
       difficulty: "hard",
       topic: "residue-only",
     });
-  });
-
-  it("prefers title over set_title when both are present", () => {
-    const envelope = envelopeFor(
-      JSON.stringify({
-        title: "Canonical",
-        set_title: "Legacy",
-        cards: [{ __kind: "flashcard", front: "Q?", back: "A" }],
-      }),
-    );
-    expect(generatedSetFromEnvelope(envelope)?.set_title).toBe("Canonical");
   });
 
   it("skips entries missing both front and back", () => {

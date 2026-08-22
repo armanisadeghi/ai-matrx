@@ -220,7 +220,7 @@ describe("direct-launch live flashcards (root-cause chain)", () => {
       ? generatedSetFromEnvelope(finalEnvelope)
       : null;
     expect(persisted).not.toBeNull();
-    expect(persisted?.set_title).toBe("Photosynthesis Basics");
+    expect(persisted?.title).toBe("Photosynthesis Basics");
     expect(persisted?.cards).toHaveLength(5);
     expect(persisted?.cards[0]).toMatchObject({
       front: "What is photosynthesis?",

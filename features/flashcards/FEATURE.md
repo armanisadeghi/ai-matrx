@@ -156,7 +156,11 @@ own fresh conversation):
   print) carry the URL and alt text but not the credit caption.
 
 ## Change log
-
+- 2026-08-22 — Generated-set title reads the `flashcard_set` kind's `title` only: the mandate
+  `flashcards.generate_from_source` (v6) dropped `set_title` from its output_schema and declares
+  `output_kind="flashcard_set"`, so the `title | set_title` coercion is gone from
+  `useGenerateCards` (`GeneratedCardSet.title`), `generated-set-from-envelope`, the
+  from-topic/from-source creators, and `education/convert/generators/deck.ts` (no legacy twin).
 - **2026-08-19 — The editor's two FREE image lanes shipped (upload + Unsplash stock).**
   `CardImageSlot` is now a compact 5-icon row per face. Upload goes through the canonical
   `useFileUpload` at public visibility and stamps BOTH `image_file_id` and the durable CDN

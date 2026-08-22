@@ -249,7 +249,7 @@ export function CreateFromSource() {
       const setRes = await fcService.createGeneratedSetForConversation(
         result.conversationId,
         {
-          name: result.set_title?.trim() || selectedDoc.name,
+          name: result.title?.trim() || selectedDoc.name,
           topic: selectedDoc.name,
           difficulty,
         },

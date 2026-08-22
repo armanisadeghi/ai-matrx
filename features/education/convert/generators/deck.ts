@@ -96,8 +96,6 @@ function rawCardsOf(value: unknown): unknown[] {
 function agentTitle(value: unknown): string {
   const obj = isRecord(value) ? value : {};
   if (typeof obj.title === "string" && obj.title.trim()) return obj.title.trim();
-  if (typeof obj.set_title === "string" && obj.set_title.trim())
-    return obj.set_title.trim();
   return "";
 }
 

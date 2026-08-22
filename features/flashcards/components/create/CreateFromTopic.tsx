@@ -160,7 +160,7 @@ export function CreateFromTopic() {
       const setRes = await fcService.createGeneratedSetForConversation(
         extracted.conversationId,
         {
-          name: result.set_title?.trim() || trimmedTopic,
+          name: result.title?.trim() || trimmedTopic,
           topic: trimmedTopic,
           difficulty,
         },

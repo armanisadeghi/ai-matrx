@@ -7,8 +7,8 @@
 // auto-running agent launch with JSON extraction on; this hook owns only the
 // variables and the card-set coercion.
 //
-// Returns the RAW agent JSON ({ title, cards[] } for FC_MANDATES.generateCards;
-// the OLD set_title key is tolerated as a transition alias) coerced into a
+// Returns the RAW agent JSON ({ title, cards[] } — the registered
+// `flashcard_set` kind — for FC_MANDATES.generateCards) coerced into a
 // normalized shape so callers never touch `any`. Persisting the result
 // (fc_set + fc_card rows) is the CALLER's job — this hook only owns the
 // agent round-trip, so the same primitive serves from-topic, from-source, and
@@ -28,11 +28,11 @@ import type { NewCardInput } from "./types";
 
 /**
  * The normalized generation result. The agent's canonical response shape is
- * `{ title, cards[] }`; the field keeps its historical `set_title` name
- * internally (persistence consumers read it as the set's name).
+ * the `flashcard_set` kind `{ title, cards[] }`; `title` is the set's name
+ * (persistence consumers read it as such).
  */
 export interface GeneratedCardSet {
-  set_title: string;
+  title: string;
   cards: NewCardInput[];
   /**
    * The headless run's conversation id — the run's IDENTITY for the
@@ -173,9 +173,9 @@ function coerceCard(raw: unknown): NewCardInput | null {
 
 /**
  * Coerce the extracted object into a GeneratedCardSet. Accepts the canonical
- * `{ title, cards[] }` and is tolerant of the transition/drift shapes (the
- * OLD `set_title` key, a bare array of cards, or a `flashcards` key) so a
- * prompt tweak doesn't break the flow silently. Throws (caught by the
+ * `flashcard_set` kind `{ title, cards[] }` and is tolerant of the drift
+ * shapes for the cards list (a bare array of cards, or a `flashcards` key) so
+ * a prompt tweak doesn't break the flow silently. Throws (caught by the
  * caller) only when no cards can be recovered at all.
  */
 function coerceGeneratedSet(value: unknown): Omit<GeneratedCardSet, "conversationId"> {
@@ -185,7 +185,7 @@ function coerceGeneratedSet(value: unknown): Omit<GeneratedCardSet, "conversatio
       .map(coerceCard)
       .filter((c): c is NewCardInput => c !== null);
     if (cards.length === 0) throw new Error("Agent returned no usable cards");
-    return { set_title: "", cards };
+    return { title: "", cards };
   }
 
   if (!value || typeof value !== "object") {
@@ -193,10 +193,7 @@ function coerceGeneratedSet(value: unknown): Omit<GeneratedCardSet, "conversatio
   }
   const obj = value as Record<string, unknown>;
 
-  const set_title =
-    (typeof obj.title === "string" && obj.title.trim()) ||
-    (typeof obj.set_title === "string" && obj.set_title.trim()) ||
-    "";
+  const title = (typeof obj.title === "string" && obj.title.trim()) || "";
 
   const rawCards = Array.isArray(obj.cards)
     ? obj.cards
@@ -210,7 +207,7 @@ function coerceGeneratedSet(value: unknown): Omit<GeneratedCardSet, "conversatio
   if (cards.length === 0) {
     throw new Error("Agent returned no usable cards");
   }
-  return { set_title, cards };
+  return { title, cards };
 }
 
 export function useGenerateCards(): GenerateCardsResult {
