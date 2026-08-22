@@ -269,13 +269,15 @@ export async function fetchThroughDeploymentDrain(
     try {
       response = await fetch(url, init);
     } catch (error) {
-      if (!drainObserved || signal.aborted || Date.now() >= deadline) throw error;
+      if (!drainObserved || signal.aborted || Date.now() >= deadline)
+        throw error;
       attempt += 1;
       await waitForDrainRetry(Math.min(1_000 * attempt, 5_000), signal);
       continue;
     }
     const draining =
-      response.status === 503 && response.headers.get("X-Matrx-Drain") === "deployment";
+      response.status === 503 &&
+      response.headers.get("X-Matrx-Drain") === "deployment";
     if (!draining) return response;
 
     drainObserved = true;
@@ -400,8 +402,7 @@ export async function runAiStream(
     if (
       attemptV1Fallback &&
       response.headers.get("X-Matrx-Drain") !== "deployment" &&
-      (response.status === 404 ||
-        response.status === 405)
+      (response.status === 404 || response.status === 405)
     ) {
       logDowngrade(`HTTP ${response.status}`, response.status);
       response = await fetchThroughDeploymentDrain(
@@ -575,8 +576,7 @@ export async function runAiStream(
       getState,
       submittedVariableResourcePolicies:
         (body.variable_resource_context as
-          | Record<string, VariableResourceContextConfig>
-          | undefined) ?? {},
+          Record<string, VariableResourceContextConfig> | undefined) ?? {},
       jsonExtraction,
       userMessageClientTempId,
       forceLocalConversationId,
@@ -699,17 +699,17 @@ export async function runAiStream(
     // when the spine has no operation. Fire-and-forget; the follower stands
     // down by itself if the user retries or sends a new message.
     if (isConnectionLoss) {
-      void import(
-        "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk"
-      ).then(({ reconnectServerOperation }) => {
-        dispatch(
-          reconnectServerOperation({
-            conversationId,
-            requestId,
-            source: "stream-loss",
-          }),
-        );
-      });
+      void import("@/features/agents/runtime-reconnect/reconnect-server-operation.thunk").then(
+        ({ reconnectServerOperation }) => {
+          dispatch(
+            reconnectServerOperation({
+              conversationId,
+              requestId,
+              source: "stream-loss",
+            }),
+          );
+        },
+      );
     }
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the

@@ -61,16 +61,17 @@ export function ServerOperationBanner({
       !operation.userRequestId ||
       operation.recoveryState === "checking_for_prompt" ||
       operation.recoveryState === "pending_tool";
-    const action = !shouldRecheck && operation.userRequestId
-      ? dispatch(
-          resumeInstance({
-            conversationId,
-            userRequestId: operation.userRequestId,
-          }),
-        )
-      : dispatch(
-          reconnectServerOperation({ conversationId, source: "cold-load" }),
-        );
+    const action =
+      !shouldRecheck && operation.userRequestId
+        ? dispatch(
+            resumeInstance({
+              conversationId,
+              userRequestId: operation.userRequestId,
+            }),
+          )
+        : dispatch(
+            reconnectServerOperation({ conversationId, source: "cold-load" }),
+          );
     void action.finally(() => setActionBusy(false));
   };
 
@@ -81,8 +82,7 @@ export function ServerOperationBanner({
     operation.recoveryState === "checking_for_prompt" ||
     operation.recoveryState === "pending_tool";
 
-  let message =
-    "Reconnecting to your response…";
+  let message = "Reconnecting to your response…";
   if (waiting && hasQuestion) {
     message =
       pendingAsks.length === 1

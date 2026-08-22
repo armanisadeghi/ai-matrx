@@ -246,7 +246,10 @@ interface ProcessStreamArgs {
   conversationIdAt: number | null;
   dispatch: (action: unknown) => unknown;
   getState: () => RootState;
-  submittedVariableResourcePolicies?: Record<string, VariableResourceContextConfig>;
+  submittedVariableResourcePolicies?: Record<
+    string,
+    VariableResourceContextConfig
+  >;
   jsonExtraction?: JsonExtractionConfig;
   /**
    * Called once per incoming event, before domain processing. Used by the
@@ -1971,9 +1974,7 @@ export async function processStream({
               dispatch(confirmServerSync(conversationId));
               // The conversation row now exists — document/scratch edges that
               // were queued while it was cache-only can finally persist.
-              void dispatch(
-                flushPendingDocumentEdgesThunk({ conversationId }),
-              );
+              void dispatch(flushPendingDocumentEdgesThunk({ conversationId }));
               const syncListCx = upsertAgentConversationFromExecutionAction(
                 getState(),
                 conversationId,
