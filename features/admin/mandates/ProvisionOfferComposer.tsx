@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
 import {
   SCALAR_VALUE_KINDS,

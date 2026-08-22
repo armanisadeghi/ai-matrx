@@ -20,7 +20,7 @@
  */
 
 import { parseFlashcards } from "@/components/mardown-display/blocks/flashcards/flashcard-parser";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 const DEFAULT_SET_TITLE = "Flashcards";
 

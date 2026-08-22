@@ -17,6 +17,9 @@ importers:
       '@ai-matrx/agents':
         specifier: 0.1.0
         version: 0.1.0
+      '@ai-matrx/content-ir':
+        specifier: 0.1.1
+        version: 0.1.1
       '@ai-matrx/design-system':
         specifier: 0.1.1
         version: 0.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -795,6 +798,10 @@ packages:
 
   '@ai-matrx/agents@0.1.0':
     resolution: {integrity: sha512-x+iihK5EAH8TE482O+NNkp+V4l5LGA3iu86k7ZInL9rtJuiVb6lmk1Sf8NFtCWyNhdVIUpL3GPrszEtkhA2P+Q==}
+    engines: {node: '>=20'}
+
+  '@ai-matrx/content-ir@0.1.1':
+    resolution: {integrity: sha512-Fg6lXemoCzA1RFIkePzZH5IFC4LSY5PNqV3H0YYZ9/+Xm97cvIQjlzCj0hJDL95AZDIz4eBvEBtMU0d4N4OUsw==}
     engines: {node: '>=20'}
 
   '@ai-matrx/design-system@0.1.1':
@@ -12791,6 +12798,10 @@ snapshots:
   '@acemir/cssom@0.9.31': {}
 
   '@ai-matrx/agents@0.1.0': {}
+
+  '@ai-matrx/content-ir@0.1.1':
+    dependencies:
+      ajv: 8.20.0
 
   '@ai-matrx/design-system@0.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:

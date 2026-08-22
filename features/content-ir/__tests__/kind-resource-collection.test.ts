@@ -18,11 +18,11 @@
  */
 
 import { validateResourceCollection } from "@/components/mardown-display/blocks/resources/parseResourcesMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { kindSchemaToStorage } from "../registry/kind-storage-transform";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
+import { KIND_KEY } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { kindSchemaToStorage } from "@ai-matrx/content-ir";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import {
   RESOURCE_COLLECTION_KIND_SCHEMAS,
   RESOURCE_COLLECTION_KIND_DEFINITIONS,

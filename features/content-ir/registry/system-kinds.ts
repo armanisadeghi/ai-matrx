@@ -19,7 +19,7 @@
  *   math_solution_step, item_presentation, schema_proposal.
  */
 
-import type { KindDefinition } from "./kind-registry.types";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import {
   flashcardsServerDataFromEnvelope,
   flashcardsMarkdownFromValue,

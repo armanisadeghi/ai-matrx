@@ -1,11 +1,11 @@
-import { ParseSession } from "../session/parse-session";
+import { ParseSession } from "@ai-matrx/content-ir";
 import {
   disposeParseSession,
   getParseSession,
   openParseSession,
-} from "../session/session-manager";
-import { normalizeJsonRegion } from "../core/normalize";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import { normalizeJsonRegion } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 import {
   FLASHCARD_SCHEMAS,

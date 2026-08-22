@@ -17,7 +17,7 @@
  * kinds the identity travels out of band (`root.kind`), there is no key to add.
  */
 
-import { KIND_KEY } from "./kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export function withRootKind(kind: string, value: unknown): unknown {
   if (value && typeof value === "object" && !Array.isArray(value)) {

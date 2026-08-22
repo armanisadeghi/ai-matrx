@@ -1,6 +1,6 @@
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import type { KindSchema } from "../core/kind-schema.types";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { VIDEO_TRANSCRIPT_RESEARCH_KIND_DEFINITIONS } from "../kinds/video-transcript-research";
 import { TRANSCRIPT_KIND_DEFINITIONS } from "../kinds/transcript";
 

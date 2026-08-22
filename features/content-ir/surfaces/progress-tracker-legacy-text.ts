@@ -32,7 +32,7 @@ import {
   parseProgressMarkdown,
   validateProgressTracker,
 } from "@/components/mardown-display/blocks/progress/parseProgressMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening tag with optional attributes, e.g. `<progress_tracker>` — host framing. */
 const OPENING_TAG_RE = /^\s*<progress_tracker(?:\s[^>]*)?>/i;

@@ -16,7 +16,7 @@
  * documented contract, and it is pinned here too.
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 const FIELDLESS: KindSchema = { kind: "kind_under_test", fields: {} };
 const RICH: KindSchema = {

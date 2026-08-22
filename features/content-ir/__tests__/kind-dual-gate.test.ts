@@ -5,13 +5,13 @@
  * produced by the REAL emitter so the structural leg is tested end-to-end.
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   describeDualGateFailure,
   type DualGateDefinition,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 
 const SCHEMAS: Record<string, KindSchema> = {
   flashcard_set: {

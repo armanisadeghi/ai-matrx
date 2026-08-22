@@ -34,9 +34,9 @@
  * That is what makes the floating live-run window worth watching.
  */
 
-import type { CanonicalBlockIR } from "../core/ir-types";
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import { isRecord } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

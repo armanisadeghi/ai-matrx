@@ -26,8 +26,8 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { KIND_KEY } from "../core/kind-schema.types";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
+import { KIND_KEY } from "@ai-matrx/content-ir";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { deriveInstanceTitle } from "./instance-title";
 import type { Json } from "@/types/database.types";
 

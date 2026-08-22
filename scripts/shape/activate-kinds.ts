@@ -48,8 +48,8 @@ import {
   describeDualGateFailure,
   type DualGateDefinition,
   type DualGateResult,
-} from "../../features/content-ir/registry/kind-dual-gate";
-import type { KindDefinition } from "../../features/content-ir/registry/kind-registry.types";
+} from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 
 // EVERY compiled kind — the same objects the runtime registry bootstraps from,
 // so the harness resolves a definition (and therefore a real render leg) for

@@ -1,9 +1,9 @@
-import { fingerprintText } from "../core/fingerprint";
+import { fingerprintText } from "@ai-matrx/content-ir";
 import {
   isCanonicalBlockIR,
   normalizeJsonRegion,
   reuseEnvelopeIfCurrent,
-} from "../core/normalize";
+} from "@ai-matrx/content-ir";
 import {
   FLASHCARD_SCHEMAS,
   FLASHCARD_SET_JSON,

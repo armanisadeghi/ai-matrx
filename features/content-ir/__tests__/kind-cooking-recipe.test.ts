@@ -20,14 +20,14 @@
  */
 
 import { parseRecipeMarkdown } from "@/components/mardown-display/blocks/cooking-recipes/parseRecipeMarkdown";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { kindSchemaToStorage } from "../registry/kind-storage-transform";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { kindSchemaToStorage } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   COOKING_RECIPE_EXAMPLE_FULL,
   COOKING_RECIPE_EXAMPLE_SIMPLE,

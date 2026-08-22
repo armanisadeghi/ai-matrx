@@ -7,9 +7,9 @@ import {
   createKindStreamParser,
   type KindStreamEvent,
   type SchemaResolver,
-} from "../core/kind-parser";
-import { irPathKey } from "../core/ir-types";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import { irPathKey } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   FLASHCARD_SCHEMAS,
   SPECULATION_SCHEMAS,

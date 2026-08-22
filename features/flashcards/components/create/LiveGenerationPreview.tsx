@@ -14,7 +14,7 @@
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { flashcardsServerDataFromEnvelope } from "@/features/content-ir/kinds/flashcard-set";
-import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 
 const FlashcardsBlock = dynamic(

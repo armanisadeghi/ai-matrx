@@ -60,7 +60,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AgentContentList } from "@/features/workflow-runtime/components/AgentContentList";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import { cn } from "@/lib/utils";
 import type { AgentResultData } from "@/features/content-ir/kinds/agent-result";
 import type { AgentRunFacts } from "@/features/workflow-runtime/agent-run-output";

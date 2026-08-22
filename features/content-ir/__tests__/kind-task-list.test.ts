@@ -10,18 +10,18 @@
  */
 
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
-import { fingerprintText } from "../core/fingerprint";
-import type { KindSchema } from "../core/kind-schema.types";
-import { envelopeFromCompleteValue, normalizeJsonRegion } from "../core/normalize";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import { fingerprintText } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue, normalizeJsonRegion } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import {
   TASK_ITEM_KIND_SCHEMA,
   TASK_LIST_KIND_SCHEMA,

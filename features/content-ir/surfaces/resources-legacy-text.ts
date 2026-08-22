@@ -30,7 +30,7 @@ import {
   parseResourcesMarkdown,
   validateResourceCollection,
 } from "@/components/mardown-display/blocks/resources/parseResourcesMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening tag with optional attributes, e.g. `<resources>` — host framing. */
 const OPENING_TAG_RE = /^\s*<resources(?:\s[^>]*)?>/i;

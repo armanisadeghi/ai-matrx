@@ -14,8 +14,8 @@
  */
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { readObjectKind } from "../core/kind-schema.types";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import {
   resolveComponent,

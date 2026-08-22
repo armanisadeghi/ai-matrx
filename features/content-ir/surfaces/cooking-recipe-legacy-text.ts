@@ -34,7 +34,7 @@
  */
 
 import { parseRecipeMarkdown } from "@/components/mardown-display/blocks/cooking-recipes/parseRecipeMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening tag with optional attributes — accumulator host framing. */
 const OPENING_TAG_RE = /^\s*<cooking_recipe(?:\s[^>]*)?>/i;

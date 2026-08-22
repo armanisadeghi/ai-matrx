@@ -13,9 +13,9 @@
  *     classification batch payloads splits into one region per batch.
  */
 
-import { ParseSession } from "../session/parse-session";
-import type { KindSchema } from "../core/kind-schema.types";
-import type { SchemaResolver } from "../core/kind-parser";
+import { ParseSession } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { SchemaResolver } from "@ai-matrx/content-ir";
 import {
   KEYWORD_RESEARCH_KIND_SCHEMAS,
   keywordClassificationServerDataFromEnvelope,

@@ -25,7 +25,7 @@
  */
 
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { readNodeOutcomeValue } from "@/features/content-ir/core/runtime-wrapper";
 import type { NodeOutcomeWrapper } from "@/features/content-ir/core/runtime-wrapper";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";

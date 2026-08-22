@@ -46,7 +46,7 @@ import {
   readEnvelope,
   reconstructRegionValue,
 } from "@/features/content-ir/redux/render-block-envelope";
-import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { wrapArtifactText } from "./artifactWire";
 import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 

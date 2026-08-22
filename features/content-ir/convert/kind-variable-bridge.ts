@@ -51,7 +51,7 @@ import {
   type ArrayItemScalarType,
   type FieldSchema,
   type KindSchema,
-} from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
 import type {
   ContextItemBinding,
   StructuredListBinding,

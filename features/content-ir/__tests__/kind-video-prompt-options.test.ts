@@ -15,18 +15,18 @@
  *   (c) complete-only law + decline rules (no prompts → undefined).
  */
 
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { fingerprintText } from "../core/fingerprint";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import type { KindSchema } from "../core/kind-schema.types";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { fingerprintText } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   DEFAULT_VIDEO_PROMPT_VARIABLE,
   VIDEO_PROMPT_OPTIONS_KIND_DEFINITIONS,

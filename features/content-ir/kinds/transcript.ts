@@ -28,8 +28,8 @@
 
 import type { ParsedTranscript } from "@/components/mardown-display/blocks/transcripts/transcript-parser";
 import type { TranscriptSegment } from "@/components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer";
-import { KIND_KEY } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import {
   additionalDetailsSection,
   collectExtras,

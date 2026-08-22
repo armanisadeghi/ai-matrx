@@ -17,7 +17,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import { KIND_LOADING_COMPONENTS } from "@/features/content-ir/react/loading/kind-loading-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import ShapeActivationControl from "@/features/content-ir/studio/components/ShapeActivationControl";

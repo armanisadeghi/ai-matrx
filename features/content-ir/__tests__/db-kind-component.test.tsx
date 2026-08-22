@@ -42,8 +42,8 @@ import {
   type KindComponentProjection,
 } from "../registry/schema-source-kind-components";
 import { getOrCompileDbKindComponent } from "../react/db-component/dbKindComponentCache";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { DbKindComponentImpl } from "../react/db-component/DbKindComponentImpl";
 import {
   buildComponentScope,

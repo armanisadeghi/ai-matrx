@@ -18,17 +18,17 @@
 
 import { parseTranscript } from "@/components/mardown-display/blocks/transcripts/transcript-parser";
 import type { ParsedTranscript } from "@/components/mardown-display/blocks/transcripts/transcript-parser";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import type { KindSchema } from "../core/kind-schema.types";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   TRANSCRIPT_KIND_DEFINITIONS,
   transcriptMarkdownFromValue,

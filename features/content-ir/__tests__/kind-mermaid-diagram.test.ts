@@ -18,17 +18,17 @@
  */
 
 import type { MermaidBlockData } from "@/types/python-generated/stream-events";
-import type { CanonicalBlockIR } from "../core/ir-types";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import {
   MERMAID_DIAGRAM_KIND_DEFINITION,
   MERMAID_DIAGRAM_KIND_SCHEMA,

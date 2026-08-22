@@ -14,9 +14,9 @@
  *  4. COMPLETE (pack): all members present, isComplete=true.
  */
 
-import { ParseSession } from "../session/parse-session";
-import type { KindSchema } from "../core/kind-schema.types";
-import type { SchemaResolver } from "../core/kind-parser";
+import { ParseSession } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { SchemaResolver } from "@ai-matrx/content-ir";
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
 import { lessonScriptsServerDataFromEnvelope } from "../kinds/lesson-scripts";
 import { studyPackServerDataFromEnvelope } from "../kinds/study-pack";

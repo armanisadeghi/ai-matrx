@@ -1,4 +1,4 @@
-import { JsonStreamTokenizer, type JsonToken } from "../core/json-tokenizer";
+import { JsonStreamTokenizer, type JsonToken } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 import {
   FLASHCARD_SET_JSON,

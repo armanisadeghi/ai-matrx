@@ -36,7 +36,7 @@
  * existed — additive on the wire, additive here.
  */
 
-import { KIND_KEY } from "./kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** The registered slugs — named once, never spelled by hand elsewhere. */
 export const NODE_OUTCOME_KIND = "node_outcome";

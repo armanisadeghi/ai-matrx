@@ -19,9 +19,9 @@ import {
   collectSchemaReferencedKinds,
   kindSchemaToJsonSchema,
   type KindJsonSchemaExport,
-} from "../convert/kind-to-json-schema";
-import { runSchemaConversion } from "../convert/openai-schema-converter";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import { runSchemaConversion } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 const compiled = kindRegistry.snapshotSchemas();
 const resolve = (kind: string): KindSchema | undefined => compiled[kind];

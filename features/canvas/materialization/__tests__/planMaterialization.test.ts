@@ -6,7 +6,7 @@
  * under the dev/test flag) and the plan is asserted structurally.
  */
 
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { planMaterialization } from "../planMaterialization";
 

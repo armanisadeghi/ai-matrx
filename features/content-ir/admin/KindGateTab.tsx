@@ -28,7 +28,7 @@ import {
   validateStructuralLeg,
   type DualGateDefinition,
   type LegResult,
-} from "@/features/content-ir/registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import {
   componentRegistry,

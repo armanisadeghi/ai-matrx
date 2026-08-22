@@ -25,12 +25,12 @@
  * legacy parsers' `parsed.<root_key> || parsed` fallbacks tolerate.
  */
 
-import type { CanonicalBlockIR } from "../core/ir-types";
-import { KIND_KEY } from "../core/kind-schema.types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   reconstructRegionValue,
   stripKindDeep,
-} from "../core/envelope-value";
+} from "@ai-matrx/content-ir";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

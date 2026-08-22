@@ -31,14 +31,14 @@ import {
   troubleshootingMarkdownFromValue,
 } from "../kinds/troubleshooting-guide";
 import { troubleshootingLegacyTextToKindValue } from "../surfaces/troubleshooting-legacy-text";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 type TroubleshootingData = ReturnType<typeof parseTroubleshootingMarkdown>;
 

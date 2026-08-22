@@ -30,16 +30,16 @@ import {
   clearCapturedErrors,
   getSnapshot,
 } from "@/lib/diagnostics/errorCaptureStore";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "../core/ir-types";
-import { isCanonicalBlockIR } from "../core/normalize";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   IR_ENVELOPE_CACHE_VERSION,
   envelopeCacheFromEnvelopes,
   isIrEnvelopeCache,
   type IrEnvelopeCache,
-} from "../core/envelope-cache";
+} from "@ai-matrx/content-ir";
 import { sanitizeInboundEnvelopeMetadata } from "../redux/render-block-envelope";
-import { fingerprintText } from "../core/fingerprint";
+import { fingerprintText } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
 // ---------------------------------------------------------------------------

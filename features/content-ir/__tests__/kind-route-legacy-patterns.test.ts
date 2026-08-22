@@ -12,9 +12,9 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import { applyIrKindRoute } from "../react/kind-route";
-import { normalizeJsonRegion, isCanonicalBlockIR } from "../core/normalize";
+import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "../core/ir-types";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
 function envelopeFor(source: string) {

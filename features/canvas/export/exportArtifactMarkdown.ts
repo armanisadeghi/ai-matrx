@@ -17,7 +17,7 @@
  * PURE — no IO, no Redux, no React. Callers own clipboard / download / UI.
  */
 
-import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { genericKindMarkdown } from "@/features/content-ir/kinds/kind-markdown-utils";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { CanvasArtifactRow } from "@/features/canvas/services/canvasArtifactService";

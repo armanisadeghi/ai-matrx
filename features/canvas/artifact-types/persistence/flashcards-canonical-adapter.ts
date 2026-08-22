@@ -19,7 +19,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { parseFlashcards } from "@/components/mardown-display/blocks/flashcards/flashcard-parser";
-import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";

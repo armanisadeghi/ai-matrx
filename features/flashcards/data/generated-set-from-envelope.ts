@@ -12,7 +12,7 @@
 // compiled bootstrap or flexible_data — was live during the parse. The set
 // title is read from the kind's `title` key only.
 
-import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   reconstructRegionValue,
   stripKindDeep,

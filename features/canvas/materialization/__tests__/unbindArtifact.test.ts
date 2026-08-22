@@ -7,7 +7,7 @@
  * byte-equivalent to the row's markdown export.
  */
 
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   CxContentBlock,
   CxTextContent,

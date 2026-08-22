@@ -32,7 +32,7 @@
  */
 
 import { parseResearchMarkdown } from "@/components/mardown-display/blocks/research/parseResearchMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 type ResearchData = NonNullable<ReturnType<typeof parseResearchMarkdown>>;
 

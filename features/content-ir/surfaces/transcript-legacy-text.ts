@@ -24,7 +24,7 @@
  */
 
 import { parseTranscript } from "@/components/mardown-display/blocks/transcripts/transcript-parser";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening fence line, e.g. ```transcript (optional info suffix) — host framing. */
 const OPENING_FENCE_RE = /^\s*```transcript[^\n]*\n?/i;

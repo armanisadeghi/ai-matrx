@@ -34,11 +34,11 @@ import type { Database, Json } from "@/types/database.types";
 import {
   KIND_KEY,
   type KindSchema,
-} from "@/features/content-ir/core/kind-schema.types";
+} from "@ai-matrx/content-ir";
 import {
   runSchemaConversion,
   type ConversionProblem,
-} from "@/features/content-ir/convert/openai-schema-converter";
+} from "@ai-matrx/content-ir";
 import {
   planKindMigration,
   type PlannedKind,
@@ -46,7 +46,7 @@ import {
 import {
   validateStructuralLeg,
   type LegResult,
-} from "@/features/content-ir/registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
 
 import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-authoring-service";

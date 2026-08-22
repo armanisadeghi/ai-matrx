@@ -30,9 +30,9 @@ import { componentRegistry } from "../registry/component-registry";
 import {
   envelopeFromCompleteValue,
   normalizeJsonRegion,
-} from "../core/normalize";
+} from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
 
 const FLASHCARDS = JSON.stringify({

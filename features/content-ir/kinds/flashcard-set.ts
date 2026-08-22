@@ -14,8 +14,8 @@
  */
 
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
-import type { CanonicalBlockIR, IrResidue } from "../core/ir-types";
-import { KIND_KEY } from "../core/kind-schema.types";
+import type { CanonicalBlockIR, IrResidue } from "@ai-matrx/content-ir";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   additionalDetailsSection,
   collectExtras,

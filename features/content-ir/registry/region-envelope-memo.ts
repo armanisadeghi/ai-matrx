@@ -20,10 +20,10 @@
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
-} from "../core/ir-types";
-import { normalizeJsonRegion } from "../core/normalize";
-import { isIrEnvelopeCache } from "../core/envelope-cache";
-import { fingerprintText } from "../core/fingerprint";
+} from "@ai-matrx/content-ir";
+import { normalizeJsonRegion } from "@ai-matrx/content-ir";
+import { isIrEnvelopeCache } from "@ai-matrx/content-ir";
+import { fingerprintText } from "@ai-matrx/content-ir";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { kindRegistry } from "./kind-registry";
 import { componentRegistry } from "./component-registry";

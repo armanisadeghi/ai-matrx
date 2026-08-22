@@ -60,9 +60,9 @@ import type {
 import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import { SPECIAL_CODE_LANGUAGES } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import type { NormalizedCitation } from "@/features/agents/redux/execution-system/messages/message-citations";
-import { envelopeCacheFromEnvelopes } from "@/features/content-ir/core/envelope-cache";
+import { envelopeCacheFromEnvelopes } from "@ai-matrx/content-ir";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 
 // ---------------------------------------------------------------------------

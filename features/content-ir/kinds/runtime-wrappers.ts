@@ -40,8 +40,8 @@
  * render (that is the `__ir_partial` channel, on its own contract).
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import {
   NODE_OUTCOME_KIND,
   RUN_RESULT_KIND,

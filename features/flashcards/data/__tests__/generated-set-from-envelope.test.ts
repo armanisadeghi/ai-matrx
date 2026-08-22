@@ -6,12 +6,12 @@
  * the active schema didn't declare still reaches the persisted cards).
  */
 
-import { normalizeJsonRegion } from "@/features/content-ir/core/normalize";
+import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import {
   KIND_KEY,
   type KindSchema,
-} from "@/features/content-ir/core/kind-schema.types";
+} from "@ai-matrx/content-ir";
 import { generatedSetFromEnvelope } from "../generated-set-from-envelope";
 
 function envelopeFor(source: string, schemas?: Record<string, KindSchema>) {

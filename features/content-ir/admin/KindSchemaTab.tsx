@@ -10,7 +10,7 @@
 import { Copy, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
-import type { StoredFieldElement } from "@/features/content-ir/registry/kind-storage-transform";
+import type { StoredFieldElement } from "@ai-matrx/content-ir";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,

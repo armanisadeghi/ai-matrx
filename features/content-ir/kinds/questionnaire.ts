@@ -68,8 +68,8 @@
  * form-state context. The type's loading visualization stands while streaming.
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

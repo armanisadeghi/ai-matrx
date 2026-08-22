@@ -14,7 +14,7 @@
  * Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
  */
 
-import { IR_VERSION } from "../core/ir-types";
+import { IR_VERSION } from "@ai-matrx/content-ir";
 import {
   IR_PARTIAL_KEY,
   advancePartialKind,

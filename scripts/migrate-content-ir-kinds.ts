@@ -30,7 +30,7 @@ import {
   type KindEdgeProjection,
 } from "../features/content-ir/registry/schema-source-kind-tables";
 import { kindRegistry } from "../features/content-ir/registry/kind-registry";
-import type { DualGateDefinition } from "../features/content-ir/registry/kind-dual-gate";
+import type { DualGateDefinition } from "@ai-matrx/content-ir";
 import { readAllRows } from "../lib/supabase/readAllRows";
 
 dotenv.config({ path: resolve(process.cwd(), ".env.local") });

@@ -39,18 +39,18 @@ import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { separatedMarkdownParser } from "@/components/mardown-display/markdown-classification/processors/custom/parser-separated";
 
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { envelopeFromCompleteValue, isCanonicalBlockIR } from "../core/normalize";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "../core/ir-types";
-import type { KindSchema } from "../core/kind-schema.types";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue, isCanonicalBlockIR } from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   QUESTIONNAIRE_KIND_DEFINITIONS,
   QUESTIONNAIRE_KIND_SCHEMAS,

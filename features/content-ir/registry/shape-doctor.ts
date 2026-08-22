@@ -69,7 +69,7 @@
  * or activate the kind, and the `n/a` evaporates and the yellows come back.
  */
 
-import { validateStructuralLeg } from "./kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 
 // ─── Asset columns (v1) ─────────────────────────────────────────────────────
 

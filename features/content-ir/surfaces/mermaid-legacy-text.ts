@@ -24,7 +24,7 @@
  */
 
 import { extractMermaidTitle } from "@/components/mermaid/diagram-type";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening fence line with the mermaid/mmd language token — host framing. */
 const OPENING_FENCE_RE = /^\s*(?:`{3,}|~{3,})\s*(?:mermaid|mmd)[^\n]*\n/i;

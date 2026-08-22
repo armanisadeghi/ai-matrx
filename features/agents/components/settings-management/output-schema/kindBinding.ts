@@ -18,13 +18,13 @@
  * entries + resolver from `features/content-ir/registry/kind-catalog.ts`.
  */
 
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToJsonSchema,
   type KindJsonSchemaExport,
-} from "@/features/content-ir/convert/kind-to-json-schema";
+} from "@ai-matrx/content-ir";
 import type { KindCatalogEntry } from "@/features/content-ir/registry/kind-catalog";
-import { fingerprintText } from "@/features/content-ir/core/fingerprint";
+import { fingerprintText } from "@ai-matrx/content-ir";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
 
 /**

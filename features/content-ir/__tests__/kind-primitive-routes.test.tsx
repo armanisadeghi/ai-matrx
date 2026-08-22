@@ -64,8 +64,8 @@ import {
   resolveComponent,
 } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 

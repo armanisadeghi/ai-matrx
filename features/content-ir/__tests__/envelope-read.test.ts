@@ -12,9 +12,9 @@ import {
   classifyInboundEnvelopeMetadata,
   readEnvelope,
   sanitizeInboundEnvelopeMetadata,
-} from "../core/envelope-read";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "../core/ir-types";
-import { envelopeFromCompleteValue } from "../core/normalize";
+} from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 
 const VALID_ENVELOPE = envelopeFromCompleteValue(
   { __kind: "flashcard_set", title: "Cells", cards: [] },

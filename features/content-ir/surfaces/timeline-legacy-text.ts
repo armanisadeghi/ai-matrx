@@ -29,7 +29,7 @@
  */
 
 import { parseTimelineMarkdown } from "@/components/mardown-display/blocks/timeline/parseTimelineMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening tag with optional attributes, e.g. `<timeline>` — host framing. */
 const OPENING_TAG_RE = /^\s*<timeline(?:\s[^>]*)?>/i;

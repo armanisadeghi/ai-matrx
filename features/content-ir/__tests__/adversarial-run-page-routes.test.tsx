@@ -44,8 +44,8 @@ import {
 } from "../react/kind-route";
 import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 
 function kindBlock(kind: string, value: Record<string, unknown>) {
   const complete = { __kind: kind, ...value };

@@ -33,7 +33,7 @@
  * - `features/masterwork/service.ts`
  */
 
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
  * ONE element of the §6 content channel — a typed instance the agent produced,

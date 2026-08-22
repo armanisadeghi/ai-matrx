@@ -43,9 +43,9 @@ import {
   kindFieldsToVariableDefinitions,
   variableDefinitionsToKindFields,
 } from "@/features/content-ir/convert/kind-variable-bridge";
-import { validateStructuralLeg } from "@/features/content-ir/registry/kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { getKindSchemaBySlugFromTables } from "@/features/content-ir/registry/schema-source-kind-tables";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import type { Json } from "@/types/database.types";
 import {
   assembleKindInstance,

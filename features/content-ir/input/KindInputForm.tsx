@@ -37,12 +37,12 @@ import { useEffect, useState } from "react";
 import { CircleAlert, Loader2, Send, X } from "lucide-react";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { KIND_KEY, type KindSchema } from "../core/kind-schema.types";
+import { KIND_KEY, type KindSchema } from "@ai-matrx/content-ir";
 import {
   componentRegistry,
   resolveComponent,
 } from "../registry/component-registry";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { getKindInputContractBySlug } from "../registry/schema-source-kind-tables";
 import type { Json } from "@/types/database.types";
 import { decideKindInputPath, type KindInputPath } from "./kind-input-resolution";

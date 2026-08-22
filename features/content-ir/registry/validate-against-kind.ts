@@ -32,7 +32,7 @@
  * kind's schema is perfectly checkable. Callers that need it read the catalog.
  */
 
-import { validateStructuralLeg } from "./kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { getKindInputContractBySlug } from "./schema-source-kind-tables";
 
 /**

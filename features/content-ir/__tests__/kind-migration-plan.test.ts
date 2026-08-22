@@ -4,9 +4,9 @@
  * lacks a sample or fails the gate. Nothing is silently dropped.
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import { planKindMigration } from "../registry/kind-migration-plan";
-import type { DualGateDefinition } from "../registry/kind-dual-gate";
+import type { DualGateDefinition } from "@ai-matrx/content-ir";
 
 const schemas: Record<string, KindSchema> = {
   flashcard_set: {

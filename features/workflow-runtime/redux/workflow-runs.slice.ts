@@ -27,7 +27,7 @@ import {
   type WorkflowRunEvent,
   type WorkflowRunStatus,
 } from "@/features/workflow-runtime/types";
-import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import {
   rehydrateNodeOutcome,
   rehydrateRunResult,

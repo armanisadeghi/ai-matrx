@@ -20,13 +20,13 @@ import { cn } from "@/lib/utils";
 import {
   KIND_KEY,
   type KindSchema,
-} from "@/features/content-ir/core/kind-schema.types";
-import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
+} from "@ai-matrx/content-ir";
+import type { KindStreamEvent } from "@ai-matrx/content-ir";
 import {
   disposeParseSession,
   getParseSession,
   openParseSession,
-} from "@/features/content-ir/session/session-manager";
+} from "@ai-matrx/content-ir";
 import { useIrNodePaths } from "@/features/content-ir/react/useIrNode";
 import { mockJsonStream } from "./dev-test-harness";
 import {

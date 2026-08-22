@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
-import { kindSchemaToJsonSchema } from "@/features/content-ir/convert/kind-to-json-schema";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   catalogResolver,
   listAllKinds,
@@ -40,7 +40,7 @@ import {
   type KindCatalogEntry,
   type KindCatalogSource,
 } from "@/features/content-ir/registry/kind-catalog";
-import type { FieldSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { FieldSchema } from "@ai-matrx/content-ir";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,

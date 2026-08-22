@@ -15,7 +15,7 @@
  * non-empty array.
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

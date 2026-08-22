@@ -54,7 +54,7 @@ import {
   humanizeKey,
   isPlainObject,
 } from "@/features/tool-call-visualization/result-fields/shape";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
  * Serialized-character budget above which the document renders in the CAPPED

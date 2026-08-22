@@ -43,7 +43,7 @@
  * consumed directly by __tests__/kind-progress-tracker.test.ts.
  */
 
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

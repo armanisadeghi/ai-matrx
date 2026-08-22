@@ -18,18 +18,18 @@
  */
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   setJsonRootKeyLookup,
   type SchemaResolver,
-} from "../core/kind-parser";
+} from "@ai-matrx/content-ir";
 import {
   getKindSchemaAndMetaBySlugFromTables,
   listKindSchemasFromTables,
 } from "./schema-source-kind-tables";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
 import { getSurfaceForJsonRootKey } from "./surface-registry";
-import type { KindDefinition } from "./kind-registry.types";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 
 type SchemaArrivalListener = (kind: string, schema: KindSchema | null) => void;
 

@@ -7,8 +7,8 @@
  * the deterministic candidate allowlist before they can become actions.
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 
 export const seoAuthorityRouteAnalysisKindSchema: KindSchema = {
   kind: "seo_authority_route_analysis",

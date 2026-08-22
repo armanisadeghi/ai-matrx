@@ -29,7 +29,7 @@
 
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening fence line, e.g. ```tasks (with optional trailing annotations). */
 const OPENING_FENCE_RE = /^\s*```+[ \t]*tasks[^\n]*\n?/i;

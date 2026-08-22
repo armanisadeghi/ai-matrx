@@ -28,7 +28,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import type { KindCatalogEntry } from "@/features/content-ir/registry/kind-catalog";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
 import { buildKindOutputSchema, listBindableKinds } from "./kindBinding";

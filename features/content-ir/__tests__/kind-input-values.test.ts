@@ -14,8 +14,8 @@ import {
   kindFieldsToVariableDefinitions,
   variableDefinitionsToKindFields,
 } from "../convert/kind-variable-bridge";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
-import { KIND_KEY, type KindSchema } from "../core/kind-schema.types";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
+import { KIND_KEY, type KindSchema } from "@ai-matrx/content-ir";
 import {
   assembleKindInstance,
   attributeStructuralErrors,

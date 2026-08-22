@@ -9,7 +9,7 @@
  * common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
  */
 
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { IR_PARTIAL_KEY } from "../core/partial-kind";
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
 import {

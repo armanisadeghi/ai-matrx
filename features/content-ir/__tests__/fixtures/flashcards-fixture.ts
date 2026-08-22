@@ -8,7 +8,7 @@
  * (optional) as the transition alias for the OLD agent payload shape.
  */
 
-import type { KindSchema } from "../../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 /**
  * Looks up a kind in a fixture schema map, throwing loudly if it's missing.

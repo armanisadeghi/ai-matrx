@@ -21,18 +21,18 @@
  */
 
 import type { parseResearchMarkdown } from "@/components/mardown-display/blocks/research/parseResearchMarkdown";
-import { xmlDiscriminator } from "../core/discriminator";
-import type { CanonicalBlockIR } from "../core/ir-types";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import { xmlDiscriminator } from "@ai-matrx/content-ir";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   RESEARCH_REPORT_EXAMPLE_FULL,
   RESEARCH_REPORT_EXAMPLE_SIMPLE,

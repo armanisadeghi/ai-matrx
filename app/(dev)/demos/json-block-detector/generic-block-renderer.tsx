@@ -11,12 +11,12 @@ import { cn } from "@/lib/utils";
 import type {
   FieldSchema,
   KindSchema,
-} from "@/features/content-ir/core/kind-schema.types";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   formatBlockLabel,
   schemaLayoutMode,
-} from "@/features/content-ir/core/schema-structure";
+} from "@ai-matrx/content-ir";
 import type { LiveBlockSnapshot } from "./demo-block-components";
 import { pathLabel } from "./validation-report";
 

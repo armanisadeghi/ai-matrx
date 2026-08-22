@@ -66,8 +66,8 @@ import {
   agentResultServerData,
   type AgentResultData,
 } from "../kinds/agent-result";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { applyIrKindRoute } from "../react/kind-route";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import AgentResultBlock from "@/components/mardown-display/blocks/agent-result/AgentResultBlock";

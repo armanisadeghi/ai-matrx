@@ -26,11 +26,11 @@ import {
 import { getSystemComponentEntries } from "../registry/system-components";
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "../react/kind-route";
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
-import type { KindSchema } from "../core/kind-schema.types";
-import { KIND_KEY } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   decideKindInputPath,
   GENERIC_INPUT_COMPONENT_KEY,

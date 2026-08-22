@@ -20,7 +20,7 @@ import {
   FlexibleDataError,
   type BlockSchemaEntry,
 } from "@/features/content-ir/registry/schema-source-flexible-data";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   fieldsToDbPayload,
   runSchemaConversion,
@@ -30,7 +30,7 @@ import {
   type FieldComparison,
   type SavePlanEntry,
   type SchemaConversionResult,
-} from "@/features/content-ir/convert/openai-schema-converter";
+} from "@ai-matrx/content-ir";
 
 type PanelId = "input" | "blockSchemas" | "agentSchema";
 

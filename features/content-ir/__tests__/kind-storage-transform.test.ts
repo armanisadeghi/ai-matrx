@@ -5,12 +5,12 @@
  * an inline_object (the path-collision case the dot-path edges exist to solve).
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
   type KindEdgeSpec,
-} from "../registry/kind-storage-transform";
+} from "@ai-matrx/content-ir";
 
 function roundTrip(schema: KindSchema): KindSchema {
   return storageToKindSchema(schema.kind, kindSchemaToStorage(schema));

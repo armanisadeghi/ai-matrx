@@ -33,8 +33,8 @@
  * pass (this bridge's output shape is designed so that hop is one line).
  */
 
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

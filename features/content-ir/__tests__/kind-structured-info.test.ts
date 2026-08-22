@@ -20,14 +20,14 @@
  *    projection (fence → value → markdown → same value).
  */
 
-import { runKindDualGate, validateStructuralLeg } from "../registry/kind-dual-gate";
+import { runKindDualGate, validateStructuralLeg } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   STRUCTURED_INFO_ITEM_SCHEMA,
   STRUCTURED_INFO_SCHEMA,

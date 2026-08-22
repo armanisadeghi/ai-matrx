@@ -45,8 +45,8 @@ import { Braces } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
-import { reconstructRegionValue } from "@/features/content-ir/core/envelope-value";
-import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { reconstructRegionValue } from "@ai-matrx/content-ir";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { readIrRouteMarker } from "@/features/content-ir/react/kind-route";
 
 export interface GenericStructuredBlockProps {

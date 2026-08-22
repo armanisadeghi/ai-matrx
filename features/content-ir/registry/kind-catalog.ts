@@ -11,9 +11,9 @@
  * `listAllKinds` is the async assembler.
  */
 
-import type { FieldSchema, KindSchema } from "../core/kind-schema.types";
-import { formatBlockLabel } from "../core/schema-structure";
-import { collectReferencedKinds } from "../convert/kind-to-json-schema";
+import type { FieldSchema, KindSchema } from "@ai-matrx/content-ir";
+import { formatBlockLabel } from "@ai-matrx/content-ir";
+import { collectReferencedKinds } from "@ai-matrx/content-ir";
 import type { BlockSchemaEntry } from "./schema-source-flexible-data";
 import { listKindSchemasFromTables } from "./schema-source-kind-tables";
 // ORDER MATTERS: kind-registry must load BEFORE system-kinds here. The
@@ -22,7 +22,7 @@ import { listKindSchemasFromTables } from "./schema-source-kind-tables";
 // crashes if system-kinds is the mid-initialization entry of the cycle.
 import { kindRegistry } from "./kind-registry";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
-import type { KindDefinition, KindTier } from "./kind-registry.types";
+import type { KindDefinition, KindTier } from "@ai-matrx/content-ir";
 
 export type KindCatalogSource = "system" | "content_ir" | "both";
 

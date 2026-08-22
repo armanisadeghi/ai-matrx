@@ -40,13 +40,13 @@ import type { RenderBlockPayload } from "@/types/python-generated/stream-events"
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { applyIrKindRoute, type IrRoutableBlock } from "../react/kind-route";
-import { normalizeJsonRegion, isCanonicalBlockIR } from "../core/normalize";
+import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
   type IrDiscriminator,
-} from "../core/ir-types";
+} from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
 // ───────────────────────────────────────────────────────────────────────────

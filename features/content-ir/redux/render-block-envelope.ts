@@ -6,11 +6,11 @@
  * byte on real traffic before any rendering flips.
  */
 
-import { type CanonicalBlockIR } from "../core/ir-types";
+import { type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   readEnvelope,
   sanitizeInboundEnvelopeMetadata as sanitizeInboundEnvelopeMetadataPure,
-} from "../core/envelope-read";
+} from "@ai-matrx/content-ir";
 import { seedEnvelope } from "../registry/region-envelope-memo";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
@@ -53,7 +53,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // (pure kernel) so kinds/legacy-bridge-utils never re-enters the registry
 // cycle through this module. Imported for the shadow parity check below and
 // re-exported for existing consumers.
-import { reconstructRegionValue, stripKindDeep } from "../core/envelope-value";
+import { reconstructRegionValue, stripKindDeep } from "@ai-matrx/content-ir";
 
 export { reconstructRegionValue, stripKindDeep };
 

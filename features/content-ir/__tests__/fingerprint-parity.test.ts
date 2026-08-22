@@ -16,7 +16,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { createFingerprinter, fingerprintText } from "../core/fingerprint";
+import { createFingerprinter, fingerprintText } from "@ai-matrx/content-ir";
 
 interface FingerprintVector {
   name: string;

@@ -26,7 +26,7 @@ import {
   KIND_KEY,
   type FieldSchema,
   type KindSchema,
-} from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
 import {
   VARIABLE_COMPONENT_TYPES,
   type VariableComponentType,

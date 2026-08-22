@@ -17,7 +17,7 @@
  */
 
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
-import { KIND_KEY } from "../../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export interface KindRequestInput {
   agentId: string;

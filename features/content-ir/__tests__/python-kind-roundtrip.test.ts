@@ -30,13 +30,13 @@ import fixture from "./fixtures/python-blocked-kinds.json";
 import {
   runSchemaConversion,
   type BlockSchemaDraft,
-} from "../convert/openai-schema-converter";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+} from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   storageToKindSchema,
-} from "../registry/kind-storage-transform";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 type FixtureKind = {
   kind: string;

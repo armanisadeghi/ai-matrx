@@ -17,10 +17,10 @@
  */
 
 import { SYSTEM_KIND_DEFINITIONS } from "@/features/content-ir/registry/system-kinds";
-import { kindSchemaToStorage } from "@/features/content-ir/registry/kind-storage-transform";
-import { kindSchemaToJsonSchema } from "@/features/content-ir/convert/kind-to-json-schema";
-import { fingerprintText } from "@/features/content-ir/core/fingerprint";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import { kindSchemaToStorage } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { fingerprintText } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 const schemas = new Map<string, KindSchema>();
 for (const def of SYSTEM_KIND_DEFINITIONS) {

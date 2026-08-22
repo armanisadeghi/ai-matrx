@@ -18,9 +18,9 @@
  */
 
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { readEnvelope } from "../core/envelope-read";
-import { reconstructRegionValue } from "../core/envelope-value";
-import { readObjectKind } from "../core/kind-schema.types";
+import { readEnvelope } from "@ai-matrx/content-ir";
+import { reconstructRegionValue } from "@ai-matrx/content-ir";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import {
   saveKindInstance,

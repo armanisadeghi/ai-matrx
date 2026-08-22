@@ -1,4 +1,4 @@
-import { readEnvelope } from "../core/envelope-read";
+import { readEnvelope } from "@ai-matrx/content-ir";
 import { applyIrKindRoute } from "../react/kind-route";
 import { progressDataRenderBlock } from "../redux/progress-data-block";
 

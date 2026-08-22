@@ -1,8 +1,8 @@
 import {
   createKindStreamParser,
   type KindStreamEvent,
-} from "../core/kind-parser";
-import { irPathKey } from "../core/ir-types";
+} from "@ai-matrx/content-ir";
+import { irPathKey } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 import {
   FLASHCARD_SCHEMAS,

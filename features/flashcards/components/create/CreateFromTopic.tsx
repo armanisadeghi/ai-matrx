@@ -41,7 +41,7 @@ import { DEPTH_TIERS } from "../../data/enhanceCard";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";

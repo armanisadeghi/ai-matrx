@@ -37,14 +37,14 @@ import {
 import {
   disposeParseSession,
   openParseSession,
-} from "@/features/content-ir/session/session-manager";
-import type { ParseSession } from "@/features/content-ir/session/parse-session";
+} from "@ai-matrx/content-ir";
+import type { ParseSession } from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
-} from "@/features/content-ir/core/ir-types";
+} from "@ai-matrx/content-ir";
 import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
 import {
   envelopeForCompletedFenceRegion,

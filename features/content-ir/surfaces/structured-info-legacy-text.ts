@@ -28,7 +28,7 @@
  * value is schema-valid, not just bridge-tolerated.
  */
 
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import { STRUCTURED_INFO_DEFAULT_TITLE } from "../kinds/structured-info";
 
 export const STRUCTURED_INFO_LEGACY_TEXT_STRATEGY =

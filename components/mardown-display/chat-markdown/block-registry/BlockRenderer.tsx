@@ -22,7 +22,7 @@ import {
   ProvisionalKindBoundary,
   ProvisionalKindFrame,
 } from "@/features/content-ir/react/ProvisionalKindBoundary";
-import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   isBlockLoading,
   resolveBlockDispatch,

@@ -35,8 +35,8 @@
  * Pure kernel module: types + validators only. No React, no Redux, no IO.
  */
 
-import { IR_VERSION } from "./ir-types";
-import type { IrDiscriminator, IrPath, IrResidue } from "./ir-types";
+import { IR_VERSION } from "@ai-matrx/content-ir";
+import type { IrDiscriminator, IrPath, IrResidue } from "@ai-matrx/content-ir";
 
 /** The reserved metadata key carrying every event of this contract. */
 export const IR_PARTIAL_KEY = "__ir_partial" as const;

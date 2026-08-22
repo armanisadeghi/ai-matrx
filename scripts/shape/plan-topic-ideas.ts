@@ -17,9 +17,9 @@
 import { readFileSync } from "node:fs";
 
 import { planKindMigration } from "../../features/content-ir/registry/kind-migration-plan";
-import { validateStructuralLeg } from "../../features/content-ir/registry/kind-dual-gate";
-import { storageToKindSchema } from "../../features/content-ir/registry/kind-storage-transform";
-import type { KindSchema } from "../../features/content-ir/core/kind-schema.types";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
+import { storageToKindSchema } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 /** `topic_idea.data` as stored live (verified 2026-08-11). */
 const TOPIC_IDEA_STORED = [

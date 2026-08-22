@@ -52,7 +52,7 @@ import type {
   ListItem,
   Section,
 } from "@/components/mardown-display/markdown-classification/processors/custom/parser-separated";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   INTRO_SECTION_TITLE,
   OPTIONS_SECTION_TITLE,

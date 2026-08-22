@@ -28,7 +28,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { Json } from "@/types/database.types";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
 import { composeKindSampleFillIntent } from "@/features/content-ir/studio/kind-agent-intents";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";

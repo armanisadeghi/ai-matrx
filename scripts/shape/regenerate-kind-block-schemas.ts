@@ -49,10 +49,10 @@ import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { resolve } from "node:path";
 
-import { fingerprintText } from "@/features/content-ir/core/fingerprint";
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
-import { kindSchemaToJsonSchema } from "@/features/content-ir/convert/kind-to-json-schema";
+import { fingerprintText } from "@ai-matrx/content-ir";
+import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   reconstructKindRegistry,
   type KindDefProjection,

@@ -1,7 +1,7 @@
 import {
   buildCompliantKindSnapshot,
   mergeResidueIntoValue,
-} from "../core/kind-snapshot";
+} from "@ai-matrx/content-ir";
 import { FLASHCARD_SCHEMAS, requireSchema } from "./fixtures/flashcards-fixture";
 
 const flashcard = requireSchema(FLASHCARD_SCHEMAS, "flashcard");

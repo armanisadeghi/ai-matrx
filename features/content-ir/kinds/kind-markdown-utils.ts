@@ -16,7 +16,7 @@
  * honest zero-loss floor when no renderer knows the shape.
  */
 
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export function isRecordValue(
   value: unknown,

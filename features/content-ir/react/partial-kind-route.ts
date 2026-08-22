@@ -50,8 +50,8 @@
  * inferring it would leave the skeleton up forever in exactly those cases.
  */
 
-import { IR_ENVELOPE_KEY, IR_VERSION } from "../core/ir-types";
-import type { CanonicalBlockIR } from "../core/ir-types";
+import { IR_ENVELOPE_KEY, IR_VERSION } from "@ai-matrx/content-ir";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   IR_PARTIAL_KEY,
   isProvisionalKind,

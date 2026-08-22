@@ -14,8 +14,8 @@
 
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "../core/ir-types";
-import { isCanonicalBlockIR } from "../core/normalize";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
 type Upsert = { requestId: string; block: RenderBlockPayload };

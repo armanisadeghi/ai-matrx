@@ -8,7 +8,7 @@
  * keys surface under "Additional details" / inline extras).
  */
 
-import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import type { CanvasArtifactRow } from "@/features/canvas/services/canvasArtifactService";
 import {
   artifactContentToMarkdown,

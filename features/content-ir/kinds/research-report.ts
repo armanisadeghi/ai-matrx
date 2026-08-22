@@ -41,8 +41,8 @@
  */
 
 import type { parseResearchMarkdown } from "@/components/mardown-display/blocks/research/parseResearchMarkdown";
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import { isRecord, makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

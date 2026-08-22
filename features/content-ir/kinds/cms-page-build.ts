@@ -32,9 +32,9 @@
  * partial states exist so a future streamed builder needs no change here.
  */
 
-import type { CanonicalBlockIR } from "../core/ir-types";
-import type { KindSchema } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import {
   additionalDetailsSection,
   collectExtras,

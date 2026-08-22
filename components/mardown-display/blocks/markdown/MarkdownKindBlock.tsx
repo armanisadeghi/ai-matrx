@@ -41,7 +41,7 @@ import React from "react";
 
 import MarkdownStream from "@/components/MarkdownStream";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
-import { reconstructRegionValue } from "@/features/content-ir/core/envelope-value";
+import { reconstructRegionValue } from "@ai-matrx/content-ir";
 
 export interface MarkdownKindBlockProps {
   /** The raw region source — the zero-loss floor when no envelope survived. */

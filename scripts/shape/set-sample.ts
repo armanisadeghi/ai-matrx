@@ -42,7 +42,7 @@ import {
   runKindDualGate,
   validateStructuralLeg,
   type DualGateDefinition,
-} from "../../features/content-ir/registry/kind-dual-gate";
+} from "@ai-matrx/content-ir";
 import type { Database } from "../../types/database.types";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");

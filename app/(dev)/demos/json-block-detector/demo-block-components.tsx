@@ -7,12 +7,12 @@ import {
   KIND_KEY,
   type FieldSchema,
   type KindSchema,
-} from "@/features/content-ir/core/kind-schema.types";
-import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
-import type { IrResidue } from "@/features/content-ir/core/ir-types";
-import type { IrTreeNode } from "@/features/content-ir/core/ir-tree";
+} from "@ai-matrx/content-ir";
+import type { KindStreamEvent } from "@ai-matrx/content-ir";
+import type { IrResidue } from "@ai-matrx/content-ir";
+import type { IrTreeNode } from "@ai-matrx/content-ir";
 import { useIrNode } from "@/features/content-ir/react/useIrNode";
-import { getParseSession } from "@/features/content-ir/session/session-manager";
+import { getParseSession } from "@ai-matrx/content-ir";
 import { GenericBlockRenderer } from "./generic-block-renderer";
 import { eventPathKey } from "./validation-report";
 

@@ -13,7 +13,7 @@ import {
   KIND_KEY,
   type FieldSchema,
   type KindSchema,
-} from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
 
 /**
  * The browser client is loaded lazily INSIDE the async functions: its module

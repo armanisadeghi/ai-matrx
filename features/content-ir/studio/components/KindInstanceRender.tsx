@@ -28,8 +28,8 @@ import { Info } from "lucide-react";
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
-import { envelopeFromCompleteValue } from "@/features/content-ir/core/normalize";
-import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import {
   componentRegistry,

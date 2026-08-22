@@ -34,9 +34,9 @@ import {
   applyIrKindRoute,
   kindServerDataFromStoredValue,
 } from "../react/kind-route";
-import { normalizeJsonRegion, isCanonicalBlockIR } from "../core/normalize";
+import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
-import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "../core/ir-types";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
 type Upsert = { requestId: string; block: RenderBlockPayload };

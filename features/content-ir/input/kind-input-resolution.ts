@@ -37,7 +37,7 @@
  */
 
 import type { ComponentResolution } from "../registry/component-registry";
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 /**
  * MUST equal `GENERIC_STRUCTURED_COMPONENT_KEY` (react/kind-route.ts) — the

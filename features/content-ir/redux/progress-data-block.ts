@@ -1,8 +1,8 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { isJsonObject } from "@/types/json";
 
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
-import { envelopeFromCompleteValue } from "../core/normalize";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 import { applyIrKindRoute } from "../react/kind-route";
 
 /**

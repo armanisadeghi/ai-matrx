@@ -21,10 +21,10 @@
  * see features/marketing/seo/keyword-research/useKeywordResearch.ts).
  */
 
-import type { CanonicalBlockIR } from "../core/ir-types";
-import type { KindSchema } from "../core/kind-schema.types";
-import { KIND_KEY } from "../core/kind-schema.types";
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 import { isRecord, makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

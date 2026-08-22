@@ -17,20 +17,20 @@
  * silently dropped.
  */
 
-import { fingerprintText } from "../core/fingerprint";
-import type { KindSchema } from "../core/kind-schema.types";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
+import { fingerprintText } from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaToStorage,
   type KindEdgeSpec,
   type StoredFieldElement,
-} from "./kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import {
   describeDualGateFailure,
   runKindDualGate,
   type DualGateDefinition,
   type DualGateResult,
-} from "./kind-dual-gate";
+} from "@ai-matrx/content-ir";
 
 export interface PlannedKind {
   kind: string;

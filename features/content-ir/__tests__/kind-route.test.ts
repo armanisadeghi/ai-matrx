@@ -5,9 +5,9 @@
  */
 
 import { applyIrKindRoute } from "../react/kind-route";
-import { normalizeJsonRegion } from "../core/normalize";
+import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
-import { IR_ENVELOPE_KEY } from "../core/ir-types";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { flashcardsServerDataFromEnvelope } from "../kinds/flashcard-set";
 

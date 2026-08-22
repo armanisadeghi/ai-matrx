@@ -1,4 +1,4 @@
-import type { KindDefinition } from "../registry/kind-registry.types";
+import type { KindDefinition } from "@ai-matrx/content-ir";
 
 export const VIDEO_TRANSCRIPT_RESEARCH_KIND_DEFINITIONS: KindDefinition[] = [
   {

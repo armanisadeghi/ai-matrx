@@ -42,7 +42,7 @@ import {
   KIND_KEY,
   type FieldSchema,
   type KindSchema,
-} from "@/features/content-ir/core/kind-schema.types";
+} from "@ai-matrx/content-ir";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 
 // ---------------------------------------------------------------------------

@@ -13,7 +13,7 @@
  * and the rescue is reported on the envelope (never silently absorbed).
  */
 
-import { IrTree } from "../core/ir-tree";
+import { IrTree } from "@ai-matrx/content-ir";
 
 const RESEARCH_VALUE = {
   __kind: "keyword_relationship_research",

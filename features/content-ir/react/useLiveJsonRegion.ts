@@ -35,12 +35,12 @@ import {
   disposeParseSession,
   getParseSession,
   openParseSession,
-} from "../session/session-manager";
+} from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "../registry/component-registry";
 import { useIrNode } from "./useIrNode";
-import type { IrTreeNode } from "../core/ir-tree";
-import type { CanonicalBlockIR } from "../core/ir-types";
+import type { IrTreeNode } from "@ai-matrx/content-ir";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 
 export interface UseLiveJsonRegionOptions {
   /** Known-context root prediction (e.g. "flashcard_set" for the cards agent). */

@@ -63,7 +63,7 @@ import type {
 } from "@/features/agents/types/request.types";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
-import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   buildLiveCitationIndex,
   EMPTY_LIVE_CITATION_INDEX,

@@ -51,7 +51,7 @@ import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 interface ShapeInstancesTabProps {
   kind: string;

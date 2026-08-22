@@ -24,7 +24,7 @@ import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { resolve } from "node:path";
 
-import { validateStructuralLeg } from "@/features/content-ir/registry/kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { readAllRows } from "../../lib/supabase/readAllRows";
 
 config({ path: resolve(process.cwd(), ".env.local") });

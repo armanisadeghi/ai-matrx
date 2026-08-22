@@ -24,7 +24,7 @@
  */
 
 import { parseTroubleshootingMarkdown } from "@/components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown";
-import { KIND_KEY } from "../core/kind-schema.types";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** Opening tag with optional attributes, e.g. `<troubleshooting>` — host framing. */
 const OPENING_TAG_RE = /^\s*<troubleshooting(?:\s[^>]*)?>/i;

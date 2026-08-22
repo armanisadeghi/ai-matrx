@@ -25,14 +25,14 @@ import {
   parseProgressMarkdown,
   validateProgressTracker,
 } from "@/components/mardown-display/blocks/progress/parseProgressMarkdown";
-import { envelopeFromCompleteValue } from "../core/normalize";
-import { kindSchemaToJsonSchema } from "../convert/kind-to-json-schema";
-import { kindSchemaToStorage } from "../registry/kind-storage-transform";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { kindSchemaToStorage } from "@ai-matrx/content-ir";
 import {
   runKindDualGate,
   validateStructuralLeg,
-} from "../registry/kind-dual-gate";
-import type { KindSchema } from "../core/kind-schema.types";
+} from "@ai-matrx/content-ir";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   PROGRESS_TRACKER_KIND_DEFINITIONS,
   progressTrackerMarkdownFromValue,

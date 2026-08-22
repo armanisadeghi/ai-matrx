@@ -14,12 +14,12 @@
  */
 
 import type { Database, Json } from "@/types/database.types";
-import type { KindSchema } from "../core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   storageToKindSchema,
   type KindEdgeSpec,
   type StoredFieldElement,
-} from "./kind-storage-transform";
+} from "@ai-matrx/content-ir";
 import type { BlockSchemaEntry, BlockSchemaRegistry } from "./schema-source-flexible-data";
 
 async function getSupabase() {

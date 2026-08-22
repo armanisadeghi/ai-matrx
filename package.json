@@ -151,8 +151,7 @@
     "check:shapes:manifest:refresh": "tsx scripts/shape/refresh-contract-manifest.ts",
     "check:shapes:surfaces": "tsx scripts/shape/export-kind-surfaces.ts --check",
     "check:shapes:surfaces:refresh": "tsx scripts/shape/export-kind-surfaces.ts",
-    "check:content-ir:twin": "tsx scripts/shape/check-content-ir-twin.ts",
-    "check:content-ir:strict": "tsx scripts/shape/generate-content-vocab-crosswalk.ts --check && tsx scripts/shape/check-content-ir-twin.ts && tsx scripts/shape/check-shapes.ts --strict",
+    "check:content-ir:strict": "tsx scripts/shape/generate-content-vocab-crosswalk.ts --check && tsx scripts/shape/check-shapes.ts --strict",
     "shape:revalidate": "tsx scripts/shape/revalidate-stranded-examples.ts",
     "shape:reemit-discriminator": "tsx scripts/shape/regenerate-kind-block-schemas.ts",
     "shape:sample": "tsx scripts/shape/set-sample.ts",
@@ -228,6 +227,9 @@
     "lab:run": "bash scripts/build-lab/run.sh"
   },
   "dependencies": {
+    "@ai-matrx/agents": "0.1.0",
+    "@ai-matrx/content-ir": "0.1.1",
+    "@ai-matrx/design-system": "0.1.1",
     "@ai-sdk/google": "^3.0.43",
     "@anthropic-ai/sdk": "latest",
     "@babel/standalone": "^7.29.1",
@@ -242,8 +244,6 @@
     "@emotion/is-prop-valid": "^1.4.0",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
-    "@ai-matrx/agents": "0.1.0",
-    "@ai-matrx/design-system": "0.1.1",
     "@matrx/agents": "workspace:*",
     "@mermaid-js/layout-elk": "^0.2.2",
     "@modelcontextprotocol/sdk": "1.29.0",

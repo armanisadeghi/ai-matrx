@@ -33,7 +33,7 @@
  * mark `__kind` required. When either lands, these start passing and jest
  * will flag them as "obsolete failing" — then promote them to plain tests.
  */
-import { validateStructuralLeg } from "../registry/kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 
 const LIVE_CLAIM_EVIDENCE_SCHEMA = {
   type: "object",

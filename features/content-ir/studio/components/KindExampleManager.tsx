@@ -34,7 +34,7 @@ import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type { KindExampleListItem } from "@/features/content-ir/admin/kind-detail-types";
-import { validateStructuralLeg } from "@/features/content-ir/registry/kind-dual-gate";
+import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import {
   createOwnedShapeExample,

@@ -14,7 +14,7 @@ import {
   listCompiledKinds,
   type KindCatalogEntry,
 } from "@/features/content-ir/registry/kind-catalog";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindSchema } from "@ai-matrx/content-ir";
 
 export interface KindCatalogState {
   entries: KindCatalogEntry[] | null;

@@ -45,7 +45,7 @@ import {
   envelopeForCompletedXmlRegion,
 } from "@/features/content-ir/surfaces/xml-finalize";
 import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
-import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
+import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 
 /**

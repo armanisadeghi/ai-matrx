@@ -268,7 +268,7 @@ const matrxLintPlugin = {
                 schema: [],
                 messages: {
                     banned:
-                        'Do not import the kind parser / JSON tokenizer directly. Open a ContentRegion via @/features/content-ir/session/session-manager (streaming) or call normalizeJsonRegion from @/features/content-ir/core/normalize (one-shot, idempotent). The only hosts allowed to touch the parser are content-ir itself, stream-block-accumulator, content-splitter-v2, and normalize-content-blocks. See features/content-ir/FEATURE.md.',
+                        'Do not instantiate the kind parser / JSON tokenizer directly. Open a ContentRegion with the @ai-matrx/content-ir session API (streaming) or call normalizeJsonRegion from the package (one-shot, idempotent). The only hosts allowed to touch the parser are content-ir adapters, stream-block-accumulator, content-splitter-v2, and normalize-content-blocks. See features/content-ir/FEATURE.md.',
                 },
             },
             create(context) {
@@ -1015,7 +1015,7 @@ const contentIrChokepointSyntaxRestrictions = [
     {
         selector: "Literal[value='__kind']",
         message:
-            'The "__kind" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @/features/content-ir/core/kind-schema.types — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. See features/content-ir/FEATURE.md.',
+            'The "__kind" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. See features/content-ir/FEATURE.md.',
     },
     {
         selector: "Literal[value='671a423f-d350-4457-83e5-389eac70f287']",
@@ -1847,10 +1847,8 @@ export default [
     // 1) The library itself is exempt from the __kind / category-id literal
     //    bans (it DEFINES them) — flat config replaces the rule wholesale, so
     //    the global list is re-included minus contentIrChokepointSyntaxRestrictions.
-    // 2) core/ is a PURE parsing kernel: no React, no Redux, no Supabase, no
-    //    app state. Everything impure lives in registry/session/react/redux
-    //    layers. This fence is what keeps the parser testable everywhere and
-    //    portable (the Python twin mirrors core/ only).
+    // 2) Remaining host-side core helpers stay pure. The portable parser and
+    //    session kernel lives in @ai-matrx/content-ir.
     {
         files: ['features/content-ir/**/*.{ts,tsx}'],
         rules: {
@@ -1889,7 +1887,7 @@ export default [
                                 '@supabase/*',
                             ],
                             message:
-                                'features/content-ir/core is a PURE parsing kernel — no React, Redux, or Supabase. IO belongs in registry/, React bindings in react/, store glue in redux/. See features/content-ir/FEATURE.md.',
+                                'features/content-ir/core contains pure host adapters — no React, Redux, or Supabase. Portable parser/session logic belongs in @ai-matrx/content-ir; IO belongs in registry/, React bindings in react/, store glue in redux/. See features/content-ir/FEATURE.md.',
                         },
                     ],
                 },
