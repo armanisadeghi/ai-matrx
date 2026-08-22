@@ -9,7 +9,7 @@
  * The client-side check here is the instant pre-flight only.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -89,6 +89,10 @@ interface MandateOverrideEditorProps {
   principal: OverridePrincipal;
   binding: MandateBindingRow | null;
   agentsById: Record<string, MandateAgentSummary>;
+  /** The editor was opened through a "Map inputs" door: bring the Consumed
+   * values section into view and ring it once, so the map — not the agent
+   * picker — is what the reader lands on. */
+  focusConsumption?: boolean;
   onChanged: () => void;
 }
 
@@ -97,6 +101,7 @@ export function MandateOverrideEditor({
   principal,
   binding,
   agentsById,
+  focusConsumption = false,
   onChanged,
 }: MandateOverrideEditorProps) {
   const dispatch = useAppDispatch();
@@ -186,6 +191,16 @@ export function MandateOverrideEditor({
   }, [wave1.provisionKey, mandate.mandate_key]);
 
   const offer = offerState.status === "ready" ? offerState.offer : null;
+
+  // "Map inputs" landing: once the offer is on screen, scroll it into view.
+  const consumptionRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!focusConsumption || offerState.status === "loading") return;
+    const node = consumptionRef.current;
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusConsumption, offerState.status]);
+
   const consumptionProblems = useMemo(
     () => (offer ? consumptionMapProblems(offer, consumptionDraft) : []),
     [offer, consumptionDraft],
@@ -511,7 +526,14 @@ export function MandateOverrideEditor({
 
       {/* Consumed values — the Provision's full offer (Wave 2) */}
       {hasProvision ? (
-        <section>
+        <section
+          ref={consumptionRef}
+          className={cn(
+            "scroll-mt-24 rounded-md transition-shadow",
+            focusConsumption &&
+              "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
+          )}
+        >
           <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             Consumed values
           </h4>
