@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
   DialogContent,
@@ -299,7 +300,13 @@ export function IngestSourceDialog({
     >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Add rules from a source</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Add rules from a source
+            <AgentCredit
+              mandate="masterwork.source_distiller"
+              agent="masterwork_source_distiller"
+            />
+          </DialogTitle>
           <DialogDescription>
             Bring in source material — paste a chapter or a playbook, or upload
             a document or a recording of you explaining your method out loud.

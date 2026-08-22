@@ -17,6 +17,7 @@ import { Loader2, PlayCircle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Masterwork } from "../types";
+import { AgentCredit } from "../components/AgentCredit";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { refreshUnderstudy } from "./refresh";
 
@@ -110,6 +111,10 @@ export function UnderstudyCard({
         <h3 className="text-sm font-semibold text-foreground">
           Your understudy is ready — try it
         </h3>
+        <AgentCredit
+          mandate="masterwork.understudy"
+          agent="Masterwork Understudy (generic)"
+        />
       </div>
       {/* THE NAME IS THE EXPLANATION (Arman, 2026-08-18). An understudy is the
           stand-in who goes on tonight, not the star — so "your system is
@@ -117,16 +122,13 @@ export function UnderstudyCard({
           away the one term that teaches the Understudy/Masterwork pair for
           free. Say the name, then be honest that it isn't good yet: that
           honesty is what makes "Build a Masterwork" mean something. */}
-      <p className="mb-1 text-xs text-muted-foreground">
-        A rough stand-in that already does this whole job —{" "}
-        {approvedCount === 0
-          ? "improvising, since you haven't approved any rules yet"
-          : `from the ${approvedCount} ${approvedCount === 1 ? "rule" : "rules"} you've approved`}
-        . Describe a job below and watch it work.
-      </p>
+      {/* ONE line (Arman, 2026-08-21, on the previous two paragraphs: "it's
+          got this long-ass paragraph thing… it doesn't actually say what's
+          going on"). What it is, what it uses, one sentence. */}
       <p className="mb-2 text-xs text-muted-foreground">
-        It won&apos;t be as good as the real thing — that&apos;s what building
-        your Masterwork is for.
+        {approvedCount === 0
+          ? "A rough stand-in — improvising until you approve rules. Not the real thing you'll build."
+          : `A rough stand-in using your ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"}. Not the real thing you'll build.`}
       </p>
       <TryMasterworkBox
         masterworkId={understudy.id}

@@ -35,6 +35,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AgentCredit } from "../components/AgentCredit";
 import { BrainCircuit, ExternalLink, Plus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -599,7 +600,8 @@ export function ConductorPanel({
       title={
         <span className="inline-flex min-w-0 items-center gap-2">
           <BrainCircuit className="h-4 w-4 text-primary" aria-hidden />
-          <span className="truncate">Make a Masterwork</span>
+          <span className="truncate">Build it with me</span>
+          <AgentCredit mandate="masterwork.conductor" agent="masterwork_conductor" />
         </span>
       }
       headerActions={

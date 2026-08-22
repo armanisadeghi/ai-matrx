@@ -6,6 +6,7 @@ import { ExternalLink, FileUp, Sparkles, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
   DialogContent,
@@ -785,6 +786,10 @@ export function ChatImportDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Import your AI chats
+            <AgentCredit
+              mandate="masterwork.transcript_distiller"
+              agent="masterwork_transcript_distiller"
+            />
             {/* THE DOOR LAW — this working mode has its own URL. */}
             <Link
               href={`/masterwork/${rulebook.id}/import`}

@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AgentCredit } from "../AgentCredit";
 import {
   ExternalLink,
   MessagesSquare,
@@ -626,6 +627,7 @@ export function ScoutInterviewPanel({
         <span className="inline-flex min-w-0 items-center gap-2">
           <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Interview</span>
+          <AgentCredit mandate="masterwork.scout" agent="masterwork_scout" />
         </span>
       }
       headerActions={

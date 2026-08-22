@@ -20,6 +20,7 @@ import { ArrowRight, Wand2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
   DialogContent,
@@ -231,6 +232,10 @@ export function ImproveRuleDialog({
           <DialogTitle className="flex items-center gap-2 text-base">
             <Wand2 className="h-4 w-4 text-primary" />
             {review ? "Review the rewrite" : "Improve this rule"}
+            <AgentCredit
+              mandate="masterwork.rule_improver"
+              agent="Masterwork Rule Improver"
+            />
           </DialogTitle>
           <DialogDescription>
             {review

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink, FileUp, Link2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
   DialogContent,
@@ -536,6 +537,10 @@ export function BodyOfWorkDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Everything you&apos;ve published
+            <AgentCredit
+              mandate="masterwork.exemplar_distiller"
+              agent="masterwork_exemplar_distiller"
+            />
             {/* THE DOOR LAW — this working mode has its own URL. */}
             <Link
               href={`/masterwork/${rulebook.id}/body-of-work`}
