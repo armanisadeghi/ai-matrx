@@ -91,6 +91,15 @@ export async function archiveEnrollment(
  * wrong for a person staring at a bad run right now. Naming ids reviews those
  * and only those, and never advances the watermark.
  */
+<<<<<<< HEAD
+=======
+/**
+ * `exampleIds` is the "review THIS conversation" door: the automatic window
+ * excludes anything from the last 30 min (still settling), which is exactly
+ * wrong for a person staring at a bad run right now. Naming ids reviews those
+ * and only those, and never advances the watermark.
+ */
+>>>>>>> parent of a9db9e23b (Revert "hindsight: pending-examples client + focused-review door plumbing")
 export async function triggerReview(
   id: string,
   exampleIds?: string[],
