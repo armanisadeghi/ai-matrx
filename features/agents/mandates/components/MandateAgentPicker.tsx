@@ -63,6 +63,7 @@ import {
   type MandatePickerData,
 } from "../overrides";
 import { compareContracts, compareStoredContract } from "../contract-compare";
+import { parseBindingWave1, parseMandateWave1 } from "../provision-shapes";
 
 /** Externally-owned override store (e.g. research's per-topic
  * `rs_topic.agent_config`). When provided, picking a candidate still runs the
@@ -186,6 +187,43 @@ export function MandateAgentPicker({
         setPreflight(
           "Could not verify this agent — it may be inaccessible or deleted.",
         );
+        return;
+      }
+      // Provision-era mandates (Wave 2): the retuned bind rule — "everything
+      // consumed must be offered" — replaces the name-superset check, and
+      // consumption is chosen on the BINDING, not by the agent's declared
+      // names. The pre-flight above already verified the candidate RESOLVES;
+      // the server's bind-time verdict remains the authority.
+      const hasProvision =
+        parseMandateWave1(data.mandate).provisionKey != null;
+      if (hasProvision) {
+        if (override) {
+          await override.apply(candidateId);
+        } else {
+          const existingForProvision = data.myBinding?.config_overrides;
+          await putMandateBinding(
+            dispatch,
+            mandateKey,
+            { principalType: "user" },
+            {
+              agentId: candidateId,
+              configOverrides: isJsonObject(existingForProvision)
+                ? Object.fromEntries(
+                    Object.entries(existingForProvision).filter(
+                      (entry): entry is [string, JsonValue] =>
+                        entry[1] !== undefined,
+                    ),
+                  )
+                : null,
+              // The server REPLACES consumption_map with what is sent —
+              // re-send the binding's current map so a quick agent swap never
+              // silently wipes the consumption choices.
+              consumptionMap: parseBindingWave1(data.myBinding).consumptionMap,
+            },
+          );
+        }
+        toast.success("This step now runs your agent.");
+        load();
         return;
       }
       // Comparison source: the live declaration when the consumer supplied

@@ -21,7 +21,43 @@
 | `useMandateRunner.ts`                          | **The consumer primitive** — `useMandate` + `useRunAgent` in one: `runMandate(args)` runs the mandate's agent, `unavailable`/`mandateError` drive the disabled state. Migrating a hardcoded call site is two lines (`run({agentId: X_AGENT_ID, …})` → `runMandate({…})`). Resolves at CALL time so a binding saved seconds ago applies to the next run; the mandate's `config_overrides` (the user's binding) win per key over the feature's defaults.                                                                                                                                                                                                                                      |
 | `components/MandateAgentPicker.tsx`            | The reusable consumer-facing "which agent runs this step" control — compact popover: system default + the user's own/shared agents, save-on-pick, reset-to-default, link to `/agents/mandates`. First consumer: podcast topic ideas (`TopicIdeaHelper`, mandate `podcast_client.topic_ideas`). Drop it beside any mandate-resolved affordance.                                                                                                                                                                                                                                                                                                                                              |
 
+| `provision-shapes.ts`                          | LEAF module (the `contract.ts` pattern) for the Provision era: `OfferedValue` + `parseOfferedValues`, the ONE client consumption-map deserializer `parseConsumptionMap` (legacy `code_value` normalizes to `offered_value`), `parseMandateWave1`/`parseBindingWave1` (runtime narrowing of the wave-1 columns off `select("*")` rows — see the DB-types note below), the kind-law mirrors (`SCALAR_VALUE_KINDS`, `GENERIC_VALUE_KINDS`, `ALLOWED_PIN_KEYS`), and the `consumptionMapProblems` pre-flight. |
+| `provisions.ts`                                | Client reads of `agent.provision` (`fetchProvision` + 5-min cache). Carries the ONE clearly-marked local-type widening for the table (`ProvisionRowLocal` / `Wave1Database`) — **delete it and rerun `pnpm db-types` when the CLI can authenticate**; the generated `types/database.types.ts` predates `agent.provision` and the wave-1 mandate/binding columns (live-verified 2026-08-22). |
+| `components/ConsumptionMapEditor.tsx`          | THE consumption-map editor: renders the provision's FULL offer (name, kind chip → `/shapes/[kind]` for registered kinds, guaranteed/optional, lazy badge, pinned-context lock) with per-value consume toggle, variable⇄context delivery (structured kinds are context-only), and `when_absent` for optionals. **Unconsumed values render calmly available — never as errors** (the bind rule: unused offered values are NORMAL). Embedded by `MandateOverrideEditor`, which both `/agents/mandates` and the admin drawer compose. |
+| `components/EffectiveConfigLayers.tsx`         | The truthful three-layer settings view per key: agent's own → binding overrides → mandate PINS (pins win, rendered locked "set by the mandate"). Pins are code-owned levers only (`reasoning`/`streaming`); a model id is NEVER rendered as a pin — `parseMandateWave1` refuses non-lever keys at ingress.                                                                                                                                                                              |
+
 Route: `app/(core)/agents/mandates/page.tsx` (+ `MandatesHeader` in the shell header center).
+
+## The Provision era (Wave 2, 2026-08-22) — inputs come from the PROVISION
+
+**A mandate carrying `provision_key` declares NO input variables of its own** — its
+Provision (`agent.provision`, code-declared server-side) lists every value available at the
+call site, and the BINDING's `consumption_map` decides what the bound Holder consumes and
+through which channel (`variable` | `context`). SoR (rulings 2026-08-22):
+`../../../../common-docs/systems/agents/mandates/FEATURE.md`.
+
+- **The retuned bind rule: everything consumed must be offered.** The legacy
+  name-superset compare does NOT apply to provision mandates — `MandateOverrideEditor` and
+  `MandateAgentPicker` skip it (the candidate still must RESOLVE); `contract-compare.ts` →
+  `compareConsumptionAgainstOffer` is the provision-era compare. Legacy mandates keep
+  `compareStoredContract` unchanged. The server's 422 verdict stays the authority.
+- **The server REPLACES `consumption_map` with what the PUT sends** (omitted → wiped) —
+  every save on a provision mandate re-sends the full current map (`putMandateBinding`
+  `consumptionMap`; the picker re-sends the existing map on a quick agent swap).
+- **Pins are code-owned levers only** (`reasoning`, `streaming`) — never model ids;
+  precedence agent definition → binding overrides → mandate pins (pins win). Rendered by
+  `EffectiveConfigLayers` + the admin drawer's Pins fact.
+- **`pinned_context`** values are force-delivered as context — locked in the editor.
+- **Bench**: a provision mandate's test-bench composer offers "Fill from the offer"
+  (`features/admin/mandates/ProvisionOfferComposer.tsx`): the canonical `KindInputForm`
+  against the derived `<provision_key>.offer` kind when it resolves, scaffolded fields from
+  the offered values otherwise; the raw variables-JSON textarea stays as the escape hatch
+  and the legacy path.
+- **DB-types gap (temporary):** the wave-1 columns ride `select("*")` rows and are
+  narrowed at ingress (`parseMandateWave1`/`parseBindingWave1`); the PUT body's
+  `holder_type`/`consumption_map` ride a local extension beside the generated
+  `MandateBindingRequest` until `pnpm sync-types` runs against a deployed server. Both are
+  clearly marked for deletion.
 
 ## 🚨 A required variable binds the CALLER — the run REFUSES without it (disease D4)
 
@@ -129,6 +165,7 @@ count only goes DOWN, and `--write` never adds entries.
 
 ## Change Log
 
+- 2026-08-22 — **Wave 2 of the Mandate Core Rollout (Provision → consumption map → holder).** New: `provision-shapes.ts` (leaf shapes + the ONE consumption-map funnel + wave-1 column narrowing), `provisions.ts` (`agent.provision` reads; clearly-marked local DB type until `pnpm db-types` can run), `ConsumptionMapEditor` (the full-offer editor — unused values calm, structured kinds context-only, optional values demand `when_absent`), `EffectiveConfigLayers` (agent → binding → pins, pins locked). `ResolvedMandate` gained `inputKind/outputKind/provisionKey/pins/pinnedContext` (client + SSR twin). `putMandateBinding` gained `holderType` + `consumptionMap` (local extension beside the stale generated request type). Contract-compare retuned: provision mandates judge input fit by consumes-⊆-offered (`compareConsumptionAgainstOffer`); editor + picker skip the superset check for them. Admin drawer facts gained Provision / Pins / Pinned context rows; the test bench gained the offer-driven structured composer. The shared `ValueMapping` union gained the neutral `offered_value` branch (surface editor/resolver refuse it loudly). `buildBindingTargets` consolidation: both agent-shortcut forks (batchModel, ShortcutEditorNext) now use the ONE surfaces util (they had dropped `defaultValue`, hiding agent defaults).
 - 2026-08-21 — **THE DOOR LAW pass on the FEATURES that own mandates.** The platform's headline capability — swap the intelligence behind any step, no deploy — was reachable from exactly one feature surface (Podcast Studio); every other feature named `/agents/mandates` only in code comments, so its users had no way in. Added one deep-linked door per domain in the pattern each surface already uses — **15 domains** across two waves: flashcards, education, tasks, research, agent_apps, masterwork, crm, workflow, transcript_studio, war_room, notes, seo, content_plan, growth_loop; SMS's existing bare link upgraded to `?feature=sms`. Introduced `MandateDoorLink` so wave two (and every future door) composes the same primitive instead of forking a `<Link>` per surface, and retrofitted wave one onto it. See the DOOR invariant above — it names the live doors, the domains deliberately left doorless, and the seven that still need one.
 - 2026-08-21 — Added canonical Mandate fallback inheritance for ambient assistants, including cycle refusal and the database trigger that converts a changed inherited default into an explicit override.
 - 2026-08-17 — **The Mandate-level context gate.** `agent.mandate.auto_context_disabled` (applied live, additive, default false) lets a Mandate cut context off even when its Holder would accept it. Rendered in the drawer's facts panel as a `Context` fact beside `Inputs` and `Output` — context is the third input channel, so it belongs where the contract is shown, not in a settings tab. Deliberately a COLUMN, not a key inside `contract`: `contract` is a server-seeded cache of the default agent's declarations and code truth re-seeds it, so a human decision stored there would be silently overwritten. **A GATE MAY ONLY NARROW** — the effective value is `holder OR mandate`, so when the Holder's own switch is off the control renders inert and names which side closed the door rather than implying the Mandate can enable anything. `MandateRow` carries `contextGateClosed` / `holderContextClosed` / `contextClosedEffective` as three separate facts so no surface can report one as the other. Written through the existing `updateMandateDefinition` patch allowlist. Verified live on `hindsight.reviewer` (toggled, persisted, copy switched to the "cuts context off even though its Holder would accept it" wording). The Agent-level half is [`features/agents/FEATURE.md`](../FEATURE.md) § Variables vs. context policies.

@@ -24,18 +24,20 @@ import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { toLlmParams } from "./llm-params";
 import { parseMandateContract } from "./contract";
+import { parseMandateWave1 } from "./provision-shapes";
 import type { ResolvedMandate } from "./service";
 
 export async function resolveMandateServer(
   mandateKey: string,
 ): Promise<ResolvedMandate> {
   const supabase = await createClient();
+  // `select("*")` on purpose: the wave-1 columns (provision_key, pins,
+  // pinned_context) are live but ahead of the generated Row type — they ride
+  // the full row and are narrowed at ingress by `parseMandateWave1`.
   const { data: mandate, error } = await supabase
     .schema("agent")
     .from("mandate")
-    .select(
-      "id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled, contract",
-    )
+    .select("*")
     .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
     .maybeSingle();
@@ -90,6 +92,7 @@ export async function resolveMandateServer(
     }
   }
 
+  const wave1 = parseMandateWave1(mandate);
   return {
     mandateKey,
     agentId,
@@ -99,5 +102,10 @@ export async function resolveMandateServer(
     // RUN-time precondition on the caller, not only a bind-time check on the
     // agent (disease D4).
     contract: parseMandateContract(mandate.contract),
+    inputKind: mandate.input_kind,
+    outputKind: mandate.output_kind,
+    provisionKey: wave1.provisionKey,
+    pins: wave1.pins,
+    pinnedContext: wave1.pinnedContext,
   };
 }

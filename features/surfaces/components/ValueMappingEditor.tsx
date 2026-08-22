@@ -68,14 +68,18 @@ interface Props {
   disabled?: boolean;
 }
 
-const MAP_TYPE_LABELS: Record<ValueMapping["mapType"], string> = {
+/** The map types THIS editor offers — `offered_value` belongs to the Mandate
+ * consumption map (features/agents/mandates/), never to surface bindings. */
+type SurfaceMapType = Exclude<ValueMapping["mapType"], "offered_value">;
+
+const MAP_TYPE_LABELS: Record<SurfaceMapType, string> = {
   surface_value: "Surface value",
   direct_value: "Direct value",
   prompt_user: "Prompt user",
   unmapped: "Unmapped",
 };
 
-const MAP_TYPE_DESCRIPTIONS: Record<ValueMapping["mapType"], string> = {
+const MAP_TYPE_DESCRIPTIONS: Record<SurfaceMapType, string> = {
   surface_value: "Bind to a runtime value declared by the surface.",
   direct_value: "Set a fixed literal value for this binding.",
   prompt_user: "Show a dialog asking the user for the value at launch time.",
@@ -83,7 +87,7 @@ const MAP_TYPE_DESCRIPTIONS: Record<ValueMapping["mapType"], string> = {
     "Suppress auto-binding. Use when the surface declares a matching name you intentionally want to ignore.",
 };
 
-function defaultMappingFor(type: ValueMapping["mapType"]): ValueMapping {
+function defaultMappingFor(type: SurfaceMapType): ValueMapping {
   switch (type) {
     case "surface_value":
       return { mapType: "surface_value", target: "", required: false };
@@ -246,7 +250,7 @@ function MappingRow({
       setExpanded(false);
       return;
     }
-    onChange(defaultMappingFor(next as ValueMapping["mapType"]));
+    onChange(defaultMappingFor(next as SurfaceMapType));
     setExpanded(true);
   };
 
@@ -358,7 +362,9 @@ function MappingRow({
       {showDetail && mapping && (
         <div className="border-t border-border px-2 py-1.5 space-y-1.5 bg-muted/30">
           <p className="text-[10px] text-muted-foreground">
-            {MAP_TYPE_DESCRIPTIONS[mapping.mapType]}
+            {mapping.mapType === "offered_value"
+              ? "Mandate consumption entry — not editable here (edit it on the mandate binding)."
+              : MAP_TYPE_DESCRIPTIONS[mapping.mapType]}
           </p>
           {mapping.mapType === "surface_value" && (
             <SurfaceValueInput

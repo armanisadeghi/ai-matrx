@@ -9,7 +9,7 @@
  * The client-side check here is the instant pre-flight only.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -57,7 +57,16 @@ import {
   compareStoredContract,
   type ComparisonResult,
 } from "../contract-compare";
+import {
+  consumptionMapProblems,
+  parseBindingWave1,
+  parseMandateWave1,
+  type ConsumptionMap,
+} from "../provision-shapes";
+import { fetchProvision, type ProvisionOffer } from "../provisions";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
+import { ConsumptionMapEditor } from "./ConsumptionMapEditor";
+import { EffectiveConfigLayers } from "./EffectiveConfigLayers";
 import { ContractItem, type ContractRowState } from "./ContractItem";
 
 const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
@@ -131,18 +140,80 @@ export function MandateOverrideEditor({
     () => parseMandateContract(mandate.contract),
     [mandate.contract],
   );
+
+  // ── The Provision era (Wave 2) ────────────────────────────────────────────
+  // A mandate carrying a provision_key declares its inputs through the
+  // PROVISION; the binding's consumption map decides what the Holder consumes.
+  // The legacy superset compare does NOT apply to it (retuned bind rule,
+  // 2026-08-22) — any agent can bind; consumption is chosen below.
+  const wave1 = useMemo(() => parseMandateWave1(mandate), [mandate]);
+  const [offerState, setOfferState] = useState<
+    | { status: "none" }
+    | { status: "loading" }
+    | { status: "error"; message: string }
+    | { status: "ready"; offer: ProvisionOffer | null }
+  >(wave1.provisionKey ? { status: "loading" } : { status: "none" });
+  const [consumptionDraft, setConsumptionDraft] = useState<ConsumptionMap>(
+    () => parseBindingWave1(binding).consumptionMap,
+  );
+
+  useEffect(() => {
+    const provisionKey = wave1.provisionKey;
+    if (!provisionKey) return;
+    let cancelled = false;
+    fetchProvision(provisionKey)
+      .then((offer) => {
+        if (cancelled) return;
+        if (offer === null) {
+          // A mandate naming a provision no row backs is a data defect —
+          // scream, and refuse the consumption editor rather than guessing.
+          console.error(
+            `[mandates] mandate "${mandate.mandate_key}" names provision "${provisionKey}" but no agent.provision row exists`,
+          );
+        }
+        setOfferState({ status: "ready", offer });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setOfferState({
+          status: "error",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wave1.provisionKey, mandate.mandate_key]);
+
+  const offer = offerState.status === "ready" ? offerState.offer : null;
+  const consumptionProblems = useMemo(
+    () => (offer ? consumptionMapProblems(offer, consumptionDraft) : []),
+    [offer, consumptionDraft],
+  );
+  const hasProvision = wave1.provisionKey != null;
+
   const contractSize =
     contract.requiredVariables.length + contract.requiredContextPolicyKeys.length;
 
   const runContractCheck = useCallback(
     async (candidateId: string) => {
-      if (contractSize === 0) {
+      // Provision-era mandates: the input side is judged only by the
+      // consumption map ("everything consumed must be offered") — the agent's
+      // declared names are NOT required to superset anything. The candidate
+      // still has to RESOLVE, which the picker's fetch below verifies.
+      if (contractSize === 0 || hasProvision) {
         setContractCheck({
           status: "done",
           agentId: candidateId,
+          // hasProvision: the stored contract's variable list is legacy — the
+          // candidate is compared against the required names AS IF declared,
+          // yielding the honest all-pass verdict (input fit is decided by the
+          // consumption map, validated separately).
           result: compareStoredContract(contract, {
-            variableNames: [],
-            contextPolicyKeys: [],
+            variableNames: hasProvision ? contract.requiredVariables : [],
+            contextPolicyKeys: hasProvision
+              ? contract.requiredContextPolicyKeys
+              : [],
           }),
         });
         return;
@@ -180,7 +251,7 @@ export function MandateOverrideEditor({
       });
       setContractCheck({ status: "done", agentId: candidateId, result });
     },
-    [contract, contractSize, dispatch, store],
+    [contract, contractSize, hasProvision, dispatch, store],
   );
 
   const handlePickAgent = (id: string) => {
@@ -214,8 +285,17 @@ export function MandateOverrideEditor({
     return Object.keys(out).length > 0 ? out : null;
   };
 
+  const existingConsumption = useMemo(
+    () => parseBindingWave1(binding).consumptionMap,
+    [binding],
+  );
+  const consumptionDirty =
+    hasProvision &&
+    JSON.stringify(consumptionDraft) !== JSON.stringify(existingConsumption);
+
   const dirty =
     agentId !== (binding?.agent_id ?? null) ||
+    consumptionDirty ||
     JSON.stringify(buildConfigOverrides()) !==
       JSON.stringify(
         existingOverrides && Object.keys(existingOverrides).length > 0
@@ -223,14 +303,23 @@ export function MandateOverrideEditor({
           : null,
       );
 
-  const nothingSet = agentId == null && buildConfigOverrides() == null;
+  const nothingSet =
+    agentId == null &&
+    buildConfigOverrides() == null &&
+    !(hasProvision && Object.keys(consumptionDraft).length > 0);
+
+  const consumptionBlocked = hasProvision && consumptionProblems.length > 0;
 
   const handleSave = async () => {
-    if (contractBlocked) return;
+    if (contractBlocked || consumptionBlocked) return;
     const configOverrides = buildConfigOverrides();
-    if (agentId == null && configOverrides == null) {
+    if (
+      agentId == null &&
+      configOverrides == null &&
+      !(hasProvision && Object.keys(consumptionDraft).length > 0)
+    ) {
       toast.error(
-        "Pick a different agent or change a setting — an empty override does nothing.",
+        "Pick a different agent, change a setting, or choose consumed values — an empty override does nothing.",
       );
       return;
     }
@@ -246,7 +335,15 @@ export function MandateOverrideEditor({
               ? (principal.organizationId ?? undefined)
               : undefined,
         },
-        { agentId, configOverrides },
+        {
+          agentId,
+          configOverrides,
+          // The server REPLACES the stored map with what is sent, so a
+          // provision-era save always carries the current full draft (an
+          // empty map is an explicit "consume nothing"). Legacy mandates
+          // send nothing — the field stays untouched.
+          ...(hasProvision ? { consumptionMap: consumptionDraft } : {}),
+        },
       );
       toast.success(
         principal.kind === "org"
@@ -397,12 +494,82 @@ export function MandateOverrideEditor({
           </div>
         ) : null}
         {contractCheck.status === "done" ? (
-          <ContractResult
-            contract={contractCheck.result}
-            contractSize={contractSize}
-          />
+          hasProvision ? (
+            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              This mandate&apos;s inputs come from its Provision — any agent can
+              bind. Choose what it consumes below.
+            </p>
+          ) : (
+            <ContractResult
+              contract={contractCheck.result}
+              contractSize={contractSize}
+            />
+          )
         ) : null}
       </section>
+
+      {/* Consumed values — the Provision's full offer (Wave 2) */}
+      {hasProvision ? (
+        <section>
+          <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Consumed values
+          </h4>
+          {offerState.status === "loading" ? (
+            <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading the
+              provision&apos;s offer…
+            </p>
+          ) : offerState.status === "error" ? (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/5 p-2.5 text-[12px]">
+              <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" />
+              <span className="text-destructive">
+                Couldn&apos;t load the provision: {offerState.message}
+              </span>
+            </div>
+          ) : offer ? (
+            <>
+              <p className="mb-1.5 text-[11px] text-muted-foreground">
+                Everything the{" "}
+                <code className="font-mono">{offer.provisionKey}</code> call
+                site offers. Pick what this agent consumes and how it&apos;s
+                delivered — values left unconsumed stay calmly available.
+              </p>
+              <ConsumptionMapEditor
+                offer={offer}
+                pinnedContext={wave1.pinnedContext}
+                value={consumptionDraft}
+                onChange={setConsumptionDraft}
+                disabled={saving}
+              />
+              {consumptionProblems.length > 0 ? (
+                <ul className="mt-2 space-y-0.5 rounded-md border border-destructive/25 bg-destructive/5 p-2.5">
+                  {consumptionProblems.map((problem) => (
+                    <li
+                      key={problem}
+                      className="flex items-start gap-1.5 text-[11.5px] text-destructive"
+                    >
+                      <AlertCircle className="mt-px h-3 w-3 shrink-0" />
+                      {problem}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          ) : (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/5 p-2.5 text-[12px]">
+              <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" />
+              <span className="text-destructive">
+                This mandate names provision{" "}
+                <code className="font-mono">{wave1.provisionKey}</code>, but no
+                provision row exists — a platform defect (the declaration
+                hasn&apos;t synced). Consumption can&apos;t be edited until it
+                lands.
+              </span>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {/* Settings-only overrides */}
       <section>
@@ -463,6 +630,14 @@ export function MandateOverrideEditor({
           this is a settings-only override (same agent, your model and thinking
           level).
         </p>
+        {/* The three layers per setting: agent's own → binding overrides →
+            mandate pins (pins win, locked). Renders only when a layer above
+            the agent's own definition is in play. */}
+        <EffectiveConfigLayers
+          pins={wave1.pins}
+          bindingOverrides={buildConfigOverrides()}
+          className="mt-2"
+        />
       </section>
 
       {/* Actions */}
@@ -470,7 +645,9 @@ export function MandateOverrideEditor({
         <Button
           type="button"
           onClick={handleSave}
-          disabled={saving || !dirty || nothingSet || contractBlocked}
+          disabled={
+            saving || !dirty || nothingSet || contractBlocked || consumptionBlocked
+          }
           className="h-8 gap-1.5 text-[13px]"
         >
           {saving ? (
