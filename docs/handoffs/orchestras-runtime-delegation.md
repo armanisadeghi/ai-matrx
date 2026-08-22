@@ -17,6 +17,6 @@ Execution half of Orchestras. System of record: `features/agents/docs/ORCHESTRAS
 
 ## Remaining work
 
-1. **Live browser verification of the canvas highlight.** Not yet run in a real browser. Test: `/agents/orchestras/<orchestratorId>` on desktop → Run (opens the embedded panel) → send a delegating message → member nodes pulse while running, emerald when done; turn 2 resets rings. Known nuance: fork/retry inside the embedded panel navigates to the full runner route.
+1. **Live browser verification of the canvas highlight.** Not yet run in a real browser. Test: `/agents/orchestras/<conductorId>` on desktop → Run (opens the embedded panel) → send a delegating message → member nodes pulse while running, emerald when done; turn 2 resets rings. Known nuance: fork/retry inside the embedded panel navigates to the full runner route.
 2. **Intermittent production 502s (~10% of `/api/ai/agents/*` requests, Cloudflare-served)** — root cause of the historical "headless empty run" bug; masked by the describer's 3× retry but hits every retry-less consumer. Tracked in `aidream/FOUND_DEFECTS.md` (2026-08-08 entry); needs an infra session.
 3. Phase 2+ (pipelines/DAG, input mapping, editable edges) and Phase 3 hardening (dangling-member GC, cycle prevention, versioned runs, cross-org auth) — see `ORCHESTRAS_ROADMAP.md`.
