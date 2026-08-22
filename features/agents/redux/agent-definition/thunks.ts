@@ -233,41 +233,64 @@ export const searchAgentsServer = createAsyncThunk<
  * Use this for any picker/dropdown that needs the complete agent catalogue.
  * Use fetchAgentsList() for the agents page where builtins are not shown.
  */
+/**
+ * Shared promise for an in-progress full-list load — see the dedupe note in
+ * the thunk body. Session-local guard, deliberately not Redux state.
+ */
+let _listFullInFlight: Promise<void> | null = null;
+
 export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
   "agentDefinition/fetchListFull",
   async (_, { dispatch }) => {
-    const { data, error } = await supabase.rpc("agx_get_list_full");
+    // In-flight dedupe. ~20 surfaces dispatch this on mount and several of
+    // them co-exist on one page (chat sidebar + bootstrap hook + pinned
+    // agents), with their effects running in the same commit — no
+    // component-level or status-based guard can see a sibling's request.
+    // Sharing the promise collapses them to one `agx_get_list_full` RPC
+    // while every caller still awaits a real result.
+    if (_listFullInFlight) return _listFullInFlight;
 
-    if (error) throw pgErrorToError(error);
+    const run = (async () => {
+      const { data, error } = await supabase.rpc("agx_get_list_full");
 
-    const rows = (data ?? []) as AgentListRow[];
+      if (error) throw pgErrorToError(error);
 
-    for (const row of rows) {
-      dispatch(
-        mergePartialAgent({
-          id: row.id,
-          name: row.name,
-          description: row.description,
-          category: row.category,
-          tags: row.tags ?? [],
-          agentType: row.agent_type,
-          modelId: row.model_id,
-          isActive: row.is_active,
-          isArchived: row.is_archived,
-          isFavorite: row.is_favorite,
-          createdBy: row.created_by,
-          organizationId: row.organization_id,
-          taskId: row.task_id ?? null,
-          sourceAgentId: row.source_agent_id,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          isVersion: false,
-          isOwner: row.is_owner,
-          accessLevel: row.access_level,
-          sharedByEmail: row.shared_by_email,
-        }),
-      );
-      dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
+      const rows = (data ?? []) as AgentListRow[];
+
+      for (const row of rows) {
+        dispatch(
+          mergePartialAgent({
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            category: row.category,
+            tags: row.tags ?? [],
+            agentType: row.agent_type,
+            modelId: row.model_id,
+            isActive: row.is_active,
+            isArchived: row.is_archived,
+            isFavorite: row.is_favorite,
+            createdBy: row.created_by,
+            organizationId: row.organization_id,
+            taskId: row.task_id ?? null,
+            sourceAgentId: row.source_agent_id,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            isVersion: false,
+            isOwner: row.is_owner,
+            accessLevel: row.access_level,
+            sharedByEmail: row.shared_by_email,
+          }),
+        );
+        dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
+      }
+    })();
+
+    _listFullInFlight = run;
+    try {
+      await run;
+    } finally {
+      if (_listFullInFlight === run) _listFullInFlight = null;
     }
   },
 );
@@ -461,27 +484,24 @@ export const resolveAgentVersionId = createAsyncThunk<
   AgentVersionLookup | null,
   string,
   ThunkApi
->(
-  "agentDefinition/resolveVersionId",
-  async (versionId) => {
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition_version")
-      .select("id, agent_id, version_number, name")
-      .eq("id", versionId)
-      .maybeSingle();
+>("agentDefinition/resolveVersionId", async (versionId) => {
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("definition_version")
+    .select("id, agent_id, version_number, name")
+    .eq("id", versionId)
+    .maybeSingle();
 
-    if (error) throw pgErrorToError(error);
-    if (!data) return null;
+  if (error) throw pgErrorToError(error);
+  if (!data) return null;
 
-    return {
-      versionId: data.id,
-      agentId: data.agent_id,
-      versionNumber: data.version_number,
-      agentName: data.name,
-    };
-  },
-);
+  return {
+    versionId: data.id,
+    agentId: data.agent_id,
+    versionNumber: data.version_number,
+    agentName: data.name,
+  };
+});
 
 /**
  * Fetches a full version snapshot for diff/preview.
@@ -1374,21 +1394,19 @@ export const syncLinkedAgents = createAsyncThunk<
   ThunkApi
 >(
   "agentDefinition/syncLinked",
-  async (
-    {
-      fromId,
-      toId,
-      includeIdentity = true,
-      expectedFromUpdatedAt,
-      expectedToUpdatedAt,
-    },
-  ) => {
+  async ({
+    fromId,
+    toId,
+    includeIdentity = true,
+    expectedFromUpdatedAt,
+    expectedToUpdatedAt,
+  }) => {
     const { data, error } = await supabase.rpc(
       "agx_sync_linked_agents_reviewed",
       {
-      p_from_id: fromId,
-      p_to_id: toId,
-      p_include_identity: includeIdentity,
+        p_from_id: fromId,
+        p_to_id: toId,
+        p_include_identity: includeIdentity,
         p_expected_from_updated_at: expectedFromUpdatedAt,
         p_expected_to_updated_at: expectedToUpdatedAt,
       },

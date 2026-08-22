@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-21`
+**Last updated:** `2026-08-22`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -357,6 +357,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-22` — **Full agent-catalogue loads deduplicate in flight.** `fetchAgentsListFull` shares one session-local promise so simultaneous chat, bootstrap, and picker mounts collapse onto one `agx_get_list_full` RPC while every caller still awaits the real result.
 - `2026-08-21` — **Runtime input capabilities are now one frontend-only system from authoring through Chat.** `ui_gates` no longer flatten into `instanceModelOverrides` and no API selector silently strips them; the independent `instanceInputCapabilities` slice owns the agent/version snapshot, conversation delta, attachment selector, builder live-sync, shortcut hydration, cold-load hydration, and conflict-safe `metadata.input_capabilities` persistence. Builder and Chat reuse one editor and always show Image URLs, File URLs, and YouTube Videos without selected-model suppression; provider compatibility/conversion stays server-owned. Provider-native `internal_web_search`, `internal_url_context`, and `output_format` are no longer misclassified as UI-only and now reach Python. `FeLlmParams` and Redux `AgentSettings` are direct aliases of generated `LLMParams`; model selection uses its canonical `model` key and tools remain in agent-definition state. Generated-contract drift is guarded by `pnpm check:generated-contracts`, which scans the repository, ratchets existing debt, and refuses every new handwritten OpenAPI mirror.
 - `2026-08-21` — **Builder context injection is a compact control in the Context row.** The shared `AutoInjectionSwitch` now has a dense icon + switch presentation that preserves full state help and warning semantics without adding a second row; the dedicated Context tab keeps the full explanatory treatment. The policy stack can shrink and truncate, so Context, injection, Add, and Batch add stay on one line in a narrow Builder panel.
 - `2026-08-21` — **Ambient assistants gained configurable mandate inheritance and one-click voice.** The primary Agent now resolves section/page → module → `ambient.page_guidance`; Notes, Data, Education, and every Education section have editable mandate rows with no variables. User/org bindings win at their level; changing an inherited row's system default removes its fallback. Selecting Voice now calls `relay.start()` during the first interaction instead of requiring a second mic click.
