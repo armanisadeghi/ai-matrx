@@ -10,7 +10,7 @@
 // tool to its source-of-truth section in the canonical vision
 // (common-docs/systems/education/VISION.md).
 
-import { FileText, Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck } from "lucide-react";
+import { FileText, Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck, Package } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -186,6 +186,25 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Live lecture capture — record → real-time transcription streamed into the editor",
       "Every converted artifact links back to the note (visible lineage both directions)",
       "Registers the converter `notes` target (source → structured, grounded study note)",
+    ],
+  },
+  {
+    slug: "kits",
+    name: "Study Kits",
+    tagline: "One upload, one place — everything made from it",
+    description:
+      "Every study kit you've built. A kit is one piece of your material plus the flashcards, summary, quiz, mind map, memory aids and audio study generated from it — kept together instead of scattered across six separate lists.",
+    icon: Package,
+    letter: "Kt",
+    status: "live", // P9 — the kit hub over the converter's source-lineage edges (features/education/kits)
+    accessTier: "free",
+    visionRef: "VISION §5 one upload → a full study kit (the headline flow)",
+    capabilities: [
+      "Every kit you own, each showing what came out of it at a glance",
+      "One kit page: all eight artifact kinds, ordered for studying, each opening",
+      "Needs no kit table — a kit IS its source material, read from the lineage edges every generator already writes",
+      "The kit is named once per run by `education.kit_title`, so every artifact shares one clean human title",
+      "Reachable from the run result, from any artifact ('Open the kit'), and from the tools grid",
     ],
   },
   {
