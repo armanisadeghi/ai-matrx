@@ -32,7 +32,11 @@ with near-perfect reliability. **Nothing more, nothing less.**
   interface — never a raw insert, never SQL.
 
 **The gold standard to study before you build anything:** `agent_catalog get_agent` on
-`80e453a0-68e0-4750-868d-3198d3a33639` ("Keyword Analysis Master"). Its kind pair lives at
+`80e453a0-68e0-4750-868d-3198d3a33639` ("Keyword Analysis Master"). A builder-made family
+that followed this skill end to end (kinds first, workflow-bound, first run green): the
+Study Pack v2 composers — `21bb212a-6ae8-4b4c-b507-f82efbb7f972` (notes),
+`79c667eb-0061-46ae-9ec3-9ffdcc51ee23` (flashcards), `3d0632fd-399c-4684-882c-f60122992d8a`
+(quiz), `bb88d07b-4ab8-41d3-af0f-84b9cfb565a7` (lessons). Its kind pair lives at
 `matrx-frontend/features/content-ir/kinds/keyword-research.ts` and renders through
 `components/mardown-display/blocks/keyword-research/KeywordResearchBlock.tsx`. Every rule
 below is visible in that one agent.
@@ -128,6 +132,14 @@ Supply structure — the trained builder writes the prompt:
   values by location, never pasted blobs.
 - `model_guidance` — cost/speed/intelligence priorities only; the builder never picks
   your final model (you do, next step).
+
+**What the builder gets wrong, observed (2026-08-22, Study Pack v2):** it writes a
+strong system prompt and even sensible input components, but its authored **user turn
+comes back form-like** ("Topic: {{topic}}\nAudience: {{audience}}"). Read the agent back
+and rewrite that turn as a real human request (see "Anatomy" below) with
+`update({"messages": [...]})` — `messages` is editable and replaces the whole array, so
+resend the system message verbatim. Optional variables render as empty strings, so keep
+them on labeled lines after the conversational opening rather than mid-sentence.
 
 For structured output, the schema must pass the provider gate: object root,
 `additionalProperties: false` on every object, every property in `required` (optional =
