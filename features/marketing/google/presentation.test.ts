@@ -1,6 +1,7 @@
 import {
   googleConnectionLabel,
   summarizeGoogleResourcesByConnection,
+  uniqueGoogleResourcesByProviderIdentity,
 } from "@/features/marketing/google/presentation";
 import type { GoogleConnectionResource } from "@/features/marketing/google/types";
 
@@ -44,5 +45,18 @@ describe("Google connection presentation", () => {
     });
     expect(summary?.youtubeChannels).toHaveLength(1);
     expect(summary?.youtubeChannels[0].resource_type).toBe("youtube_channel");
+  });
+
+  it("presents the same provider channel once across duplicate connections", () => {
+    const first = resource("youtube_channel");
+    const duplicate = {
+      ...first,
+      id: "youtube-channel-duplicate",
+      connection_id: "connection-2",
+    };
+
+    expect(
+      uniqueGoogleResourcesByProviderIdentity([first, duplicate]),
+    ).toEqual([first]);
   });
 });

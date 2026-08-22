@@ -53,6 +53,7 @@ import {
 import {
   googleConnectionLabel,
   summarizeGoogleResourcesByConnection,
+  uniqueGoogleResourcesByProviderIdentity,
 } from "@/features/marketing/google/presentation";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -113,8 +114,10 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
   const analyticsProperties = inventory.data?.resources.filter(
     (resource) => resource.resource_type === "analytics_property",
   );
-  const youtubeChannels = inventory.data?.resources.filter(
-    (resource) => resource.resource_type === "youtube_channel",
+  const youtubeChannels = uniqueGoogleResourcesByProviderIdentity(
+    inventory.data?.resources.filter(
+      (resource) => resource.resource_type === "youtube_channel",
+    ) ?? [],
   );
   const pageSpeedEnabledCount = (sites.data ?? []).filter(
     (site) =>

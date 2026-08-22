@@ -21,6 +21,19 @@ export function googleConnectionLabel(
   return name || email || "Google account";
 }
 
+/** Present one provider resource once even when multiple valid connections discover it. */
+export function uniqueGoogleResourcesByProviderIdentity(
+  resources: GoogleConnectionResource[],
+): GoogleConnectionResource[] {
+  const seen = new Set<string>();
+  return resources.filter((resource) => {
+    const identity = `${resource.resource_type}:${resource.resource_ref}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
+}
+
 /**
  * Summarize only resource kinds owned by the Marketing connection inventory.
  * Picker-selected Docs and Sheets must never be presented as YouTube channels.
