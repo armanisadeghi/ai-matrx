@@ -29,7 +29,7 @@ The footer is gone (2026-08-22). Right-click → the LAST entry of the menu is t
 - **v3.n** = `CANONICAL_MENU_VERSION_V3` (`features/context-menu-v3/types.ts`) — bumped when the canonical menu itself changes.
 - **V** = the surface's `menuVersion` prop (default `1`) — bump when a surface customizes its wiring beyond the standard.
 - A wrong label or "This page" there means the surface is not registered / not mapped — fix S1 of the `surface-check` checklist.
-- A surface still on a BESPOKE menu shows **no footer tag** — that absence means "not migrated."
+- A surface still on a BESPOKE menu has no such entry at all — that absence means "not migrated."
 
 ## The platform guarantees you can rely on (do NOT re-implement)
 
