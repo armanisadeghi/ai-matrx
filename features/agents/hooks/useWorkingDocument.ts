@@ -34,6 +34,10 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
 import { useAutoLabel } from "@/features/notes/hooks/useAutoLabel";
+import {
+  acquireDocumentBridge,
+  releaseDocumentBridge,
+} from "./documentBridgeOwnership";
 import { useAccess } from "@/utils/permissions/access";
 import {
   USER_SCRATCHPAD_CONTEXT_KEY,
@@ -460,6 +464,10 @@ export function useConversationDocumentsBridge(conversationId: string): void {
   const userId = useAppSelector(selectUserId);
   useEffect(() => {
     if (!userId) return;
+    const ownsHydration = acquireDocumentBridge(conversationId);
+    if (!ownsHydration) {
+      return () => releaseDocumentBridge(conversationId);
+    }
     void dispatch(hydrateConversationDocumentsThunk({ conversationId }));
     // Attached-scratchpad hydration must run AFTER the active pointer resolves
     // (it excludes the active id from the attached list).
@@ -470,6 +478,7 @@ export function useConversationDocumentsBridge(conversationId: string): void {
       .catch((err: unknown) => {
         console.error("[scratchpad] bridge hydrate failed", err);
       });
+    return () => releaseDocumentBridge(conversationId);
   }, [dispatch, conversationId, userId]);
   useWorkingDocumentContextSync(conversationId, "working");
   useScratchpadContextSync(conversationId);
