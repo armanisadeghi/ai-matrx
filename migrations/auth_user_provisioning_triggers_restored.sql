@@ -1,0 +1,27 @@
+-- auth_user_provisioning_triggers_restored.sql
+--
+-- RECORD of a change applied live via Supabase MCP on 2026-08-22.
+--
+-- INCIDENT: auth.users carried ZERO custom triggers. The `auth` schema is
+-- Supabase-managed, so custom triggers on it did NOT travel with the move to
+-- project brsgrqvjdzwihsvnfqkf. Signups broke cleanly on 2026-08-20 — 28 of 31
+-- new accounts had no personal organization, no membership, no users.profiles
+-- row, no crm.party, and no complimentary Pro grant. An account with no
+-- organization is unusable (organization_id is NOT NULL platform-wide).
+--
+-- Restores four triggers, in provisioning order, and backfills every account.
+-- Full applied text is in the Supabase migration of the same name; the
+-- load-bearing note for future readers:
+--
+--   users.profiles' organization_id MUST be set explicitly by the provisioning
+--   function. The table's own `_stamp_org_default` trigger resolves the org
+--   from auth.uid(), and at signup (supabase_auth_admin, no JWT) there is no
+--   auth.uid() — so relying on the stamp fails the NOT NULL. This is why the
+--   original `handle_new_dm_user` could not have worked here.
+--
+--   Trigger order matters and is enforced by NAME (Postgres fires per-event
+--   triggers alphabetically): on_auth_user_created (personal org) →
+--   on_auth_user_created_crm_party / on_auth_user_created_profile →
+--   zzz_on_auth_user_created_prelaunch_plan (needs the org to exist).
+--
+-- migrate: skip: applied live via MCP; recorded here for the ledger + history.
