@@ -22,7 +22,7 @@ const PAGE_ROLLUP = {
 
 interface MockResult {
   data: unknown;
-  error: null;
+  error: unknown;
   count?: number;
 }
 
@@ -74,7 +74,8 @@ const relationResults: Record<string, MockResult> = {
 const from = jest.fn((relation: string) =>
   queryBuilder(relationResults[relation] ?? { data: null, error: null }),
 );
-const rpc = jest.fn(() => queryBuilder({ data: PAGE_ROLLUP, error: null }));
+let rpcResult: MockResult = { data: PAGE_ROLLUP, error: null };
+const rpc = jest.fn(() => queryBuilder(rpcResult));
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/utils/supabase/webDb", () => ({
@@ -84,6 +85,7 @@ jest.mock("@/utils/supabase/webDb", () => ({
 describe("getSiteOverview", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    rpcResult = { data: PAGE_ROLLUP, error: null };
   });
 
   it("loads every page count through one shared aggregate scan", async () => {
@@ -110,5 +112,15 @@ describe("getSiteOverview", () => {
       p_site_id: SITE_ID,
     });
     expect(from).not.toHaveBeenCalledWith("v_page_list");
+  });
+
+  it("preserves an empty PostgREST failure as the user-facing error cause", async () => {
+    const upstream = { message: "", status: 500 };
+    rpcResult = { data: null, error: upstream };
+
+    await expect(getSiteOverview(SITE_ID)).rejects.toMatchObject({
+      message: "We couldn't load this site's overview.",
+      cause: upstream,
+    });
   });
 });

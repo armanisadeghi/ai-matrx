@@ -748,16 +748,23 @@ export async function getSiteOverview(
       .abortSignal(abortSignal),
   ]);
 
-  if (score.error) throw score.error;
-  if (pageRollup.error) throw pageRollup.error;
-  if (findings.error) throw findings.error;
-  if (snapshots.error) throw snapshots.error;
-  if (latestCrawl.error) throw latestCrawl.error;
-  if (sitemaps.error) throw sitemaps.error;
-  if (crawlSessions.error) throw crawlSessions.error;
-  const pageCounts = parseSiteOverviewPageCounts(
-    assertData(pageRollup.data, pageRollup.error),
-  );
+  for (const response of [
+    score,
+    pageRollup,
+    findings,
+    snapshots,
+    latestCrawl,
+    sitemaps,
+    crawlSessions,
+  ]) {
+    if (response.error) {
+      throw operationFailed("load this site's overview", response.error);
+    }
+  }
+  if (pageRollup.data === null) {
+    throw operationFailed("load this site's overview");
+  }
+  const pageCounts = parseSiteOverviewPageCounts(pageRollup.data);
 
   return {
     siteScore: score.data?.site_score ?? null,
