@@ -1,5 +1,5 @@
 {
-  "generated_for": "614-kinds+656971204794",
+  "generated_for": "614-kinds+d74bad155b8a",
   "columns": [
     "definition",
     "example",
@@ -222,7 +222,7 @@
     },
     {
       "kind": "arman_video_prompt",
-      "is_active": false,
+      "is_active": true,
       "family": "user_authored",
       "assets": {
         "definition": "ok",

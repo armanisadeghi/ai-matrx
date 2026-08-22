@@ -29,6 +29,11 @@ import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
 
+const KindComponentCodeTab = dynamic(
+  () => import("@/features/content-ir/admin/KindComponentCodeTab"),
+  { ssr: false },
+);
+
 const KindGateTab = dynamic(
   () => import("@/features/content-ir/admin/KindGateTab"),
   {
@@ -70,6 +75,7 @@ const KindInputsTab = dynamic(
 
 const TABS = [
   "preview",
+  "code",
   "examples",
   "assets",
   "try-input",
@@ -80,6 +86,7 @@ const TABS = [
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   preview: "Preview",
+  code: "Code",
   examples: "Examples",
   assets: "Assets",
   "try-input": "Try input",
@@ -220,6 +227,12 @@ export default function KindDetailClient({
       <main className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
         {tab === "preview" && (
           <KindPreviewTab kind={detail.kind} examples={examples} />
+        )}
+        {tab === "code" && (
+          <KindComponentCodeTab
+            kindDefinitionId={detail.id}
+            kind={detail.kind}
+          />
         )}
         {tab === "examples" && (
           <div className="mx-auto max-w-4xl">

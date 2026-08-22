@@ -118,7 +118,8 @@ export async function saveKindComponentCode(
   if (authError) {
     throw operationFailed("verify who is editing this component", authError);
   }
-  if (!authData.user) throw new Error("You must be signed in to save component code.");
+  if (!authData.user)
+    throw new Error("You must be signed in to save component code.");
 
   try {
     const result = await guardedUpdate<KindComponentCodeRow>({
@@ -151,7 +152,9 @@ export async function saveKindComponentCode(
     });
 
     if (result.status === "not_found") {
-      throw new Error("This component no longer exists or is no longer editable.");
+      throw new Error(
+        "This component no longer exists or is no longer editable.",
+      );
     }
     if (result.status === "conflict") {
       throw new Error(
@@ -166,4 +169,3 @@ export async function saveKindComponentCode(
     throw operationFailed("save this Shape's component code", error);
   }
 }
-
