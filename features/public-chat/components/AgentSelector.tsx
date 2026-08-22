@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -18,6 +18,8 @@ import {
   Atom,
 } from "lucide-react";
 import type { AgentConfig } from "@/features/cx-chat/types/agents";
+import type { ResponseMode } from "@/features/cx-chat/components/agent/local-agents";
+import { useResponseModeAgents } from "@/features/cx-chat/components/agent/useResponseModeAgents";
 
 // ============================================================================
 // TYPES
@@ -246,45 +248,38 @@ export function AgentSelector({
 // ============================================================================
 
 /**
- * Maps each response mode to a system agent ID.
- * Modes with an agentId will switch the active agent when clicked.
- * Modes without an agentId are placeholders for future functionality.
+ * Each mode is a MANDATE — the ONE map lives in cx-chat's `local-agents.ts`
+ * (`RESPONSE_MODE_MANDATE_MAP`) and resolves for this user through
+ * `useResponseModeAgents`. A mode whose mandate cannot resolve is disabled
+ * with the reason as its title — never a silent fallback to a hardcoded id.
  */
-export const RESPONSE_MODE_AGENT_MAP: Record<string, string | null> = {
-  text: "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8",
-  images: "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8",
-  videos: "7def859b-6bdc-4867-9471-4b2de7a7e2f7",
-  research: "7a90bace-1c2b-4d40-829d-b6d875573324",
-  brainstorm: "01120af5-5511-4fe7-a4f2-586db6f05a4e",
-  data: "f76a6b8f-b720-4730-87de-606e0bfa0e0c",
-  recipe: null,
-  code: null,
+const RESPONSE_MODE_ICONS: Record<ResponseMode, React.ReactNode> = {
+  text: <MessageCircle size={16} />,
+  images: <Image size={16} />,
+  videos: <Video size={16} />,
+  research: <Search size={16} />,
+  brainstorm: <Lightbulb size={16} />,
+  data: <BarChart size={16} />,
+  recipe: <ChefHat size={16} />,
+  code: <Code size={16} />,
 };
 
-// Reverse map: agentId → modeId for deriving active state from selected agent
-const AGENT_TO_MODE: Record<string, string> = {};
-for (const [modeId, agentId] of Object.entries(RESPONSE_MODE_AGENT_MAP)) {
-  if (agentId && !AGENT_TO_MODE[agentId]) {
-    AGENT_TO_MODE[agentId] = modeId;
-  }
-}
-
-const RESPONSE_MODES = [
-  { id: "text", label: "Text", icon: <MessageCircle size={16} /> },
-  { id: "images", label: "Images", icon: <Image size={16} /> },
-  { id: "videos", label: "Videos", icon: <Video size={16} /> },
-  { id: "research", label: "Research", icon: <Search size={16} /> },
-  { id: "brainstorm", label: "Brainstorm", icon: <Lightbulb size={16} /> },
-  { id: "data", label: "Data", icon: <BarChart size={16} /> },
-  { id: "recipe", label: "Recipe", icon: <ChefHat size={16} /> },
-  { id: "code", label: "Code", icon: <Code size={16} /> },
-] as const;
+const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
+  text: "Text",
+  images: "Images",
+  videos: "Videos",
+  research: "Research",
+  brainstorm: "Brainstorm",
+  data: "Data",
+  recipe: "Recipe",
+  code: "Code",
+};
 
 interface ResponseModeButtonsProps {
   disabled?: boolean;
   /** The currently selected agent's promptId — used to derive active mode */
   selectedAgentId?: string | null;
-  /** Called when a mode button is clicked. Receives modeId and mapped agentId. */
+  /** Called when a mode button is clicked. Receives modeId and the RESOLVED agentId. */
   onModeSelect?: (modeId: string, agentId: string | null) => void;
 }
 
@@ -293,31 +288,29 @@ export function ResponseModeButtons({
   selectedAgentId,
   onModeSelect,
 }: ResponseModeButtonsProps) {
+  const { modes, modeForAgent } = useResponseModeAgents();
   // Derive active mode from the selected agent instead of local state
-  const activeMode = useMemo(() => {
-    if (!selectedAgentId) return "text";
-    return AGENT_TO_MODE[selectedAgentId] || null;
-  }, [selectedAgentId]);
-
-  const handleSelect = (modeId: string) => {
-    if (disabled) return;
-    const agentId = RESPONSE_MODE_AGENT_MAP[modeId];
-    if (agentId) {
-      onModeSelect?.(modeId, agentId);
-    }
-  };
+  const activeMode = selectedAgentId ? modeForAgent(selectedAgentId) : "text";
 
   return (
     <div className="flex flex-wrap justify-center gap-1 md:gap-1.5">
-      {RESPONSE_MODES.map((mode) => {
-        const agentId = RESPONSE_MODE_AGENT_MAP[mode.id];
-        const isActive = activeMode === mode.id;
-        const isMapped = agentId !== null;
+      {modes.map((entry) => {
+        const isActive = activeMode === entry.mode;
+        const isMapped = entry.agentId !== null;
+        const unresolved = entry.mandateKey !== null && entry.error !== null;
         return (
           <button
-            key={mode.id}
-            onClick={() => handleSelect(mode.id)}
+            key={entry.mode}
+            onClick={() => {
+              if (disabled || !entry.agentId) return;
+              onModeSelect?.(entry.mode, entry.agentId);
+            }}
             disabled={disabled || !isMapped}
+            title={
+              unresolved
+                ? `Not available yet — no agent is assigned (${entry.mandateKey})`
+                : undefined
+            }
             className={`py-1 px-2.5 rounded-full flex items-center gap-1 border text-xs transition-colors ${
               isActive
                 ? "bg-zinc-300 dark:bg-zinc-600 text-gray-800 dark:text-gray-200 border-zinc-300 dark:border-zinc-700"
@@ -327,9 +320,9 @@ export function ResponseModeButtons({
             } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <span className={isActive ? "text-yellow-500" : ""}>
-              {mode.icon}
+              {RESPONSE_MODE_ICONS[entry.mode]}
             </span>
-            <span className="pr-0.5">{mode.label}</span>
+            <span className="pr-0.5">{RESPONSE_MODE_LABELS[entry.mode]}</span>
           </button>
         );
       })}

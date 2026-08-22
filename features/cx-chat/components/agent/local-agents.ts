@@ -126,13 +126,38 @@ export const DEFAULT_AGENTS: AgentOption[] = [
   },
 ];
 
-export const RESPONSE_MODE_AGENT_MAP: Record<string, string | null> = {
-  text: "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8",
-  images: "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8",
-  videos: "7def859b-6bdc-4867-9471-4b2de7a7e2f7",
-  research: "7a90bace-1c2b-4d40-829d-b6d875573324",
-  brainstorm: "01120af5-5511-4fe7-a4f2-586db6f05a4e",
-  data: "f76a6b8f-b720-4730-87de-606e0bfa0e0c",
+/** The response-mode strip under the composer, in render order. */
+export const RESPONSE_MODES = [
+  "text",
+  "images",
+  "videos",
+  "research",
+  "brainstorm",
+  "data",
+  "recipe",
+  "code",
+] as const;
+
+export type ResponseMode = (typeof RESPONSE_MODES)[number];
+
+/**
+ * THE ONE response-mode → MANDATE map (the auto-selector). Shared by the
+ * cx-chat strip and public-chat's `ResponseModeButtons` — never duplicate it.
+ * A mode maps to a mandate KEY, resolved at render time through
+ * `useResponseModeAgents` (system default → the user's binding); `null` marks
+ * a placeholder mode with no agent yet. A mode whose mandate cannot resolve
+ * (not yet seeded, disabled) renders disabled with the reason — never a
+ * silent fallback to a UUID.
+ */
+export const RESPONSE_MODE_MANDATE_MAP: Readonly<
+  Record<ResponseMode, string | null>
+> = {
+  text: "chat.cx_default",
+  images: "chat.cx_default",
+  videos: "chat.response_mode_video",
+  research: "research.report",
+  brainstorm: "chat.response_mode_brainstorm",
+  data: "chat.response_mode_data",
   recipe: null,
   code: null,
 };

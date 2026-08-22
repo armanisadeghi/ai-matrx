@@ -1,18 +1,12 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import { useMemo } from "react";
-import { RESPONSE_MODE_AGENT_MAP } from "@/features/cx-chat/components/agent/local-agents";
-
-// ── Reverse map: agentId → modeId ────────────────────────────────────────────
-const AGENT_TO_MODE: Record<string, string> = {};
-for (const [modeId, agentId] of Object.entries(RESPONSE_MODE_AGENT_MAP)) {
-  if (agentId && !AGENT_TO_MODE[agentId]) {
-    AGENT_TO_MODE[agentId] = modeId;
-  }
-}
+import { useResponseModeAgents } from "@/features/cx-chat/components/agent/useResponseModeAgents";
 
 // ── Response Mode Buttons ─────────────────────────────────────────────────────
+// Each mode is a MANDATE (RESPONSE_MODE_MANDATE_MAP), resolved for this user by
+// useResponseModeAgents. A mode whose mandate cannot resolve is disabled with
+// the reason as its title — never a silent fallback to a hardcoded agent id.
 
 interface ResponseModeButtonsProps {
   disabled?: boolean;
@@ -25,30 +19,28 @@ export function ResponseModeButtons({
   selectedAgentId,
   onModeSelect,
 }: ResponseModeButtonsProps) {
-  const activeMode = useMemo(() => {
-    if (!selectedAgentId) return "text";
-    return AGENT_TO_MODE[selectedAgentId] || null;
-  }, [selectedAgentId]);
-
-  const handleSelect = (modeId: string) => {
-    if (disabled) return;
-    const agentId = RESPONSE_MODE_AGENT_MAP[modeId];
-    if (agentId) {
-      onModeSelect?.(modeId, agentId);
-    }
-  };
+  const { modes, modeForAgent } = useResponseModeAgents();
+  const activeMode = selectedAgentId ? modeForAgent(selectedAgentId) : "text";
 
   return (
     <div className="flex flex-wrap justify-center gap-1 md:gap-1.5">
-      {Object.keys(RESPONSE_MODE_AGENT_MAP).map((modeId) => {
-        const agentId = RESPONSE_MODE_AGENT_MAP[modeId];
-        const isActive = activeMode === modeId;
-        const isMapped = agentId !== null;
+      {modes.map((entry) => {
+        const isActive = activeMode === entry.mode;
+        const isMapped = entry.agentId !== null;
+        const unresolved = entry.mandateKey !== null && entry.error !== null;
         return (
           <button
-            key={modeId}
-            onClick={() => handleSelect(modeId)}
+            key={entry.mode}
+            onClick={() => {
+              if (disabled || !entry.agentId) return;
+              onModeSelect?.(entry.mode, entry.agentId);
+            }}
             disabled={disabled || !isMapped}
+            title={
+              unresolved
+                ? `Not available yet — no agent is assigned (${entry.mandateKey})`
+                : undefined
+            }
             className={`py-1 px-2.5 rounded-full flex items-center gap-1 border text-xs transition-colors ${
               isActive
                 ? "bg-zinc-300 dark:bg-zinc-600 text-gray-800 dark:text-gray-200 border-zinc-300 dark:border-zinc-700"
@@ -57,7 +49,7 @@ export function ResponseModeButtons({
                   : "text-gray-400 dark:text-gray-600 border-zinc-200 dark:border-zinc-800 cursor-not-allowed"
             } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <span className="pr-0.5">{modeId}</span>
+            <span className="pr-0.5">{entry.mode}</span>
           </button>
         );
       })}
