@@ -29,6 +29,7 @@ import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { INCOMPLETE_AREAS_QUERY } from "../lib";
 import type {
   MeaningHealthArea,
   MeaningHealthRow,
@@ -124,14 +125,19 @@ export function MeaningHealth({
           const chrome = SEVERITY_CHROME[row.severity] ?? SEVERITY_CHROME.ok;
           const Icon = chrome.icon;
           const route = AREA_ROUTE[row.area];
+          /**
+           * An `inert` geo row means areas EXIST and are empty, so the door
+           * opens straight onto exactly those. A `gap` row means there are
+           * none at all — filtering to "the empty ones" would land on nothing.
+           */
+          const path =
+            row.area === "geo" && row.severity === "inert"
+              ? `${route.path}?${INCOMPLETE_AREAS_QUERY}`
+              : (route?.path ?? "/value");
           return (
             <li key={`${row.area}-${row.severity}`}>
               <Link
-                href={marketingRoutes.site(
-                  brandId,
-                  siteId,
-                  route?.path ?? "/value",
-                )}
+                href={marketingRoutes.site(brandId, siteId, path)}
                 className={cn(
                   "group flex h-full items-start gap-2 rounded-md border px-2.5 py-2 transition-colors hover:bg-accent",
                   chrome.row,

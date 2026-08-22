@@ -15,6 +15,31 @@
  */
 
 import type { ValueBandDef, ValueSummaryRow } from "./types";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import type { SiteGeoArea } from "./types";
+
+// ── Service areas that were never told what they stand for ───────────────────
+
+/**
+ * An area with a name, a band, and NO place names matches nothing — the
+ * single most misleading state in this feature, because the ledger that lists
+ * it looks configured. Starter-pack adoption is where they come from (a pack
+ * deliberately carries archetypes, never somebody else's cities), so both the
+ * packs screen and the workbench ask this same question of the same rows.
+ */
+export function areaNeedsPlaces(area: Pick<SiteGeoArea, "match_tokens">): boolean {
+  return (area.match_tokens?.length ?? 0) === 0;
+}
+
+/** The rule + geo bench, opened on exactly the areas that have no places. */
+export const INCOMPLETE_AREAS_QUERY = "areas=incomplete";
+
+export function incompleteAreasHref(
+  brandId: string | null | undefined,
+  siteId: string,
+): string {
+  return marketingRoutes.site(brandId, siteId, `/value/rules?${INCOMPLETE_AREAS_QUERY}`);
+}
 
 // ── Review window ────────────────────────────────────────────────────────────
 

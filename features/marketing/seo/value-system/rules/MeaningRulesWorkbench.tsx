@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -28,6 +29,7 @@ import {
   MapPinned,
   Plus,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
@@ -42,7 +44,7 @@ import {
   listValueRules,
 } from "../data";
 import type { SiteGeoArea, ValueRule } from "../types";
-import { buildBandMeta, humanizeSlug, reviewWindow } from "../lib";
+import { areaNeedsPlaces, buildBandMeta, humanizeSlug, reviewWindow } from "../lib";
 import { ValueRuleEditor } from "./ValueRuleEditor";
 import { GeoAreaEditor } from "./GeoAreaEditor";
 import {
@@ -95,6 +97,15 @@ function ruleMatchText(rule: ValueRule): string {
 
 export function MeaningRulesWorkbench() {
   const { site, brandId } = useMarketingSite();
+  const router = useRouter();
+  /**
+   * `?areas=incomplete` — the door the packs screen and meaning health open.
+   * A filter in the URL, not component state, so the link that names the
+   * problem lands on exactly the rows that have it (and the person can share
+   * or bookmark that view).
+   */
+  const searchParams = useSearchParams();
+  const onlyIncompleteAreas = searchParams.get("areas") === "incomplete";
   const siteId = site.id;
   const window = reviewWindow();
   const windowLabel = "the last 28 days";
@@ -130,6 +141,10 @@ export function MeaningRulesWorkbench() {
   const usageByArea = new Map<string, MeaningUsageRow>(
     (usage.data ?? []).filter((row) => row.kind === "geo_area").map((row) => [row.ref, row]),
   );
+
+  const incompleteAreas = (areas.data ?? []).filter(areaNeedsPlaces);
+  const visibleAreas = onlyIncompleteAreas ? incompleteAreas : (areas.data ?? []);
+  const pathWithoutAreaFilter = marketingRoutes.site(brandId, siteId, "/value/rules");
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-textured">
@@ -263,7 +278,9 @@ export function MeaningRulesWorkbench() {
                 Geo areas
                 {areas.data ? (
                   <span className="font-normal text-muted-foreground">
-                    ({areas.data.length})
+                    {onlyIncompleteAreas
+                      ? `(${incompleteAreas.length} of ${areas.data.length} — showing only the ones with no places)`
+                      : `(${areas.data.length})`}
                   </span>
                 ) : null}
               </h2>
@@ -304,8 +321,55 @@ export function MeaningRulesWorkbench() {
             </p>
           ) : null}
 
+          {incompleteAreas.length > 0 ? (
+            <div className="flex flex-wrap items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
+              <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-warning">
+                  {incompleteAreas.length} service area
+                  {incompleteAreas.length === 1 ? " has" : "s have"} no places yet
+                  — add them
+                </p>
+                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                  {incompleteAreas.length === 1 ? "It was" : "They were"} created
+                  with a name and a band but nothing inside, so no search has ever
+                  matched {incompleteAreas.length === 1 ? "it" : "them"} and
+                  geography counts for nothing in your value tiers. Open{" "}
+                  {incompleteAreas.length === 1 ? "it" : "each one"} and add the
+                  towns, cities or regions it stands for.
+                </p>
+              </div>
+              {onlyIncompleteAreas ? (
+                <button
+                  type="button"
+                  onClick={() => router.replace(pathWithoutAreaFilter)}
+                  className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent"
+                >
+                  <X className="h-2.5 w-2.5" aria-hidden />
+                  show all {areas.data?.length ?? 0}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {onlyIncompleteAreas &&
+          incompleteAreas.length === 0 &&
+          (areas.data?.length ?? 0) > 0 ? (
+            <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
+              Every service area has places in it now — nothing is left to fix
+              here.{" "}
+              <Link
+                href={pathWithoutAreaFilter}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                Show all {areas.data?.length ?? 0} areas
+              </Link>
+              .
+            </p>
+          ) : null}
+
           <ul className="space-y-1.5">
-            {(areas.data ?? []).map((area) => (
+            {visibleAreas.map((area) => (
               <li key={area.id}>
                 <button
                   type="button"

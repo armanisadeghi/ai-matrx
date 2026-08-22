@@ -407,17 +407,32 @@ export async function getStarterPackDetail(
   return assertData(response.data, response.error) as unknown as StarterPackDetail;
 }
 
-/** THE one adoption path. Copy-insert, additive, idempotent — a site's own
- *  rows are never overwritten, and re-adopting writes only what is missing. */
+/**
+ * THE one adoption path. Copy-insert, additive, idempotent — a site's own
+ * rows are never overwritten, and re-adopting writes only what is missing.
+ *
+ * `geoPlaces` maps a pack geo-area item id to the business's OWN place names.
+ * A pack ships geo areas as archetypes with no places in them, so adopting
+ * without this writes labelled shells that match nothing — the RPC stamps
+ * those `metadata.places_pending` and reports them in `geo_areas_pending` so
+ * the screens can put a door in front of them. Passing places for an area the
+ * site already has but never filled FILLS it (that is "writing only what is
+ * missing"); an area that already carries places is the site's own ruling and
+ * is never touched.
+ */
 export async function adoptStarterPack(
   siteId: string,
   packId: string,
   parts?: StarterPackPart[],
+  geoPlaces?: Record<string, string[]>,
 ): Promise<StarterPackAdoptResult> {
   const response = await (await seoDb()).rpc("adopt_starter_pack", {
     p_site_id: siteId,
     p_pack_id: packId,
     ...(parts && parts.length ? { p_include: parts } : {}),
+    ...(geoPlaces && Object.keys(geoPlaces).length
+      ? { p_geo_places: geoPlaces as unknown as Json }
+      : {}),
   });
   return assertData(response.data, response.error) as unknown as StarterPackAdoptResult;
 }

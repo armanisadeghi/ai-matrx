@@ -27,6 +27,7 @@ import {
   ListChecks,
   MapPinned,
   TreePine,
+  TriangleAlert,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -40,9 +41,13 @@ import {
   adoptStarterPack,
   getStarterPackCatalog,
   getStarterPackDetail,
+  listGeoAreas,
   starterPackCatalogQueryKey,
   starterPackDetailQueryKey,
 } from "../data";
+import { geoAreasQueryKey } from "../rules/data";
+import { areaNeedsPlaces, incompleteAreasHref } from "../lib";
+import { GeoPlacesStep, type GeoPlacesByItem } from "./GeoPlacesStep";
 import type {
   StarterPackBandItem,
   StarterPackDetail,
@@ -303,37 +308,96 @@ function Section({
   );
 }
 
+/**
+ * The persistent door. A site can end up with labelled service areas that have
+ * no places in them — by skipping the places step, or from any adoption before
+ * this step existed. That state is worse than having no areas at all, because
+ * the ledger listing them looks configured, so it is never a toast: it stays on
+ * the screen until the places are there.
+ */
+function IncompleteAreasBanner({
+  count,
+  brandId,
+  siteId,
+}: {
+  count: number;
+  brandId: string | null | undefined;
+  siteId: string;
+}) {
+  if (count === 0) return null;
+  return (
+    <Link
+      href={incompleteAreasHref(brandId, siteId)}
+      className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 transition-colors hover:bg-warning/15"
+    >
+      <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-semibold text-warning">
+          {count} service area{count === 1 ? " has" : "s have"} no places yet — add
+          them
+        </span>
+        <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
+          {count === 1 ? "It has" : "They have"} a name and a band but no town,
+          city or region inside, so no search has ever matched{" "}
+          {count === 1 ? "it" : "them"} and geography counts for nothing in your
+          value tiers. Open the geo bench on{" "}
+          {count === 1 ? "this area" : "exactly these areas"}.
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 function PackDetail({
   detail,
   siteId,
+  brandId,
   sitePath,
+  incompleteAreas,
 }: {
   detail: StarterPackDetail;
   siteId: string;
+  brandId: string | null | undefined;
   sitePath: string;
+  incompleteAreas: number;
 }) {
   const queryClient = useQueryClient();
   const status = STATUS_META[detail.pack.status] ?? STATUS_META.draft;
+  const [askingPlaces, setAskingPlaces] = useState(false);
 
   const adopt = useMutation({
-    mutationFn: () => adoptStarterPack(siteId, detail.pack.id),
+    mutationFn: (geoPlaces: GeoPlacesByItem) =>
+      adoptStarterPack(siteId, detail.pack.id, undefined, geoPlaces),
     onSuccess: (result) => {
       const written =
         result.topics +
         result.value_bands +
         result.geo_bands +
         result.geo_areas +
-        result.rules;
+        result.rules +
+        result.geo_areas_filled;
+      setAskingPlaces(false);
       toast.success(
         written === 0
           ? "Already adopted — nothing new to write."
-          : `Adopted: ${result.topics} topic values, ${result.rules} rules, ${result.value_bands + result.geo_bands} band definitions, ${result.geo_areas} geo areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}.`,
+          : `Adopted: ${result.topics} topic values, ${result.rules} rules, ${result.value_bands + result.geo_bands} band definitions, ${result.geo_areas} geo areas${result.geo_areas_filled > 0 ? `, ${result.geo_areas_filled} filled with your places` : ""}${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}.`,
+        result.geo_areas_pending > 0
+          ? {
+              description: `${result.geo_areas_pending} service area${result.geo_areas_pending === 1 ? "" : "s"} still ${result.geo_areas_pending === 1 ? "has" : "have"} no places, so ${result.geo_areas_pending === 1 ? "it matches" : "they match"} nothing yet.`,
+            }
+          : undefined,
       );
       void queryClient.invalidateQueries({ queryKey: ["seo"] });
     },
     onError: (error) =>
       toast.error(`Could not adopt this starter pack: ${extractErrorMessage(error)}`),
   });
+
+  /** A pack that carries archetypes asks for the places BEFORE it writes. */
+  const startAdoption = () => {
+    if (detail.geo_areas.length > 0) setAskingPlaces(true);
+    else adopt.mutate({});
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -354,7 +418,7 @@ function PackDetail({
           </div>
           <Button
             size="sm"
-            onClick={() => adopt.mutate()}
+            onClick={startAdoption}
             disabled={adopt.isPending}
             className="shrink-0"
           >
@@ -388,6 +452,13 @@ function PackDetail({
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="mb-4">
+          <IncompleteAreasBanner
+            count={incompleteAreas}
+            brandId={brandId}
+            siteId={siteId}
+          />
+        </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-6">
             <Section
@@ -423,7 +494,7 @@ function PackDetail({
             <Section
               icon={MapPinned}
               title="Geo areas"
-              hint="Placeholders, deliberately empty — you fill in your own cities. A pack never carries somebody else's addresses."
+              hint="Archetypes — the shape of a service area, not the places. A pack never carries somebody else's addresses, so adopting asks you for yours before it writes."
             >
               {detail.geo_areas.length ? (
                 <ul className="space-y-1.5">
@@ -466,13 +537,32 @@ function PackDetail({
           </div>
         </div>
       </div>
+
+      {askingPlaces ? (
+        <GeoPlacesStep
+          packName={detail.pack.name}
+          brandId={brandId}
+          areas={detail.geo_areas}
+          busy={adopt.isPending}
+          onCancel={() => setAskingPlaces(false)}
+          onAdopt={(places) => adopt.mutate(places)}
+        />
+      ) : null}
     </div>
   );
 }
 
 export function StarterPackCatalog() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId, sitePath } = useMarketingSite();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  /** The site's own areas — how many were adopted and never given places. */
+  const areas = useQuery({
+    queryKey: geoAreasQueryKey(site.id),
+    queryFn: () => listGeoAreas(site.id),
+    staleTime: 60_000,
+  });
+  const incompleteAreas = (areas.data ?? []).filter(areaNeedsPlaces).length;
 
   const catalog = useQuery({
     queryKey: starterPackCatalogQueryKey,
@@ -548,7 +638,13 @@ export function StarterPackCatalog() {
               />
             </div>
           ) : detail.data ? (
-            <PackDetail detail={detail.data} siteId={site.id} sitePath={sitePath} />
+            <PackDetail
+              detail={detail.data}
+              siteId={site.id}
+              brandId={brandId}
+              sitePath={sitePath}
+              incompleteAreas={incompleteAreas}
+            />
           ) : (
             <div className="flex h-full items-center justify-center p-6 text-center">
               <p className="max-w-sm text-xs text-muted-foreground">

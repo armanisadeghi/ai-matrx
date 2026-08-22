@@ -49679,6 +49679,17 @@ export type Database = {
       }
     }
     Functions: {
+      _pack_geo_archetypes: {
+        Args: { p_geo_places: Json; p_pack_id: string }
+        Returns: {
+          area_kind: string
+          geo_band: string
+          item_id: string
+          label: string
+          notes: string
+          tokens: Json
+        }[]
+      }
       _site_keyword_query_totals: {
         Args: { p_site_id: string }
         Returns: {
@@ -49709,6 +49720,7 @@ export type Database = {
       }
       adopt_starter_pack: {
         Args: {
+          p_geo_places?: Json
           p_include?: string[]
           p_pack_id: string
           p_seed_guidelines?: boolean

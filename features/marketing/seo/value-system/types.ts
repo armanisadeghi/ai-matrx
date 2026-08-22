@@ -285,4 +285,8 @@ export interface StarterPackAdoptResult {
   geo_areas: number;
   rules: number;
   guidelines_seeded: boolean;
+  /** Areas this site already had, still empty, that this adoption filled in. */
+  geo_areas_filled: number;
+  /** Areas on this site that STILL have no place names — they match nothing. */
+  geo_areas_pending: number;
 }
