@@ -247,6 +247,33 @@ export interface CrmJournalistBeatAnalysisOffer {
   campaign_context?: string;
 }
 
+/** Offered shape of provision `crm.media_list_ranker` (kind `crm.media_list_ranker.offer`). */
+export interface CrmMediaListRankerOffer {
+  goal_context: string;
+  candidates_json: string;
+  shortlist_size?: string;
+}
+
+/** Offered shape of provision `crm.outreach_personalization_writer` (kind `crm.outreach_personalization_writer.offer`). */
+export interface CrmOutreachPersonalizationWriterOffer {
+  campaign_context: string;
+  targets_json: string;
+}
+
+/** Offered shape of provision `crm.outreach_recipient_shortlister` (kind `crm.outreach_recipient_shortlister.offer`). */
+export interface CrmOutreachRecipientShortlisterOffer {
+  pitch_context: string;
+  recipients_json: string;
+  shortlist_size?: string;
+}
+
+/** Offered shape of provision `crm.outreach_reply_drafter` (kind `crm.outreach_reply_drafter.offer`). */
+export interface CrmOutreachReplyDrafterOffer {
+  campaign_context: string;
+  thread_json: string;
+  record_facts?: string;
+}
+
 /** Offered shape of provision `crm.party_kind_judgment` (kind `crm.party_kind_judgment.offer`). */
 export interface CrmPartyKindJudgmentOffer {
   display_name: string;
@@ -1160,6 +1187,13 @@ export interface SeoAuthorityRoutingOffer {
   guidance?: string;
 }
 
+/** Offered shape of provision `seo.backlink_context_assessor` (kind `seo.backlink_context_assessor.offer`). */
+export interface SeoBacklinkContextAssessorOffer {
+  brand_context: string;
+  site_context: string;
+  backlinks_json: string;
+}
+
 /** Offered shape of provision `seo.competitor_classification` (kind `seo.competitor_classification.offer`). */
 export interface SeoCompetitorClassificationOffer {
   site_id: string;
@@ -1460,6 +1494,21 @@ export interface WorkflowNodeStewardOffer {
   node_context: string;
 }
 
+/** Offered shape of provision `workflow.plan_node_type_recommender` (kind `workflow.plan_node_type_recommender.offer`). */
+export interface WorkflowPlanNodeTypeRecommenderOffer {
+  plan_json: string;
+  catalog_json: string;
+  graph_context: string;
+}
+
+/** Offered shape of provision `workflow.plan_notes_writer` (kind `workflow.plan_notes_writer.offer`). */
+export interface WorkflowPlanNotesWriterOffer {
+  plan_name: string;
+  current_notes: string;
+  rough_input: string;
+  graph_context: string;
+}
+
 /** Offered shape of provision `workflow.plan_room` (kind `workflow.plan_room.offer`). */
 export interface WorkflowPlanRoomOffer {
   plan_id: string;
@@ -1470,6 +1519,15 @@ export interface WorkflowPlanRoomOffer {
   phase?: string;
   input_shape?: unknown;
   output_shape?: unknown;
+}
+
+/** Offered shape of provision `workflow.plan_shape_designer` (kind `workflow.plan_shape_designer.offer`). */
+export interface WorkflowPlanShapeDesignerOffer {
+  plan_name: string;
+  plan_notes: string;
+  direction?: string;
+  description: string;
+  graph_context: string;
 }
 
 /** Offered shape of provision `workflow.run_failure` (kind `workflow.run_failure.offer`). */
@@ -1522,6 +1580,10 @@ export interface ProvisionOffers {
   "content_plan.plan_shape": ContentPlanPlanShapeOffer;
   "conversation.analysis": ConversationAnalysisOffer;
   "crm.journalist_beat_analysis": CrmJournalistBeatAnalysisOffer;
+  "crm.media_list_ranker": CrmMediaListRankerOffer;
+  "crm.outreach_personalization_writer": CrmOutreachPersonalizationWriterOffer;
+  "crm.outreach_recipient_shortlister": CrmOutreachRecipientShortlisterOffer;
+  "crm.outreach_reply_drafter": CrmOutreachReplyDrafterOffer;
   "crm.party_kind_judgment": CrmPartyKindJudgmentOffer;
   "crm.save_contact_selection": CrmSaveContactSelectionOffer;
   "dictionary.workspace": DictionaryWorkspaceOffer;
@@ -1639,6 +1701,7 @@ export interface ProvisionOffers {
   "scraper.page_analysis": ScraperPageAnalysisOffer;
   "seo.ai_visibility_analysis": SeoAiVisibilityAnalysisOffer;
   "seo.authority_routing": SeoAuthorityRoutingOffer;
+  "seo.backlink_context_assessor": SeoBacklinkContextAssessorOffer;
   "seo.competitor_classification": SeoCompetitorClassificationOffer;
   "seo.competitor_opportunity_autopsy": SeoCompetitorOpportunityAutopsyOffer;
   "seo.competitor_page_autopsy": SeoCompetitorPageAutopsyOffer;
@@ -1669,7 +1732,10 @@ export interface ProvisionOffers {
   "web.endpoint_family_judgment": WebEndpointFamilyJudgmentOffer;
   "workflow.extract_sweep": WorkflowExtractSweepOffer;
   "workflow.node_steward": WorkflowNodeStewardOffer;
+  "workflow.plan_node_type_recommender": WorkflowPlanNodeTypeRecommenderOffer;
+  "workflow.plan_notes_writer": WorkflowPlanNotesWriterOffer;
   "workflow.plan_room": WorkflowPlanRoomOffer;
+  "workflow.plan_shape_designer": WorkflowPlanShapeDesignerOffer;
   "workflow.run_failure": WorkflowRunFailureOffer;
   "workflow.run_recovery": WorkflowRunRecoveryOffer;
 }
@@ -1699,6 +1765,10 @@ export const PROVISION_OFFER_KINDS = {
   "content_plan.plan_shape": "content_plan.plan_shape.offer",
   "conversation.analysis": "conversation.analysis.offer",
   "crm.journalist_beat_analysis": "crm.journalist_beat_analysis.offer",
+  "crm.media_list_ranker": "crm.media_list_ranker.offer",
+  "crm.outreach_personalization_writer": "crm.outreach_personalization_writer.offer",
+  "crm.outreach_recipient_shortlister": "crm.outreach_recipient_shortlister.offer",
+  "crm.outreach_reply_drafter": "crm.outreach_reply_drafter.offer",
   "crm.party_kind_judgment": "crm.party_kind_judgment.offer",
   "crm.save_contact_selection": "crm.save_contact_selection.offer",
   "dictionary.workspace": "dictionary.workspace.offer",
@@ -1816,6 +1886,7 @@ export const PROVISION_OFFER_KINDS = {
   "scraper.page_analysis": "scraper.page_analysis.offer",
   "seo.ai_visibility_analysis": "seo.ai_visibility_analysis.offer",
   "seo.authority_routing": "seo.authority_routing.offer",
+  "seo.backlink_context_assessor": "seo.backlink_context_assessor.offer",
   "seo.competitor_classification": "seo.competitor_classification.offer",
   "seo.competitor_opportunity_autopsy": "seo.competitor_opportunity_autopsy.offer",
   "seo.competitor_page_autopsy": "seo.competitor_page_autopsy.offer",
@@ -1846,7 +1917,10 @@ export const PROVISION_OFFER_KINDS = {
   "web.endpoint_family_judgment": "web.endpoint_family_judgment.offer",
   "workflow.extract_sweep": "workflow.extract_sweep.offer",
   "workflow.node_steward": "workflow.node_steward.offer",
+  "workflow.plan_node_type_recommender": "workflow.plan_node_type_recommender.offer",
+  "workflow.plan_notes_writer": "workflow.plan_notes_writer.offer",
   "workflow.plan_room": "workflow.plan_room.offer",
+  "workflow.plan_shape_designer": "workflow.plan_shape_designer.offer",
   "workflow.run_failure": "workflow.run_failure.offer",
   "workflow.run_recovery": "workflow.run_recovery.offer",
 } as const;
