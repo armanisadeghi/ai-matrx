@@ -416,7 +416,6 @@ export function SourceRequestRail({
   selectedId,
   onSelect,
   onRuleRequest,
-  action,
 }: {
   requests: readonly SourceRequest[];
   angles: readonly StoryAngle[];
@@ -424,8 +423,6 @@ export function SourceRequestRail({
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onRuleRequest: (requestId: string, status: string) => void;
-  /** Header affordance — the workspace passes the digest-ingest dialog. */
-  action?: React.ReactNode;
 }) {
   const ordered = useMemo(() => rankRequests(requests, now), [requests, now]);
   const angleById = useMemo(
@@ -444,11 +441,8 @@ export function SourceRequestRail({
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Journalist requests
         </h2>
-        <span className="flex items-center gap-2">
-          {action}
-          <span className="text-[11px] tabular-nums text-muted-foreground">
-            {ordered.length}
-          </span>
+        <span className="text-[11px] tabular-nums text-muted-foreground">
+          {ordered.length}
         </span>
       </div>
 
@@ -490,9 +484,9 @@ export function SourceRequestRail({
             No open journalist requests
           </p>
           <p className="mx-auto mt-1 max-w-xs text-[11px] leading-4 text-muted-foreground">
-            Paste a HARO, Qwoted, Featured or SourceBottle digest with &ldquo;Add
-            requests&rdquo; above — each query is matched against this site,
-            scored, and drafted where the fit is real.
+            HARO, Qwoted, Featured and SourceBottle queries land here as they are
+            published and matched against your angles. Nothing is waiting on you
+            right now.
           </p>
         </div>
       ) : (
