@@ -759,6 +759,8 @@ export const PUBLISHER_TIER_LABELS: Record<PublisherTier, string> = {
   long_tail: "Long tail",
 };
 
+export const PUBLISHER_API_ACCESS = ["open", "approval", "partnership", "closed", "none"] as const;
+export type PublisherApiAccess = (typeof PUBLISHER_API_ACCESS)[number];
 export const PUBLISHER_API_ACCESS_LABELS: Record<string, string> = {
   open: "Open API",
   approval: "Approval required",

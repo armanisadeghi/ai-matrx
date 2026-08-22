@@ -359,28 +359,53 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
           label="Profile completeness"
           value={`${Math.max(0, 11 - gaps.length)}/11`}
           tone={scoreTone(Math.round(((11 - gaps.length) / 11) * 100))}
-          detail={gaps.length === 0 ? "Submission-ready" : `${gaps.length} field${gaps.length === 1 ? "" : "s"} missing`}
+          detail={
+            gaps.length === 0
+              ? "Submission-ready"
+              : `${gaps.length} field${gaps.length === 1 ? "" : "s"} missing`
+          }
         />
         <KpiTile
           label="NAP consistency"
           value={napAverage === null ? "—" : `${napAverage}%`}
-          tone={napAverage === null ? "text-muted-foreground" : scoreTone(napAverage)}
-          detail={napAverage === null ? "No observed listing data yet" : `${napScores.length} listing${napScores.length === 1 ? "" : "s"} audited`}
+          tone={
+            napAverage === null
+              ? "text-muted-foreground"
+              : scoreTone(napAverage)
+          }
+          detail={
+            napAverage === null
+              ? "No observed listing data yet"
+              : `${napScores.length} listing${napScores.length === 1 ? "" : "s"} audited`
+          }
         />
         <KpiTile
           label="Needs attention"
           value={String(coverage.attention.length)}
-          tone={coverage.attention.length === 0 ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400"}
+          tone={
+            coverage.attention.length === 0
+              ? "text-muted-foreground"
+              : "text-amber-600 dark:text-amber-400"
+          }
           detail="Updates, duplicates, rejections"
         />
       </div>
 
-      <ProfileEditor location={location} gaps={gaps} suggestions={suggestions} />
+      <ProfileEditor
+        location={location}
+        gaps={gaps}
+        suggestions={suggestions}
+      />
       <OnSiteSchemaCard location={location} />
-      <ListingsMatrix organizationId={location.organization_id} location={location} matrix={matrix} />
+      <ListingsMatrix
+        organizationId={location.organization_id}
+        location={location}
+        matrix={matrix}
+      />
       <JsonLdCard location={location} />
       <EndowmentAnalysisCard
         brandId={location.brand_id}
+        organizationId={location.organization_id}
         defaultCompany={location.name}
         defaultIndustry={location.business_type ?? ""}
       />
