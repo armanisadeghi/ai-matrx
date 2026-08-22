@@ -17,6 +17,27 @@ import { cn } from "@/lib/utils";
 import type { ThreadMessage } from "../types";
 import { fmtDate } from "./tokens";
 
+/** What the server withheld, said plainly.
+ *
+ * The reviewer's own first turn is the review BUNDLE — every example transcript
+ * it was given — routinely 40-100K characters. The server caps it (aidream
+ * `discuss.py::THREAD_MESSAGE_MAX_CHARS`) because a 101,520-char message
+ * rendered through the markdown pipeline froze the tab outright. A cap that
+ * does not announce itself is worse than the freeze: it silently misrepresents
+ * what the reviewer was given, which is the one thing this panel exists to show.
+ */
+function TruncationNotice({ message }: { message: ThreadMessage }) {
+  if (!message.truncated) return null;
+  const shown = (message.text ?? "").length;
+  return (
+    <p className="mt-1.5 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
+      Showing the first {shown.toLocaleString()} of{" "}
+      {(message.full_chars ?? 0).toLocaleString()} characters. This turn is the
+      review bundle the reviewer was given — evidence, not a chat message.
+    </p>
+  );
+}
+
 export function ThreadMessageRow({
   message,
   /** "chat" right-aligns the human like a messenger; "flat" is the compact admin list. */
@@ -53,6 +74,7 @@ export function ThreadMessageRow({
               hideCopyButton
             />
           </div>
+          <TruncationNotice message={message} />
         </div>
       </div>
     );
@@ -80,6 +102,7 @@ export function ThreadMessageRow({
           hideCopyButton
         />
       </div>
+      <TruncationNotice message={message} />
     </div>
   );
 }
