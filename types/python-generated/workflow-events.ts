@@ -350,12 +350,16 @@ export interface NodeStreamEvent {
   event: "node_stream";
   run_id: string;
   node_id: string | null;
-  kind: "chunk" | "reasoning" | "phase" | "tool" | "warning" | "record_update" | "resource_changed";
+  kind: "chunk" | "reasoning" | "phase" | "tool" | "warning" | "record_update" | "resource_changed" | "render_block";
   delta: string;
   stream_seq: number;
   ts: string;
   chunks_received: number;
   chars_streamed: number;
+  frame_id?: string | null;
+  frame_index?: number;
+  frame_count?: number;
+  block_shadowed?: boolean;
 }
 
 export function isNodeStreamEvent(value: unknown): value is NodeStreamEvent {
