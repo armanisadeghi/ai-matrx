@@ -219,6 +219,7 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-22` — Added canonical shell-header clearance to the shared `FeatureAdminPage`, fixing every core feature admin map that previously began underneath the transparent AppShell header.
 - `2026-08-20` — Relocated the per-feature admin map (`FeatureAdminMap`) contract and design rules here from CLAUDE.md (charter rewrite); CLAUDE.md keeps a pointer.
 
 - `2026-08-19` — Registered User Acquisition in the canonical Users navigation and admin destination catalog.

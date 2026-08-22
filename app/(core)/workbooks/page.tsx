@@ -490,7 +490,7 @@ export default function WorkbooksLandingPage() {
         </BottomSheetBody>
       </BottomSheet>
       <div className="h-full overflow-y-auto scrollbar-none">
-        <div className="w-full space-y-4 p-4">
+        <div className="w-full space-y-4 px-4 pb-4 pt-[calc(var(--shell-header-h)+1rem)]">
           {loading && (
             <div className="flex h-40 items-center justify-center text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

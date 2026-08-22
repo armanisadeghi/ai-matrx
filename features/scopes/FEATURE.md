@@ -991,6 +991,7 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 
 ## Change log
 
+- `2026-08-22` — Added shell-height-aware top clearance to the all-context-items hub so its introductory content no longer sits beneath the AppShell header.
 - `2026-08-15` — **Canonical categories support category + subcategory end-to-end.** `CategorySelect` and `CategoryTagPicker` share `buildCategoryHierarchy`: hierarchical dimensions render root→indented child and selected children as `Parent / Child`; flat dimensions preserve their previous order and face. Inline create now carries the chosen root as `parentId`. Live DB migration `category_two_level_primitives` adds `_category_two_level_guard` (two levels, same dimension, no cycles/orphans/hidden cross-org parents, no parent deletion with children) plus canonical `cat_update` / `cat_reparent` / `cat_delete`; `useCategories` exposes all mutations and refreshes the facet authoritatively. `web_entity_type` joins `CATEGORY_DIMENSIONS`. Live transactional tests covered every RPC and each rejected shape; `pnpm db-types` regenerated the contract.
 - `2026-08-15` — **Universal pickers gained registry-declared candidate predicates.**
   `platform.entity_types.reference_candidate_predicates` carries structured scalar

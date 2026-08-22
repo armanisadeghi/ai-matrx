@@ -152,6 +152,7 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-22 — Added canonical shell-header clearance to the workflow bake-off picker so its search field and instructions no longer render underneath the transparent AppShell header.
 - 2026-08-21 — **Programmatic workflows stream into visible readouts, terminal results land
   without refresh, and every failure is copyable.** `resolveNodeIdentity` now falls back from
   Studio-only node metadata to canonical `node.type`, and `deriveDefaultSurfaceConfig` uses the

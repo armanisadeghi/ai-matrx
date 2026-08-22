@@ -650,6 +650,7 @@ browser and read the `/rest/v1/` origin.
 
 ## Change log
 
+- `2026-08-22` — Added canonical AppShell top clearance to the workbook gallery so the first row of workbook cards and actions no longer collides with the transparent shell header.
 - 2026-08-18 — **Document editor satisfies global sheets Facade dependencies without starting sheets UI.**
   Univer's sheets Facade observer attaches to every later FUniver instance, but
   sheet-typed plugins do not run for a document unit. `DocumentEditor` now

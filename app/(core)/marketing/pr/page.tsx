@@ -38,9 +38,11 @@ export default function PressRoomPage() {
           </span>
         </div>
       </PageHeader>
-      <Suspense fallback={<LoadingSurface label="Loading the press room…" />}>
-        <PressRoomWorkspace />
-      </Suspense>
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <Suspense fallback={<LoadingSurface label="Loading the press room…" />}>
+          <PressRoomWorkspace />
+        </Suspense>
+      </div>
     </>
   );
 }
