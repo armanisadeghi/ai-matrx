@@ -48,6 +48,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronRight, Loader2, Search, Type } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import {
   buildMenuModel,
@@ -63,6 +69,14 @@ function truncatePreview(text: string): string {
   const t = text.trim();
   if (t.length <= 50) return `"${t}"`;
   return `"${t.substring(0, 20)}...${t.substring(t.length - 20)}"`;
+}
+
+/** Hover preview: the real text, capped so a whole document can't fill the screen. */
+const TOOLTIP_PREVIEW_MAX = 700;
+function previewForTooltip(text: string): string {
+  const t = text.trim();
+  if (t.length <= TOOLTIP_PREVIEW_MAX) return t;
+  return `${t.substring(0, TOOLTIP_PREVIEW_MAX)}… (${t.length - TOOLTIP_PREVIEW_MAX} more chars)`;
 }
 
 // ── Density tokens ──────────────────────────────────────────────────────────
@@ -283,28 +297,49 @@ export default function MenuContent(props: MenuContentProps) {
     ) : null;
 
   // ── Header (selection / content preview) ─────────────────────────────────
+  // Classic/comfortable keeps the inline two-line preview. Every other
+  // combination shows the one-line "Content (N chars)" row — hover it to see
+  // the actual text (Arman, 2026-08-22: the compact header is the keeper,
+  // but the text must stay one hover away).
+  const compactHeader = menuLayout !== "classic" || menuDensity === "compact";
   const header = model.header ? (
-    <div
-      className={cn(
-        "border-b border-border bg-primary/5",
-        menuDensity === "compact" ? "px-2 py-1.5" : "px-2 py-2",
-      )}
-    >
-      <div className="flex items-start gap-2">
-        <Type className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <div className="mb-0.5 text-xs font-medium text-primary">
-            {model.header.label} ({model.header.text.length} char
-            {model.header.text.length !== 1 ? "s" : ""})
-          </div>
-          {menuDensity !== "compact" && (
+    compactHeader ? (
+      <TooltipProvider delayDuration={250}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex cursor-help items-center gap-2 border-b border-border bg-primary/5 px-2 py-1.5">
+              <Type className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
+              <div className="min-w-0 flex-1 truncate text-xs font-medium text-primary">
+                {model.header.label} ({model.header.text.length} char
+                {model.header.text.length !== 1 ? "s" : ""})
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            align="start"
+            className="max-w-sm whitespace-pre-wrap break-words font-mono text-[11px] leading-snug"
+          >
+            {previewForTooltip(model.header.text)}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    ) : (
+      <div className="border-b border-border bg-primary/5 px-2 py-2">
+        <div className="flex items-start gap-2">
+          <Type className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 text-xs font-medium text-primary">
+              {model.header.label} ({model.header.text.length} char
+              {model.header.text.length !== 1 ? "s" : ""})
+            </div>
             <div className="break-all font-mono text-xs leading-tight text-muted-foreground">
               {truncatePreview(model.header.text)}
             </div>
-          )}
+          </div>
         </div>
       </div>
-    </div>
+    )
   ) : null;
 
   // ── Command layout: type-to-filter over every leaf in the model ──────────
