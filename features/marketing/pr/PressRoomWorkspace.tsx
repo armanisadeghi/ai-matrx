@@ -83,6 +83,7 @@ import {
 } from "@/features/marketing/pr/routes";
 import { CoverageWon } from "@/features/marketing/pr/components/CoverageWon";
 import { PitchPipeline } from "@/features/marketing/pr/components/PitchPipeline";
+import { IngestRequestsDialog } from "@/features/marketing/pr/components/IngestRequestsDialog";
 import { SourceRequestRail } from "@/features/marketing/pr/components/SourceRequestRail";
 import {
   ANGLE_VIEWS,
@@ -796,6 +797,14 @@ export default function PressRoomWorkspace() {
                     set({ focus: id ? { kind: "request", id } : null })
                   }
                   onRuleRequest={rulings.ruleRequest}
+                  action={
+                    siteId ? (
+                      <IngestRequestsDialog
+                        siteId={siteId}
+                        onIngested={press.refetch}
+                      />
+                    ) : null
+                  }
                 />
               </div>
             </div>
