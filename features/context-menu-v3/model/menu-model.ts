@@ -94,12 +94,6 @@ export interface MenuItemNode extends MenuNodeBase {
   /** Native tooltip. */
   title?: string;
   disabled?: boolean;
-  /**
-   * The surface can NEVER do this (no handler / not editable) — distinct from
-   * `disabled` = unavailable right now. Classic shows it greyed for
-   * discoverability; tiered/command hide it.
-   */
-  inapplicable?: boolean;
   destructive?: boolean;
   /** Extra classes on the row (admin amber, …). */
   className?: string;
@@ -549,7 +543,6 @@ export function buildMenuModel(
     icon: Scissors,
     iconClassName: "text-emerald-500",
     disabled: !isEditable || !selectedText,
-    inapplicable: !isEditable,
     onSelect: () => void m.handleCut(),
   };
   const paste: MenuItemNode = {
@@ -559,7 +552,6 @@ export function buildMenuModel(
     icon: Clipboard,
     iconClassName: "text-emerald-500",
     disabled: !isEditable,
-    inapplicable: !isEditable,
     onSelect: () => void m.handlePaste(),
   };
   const selectAll: MenuItemNode = {
@@ -598,7 +590,6 @@ export function buildMenuModel(
     iconClassName: "text-sky-500",
     hint: undoHint,
     disabled: onUndo ? !canUndo : !m.canNativeUndo,
-    inapplicable: !isEditable && !onUndo,
     onSelect: m.handleUndo,
   };
   const redo: MenuItemNode = {
@@ -609,7 +600,6 @@ export function buildMenuModel(
     iconClassName: "text-sky-500",
     hint: redoHint,
     disabled: onRedo ? !canRedo : !m.canNativeUndo,
-    inapplicable: !isEditable && !onRedo,
     onSelect: m.handleRedo,
   };
   const viewHistory: MenuItemNode = {
@@ -619,7 +609,6 @@ export function buildMenuModel(
     icon: History,
     iconClassName: "text-violet-500",
     disabled: !onViewHistory || !hasHistory,
-    inapplicable: !onViewHistory,
     onSelect: () => onViewHistory?.(),
   };
   const compare: MenuSubmenuNode = {

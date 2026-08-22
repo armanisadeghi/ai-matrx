@@ -6,9 +6,10 @@
 //
 //   classic  — the historical flat column (every section top-level).
 //   tiered   — icon strip for the universal verbs (copy/cut/paste/undo/redo/
-//              find) + ≤ ~8 grouped rows; the long tail folds into a few named
-//              submenus (Library, Share & Export, More, the surface's own
-//              section). Inapplicable rows are HIDDEN, not greyed.
+//              find); every other Classic row stays, by name, at the top
+//              level — only History groups (Undo/Redo/View History/Compare)
+//              and a surface's own section folds under the surface's label.
+//              LOSSLESS: nothing is hidden or renamed (Arman's rule).
 //   command  — tiered + a type-to-filter box. Typing flattens every leaf in
 //              the whole model (including nested agents / shortcuts / content
 //              blocks) into one ranked list with its breadcrumb.
@@ -18,7 +19,7 @@
 // longer one becomes ONE submenu named by its label — the surface never has to
 // know which layout is active.
 
-import { Ellipsis, Library, Share2 } from "lucide-react";
+import { Ellipsis, History as HistoryIcon } from "lucide-react";
 import type {
   MenuLeafNode,
   MenuModel,
@@ -56,18 +57,6 @@ function tidy(nodes: MenuNode[]): MenuNode[] {
   return out;
 }
 
-/** A submenu whose children are flattened into labelled groups. */
-function flattenedGroup(
-  id: string,
-  sub: MenuSubmenuNode | null,
-): MenuNode[] {
-  if (!sub || !hasActionable(sub.children)) return [];
-  return [
-    { kind: "label", id: `${id}:label`, label: sub.label.toUpperCase() },
-    ...sub.children,
-  ];
-}
-
 function surfaceSections(sections: MenuSection[]): MenuSection[] {
   return sections
     .map((s): MenuSection | null => {
@@ -100,57 +89,32 @@ export function arrangeMenu(
 
   const r = model.roles;
 
-  // ── Strip: the universal verbs, icon-only. Hidden (not greyed) when the
-  //    surface can never do them; greyed when merely unavailable right now.
-  const strip: MenuLeafNode[] = [r.copy, r.cut, r.paste, r.undo, r.redo, r.find].filter(
-    (n) => !(n.kind === "item" && n.inapplicable),
-  );
+  // ── THE LOSSLESS LAW (Arman, 2026-08-22): every row Classic shows exists
+  //    here too, by its own name — greyed when unavailable exactly like
+  //    Classic, NEVER hidden, never renamed, never folded under a coined
+  //    heading. The only grouping he approved is History (Undo / Redo / View
+  //    History / Compare under one entry). A surface's own section folds into
+  //    one submenu carrying the surface's OWN label (e.g. "Note").
+
+  // Strip: the universal verbs, icon-only (greyed when unavailable).
+  const strip: MenuLeafNode[] = [r.copy, r.cut, r.paste, r.undo, r.redo, r.find];
 
   const sections: MenuSection[] = [];
 
-  // ── Contextual (content-aware) — only when it applies.
-  if (r.json) sections.push({ id: "contextual", group: "clipboard", nodes: [r.json] });
+  // Clipboard tail — what the strip doesn't carry.
+  sections.push({
+    id: "clipboard",
+    group: "clipboard",
+    nodes: compact([r.copyAs, r.json, r.selectAll]),
+  });
 
-  // ── AI — the intelligence is what the menu is FOR; it stays at the top.
-  const aiActions = r.placements.find((p) => p.placement === "ai-action");
-  const agents = r.placements.find((p) => p.placement === "bound-agent");
-  const libraryParts = r.placements.filter(
-    (p) => p.placement !== "ai-action" && p.placement !== "bound-agent",
-  );
-  const libraryChildren = tidy(
-    libraryParts.flatMap((p, i) =>
-      hasActionable(p.children) || p.loading
-        ? [
-            ...(i > 0 ? [{ kind: "separator" as const, id: `lib:${p.id}:sep` }] : []),
-            ...flattenedGroup(`lib:${p.id}`, p),
-          ]
-        : [],
-    ),
-  );
-  const libraryLoading = libraryParts.some((p) => p.loading);
-  const library: MenuSubmenuNode | null =
-    libraryChildren.length > 0 || libraryLoading
-      ? {
-          kind: "submenu",
-          id: "library",
-          label: "Library",
-          icon: Library,
-          iconClassName: "text-violet-500",
-          loading: libraryLoading,
-          disabled: libraryChildren.length === 0,
-          emptyLabel: "Loading…",
-          width: "w-64",
-          children: libraryChildren,
-        }
-      : null;
-  const aiNodes = compact([
-    aiActions && (hasActionable(aiActions.children) || aiActions.loading) ? aiActions : null,
-    agents && (hasActionable(agents.children) || agents.loading) ? agents : null,
-    library,
-  ]);
-  if (aiNodes.length) sections.push({ id: "ai", group: "ai", nodes: aiNodes });
+  // AI + libraries — every placement row, same names as Classic.
+  if (r.placements.length) {
+    sections.push({ id: "ai", group: "ai", nodes: [...r.placements] });
+  }
 
-  // ── Surface — the "minor local changes" (notes ops, file ops, …).
+  // Surface — "minor local changes" (notes ops, file ops, …), one fold
+  // per section named by the surface.
   sections.push(
     ...surfaceSections([
       ...r.extras["after-clipboard"],
@@ -159,55 +123,37 @@ export function arrangeMenu(
     ]),
   );
 
-  // ── Share & Export — everything that moves the content somewhere else.
-  const shareChildren = tidy([
-    ...flattenedGroup("se:copy-as", r.copyAs),
-    { kind: "separator", id: "se:sep1" },
-    ...flattenedGroup("se:export", r.exportMenu),
-    { kind: "separator", id: "se:sep2" },
-    ...flattenedGroup("se:convert", r.convert),
-    { kind: "separator", id: "se:sep3" },
-    ...compact([r.attach, r.share]),
-    { kind: "separator", id: "se:sep4" },
-    r.compare,
-  ]);
-  const shareExport: MenuSubmenuNode = {
+  // History — the one approved grouping.
+  const history: MenuSubmenuNode = {
     kind: "submenu",
-    id: "share-export",
-    label: "Share & Export",
-    icon: Share2,
-    iconClassName: "text-emerald-500",
-    width: "w-64",
-    children: shareChildren,
+    id: "history",
+    label: "History",
+    icon: HistoryIcon,
+    iconClassName: "text-violet-500",
+    width: "w-60",
+    children: [r.undo, r.redo, r.viewHistory, { kind: "separator", id: "history:sep" }, r.compare],
   };
+  sections.push({
+    id: "document",
+    group: "document",
+    nodes: compact([history, r.exportMenu, r.convert, r.attach, r.share]),
+  });
 
-  // ── More — the rarely-used tail, still one click away.
-  const moreChildren = tidy([
-    r.selectAll,
-    ...(r.viewHistory.inapplicable ? [] : [r.viewHistory]),
-    r.chat,
-    { kind: "separator", id: "more:sep1" },
-    ...flattenedGroup("more:quick", r.quickActions),
-  ]);
-  const more: MenuSubmenuNode = {
-    kind: "submenu",
-    id: "more",
-    label: "More",
-    icon: Ellipsis,
-    iconClassName: "text-muted-foreground",
-    width: "w-56",
-    children: moreChildren,
-  };
-  sections.push({ id: "document", group: "document", nodes: [shareExport, more] });
+  // Tools.
+  sections.push({
+    id: "tools",
+    group: "tools",
+    nodes: compact([r.chat, r.quickActions]),
+  });
 
-  // ── Editable (core Save / Delete, when the surface wires them).
+  // Editable (core Save / Delete, when the surface wires them).
   const editableNodes = compact([r.save, r.del]);
   if (editableNodes.length) sections.push({ id: "editable", group: "editable", nodes: editableNodes });
 
-  // ── Admin.
+  // Admin.
   if (r.admin) sections.push({ id: "admin", group: "admin", nodes: [r.admin] });
 
-  return { strip, sections };
+  return { strip, sections: sections.filter((s) => s.nodes.length > 0) };
 }
 
 // ---------------------------------------------------------------------------
