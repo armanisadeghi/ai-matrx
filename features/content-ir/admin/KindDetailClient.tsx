@@ -26,13 +26,9 @@ import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
+import KindComponentCodeTab from "@/features/content-ir/admin/KindComponentCodeTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
-
-const KindComponentCodeTab = dynamic(
-  () => import("@/features/content-ir/admin/KindComponentCodeTab"),
-  { ssr: false },
-);
 
 const KindGateTab = dynamic(
   () => import("@/features/content-ir/admin/KindGateTab"),

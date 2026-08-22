@@ -45,6 +45,10 @@ function isHtmlComponent(row: KindComponentCodeRecord): boolean {
   return isJsonObject(row.config) && row.config.flavor === "html";
 }
 
+function componentSourceText(row: KindComponentCodeRecord | undefined): string {
+  return typeof row?.componentSource === "string" ? row.componentSource : "";
+}
+
 export default function KindComponentCodeTab({
   kindDefinitionId,
   kind,
@@ -65,8 +69,8 @@ export default function KindComponentCodeTab({
           (row) => row.source === "db" && row.role === "output",
         );
         const first = firstEditable ?? rows[0];
-        setSelectedId(first?.id ?? "");
-        setDraft(first?.componentSource ?? "");
+        setSelectedId(first ? first.id : "");
+        setDraft(componentSourceText(first));
       })
       .catch((error) => {
         if (!alive) return;
@@ -120,14 +124,14 @@ export default function KindComponentCodeTab({
   }
 
   const selectedComponent: KindComponentCodeRecord = selected;
-  const savedCode = selectedComponent.componentSource ?? "";
+  const savedCode = componentSourceText(selectedComponent);
   const dirty = draft !== savedCode;
   const editable = selectedComponent.source === "db";
 
   function selectComponent(id: string) {
     const next = rows.find((row) => row.id === id);
     setSelectedId(id);
-    setDraft(next?.componentSource ?? "");
+    setDraft(componentSourceText(next));
   }
 
   async function save(): Promise<void> {
@@ -235,7 +239,9 @@ export default function KindComponentCodeTab({
             }
             path={`kind-component://${selectedComponent.id}${isHtmlComponent(selectedComponent) ? ".html" : ".tsx"}`}
             initialCode={draft}
-            onChange={(value) => setDraft(value ?? "")}
+            onChange={(value) =>
+              setDraft(typeof value === "string" ? value : "")
+            }
             mode={mode}
             height="100%"
             defaultWordWrap="on"
