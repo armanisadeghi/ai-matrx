@@ -25,11 +25,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  ChevronDown,
   ExternalLink,
   Expand,
   MessagesSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   Tooltip,
@@ -54,6 +61,8 @@ export interface ConversationsSectionProps {
   onContinue: (conversationId: string) => void;
   /** Start a brand-new interview in the panel. */
   onStartNew: () => void;
+  /** Reports how many interviews loaded (the parent heading shows it). */
+  onCount?: (count: number) => void;
 }
 
 export function ConversationsSection({
@@ -63,6 +72,7 @@ export function ConversationsSection({
   canEdit,
   onContinue,
   onStartNew,
+  onCount,
 }: ConversationsSectionProps) {
   const [interviews, setInterviews] = useState<RulebookInterview[] | null>(
     null,
@@ -75,6 +85,7 @@ export function ConversationsSection({
       const res = await listRulebookInterviewsWithAccess(rulebookId, rules);
       if (cancelled) return;
       setInterviews(res.interviews);
+      onCount?.(res.interviews.length);
       setHiddenCount(res.hiddenCount);
     })();
     return () => {
@@ -134,55 +145,84 @@ export function ConversationsSection({
                     : ""}
                 </div>
               </div>
+              {/* ONE Continue (Arman, 2026-08-21): "those three are all
+                  continue, but only one of them is called Continue, which
+                  confuses things." The row now has exactly one action —
+                  Continue — and a small chevron for the two other WAYS of
+                  continuing (full page, new tab). Same three doors, one name. */}
               <div className="flex shrink-0 items-center gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                      <Link
-                        href={`/masterwork/${rulebookId}/interview?conversation=${interview.conversationId}`}
-                      >
-                        <Expand className="h-3.5 w-3.5" />
-                        <span className="sr-only">Continue full-screen</span>
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Continue on its own full page</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                      <Link
-                        href={`/chat/${interview.conversationId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="sr-only">Open in a new tab</span>
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Read the whole conversation in a new tab
-                  </TooltipContent>
-                </Tooltip>
                 {canEdit ? (
+                  <div className="flex items-center">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 rounded-r-none"
+                          onClick={() => onContinue(interview.conversationId)}
+                        >
+                          Continue
+                          <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Pick this interview back up here, beside your rules
+                      </TooltipContent>
+                    </Tooltip>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-7 w-6 rounded-l-none border-l-0"
+                          aria-label="Other ways to continue"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/masterwork/${rulebookId}/interview?conversation=${interview.conversationId}`}
+                            className="flex items-center gap-2"
+                          >
+                            <Expand className="h-3.5 w-3.5" />
+                            Continue on a full page
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/chat/${interview.conversationId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Read it in a new tab
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7"
-                        onClick={() => onContinue(interview.conversationId)}
-                      >
-                        Continue
-                        <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      <Button asChild size="icon" variant="ghost" className="h-7 w-7">
+                        <Link
+                          href={`/chat/${interview.conversationId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span className="sr-only">Read it in a new tab</span>
+                        </Link>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      Pick this interview back up here, beside your rules
+                      Read the whole conversation in a new tab
                     </TooltipContent>
                   </Tooltip>
-                ) : null}
+                )}
               </div>
             </li>
           ))}

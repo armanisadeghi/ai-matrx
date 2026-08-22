@@ -35,7 +35,8 @@
 // to delete the one it replaces.
 
 import Link from "next/link";
-import { Layers, MessageSquarePlus, Plus } from "lucide-react";
+import { useState } from "react";
+import { Layers, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -72,11 +73,18 @@ export function RulebookInputsSection({
   onStartInterview,
   onOpenApproaches,
 }: RulebookInputsSectionProps) {
+  // Counts for the two headings — "it needs to say interviews and then show
+  // that I have one interview" (Arman, 2026-08-21). Reported up by the two
+  // lists themselves, never queried twice.
+  const [interviewCount, setInterviewCount] = useState<number | null>(null);
+  const [resourceCount, setResourceCount] = useState<number | null>(null);
+
   return (
     <section
       className="rounded-lg border border-border bg-card px-4 py-3"
       data-surface-value="sources"
     >
+      {/* ── section header: the one door + the record + every-way-in ── */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -94,51 +102,67 @@ export function RulebookInputsSection({
               Everything your rules come from — open it as its own page
             </TooltipContent>
           </Tooltip>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Interviews, documents, published work, AI chats
-          </span>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           {/* THE RECORD — everything the Expert has ever said, one entry
-              point on the whole page (it used to be here, in the header, and
-              in a bare unlabeled icon beside it). */}
-          <YourWordsActions rulebookId={rulebook.id} compact variant="ghost" />
+              point on the whole page. Beside the Interviews it explains:
+              this is where the content of those interviews lives. */}
+          <YourWordsActions rulebookId={rulebook.id} compact variant="outline" />
           {canEdit ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="h-7"
+                  variant="ghost"
+                  className="h-7 text-muted-foreground"
                   onClick={onOpenApproaches}
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add
+                  All the ways to add
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Every way to add to this Rulebook — documents, published work,
+                Every way to build this Rulebook — documents, published work,
                 AI chats, recordings, and more
-              </TooltipContent>
-            </Tooltip>
-          ) : null}
-          {canEdit ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" className="h-7" onClick={onStartInterview}>
-                  <MessageSquarePlus className="h-3.5 w-3.5" />
-                  New interview
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Talk about how you work — rules get drafted as you speak
               </TooltipContent>
             </Tooltip>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-2">
+      {/* ── INTERVIEWS — a named section with its count and its own + ──
+          (Arman, 2026-08-21): "it needs to say interviews and then show that
+          I have one interview. And then… right where it shows interviews,
+          there could be a plus icon that I can click to add more." */}
+      <div className="mt-3">
+        <div className="flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Interviews
+          </h4>
+          {interviewCount !== null && interviewCount > 0 ? (
+            <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+              {interviewCount}
+            </span>
+          ) : null}
+          {canEdit ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-5 w-5"
+                  onClick={onStartInterview}
+                  aria-label="New interview"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                New interview — talk about how you work, rules get drafted as
+                you speak
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
         <ConversationsSection
           rulebookId={rulebook.id}
           rules={rulebook.rules}
@@ -146,15 +170,31 @@ export function RulebookInputsSection({
           canEdit={canEdit}
           onContinue={onContinueInterview}
           onStartNew={onStartInterview}
+          onCount={setInterviewCount}
         />
       </div>
 
-      <div className="mt-2 border-t border-border/60 pt-2">
+      {/* ── RESOURCES — same shape: name, count, add. The pickers stay
+          hidden until asked for (collapsedCapture): "not instantly at the
+          beginning" — the panel is informational once things exist. */}
+      <div className="mt-3 border-t border-border/60 pt-2">
+        <div className="flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Resources
+          </h4>
+          {resourceCount !== null && resourceCount > 0 ? (
+            <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+              {resourceCount}
+            </span>
+          ) : null}
+        </div>
         <RulebookSourcesPanel
           rulebook={rulebook}
           canEdit={canEdit}
           autoOpen={dumpFocus}
           variant="bare"
+          collapsedCapture
+          onCount={setResourceCount}
           onRulebookChanged={onRulebookChanged}
           onIngested={onIngested}
         />

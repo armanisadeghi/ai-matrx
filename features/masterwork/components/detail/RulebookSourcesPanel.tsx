@@ -179,6 +179,8 @@ export function RulebookSourcesPanel({
   onRulebookChanged,
   onIngested,
   variant = "card",
+  collapsedCapture = false,
+  onCount,
 }: {
   rulebook: Rulebook;
   canEdit: boolean;
@@ -191,6 +193,17 @@ export function RulebookSourcesPanel({
    * standalone `/masterwork/[id]/sources` route unchanged.
    */
   variant?: "card" | "bare";
+  /**
+   * COLLECT vs INFORMATIONAL (Arman, 2026-08-21): "At first, you need to have
+   * this thing that makes it easy to add things. But then once things have
+   * been added… it needs to switch to a point where it's now informational."
+   * When true, the capture toolbar (upload / link / workspace) starts HIDDEN
+   * behind one "Add" click; the list of what's attached and the run button
+   * stay visible. `autoOpen` (the ?dump=1 Approach card) still opens it.
+   */
+  collapsedCapture?: boolean;
+  /** Reports how many sources are attached (the parent heading shows it). */
+  onCount?: (count: number) => void;
   /** A staged-URL CAS write returned a fresh Rulebook row — adopt it. */
   onRulebookChanged: (rulebook: Rulebook) => void;
   /** The run finished — drafts landed on the Rulebook behind this panel. */
@@ -198,6 +211,9 @@ export function RulebookSourcesPanel({
 }) {
   const bare = variant === "bare";
   const [open, setOpen] = useState(autoOpen || variant === "bare");
+  const [captureVisible, setCaptureVisible] = useState(
+    autoOpen || !collapsedCapture,
+  );
   const [showPicker, setShowPicker] = useState(false);
   const [showUrlAdd, setShowUrlAdd] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -207,6 +223,7 @@ export function RulebookSourcesPanel({
   useEffect(() => {
     if (!autoOpen) return;
     setOpen(true);
+    setCaptureVisible(true);
     const timer = window.setTimeout(() => {
       sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 150);
@@ -241,6 +258,9 @@ export function RulebookSourcesPanel({
 
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
   const totalSources = sourceLinks.length + stagedUrls.length;
+  useEffect(() => {
+    onCount?.(totalSources);
+  }, [totalSources, onCount]);
 
   const attachedKeys = useMemo(
     () =>
@@ -475,7 +495,41 @@ export function RulebookSourcesPanel({
           ) : null}
 
           {/* ── capture ──────────────────────────────────────────────── */}
-          {canEdit ? (
+          {canEdit && !captureVisible ? (
+            <div className="mt-1">
+              {totalSources > 0 ? (
+                <div className="rounded-md border border-border/60">
+                  <SourceRows
+                    sourceLinks={sourceLinks}
+                    stagedUrls={stagedUrls}
+                    titleFor={(token, id, label) =>
+                      titleFor({ token, id, label })
+                    }
+                    status={links.status}
+                    error={links.error}
+                    busyKey={busyKey}
+                    canEdit={canEdit}
+                    onDetach={detachAttached}
+                    onRemoveUrl={(url) => void removeUrl(url)}
+                  />
+                </div>
+              ) : null}
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant={totalSources === 0 ? "outline" : "ghost"}
+                  className="h-7"
+                  onClick={() => setCaptureVisible(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {totalSources === 0
+                    ? "Add your first resource"
+                    : "Add more"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {canEdit && captureVisible ? (
             <div className={cn("rounded-md border border-border/60", !bare && "mt-3")}>
               <AssociationCaptureToolbar
                 attach={captureAttach}
@@ -575,7 +629,8 @@ export function RulebookSourcesPanel({
                 />
               </AssociationCaptureToolbar>
             </div>
-          ) : (
+          ) : null}
+          {!canEdit ? (
             <div className="mt-3 rounded-md border border-border/60">
               <SourceRows
                 sourceLinks={sourceLinks}
@@ -589,7 +644,7 @@ export function RulebookSourcesPanel({
                 onRemoveUrl={() => undefined}
               />
             </div>
-          )}
+          ) : null}
 
           {/* ── the run ──────────────────────────────────────────────── */}
           {canEdit ? (
