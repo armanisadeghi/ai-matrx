@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 
 import type { useEnrollmentActions } from "../hooks/useEnrollmentActions";
 import type { EnrollmentDetail, Review } from "../types";
-import { PendingExamplesPanel } from "../components/PendingExamplesPanel";
 import { ReviewProgress } from "../components/ReviewProgress";
 import { fmtCost, fmtDate } from "../components/tokens";
 
@@ -195,13 +194,6 @@ export function EnrollmentSidebar({
               : `Reviews happen automatically after ${needed} new real runs, or run one now.`}
           </p>
         </div>
-
-        <PendingExamplesPanel
-          enrollmentId={enrollment.id}
-          audience="product"
-          reviewRunning={runReview.isPending}
-          onReviewExample={(id) => runReview.mutate([id])}
-        />
 
         <div className="text-[11px] text-muted-foreground">
           Spent {fmtCost(detail.spend.total_cost)} across{" "}

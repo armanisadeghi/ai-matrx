@@ -105,12 +105,7 @@ export function ReviewRow({
                   const kind = ex.kind ?? "run";
                   const id = ex.id ?? "";
                   const door = id ? exampleDoor(kind, id, audience) : null;
-                  // The timestamp says WHICH moment of the subject's history
-                  // this was — reviews that silently read the previous session
-                  // were the blind test's worst failure. Null on old reviews.
-                  const label = ex.at
-                    ? `${kind} ${id.slice(0, 8)} · ${fmtDate(ex.at)}`
-                    : `${kind} ${id.slice(0, 8)}`;
+                  const label = `${kind} ${id.slice(0, 8)}`;
                   return door ? (
                     <DoorLink key={`${id}-${i}`} size="xs" door={{ ...door, label }} />
                   ) : (
