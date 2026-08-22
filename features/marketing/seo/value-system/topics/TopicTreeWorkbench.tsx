@@ -21,6 +21,7 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListTree, Plus } from "lucide-react";
@@ -62,8 +63,9 @@ import { UnplacedQueue } from "./UnplacedQueue";
 const PAGE_SIZE = 50;
 
 export function TopicTreeWorkbench() {
-  const params = useParams<{ siteId: string }>();
+  const params = useParams<{ brandId: string; siteId: string }>();
   const siteId = params.siteId;
+  const brandId = params.brandId;
   const queryClient = useQueryClient();
   const window28 = reviewWindow();
   const windowLabel = `${window28.start} → ${window28.end}`;
@@ -294,6 +296,18 @@ export function TopicTreeWorkbench() {
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
           <ListTree className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">Topic tree</h2>
+          <Link
+            href={`/marketing/brands/${brandId}/sites/${siteId}/value/c`}
+            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Value workbench
+          </Link>
+          <Link
+            href={`/marketing/brands/${brandId}/sites/${siteId}/value/rules`}
+            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Rules &amp; places
+          </Link>
           <p className="hidden text-[11px] text-muted-foreground sm:block">
             Topics are shared across every site. What each one is worth is yours
             alone.

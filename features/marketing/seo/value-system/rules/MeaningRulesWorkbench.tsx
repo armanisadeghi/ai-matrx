@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ListChecks,
+  ListTree,
   MapPin,
   MapPinned,
   Plus,
@@ -133,13 +134,25 @@ export function MeaningRulesWorkbench() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-textured">
       <div className="shrink-0 border-b border-border bg-card px-3 py-2.5 sm:px-4">
-        <Link
-          href={marketingRoutes.site(brandId, siteId, "/value/c")}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-3 w-3" aria-hidden />
-          Back to the value workbench
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href={marketingRoutes.site(brandId, siteId, "/value/c")}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3 w-3" aria-hidden />
+            Back to the value workbench
+          </Link>
+          {/* Rules are one half of the arithmetic; the topic tree is the other
+              (the base weight every rule multiplies), so it is reachable from
+              here rather than by URL. */}
+          <Link
+            href={marketingRoutes.site(brandId, siteId, "/value/topics")}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ListTree className="h-3 w-3" aria-hidden />
+            Topic tree — what each subject is worth
+          </Link>
+        </div>
         <h1 className="mt-1 text-sm font-semibold text-foreground">
           Rules &amp; places — what words and locations are worth to {site.domain}
         </h1>
