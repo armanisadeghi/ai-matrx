@@ -312,6 +312,15 @@ export function MasterworksPage({
                         {masterwork.description}
                       </p>
                     ) : null}
+                    {/* THE CONTRACT LINE (Arman, 2026-08-21: "We need to
+                        define inputs and output from the start"): what you
+                        give it and what it hands back, stated before any
+                        run. The run box below shows the exact fields. */}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {masterwork.masterwork_kind === "generate"
+                        ? "You describe the job → it hands you the finished work, checked against every rule."
+                        : "You give it something written → it hands it back corrected, with what changed and why."}
+                    </p>
                     {drifted ? (
                       <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-primary">
                         <AlertTriangle className="h-3.5 w-3.5" />
