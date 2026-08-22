@@ -29,17 +29,39 @@
  *     like an expert one (P12).
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, BrainCircuit, Check, UserCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, BrainCircuit, Check, Loader2, UserCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { formatCount } from "@/features/marketing/search-console/types";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { getTopicPlacementStatus } from "./data";
+import type { TopicPlacementPassResult } from "./types";
 
 /** The knob registry namespace this strip obeys. */
 const KNOB_FEATURE = "seo.topic_placement";
+const PLACEMENT_PATH = "/seo/keywords/topics/backfill";
+
+/** The server's own milestones, in the operator's words. Never invented. */
+const PLACEMENT_STAGES: Record<string, string> = {
+  "seo.placement_refreshed": "Measuring this site's Search Console demand…",
+  "seo.placement_claimed": "Claiming the highest-demand unplaced keywords…",
+  "seo.assign_topics_started": "Reading the keywords…",
+  "seo.assign_topics_tree_loaded": "Reading the shared topic tree…",
+  "seo.assign_topics_agent_completed": "Placing keywords on the tree…",
+  "seo.assign_topics_applied": "Saving placements…",
+  "seo.placement_settled": "Settling the batch…",
+  "seo.placement_ceiling_reached": "Daily ceiling reached",
+  "seo.placement_completed": "Placement pass complete",
+};
+
 function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
 }
@@ -93,11 +115,16 @@ function Meter({
 
 export function TopicPlacementStrip({
   siteId,
+  siteName,
+  onPassFinished,
 }: {
   siteId: string;
   siteName: string;
   onPassFinished: () => void;
 }) {
+  const queryClient = useQueryClient();
+  const isAdmin = useAppSelector(selectIsAdmin);
+  const [lastPass, setLastPass] = useState<string | null>(null);
 
   // The demand floor is the SERVER's number. Reading it here (rather than
   // assuming one) is what lets the strip report what the floor defers instead
@@ -117,6 +144,45 @@ export function TopicPlacementStrip({
     staleTime: 30 * 1000,
   });
 
+  // The assigner's own reasoning is the product here, so the pass streams into
+  // the floating live-run window rather than hiding behind a spinner.
+  const pass = useSeoCommandRun<TopicPlacementPassResult>({
+    key: "topic-placement",
+    path: PLACEMENT_PATH,
+    finalKind: "seo.placement_completed",
+    stageLabels: PLACEMENT_STAGES,
+    live: { label: "Topic assigner" },
+  });
+
+  // The result lands on the handle (a durable run can also arrive by REJOIN
+  // after a refresh), so the settle-up reads it there rather than from a
+  // launch call that resolves as soon as the stream is handed over.
+  useEffect(() => {
+    const result = pass.result;
+    if (!result) return;
+    setLastPass(
+      result.ceiling_reached
+        ? `Daily ceiling reached — ${formatCount(result.placed_today)} of ${formatCount(result.daily_ceiling)} keywords placed today.`
+        : `Placed ${formatCount(result.placed)} of ${formatCount(result.claimed)} claimed` +
+          (result.proposed > 0
+            ? ` · ${formatCount(result.proposed)} need your confirmation`
+            : "") +
+          (result.human_protected > 0
+            ? ` · ${formatCount(result.human_protected)} left alone (you placed them)`
+            : "") +
+          (result.quarantined > 0
+            ? ` · ${formatCount(result.quarantined)} quarantined`
+            : "") +
+          ".",
+    );
+    if (result.error) toast.error(result.error);
+    // Placement moves the tree, the offering split and every value the
+    // resolver reaches through it.
+    void queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+    void queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
+    onPassFinished();
+  }, [onPassFinished, pass.result, queryClient]);
+
   const row = status.data;
 
   if (status.isError) {
@@ -135,6 +201,8 @@ export function TopicPlacementStrip({
   const owed = row.queue_pending - row.queue_deferred;
   // Nothing above the demand floor left to place is the only honest "done".
   const complete = owed <= 0;
+  const running = pass.running || row.queue_running > 0;
+
   return (
     <div
       className={cn(
@@ -206,6 +274,29 @@ export function TopicPlacementStrip({
             })}
             json={() => row}
           />
+          {isAdmin ? (
+            <Button
+              size="sm"
+              variant={complete ? "outline" : "default"}
+              className="h-6 gap-1 text-[11px]"
+              disabled={running || complete}
+              title={
+                complete
+                  ? "Every keyword above the demand floor is on the tree"
+                  : `Place the next highest-demand keywords, starting with "${row.next_phrase ?? ""}"`
+              }
+              onClick={() =>
+                void pass.launch({ site_id: siteId, refresh: true }, siteName)
+              }
+            >
+              {running ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <BrainCircuit className="h-3 w-3" />
+              )}
+              {running ? "Placing…" : "Place next"}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -226,6 +317,12 @@ export function TopicPlacementStrip({
         />
       </div>
 
+      {pass.stage && running ? (
+        <p className="text-[10px] text-foreground">{pass.stage}</p>
+      ) : null}
+      {pass.error ? (
+        <p className="text-[10px] text-destructive">{pass.error}</p>
+      ) : null}
       <p className="text-[10px] leading-relaxed text-muted-foreground">
         {row.next_phrase && !complete ? (
           <>
@@ -248,6 +345,7 @@ export function TopicPlacementStrip({
             yourself.{" "}
           </>
         ) : null}
+        {lastPass ? <span className="text-foreground">{lastPass}</span> : null}
       </p>
     </div>
   );
