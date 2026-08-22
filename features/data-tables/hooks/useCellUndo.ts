@@ -55,8 +55,13 @@ export type CellEdit = {
 const MAX_DEPTH = 100;
 
 export function useCellUndo(options: {
-  /** Refresh the grid after an undo/redo lands. */
-  onApplied: () => void;
+  /**
+   * An undo/redo landed. Carries the exact cell and the value now stored, so
+   * the grid can patch that ONE cell instead of refetching the table — a
+   * reload would remount the body and throw away the user's place, which is
+   * especially wrong for undo, whose whole job is to put things back.
+   */
+  onApplied: (edit: CellEdit, appliedValue: unknown) => void;
   /** True when the table is not writable — undo must be refused too. */
   readOnly: boolean;
 }) {
@@ -121,7 +126,7 @@ export function useCellUndo(options: {
         undoStack.current.pop();
         redoStack.current.push(edit);
         syncDepths();
-        onApplied();
+        onApplied(edit, edit.priorValue);
         toast({
           title: "Undone",
           description: `${edit.fieldDisplayName} restored.`,
@@ -143,7 +148,7 @@ export function useCellUndo(options: {
         redoStack.current.pop();
         undoStack.current.push(edit);
         syncDepths();
-        onApplied();
+        onApplied(edit, edit.nextValue);
         toast({
           title: "Redone",
           description: `${edit.fieldDisplayName} reapplied.`,

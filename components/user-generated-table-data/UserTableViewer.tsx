@@ -53,10 +53,14 @@ import {
   withResolvedChoices,
 } from "@/lib/field-formats/choices";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
-import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
+import {
+  useTableRealtime,
+  type TableRealtimeEvent,
+} from "@/features/data-tables/hooks/useTableRealtime";
 import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection";
 import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
 import { cellDomKey, type CellAddress } from "@/features/data-tables/grid-selection";
+import { classifyEcho } from "@/features/data-tables/realtime-echo";
 import {
   bulkWrite,
   deleteField,
@@ -123,6 +127,13 @@ import { TableCopyControls } from "@/features/data-tables/components/TableCopyCo
 interface TableDataRow {
   id: string;
   data: Record<string, unknown>;
+  /**
+   * Server write time. Load-bearing: it is what lets a realtime echo of OUR
+   * OWN write be recognised and dropped instead of triggering a refetch.
+   * Always the value the SERVER returned — never a client clock, whose skew
+   * would make a genuine remote change look older than ours and vanish.
+   */
+  updated_at?: string;
 }
 
 interface RowOrderingConfig {
@@ -190,10 +201,12 @@ function asTableDataRows(raw: unknown): TableDataRow[] {
       typeof (row as { data: unknown }).data === "object" &&
       (row as { data: unknown }).data !== null
     ) {
+      const updatedAt = (row as { updated_at?: unknown }).updated_at;
       return [
         {
           id: (row as { id: string }).id,
           data: (row as { data: Record<string, unknown> }).data,
+          ...(typeof updatedAt === "string" ? { updated_at: updatedAt } : {}),
         },
       ];
     }
@@ -765,26 +778,104 @@ const UserTableViewer = ({
   const applyColumnFilters = (rows: TableDataRow[]): TableDataRow[] =>
     applyFilters(rows, columnFilters);
 
-  // Live updates from other clients (or our own writes that bypass the
-  // local refetch). Debounced so a 1k-row bulk import doesn't trigger 1k
-  // refetches; a single refetch ~400ms after the burst stops is enough.
+  // ─── Realtime: suppress our own echoes, patch what is genuinely remote ────
+  //
+  // 🚨 SUPABASE SENDS YOU YOUR OWN WRITES, 50–500ms after your REST call already
+  // returned the fresh row. This used to trigger a debounced refetch of the
+  // whole table on EVERY event, including our own — so a beat after each save
+  // the grid reloaded, remounted, flashed, and lost the user's place. We were
+  // reloading the table to learn what we had just written.
+  //
+  // The guard is TIMESTAMP-MONOTONIC, never an in-flight flag: by the time the
+  // echo lands the flag is long cleared, so flags always miss it
+  // (`supabase-realtime` skill, rule 1).
+  //
+  //   older `updated_at` than we hold      → drop; it carries no information
+  //   equal `updated_at` AND equal content → drop; that is our own echo
+  //   equal `updated_at`, different content → DELIVER; a same-millisecond
+  //                                           collaborator write is real
+  //   unparseable timestamps                → fall through to delivering
+  //
+  // Degrading toward DELIVERING is deliberate: showing a change we could have
+  // suppressed is a cosmetic flicker, while suppressing one we should have
+  // shown is silent data loss on screen.
   const realtimeRefetchTimer = React.useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
-  useTableRealtime(tableId, () => {
-    if (realtimeRefetchTimer.current) {
-      clearTimeout(realtimeRefetchTimer.current);
-    }
-    realtimeRefetchTimer.current = setTimeout(() => {
-      void loadTableData(
-        currentPage,
-        limit,
-        sortField,
-        sortDirection,
-        searchTerm,
+
+  const rowsRef = React.useRef<TableDataRow[]>(data);
+  rowsRef.current = data;
+
+  const handleRealtime = useCallback(
+    (event: TableRealtimeEvent) => {
+      // A row appeared or vanished: the page contents, the total and the
+      // pagination all genuinely moved, and only a refetch can say what the
+      // page is now. Debounced so a bulk import does not fire one per row.
+      if (event.kind !== "UPDATE" || !event.rowId || !event.row) {
+        if (realtimeRefetchTimer.current) {
+          clearTimeout(realtimeRefetchTimer.current);
+        }
+        realtimeRefetchTimer.current = setTimeout(() => {
+          void loadTableData(
+            currentPage,
+            limit,
+            sortField,
+            sortDirection,
+            searchTerm,
+          );
+        }, 400);
+        return;
+      }
+
+      const local = rowsRef.current.find((r) => r.id === event.rowId);
+      const incomingData = event.row.data;
+      if (!local || !incomingData) return;
+
+      // The decision itself lives in `realtime-echo.ts` and is unit-tested —
+      // this is the class that has frozen browsers before, and it should not be
+      // re-derived inline in a 2,700-line component.
+      const decision = classifyEcho({
+        localUpdatedAt: local.updated_at,
+        incomingUpdatedAt: event.row.updated_at,
+        localData: local.data,
+        incomingData,
+      });
+      if (decision !== "deliver") return;
+
+      // A genuine remote change. Patch the row rather than refetching, so a
+      // collaborator's edit appears without the grid flashing under the user.
+      setData((prev) =>
+        prev.map((row) =>
+          row.id === event.rowId
+            ? { ...row, data: incomingData, updated_at: event.row?.updated_at }
+            : row,
+        ),
       );
-    }, 400);
-  });
+      setFullDatasetCache((prev) =>
+        prev
+          ? prev.map((row) =>
+              row.id === event.rowId
+                ? { ...row, data: incomingData, updated_at: event.row?.updated_at }
+                : row,
+            )
+          : prev,
+      );
+      setAllSortedData((prev) =>
+        prev
+          ? prev.map((row) =>
+              row.id === event.rowId
+                ? { ...row, data: incomingData, updated_at: event.row?.updated_at }
+                : row,
+            )
+          : prev,
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentPage, limit, sortField, sortDirection, searchTerm],
+  );
+
+  useTableRealtime(tableId, handleRealtime);
+
   useEffect(
     () => () => {
       if (realtimeRefetchTimer.current)
@@ -1582,16 +1673,10 @@ const UserTableViewer = ({
       // read twin (`table_description`) refresh without refetching the table.
       setTableInfo((prev) => (prev ? { ...prev, description } : prev));
     },
-    onCellSaved: () => {
-      setAllSortedData(null);
-      setFullDatasetCache(null);
-      void loadTableData(
-        currentPage,
-        limit,
-        sortField,
-        sortDirection,
-        searchTerm,
-      );
+    // An agent write is still ONE cell — patch it in place for the same reason
+    // a hand edit does, so the grid does not flash under the user mid-run.
+    onCellSaved: (rowId, fieldName, value) => {
+      patchLocalCell(rowId, fieldName, value);
     },
   });
 
@@ -1660,6 +1745,68 @@ const UserTableViewer = ({
   // being edited. The middle state is what makes arrow keys, Tab, copy and
   // Delete mean anything — see `features/data-tables/grid-selection.ts`.
 
+  /**
+   * A cell write landed — patch that ONE cell in the rows we already hold.
+   *
+   * 🚨 NEVER REFETCH FOR A SINGLE CELL. A full reload replaces every row object,
+   * so React remounts the whole body: the grid visibly flashes, the scroll
+   * position jumps, and the cell you just left stops being the cell you are
+   * looking at. For a value the server already confirmed, the browser knows the
+   * answer — going back to the network to learn what we just wrote is both
+   * slower and worse.
+   *
+   * The write is already authoritative: `udt_upsert_cell` is a surgical
+   * jsonb_set that cannot touch another field, and it returns the stored row.
+   * So this is not an optimistic guess that might diverge — it is applying the
+   * result we were handed.
+   *
+   * Every row source has to be patched together or they disagree: `data` is the
+   * page on screen, `fullDatasetCache` backs column filtering, `allSortedData`
+   * backs whole-table sorting. Patching one and dropping the others is how a
+   * filtered view starts showing a stale value.
+   */
+  const patchLocalCell = useCallback(
+    (
+      rowId: string,
+      fieldName: string,
+      value: unknown,
+      /**
+       * The `updated_at` the SERVER stored for this write. Recording it is what
+       * makes the incoming echo recognisable as ours: the echo arrives with the
+       * same stamp and the same content, and is dropped. Omitted for a purely
+       * local patch, which then simply fails to suppress — degrading to a
+       * refetch, never to showing the wrong value.
+       */
+      serverUpdatedAt?: string,
+    ) => {
+      const patch = (rows: TableDataRow[] | null): TableDataRow[] | null => {
+        if (!rows) return rows;
+        let hit = false;
+        const next = rows.map((row) => {
+          if (row.id !== rowId) return row;
+          hit = true;
+          return {
+            ...row,
+            data: { ...row.data, [fieldName]: value },
+            ...(serverUpdatedAt ? { updated_at: serverUpdatedAt } : {}),
+          };
+        });
+        // Identity is preserved when nothing matched, so React skips the
+        // re-render entirely rather than reconciling an equal list.
+        return hit ? next : rows;
+      };
+      setData((prev) => patch(prev) ?? prev);
+      setFullDatasetCache((prev) => patch(prev));
+      setAllSortedData((prev) => patch(prev));
+    },
+    [],
+  );
+
+  /**
+   * A write changed which ROWS exist (insert, delete) — only then is a refetch
+   * the honest answer, because the page's contents genuinely changed and the
+   * total and pagination move with it.
+   */
   const refreshAfterWrite = useCallback(() => {
     setAllSortedData(null);
     setFullDatasetCache(null);
@@ -1668,7 +1815,11 @@ const UserTableViewer = ({
   }, [currentPage, limit, sortField, sortDirection, searchTerm]);
 
   const cellUndo = useCellUndo({
-    onApplied: refreshAfterWrite,
+    // Undo restores ONE cell; patch it rather than reloading the table. A
+    // reload here would be doubly wrong — undo exists to put things back, and
+    // a flashing, scroll-jumping grid is not "back".
+    onApplied: (edit, appliedValue) =>
+      patchLocalCell(edit.rowId, edit.fieldName, appliedValue),
     readOnly: isReadOnly,
   });
 
@@ -1740,14 +1891,23 @@ const UserTableViewer = ({
         priorValue: prior,
         nextValue: null,
       });
-      refreshAfterWrite();
+      patchLocalCell(address.rowId, address.fieldName, null);
     },
-    [cellUndo, fields, isReadOnly, readCell, refreshAfterWrite, tableId],
+    [cellUndo, fields, isReadOnly, patchLocalCell, readCell, tableId],
   );
 
   /** Run one bulk transaction and report it honestly. */
   const runBulkOps = useCallback(
-    async (ops: BulkOp[], describe: string): Promise<boolean> => {
+    async (
+      ops: BulkOp[],
+      describe: string,
+      /**
+       * Refetch afterwards. TRUE only when the write changed which ROWS exist
+       * (insert, delete) — then the page contents, the total and the pagination
+       * all genuinely moved. A pure cell batch patches in place instead.
+       */
+      refetch = true,
+    ): Promise<boolean> => {
       if (isReadOnly || ops.length === 0) return false;
       const result = await bulkWrite({ tableId, operations: ops });
       if (isServiceFailure(result)) {
@@ -1771,7 +1931,7 @@ const UserTableViewer = ({
       } else {
         toast({ title: describe });
       }
-      refreshAfterWrite();
+      if (refetch) refreshAfterWrite();
       return true;
     },
     [isReadOnly, refreshAfterWrite, tableId],
@@ -1791,10 +1951,12 @@ const UserTableViewer = ({
     ) => {
       const field = fields.find((f) => f.field_name === fieldName);
       const prior = capturePriorValues(rows, fieldName);
-      const landed = await runBulkOps(ops, describe);
+      // Cell-only batch — no row appears or disappears, so patch in place.
+      const landed = await runBulkOps(ops, describe, false);
       if (!landed) return;
       for (const op of ops) {
         if (op.op !== "cell") continue;
+        patchLocalCell(op.row_id, fieldName, op.value);
         cellUndo.record({
           tableId,
           rowId: op.row_id,
@@ -1805,7 +1967,7 @@ const UserTableViewer = ({
         });
       }
     },
-    [cellUndo, fields, runBulkOps, tableId],
+    [cellUndo, fields, patchLocalCell, runBulkOps, tableId],
   );
 
   const handleBulkSetColumn = useCallback(
@@ -2587,7 +2749,16 @@ const UserTableViewer = ({
                                   nextValue,
                                 })
                               }
-                              onSaved={refreshAfterWrite}
+                              // Patch, never refetch — a full reload remounts
+                              // the body and throws away the user's place.
+                              onSaved={(newValue, serverUpdatedAt) =>
+                                patchLocalCell(
+                                  row.id,
+                                  field.field_name,
+                                  newValue,
+                                  serverUpdatedAt,
+                                )
+                              }
                             />
                           </div>
                           {cellData && (

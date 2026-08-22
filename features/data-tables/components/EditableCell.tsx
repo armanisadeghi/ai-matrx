@@ -76,8 +76,12 @@ type Props = {
   display: ReactNode;
   /** Disable edit mode entirely (e.g. viewer permission only). */
   editable?: boolean;
-  /** Notify parent so it can refresh its row cache. */
-  onSaved?: (newValue: unknown) => void;
+  /**
+   * The write landed. `serverUpdatedAt` is the row's stored write time as the
+   * RPC returned it — the parent records it so the realtime ECHO of this same
+   * write is recognised and dropped instead of refetching the table.
+   */
+  onSaved?: (newValue: unknown, serverUpdatedAt?: string) => void;
 
   // ─── grid-owned state ────────────────────────────────────────────────────
   /** This cell is the current one. Renders the ring; nothing has changed. */
@@ -194,7 +198,8 @@ export function EditableCell({
     // Prior value FIRST — this is the whole basis of undo.
     onRecordEdit?.(value, normalized);
     onEndEdit?.(opts?.move);
-    onSaved?.(normalized);
+    const storedAt = (result.data as { updated_at?: unknown } | null)?.updated_at;
+    onSaved?.(normalized, typeof storedAt === "string" ? storedAt : undefined);
   }, [
     dataType,
     format,
