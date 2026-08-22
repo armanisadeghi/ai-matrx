@@ -76,7 +76,7 @@ function PendingRow({
         {soon ? (
           <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            This is the one we emailed you about.
+            This is what we emailed you about.
           </p>
         ) : null}
       </div>

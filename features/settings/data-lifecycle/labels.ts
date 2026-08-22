@@ -3,11 +3,21 @@
 // THE RULE: a person never sees `entity_token`. "fc_card" is a table name, and
 // this page has to make sense to someone who does not know what a table is.
 //
-// Three sources, in order: the retention policy's own label (an admin wrote it
-// for exactly this notice), then the canonical entity registry
-// (`platform.entity_types.label`, already generated into the client via
-// `entityRegistry` — no new data path), then a humanized token as a last resort
-// so a brand-new entity still reads as English instead of code.
+// Three sources, in order:
+//   1. the canonical entity registry (`platform.entity_types.label`, already
+//      generated into the client via `entityRegistry` — no new data path),
+//   2. the retention policy's own `label`,
+//   3. a humanized token, so a brand-new entity still reads as English.
+//
+// 🚨 The registry comes FIRST, and that ordering is load-bearing. A retention
+// policy is written at a SCOPE — user, organization, taxonomy node, global —
+// and only the `entity` scope names one entity, so its label is usually a
+// sentence about the whole scope. Verified live 2026-08-22: a user-scoped
+// policy labelled "Flashcard decks you deleted" is the winning policy for
+// EVERY one of that user's entities, so trusting it first labelled that
+// person's rulebooks as flashcard decks. The registry label is per-entity by
+// construction and cannot be wrong that way; the policy label is the fallback
+// for a token the registry does not carry.
 
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 
@@ -25,9 +35,9 @@ export function lifecycleLabel(
   entityToken: string,
   policyLabel?: string | null,
 ): string {
-  if (policyLabel?.trim()) return policyLabel.trim();
   const info = tryGetEntityInfo(entityToken);
   if (info) return info.labelPlural;
+  if (policyLabel?.trim()) return policyLabel.trim();
   return humanize(entityToken);
 }
 

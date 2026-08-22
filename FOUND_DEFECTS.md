@@ -15,6 +15,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D251 — a `user`-scoped retention policy silently governs EVERY entity, and its label follows (2026-08-22)
+
+`platform.retention_policy`'s `retention_policy_scope_addressing` CHECK constrains
+`entity_token` for the `global` / `taxonomy_node` / `entity` scopes, but its `user` branch is
+only `((user_id IS NOT NULL) OR (user_predicate IS NOT NULL))` — so a `user`-scoped row may
+carry an `entity_token` that is **accepted and then ignored**. The row governs every one of
+that user's entities.
+
+**Observed live 2026-08-22** while verifying `/settings/data`: a row
+`scope='user', entity_token='fc_set', label='Flashcard decks you deleted'` was the winning
+policy for `rulebook` too, so `lifecycle_user_notice` returned that label for both. The page is
+immune (`features/settings/data-lifecycle/labels.ts` resolves the registry label FIRST), but
+aidream's digest is not — `services/data_lifecycle/digest.py::_line()` uses
+`entry['label'] or entity_token`, so the email would tell a person their rulebooks are
+flashcard decks.
+
+**Two fixes, both in the aidream/DB half:**
+
+1. Extend the CHECK's `user` branch with `AND entity_token IS NULL AND taxonomy_node_id IS NULL`
+   (after auditing existing rows — today only the `global` floor exists, so it is free).
+2. Have `_line()` prefer a per-entity label over the policy label, matching the page.
+
+**Whose call:** aidream owns both. File the aidream half as `AD<n> — D251 remainder`.
+
 ### D250 — `orchestra_list()` still returns two LEGACY output columns; drop them after the next deploy (2026-08-22)
 
 **Deliberate, transitional, and time-boxed — not an oversight.** The Orchestrator→Conductor
