@@ -1,5 +1,5 @@
 {
-  "generated_for": "635-kinds+f50d9f879678",
+  "generated_for": "637-kinds+1a8d5711087d",
   "columns": [
     "definition",
     "example",
@@ -250,6 +250,20 @@
     },
     {
       "kind": "arman_video_prompt",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "artisan_demo_reading_list",
       "is_active": true,
       "family": "user_authored",
       "assets": {
@@ -4925,6 +4939,20 @@
       }
     },
     {
+      "kind": "reading_list_book",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "recipe_ingredient",
       "is_active": false,
       "family": "render_block",
@@ -9041,6 +9069,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "artisan_demo_reading_list",
+      "message": "kind \"artisan_demo_reading_list\" has no content block referencing \"__kind\": \"artisan_demo_reading_list\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "assertion_result",
       "message": "kind \"assertion_result\" has no content block referencing \"__kind\": \"assertion_result\""
     },
@@ -10441,6 +10475,12 @@
       "code": "no-content-block",
       "kind": "rating",
       "message": "kind \"rating\" has no content block referencing \"__kind\": \"rating\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "reading_list_book",
+      "message": "kind \"reading_list_book\" has no content block referencing \"__kind\": \"reading_list_book\""
     },
     {
       "severity": "yellow",
@@ -13421,6 +13461,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "artisan_demo_reading_list",
+      "message": "kind \"artisan_demo_reading_list\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "assertion_result",
       "message": "kind \"assertion_result\" has no render_block skill teaching it"
     },
@@ -14779,6 +14825,12 @@
       "code": "no-skill",
       "kind": "rating",
       "message": "kind \"rating\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "reading_list_book",
+      "message": "kind \"reading_list_book\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
