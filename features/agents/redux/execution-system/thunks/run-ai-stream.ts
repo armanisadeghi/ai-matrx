@@ -132,6 +132,11 @@ export class StreamPhaseError extends Error {
   }
 }
 
+/** The detached task is real, but this backend process cannot replay its wire. */
+export class StreamRejoinUnavailableError extends Error {
+  override name = "StreamRejoinUnavailableError" as const;
+}
+
 export interface RunAiStreamArgs {
   /** Tracking id for the active request (`createRequest`'d by the caller). */
   requestId: string;
@@ -156,7 +161,7 @@ export interface RunAiStreamArgs {
    *     answering). Reset the instance to `paused`, complete the request,
    *     do NOT failPendingToolLifecycle.
    */
-  kind: "turn" | "resume";
+  kind: "turn" | "resume" | "rejoin";
   /**
    * Clear the hidden user input on pre-persistence failure. Turns pass `!retry`
    * (clear on initial sends, leave drafts alone on retries). Resume passes
@@ -459,6 +464,10 @@ export async function runAiStream(
       }
 
       const code = response.status;
+      if (kind === "rejoin" && (code === 404 || code === 409)) {
+        unregisterAbortController(conversationId);
+        throw new StreamRejoinUnavailableError(serverMessage);
+      }
       if (code === 409) {
         if (kind === "resume") {
           // Three structured 409 shapes from /resume — none of them is a
@@ -599,6 +608,11 @@ export async function runAiStream(
       // Deliberately no cleanup: the caller retries the SAME request.
       throw error;
     }
+    if (error instanceof StreamRejoinUnavailableError) {
+      // Another process may own the detached task. The runtime follower is the
+      // durable fallback and will rehydrate the persisted result at terminal.
+      throw error;
+    }
 
     if (error instanceof Error && error.name === "AbortError") {
       dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
@@ -645,7 +659,7 @@ export async function runAiStream(
           : "client_error";
     const message = error instanceof Error ? error.message : "Unknown error";
     const connectionLossMessage =
-      "Connection to the stream was lost. The server is still finishing the response — recovering it automatically.";
+      "Connection interrupted. Reconnecting to your response now.";
 
     // Feed the systemwide Error Inspector — a dead stream (heartbeat loss,
     // total-timeout, fetch failure) is a server-origin failure the admin wants
@@ -705,7 +719,7 @@ export async function runAiStream(
         requestId,
         errorType,
         errorMessage: isConnectionLoss
-          ? "The connection to the stream dropped — reconnecting to the server run."
+          ? "The connection dropped — reconnecting to the response."
           : isTotal
             ? "Stream exceeded its maximum lifetime."
             : message,

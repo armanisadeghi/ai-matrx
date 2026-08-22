@@ -76,6 +76,7 @@ import {
   finalizeAccumulatedReasoning,
   finalizeClientMetrics,
   setRequestStatus,
+  recordTransportSeq,
   setCurrentPhase,
   trackOperationInit,
   trackOperationCompletion,
@@ -143,6 +144,20 @@ import type { ContentType } from "@/features/ai-models/capabilities/types";
 import { toast } from "@/lib/toast";
 import { isDirectiveApplyEvent } from "@/features/matrx-envelope/envelope";
 import { proposeDirective } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+
+function readTransportSeq(event: unknown): number | null {
+  if (
+    typeof event !== "object" ||
+    event === null ||
+    !("stream_seq" in event) ||
+    typeof event.stream_seq !== "number" ||
+    !Number.isSafeInteger(event.stream_seq) ||
+    event.stream_seq <= 0
+  ) {
+    return null;
+  }
+  return event.stream_seq;
+}
 
 /**
  * Maps a render-block `type` onto the canonical content type, when it
@@ -583,8 +598,17 @@ export async function processStream({
     }, POST_TERMINAL_GRACE_MS);
   };
 
+  let lastTransportSeq =
+    getState().activeRequests.byRequestId[requestId]?.lastTransportSeq ?? 0;
+
   try {
     for await (const event of events) {
+      const transportSeq = readTransportSeq(event);
+      if (transportSeq !== null) {
+        if (transportSeq <= lastTransportSeq) continue;
+        lastTransportSeq = transportSeq;
+        dispatch(recordTransportSeq({ requestId, streamSeq: transportSeq }));
+      }
       totalEvents++;
       const now = performance.now();
       if (onEvent) {
