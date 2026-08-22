@@ -385,8 +385,8 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: "/agents/sets/:orchestratorId",
-        destination: "/agents/orchestras/:orchestratorId",
+        source: "/agents/sets/:conductorId",
+        destination: "/agents/orchestras/:conductorId",
         permanent: true,
       },
       // 2026-08-17: The Vocabulary Law 4 rename moved the shipped
