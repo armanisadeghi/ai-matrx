@@ -21,12 +21,15 @@ export function MandateOverridePanel({
   mandate,
   bindings,
   agentsById,
+  focusConsumption = false,
   onChanged,
 }: {
   mandate: MandateDefinitionRow;
   /** Every binding the surface already loaded for this mandate. */
   bindings: MandateBindingRow[];
   agentsById: Record<string, MandateAgentSummary>;
+  /** Opened via a "Map inputs" door — scroll to and ring the consumption map. */
+  focusConsumption?: boolean;
   onChanged: () => void;
 }) {
   const userId = useAppSelector(selectUserId);
@@ -110,6 +113,7 @@ export function MandateOverridePanel({
         principal={principal}
         binding={binding}
         agentsById={agentsById}
+        focusConsumption={focusConsumption}
         onChanged={onChanged}
       />
     </div>

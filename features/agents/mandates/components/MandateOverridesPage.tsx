@@ -17,11 +17,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowDownUp,
+  Boxes,
   ChevronDown,
   KeyRound,
+  Loader2,
   RefreshCw,
   ShieldCheck,
   Building2,
+  Waypoints,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,11 @@ import {
   type MandateDefinitionRow,
   type MandateOverridesData,
 } from "../overrides";
+import {
+  parseBindingWave1,
+  parseMandateWave1,
+} from "../provision-shapes";
+import { fetchProvisions, type ProvisionOffer } from "../provisions";
 import {
   useBindingHealth,
   type BindingVerdict,
@@ -65,6 +73,14 @@ interface MandateView {
   resolvedAgentId: string | null;
   resolvedAgentName: string;
   settingsOnly: boolean;
+  /** The Provision this job's inputs come from — null for legacy mandates. */
+  provisionKey: string | null;
+  /** Offered values the mandate force-delivers as context (locked). */
+  pinnedContext: string[];
+  /** The binding that decides for THIS user (user > org), if any. */
+  activeBinding: MandateBindingRow | null;
+  /** How many offered values that binding consumes. 0 with no binding. */
+  consumedCount: number;
 }
 
 export function MandateOverridesPage() {
@@ -76,6 +92,14 @@ export function MandateOverridesPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openMandateId, setOpenMandateId] = useState<string | null>(null);
+  // The card whose "Map inputs" button was pressed — the expanded editor
+  // scrolls its Consumed-values section into view and rings it once.
+  const [mapIntentId, setMapIntentId] = useState<string | null>(null);
+  // provision_key → the call site's full offer. ONE batched read for the whole
+  // list (fetchProvisions), never one request per card.
+  const [offers, setOffers] = useState<Record<string, ProvisionOffer>>({});
+  const [offersLoading, setOffersLoading] = useState(true);
+  const [onlyMappable, setOnlyMappable] = useState(false);
   // Seeded from ?feature= so a feature can link its users straight to its own
   // mandates ("Choose the agents behind Podcasts") instead of dropping them at
   // the top of a 39-domain list.
@@ -107,6 +131,37 @@ export function MandateOverridesPage() {
     // Canonical agent listing for the override picker (owned + shared + builtins).
     void dispatch(fetchAgentsListFull());
   }, [dispatch, load]);
+
+  // ONE batched provision read for the entire list. 227 mandates carry a
+  // provision_key — a per-card fetch would be a request storm, so every key on
+  // the page is resolved in a single chunked query (5-min cached).
+  useEffect(() => {
+    if (!data) return;
+    const keys = [
+      ...new Set(
+        data.mandates
+          .map((m) => parseMandateWave1(m).provisionKey)
+          .filter((k): k is string => k !== null),
+      ),
+    ];
+    let cancelled = false;
+    fetchProvisions(keys)
+      .then((byKey) => {
+        if (cancelled) return;
+        setOffers(Object.fromEntries(byKey));
+      })
+      .catch((err: unknown) => {
+        // Never fatal for the page — the cards simply can't summarize the
+        // offer, and the editor re-fetches per mandate when opened.
+        console.error("[mandates] couldn't load provision offers", err);
+      })
+      .finally(() => {
+        if (!cancelled) setOffersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
 
   const orgNamesById = useMemo(() => {
     const out: Record<string, string> = {};
@@ -167,6 +222,18 @@ export function MandateOverridesPage() {
           Object.values(orgBindings).some((b) => b.config_overrides != null),
         );
 
+      // Wave-2 input model: the mandate's Provision (what the call site
+      // OFFERS) and the deciding binding's consumption map (what the bound
+      // agent CONSUMES). Unused offered values are normal — never a warning.
+      const wave1 = parseMandateWave1(mandate);
+      const activeBinding =
+        myBinding?.is_enabled === true
+          ? myBinding
+          : (Object.values(orgBindings)[0] ?? null);
+      const consumedCount = Object.keys(
+        parseBindingWave1(activeBinding).consumptionMap,
+      ).length;
+
       return {
         mandate,
         domain: splitMandateKey(mandate.mandate_key).feature,
@@ -180,6 +247,10 @@ export function MandateOverridesPage() {
           ? (data.agentsById[resolvedAgentId]?.name ?? "(unknown agent)")
           : defaultAgentName,
         settingsOnly,
+        provisionKey: wave1.provisionKey,
+        pinnedContext: wave1.pinnedContext,
+        activeBinding,
+        consumedCount,
       };
     });
   }, [data, organizations, userId]);
@@ -201,6 +272,10 @@ export function MandateOverridesPage() {
     return out;
   }, [views]);
   const bindingHealth = useBindingHealth(boundRefs);
+  const mappableCount = useMemo(
+    () => views.filter((v) => v.provisionKey !== null).length,
+    [views],
+  );
   const brokenCount = useMemo(
     () => Object.values(bindingHealth).filter((v) => !v.passing).length,
     [bindingHealth],
@@ -210,8 +285,9 @@ export function MandateOverridesPage() {
   // deep link straight to its own mandates (/agents/mandates?feature=podcast).
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return views;
-    return views.filter(
+    const scoped = onlyMappable ? views.filter((v) => v.provisionKey) : views;
+    if (!q) return scoped;
+    return scoped.filter(
       (v) =>
         v.domain.toLowerCase().includes(q) ||
         v.mandate.mandate_key.toLowerCase().includes(q) ||
@@ -223,9 +299,10 @@ export function MandateOverridesPage() {
           : ""
         )
           .toLowerCase()
-          .includes(q),
+          .includes(q) ||
+        (v.provisionKey ?? "").toLowerCase().includes(q),
     );
-  }, [views, query]);
+  }, [views, query, onlyMappable]);
 
   const domains = useMemo(() => {
     const grouped = new Map<string, MandateView[]>();
@@ -268,9 +345,10 @@ export function MandateOverridesPage() {
       <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted-foreground">
-            Every Mandate below is a named job, fulfilled by default by a system
-            agent. Swap in one of your own agents, or keep the system agent and
-            override its settings.
+            Every Mandate below is a named job, fulfilled by default by a
+            system agent. Swap in one of your own agents, keep the system agent
+            and override its settings, or map which of the values the call site
+            offers your agent actually consumes.
           </p>
           <OverriddenCountBadge
             overridden={
@@ -301,15 +379,29 @@ export function MandateOverridesPage() {
           </div>
         ) : null}
 
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by feature or job — e.g. podcast"
+            placeholder="Filter by feature, job, or provision — e.g. podcast"
             aria-label="Filter mandates"
-            className="h-9 w-full rounded-md border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:text-sm"
+            className="h-9 min-w-[14rem] flex-1 rounded-md border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:text-sm"
           />
+          {/* The door to the input model: without this, a job's offered values
+              are invisible until someone happens to expand the right card. */}
+          <Button
+            type="button"
+            variant={onlyMappable ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyMappable((v) => !v)}
+            aria-pressed={onlyMappable}
+            className="h-9 gap-1.5 text-[12.5px]"
+          >
+            <Waypoints className="h-3.5 w-3.5" />
+            Mappable inputs
+            <span className="opacity-70">({mappableCount})</span>
+          </Button>
         </div>
 
         {domains.length === 0 ? (
@@ -335,11 +427,23 @@ export function MandateOverridesPage() {
                   orgNamesById={orgNamesById}
                   canEditAnyOrg={adminOrgs.length > 0}
                   open={openMandateId === view.mandate.id}
-                  onToggle={() =>
+                  onToggle={() => {
+                    setMapIntentId(null);
                     setOpenMandateId((prev) =>
                       prev === view.mandate.id ? null : view.mandate.id,
-                    )
+                    );
+                  }}
+                  onMapInputs={() => {
+                    setOpenMandateId(view.mandate.id);
+                    setMapIntentId(view.mandate.id);
+                  }}
+                  offer={
+                    view.provisionKey
+                      ? (offers[view.provisionKey] ?? null)
+                      : null
                   }
+                  offersLoading={offersLoading}
+                  focusConsumption={mapIntentId === view.mandate.id}
                   onChanged={() => load()}
                   verdict={bindingHealth[view.mandate.id]}
                 />
@@ -377,6 +481,95 @@ function ProvenancePill({ view }: { view: MandateView }) {
   );
 }
 
+/**
+ * The list-level view of a mandate's INPUT model: which Provision feeds it,
+ * how big the offer is, how much of it the deciding binding consumes, and the
+ * explicit door onto the consumption map.
+ *
+ * THE CALM RULE (Arman, 2026-08-22): an offered value nothing consumes is
+ * NORMAL. Nothing here renders as a warning — a job with zero consumed values
+ * reads as "nothing mapped yet", never as a problem.
+ */
+function ProvisionStrip({
+  view,
+  offer,
+  loading,
+  onMapInputs,
+}: {
+  view: MandateView;
+  offer: ProvisionOffer | null;
+  loading: boolean;
+  onMapInputs: () => void;
+}) {
+  const offeredCount = offer?.values.length ?? 0;
+  const guaranteedCount =
+    offer?.values.filter((v) => v.guaranteed).length ?? 0;
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      <Badge
+        variant="outline"
+        className="gap-1 border-border/70 font-mono text-[10.5px] font-medium text-muted-foreground"
+      >
+        <Boxes className="h-2.5 w-2.5" />
+        {view.provisionKey}
+      </Badge>
+      {loading && !offer ? (
+        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Loading what this step offers…
+        </span>
+      ) : offer ? (
+        <>
+          <span className="text-[11px] text-muted-foreground">
+            {offeredCount} value{offeredCount === 1 ? "" : "s"} offered
+            {guaranteedCount > 0 ? ` — ${guaranteedCount} guaranteed` : null}
+          </span>
+          <span aria-hidden className="text-muted-foreground/40">
+            ·
+          </span>
+          <span
+            className={cn(
+              "text-[11px]",
+              view.consumedCount > 0
+                ? "font-medium text-foreground/80"
+                : "text-muted-foreground",
+            )}
+          >
+            {view.activeBinding
+              ? view.consumedCount > 0
+                ? `${view.consumedCount} of ${offeredCount} consumed`
+                : "nothing mapped yet"
+              : "nothing mapped yet"}
+          </span>
+          {view.pinnedContext.length > 0 ? (
+            <span className="text-[11px] text-muted-foreground/70">
+              ({view.pinnedContext.length} always sent as context)
+            </span>
+          ) : null}
+        </>
+      ) : (
+        <span className="text-[11px] text-muted-foreground/70">
+          This step&apos;s offer hasn&apos;t synced yet.
+        </span>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          onMapInputs();
+        }}
+        className="h-6 gap-1 px-2 text-[11px]"
+      >
+        <Waypoints className="h-3 w-3" />
+        Map inputs
+      </Button>
+    </div>
+  );
+}
+
 function MandateCard({
   view,
   data,
@@ -385,6 +578,10 @@ function MandateCard({
   canEditAnyOrg,
   open,
   onToggle,
+  onMapInputs,
+  offer,
+  offersLoading,
+  focusConsumption,
   onChanged,
   verdict,
 }: {
@@ -395,6 +592,14 @@ function MandateCard({
   canEditAnyOrg: boolean;
   open: boolean;
   onToggle: () => void;
+  /** Expand straight onto the consumption map (the explicit door). */
+  onMapInputs: () => void;
+  /** This mandate's provision offer — null while loading, or when the mandate
+   * carries no provision_key. */
+  offer: ProvisionOffer | null;
+  offersLoading: boolean;
+  /** Scroll + ring the Consumed-values section on the expanded editor. */
+  focusConsumption: boolean;
   onChanged: () => void;
   /** Undefined when nothing is bound here (the system agent runs). */
   verdict?: BindingVerdict;
@@ -539,6 +744,16 @@ function MandateCard({
               </span>
             ) : null}
           </div>
+          {/* The input model, at list level. A mandate with no Provision shows
+              nothing here — an absent offer is not a deficiency. */}
+          {view.provisionKey ? (
+            <ProvisionStrip
+              view={view}
+              offer={offer}
+              loading={offersLoading}
+              onMapInputs={onMapInputs}
+            />
+          ) : null}
         </div>
         <ChevronDown
           className={cn(
@@ -598,6 +813,7 @@ function MandateCard({
             mandate={mandate}
             bindings={mandateBindings}
             agentsById={data.agentsById}
+            focusConsumption={focusConsumption}
             onChanged={onChanged}
           />
         </div>

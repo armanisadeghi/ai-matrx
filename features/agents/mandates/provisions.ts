@@ -136,6 +136,77 @@ export async function fetchProvision(
   return value;
 }
 
+/**
+ * Fetch MANY provisions in one round trip — the list-surface read.
+ *
+ * `/agents/mandates` renders hundreds of mandates, most carrying a
+ * `provision_key`; one `fetchProvision` per card would be a 200+ request
+ * storm. Keys already cached are served from the cache and only the misses
+ * are queried, in chunks (PostgREST `in.(...)` rides the URL, so an unbounded
+ * key list would blow the request line). Missing keys are simply absent from
+ * the returned map — a mandate naming a provision no row backs is a data
+ * defect the CALLER decides how loudly to render.
+ */
+const PROVISION_BATCH_SIZE = 100;
+
+export async function fetchProvisions(
+  provisionKeys: readonly string[],
+): Promise<Map<string, ProvisionOffer>> {
+  const out = new Map<string, ProvisionOffer>();
+  const misses: string[] = [];
+  for (const key of new Set(provisionKeys)) {
+    const cached = provisionCache.get(key);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      if (cached.value) out.set(key, cached.value);
+      continue;
+    }
+    misses.push(key);
+  }
+  if (misses.length === 0) return out;
+
+  const client = wave1Client();
+  const chunks: string[][] = [];
+  for (let i = 0; i < misses.length; i += PROVISION_BATCH_SIZE) {
+    chunks.push(misses.slice(i, i + PROVISION_BATCH_SIZE));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      client
+        .schema("agent")
+        .from("provision")
+        .select("*")
+        .in("provision_key", chunk)
+        .is("deleted_at", null),
+    ),
+  );
+
+  const at = Date.now();
+  const seen = new Set<string>();
+  for (const { data, error } of results) {
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const offer: ProvisionOffer = {
+        id: row.id,
+        provisionKey: row.provision_key,
+        label: row.label,
+        description: row.description ?? "",
+        offerKindSlug: row.derived_input_kind,
+        values: parseOfferedValues(row.offered_values),
+        isEnabled: row.is_enabled,
+      };
+      seen.add(row.provision_key);
+      provisionCache.set(row.provision_key, { at, value: offer });
+      out.set(row.provision_key, offer);
+    }
+  }
+  // Negative-cache the keys that came back empty so a re-render doesn't
+  // re-query them every pass (same TTL as a hit).
+  for (const key of misses) {
+    if (!seen.has(key)) provisionCache.set(key, { at, value: null });
+  }
+  return out;
+}
+
 /** Cache-bust hook (mirrors the mandate cache buses). */
 export function invalidateProvisionCache(provisionKey?: string): void {
   if (provisionKey) provisionCache.delete(provisionKey);
