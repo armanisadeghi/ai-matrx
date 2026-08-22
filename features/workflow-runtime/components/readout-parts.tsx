@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
@@ -46,6 +47,11 @@ import {
 } from "../redux/workflow-runs.selectors";
 import { TERMINAL_RUN_STATUSES } from "../types";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
+import {
+  workflowFailureAgentInput,
+  workflowFailureHuman,
+  workflowFailureInvestigationPrompt,
+} from "./run/run-copy";
 
 export const PHASE_LABEL: Record<string, string> = {
   idle: "Not started",
@@ -163,14 +169,56 @@ function KindShapeDriftNote({
  * record, and pulling one string back out is exactly the throwing-away this
  * surface used to compensate for with regexes.
  */
-function StepErrorBody({ error }: { error: Record<string, unknown> }) {
+function StepErrorBody({
+  runId,
+  invocation,
+}: {
+  runId: string;
+  invocation: NodeInvocationState;
+}) {
   const [showTechnical, setShowTechnical] = useState(false);
+  const error = invocation.error ?? {};
   const explanation = explainRunFailure(error, "This step");
+  const failureView = () => ({
+    kind: "node" as const,
+    headline: explanation.headline,
+    technical: explanation.technical,
+    nextStep: explanation.nextStep,
+    runId,
+    status: invocation.phase,
+    stepId: invocation.nodeId,
+    stepLabel: invocation.specType ?? invocation.nodeId,
+    detail:
+      invocation.attempt > 1 ? `Attempt ${invocation.attempt}` : undefined,
+  });
   return (
     <div className="space-y-1.5">
       <div className="flex items-start gap-1.5">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-        <p className="text-xs text-destructive">{explanation.headline}</p>
+        <p className="min-w-0 flex-1 text-xs text-destructive">
+          {explanation.headline}
+        </p>
+        <CopyButtons
+          size="xs"
+          label="Workflow node failure"
+          human={() => workflowFailureHuman(failureView())}
+          agent={() => workflowFailureAgentInput(failureView())}
+          json={() => error}
+          agentVariant={{
+            id: "error",
+            label: "Error",
+            hint: "The node failure exactly as rendered",
+            position: "first",
+          }}
+          aiVariants={[
+            {
+              id: "error-with-prompt",
+              label: "Error with prompt",
+              hint: "Add a root-cause investigation brief",
+              build: () => workflowFailureInvestigationPrompt(failureView()),
+            },
+          ]}
+        />
       </div>
       {explanation.technical ? (
         <>
@@ -330,7 +378,7 @@ export function InvocationBody({
     return <SettledOutputBody output={invocation.output} />;
   }
   if (invocation.error) {
-    return <StepErrorBody error={invocation.error} />;
+    return <StepErrorBody runId={runId} invocation={invocation} />;
   }
   if (working) {
     return <WorkingBody message={invocation.progress?.message ?? null} />;

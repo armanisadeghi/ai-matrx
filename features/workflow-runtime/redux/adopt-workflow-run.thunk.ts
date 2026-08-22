@@ -355,6 +355,28 @@ export function adoptWorkflowRun(
           const stopThisRun = tree.stops.get(runId);
           // Defer so the current onEvent callback unwinds first.
           if (stopThisRun) setTimeout(stopThisRun, 0);
+
+          // A terminal durable event does NOT carry the run_result wrapper.
+          // GET /runs/{id} derives that wrapper from the now-terminal run and
+          // its node outcomes. The initial attach read happened before those
+          // rows existed, so stopping here without one final read left the
+          // live page blank until a manual refresh re-adopted the run.
+          // Transport shutdown and final hydration are intentionally
+          // independent: the event wire can close immediately while this
+          // bounded read completes against durable state.
+          void fetchJson<RunRow>(`/runs/${runId}`)
+            .then((row) => {
+              if (!tree.stopped) dispatch(seedRunRow({ runId, row }));
+            })
+            .catch((error: unknown) => {
+              const message =
+                error instanceof Error ? error.message : "final run read failed";
+              captureError({
+                source: "durable-run",
+                message: `[adopt-workflow-run] run ${runId} ended, but its final result could not be hydrated: ${message}`,
+                raw: { runId, error },
+              });
+            });
           break;
         }
         default:

@@ -27,13 +27,21 @@ import {
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 import {
+  selectNodeAggregatePhases,
+  selectRunCostTotal,
   selectRunError,
   selectRunStatus,
   selectRunStickyFacts,
 } from "../../redux/workflow-runs.selectors";
 import { explainRunFailure } from "../../run-failure-explanation";
+import {
+  workflowFailureAgentInput,
+  workflowFailureHuman,
+  workflowFailureInvestigationPrompt,
+} from "./run-copy";
 
 const STOPPED_STATUSES = new Set(["failed", "errored", "cancelled"]);
 
@@ -65,6 +73,8 @@ export function RunFailureCard({
   const status = useAppSelector(selectRunStatus(runId));
   const error = useAppSelector(selectRunError(runId));
   const sticky = useAppSelector(selectRunStickyFacts(runId));
+  const phases = useAppSelector(selectNodeAggregatePhases(runId));
+  const costUsd = useAppSelector(selectRunCostTotal(runId));
   const [showTechnical, setShowTechnical] = useState(false);
 
   if (status === null || !STOPPED_STATUSES.has(status)) return null;
@@ -91,6 +101,24 @@ export function RunFailureCard({
       ? error.step_label
       : null;
   const namedSteps = failedSteps.length > 0 ? failedSteps : recordedStep ? [recordedStep] : [];
+  const totalSteps = Object.keys(stepLabels).length;
+  const completedSteps = Object.values(phases).filter(
+    (phase) => phase === "settled" || phase === "skipped",
+  ).length;
+  const failureView = () => ({
+    kind: "run" as const,
+    headline: explanation.headline,
+    technical: explanation.technical,
+    nextStep: explanation.nextStep,
+    runId,
+    workflowName: whatItRan,
+    status,
+    stepLabel: recordedStep,
+    failedSteps: namedSteps,
+    completedSteps,
+    totalSteps,
+    costUsd,
+  });
 
   return (
     <section
@@ -109,9 +137,33 @@ export function RunFailureCard({
           )}
         />
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">
-            {explanation.headline}
-          </h2>
+          <div className="flex items-start gap-2">
+            <h2 className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+              {explanation.headline}
+            </h2>
+            <CopyButtons
+              size="icon"
+              label="Workflow run failure"
+              human={() => workflowFailureHuman(failureView())}
+              agent={() => workflowFailureAgentInput(failureView())}
+              json={() => error}
+              agentVariant={{
+                id: "error",
+                label: "Error",
+                hint: "The failure exactly as rendered, with run context",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "error-with-prompt",
+                  label: "Error with prompt",
+                  hint: "Add a root-cause investigation brief",
+                  build: () =>
+                    workflowFailureInvestigationPrompt(failureView()),
+                },
+              ]}
+            />
+          </div>
           {namedSteps.length > 0 ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
               It stopped at{" "}

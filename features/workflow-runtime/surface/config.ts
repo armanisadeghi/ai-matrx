@@ -18,6 +18,7 @@
  */
 
 import type { TriggerPointId } from "../trigger-points";
+import { resolveNodeIdentity } from "../components/run/node-presentation";
 
 export const SURFACE_SCHEMA_VERSION = 1;
 
@@ -185,7 +186,7 @@ export function describeSource(source: ReadoutSource): string {
  * when a person (or an AI author) shapes one.
  */
 export function deriveDefaultSurfaceConfig(definition: {
-  nodes: { id: string; data?: Record<string, unknown> }[];
+  nodes: { id: string; type?: string | null; data?: Record<string, unknown> }[];
 }): RunSurfaceConfig {
   const readouts: Readout[] = [];
   let deliverableNodeId: string | undefined;
@@ -193,9 +194,13 @@ export function deriveDefaultSurfaceConfig(definition: {
 
   for (const node of definition.nodes) {
     const data = node.data ?? {};
-    const specType =
-      typeof data.spec_type === "string" ? data.spec_type : null;
-    const category = typeof data.category === "string" ? data.category : null;
+    // ONE reader of a node's engine identity, shared with the journey rail —
+    // and it falls back to `node.type`, because `data.spec_type` /
+    // `data.category` exist only on Studio-authored definitions. Without the
+    // fallback every programmatically-created workflow (agent plans, compiled
+    // Orchestras, anything POSTed to /workflows) derived ZERO readouts and its
+    // run page showed an empty column while its agents worked.
+    const { specType, category } = resolveNodeIdentity(node);
     const outputKind =
       typeof data.output_kind === "string" && data.output_kind
         ? data.output_kind
