@@ -121,25 +121,14 @@ function WorkingBody({ message }: { message: string | null }) {
  * Silent on the happy path (the overwhelmingly common case), so it costs a
  * clean run nothing.
  */
-function KindShapeDriftNote({
-  invocation,
-  verdictShownElsewhere = false,
-}: {
+function KindShapeDriftNote({ invocation }: {
   invocation: NodeInvocationState;
-  /**
-   * True when the `node_outcome` wrapper is rendering its own verdict chip
-   * right below this note. The chip owns `output_kind_ok`; the note keeps the
-   * one thing the chip cannot say — that the payload named a DIFFERENT kind
-   * than the node promised. Saying it twice is noise, not emphasis.
-   */
-  verdictShownElsewhere?: boolean;
 }) {
   const declared = invocation.outputKindDeclared;
   const emitted = invocation.outputKind;
   const mismatched =
     declared !== null && emitted !== null && declared !== emitted;
-  const checkFailed =
-    invocation.outputKindOk === false && !verdictShownElsewhere;
+  const checkFailed = invocation.outputKindOk === false;
   if (!mismatched && !checkFailed) return null;
 
   return (
@@ -323,17 +312,17 @@ export function InvocationBody({
     return <WorkingBody message={invocation.progress?.message ?? null} />;
   }
   // THE WRAPPER BRANCH. When the engine sent a `node_outcome`, the readout
-  // renders THAT — provenance chrome (workflow, step, timing, kind verdict)
-  // from the wrapper's own component, which then hands the nested payload back
-  // to the registry so the data kind's component draws it. One packet, one
-  // path, no second renderer and no second `final_text` reader here.
+  // renders THAT through its transparent router, which hands the nested payload
+  // back to the registry so the data kind's component draws it. Wrapper
+  // diagnostics never become reader-facing chrome. One packet, one path, no
+  // second renderer and no second `final_text` reader here.
   //
   // Null wrapper = a pre-wrapper run or a producer that failed open, and the
   // branches below carry the surface exactly as they always did.
   if (settledOutput && invocation.wrapper) {
     return (
       <>
-        <KindShapeDriftNote invocation={invocation} verdictShownElsewhere />
+        <KindShapeDriftNote invocation={invocation} />
         <KindInstanceRender
           kind={NODE_OUTCOME_KIND}
           value={invocation.wrapper}

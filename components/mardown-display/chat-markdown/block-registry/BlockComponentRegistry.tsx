@@ -24,7 +24,7 @@ import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import AgentResultBlock from "../../blocks/agent-result/AgentResultBlock";
-// Runtime wrapper kinds — provenance chrome that DELEGATES the nested payload
+// Runtime wrapper kinds — transparent routers that DELEGATE the nested payload
 // back to the registry (RUNTIME_WRAPPER_WIRE.md §5).
 import NodeOutcomeBlock from "../../blocks/runtime-wrappers/NodeOutcomeBlock";
 import RunResultBlock from "../../blocks/runtime-wrappers/RunResultBlock";
