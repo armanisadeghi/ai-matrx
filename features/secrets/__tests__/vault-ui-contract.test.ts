@@ -172,6 +172,26 @@ describe("shared vault UI contract", () => {
     expect(detailSource).toContain("<Trash2");
   });
 
+  test("edits field values and metadata in place without a second editor card", () => {
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+
+    expect(detailSource).toContain("editingValue && editMode");
+    expect(detailSource).toContain("Enter the new value");
+    expect(detailSource).toContain("used for identification in workflows");
+    expect(detailSource).toContain(
+      "Add a runtime key before enabling sandboxes",
+    );
+    expect(detailSource).toContain("Additional fields");
+    expect(detailSource).not.toContain("Replace stored value");
+    expect(detailSource).not.toContain("runtime key required");
+    expect(detailSource).not.toContain(
+      "Workflows find this value by its runtime key",
+    );
+  });
+
   test("keeps the legacy settings URL on the canonical full Vault", () => {
     const settingsEntrySource = readFileSync(
       join(process.cwd(), "app/(transitional)/settings/secrets/page.tsx"),

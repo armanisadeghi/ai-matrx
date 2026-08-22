@@ -311,7 +311,7 @@ export function VaultItemDetail({
             <div className="contents">
               {primaryIds.size > 0 && (
                 <p className="rounded-md bg-muted/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground xl:col-span-2">
-                  Other fields
+                  Additional fields
                 </p>
               )}
               {otherFields.map((field) => renderField(field, false))}
@@ -320,10 +320,15 @@ export function VaultItemDetail({
         </section>
       )}
       {editingCredential && (
-        <AddFieldPanel
-          busy={busy}
-          onAdd={(field) => actions.addField(item.id, field)}
-        />
+        <section aria-label="Add an additional field" className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Add an additional field
+          </p>
+          <AddFieldPanel
+            busy={busy}
+            onAdd={(field) => actions.addField(item.id, field)}
+          />
+        </section>
       )}
 
       <AttachmentsSection
@@ -881,16 +886,32 @@ function FieldRow({
   const [valueDraft, setValueDraft] = useState("");
   const [envDraft, setEnvDraft] = useState(field.env_key ?? "");
   const [descDraft, setDescDraft] = useState(field.description ?? "");
+  const [editingValue, setEditingValue] = useState(false);
   const [confirmSeal, setConfirmSeal] = useState(false);
+  const envInputRef = useRef<HTMLInputElement>(null);
 
   const displayLabel = fieldLabelOf(field, label);
   const showEnvAlias = !envAliasIsRedundant(field);
-  const fieldTextChanged =
-    Boolean(valueDraft) ||
+  const metadataChanged =
     envDraft !== (field.env_key ?? "") ||
     descDraft !== (field.description ?? "");
   const protection = HANDLING_PRESENTATION[field.handling];
   const ProtectionIcon = protection.icon;
+
+  const saveValue = async () => {
+    if (!valueDraft) return;
+    await actions.updateFieldValue(item.id, field.id, valueDraft);
+    setValueDraft("");
+    setEditingValue(false);
+  };
+
+  const saveMetadata = async () => {
+    if (!VALID_KEY_RE.test(envDraft) && envDraft) return;
+    await actions.updateFieldMeta(item.id, field.id, {
+      ...(envDraft ? { env_key: envDraft } : { clear_env_key: true }),
+      description: descDraft || null,
+    });
+  };
 
   return (
     <div
@@ -935,14 +956,88 @@ function FieldRow({
         </span>
       </div>
 
-      {/* THE control — identical here and anywhere else a value is shown.
-          It begins concealed, reveals only on demand, and clears itself. */}
-      <SecretValue
-        item={item}
-        field={field}
-        showCountdown
-        className="mt-1 min-w-0"
-      />
+      {/* Display and edit occupy the SAME row. Never create a second value
+          panel below the value a person is already looking at. */}
+      {editingValue && editMode ? (
+        <div className="mt-1 flex min-w-0 items-center gap-1">
+          <Input
+            type={field.handling === "visible" ? "text" : "password"}
+            value={valueDraft}
+            onChange={(event) => setValueDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void saveValue();
+              if (event.key === "Escape") {
+                setValueDraft("");
+                setEditingValue(false);
+              }
+            }}
+            placeholder="Enter the new value"
+            className="h-9 min-w-0 flex-1 font-mono text-sm"
+            autoComplete="off"
+            autoFocus
+            aria-label={`New value for ${displayLabel}`}
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0"
+            disabled={busy || !valueDraft}
+            onClick={() => void saveValue()}
+            aria-label={`Save ${displayLabel}`}
+            title="Save"
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0"
+            onClick={() => {
+              setValueDraft("");
+              setEditingValue(false);
+            }}
+            aria-label={`Cancel editing ${displayLabel}`}
+            title="Cancel"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <SecretValue
+          item={item}
+          field={field}
+          showCountdown
+          className="mt-1 min-w-0"
+        >
+          {editMode && caps.can_edit && (
+            <>
+              {field.editable && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => setEditingValue(true)}
+                  aria-label={`Edit ${displayLabel}`}
+                  title="Edit"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={busy}
+                onClick={() => void actions.deleteField(item.id, field.id)}
+                aria-label={`Delete ${displayLabel}`}
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
+        </SecretValue>
+      )}
 
       {(showEnvAlias || field.inject_into_sandbox || field.description) && (
         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
@@ -965,110 +1060,53 @@ function FieldRow({
       )}
 
       {editMode && caps.can_edit && (
-        <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/40 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold">Edit {displayLabel}</p>
-            <div className="flex items-center gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                aria-label={`Save ${displayLabel}`}
-                title="Save field"
-                disabled={
-                  busy ||
-                  !fieldTextChanged ||
-                  (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft))
-                }
-                onClick={async () => {
-                  if (valueDraft) {
-                    await actions.updateFieldValue(
-                      item.id,
-                      field.id,
-                      valueDraft,
-                    );
-                    setValueDraft("");
-                  }
-                  if (
-                    envDraft !== (field.env_key ?? "") ||
-                    descDraft !== (field.description ?? "")
-                  ) {
-                    await actions.updateFieldMeta(item.id, field.id, {
-                      ...(envDraft
-                        ? { env_key: envDraft }
-                        : { clear_env_key: true }),
-                      description: descDraft || null,
-                    });
-                  }
-                }}
-              >
-                <Save className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                aria-label={`Delete ${displayLabel}`}
-                title="Delete field"
-                disabled={busy}
-                onClick={() => void actions.deleteField(item.id, field.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
+          <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <label className="flex min-w-0 items-center gap-2 text-xs">
+              <span className="shrink-0 text-muted-foreground">
+                {VAULT_LABELS.runtimeKey}:
+                <span className="hidden sm:inline">
+                  used for identification in workflows
+                </span>
+              </span>
+              <Input
+                ref={envInputRef}
+                value={envDraft}
+                onChange={(event) => setEnvDraft(event.target.value)}
+                placeholder="Optional"
+                className="h-8 min-w-0 flex-1 font-mono text-xs"
+                aria-invalid={Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)}
+              />
+            </label>
+            <label className="flex min-w-0 items-center gap-2 text-xs">
+              <span className="shrink-0 text-muted-foreground">
+                Description:
+              </span>
+              <Input
+                value={descDraft}
+                onChange={(event) => setDescDraft(event.target.value)}
+                placeholder="Optional"
+                className="h-8 min-w-0 flex-1 text-xs"
+              />
+            </label>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              disabled={
+                busy ||
+                !metadataChanged ||
+                (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft))
+              }
+              onClick={() => void saveMetadata()}
+              aria-label={`Save ${displayLabel} metadata`}
+              title="Save runtime key and description"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
           </div>
-          {field.editable && (
-            <div className="space-y-1">
-              <Label htmlFor={`replacement-value-${field.id}`}>
-                Replace stored value
-              </Label>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  id={`replacement-value-${field.id}`}
-                  type="password"
-                  value={valueDraft}
-                  onChange={(event) => setValueDraft(event.target.value)}
-                  placeholder="Enter the complete new value"
-                  className="min-w-48 flex-1 font-mono text-sm"
-                  autoComplete="off"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                The current value is never placed into an editable input.
-              </p>
-            </div>
-          )}
-          {/* A sandbox env is a NAME->value map: with no env key the value has
-              nowhere to land, so injection is impossible rather than merely
-              unconfigured. The server refuses that state outright (422); the
-              switch is disabled here so the user is pointed at the fix — set
-              an env key below — instead of hitting an error. Flipping this on
-              used to "succeed" and silently do nothing forever. */}
-          <div className="min-w-0 space-y-1">
-            <Label className="text-xs">{VAULT_LABELS.runtimeKey}</Label>
-            <Input
-              value={envDraft}
-              onChange={(e) => setEnvDraft(e.target.value)}
-              placeholder="DATA_FOR_SEO_EMAIL"
-              className="h-8 font-mono text-xs"
-              aria-invalid={Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Workflows find this value by its runtime key. Leave it empty only
-            when the credential is stored for manual viewing and copying.
-          </p>
-          <div className="min-w-0 space-y-1">
-            <Label className="text-xs">{VAULT_LABELS.description}</Label>
-            <Input
-              value={descDraft}
-              onChange={(e) => setDescDraft(e.target.value)}
-              placeholder="What is this field?"
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-xs">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label className="flex items-center gap-2 text-xs">
               <span>{VAULT_LABELS.fieldStatus}</span>
               <Switch
                 checked={field.is_active}
@@ -1081,34 +1119,37 @@ function FieldRow({
                 aria-label={VAULT_LABELS.fieldStatus}
               />
             </label>
-            <label
-              className="flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-xs"
-              title={
-                field.env_key
-                  ? undefined
-                  : "Set a runtime key first — a sandbox variable needs a name."
-              }
-            >
-              <span>
-                {VAULT_LABELS.sandboxAccess}
-                {field.env_key ? "" : " — runtime key required"}
-              </span>
+            <label className="flex items-center gap-2 text-xs">
+              <span>{VAULT_LABELS.sandboxAccess}</span>
               <Switch
                 checked={field.inject_into_sandbox}
-                disabled={busy || !field.env_key}
-                onCheckedChange={(checked) =>
-                  void actions.setInject(item.id, field.id, checked)
-                }
+                disabled={busy}
+                onCheckedChange={(checked) => {
+                  const effectiveKey = envDraft.trim() || field.env_key;
+                  if (checked && !effectiveKey) {
+                    toast.error("Add a runtime key before enabling sandboxes.");
+                    envInputRef.current?.focus();
+                    return;
+                  }
+                  if (checked && !VALID_KEY_RE.test(effectiveKey ?? "")) {
+                    toast.error("Enter a valid runtime key first.");
+                    envInputRef.current?.focus();
+                    return;
+                  }
+                  void (async () => {
+                    if (checked && envDraft.trim() !== (field.env_key ?? "")) {
+                      await saveMetadata();
+                    }
+                    await actions.setInject(item.id, field.id, checked);
+                  })();
+                }}
                 aria-label={VAULT_LABELS.sandboxAccess}
               />
             </label>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <Label className="text-xs">Protection</Label>
-              <span className="text-[11px] text-muted-foreground">
-                Every value is encrypted at rest.
-              </span>
             </div>
             <VaultHandlingControl
               value={field.handling}
@@ -1180,6 +1221,7 @@ function AddFieldPanel({
   const [envKey, setEnvKey] = useState("");
   const [handling, setHandling] = useState<VaultHandling>("revealable");
   const [inject, setInject] = useState(false);
+  const envKeyInputRef = useRef<HTMLInputElement>(null);
   const fieldKey = sanitizeFieldName(fieldName);
 
   const valid =
@@ -1207,25 +1249,19 @@ function AddFieldPanel({
             className="h-8 text-xs"
             aria-invalid={Boolean(fieldName) && !FIELD_KEY_RE.test(fieldKey)}
           />
-          {fieldName && (
-            <p className="whitespace-normal break-all text-[11px] text-muted-foreground">
-              {VAULT_LABELS.internalFieldKey}:{" "}
-              <code className="font-mono">{fieldKey || "invalid"}</code>
-            </p>
-          )}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">{VAULT_LABELS.runtimeKey}</Label>
+          <Label className="text-xs">
+            {VAULT_LABELS.runtimeKey}: used for identification in workflows
+          </Label>
           <Input
+            ref={envKeyInputRef}
             value={envKey}
             onChange={(e) => setEnvKey(e.target.value)}
             placeholder="DATA_FOR_SEO_EMAIL"
             className="h-8 font-mono text-xs"
             aria-invalid={Boolean(envKey) && !VALID_KEY_RE.test(envKey)}
           />
-          <p className="text-[11px] text-muted-foreground">
-            Required when a workflow finds this value by name.
-          </p>
         </div>
       </div>
       <div className="space-y-1">
@@ -1247,24 +1283,20 @@ function AddFieldPanel({
             onValueChange={setHandling}
             disabled={busy}
           />
-          <p className="text-[11px] text-muted-foreground">
-            Every value is encrypted at rest.
-          </p>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <label
-            className="flex items-center gap-2 text-xs text-muted-foreground"
-            title={
-              envKey
-                ? undefined
-                : "Sandbox injection needs an env key — a container variable must have a name."
-            }
-          >
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
             {VAULT_LABELS.sandboxAccess}
             <Switch
-              checked={inject && Boolean(envKey)}
-              disabled={!envKey}
-              onCheckedChange={setInject}
+              checked={inject}
+              onCheckedChange={(checked) => {
+                if (checked && !envKey.trim()) {
+                  toast.error("Add a runtime key before enabling sandboxes.");
+                  envKeyInputRef.current?.focus();
+                  return;
+                }
+                setInject(checked);
+              }}
               aria-label="Inject into sandboxes"
             />
           </label>

@@ -41,7 +41,7 @@ Every field carries exactly three controls (independent; catalog definitions pro
 
 `user_secrets.key` is the **optional env alias** (`VALID_KEY_RE`); `field_key` is the stable lowercase-snake identity within the item. Legacy single-value rows are one-field `env_value` items.
 
-**Sandbox injection REQUIRES an env alias — never offer the toggle without one.** A container environment is a NAME→value map; a field with no `key` has nowhere to land, so the resolver drops it. The server refuses `inject_into_sandbox=true` with no alias (422, `SandboxInjectionWithoutEnvKeyError`) and a DB CHECK makes the state unrepresentable. This UI must never build that request: every sandbox switch is **disabled until an env key exists**, and the create dialogs list it as a validation problem. Until 2026-07-26 the toggle was live on keyless fields and flipping it "succeeded" while the value silently never reached any sandbox — the exact class this rule kills. Note that catalog definitions `env_value` and `visible_config` ship `inject_into_sandbox: true` with no default alias, so prompting for the key is the NORMAL path there, not an edge case.
+**Sandbox injection REQUIRES an env alias.** A container environment is a NAME→value map; a field with no `key` has nowhere to land, so the resolver drops it. The server refuses `inject_into_sandbox=true` with no alias (422, `SandboxInjectionWithoutEnvKeyError`) and a DB CHECK makes the state unrepresentable. The UI may keep the switch interactive, but turning it on without a runtime key must show a focused reminder and move focus to the runtime-key input; it must never build the invalid request. Until 2026-07-26 the toggle was live on keyless fields and flipping it "succeeded" while the value silently never reached any sandbox — the exact class this rule kills. Note that catalog definitions `env_value` and `visible_config` ship `inject_into_sandbox: true` with no default alias, so prompting for the key is the NORMAL path there, not an edge case.
 
 Field metadata (inject flag, env alias set/clear, description, `is_active`, handling, `editable`) is edited via `PATCH /api/vault/items/{id}/fields/{fid}` — there is NO direct client write path to `users.user_secrets` (all client write grants were revoked in Phase 1). **Sealing is a one-way door:** the UI confirms with a cannot-be-undone warning, a sealed field shows a lock and no unseal control, and the server 403s any change away from `sealed`. Sharing carries per-recipient grants (`grantees: [{user_id, can_use, can_manage}]`).
 
@@ -158,9 +158,15 @@ Personal and organization credentials render through the same
   exception: its row menu may rename the same credential directly so a person
   does not have to leave an active six-digit-code task just to fix its label.
 - **Edit is dense, not card-within-card.** Name and description edit inline
-  without a redundant “Credential details” container; save/delete actions use
-  accessible icon buttons beside the content they affect. Full-width action
-  rows that merely repeat “Save field changes” or “Delete field” are forbidden.
+  without a redundant “Credential details” container. A field's display and
+  editor occupy the same row: reveal/copy/edit/delete are trailing icon actions,
+  and Edit replaces the value in place until Save or Cancel. Runtime key and
+  description are compact inline metadata, with the runtime key identified as
+  “used for identification in workflows.” The sandbox switch says only
+  “Available in sandboxes”; a missing runtime key is interaction feedback, not
+  permanent wrapping prose. Custom fields live under the explicit heading
+  “Additional fields.” Full-width action rows that merely repeat “Save field
+  changes” or “Delete field” are forbidden.
 - Website metadata renders only for `website_login`, an item with existing
   login URLs, or a legacy credential whose URL can be promoted. A generic API
   or environment credential must not be presented as a website login.
@@ -302,6 +308,12 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-22** — Collapsed credential field display and editing into one
+  compact surface: value actions now sit on the value row, Edit replaces the
+  value in place, runtime key and description are inline metadata, sandbox
+  eligibility no longer adds permanent helper prose, and custom values are
+  explicitly grouped as Additional fields.
 
 - **2026-08-22** — Replaced `?item=<id>` with canonical `/vault/[itemId]`
   credential routes across Vault and Authenticator, then began the focused edit
