@@ -242,39 +242,43 @@ export function UnplacedQueue({
             return (
               <div
                 key={row.keyword_id}
-                className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-sm last:border-b-0 hover:bg-muted/40"
+                className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-3 py-1.5 text-sm last:border-b-0 hover:bg-muted/40"
               >
                 <Checkbox
                   checked={selected.has(row.keyword_id)}
                   onCheckedChange={() => toggle(row.keyword_id)}
                   aria-label={`Select ${row.phrase}`}
                 />
-                <span className="min-w-0 flex-1 truncate text-foreground">
+                {/* The phrase always gets the first line; the metrics wrap
+                    below it on a phone rather than squeezing it to nothing. */}
+                <span className="min-w-[8rem] flex-1 truncate text-foreground">
                   {row.phrase}
                 </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded border px-1 py-px text-[10px] leading-tight",
-                    meta.chip,
-                  )}
-                >
-                  {meta.label}
+                <span className="ml-auto flex shrink-0 items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded border px-1 py-px text-[10px] leading-tight",
+                      meta.chip,
+                    )}
+                  >
+                    {meta.label}
+                  </span>
+                  <span className="text-right text-[11px] tabular-nums text-muted-foreground">
+                    {formatCount(row.clicks)} clk
+                  </span>
+                  <span className="text-right text-[11px] tabular-nums text-muted-foreground">
+                    {formatCount(row.impressions)} imp
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[11px]"
+                    disabled={busy}
+                    onClick={() => onPlace([row.keyword_id], row.phrase)}
+                  >
+                    Place…
+                  </Button>
                 </span>
-                <span className="w-16 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-                  {formatCount(row.clicks)} clk
-                </span>
-                <span className="w-20 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-                  {formatCount(row.impressions)} imp
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 shrink-0 px-2 text-[11px]"
-                  disabled={busy}
-                  onClick={() => onPlace([row.keyword_id], row.phrase)}
-                >
-                  Place…
-                </Button>
               </div>
             );
           })

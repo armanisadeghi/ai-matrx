@@ -49599,19 +49599,39 @@ export type Database = {
       facet_dimension_catalog: {
         Args: { p_site_id?: string }
         Returns: {
+          can_abstain: boolean
           cardinality: string
           description: string
           dimension_id: string
           facet_values: Json
+          is_ready: boolean
           is_system: boolean
           keyword_count: number
           label: string
+          readiness_note: string
           rule_count: number
           scope: string
           site_id: string
           slug: string
           value_count: number
         }[]
+      }
+      facet_dimension_readiness: {
+        Args: { p_dimension_id: string }
+        Returns: {
+          can_abstain: boolean
+          is_ready: boolean
+          readiness_note: string
+        }[]
+      }
+      facet_dimension_seed_abstain: {
+        Args: {
+          p_dimension_id: string
+          p_is_system: boolean
+          p_org: string
+          p_uid: string
+        }
+        Returns: string
       }
       facet_dimension_upsert: {
         Args: {
