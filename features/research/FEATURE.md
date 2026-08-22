@@ -200,9 +200,17 @@ the pre-bundle input, verified against every topic that has a report),
 `research-brand-profile`, `research-reputation-business`,
 `research-reputation-personal`, `research-gap-analysis`,
 `research-literature-review`, `research-competitive-landscape`. Each domain
-bundle points at its own `agent.definition` row, and those agents declare real
-variables (`scraped_pages`, `page_analyses`, `source_quality`, …) whose names
-match the catalog's `defaultVariable` values.
+output runs through its own AGENT MANDATE (`DOMAIN_OUTPUTS[].mandateKey` =
+`research_client.output_brand_profile` / `output_reputation_business` /
+`output_reputation_personal` / `output_gap_analysis` / `output_literature_review`
+/ `output_competitive_landscape`); the Context Builder resolves the mandate when
+a domain system bundle is loaded and runs `launchMandate(key)` (never a resolved
+id — the binding's config overrides ride along), and a `<MandateAgentPicker>`
+sits beside each domain-report row on the Outputs tab and in the runner. The
+bundle row's `agent_id` is a SEED MIRROR of the system default, never read for a
+mandated run. The agents declare real variables (`scraped_pages`,
+`page_analyses`, `source_quality`, …) whose names match the catalog's
+`defaultVariable` values.
 
 **`topic.experts` is a DERIVED kind fed from OUTSIDE the manifest RPC.** Every
 other derived kind computes from the RPC payload; experts live in `crm`, so
@@ -213,8 +221,9 @@ take the Context Builder down — it logs loudly and the resource renders empty.
 It carries the PROMOTED roster (a human accepted them), not raw extraction.
 
 **Adding a domain output is DATA:** create the agent (declaring variables named
-after catalog kinds), insert a bundle row selecting the resources it needs, add
-one entry to `DOMAIN_OUTPUTS`. No new component, no new resolver branch. If you
+after catalog kinds), declare its mandate in aidream `client_mandates.py`,
+insert a bundle row selecting the resources it needs, add one entry to
+`DOMAIN_OUTPUTS` (mandate key + bundle slug — never an agent id). No new component, no new resolver branch. If you
 find yourself writing code to add an output, something above is wrong.
 
 ---
@@ -305,6 +314,7 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-22 — **Domain outputs run through MANDATES (ROLLOUT F8, research batch).** `DOMAIN_OUTPUTS[].agentId` (6 raw UUIDs) became `mandateKey` (`research_client.output_*`); the Context Builder's runner resolves the mandate for a loaded domain system bundle (`useMandate`, gated: unresolved = disabled + the message) and runs `launchMandate(key)`; an ad-hoc dropdown pick still runs directly and a save-as stamps the agent it was born under. `<MandateAgentPicker>` beside each Domain reports row (`OutputsStudio`) and in the runner. `domainOutputForBundleSlug` is the slug→mandate seam.
 - 2026-08-18 — **THE USER-INPUT LAW fix: OutputsStudio's blog/slides/SEO generators stopped concatenating the Voice & Lens note and the full research report into `user_input`.** `buildGeneratorInput()` (string concat) replaced with `buildGeneratorVariables()`, sending `report_markdown` and `voice_lens` as named variables to all three call sites (`BlogOutputCard`, `SlidesOutputCard`, `SeoOutputCard`) — `research_client.output_blog` / `output_slides` / `output_seo` already declare and template-consume both, so no DB change was needed. These generator runs have no human turn at all; `user_input` is now empty on all three. SoR: `common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE USER-INPUT LAW.
 - 2026-08-17 — **Selected YouTube analyses dispatch the whole batch.** The
   library starts every independent video-analysis stream immediately and leaves

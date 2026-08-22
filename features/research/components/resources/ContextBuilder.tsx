@@ -43,6 +43,10 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { domainOutputForBundleSlug } from "../outputs/outputDefinitions";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   bundleDeliveries,
@@ -84,8 +88,22 @@ export default function ContextBuilder() {
   const [suggestedAgentId, setSuggestedAgentId] = useState<string | null>(null);
   /** Agent the USER picked in the runner. Saved with the bundle (D106). */
   const [pickedAgentId, setPickedAgentId] = useState<string | null>(null);
-  /** What a save persists and the runner uses: the user's pick, else the bundle's. */
-  const agentId = pickedAgentId ?? suggestedAgentId;
+  /**
+   * A loaded SYSTEM bundle that backs a domain output runs through that
+   * output's AGENT MANDATE (`research_client.output_*`) — the mandate is the
+   * identity; the bundle row's `agent_id` is only a seed mirror of the system
+   * default. The runner resolves it and reports the agent back up so a save-as
+   * stamps the agent the copy was born under.
+   */
+  const mandateKey = loaded?.isSystem
+    ? (domainOutputForBundleSlug(loaded.slug)?.mandateKey ?? null)
+    : null;
+  const [mandateAgentId, setMandateAgentId] = useState<string | null>(null);
+  /** What a save persists and the runner uses: the user's pick, else the
+   *  mandate's resolution (never the row's mirror when a mandate governs),
+   *  else the bundle's own agent. */
+  const agentId =
+    pickedAgentId ?? (mandateKey ? mandateAgentId : suggestedAgentId);
 
   const searchParams = useSearchParams();
   const requestedSlug = searchParams.get("bundle");
@@ -370,7 +388,11 @@ export default function ContextBuilder() {
               bundle={builder.draft}
               disabled={selectionCount === 0}
               agentId={agentId}
+              pickedAgentId={pickedAgentId}
+              mandateKey={mandateKey}
+              onMandateAgentResolved={setMandateAgentId}
               onSelectAgent={setPickedAgentId}
+              onResetAgent={() => setPickedAgentId(null)}
             />
           </div>
         </div>
@@ -403,27 +425,80 @@ export default function ContextBuilder() {
  * never hidden — a brand-profile agent silently receiving no page content would
  * produce a confident, sourceless profile.
  */
-function AgentRunner({
-  manifest,
-  bundle,
-  disabled,
-  agentId,
-  onSelectAgent,
-}: {
+interface AgentRunnerProps {
   manifest: Parameters<typeof resolveBundle>[0];
   bundle: ContextBundle;
   disabled: boolean;
   /**
-   * Controlled by the parent: the user's pick, else the loaded bundle's agent.
-   * Lifted so a bundle save can persist the choice (D106: the agent was local
-   * to this card and every save silently wrote `agent_id: null`).
+   * Controlled by the parent: the user's pick, else the mandate's resolution,
+   * else the loaded bundle's agent. Lifted so a bundle save can persist the
+   * choice (D106: the agent was local to this card and every save silently
+   * wrote `agent_id: null`).
    */
   agentId: string | null;
+  /** The user's explicit ad-hoc pick, if any — a pick runs DIRECTLY; absent,
+   *  a mandated bundle runs through `launchMandate`. */
+  pickedAgentId: string | null;
+  /** The domain output's mandate when the loaded system bundle backs one. */
+  mandateKey: string | null;
+  /** Reports the mandate's resolved agent (null while loading / unresolved /
+   *  no mandate) so the parent can persist it on save-as. */
+  onMandateAgentResolved: (id: string | null) => void;
   onSelectAgent: (id: string) => void;
-}) {
+  onResetAgent: () => void;
+}
+
+/** Mandate state handed to the body — the hook runs only when there IS a
+ *  mandate, which is why the runner is split in two below. */
+interface RunnerMandate {
+  key: string;
+  agentId: string | null;
+  loading: boolean;
+  error: string | null;
+}
+
+function AgentRunner(props: AgentRunnerProps) {
+  return props.mandateKey ? (
+    <MandatedAgentRunner {...props} mandateKey={props.mandateKey} />
+  ) : (
+    <AgentRunnerBody {...props} mandate={null} />
+  );
+}
+
+function MandatedAgentRunner({
+  mandateKey,
+  onMandateAgentResolved,
+  ...rest
+}: AgentRunnerProps & { mandateKey: string }) {
+  const { mandate, loading, error } = useMandate(mandateKey);
+  const resolvedAgentId = mandate?.agentId ?? null;
+  useEffect(() => {
+    onMandateAgentResolved(resolvedAgentId);
+    return () => onMandateAgentResolved(null);
+  }, [resolvedAgentId, onMandateAgentResolved]);
+  return (
+    <AgentRunnerBody
+      {...rest}
+      mandateKey={mandateKey}
+      onMandateAgentResolved={onMandateAgentResolved}
+      mandate={{ key: mandateKey, agentId: resolvedAgentId, loading, error }}
+    />
+  );
+}
+
+function AgentRunnerBody({
+  manifest,
+  bundle,
+  disabled,
+  agentId,
+  pickedAgentId,
+  mandate,
+  onSelectAgent,
+  onResetAgent,
+}: AgentRunnerProps & { mandate: RunnerMandate | null }) {
   const dispatch = useAppDispatch();
   const { topicId } = useTopicContext();
-  const { launchAgent } = useAgentLauncher();
+  const { launchAgent, launchMandate } = useAgentLauncher();
   const liveAgents = useAppSelector(selectLiveAgents);
   const setAgentId = onSelectAgent;
   const [launching, setLaunching] = useState(false);
@@ -453,8 +528,16 @@ function AgentRunner({
   const declared = payload?.variableDefinitions ?? null;
   const bundleVars = new Set(bundle.bindings.map((b) => b.variable));
 
+  /** A mandated bundle with no ad-hoc pick runs THROUGH the mandate — the
+   *  thunk resolves it and applies both halves of the binding (agent AND
+   *  config overrides). Passing the resolved id to `launchAgent` would drop
+   *  the settings half. */
+  const runsViaMandate = mandate !== null && pickedAgentId === null;
+  const mandateBlocked =
+    runsViaMandate && (mandate.loading || mandate.error !== null);
+
   const doRun = async () => {
-    if (!agentId) return;
+    if (!agentId || mandateBlocked) return;
     setLaunching(true);
     try {
       const resolved = await resolveBundle(manifest, bundle);
@@ -465,7 +548,7 @@ function AgentRunner({
           `Context trimmed before sending — ${resolved.report.notes.join("; ")}`,
         );
       }
-      await launchAgent(agentId, {
+      const launchOptions: ManagedAgentOptions = {
         surfaceKey: `research-context:${topicId}`,
         sourceFeature: "research",
         config: {
@@ -486,7 +569,12 @@ function AgentRunner({
           userInput: instruction.trim() || DEFAULT_INSTRUCTION,
           surfaceName: RESEARCH_SURFACE_NAME,
         },
-      });
+      };
+      if (mandate && runsViaMandate) {
+        await launchMandate(mandate.key, launchOptions);
+      } else {
+        await launchAgent(agentId, launchOptions);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "The run failed");
     } finally {
@@ -522,10 +610,15 @@ function AgentRunner({
             </Button>
           }
         />
+        {mandate && (
+          // The mandate's own "which agent runs this" control — binding your
+          // agent here is what the domain-report row on the Outputs tab does too.
+          <MandateAgentPicker mandateKey={mandate.key} className="shrink-0" />
+        )}
         <Button
           size="sm"
           className="h-7 gap-1.5 text-xs shrink-0"
-          disabled={disabled || !agentId || launching}
+          disabled={disabled || !agentId || launching || mandateBlocked}
           onClick={doRun}
         >
           {launching ? (
@@ -536,6 +629,33 @@ function AgentRunner({
           Run
         </Button>
       </div>
+
+      {mandate && runsViaMandate && mandate.error !== null && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.04] px-3 py-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-destructive">
+              This output has no agent bound
+            </p>
+            <p className="text-[11px] text-muted-foreground break-words">
+              {mandate.error}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {mandate && !runsViaMandate && (
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <span>Running your one-off pick instead of this output&apos;s agent.</span>
+          <button
+            type="button"
+            className="underline underline-offset-2 hover:text-foreground"
+            onClick={onResetAgent}
+          >
+            Use the output&apos;s agent
+          </button>
+        </div>
+      )}
 
       {agentId && (
         <label className="block space-y-1">

@@ -19,9 +19,15 @@
  *   each declares the variables its agent expects. Adding the next one is a SQL
  *   insert plus one entry below.
  *
- * Agent ids are the live `agent.definition` rows created via the aidream
- * agent-authoring path; bundle slugs are the stable keys in
- * `research.rs_context_bundle` (migrations/research_system_context_bundles.sql).
+ * Each domain output names its AGENT MANDATE, never an agent id: the mandate is
+ * the identity (system default managed in the admin console; a user may bind
+ * their own agent via `<MandateAgentPicker>`), resolved at the launch point
+ * (the Context Builder runs `launchMandate(mandateKey)`). The mandates are
+ * declared server-side in aidream `client_mandates.py`. Bundle slugs are the
+ * stable keys in `research.rs_context_bundle`
+ * (migrations/research_system_context_bundles.sql) — that row's `agent_id` is a
+ * SEED MIRROR of the mandate's system default, not a second authority.
+ * SoR: common-docs/systems/agents/mandates/FEATURE.md.
  */
 
 /** The bundle every publishing output uses — the report, and nothing else. */
@@ -33,8 +39,8 @@ export interface DomainOutputDefinition {
   label: string;
   /** One line: what this produces and what it reads. */
   description: string;
-  /** Live agent that writes it. */
-  agentId: string;
+  /** The mandate whose resolved agent writes it (`research_client.output_*`). */
+  mandateKey: string;
   /** System bundle that feeds it. */
   bundleSlug: string;
 }
@@ -54,7 +60,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Brand profile",
     description:
       "The brand plus its key people, partners and reputation signals — from authority-ranked pages, the full search footprint and the analyses.",
-    agentId: "90d1865f-a532-4c09-ab88-d88014b2e9f8",
+    mandateKey: "research_client.output_brand_profile",
     bundleSlug: "research-brand-profile",
   },
   {
@@ -62,7 +68,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Reputation review — business",
     description:
       "How a business reads to someone searching it: positive and negative signals with attribution, review themes, and legitimate remediation.",
-    agentId: "75dcbb31-d39c-4b58-a5f6-ec48ad092a7f",
+    mandateKey: "research_client.output_reputation_business",
     bundleSlug: "research-reputation-business",
   },
   {
@@ -70,7 +76,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Reputation review — personal",
     description:
       "An individual's public professional record: credential verification, independent vs self-published signals, same-name confusion checks.",
-    agentId: "c3b7b2e8-9b40-46e8-b77a-8293f51f019a",
+    mandateKey: "research_client.output_reputation_personal",
     bundleSlug: "research-reputation-personal",
   },
   {
@@ -78,7 +84,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Gap analysis",
     description:
       "What this research is MISSING — unsearched keywords, thin single-source claims, absent viewpoints, and what to research next.",
-    agentId: "ddcc51e4-bf5f-4008-82d0-17bbc557b32f",
+    mandateKey: "research_client.output_gap_analysis",
     bundleSlug: "research-gap-analysis",
   },
   {
@@ -86,7 +92,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Literature & evidence review",
     description:
       "Findings by theme with strength-of-support ratings, contested evidence, and a critique of the corpus itself.",
-    agentId: "282a1431-f192-4427-8779-fbf40afd6dd1",
+    mandateKey: "research_client.output_literature_review",
     bundleSlug: "research-literature-review",
   },
   {
@@ -94,10 +100,19 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Competitive landscape",
     description:
       "Per-competitor profiles, a comparison table, positioning clusters and whitespace — grouped by the entity each source is about.",
-    agentId: "078feda2-a535-4142-bc82-19f885ef6f4a",
+    mandateKey: "research_client.output_competitive_landscape",
     bundleSlug: "research-competitive-landscape",
   },
 ];
+
+/** The domain output a bundle slug belongs to, if any — how the Context
+ *  Builder knows which mandate a loaded SYSTEM bundle runs through. */
+export function domainOutputForBundleSlug(
+  slug: string | null,
+): DomainOutputDefinition | null {
+  if (!slug) return null;
+  return DOMAIN_OUTPUTS.find((d) => d.bundleSlug === slug) ?? null;
+}
 
 /** Deep link to the Context Builder with a bundle preloaded. */
 export function contextBuilderHref(topicId: string, bundleSlug: string): string {

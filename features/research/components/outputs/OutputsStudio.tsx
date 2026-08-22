@@ -320,8 +320,9 @@ export default function OutputsStudio() {
 /**
  * DOMAIN REPORTS — the outputs that read the RESEARCH, not the report.
  *
- * Each one is an agent plus a system bundle (see `outputDefinitions.ts`), and
- * each opens in the Context Builder with its bundle preloaded. That is
+ * Each one is a MANDATE plus a system bundle (see `outputDefinitions.ts`), and
+ * each opens in the Context Builder with its bundle preloaded, where the run
+ * goes through `launchMandate(def.mandateKey)`. That is
  * deliberate: the builder shows exactly which resources the agent will receive
  * and what they cost before a token is spent. A "just generate it" button here
  * would be a second run path whose inputs are invisible — precisely the problem
@@ -346,21 +347,28 @@ function DomainReportsCard({ topicId }: { topicId: string }) {
       </div>
       <div className="divide-y divide-border/50">
         {DOMAIN_OUTPUTS.map((def) => (
-          <Link
+          <div
             key={def.slug}
-            href={contextBuilderHref(topicId, def.bundleSlug)}
             className="flex items-center gap-2 px-3 py-2 hover:bg-accent/40 transition-colors"
           >
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-medium text-foreground">
-                {def.label}
+            <Link
+              href={contextBuilderHref(topicId, def.bundleSlug)}
+              className="flex min-w-0 flex-1 items-center gap-2"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium text-foreground">
+                  {def.label}
+                </div>
+                <div className="text-[11px] text-muted-foreground line-clamp-2">
+                  {def.description}
+                </div>
               </div>
-              <div className="text-[11px] text-muted-foreground line-clamp-2">
-                {def.description}
-              </div>
-            </div>
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          </Link>
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </Link>
+            {/* Which agent writes this output — the same mandate the Context
+                Builder runs through, so a rebind here changes the run there. */}
+            <MandateAgentPicker mandateKey={def.mandateKey} className="shrink-0" />
+          </div>
         ))}
       </div>
     </div>

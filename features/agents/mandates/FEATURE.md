@@ -122,7 +122,7 @@ where deleted_at is null and metadata->>'migration_status' = 'placeholder'
 
 Recipe: React run site → `useMandateRunner`; React non-run site (a `defaultAgentId` prop, an on-click launch) → `useMandate` + gate the affordance on resolution; thunk/handler → `await resolveMandate`. Drop `<MandateAgentPicker>` wherever the user should be able to choose. Then move the mandate from aidream's `scripts/seed_mandate_placeholders.py` into a real `declare_mandate(...)` in `aidream/services/mandates/client_mandates.py` and release — `sync_declared_mandates` pops the placeholder marker, so the DB stops claiming the hardcoded path still runs.
 
-**Migrated:** research Outputs Studio (3), content-plan setup (7), kind architect, kind creator (twin collapsed to one floating mandate), agent-app coding agent, flashcards spoken-front TTS, War Room (3), chat defaults (`chat.default_new_chat` + `chat.cx_default`), `projects.creation_guide` — and, 2026-08-18 (education-platform WP2), **the entire education tree**: 31 raw UUIDs across 9 `agents.ts` registries became the 28-key `education.*`/`flashcards.*` roster (IC-1 in `common-docs/systems/education/INTEGRATION_MAP.md`); registries deleted, 39 call sites converted, 2 dead ids deleted unmandated.
+**Migrated:** research Outputs Studio (3) + research domain outputs (6, `DOMAIN_OUTPUTS[].mandateKey` → Context Builder `launchMandate`, 2026-08-22), content-plan setup (7), kind architect, kind creator (twin collapsed to one floating mandate), agent-app coding agent, flashcards spoken-front TTS, War Room (3), chat defaults (`chat.default_new_chat` + `chat.cx_default`), `projects.creation_guide` — and, 2026-08-18 (education-platform WP2), **the entire education tree**: 31 raw UUIDs across 9 `agents.ts` registries became the 28-key `education.*`/`flashcards.*` roster (IC-1 in `common-docs/systems/education/INTEGRATION_MAP.md`); registries deleted, 39 call sites converted, 2 dead ids deleted unmandated.
 
 🚨 **The placeholder census is NOT a hardcoded-id census.** The query above counts only rows someone SEEDED as placeholders — a UUID that was never seeded is invisible to it, which is exactly how education's 31 UUIDs sat outside a "worklist: empty" verdict for a month. An empty placeholder worklist means _seeded migrations are done_; the authority on remaining un-seeded hardcoded ids is `common-docs/systems/agents/mandates/ROLLOUT.md` (F8 — ~13 ids remain outside education). A new hardcoded agent id is a new placeholder to seed + migrate, not a precedent. (`prompts.categorizer` was deleted as a dead pin.)
 
@@ -181,8 +181,21 @@ Guard: **`pnpm check:hardcoded-prompts`** — loud, advisory, in
 (`scripts/hardcoded-prompts-allowlist.json`) is a reason-required ratchet; the
 count only goes DOWN, and `--write` never adds entries.
 
+Guard: **`pnpm check:hardcoded-agents`** — the same law spelled as a raw agent
+UUID (ROLLOUT.md row X4). Scans `app/ components/ features/ hooks/ lib/ utils/
+actions/` for v4 UUID literals held in agent-shaped names (`agentId`, `promptId`,
+`*_AGENT_ID`, …) or passed into `launchAgentExecution` / `launchAgent` /
+`createManualInstance` / `useRunAgent` / `executeAgent`. Legal postures it
+skips: a `SEED MIRROR` comment within 10 lines above the literal, a manifest
+`defaultAgentId:` under `features/surfaces/manifests/`, or a reason-required
+entry in `scripts/hardcoded-agents-allowlist.json`. Baseline
+(`scripts/hardcoded-agents-baseline.json`) is a ratchet: exits 1 on a NEW site,
+`--write` only ratchets down. Advisory in `run-release-gates.sh`; nothing runs at
+commit time.
+
 ## Change Log
 
+- 2026-08-22 — **`pnpm check:hardcoded-agents` built** (ROLLOUT.md row X4, the frontend half): raw-agent-UUID guard modelled on `check:hardcoded-prompts` — SEED MIRROR / manifest `defaultAgentId` / reason-required allowlist exemptions, baseline ratchet seeded from the live sites at build time, wired into `run-release-gates.sh` in both modes. See the Guard paragraph above.
 - 2026-08-22 — **The Provision system got a door.** Arman opened `/agents/mandates` and saw
   nothing new: the list page had zero references to provisions, and `ConsumptionMapEditor`
   only mounted inside an already-expanded card, so a fully built, populated feature (153
