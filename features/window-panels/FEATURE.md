@@ -58,6 +58,12 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ## Change Log
 
+- 2026-08-21 — **Completed conversation-backed live runs expose the canonical
+  assistant actions.** `LiveRunDisplay` now hands a request-backed assistant
+  row to `AgentAssistantMessage`, so the floating window gains the same copy,
+  edit, save, share, print, and overflow actions as `/chat` when the response
+  settles. Bare adopted streams without a canonical message retain the
+  renderer-only fallback.
 - 2026-08-21 — **Stateful windows can retain their body across minimize.**
   `WindowPanel retainBodyOnMinimize` keeps a live body mounted offscreen while
   its minimized preview is shown; `AgentRunWindow` opts in so launcher focus,
