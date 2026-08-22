@@ -46,7 +46,8 @@ export function PendingExamplesPanel({
   });
 
   const data = pending.data;
-  if (!data || data.examples.length === 0) return null;
+  const examples = data?.examples ?? [];
+  if (!data || examples.length === 0) return null;
 
   const unsettled = data.unsettled_count ?? 0;
 
@@ -64,10 +65,10 @@ export function PendingExamplesPanel({
         </p>
       )}
       <div className="text-xs font-medium uppercase text-muted-foreground">
-        Waiting for the next review ({data.examples.length})
+        Waiting for the next review ({examples.length})
       </div>
       <div className="space-y-1">
-        {data.examples.map((ex) => {
+        {examples.map((ex) => {
           const door = ex.id ? exampleDoor(ex.kind, ex.id, audience) : null;
           const focusable = ex.kind === "conversation" || ex.kind === "wf_run";
           return (

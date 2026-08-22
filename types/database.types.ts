@@ -39481,6 +39481,138 @@ export type Database = {
           },
         ]
       }
+      ingest_run: {
+        Row: {
+          actor_id: string
+          binary_pipeline: boolean
+          chars_in: number
+          chunks_reused: number
+          chunks_written: number
+          cost_is_exact: boolean
+          created_at: string
+          created_by: string | null
+          duration_ms: number | null
+          embedding_cache_hits: number
+          embedding_calls: number
+          embedding_cost_saved_usd: number
+          embedding_cost_usd: number
+          embedding_model: string
+          embedding_tokens: number
+          embeddings_written: number
+          enrich_ran: boolean
+          enrichment_calls: number
+          enrichment_cost_usd: number
+          error: string | null
+          est_cost_usd: number
+          extraction_calls: number
+          extraction_cost_usd: number
+          field_id: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          pages_in: number | null
+          skip_reason: string | null
+          source_id: string
+          source_kind: string
+          started_at: string
+          status: string
+          suggestions_created: number
+          total_cost_usd: number
+          triggered_by: string
+          updated_at: string
+          updated_by: string | null
+          urgency: string
+          version: number
+        }
+        Insert: {
+          actor_id: string
+          binary_pipeline?: boolean
+          chars_in?: number
+          chunks_reused?: number
+          chunks_written?: number
+          cost_is_exact?: boolean
+          created_at?: string
+          created_by?: string | null
+          duration_ms?: number | null
+          embedding_cache_hits?: number
+          embedding_calls?: number
+          embedding_cost_saved_usd?: number
+          embedding_cost_usd?: number
+          embedding_model?: string
+          embedding_tokens?: number
+          embeddings_written?: number
+          enrich_ran?: boolean
+          enrichment_calls?: number
+          enrichment_cost_usd?: number
+          error?: string | null
+          est_cost_usd?: number
+          extraction_calls?: number
+          extraction_cost_usd?: number
+          field_id?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          pages_in?: number | null
+          skip_reason?: string | null
+          source_id: string
+          source_kind: string
+          started_at?: string
+          status?: string
+          suggestions_created?: number
+          total_cost_usd?: number
+          triggered_by: string
+          updated_at?: string
+          updated_by?: string | null
+          urgency?: string
+          version?: number
+        }
+        Update: {
+          actor_id?: string
+          binary_pipeline?: boolean
+          chars_in?: number
+          chunks_reused?: number
+          chunks_written?: number
+          cost_is_exact?: boolean
+          created_at?: string
+          created_by?: string | null
+          duration_ms?: number | null
+          embedding_cache_hits?: number
+          embedding_calls?: number
+          embedding_cost_saved_usd?: number
+          embedding_cost_usd?: number
+          embedding_model?: string
+          embedding_tokens?: number
+          embeddings_written?: number
+          enrich_ran?: boolean
+          enrichment_calls?: number
+          enrichment_cost_usd?: number
+          error?: string | null
+          est_cost_usd?: number
+          extraction_calls?: number
+          extraction_cost_usd?: number
+          field_id?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          pages_in?: number | null
+          skip_reason?: string | null
+          source_id?: string
+          source_kind?: string
+          started_at?: string
+          status?: string
+          suggestions_created?: number
+          total_cost_usd?: number
+          triggered_by?: string
+          updated_at?: string
+          updated_by?: string | null
+          urgency?: string
+          version?: number
+        }
+        Relationships: []
+      }
       kg_alerts: {
         Row: {
           confidence: number

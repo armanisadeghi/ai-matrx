@@ -117,7 +117,7 @@ function EnrolledWorkspace({
       guidedFinding={guidedFinding}
       onClearGuidedFinding={() => setGuidedFinding(null)}
       onResolved={actions.invalidate}
-      onRunReview={() => actions.runReview.mutate()}
+      onRunReview={() => actions.runReview.mutate(undefined)}
       reviewRunning={actions.runReview.isPending}
       pendingExamples={data.pending_examples ?? 0}
     />

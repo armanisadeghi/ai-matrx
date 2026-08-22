@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 416 active entity tokens. A token here is FK-valid for
+// 417 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -261,6 +261,7 @@ export type EntityTypeToken =
   | "project"
   | "purpose"
   | "quiz_session"
+  | "rag_ingest_run"
   | "redaction_mapping"
   | "research_analysis"
   | "research_content"
@@ -952,6 +953,7 @@ export type ScopeableEntityToken =
   | "project"
   | "purpose"
   | "quiz_session"
+  | "rag_ingest_run"
   | "redaction_mapping"
   | "research_analysis"
   | "research_content"
@@ -1420,6 +1422,7 @@ export const ENTITY_TYPE_METADATA = {
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "purpose": { token: "purpose", schema: "platform", table: "purpose", label: "Purpose", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
+  "rag_ingest_run": { token: "rag_ingest_run", schema: "rag", table: "ingest_run", label: "Ingest Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "redaction_mapping": { token: "redaction_mapping", schema: "pdf", table: "redaction_mapping", label: "Redaction Mapping", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_analysis": { token: "research_analysis", schema: "research", table: "rs_analysis", label: "Research Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_content": { token: "research_content", schema: "research", table: "rs_content", label: "Research Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1840,6 +1843,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "project",
   "purpose",
   "quiz_session",
+  "rag_ingest_run",
   "redaction_mapping",
   "research_analysis",
   "research_content",

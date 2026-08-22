@@ -130,7 +130,7 @@ export function EnrollmentDetailPanel({
             <Button
               size="sm"
               disabled={runReview.isPending}
-              onClick={() => runReview.mutate()}
+              onClick={() => runReview.mutate(undefined)}
               data-testid="hindsight-review-now"
             >
               {runReview.isPending ? (
