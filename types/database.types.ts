@@ -25960,6 +25960,7 @@ export type Database = {
           bytes_removed_estimate: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           file_id: string | null
           id: string
           metadata: Json
@@ -25971,13 +25972,16 @@ export type Database = {
           regions_count: number
           status: string
           tier_used: string
+          updated_at: string
           updated_by: string | null
-          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           bytes_removed_estimate?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           file_id?: string | null
           id?: string
           metadata?: Json
@@ -25989,13 +25993,16 @@ export type Database = {
           regions_count?: number
           status?: string
           tier_used?: string
+          updated_at?: string
           updated_by?: string | null
-          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           bytes_removed_estimate?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           file_id?: string | null
           id?: string
           metadata?: Json
@@ -26007,8 +26014,10 @@ export type Database = {
           regions_count?: number
           status?: string
           tier_used?: string
+          updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
