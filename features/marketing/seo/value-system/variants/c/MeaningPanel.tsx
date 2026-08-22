@@ -4,11 +4,17 @@
  * "How value is computed" — the meaning that drives every number on the
  * workbench: the site's business guidelines, value bands, geo bands + areas,
  * value rules, and topic worth.
- * Read-only on purpose (this workbench rules keywords; the meaning tables
- * are governed elsewhere), but nothing here is a mystery: every section says
- * what it does in plain language, shows "using platform defaults" when the
- * site has not adopted its own rows yet, and empty sections say honestly why
- * so many keywords sit in Unvalued.
+ * Nothing here is a mystery, and nothing here is read-only any more: every
+ * section says what it does in plain language, shows "using platform defaults"
+ * when the site has not adopted its own rows yet, says honestly why keywords
+ * sit in Unvalued — and opens the editor that fixes it.
+ *
+ * VALUE RULES and GEO AREAS had no authoring UI anywhere until 2026-08-22: the
+ * rows in the database came only from seed migrations and starter-pack
+ * adoption, which made the most business-specific mechanic in the system
+ * (Arman: "the word FREE massively reduces the value of a keyword" — for HIS
+ * business) something a user could read and never write. Both now open a real
+ * editor with a server-measured live preview; the bench is at ../value/rules.
  */
 
 import { useState, type ReactNode } from "react";
@@ -23,6 +29,7 @@ import {
   MapPin,
   MapPinned,
   Pencil,
+  Plus,
   TreePine,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
@@ -43,7 +50,16 @@ import {
   listValueRules,
 } from "../../data";
 import { BandVocabularyEditor } from "../../vocabulary/BandVocabularyEditor";
-import type { SiteTopicValue, TopicNode, VocabKind } from "../../types";
+import { ValueRuleEditor } from "../../rules/ValueRuleEditor";
+import { GeoAreaEditor } from "../../rules/GeoAreaEditor";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import type {
+  SiteGeoArea,
+  SiteTopicValue,
+  TopicNode,
+  ValueRule,
+  VocabKind,
+} from "../../types";
 import { humanizeSlug, type BandMeta } from "./lib";
 
 function SectionHeader({
@@ -171,6 +187,14 @@ export function MeaningPanel({
   onClose: () => void;
 }) {
   const [editing, setEditing] = useState<VocabKind | null>(null);
+  // `undefined` = closed · `null` = creating · a row = editing that row.
+  const [editingRule, setEditingRule] = useState<ValueRule | null | undefined>(
+    undefined,
+  );
+  const [editingArea, setEditingArea] = useState<SiteGeoArea | null | undefined>(
+    undefined,
+  );
+  const { site } = useMarketingSite();
   // The prose doctrine every AI run for this site reads (D35). Read-only here:
   // the document is AUTHORED in the classification workbench, and two editors
   // for one document is how they drift.
@@ -347,14 +371,36 @@ export function MeaningPanel({
           </ul>
         </section>
 
-        {/* Value rules */}
+        {/* Value rules — authored right here (D34: ONE rules engine) */}
         <section className="space-y-2">
-          <SectionHeader
-            icon={ListChecks}
-            title="Value rules"
-            count={rules.data?.length ?? null}
-            hint="Multipliers you ratified — a matched word or detected facet scales the score up or down. Every fired rule shows up in a keyword's why chain."
-          />
+          <div className="flex items-start justify-between gap-2">
+            <SectionHeader
+              icon={ListChecks}
+              title="Value rules"
+              count={rules.data?.length ?? null}
+              hint="Multipliers you ratified — a matched word or detected fact scales the score up or down. Every fired rule shows up in a keyword's why chain."
+            />
+            <span className="flex shrink-0 items-center gap-1.5">
+              <Link
+                href={`${marketingRoutes.site(brandId, siteId, "/value/rules")}`}
+                className="rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Open the full bench — rules and places side by side, each showing what it currently fires on"
+              >
+                Bench
+              </Link>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditingRule(null)}
+                className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+                title="Write a rule — you will see exactly which of your keywords it moves before you save."
+              >
+                <Plus className="h-3 w-3" />
+                New
+              </Button>
+            </span>
+          </div>
           {rules.isLoading ? <SectionSkeleton /> : null}
           {rules.isError ? (
             <InlineQueryError
@@ -372,10 +418,13 @@ export function MeaningPanel({
           ) : null}
           <ul className="space-y-1">
             {(rules.data ?? []).map((rule) => (
-              <li
-                key={rule.id}
-                className="rounded-md border border-border bg-card px-2.5 py-1.5"
-              >
+              <li key={rule.id}>
+                <button
+                  type="button"
+                  onClick={() => setEditingRule(rule)}
+                  className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-left transition-colors hover:bg-accent"
+                  title="Edit this rule — the live preview shows what changes before you save."
+                >
                 <p className="flex items-center justify-between gap-2 text-[11px]">
                   <span className="min-w-0 truncate font-medium text-foreground">
                     {rule.name}
@@ -399,6 +448,7 @@ export function MeaningPanel({
                       : "No match condition recorded"}
                   {rule.description ? ` — ${rule.description}` : ""}
                 </p>
+                </button>
               </li>
             ))}
           </ul>
@@ -420,6 +470,17 @@ export function MeaningPanel({
                 isTemplate={Boolean(geoBands.data?.[0]?.is_template)}
                 onClick={() => setEditing("geo_band")}
               />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditingArea(null)}
+                className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+                title="Add an area — the real place names that put a search into one of these bands."
+              >
+                <Plus className="h-3 w-3" />
+                Area
+              </Button>
             </span>
           </div>
           {geoBands.isError ? (
@@ -463,25 +524,34 @@ export function MeaningPanel({
           ) : null}
           <ul className="space-y-1">
             {(geoAreas.data ?? []).map((area) => (
-              <li
-                key={area.id}
-                className="flex items-start gap-2 rounded-md border border-border bg-card px-2.5 py-1.5"
-              >
-                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 text-[11px] leading-4">
-                  <span className="font-medium text-foreground">
-                    {area.label}
-                  </span>{" "}
-                  <span className="text-muted-foreground">
-                    ({humanizeSlug(area.area_kind).toLowerCase()}) →{" "}
-                    {humanizeSlug(area.geo_band)}
-                  </span>
-                  {area.match_tokens.length > 0 ? (
-                    <span className="block truncate text-[10px] text-muted-foreground/80">
-                      matches: {area.match_tokens.join(", ")}
+              <li key={area.id}>
+                <button
+                  type="button"
+                  onClick={() => setEditingArea(area)}
+                  className="flex w-full items-start gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-left transition-colors hover:bg-accent"
+                  title="Edit this area — see which keywords it catches before you save."
+                >
+                  <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 text-[11px] leading-4">
+                    <span className="font-medium text-foreground">
+                      {area.label}
+                    </span>{" "}
+                    <span className="text-muted-foreground">
+                      ({humanizeSlug(area.area_kind).toLowerCase()}) →{" "}
+                      {humanizeSlug(area.geo_band)}
                     </span>
-                  ) : null}
-                </span>
+                    {area.match_tokens.length > 0 ? (
+                      <span className="block truncate text-[10px] text-muted-foreground/80">
+                        matches: {area.match_tokens.join(", ")}
+                      </span>
+                    ) : (
+                      <span className="block text-[10px] text-warning">
+                        No place names yet — this area matches nothing. Add them
+                        and the geo gate starts working.
+                      </span>
+                    )}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
@@ -559,6 +629,28 @@ export function MeaningPanel({
           kind={editing}
           window={window}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+      {editingRule !== undefined ? (
+        <ValueRuleEditor
+          siteId={siteId}
+          organizationId={site.organization_id ?? null}
+          window={window}
+          windowLabel="the last 28 days"
+          bandMetas={bandMetas}
+          rule={editingRule}
+          onClose={() => setEditingRule(undefined)}
+        />
+      ) : null}
+      {editingArea !== undefined ? (
+        <GeoAreaEditor
+          siteId={siteId}
+          organizationId={site.organization_id ?? null}
+          window={window}
+          windowLabel="the last 28 days"
+          bandMetas={bandMetas}
+          area={editingArea}
+          onClose={() => setEditingArea(undefined)}
         />
       ) : null}
     </SidePanelSurface>
