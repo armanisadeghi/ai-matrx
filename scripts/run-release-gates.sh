@@ -174,6 +174,9 @@ if $STRICT; then
         # allowlist is a reason-required ratchet whose count only goes down.
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
+        # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
+        # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
+        "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
         # DDL GUARD LOG — the reader the sentinel never had. Advisory in BOTH
         # modes: the guard's own WARN lane is advisory, and a release that never
         # touches the database must not be blocked because someone else's ALTER
@@ -280,6 +283,9 @@ else
         # allowlist is a reason-required ratchet whose count only goes down.
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
+        # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
+        # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
+        "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
         # DDL GUARD LOG — the reader the sentinel never had. Advisory in BOTH
         # modes: the guard's own WARN lane is advisory, and a release that never
         # touches the database must not be blocked because someone else's ALTER

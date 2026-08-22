@@ -1,0 +1,112 @@
+[
+  {
+    "file": "features/cx-chat/components/agent/agents.ts",
+    "symbol": "DEFAULT_AGENT_ID",
+    "uuid": "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8"
+  },
+  {
+    "file": "features/cx-chat/components/agent/agents.ts",
+    "symbol": "promptId",
+    "uuid": "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8"
+  },
+  {
+    "file": "features/cx-chat/components/agent/agents.ts",
+    "symbol": "promptId",
+    "uuid": "3ca61863-43cf-49cd-8da5-7e0a4b192867"
+  },
+  {
+    "file": "features/cx-chat/components/agent/agents.ts",
+    "symbol": "promptId",
+    "uuid": "f76a6b8f-b720-4730-87de-606e0bfa0e0c"
+  },
+  {
+    "file": "features/cx-chat/components/agent/agents.ts",
+    "symbol": "promptId",
+    "uuid": "35461e07-bbd1-46cc-81a7-910850815703"
+  },
+  {
+    "file": "features/cx-chat/components/agent/agents.ts",
+    "symbol": "promptId",
+    "uuid": "fc8fd18c-9324-48ca-85d4-faf1b1954945"
+  },
+  {
+    "file": "features/cx-chat/components/agent/local-agents.ts",
+    "symbol": "promptId",
+    "uuid": "6b6b4e45-4699-4860-8dea-d8a60e07d69a"
+  },
+  {
+    "file": "features/cx-chat/components/agent/local-agents.ts",
+    "symbol": "promptId",
+    "uuid": "3ca61863-43cf-49cd-8da5-7e0a4b192867"
+  },
+  {
+    "file": "features/cx-chat/components/agent/local-agents.ts",
+    "symbol": "promptId",
+    "uuid": "f76a6b8f-b720-4730-87de-606e0bfa0e0c"
+  },
+  {
+    "file": "features/cx-chat/components/agent/local-agents.ts",
+    "symbol": "promptId",
+    "uuid": "35461e07-bbd1-46cc-81a7-910850815703"
+  },
+  {
+    "file": "features/cx-chat/components/agent/local-agents.ts",
+    "symbol": "promptId",
+    "uuid": "fc8fd18c-9324-48ca-85d4-faf1b1954945"
+  },
+  {
+    "file": "features/marketing/lib/generate-page-image.ts",
+    "symbol": "IMAGE_PROMPT_GENERATOR_AGENT_ID",
+    "uuid": "175cd409-cb7e-4c53-83e6-1dbf0ec24ed1"
+  },
+  {
+    "file": "features/marketing/lib/generate-page-image.ts",
+    "symbol": "MATRX_IMAGE_ULTRA_AGENT_ID",
+    "uuid": "bcc69216-d4fa-4e28-a090-8a7749123bc5"
+  },
+  {
+    "file": "features/marketing/lib/generate-page-image.ts",
+    "symbol": "IMAGE_ALL_IN_ONE_AGENT_ID",
+    "uuid": "6bc1d330-40b5-49f8-8895-e5b55ec95ae9"
+  },
+  {
+    "file": "features/public-chat/components/AgentSelector.tsx",
+    "symbol": "promptId",
+    "uuid": "6b6b4e45-4699-4860-8dea-d8a60e07d69a"
+  },
+  {
+    "file": "features/public-chat/components/AgentSelector.tsx",
+    "symbol": "promptId",
+    "uuid": "3ca61863-43cf-49cd-8da5-7e0a4b192867"
+  },
+  {
+    "file": "features/public-chat/components/AgentSelector.tsx",
+    "symbol": "promptId",
+    "uuid": "f76a6b8f-b720-4730-87de-606e0bfa0e0c"
+  },
+  {
+    "file": "features/public-chat/components/AgentSelector.tsx",
+    "symbol": "promptId",
+    "uuid": "35461e07-bbd1-46cc-81a7-910850815703"
+  },
+  {
+    "file": "features/public-chat/components/AgentSelector.tsx",
+    "symbol": "promptId",
+    "uuid": "fc8fd18c-9324-48ca-85d4-faf1b1954945"
+  },
+  {
+    "file": "features/scraper/constants/analysis-agents.ts",
+    "symbol": "agentId",
+    "uuid": "07e85962-71c8-4a2d-acb0-80d1771a4594"
+  },
+  {
+    "file": "features/scraper/constants/analysis-agents.ts",
+    "symbol": "agentId",
+    "uuid": "0288e091-6252-4cca-b140-7ba94b4eb206"
+  },
+  {
+    "file": "features/window-panels/tools-grid/toolsGridTiles.ts",
+    "symbol": "SMART_CODE_EDITOR_DEFAULT_AGENT_ID",
+    "uuid": "55cc4ad1-bafd-4b82-af0b-4b4f40406ca3"
+  }
+]
