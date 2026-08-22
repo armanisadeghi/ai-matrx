@@ -139,6 +139,20 @@ This is a security-adjacent property of the function that decides who can read
 what, so an agent should not grant it. If yes, it is roughly a day of work plus
 a full equivalence re-proof.
 
+## ATTACHED CAMPAIGN — the bare `auth.uid()` sweep (added 2026-08-22)
+
+The 2026-08-22 slowness investigation found the repeating shape: a bare
+`auth.uid()` in a SQL function's WHERE is re-evaluated PER ROW and blocks the
+index, so RLS's `iam.has_access` arm fires across whole tables.
+`get_cx_conversation_source_facets` went **2,869 ms → 18 ms** from the one-line
+`(select auth.uid())` fix (`migrations/cx_source_facets_initplan_uid.sql`).
+A live census counts **~270 functions** matching the bare pattern (upper bound —
+plpgsql `v_uid := auth.uid()` assignments are benign). The campaign: classify
+(SQL-in-WHERE vs benign), fix in measured batches (EXPLAIN before/after each),
+never touch SECURITY DEFINER/INVOKER while converting. Same equivalence bar as
+everything in this doc. Also verify new RLS policies keep the InitPlan form —
+`iam.apply_rls` already emits it correctly.
+
 ## How to prove any change here
 
 The bar is equivalence, not speed. Reproduce the harness the last change used,
