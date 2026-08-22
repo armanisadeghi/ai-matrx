@@ -18,8 +18,8 @@ importers:
         specifier: 0.1.0
         version: 0.1.0
       '@ai-matrx/content-ir':
-        specifier: 0.1.1
-        version: 0.1.1
+        specifier: 0.1.2
+        version: 0.1.2
       '@ai-matrx/design-system':
         specifier: 0.1.1
         version: 0.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -800,8 +800,8 @@ packages:
     resolution: {integrity: sha512-x+iihK5EAH8TE482O+NNkp+V4l5LGA3iu86k7ZInL9rtJuiVb6lmk1Sf8NFtCWyNhdVIUpL3GPrszEtkhA2P+Q==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/content-ir@0.1.1':
-    resolution: {integrity: sha512-Fg6lXemoCzA1RFIkePzZH5IFC4LSY5PNqV3H0YYZ9/+Xm97cvIQjlzCj0hJDL95AZDIz4eBvEBtMU0d4N4OUsw==}
+  '@ai-matrx/content-ir@0.1.2':
+    resolution: {integrity: sha512-EJpVGZZRw9wMxcw+vB17tWIrvvmVTlNTSwD6w3IFGs5XvI6MTKW9s+jILsxFv43hlBRleHkHuiHYK/D3nBsusQ==}
     engines: {node: '>=20'}
 
   '@ai-matrx/design-system@0.1.1':
@@ -12799,7 +12799,7 @@ snapshots:
 
   '@ai-matrx/agents@0.1.0': {}
 
-  '@ai-matrx/content-ir@0.1.1':
+  '@ai-matrx/content-ir@0.1.2':
     dependencies:
       ajv: 8.20.0
 
@@ -24454,7 +24454,7 @@ snapshots:
 
   md5.js@1.3.5:
     dependencies:
-      hash-base: 3.0.5
+      hash-base: 3.1.2
       inherits: 2.0.4
       safe-buffer: 5.2.1
 

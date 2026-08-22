@@ -40,8 +40,6 @@ const config: Config = {
     // whole `features/files` barrel chain, and with it process-stream's suites).
     // Listed BEFORE the `@/` alias so asset requests never fall through to it.
     moduleNameMapper: {
-        "^@ai-matrx/content-ir$":
-            "<rootDir>/node_modules/@ai-matrx/content-ir/dist/index.js",
         "\\.(css|less|sass|scss)$": "<rootDir>/test-utils/style-mock.ts",
         "\\.(gif|ttf|eot|otf|woff|woff2|png|jpe?g|webp|avif|mp4|webm|wav|mp3|m4a|aac|oga)$":
             "<rootDir>/test-utils/style-mock.ts",
@@ -67,7 +65,7 @@ const config: Config = {
     // prefixes makes that nested position fail the ignore, so ESM markdown
     // deps (needed by rehypeSafeRawHtml et al.) get transpiled to CJS.
     transformIgnorePatterns: [
-      "/node_modules/(?!\\.pnpm/|@ai-matrx/content-ir|uuid|unist|hast|mdast|micromark|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
+      "/node_modules/(?!\\.pnpm/|uuid|unist|hast|mdast|micromark|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
     ],
     testPathIgnorePatterns: ["/node_modules/", "/.next/", "/.claude/"],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
