@@ -168,8 +168,8 @@ export function ContinueOnMyMacPanel({
             {startedConversationId &&
               (startedConversationId === conversationId ? (
                 <span className="text-xs text-muted-foreground">
-                  Running — new turns mirror into this conversation as they
-                  complete.
+                  Running — new turns and tool activity appear on this page as
+                  they arrive.
                 </span>
               ) : (
                 <a

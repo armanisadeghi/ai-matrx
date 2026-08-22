@@ -188,11 +188,17 @@ individually "works". Verified ground truth below is from a three-way full-featu
      **The real fix belongs in matrx-codex-plugin: make the stable event id a function of the
      payload, or stop mutating a turn's payload after first emit.** Re-sending the 88 as-is fails
      forever; minting new ids would duplicate turns. They are preserved, never deleted.
-2. **Make a launched local run WATCHABLE (chip fired).** Launch works (146 sessions!) but the
-   mirror detail view has zero realtime/poll/refresh — "watchable while it runs" is only true
-   across manual reloads. The composer's post-launch door bug (landed users on a blank /chat/new)
-   was fixed 2026-08-19 (`5648f6d3b`). Remaining: live updates on `/work/conversations/[id]`
-   while a run is active + honest copy.
+2. **DONE 2026-08-19 — a launched local run is now watchable.** `/work/conversations/[id]`
+   updates live while its coding session is delivering (`useLiveProviderTranscript` +
+   `liveSessionState`, shipped v0.4.851): new turns and tool calls append within a few seconds,
+   the loop stops when the session settles, returning to the tab or **Check now** re-arms it, and
+   the composer / Continue copy now matches. Transport is a visible-tab poll of the existing
+   keyset reads, chosen against the `supabase-realtime` skill and verified on the live DB
+   (`chat.message` / `chat.tool_call` are not in the realtime publication; `chat.conversation` is
+   but only bumps at message boundaries). Rationale + rules: `features/ai-work/FEATURE.md`
+   § Watch a run while it happens. **Left open:** owner-eyes browser pass on production — the
+   live path is owner-only by construction (the binding read is `created_by = auth.uid()`), so it
+   cannot be exercised from the admin test account.
 3. **Fix `conversations` search+provider (chip fired).** Reproduced: search+provider fails while
    each alone works; nested Subquery composition in `conversation_browse.py` ~L348-395 is the
    suspect; the tool also swallows the real exception (its own defect). Feedback `2f29a244`.
@@ -222,9 +228,11 @@ individually "works". Verified ground truth below is from a three-way full-featu
    (reconnect/account UX) still not started. Live-path multi-account identity still unproven.
 8. **Conformance + docs debt (single sweep):** BEHAVIOR.md 12-MUST conformance was chipped but
    never executed (MUST #1 mismatch statement likely missing); `features/ai-work/FEATURE.md`
-   drift (inspector→detail mount, schedule-prefill claim, SyncStatePanel mechanism copy);
-   matrx-local AGENT_TASKS hygiene (TASK-003/003b done-but-Active); 2 pre-existing failing tests
-   in `compose-destinations.test.ts`; 19 `Auto:%` titles remain among coding-bound conversations
+   drift (inspector→detail mount and SyncStatePanel mechanism copy both FIXED 2026-08-19;
+   schedule-prefill claim still open — see item 4);
+   matrx-local AGENT_TASKS hygiene (TASK-003/003b done-but-Active); the 2 pre-existing failing
+   tests in `compose-destinations.test.ts` are FIXED (they asserted the retired hosted-capability
+   contract; `pnpm jest features/ai-work` is green); 19 `Auto:%` titles remain among coding-bound conversations
    (was 1 — regressed during the backfill wave; re-run title sync after the outbox drains, then
    investigate any survivors).
 9. **Distribution (all Arman-gated):** VS Code — 40 min in `matrx-vscode/OPERATOR_CHECKLIST.md`;

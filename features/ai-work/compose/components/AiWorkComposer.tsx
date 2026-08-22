@@ -699,7 +699,8 @@ function ComposerBody({
           </dd>
           <dt className="text-muted-foreground">Where it goes</dt>
           <dd className="text-foreground">
-            A conversation in your account, watchable while it runs.
+            A conversation in your account. Open it and new turns and tool
+            activity appear there every few seconds while the run is going.
           </dd>
         </dl>
       </ComposerSection>

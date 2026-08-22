@@ -10,16 +10,18 @@
 //   <SyncStateIndicator /> the compact strip above /work/conversations
 // A user must never be able to open both and see different verdicts.
 //
-// THE SYNC-NOW DOOR — verified 2026-08-16, stated exactly:
+// THE SYNC-NOW DOOR — re-verified 2026-08-19, stated exactly:
 // Matrx Local really does own the historical import (`/coding-session/claude/
-// history/{preview,import,status}` in matrx-local), but the web app cannot
-// invoke it today, for two independent reasons:
-//   1. the desktop engine listens on a locally SCANNED port (MATRX_PORT_BASE
-//      22140+), which a browser has no way to discover; and
-//   2. the one web→desktop relay that exists — aidream
-//      `/api/local-proxy/{app_instance_id}/{path}` — hard-rewrites every
-//      request to `{tunnel_url}/sandbox/{path}`, so it cannot address the
-//      `/coding-session/*` router at all.
+// history/{preview,import,status}` in matrx-local), and the web app still
+// cannot invoke it — but NOT for the reason this comment used to give. The
+// "a browser cannot discover a locally scanned port / the aidream relay only
+// addresses /sandbox" rationale predates the per-user Broadcast bridge
+// (`matrx-local-bridge:<userId>`), which the composer and the Continue panel
+// use to reach this very desktop app today. The REAL and only remaining
+// reason: matrx-local registers `coding_runtime.{capabilities,resumable,
+// start,status,cancel}` on that channel and NOTHING for history — there is no
+// `coding_history.*` handler to call. Building those handlers is the open
+// work (handoff item 7); until then the door stays honest.
 // So the button says that and opens the desktop app's own page. A button that
 // looks live and does nothing is the "fake Resume" this product forbids.
 
@@ -51,11 +53,10 @@ import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/relea
 
 /** Exact, verified statement of why the web app cannot start a sync itself. */
 export const SYNC_NOW_UNAVAILABLE_REASON =
-  "Historical Claude Code sync runs inside the Matrx Local desktop app. This browser " +
-  "cannot start it: the desktop engine listens on a locally scanned port (22140+) that " +
-  "a web page cannot discover, and the only web-to-desktop relay we operate " +
-  "(aidream /api/local-proxy) forwards every request to the desktop's /sandbox routes, " +
-  "so it cannot reach the Claude-history endpoints. Open Matrx Local → Claude History to run it.";
+  "Historical Claude Code sync runs inside the Matrx Local desktop app. AI Matrx can reach " +
+  "that app (it is how a run starts on your Mac), but the desktop only answers agent-runtime " +
+  "requests over that link — it exposes nothing for history import yet, so there is no " +
+  "sync to start from here. Open Matrx Local → Claude History to run it.";
 
 function useSyncState() {
   const [state, setState] = useState<SyncStateSnapshot>(EMPTY_SYNC_STATE);
