@@ -59234,7 +59234,7 @@ export type Database = {
           id: string
           is_public: boolean
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           table_id: string
           updated_at: string
           updated_by: string | null
@@ -59249,7 +59249,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           table_id: string
           updated_at?: string
           updated_by?: string | null
@@ -59264,7 +59264,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           table_id?: string
           updated_at?: string
           updated_by?: string | null
