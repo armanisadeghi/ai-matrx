@@ -62,7 +62,7 @@ export const persistAssistantConversationThunk = createAsyncThunk<
     // (with its agent); fall back to the resolved default if not.
     const agentId =
       findRosterByConversation(roster, conversationId)?.agentId ??
-      resolveDefaultAssistantAgentId(getState());
+      (await resolveDefaultAssistantAgentId(getState()));
     const nextRoster = findRosterByConversation(roster, conversationId)
       ? touchRoster(roster, conversationId)
       : appendRoster(roster, makeRosterRef(conversationId, agentId));
@@ -116,7 +116,7 @@ export const setActiveAssistantConversationThunk = createAsyncThunk<
     const roster = session?.assistantConversations ?? [];
     const agentId =
       findRosterByConversation(roster, conversationId)?.agentId ??
-      resolveDefaultAssistantAgentId(getState());
+      (await resolveDefaultAssistantAgentId(getState()));
 
     const instanceExists =
       !!getState().conversations.byConversationId[conversationId];

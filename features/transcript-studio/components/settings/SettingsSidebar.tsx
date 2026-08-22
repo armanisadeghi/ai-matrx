@@ -14,7 +14,8 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
-import { AUDIO_ASSISTANT_AGENT_ID } from "../../constants";
+import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../../constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { toast } from "@/lib/toast";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
@@ -182,15 +183,28 @@ interface SettingsGroupProps {
  * choice lives on the session, not here). Persisted as the caller's user-tier
  * selection on the `assistant` role of `matrx-user/transcript-scribe`
  * (surface-config) — replaced the deleted
- * `userPreferences.transcription.scribeAssistantAgentId` preference.
+ * `userPreferences.transcription.scribeAssistantAgentId` preference. Below the
+ * role sits the `transcript_studio.document_edit` Mandate — the picker shows
+ * its resolution, never a hardcoded agent id.
  */
 function DefaultAssistantAgentPicker() {
   const { roles } = useSurfaceAgentRoles(TRANSCRIPT_SCRIBE_SURFACE);
   const assistant = roles["assistant"];
-  const effectiveId =
-    assistant?.effectiveAgentId ?? AUDIO_ASSISTANT_AGENT_ID;
+  const {
+    mandate,
+    loading: mandateLoading,
+    error: mandateError,
+  } = useMandate(TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY);
+  const effectiveId = assistant?.effectiveAgentId ?? mandate?.agentId ?? null;
   const hasUserOverride = Boolean(assistant?.userSelection);
-  const name = useAppSelector((s) => selectAgentById(s, effectiveId)?.name);
+  const name = useAppSelector((s) =>
+    effectiveId ? selectAgentById(s, effectiveId)?.name : undefined,
+  );
+  const placeholder = mandateError
+    ? "Default assistant unavailable"
+    : mandateLoading && !effectiveId
+      ? "Resolving default assistant…"
+      : "Default assistant";
 
   const setAgent = (id: string) => {
     assistant?.setForMe(id).catch((err: unknown) => {
@@ -221,7 +235,7 @@ function DefaultAssistantAgentPicker() {
             >
               <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="truncate text-[12px] text-foreground">
-                {name ?? "Default assistant"}
+                {name ?? placeholder}
               </span>
             </button>
           }
@@ -237,7 +251,8 @@ function DefaultAssistantAgentPicker() {
         )}
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Used for new sessions. Each session can change its own agent.
+        {mandateError ??
+          "Used for new sessions. Each session can change its own agent."}
       </p>
     </div>
   );

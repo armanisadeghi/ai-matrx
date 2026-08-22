@@ -160,6 +160,7 @@ These are sibling features. The simple `features/transcripts/` view is shaped fo
 
 ## Change Log
 
+- **2026-08-22** — **The Scribe assistant's default agent is decided by mandate `transcript_studio.document_edit`, not a constant.** `resolveDefaultAssistantAgentId` (`redux/assistantRoster.ts`) is now async: surface-config `assistant` role → `resolveMandate(TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY)`, throwing loudly when unresolvable; `ensureAssistantConversation`'s legacy-session fallback resolves the same mandate; the settings `DefaultAssistantAgentPicker` reads it via `useMandate` and shows resolving/unavailable states. `AUDIO_ASSISTANT_AGENT_ID` stays ONLY as the documented seed mirror read by the static `transcript-scribe` surface manifest (ROLLOUT F7 closed; shortcut ids untouched).
 - **2026-08-17** — Removed duplicated icons from all four column empty states.
   The persistent column header remains the single visual identity; the body
   now carries only status and useful guidance.

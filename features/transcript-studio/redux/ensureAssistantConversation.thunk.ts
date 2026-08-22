@@ -28,7 +28,8 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { setShowMicrophone } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { AUDIO_ASSISTANT_AGENT_ID } from "../constants";
+import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../constants";
+import { resolveMandate } from "@/features/agents/mandates/service";
 import { getSession, updateSession } from "../service/studioService";
 import { assistantConversationIdSet, sessionUpserted } from "./slice";
 import {
@@ -123,14 +124,17 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         if (raced) return raced;
 
         // The stored conversation predates the roster on legacy sessions —
-        // recover its agent from the roster, else assume the seeded default it
-        // was originally created with.
+        // recover its agent from the roster, else the studio's assistant
+        // Mandate (its system default is the agent legacy sessions were born
+        // under; a bound conversation is never re-pointed, so this only stamps
+        // the roster entry).
         const session = getState().transcriptStudio.byId[sessionId];
         const roster = session?.assistantConversations ?? [];
         const storedAgentId =
           findRosterByConversation(roster, storedId)?.agentId ??
           defaultAgentId ??
-          AUDIO_ASSISTANT_AGENT_ID;
+          (await resolveMandate(TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY))
+            .agentId;
 
         const instanceExists =
           !!getState().conversations.byConversationId[storedId];
@@ -192,7 +196,7 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
       // the conversation "disappears". `useStudioAssistant` calls
       // `persistAssistantConversationThunk` the instant the server confirms the
       // turn, so only REAL conversations ever hit the session row.
-      const resolvedAgentId = resolveDefaultAssistantAgentId(
+      const resolvedAgentId = await resolveDefaultAssistantAgentId(
         getState(),
         defaultAgentId,
       );

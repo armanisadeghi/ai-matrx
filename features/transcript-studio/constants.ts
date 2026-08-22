@@ -113,20 +113,22 @@ export const DEFAULT_QUIZ_SHORTCUT_ID =
 // metadata; per-session overrides land in studio_session_settings.
 export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 
-// The audio-first studio assistant — a builtin `agent.definition` row that
-// receives the session's transcripts as named context objects and edits the
-// working document (studio_documents) via ctx_patch. Seeded in
-// migrations/studio_audio_assistant_agent.sql.
+// The audio-first studio assistant — the agent that receives the session's
+// transcripts as named context objects and edits the working document
+// (studio_documents) via ctx_patch.
 //
-// 🚨 HARDCODED AGENT ID, READ AT RUN TIME — a known gap, ROLLOUT.md row F7.
-// `resolveDefaultAssistantAgentId` (redux/assistantRoster.ts) falls back to it
-// below the surface-config `assistant` role, and ensureAssistantConversation
-// uses it as the last-resort agent for legacy sessions. So the DB does not
-// fully own which agent assists here. The canonical form is a declared mandate
-// resolved at run time; the surface manifest's `defaultAgentId`
-// (features/surfaces/manifests/transcript-scribe.manifest.ts) may keep it as a
-// documented SEED MIRROR, but a runtime read is a defect and no new one may be
-// added. Law: /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md.
+// At RUN TIME the assistant is decided by the Mandate below (system default →
+// the user's binding at /agents/mandates), resolved via `resolveMandate` in the
+// thunks and `useMandate` in the settings picker; the surface-config
+// `assistant` role (per-user/org surface choice) still wins above it.
+export const TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY =
+  "transcript_studio.document_edit";
+
+// SEED MIRROR ONLY — the mandate's system-default agent id, read by exactly one
+// place: the static surface manifest's `agentRoles[].defaultAgentId`
+// (features/surfaces/manifests/transcript-scribe.manifest.ts), which is
+// module-scope data seeded into `ui_surface_agent_role` and cannot resolve a
+// mandate. Nothing may read this at run time — resolve the mandate instead.
 export const AUDIO_ASSISTANT_AGENT_ID =
   "86564a0c-fe79-40a7-bf97-6349fb352a9d";
 
