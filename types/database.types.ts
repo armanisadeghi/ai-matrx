@@ -4911,7 +4911,7 @@ export type Database = {
           created_at: string
           id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           quantity: number
           user_id: string
         }
@@ -4921,7 +4921,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           quantity?: number
           user_id: string
         }
@@ -4931,7 +4931,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           quantity?: number
           user_id?: string
         }

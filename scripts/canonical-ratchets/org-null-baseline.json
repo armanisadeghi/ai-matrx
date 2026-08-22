@@ -1,7 +1,7 @@
 {
   "_comment": "NO NULL ORG (owner ruling 2026-08-21, db-rules FEATURE.md §2/§6e). Seeded from LIVE, not from zero — the gate's job is preventing growth, not forcing an instant cleanup, and it must never be able to block a release on the legacy backlog. `null_org_rows_total` may only go DOWN; `nullable_org_columns` may only SHRINK. Raising either is an Arman decision; agents shrink them with --update-baseline.",
-  "seeded_at": "2026-08-21T22:58:11.04245+00:00",
-  "null_org_rows_total": 12744,
+  "seeded_at": "2026-08-22T18:09:25.259668+00:00",
+  "null_org_rows_total": 12622,
   "nullable_org_columns": [
     "dictionary.dict_entries",
     "docproc.processed_documents",
@@ -35,7 +35,6 @@
   ],
   "known_null_org_writers": [],
   "null_org_rows_by_table": {
-    "billing.usage_ledger": 122,
     "dictionary.dict_entries": 7,
     "docproc.processed_documents": 124,
     "platform.assists": 116,
