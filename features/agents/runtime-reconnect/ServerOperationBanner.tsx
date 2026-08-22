@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * ServerOperationBanner — the persistent "still working on the server"
- * indicator, driven by SERVER state (`conversation.serverOperation`, stamped
+ * ServerOperationBanner — the persistent reconnect indicator, driven by
+ * runtime state (`conversation.serverOperation`, stamped
  * from the `/runtime` reconnect surface) so it survives a page refresh.
  *
  * Renders above the composer beside PendingAsksZone. Four evidence-backed faces:
@@ -61,16 +61,17 @@ export function ServerOperationBanner({
       !operation.userRequestId ||
       operation.recoveryState === "checking_for_prompt" ||
       operation.recoveryState === "pending_tool";
-    const action = !shouldRecheck && operation.userRequestId
-      ? dispatch(
-          resumeInstance({
-            conversationId,
-            userRequestId: operation.userRequestId,
-          }),
-        )
-      : dispatch(
-          reconnectServerOperation({ conversationId, source: "cold-load" }),
-        );
+    const action =
+      !shouldRecheck && operation.userRequestId
+        ? dispatch(
+            resumeInstance({
+              conversationId,
+              userRequestId: operation.userRequestId,
+            }),
+          )
+        : dispatch(
+            reconnectServerOperation({ conversationId, source: "cold-load" }),
+          );
     void action.finally(() => setActionBusy(false));
   };
 
@@ -81,8 +82,7 @@ export function ServerOperationBanner({
     operation.recoveryState === "checking_for_prompt" ||
     operation.recoveryState === "pending_tool";
 
-  let message =
-    "Still working on the server — the response will appear here when it finishes.";
+  let message = "Reconnecting to your response…";
   if (waiting && hasQuestion) {
     message =
       pendingAsks.length === 1

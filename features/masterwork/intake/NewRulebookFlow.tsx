@@ -42,6 +42,9 @@ import {
   HelpCircle,
   Loader2,
   MessagesSquare,
+  Lightbulb,
+  Inbox,
+  Video,
   Network,
   Puzzle,
   ThumbsDown,
@@ -71,6 +74,7 @@ import {
   type DistillationApproach,
 } from "../browse/approaches";
 import { ApproachCard, ACCENT } from "../browse/ApproachCard";
+import { relevantApproachKeys } from "./approachRelevance";
 
 const WIZARD_ID = "masterwork-new";
 
@@ -94,6 +98,17 @@ interface IntakeQuestion {
   options: IntakeOption[];
   /** Pre-selected so the Expert can click straight through. */
   defaultValue: string;
+  /** One line under the title — used where the answer changes what comes next. */
+  subtitle?: string;
+  /** Knowledge lives in several places at once; its answer is a SET. */
+  multi?: boolean;
+}
+
+/** Multi-select answers persist as one string so draft recovery, the wizard
+ *  slice and `metadata.intake` all keep their existing shapes. */
+export const MULTI_SEP = " | ";
+export function splitMulti(value: string | undefined): string[] {
+  return (value ?? "").split(MULTI_SEP).map((v) => v.trim()).filter(Boolean);
 }
 
 const QUESTIONS: IntakeQuestion[] = [
@@ -113,7 +128,9 @@ const QUESTIONS: IntakeQuestion[] = [
   {
     key: "knowledge",
     title: "Where does the knowledge live today?",
+    subtitle: "Pick every place it lives — this decides what we offer you next.",
     accent: "amber",
+    multi: true,
     defaultValue: "In my head",
     options: [
       { value: "In my head", label: "In my head", helper: "I just know it", icon: Brain },
@@ -124,13 +141,16 @@ const QUESTIONS: IntakeQuestion[] = [
         helper: "Docs, SOPs, past work",
         icon: FileText,
       },
+      { value: "In my AI chats", label: "In my AI chats", helper: "ChatGPT, Claude, coding tools", icon: MessagesSquare },
+      { value: "In my meetings and calls", label: "In my meetings", helper: "Calls and recordings", icon: Video },
+      { value: "In my email and messages", label: "In my messages", helper: "Email and threads", icon: Inbox },
       {
         value: "Someone else's material (a book, a course)",
         label: "Someone else's material",
         helper: "A book or a course",
         icon: BookOpen,
       },
-      { value: "Not sure", label: "Not sure", helper: "Help me figure it out", icon: HelpCircle },
+      { value: "Nothing yet — just an idea", label: "Nothing yet", helper: "Just an idea so far", icon: Lightbulb },
     ],
   },
   {
@@ -178,14 +198,11 @@ const QUESTIONS: IntakeQuestion[] = [
  * Which Approach the knowledge answer suggests — a soft hint (badge +
  * preselect), never a route. The Expert always sees every enabled card.
  */
+/** The single strongest fit — the card we pre-select. Derived from the SAME
+ *  relevance map that orders the top row, so the badge can never disagree
+ *  with what is shown. */
 function suggestedApproachKey(knowledge: string): string {
-  if (
-    knowledge === "Written down (docs, SOPs, past work)" ||
-    knowledge === "Someone else's material (a book, a course)"
-  ) {
-    return "source";
-  }
-  return "interview";
+  return relevantApproachKeys(splitMulti(knowledge))[0] ?? "interview";
 }
 
 /**
@@ -268,14 +285,23 @@ function QuestionSection({
 }) {
   return (
     <section className="space-y-2.5">
-      <h2 className="text-sm font-semibold text-foreground">{question.title}</h2>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+      <div>
+        <h2 className="text-sm font-semibold text-foreground">{question.title}</h2>
+        {question.subtitle ? (
+          <p className="text-xs text-muted-foreground">{question.subtitle}</p>
+        ) : null}
+      </div>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
         {question.options.map((opt) => (
           <OptionTile
             key={opt.value}
             option={opt}
             accent={question.accent}
-            selected={value === opt.value}
+            selected={
+              question.multi
+                ? splitMulti(value).includes(opt.value)
+                : value === opt.value
+            }
             onSelect={() => onChange(opt.value)}
           />
         ))}
@@ -314,6 +340,13 @@ export function NewRulebookFlow() {
   // the goal is the one thing the Expert must actually say.
   const step: 1 | 2 =
     searchParams.get("step") === "2" && goal.trim() ? 2 : 1;
+
+  // THE QUESTIONS COME FIRST (Arman, 2026-08-21) — they are not a form to
+  // survive, they are the router: their answers decide which Approaches lead
+  // on step 2. An `?approach=` from the standing catalog only PRE-SELECTS a
+  // card there; it never skips the questions, because the questions also
+  // configure the Rulebook itself (sharing, strictness, the Audition baseline).
+  const preChosenKey = searchParams.get("approach");
 
   const patchDraft = (patch: Record<string, unknown>) =>
     dispatch(patchWizardDraft({ wizardId: WIZARD_ID, patch }));
@@ -375,6 +408,21 @@ export function NewRulebookFlow() {
   const startable = approaches === null ? null : startableApproaches(approaches);
   const notStartable =
     approaches === null ? [] : approaches.filter((a) => !a.enabled);
+
+  // TWO TIERS, NEVER A GATE (Arman, 2026-08-21): what they told us decides
+  // what sits ON TOP; every other Approach stays on the same screen below.
+  // A coming-soon Approach that fits belongs in the top row saying so — we are
+  // not in production, and seeing it wanted is what gets it built.
+  const relevantKeys = relevantApproachKeys(splitMulti(answers.knowledge));
+  const bestForYou =
+    approaches === null
+      ? []
+      : relevantKeys
+          .map((k) => approaches.find((a) => a.key === k))
+          .filter((a): a is DistillationApproach => Boolean(a));
+  const bestKeySet = new Set(bestForYou.map((a) => a.key));
+  const everythingElse =
+    approaches === null ? [] : approaches.filter((a) => !bestKeySet.has(a.key));
   const effectiveKey =
     (selectedKey && startable?.some((a) => a.key === selectedKey)
       ? selectedKey
@@ -455,11 +503,11 @@ export function NewRulebookFlow() {
         <div className="space-y-9">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Distill your expertise
+              New Masterwork
             </h1>
             <p className="text-muted-foreground">
-              A few quick questions — we&apos;ve picked sensible answers, so
-              change only what&apos;s wrong and keep moving.
+              Four quick answers so we can show you the right way to build it.
+              Everything is pre-filled — change only what&apos;s wrong.
             </p>
           </div>
 
@@ -491,8 +539,30 @@ export function NewRulebookFlow() {
               question={q}
               value={answers[q.key]}
               onChange={(v) => {
-                setAnswers((prev) => ({ ...prev, [q.key]: v }));
-                patchDraft({ [q.key]: v });
+                // A multi-select answer is a SET: tapping toggles, and the last
+                // one standing cannot be turned off (an empty answer would
+                // leave the next step with nothing to work from).
+                //
+                // The next value is computed OUTSIDE the state updater on
+                // purpose. React runs an updater during render, so dispatching
+                // the draft-save from inside it updates another component
+                // mid-render — the "Cannot update a component while rendering a
+                // different component" warning. Compute, then set, then save.
+                const current = answers[q.key];
+                let next = v;
+                if (q.multi) {
+                  const cur = splitMulti(current);
+                  const has = cur.includes(v);
+                  const out =
+                    has && cur.length > 1
+                      ? cur.filter((x) => x !== v)
+                      : has
+                        ? cur
+                        : [...cur, v];
+                  next = out.join(MULTI_SEP);
+                }
+                setAnswers((prev) => ({ ...prev, [q.key]: next }));
+                patchDraft({ [q.key]: next });
               }}
             />
           ))}
@@ -518,7 +588,7 @@ export function NewRulebookFlow() {
 
           <div className="flex items-center justify-between border-t border-border pt-6">
             <Button asChild variant="ghost" className="min-h-[44px] gap-2">
-              <Link href="/masterwork">
+              <Link href="/masterwork/all">
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Link>
@@ -570,41 +640,63 @@ export function NewRulebookFlow() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {(startable ?? []).map((approach) => (
-                  <ApproachCard
-                    key={approach.key}
-                    approach={approach}
-                    selected={approach.key === effectiveKey}
-                    suggested={approach.key === suggested}
-                    onSelect={() => setSelectedKey(approach.key)}
-                  />
-                ))}
-              </div>
-
-              {/* Every other named Approach, so nothing we approved is
-                  invisible. Inert here on purpose: clicking away from this
-                  step would throw the Expert's unsaved answers on the floor. */}
-              {notStartable.length > 0 ? (
+              {/* TOP ROW — what fits what they told us. Startable ones select;
+                  a coming-soon card that fits still shows here, inert, so the
+                  Expert sees we know it is the right answer. */}
+              {bestForYou.length > 0 ? (
                 <div className="space-y-3">
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">
-                      Other ways we&apos;re building
+                      Best for what you described
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                      These aren&apos;t ways to <em>start</em> a Rulebook — some
-                      are already available from elsewhere, some are on the way.
-                      Once your Rulebook exists you&apos;ll find them all under
-                      &ldquo;Add&rdquo;.
+                      Based on where you said your knowledge lives. Anything
+                      below works too — this is a shortcut, not a limit.
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {notStartable.map((approach) => (
-                      <ApproachCard key={approach.key} approach={approach} inert />
+                    {bestForYou.map((approach) => (
+                      <ApproachCard
+                        key={approach.key}
+                        approach={approach}
+                        selected={approach.key === effectiveKey}
+                        suggested={approach.key === suggested}
+                        onSelect={
+                          approach.enabled
+                            ? () => setSelectedKey(approach.key)
+                            : undefined
+                        }
+                        inert={!approach.enabled}
+                      />
                     ))}
                   </div>
                 </div>
               ) : null}
+
+              {/* EVERYTHING ELSE — same screen, one section down. Never a gate. */}
+              {everythingElse.length > 0 ? (
+                <div className="space-y-3">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Every other way
+                  </h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {everythingElse.map((approach) => (
+                      <ApproachCard
+                        key={approach.key}
+                        approach={approach}
+                        selected={approach.key === effectiveKey}
+                        onSelect={
+                          approach.enabled
+                            ? () => setSelectedKey(approach.key)
+                            : undefined
+                        }
+                        inert={!approach.enabled}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
             </div>
           )}
 

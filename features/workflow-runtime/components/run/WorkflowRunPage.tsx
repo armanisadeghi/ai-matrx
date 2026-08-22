@@ -22,6 +22,7 @@ import { CalendarClock, PenLine, Play, RotateCcw } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,11 @@ import { deriveRunForm } from "../../surface/run-form";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
+import {
+  workflowFailureAgentInput,
+  workflowFailureHuman,
+  workflowFailureInvestigationPrompt,
+} from "./run-copy";
 
 interface LoadedWorkflow {
   id: string;
@@ -166,7 +172,10 @@ export function WorkflowRunPage({
     <RouteHeader
       left={
         <div className="flex min-w-0 items-center">
-          <ChevronLeftTapButton href="/workflows/all" ariaLabel="All workflows" />
+          <ChevronLeftTapButton
+            href="/workflows/all"
+            ariaLabel="All workflows"
+          />
           <span className="ml-1 min-w-0 truncate text-sm font-medium text-foreground">
             {workflow?.name ?? "Workflow"}
           </span>
@@ -202,12 +211,45 @@ export function WorkflowRunPage({
 
   let body: React.ReactNode;
   if (loadError) {
+    const failureView = () => ({
+      kind: "route" as const,
+      headline: "We couldn't open this",
+      technical: loadError,
+      nextStep: "Back to your workflows",
+      runId,
+      definitionId,
+      workflowName: workflow?.name ?? null,
+      status: "unavailable",
+    });
     body = (
       <div className="mx-auto w-full max-w-2xl px-4 py-10">
         <div className="rounded-2xl border border-border bg-card p-5">
-          <h1 className="text-base font-semibold text-foreground">
-            We couldn&apos;t open this
-          </h1>
+          <div className="flex items-start gap-2">
+            <h1 className="min-w-0 flex-1 text-base font-semibold text-foreground">
+              We couldn&apos;t open this
+            </h1>
+            <CopyButtons
+              size="icon"
+              label="Workflow route error"
+              human={() => workflowFailureHuman(failureView())}
+              agent={() => workflowFailureAgentInput(failureView())}
+              agentVariant={{
+                id: "error",
+                label: "Error",
+                hint: "The route error exactly as rendered",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "error-with-prompt",
+                  label: "Error with prompt",
+                  hint: "Add a root-cause investigation brief",
+                  build: () =>
+                    workflowFailureInvestigationPrompt(failureView()),
+                },
+              ]}
+            />
+          </div>
           <p className="mt-1.5 text-sm text-muted-foreground">{loadError}</p>
           <button
             type="button"

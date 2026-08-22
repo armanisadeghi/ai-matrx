@@ -11,6 +11,8 @@
 export interface MatrxStreamEnvelope<TData = unknown> {
   event: string;
   data: TData;
+  /** Monotonic delivery cursor used to make a replayed live stream idempotent. */
+  stream_seq?: number;
 }
 
 export interface MatrxNdjsonIssue {
@@ -47,14 +49,33 @@ export function normalizeMatrxStreamEnvelope(
 ): MatrxStreamEnvelope | null {
   if (!isRecord(value)) return null;
 
+  const streamSeq =
+    typeof value.stream_seq === "number" &&
+    Number.isSafeInteger(value.stream_seq) &&
+    value.stream_seq > 0
+      ? value.stream_seq
+      : undefined;
+
   if (typeof value.event === "string") {
-    return { event: value.event, data: value.data };
+    return {
+      event: value.event,
+      data: value.data,
+      ...(streamSeq !== undefined ? { stream_seq: streamSeq } : {}),
+    };
   }
   if (value.e === "c" && typeof value.t === "string") {
-    return { event: "chunk", data: { text: value.t } };
+    return {
+      event: "chunk",
+      data: { text: value.t },
+      ...(streamSeq !== undefined ? { stream_seq: streamSeq } : {}),
+    };
   }
   if (value.e === "r" && typeof value.t === "string") {
-    return { event: "reasoning_chunk", data: { text: value.t } };
+    return {
+      event: "reasoning_chunk",
+      data: { text: value.t },
+      ...(streamSeq !== undefined ? { stream_seq: streamSeq } : {}),
+    };
   }
   return null;
 }

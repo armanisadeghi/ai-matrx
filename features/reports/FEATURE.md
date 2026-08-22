@@ -54,5 +54,6 @@ A **metadata-only registry** (`registry.ts`, the spirit of the feature admin map
 
 ## Change log
 
+- `2026-08-22` — Added shell-height-aware top clearance to the reports landing so its introduction and first report card remain below the transparent AppShell header.
 - `2026-06-29` — Agent Drift header uses `<PageHeader>` tap-button row (agent build pattern); severity summary moved into rollup table caption. Added `check:page-headers` guard.
 - `2026-06-12` — **Module created** with Agent Drift as report #1 (registry + user/admin landings + user/admin agent-drift routes + nav + admin map). Detail pane reuses the agents `AgentUsagesEngine`.

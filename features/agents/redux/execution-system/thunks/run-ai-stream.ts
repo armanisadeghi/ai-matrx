@@ -132,6 +132,11 @@ export class StreamPhaseError extends Error {
   }
 }
 
+/** The detached task is real, but this backend process cannot replay its wire. */
+export class StreamRejoinUnavailableError extends Error {
+  override name = "StreamRejoinUnavailableError" as const;
+}
+
 export interface RunAiStreamArgs {
   /** Tracking id for the active request (`createRequest`'d by the caller). */
   requestId: string;
@@ -156,7 +161,7 @@ export interface RunAiStreamArgs {
    *     answering). Reset the instance to `paused`, complete the request,
    *     do NOT failPendingToolLifecycle.
    */
-  kind: "turn" | "resume";
+  kind: "turn" | "resume" | "rejoin";
   /**
    * Clear the hidden user input on pre-persistence failure. Turns pass `!retry`
    * (clear on initial sends, leave drafts alone on retries). Resume passes
@@ -264,13 +269,15 @@ export async function fetchThroughDeploymentDrain(
     try {
       response = await fetch(url, init);
     } catch (error) {
-      if (!drainObserved || signal.aborted || Date.now() >= deadline) throw error;
+      if (!drainObserved || signal.aborted || Date.now() >= deadline)
+        throw error;
       attempt += 1;
       await waitForDrainRetry(Math.min(1_000 * attempt, 5_000), signal);
       continue;
     }
     const draining =
-      response.status === 503 && response.headers.get("X-Matrx-Drain") === "deployment";
+      response.status === 503 &&
+      response.headers.get("X-Matrx-Drain") === "deployment";
     if (!draining) return response;
 
     drainObserved = true;
@@ -395,8 +402,7 @@ export async function runAiStream(
     if (
       attemptV1Fallback &&
       response.headers.get("X-Matrx-Drain") !== "deployment" &&
-      (response.status === 404 ||
-        response.status === 405)
+      (response.status === 404 || response.status === 405)
     ) {
       logDowngrade(`HTTP ${response.status}`, response.status);
       response = await fetchThroughDeploymentDrain(
@@ -459,6 +465,10 @@ export async function runAiStream(
       }
 
       const code = response.status;
+      if (kind === "rejoin" && (code === 404 || code === 409)) {
+        unregisterAbortController(conversationId);
+        throw new StreamRejoinUnavailableError(serverMessage);
+      }
       if (code === 409) {
         if (kind === "resume") {
           // Three structured 409 shapes from /resume — none of them is a
@@ -566,8 +576,7 @@ export async function runAiStream(
       getState,
       submittedVariableResourcePolicies:
         (body.variable_resource_context as
-          | Record<string, VariableResourceContextConfig>
-          | undefined) ?? {},
+          Record<string, VariableResourceContextConfig> | undefined) ?? {},
       jsonExtraction,
       userMessageClientTempId,
       forceLocalConversationId,
@@ -597,6 +606,11 @@ export async function runAiStream(
     }
     if (error instanceof RunInFlightError) {
       // Deliberately no cleanup: the caller retries the SAME request.
+      throw error;
+    }
+    if (error instanceof StreamRejoinUnavailableError) {
+      // Another process may own the detached task. The runtime follower is the
+      // durable fallback and will rehydrate the persisted result at terminal.
       throw error;
     }
 
@@ -645,7 +659,7 @@ export async function runAiStream(
           : "client_error";
     const message = error instanceof Error ? error.message : "Unknown error";
     const connectionLossMessage =
-      "Connection to the stream was lost. The server is still finishing the response — recovering it automatically.";
+      "Connection interrupted. Reconnecting to your response now.";
 
     // Feed the systemwide Error Inspector — a dead stream (heartbeat loss,
     // total-timeout, fetch failure) is a server-origin failure the admin wants
@@ -685,17 +699,17 @@ export async function runAiStream(
     // when the spine has no operation. Fire-and-forget; the follower stands
     // down by itself if the user retries or sends a new message.
     if (isConnectionLoss) {
-      void import(
-        "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk"
-      ).then(({ reconnectServerOperation }) => {
-        dispatch(
-          reconnectServerOperation({
-            conversationId,
-            requestId,
-            source: "stream-loss",
-          }),
-        );
-      });
+      void import("@/features/agents/runtime-reconnect/reconnect-server-operation.thunk").then(
+        ({ reconnectServerOperation }) => {
+          dispatch(
+            reconnectServerOperation({
+              conversationId,
+              requestId,
+              source: "stream-loss",
+            }),
+          );
+        },
+      );
     }
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the
@@ -705,7 +719,7 @@ export async function runAiStream(
         requestId,
         errorType,
         errorMessage: isConnectionLoss
-          ? "The connection to the stream dropped — reconnecting to the server run."
+          ? "The connection dropped — reconnecting to the response."
           : isTotal
             ? "Stream exceeded its maximum lifetime."
             : message,

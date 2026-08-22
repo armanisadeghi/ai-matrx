@@ -13,8 +13,13 @@
  *       → setContextEntries(tile entries) → setUserInputText → executeInstance.
  *
  *   • "fork" — branch the thread's EXISTING conversation (full history) via
- *     `forkConversationServer`, then send the message on the fork. Recipe = the
- *     spec's FORK path. Requires the thread to already have a conversation.
+ *     `forkConversationServer`, then send the message on the fork. The
+ *     directive rides `setContextEntries` (removed again once the turn is
+ *     sent) — a fork is a CONTINUATION, so it has no first-turn variable to
+ *     use, but the context channel IS carried on every continuation turn.
+ *     `setUserInputText` carries only a short human-legible activation line,
+ *     never the payload — a context entry alone does not mint a visible turn.
+ *     Requires the thread to already have a conversation.
  *
  * After firing EITHER path: dispatch `openWatch(newConversationId)` and a toast
  * carrying a "Watch" action (which also opens the watch window). `executeInstance`
@@ -50,7 +55,10 @@ import { resolveMandate } from "@/features/agents/mandates/service";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import {
+  setContextEntries,
+  removeContextEntry,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -138,28 +146,62 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         // Watch + notify BEFORE the run so the window is up as the stream lands.
         notifyAndWatch(dispatch, forkId, threadLabel);
 
-        // KNOWN PLATFORM GAP (THE USER-INPUT LAW, ledgered in FOUND_DEFECTS.md):
-        // args.message is a tool-call argument, not human-typed text, so per
-        // the law it should never ride as user_input. It still does HERE
-        // because a fork is a CONTINUATION of an existing conversation, and
-        // aidream's continuation path (`ConversationResolver.from_conversation_id`,
-        // `services/ai_execution/agent_run.py` `_prepare_continue_run`) has no
-        // per-turn variable/context channel — `request.variables` on a
-        // continuation only stages picklist tokens, never becomes a new
-        // visible turn, and omitting user_input entirely sends no new turn
-        // at all (silently drops the master's message). Until aidream ships
-        // a continuation-turn variable channel, user_input is the only way
-        // to actually deliver this message. Do not "fix" this by switching
-        // to variables — that silently breaks the fork feature rather than
-        // fixing the law violation.
+        // THE USER-INPUT LAW: args.message is a tool-call argument, not
+        // human-typed text, so it never rides user_input. A fork is a
+        // CONTINUATION of an existing conversation, so it can't use a
+        // first-turn variable (frozen after turn 1) — but the CONTEXT
+        // channel IS carried on every continuation turn and applied
+        // server-side (`agent_run.py:872,900` / `continue_conversation.py`),
+        // so the master's directive rides context instead. A context entry
+        // does not mint a visible turn on its own
+        // (`packages/matrx-ai/matrx_ai/agents/resolver.py:145` appends a turn
+        // only when `user_input` is present), so a short, human-legible
+        // activation line still goes in user_input — the real payload is the
+        // context entry. `max_inline_chars` set generously above any
+        // realistic directive length to guarantee it inlines rather than
+        // becoming a `ctx_get` stub. See FOUND_DEFECTS.md D215 (resolved) +
+        // agent-variable-binding/FEATURE.md § VARIABLE vs CONTEXT.
         dispatch(
-          setUserInputText({ conversationId: forkId, text: args.message }),
+          setContextEntries({
+            conversationId: forkId,
+            entries: [
+              {
+                key: "master_directive",
+                value: {
+                  content: args.message,
+                  type: "text",
+                  label: "Master agent directive",
+                  description:
+                    "The instruction the master agent sent this thread.",
+                  max_inline_chars: 20000,
+                },
+              },
+            ],
+          }),
         );
-        // initiation:"auto" — this send is driven by an agent tool call, not
-        // a person pressing send on this thread.
-        await dispatch(
-          executeInstance({ conversationId: forkId, initiation: "auto" }),
-        ).unwrap();
+        dispatch(
+          setUserInputText({
+            conversationId: forkId,
+            text: "The master agent sent a new instruction for this thread.",
+          }),
+        );
+        try {
+          // initiation:"auto" — this send is driven by an agent tool call,
+          // not a person pressing send on this thread.
+          await dispatch(
+            executeInstance({ conversationId: forkId, initiation: "auto" }),
+          ).unwrap();
+        } finally {
+          // Context entries persist on the conversation until removed — clear
+          // it once this turn is sent so it never rides a LATER turn as stale
+          // "new" instruction.
+          dispatch(
+            removeContextEntry({
+              conversationId: forkId,
+              key: "master_directive",
+            }),
+          );
+        }
 
         return {
           ok: true,

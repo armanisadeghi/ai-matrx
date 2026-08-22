@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
@@ -46,6 +47,11 @@ import {
 } from "../redux/workflow-runs.selectors";
 import { TERMINAL_RUN_STATUSES } from "../types";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
+import {
+  workflowFailureAgentInput,
+  workflowFailureHuman,
+  workflowFailureInvestigationPrompt,
+} from "./run/run-copy";
 
 export const PHASE_LABEL: Record<string, string> = {
   idle: "Not started",
@@ -115,24 +121,14 @@ function WorkingBody({ message }: { message: string | null }) {
  * Silent on the happy path (the overwhelmingly common case), so it costs a
  * clean run nothing.
  */
-function KindShapeDriftNote({
-  invocation,
-  verdictShownElsewhere = false,
-}: {
+function KindShapeDriftNote({ invocation }: {
   invocation: NodeInvocationState;
-  /**
-   * True when the `node_outcome` wrapper is rendering its own verdict chip
-   * right below this note. The chip owns `output_kind_ok`; the note keeps the
-   * one thing the chip cannot say — that the payload named a DIFFERENT kind
-   * than the node promised. Saying it twice is noise, not emphasis.
-   */
-  verdictShownElsewhere?: boolean;
 }) {
   const declared = invocation.outputKindDeclared;
   const emitted = invocation.outputKind;
   const mismatched =
     declared !== null && emitted !== null && declared !== emitted;
-  const checkFailed = invocation.outputKindOk === false && !verdictShownElsewhere;
+  const checkFailed = invocation.outputKindOk === false;
   if (!mismatched && !checkFailed) return null;
 
   return (
@@ -163,14 +159,56 @@ function KindShapeDriftNote({
  * record, and pulling one string back out is exactly the throwing-away this
  * surface used to compensate for with regexes.
  */
-function StepErrorBody({ error }: { error: Record<string, unknown> }) {
+function StepErrorBody({
+  runId,
+  invocation,
+}: {
+  runId: string;
+  invocation: NodeInvocationState;
+}) {
   const [showTechnical, setShowTechnical] = useState(false);
+  const error = invocation.error ?? {};
   const explanation = explainRunFailure(error, "This step");
+  const failureView = () => ({
+    kind: "node" as const,
+    headline: explanation.headline,
+    technical: explanation.technical,
+    nextStep: explanation.nextStep,
+    runId,
+    status: invocation.phase,
+    stepId: invocation.nodeId,
+    stepLabel: invocation.specType ?? invocation.nodeId,
+    detail:
+      invocation.attempt > 1 ? `Attempt ${invocation.attempt}` : undefined,
+  });
   return (
     <div className="space-y-1.5">
       <div className="flex items-start gap-1.5">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-        <p className="text-xs text-destructive">{explanation.headline}</p>
+        <p className="min-w-0 flex-1 text-xs text-destructive">
+          {explanation.headline}
+        </p>
+        <CopyButtons
+          size="xs"
+          label="Workflow node failure"
+          human={() => workflowFailureHuman(failureView())}
+          agent={() => workflowFailureAgentInput(failureView())}
+          json={() => error}
+          agentVariant={{
+            id: "error",
+            label: "Error",
+            hint: "The node failure exactly as rendered",
+            position: "first",
+          }}
+          aiVariants={[
+            {
+              id: "error-with-prompt",
+              label: "Error with prompt",
+              hint: "Add a root-cause investigation brief",
+              build: () => workflowFailureInvestigationPrompt(failureView()),
+            },
+          ]}
+        />
       </div>
       {explanation.technical ? (
         <>
@@ -249,11 +287,12 @@ export function InvocationBody({
   // while the heartbeat tail keeps arriving. So the lane speaks only once it
   // has actually carried a chunk; otherwise the tail gets its turn below.
   const laneCarriedContent = invocation.chunksReceived > 0;
-  const laneOwnsDisplay = Boolean(invocation.laneRequestId) && !documentWins;
+  const laneRequestId = invocation.laneRequestId;
+  const laneOwnsDisplay = laneRequestId !== null && !documentWins;
   if (laneOwnsDisplay && laneCarriedContent) {
     return (
       <LiveRunDisplay
-        requestId={invocation.laneRequestId!}
+        requestId={laneRequestId}
         label={invocation.nodeId}
         variant="bare"
       />
@@ -273,17 +312,17 @@ export function InvocationBody({
     return <WorkingBody message={invocation.progress?.message ?? null} />;
   }
   // THE WRAPPER BRANCH. When the engine sent a `node_outcome`, the readout
-  // renders THAT — provenance chrome (workflow, step, timing, kind verdict)
-  // from the wrapper's own component, which then hands the nested payload back
-  // to the registry so the data kind's component draws it. One packet, one
-  // path, no second renderer and no second `final_text` reader here.
+  // renders THAT through its transparent router, which hands the nested payload
+  // back to the registry so the data kind's component draws it. Wrapper
+  // diagnostics never become reader-facing chrome. One packet, one path, no
+  // second renderer and no second `final_text` reader here.
   //
   // Null wrapper = a pre-wrapper run or a producer that failed open, and the
   // branches below carry the surface exactly as they always did.
   if (settledOutput && invocation.wrapper) {
     return (
       <>
-        <KindShapeDriftNote invocation={invocation} verdictShownElsewhere />
+        <KindShapeDriftNote invocation={invocation} />
         <KindInstanceRender
           kind={NODE_OUTCOME_KIND}
           value={invocation.wrapper}
@@ -330,7 +369,7 @@ export function InvocationBody({
     return <SettledOutputBody output={invocation.output} />;
   }
   if (invocation.error) {
-    return <StepErrorBody error={invocation.error} />;
+    return <StepErrorBody runId={runId} invocation={invocation} />;
   }
   if (working) {
     return <WorkingBody message={invocation.progress?.message ?? null} />;

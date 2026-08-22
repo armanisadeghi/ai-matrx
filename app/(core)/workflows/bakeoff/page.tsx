@@ -81,7 +81,7 @@ export default function BakeoffPickerPage() {
         </div>
       </PageHeader>
       <div className="h-full overflow-hidden flex flex-col">
-        <div className="mx-auto w-full max-w-5xl px-4 pt-4 pb-2">
+        <div className="mx-auto w-full max-w-5xl px-4 pb-2 pt-[calc(var(--shell-header-h)+1rem)]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input

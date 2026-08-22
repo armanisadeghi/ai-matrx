@@ -113,8 +113,8 @@ function gatherCodeInputs(): CodeInputs {
     hostSurfaceTokens = hostExtraction.tokens;
     failures.push(...hostExtraction.failures);
     for (const f of failures) {
-      // access-errors: ok — admin shape-doctor census warning about source-code literals, developer-facing
       warnings.push(
+        // access-errors: ok — admin shape-doctor census warning about source-code literals, developer-facing
         `Frozen detector literal ${f.literal} not found in ${f.file} — the detector census is blind for it (run pnpm check:shapes for the CLI red).`,
       );
     }

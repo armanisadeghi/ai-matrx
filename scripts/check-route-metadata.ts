@@ -59,6 +59,16 @@ function routeDirectories(family: RouteFamily): string[] {
     .sort();
 }
 
+function hasNestedPage(relativeDirectory: string): boolean {
+  const absoluteDirectory = join(root, relativeDirectory);
+  return readdirSync(absoluteDirectory, { withFileTypes: true }).some((entry) => {
+    if (!entry.isDirectory() || entry.name.startsWith("_")) return false;
+    const childDirectory = join(absoluteDirectory, entry.name);
+    if (existsSync(join(childDirectory, "page.tsx"))) return true;
+    return hasNestedPage(join(relativeDirectory, entry.name));
+  });
+}
+
 const findings: Finding[] = [];
 
 const routesByLetter = new Map<string, string[]>();
@@ -96,6 +106,16 @@ for (const family of families) {
     const sources = [page, ...(existsSync(join(root, layout)) ? [layout] : [])];
     const source = sources.map(read).join("\n");
     const route = `${family.urlPrefix}/${segment}`;
+
+    if (!existsSync(join(root, layout)) && hasNestedPage(directory)) {
+      findings.push({
+        route,
+        file: page,
+        reason:
+          "page metadata does not cover nested routes; move the module identity to layout.tsx",
+      });
+      continue;
+    }
 
     if (!metadataExport.test(source)) {
       findings.push({

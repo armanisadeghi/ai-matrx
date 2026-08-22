@@ -180,6 +180,30 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
     },
   },
   {
+    // The provider's own sidebar category ("custom group"): captured from
+    // Claude Code by the machine ledger, mirrored here via the SessionMetadata
+    // plane. Same authority rule as titles — the provider's grouping IS the
+    // grouping (Arman, 2026-08-21).
+    id: "category",
+    label: "Category",
+    facet: "category",
+    column: {
+      id: "category",
+      accessorKey: "category",
+      header: "Category",
+      filter: "select",
+      width: 150,
+      cell: (row) =>
+        row.category ? (
+          <Badge variant="outline" className="max-w-full truncate py-0 text-[10px]">
+            {row.category}
+          </Badge>
+        ) : (
+          <Muted>—</Muted>
+        ),
+    },
+  },
+  {
     id: "message_count",
     label: "Messages",
     facet: "message_count",

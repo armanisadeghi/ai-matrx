@@ -316,6 +316,7 @@ const activeRequestsSlice = createSlice({
         parentConversationId,
         status: "pending",
         chunkCount: 0,
+        lastTransportSeq: 0,
         editedText: null,
         reasoningChunks: [],
         accumulatedReasoning: "",
@@ -408,6 +409,8 @@ const activeRequestsSlice = createSlice({
       if (request) {
         request.status = status;
         if (error !== undefined) request.error = error;
+        else if (status === "connecting" || status === "streaming")
+          request.error = null;
         if (
           status === "complete" ||
           status === "error" ||
@@ -416,6 +419,16 @@ const activeRequestsSlice = createSlice({
         ) {
           request.completedAt = new Date().toISOString();
         }
+      }
+    },
+
+    recordTransportSeq(
+      state,
+      action: PayloadAction<{ requestId: string; streamSeq: number }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (request && action.payload.streamSeq > request.lastTransportSeq) {
+        request.lastTransportSeq = action.payload.streamSeq;
       }
     },
 
@@ -1356,6 +1369,7 @@ const activeRequestsSlice = createSlice({
           parentConversationId: null,
           status,
           chunkCount: 0,
+          lastTransportSeq: 0,
           editedText: null,
           reasoningChunks: [],
           accumulatedReasoning: "",
@@ -1442,6 +1456,7 @@ const activeRequestsSlice = createSlice({
 
 export const {
   createRequest,
+  recordTransportSeq,
   setRequestStatus,
   setRequestRouting,
   setRequestServerId,

@@ -366,6 +366,9 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   // (transcription, server runs, sub-agents, generic) is reachable through
   // the filter tree but hidden by default.
   chat: { includeFeatures: ["chat"] },
+  // The floating and full-page agent runner: only conversations created by
+  // the runner itself. Other provenance remains reachable in the filter tree.
+  "agent-runner": { includeFeatures: ["agent-runner"] },
   // The /code workspace: code conversations + the agent runs it spawns.
   code: { includeFeatures: ["code-editor", "agent-runner"] },
   // The /education/tutor surface: only the learner's tutor conversations.

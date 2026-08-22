@@ -17,6 +17,7 @@
 // identity is meaningful; `titleNode` overrides the header bar with the short
 // breadcrumb so a long name never sprawls across the header.
 
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { Loader2 } from "lucide-react";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 import { useTaskEditorController } from "@/features/tasks/components/editor/useTaskEditorController";
@@ -73,7 +74,7 @@ export default function TaskEditorWindow({
           </div>
         ) : missing ? (
           <div className="grid h-full place-items-center px-6 text-center text-xs text-muted-foreground">
-            Task not found
+            {recordUnavailableMessage("task", "unknown")}
           </div>
         ) : (
           <div className="flex h-full min-h-0 flex-col">

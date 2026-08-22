@@ -235,6 +235,15 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
     });
   }
 
+  if (segments[3] === "local") {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: segments[4] ? "Location Listings" : "Brand Locations",
+      description:
+        "Manage canonical location profiles, directory listings, and NAP consistency.",
+      letter: segments[4] ? "Ll" : "Bl",
+    });
+  }
+
   const isSiteRoute = segments[3] === "sites" && Boolean(segments[4]);
   if (!isSiteRoute) {
     return createMarketingMetadata(normalizedPath, MARKETING_ROOT);

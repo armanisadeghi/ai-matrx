@@ -49,6 +49,7 @@ import {
   startRunEventSource,
   type RunTransportMode,
 } from "../transport/run-event-source";
+import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
 import {
   applyNodeStreamMeta,
   applyRunEvent,
@@ -188,6 +189,42 @@ export function adoptWorkflowRun(
       }
     };
 
+    // One frame assembler per run: server render_block snapshots are sliced
+    // across ordered frames to fit the workflow wire's pg_notify cap, and
+    // frame ids are unique per run.
+    const assemblers = new Map<string, RenderBlockFrameAssembler>();
+    const assemblerFor = (runId: string): RenderBlockFrameAssembler => {
+      let assembler = assemblers.get(runId);
+      if (!assembler) {
+        assembler = new RenderBlockFrameAssembler();
+        assemblers.set(runId, assembler);
+      }
+      return assembler;
+    };
+
+    /**
+     * The invocation lane a node's node_stream frames belong to, or null when
+     * they cannot be attributed. The wire gives us node_id only — no
+     * invocation identity — so a FAN-OUT node's frames are multiplexed across
+     * siblings with no way to tell them apart; those stay in the TRACKED tier
+     * until the server grows per-invocation stream identity (plan). Opening a
+     * lane for one anyway would mint a request row no invocation renders
+     * (`registerLane` no-ops on a key with no invocation) while eager sibling
+     * lanes stay empty — budget burnt on invisible content (adversarial
+     * finding 1).
+     */
+    const laneKeyForNodeStream = (
+      runId: string,
+      nodeId: string,
+    ): string | null => {
+      const run = getState().workflowRuns.byRunId[runId];
+      const aggregate = run?.nodeAggregates[nodeId];
+      const keys = aggregate?.invocationKeys ?? [];
+      const isFanOut = keys.length > 1 || (aggregate?.expectedCount ?? 1) > 1;
+      if (isFanOut) return null;
+      return keys.length === 1 ? keys[0] : invocationKeyOf(nodeId, null, 0);
+    };
+
     const routeNodeStream = (runId: string, event: NodeStreamEvent): void => {
       // Refetch signals (Phase 3 pump) can come from the RUN-LEVEL emitter
       // (node_id null), so they route BEFORE the node guard — dropping them
@@ -208,26 +245,27 @@ export function adoptWorkflowRun(
       }
       if (!event.node_id) return;
 
+      if (event.kind === "render_block") {
+        // THE typed live-rendering channel. A completed frame set is a
+        // canonical server render_block — the same event `/chat` receives —
+        // and it goes onto the node's lane through the same inbound funnel
+        // and the same `upsertRenderBlock` action, so partial kinds render on
+        // the run page through the EXACT chat components. Nothing here parses
+        // content or decides how anything looks.
+        const block = assemblerFor(runId).push(event);
+        if (!block) return;
+        const key = laneKeyForNodeStream(runId, event.node_id);
+        if (key === null) return;
+        tree.laneManager.pushRenderBlock(runId, key, block);
+        return;
+      }
+
       if (event.kind === "chunk" || event.kind === "reasoning") {
-        // The wire gives us node_id only — no invocation identity. For a
-        // SINGLE-invocation node the delta belongs to that invocation's
-        // lane. For a FAN-OUT node the delta is multiplexed across siblings
-        // with no way to attribute it: opening a lane would mint a request
-        // row no invocation renders (registerLane no-ops on a key with no
-        // invocation) while eager sibling lanes stay empty — burning budget
-        // on invisible content (adversarial finding 1). Fan-out therefore
-        // stays in the TRACKED tier until the server grows per-invocation
-        // stream identity (plan).
-        const run = getState().workflowRuns.byRunId[runId];
-        const aggregate = run?.nodeAggregates[event.node_id];
-        const keys = aggregate?.invocationKeys ?? [];
-        const isFanOut =
-          keys.length > 1 || (aggregate?.expectedCount ?? 1) > 1;
-        if (isFanOut) {
+        const key = laneKeyForNodeStream(runId, event.node_id);
+        if (key === null) {
           queueMeta(runId, event);
           return;
         }
-        const key = keys.length === 1 ? keys[0] : invocationKeyOf(event.node_id, null, 0);
         // Creating the lane HERE (budget freed, or post-refresh live delta
         // racing the viewport promotion) seeds it with the tracked tail so
         // the visible history carries over (adversarial finding 8). Buffered
@@ -244,6 +282,7 @@ export function adoptWorkflowRun(
           key,
           event.kind,
           event.delta,
+          event.block_shadowed === true,
         );
         if (!streamed) queueMeta(runId, event);
         else queueMeta(runId, { ...event, delta: "" });
@@ -319,6 +358,30 @@ export function adoptWorkflowRun(
           const stopThisRun = tree.stops.get(runId);
           // Defer so the current onEvent callback unwinds first.
           if (stopThisRun) setTimeout(stopThisRun, 0);
+
+          // A terminal durable event does NOT carry the run_result wrapper.
+          // GET /runs/{id} derives that wrapper from the now-terminal run and
+          // its node outcomes. The initial attach read happened before those
+          // rows existed, so stopping here without one final read left the
+          // live page blank until a manual refresh re-adopted the run.
+          // Transport shutdown and final hydration are intentionally
+          // independent: the event wire can close immediately while this
+          // bounded read completes against durable state.
+          void fetchJson<RunRow>(`/runs/${runId}`)
+            .then((row) => {
+              if (!tree.stopped) dispatch(seedRunRow({ runId, row }));
+            })
+            .catch((error: unknown) => {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "final run read failed";
+              captureError({
+                source: "durable-run",
+                message: `[adopt-workflow-run] run ${runId} ended, but its final result could not be hydrated: ${message}`,
+                raw: { runId, error },
+              });
+            });
           break;
         }
         default:
@@ -334,8 +397,12 @@ export function adoptWorkflowRun(
     ): void => {
       const key = invocationKeyOf(
         nodeId,
-        "dispatch_id" in event ? ((event.dispatch_id as string | null) ?? null) : null,
-        "item_index" in event ? ((event.item_index as number | null) ?? null) : null,
+        "dispatch_id" in event
+          ? ((event.dispatch_id as string | null) ?? null)
+          : null,
+        "item_index" in event
+          ? ((event.item_index as number | null) ?? null)
+          : null,
       );
       const message =
         outcome === "error" && "error_message" in event
@@ -385,7 +452,10 @@ export function adoptWorkflowRun(
       }
     };
 
-    const replayDurableLog = async (runId: string, depth: number): Promise<number | null> => {
+    const replayDurableLog = async (
+      runId: string,
+      depth: number,
+    ): Promise<number | null> => {
       let cursor: number | null = null;
       let total = 0;
       for (;;) {
@@ -393,7 +463,10 @@ export function adoptWorkflowRun(
           `/runs/${runId}/events?after_seq=${cursor ?? 0}&limit=${REPLAY_PAGE_SIZE}`,
         );
         for (const record of page) {
-          const payload: unknown = { ...record.payload, event: record.event_type };
+          const payload: unknown = {
+            ...record.payload,
+            event: record.event_type,
+          };
           if (isWorkflowRunEvent(payload)) {
             routeDurableEvent(runId, depth, payload, record.seq, true);
           }
@@ -406,7 +479,11 @@ export function adoptWorkflowRun(
       return cursor;
     };
 
-    const attachOne = (runId: string, parentRunId: string | null, depth: number): void => {
+    const attachOne = (
+      runId: string,
+      parentRunId: string | null,
+      depth: number,
+    ): void => {
       if (tree.stopped || tree.stops.has(runId)) return;
       dispatch(
         attachRun({
@@ -499,7 +576,8 @@ export function adoptWorkflowRun(
             void (async () => {
               try {
                 const fresh = await fetchJson<RunRow>(`/runs/${runId}`);
-                if (!stopped) dispatch(refreshHeartbeatTails({ runId, row: fresh }));
+                if (!stopped)
+                  dispatch(refreshHeartbeatTails({ runId, row: fresh }));
               } catch {
                 // Narration is best-effort: a failed tail refresh must never
                 // disturb the durable event poller that shares this run.
@@ -547,7 +625,11 @@ export function adoptWorkflowRun(
         tree.laneManager.disposeRun();
       },
       ensureLane: (runId, invocationKey, seedText) => {
-        const lane = tree.laneManager.ensureLane(runId, invocationKey, seedText);
+        const lane = tree.laneManager.ensureLane(
+          runId,
+          invocationKey,
+          seedText,
+        );
         return lane?.requestId ?? null;
       },
     };

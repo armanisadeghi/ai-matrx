@@ -20,6 +20,7 @@ const MAX_REFRESH_ATTEMPTS = 5;
 const REFRESH_BACKOFF_MAX_MS = 10_000;
 
 export interface TokenError {
+  // access-errors: ok — error-code union mirroring the token route's HTTP statuses, never rendered as copy
   code: "fetch-failed" | "unauthorized" | "service-unavailable" | "malformed";
   message: string;
   status?: number;
@@ -133,6 +134,7 @@ export function createTokenManager(
       if (!resp.ok) {
         const code: TokenError["code"] =
           resp.status === 401
+            // access-errors: ok — machine code mapped from the token route's own HTTP 401, not a guess about a read
             ? "unauthorized"
             : resp.status === 503
               ? "service-unavailable"

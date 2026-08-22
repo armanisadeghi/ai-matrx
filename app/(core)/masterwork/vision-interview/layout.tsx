@@ -3,11 +3,11 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { MessagesSquare } from "lucide-react";
 
-export const metadata = createRouteMetadata("/vision-interview", {
+export const metadata = createRouteMetadata("/masterwork/vision-interview", {
   title: "Vision Interview",
   description:
     "Turn an idea into a clear, build-ready vision through a guided interview.",
-  canonicalPath: "/vision-interview",
+  canonicalPath: "/masterwork/vision-interview",
 });
 
 export default async function VisionInterviewLayout({
@@ -20,7 +20,7 @@ export default async function VisionInterviewLayout({
     return (
       <ModuleSignInGate
         title="Vision Interview"
-        route="/vision-interview"
+        route="/masterwork/vision-interview"
         description="Turn an idea into a clear, build-ready vision through a guided interview."
         icon={MessagesSquare}
       />

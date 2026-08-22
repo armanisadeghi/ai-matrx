@@ -127,6 +127,53 @@ function readString(
 }
 
 /**
+ * `data.category` for a node that does not carry one.
+ *
+ * 🚨 THE DEFECT THIS CLOSES: `data.spec_type` and `data.category` are written
+ * by the STUDIO BUILDER and by nothing else. Every definition the platform
+ * creates for itself — compiled Orchestra plans, agent-authored plans, node
+ * probes, anything POSTed to `/workflows` — carries `type` on the node and
+ * NULL for both of those. Reading only `data` therefore classified every step
+ * of every programmatic workflow as plumbing: no readout, no deliverable, and
+ * a run page that showed a completed agent's work as an empty column
+ * (measured on live definitions, 2026-08-22). `node.type` is the field the
+ * ENGINE runs on and is always present, so it is what this reads.
+ *
+ * Deliberately partial: it names only the families the run surface changes
+ * behaviour on, and returns null for everything else so an unknown type keeps
+ * exactly today's treatment. Values match the live registry
+ * (`GET /workflow/node-types`). The durable fix is the definition write path
+ * stamping the registry's own category — filed, not done here.
+ */
+function categoryFromSpecType(specType: string | null): string | null {
+  if (!specType) return null;
+  if (specType.startsWith("ai.agent.")) return "agent";
+  if (specType.startsWith("ai.util.")) return "data";
+  if (specType.startsWith("ai.")) return "llm";
+  if (specType.startsWith("docproc.content.")) return "llm";
+  return null;
+}
+
+/**
+ * THE one reader of a node's engine identity, for every run-surface decision.
+ * `data.spec_type` when the builder wrote it, `node.type` otherwise — and the
+ * category the same way. Both callers (`describeWorkflowSteps` and
+ * `deriveDefaultSurfaceConfig`) go through this so they can never disagree
+ * about what a step IS.
+ */
+export function resolveNodeIdentity(node: {
+  type?: string | null;
+  data?: Record<string, unknown> | undefined;
+}): { specType: string | null; category: string | null } {
+  const data = node.data;
+  const specType =
+    readString(data, "spec_type") ??
+    (typeof node.type === "string" && node.type ? node.type : null);
+  const category = readString(data, "category") ?? categoryFromSpecType(specType);
+  return { specType, category };
+}
+
+/**
  * Every step of a workflow, in definition order, as the run surface shows it.
  * Tolerant by contract — a node missing a label/icon/category still produces a
  * renderable row, because a run page must render.
@@ -136,8 +183,7 @@ export function describeWorkflowSteps(
 ): RunStepPresentation[] {
   return definition.nodes.map((node) => {
     const data = node.data as Record<string, unknown> | undefined;
-    const specType = readString(data, "spec_type");
-    const category = readString(data, "category");
+    const { specType, category } = resolveNodeIdentity(node);
     const family = familyOf(category, specType);
     const rawIcon = readString(data, "icon");
     return {

@@ -17,7 +17,7 @@ export default function BacklinkValuationPage() {
           Backlink Valuation
         </h1>
       </PageHeader>
-      <div className="h-full overflow-hidden">
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <LinkValuationWorkspace />
       </div>
     </>

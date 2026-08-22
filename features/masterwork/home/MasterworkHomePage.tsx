@@ -230,6 +230,33 @@ export function MasterworkHomePage() {
         </div>
       </div>
 
+      {/* Start here — the Approach registry */}
+      {approaches !== null && startableApproaches(approaches).length > 0 ? (
+        <section className="space-y-2">
+          <div className="flex items-baseline justify-between gap-3">
+            <SectionHeading title="Start something new" />
+            <Link
+              href="/masterwork/approaches"
+              className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              All ways
+            </Link>
+          </div>
+          {/* ONE card component, three consumers (2026-08-20) — this grid used
+              to hand-roll a plainer tile, so the same Approach looked like two
+              different things depending on which page you were on. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {startableApproaches(approaches).map((a) => (
+              <ApproachCard
+                key={a.key}
+                approach={a}
+                href={`/masterwork/new?approach=${encodeURIComponent(a.key)}`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* Your Rulebooks */}
       <section className="space-y-2">
         <SectionHeading
@@ -406,32 +433,6 @@ export function MasterworkHomePage() {
         </section>
       ) : null}
 
-      {/* Start here — the Approach registry */}
-      {approaches !== null && startableApproaches(approaches).length > 0 ? (
-        <section className="space-y-2">
-          <div className="flex items-baseline justify-between gap-3">
-            <SectionHeading title="Start here" />
-            <Link
-              href="/masterwork/approaches"
-              className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              See every way, including what's coming
-            </Link>
-          </div>
-          {/* ONE card component, three consumers (2026-08-20) — this grid used
-              to hand-roll a plainer tile, so the same Approach looked like two
-              different things depending on which page you were on. */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {startableApproaches(approaches).map((a) => (
-              <ApproachCard
-                key={a.key}
-                approach={a}
-                href={`/masterwork/new?approach=${encodeURIComponent(a.key)}`}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       {/* How it's improving — the honest Hindsight panel */}
       <HowItsImprovingPanel />

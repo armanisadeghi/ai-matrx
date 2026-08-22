@@ -231,6 +231,7 @@ export function createAudioCapture(
       ) satisfies CaptureErrorCode;
       const message =
         code === "permission-denied"
+          // access-errors: ok — the browser's own getUserMedia permission verdict, not a record read
           ? "Microphone access denied — check browser permissions."
           : code === "no-microphone"
             ? "No microphone detected on this device."

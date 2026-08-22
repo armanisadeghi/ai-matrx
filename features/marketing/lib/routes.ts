@@ -91,6 +91,11 @@ export const marketingRoutes = {
   calendar: () => "/marketing/calendar",
   audience: () => "/marketing/audience",
   local: () => "/marketing/local",
+  /** One brand's locations. Location identity belongs in the path, never search params. */
+  brandLocal: (brandId: string) => `/marketing/brands/${brandId}/local`,
+  /** One canonical location and its publisher-listing workspace. */
+  brandLocation: (brandId: string, locationId: string) =>
+    `/marketing/brands/${brandId}/local/${locationId}`,
   ranks: () => "/marketing/ranks",
   contentStudio: () => "/marketing/content-studio",
   social: () => "/marketing/social",

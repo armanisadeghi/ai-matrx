@@ -155,12 +155,20 @@ export function AuditionDialog({
   open,
   onOpenChange,
   rulebookId,
+  benchmarkClaim,
   initialCandidate,
   onGapsCaptured,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rulebookId: string;
+  /**
+   * The Expert's own intake claim about how ChatGPT does today
+   * (`metadata.intake.benchmark`). THE INTAKE ANSWERS DO WORK: a Rulebook
+   * built because plain AI was failing arrives with the vanilla arm already
+   * armed, and the claim is shown so the verdict answers it directly.
+   */
+  benchmarkClaim?: string;
   /** Prefill from a finished in-place run, when opened from its result. */
   initialCandidate?: string;
   /** Fired when gap drafts landed on the Rulebook (refresh rule counts). */
@@ -169,7 +177,13 @@ export function AuditionDialog({
   const [candidate, setCandidate] = useState(initialCandidate ?? "");
   const [reference, setReference] = useState("");
   const [contextNote, setContextNote] = useState("");
-  const [compareVanilla, setCompareVanilla] = useState(false);
+  // "Haven't tried" is the only answer that is not a complaint about plain
+  // AI — every other one is the Expert saying it falls short, so the run that
+  // proves or disproves it starts armed.
+  const claimsPlainAiFallsShort = Boolean(
+    benchmarkClaim && benchmarkClaim !== "Haven't tried",
+  );
+  const [compareVanilla, setCompareVanilla] = useState(claimsPlainAiFallsShort);
   const [vanillaInput, setVanillaInput] = useState("");
   const [showVanillaText, setShowVanillaText] = useState(false);
   const [history, setHistory] = useState<AuditionRunSummary[]>([]);
@@ -342,6 +356,13 @@ export function AuditionDialog({
                 Rulebook, and both are judged against your original. One extra AI
                 call — this is how you know your rules are earning their keep.
               </p>
+              {claimsPlainAiFallsShort ? (
+                <p className="text-xs text-muted-foreground">
+                  When you started this Rulebook you said plain AI
+                  &ldquo;{benchmarkClaim?.toLowerCase()}&rdquo; — this is the run
+                  that settles it.
+                </p>
+              ) : null}
               {compareVanilla ? (
                 <ProTextarea
                   id="audition-vanilla-input"

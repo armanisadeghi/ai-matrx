@@ -1,7 +1,7 @@
 ---
 status: open
 owner: none
-updated: 2026-08-18
+updated: 2026-08-21
 ---
 
 # Local & Listings — from live pillar to Yext-class listings management
@@ -21,7 +21,7 @@ the practical sequencing path — still valid, now secondary strategy). Naming: 
 ## Live today (2026-08-18, browser-verified end-to-end)
 
 Three certified-canonical tables (`web.business_location` component of brand, `web.listing_publisher`
-system registry with 29 research-seeded rows, `web.location_listing` component of location) ·
+system registry (research-seeded, agent-grown, 740 live rows as of 2026-08-21), `web.location_listing` component of location) ·
 guarded FE CRUD + hooks · NAP audit engine (normalized field verdicts, weighted citation coverage,
 profile gaps — `features/marketing/lib/local-listings-audit.ts`, 14 tests) · LocalBusiness JSON-LD
 generator · `/marketing/local` workspace (org-agnostic brand picker, URL-synced selection, profile
@@ -47,24 +47,53 @@ deleted; review row `9489536a-fa7d-41a6-b252-e41e4ae2e4e3` awaits Arman.
    `web.location_listing` with `source='dataforseo'`. Next on this line: scheduled refresh sweep
    (all locations, staleness-driven), Bing/Apple read equivalents, `business_listings/search`
    coordinate-based discovery for candidate matching when the keyword ladder misses.
-2. **AI enrichment (mandates only)** — a location-description writer and a category suggester as DB
+2. ~~Endowment analysis → registry + task queue~~ SHIPPED 2026-08-21: the Endowment
+   Model now produces WORK, not prose. `/marketing/local` → "Endowment analysis" card has
+   TWO paths off one input set, both DB-bound Mandates sharing the call-site Provision
+   `marketing.local_endowment`:
+   - **Read the analysis** (`marketing.endowment_analysis`) — the narrative pass, streamed
+     into the floating run window. Unchanged.
+   - **Build portfolio** (`marketing.endowment_portfolio` → DB agent `Endowment Portfolio
+     Builder`, `a96508ce-84a0-4671-b142-5824f6320a35`) — structured output (per-endowment
+     verdicts, ranked artifacts, registry-shaped platforms, Tier-3 concepts), streamed
+     inline via `useLiveAgentRun` + `<LiveRunDisplay>`, then rendered as actionable rows:
+     **Add to registry** writes a `web.listing_publisher` row through the WS7 intake
+     contract (`addDiscoveredPublisher`: upsert by slug, system org, `visibility='public'`,
+     dedup by DOMAIN first against a `readAllRows` complete read, re-checked at write time
+     so two tabs can't race in duplicates; sort_rank 420-470 so discovered rows land below
+     the curated registry); **Queue as task** turns an accepted artifact into an idempotent
+     `wsp_upsert_system_task` row (`origin='agent'`, `source_type='marketing_brand'`,
+     source_id = brand, dedupe key = brand + artifact title) linked back to this surface.
+     Pure layer + 25 tests: `features/marketing/local/endowment-portfolio.ts`.
+   **Found and fixed en route:** `marketing.endowment_analysis` (added 2026-08-18) declared
+   no input contract, so aidream's `client_mandates.py` raised at import, the boot-time
+   mandate sync never ran, and NEITHER endowment mandate row existed in the database — the
+   shipped card was launching a mandate key that wasn't there. Both rows are live now.
+   **Open on this line:** the registry write is super-admin-only by the table's RLS
+   (`std_insert` gates system-org inserts on `is_super_admin()`); a non-admin sees every
+   verdict and can queue every artifact but gets a reason instead of the registry button.
+   If agent-guided discovery should be open to normal operators, that is an access decision
+   for Arman, not a thing to widen unilaterally. Also unbuilt: nothing yet reads the
+   `metadata.discovered_by` provenance back out (per-row provenance surface, PLAN.md WS7
+   "later hardening"), and Tier-3 concepts are displayed but have no action of their own.
+3. **AI enrichment (mandates only)** — a location-description writer and a category suggester as DB
    agents on new mandates (NO hardcoded prompts); assists chips on the workspace
    (`<AssistStrip surfaceName>` + a `marketing-local` surface manifest, which is also still owed for
    agent runtime values — follow `surface-authoring` skill).
-3. **Publisher write paths, in research order** — Google Business Profile API (needs the access
+4. **Publisher write paths, in research order** — Google Business Profile API (needs the access
    application: verified GBP 60+ days old; HUMAN gate for Arman), Meta Pages OAuth (existing
    Google/Meta OAuth + Unified Credential Vault precedents; dormant `google_business_profile_access`
    credential definition already exists in aidream), Data Axle + Foursquare open APIs, then
    Bing/Apple partner applications (HUMAN gates: partneronbp@microsoft.com, Apple Third-Party
    Partner registration). Every submission requires owner authorization — consent flow first.
-4. **Reviews + map-pack integration** — surface `local_pack` rank targets (already live in
+5. **Reviews + map-pack integration** — surface `local_pack` rank targets (already live in
    `/marketing/ranks`) inside the location workspace (both directions per canvas rung 6); review
    snapshots via DataForSEO `google/reviews` as append-only observations.
-5. **Location pages** — connect locations to the content plan's `location-page` type
+6. **Location pages** — connect locations to the content plan's `location-page` type
    (`plan.profile.schema_org_map` already maps it to LocalBusiness; nothing reads it yet) so the
    generated JSON-LD ships ON a page instead of via copy-paste; opening-hours/special-hours editor
    UI (fields exist, no editor yet — jsonb is written but only creatable via agents/SQL today).
-6. **Adversarial pass + mobile check** — run the ui/mobile patrols on the workspace; the matrix
+7. **Adversarial pass + mobile check** — run the ui/mobile patrols on the workspace; the matrix
    table is a plain table, not `MatrxDataTable` (deliberate v1: 29 fixed config rows with inline
    controls) — revisit when the registry grows or needs sort/filter.
 

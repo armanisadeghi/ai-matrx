@@ -968,7 +968,7 @@ function AuditBody({
                 {/* access-errors: ok — crawler-observed HTTP absence on the user's own site, a verified external fact */}
                 The crawler no longer finds these URLs. Their last-known metrics
                 are excluded from the findings above — editing them would change
-                a page that no longer exists. Restore the page or redirect the
+                a page the crawler can no longer reach. Restore the page or redirect the
                 URL. The ones with search traffic are costing you visits right
                 now.
               </span>

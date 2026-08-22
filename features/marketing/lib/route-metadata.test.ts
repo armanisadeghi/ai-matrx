@@ -7,6 +7,8 @@ const ROUTES = [
   ["/marketing/brands", "Br"],
   ["/marketing/brands/brand-1", "Bd"],
   ["/marketing/brands/brand-1/discovery", "Di"],
+  ["/marketing/brands/brand-1/local", "Bl"],
+  ["/marketing/brands/brand-1/local/location-1", "Ll"],
   ["/marketing/capabilities", "Cp"],
   ["/marketing/ai-visibility", "Ai"],
   ["/marketing/connections", "Cn"],

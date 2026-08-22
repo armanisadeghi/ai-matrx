@@ -215,6 +215,13 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
   actionsRight?: React.ReactNode;
   bodyClassName?: string;
   className?: string;
+  /**
+   * Keep the full body mounted offscreen while the window is minimized.
+   * Opt in for live/stateful surfaces whose hooks, drafts, streams, or local
+   * component state must survive minimize/restore. The default remains false
+   * so ordinary minimized windows release their heavy body tree.
+   */
+  retainBodyOnMinimize?: boolean;
   minWidth?: number;
   minHeight?: number;
   urlSyncKey?: string;
@@ -399,6 +406,7 @@ export function WindowPanel({
   onHeavySnapshot,
   captureTraySnapshot,
   overlayInstanceId,
+  retainBodyOnMinimize = false,
   hidePopOutButton = false,
   ...hookOpts
 }: WindowPanelProps) {
@@ -931,6 +939,10 @@ export function WindowPanel({
   // only long enough for one low-resolution local capture, then unmounts.
   // No network, persistent storage, polling, or full-size image is involved.
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const retainedBodyDimensionsRef = useRef<{
+    width: number;
+    height: number;
+  } | null>(null);
   const captureGenerationRef = useRef(0);
   const effectiveTrayCapture =
     captureTraySnapshot ??
@@ -961,6 +973,13 @@ export function WindowPanel({
     if (preservationEnabled) saveRef.current();
     const bodyEl = bodyRef.current;
     const generation = ++captureGenerationRef.current;
+    if (bodyEl) {
+      const bounds = bodyEl.getBoundingClientRect();
+      retainedBodyDimensionsRef.current = {
+        width: Math.max(1, Math.round(bounds.width)),
+        height: Math.max(1, Math.round(bounds.height)),
+      };
+    }
     if (effectiveTrayCapture && bodyEl) {
       const bounds = bodyEl.getBoundingClientRect();
       setPendingTrayCapture({
@@ -1472,17 +1491,24 @@ export function WindowPanel({
         {/* Debug strip — shown in the body when open, or in the minimized shell */}
         {isDebugMode && <DebugStrip rect={rect} zIndex={zIndex} />}
 
-        {(!isMinimized || pendingTrayCapture) && (
+        {(!isMinimized || pendingTrayCapture || retainBodyOnMinimize) && (
           <WindowPanelBodyShell
             bodyRef={bodyRef}
             fitContent={fitContent}
             bodyClassName={bodyClassName}
             captureDimensions={
-              isMinimized && pendingTrayCapture
-                ? {
-                    width: pendingTrayCapture.width,
-                    height: pendingTrayCapture.height,
-                  }
+              isMinimized
+                ? pendingTrayCapture
+                  ? {
+                      width: pendingTrayCapture.width,
+                      height: pendingTrayCapture.height,
+                    }
+                  : retainBodyOnMinimize
+                    ? (retainedBodyDimensionsRef.current ?? {
+                        width: Math.max(1, rect.width),
+                        height: Math.max(1, rect.height),
+                      })
+                    : null
                 : null
             }
           >

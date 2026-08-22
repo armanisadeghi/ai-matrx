@@ -2,6 +2,7 @@ import type {
   PageCoverageFilter,
   SiteCoverageMatrix,
 } from "@/features/marketing/data/service";
+import type { SiteOverviewMetrics } from "@/features/marketing/types";
 
 const COVERAGE_COUNT_FIELDS = [
   "totalPages",
@@ -73,6 +74,45 @@ export function parseSiteCoverageMatrix(value: unknown): SiteCoverageMatrix {
         "coverage.byProvenance.manual",
       ),
     },
+  };
+}
+
+export function parseSiteOverviewPageCounts(
+  value: unknown,
+): Pick<
+  SiteOverviewMetrics,
+  | "canonicalPages"
+  | "unconfirmedCandidates"
+  | "resourceUrls"
+  | "targetKeywordPages"
+  | "pagesInGsc"
+  | "blockedPages"
+  | "serpIssues"
+> {
+  const root = coverageRecord(value, "site page rollup");
+  return {
+    canonicalPages: coverageCount(
+      root.totalPages,
+      "site page rollup.totalPages",
+    ),
+    unconfirmedCandidates: coverageCount(
+      root.unconfirmedCandidates,
+      "site page rollup.unconfirmedCandidates",
+    ),
+    resourceUrls: coverageCount(
+      root.resourceUrls,
+      "site page rollup.resourceUrls",
+    ),
+    targetKeywordPages: coverageCount(
+      root.targetKeywordPages,
+      "site page rollup.targetKeywordPages",
+    ),
+    pagesInGsc: coverageCount(root.inGsc, "site page rollup.inGsc"),
+    blockedPages: coverageCount(
+      root.blockedPages,
+      "site page rollup.blockedPages",
+    ),
+    serpIssues: coverageCount(root.serpIssues, "site page rollup.serpIssues"),
   };
 }
 

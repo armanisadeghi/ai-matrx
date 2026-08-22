@@ -22,6 +22,7 @@ import {
   createBusinessLocation,
   updateBusinessLocation,
   deleteBusinessLocation,
+  addDiscoveredPublisher,
   listListingPublishers,
   listLocationListings,
   listVisibleBrandOptions,
@@ -1225,6 +1226,26 @@ export function useDeleteBusinessLocation() {
 
 export function useUpsertLocationListing() {
   return useLocationScopedMutation(upsertLocationListing);
+}
+
+/**
+ * WS7 registry intake — an agent-discovered platform becomes a registry row.
+ * Invalidates the publisher list so the listings matrix picks the new row up
+ * without a reload, and so "already tracked" stays honest on the next run.
+ */
+export function useAddDiscoveredPublisher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addDiscoveredPublisher,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "listing-publishers"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "location"],
+      });
+    },
+  });
 }
 
 /** Latest homepage structured-data evidence for the on-site LocalBusiness check. */

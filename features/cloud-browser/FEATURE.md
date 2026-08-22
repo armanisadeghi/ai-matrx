@@ -17,9 +17,11 @@
 1. **Written progress (default).** The agent's live play-by-play from the
    `browser.action_event` ledger, rendered through the canonical markdown component
    (`BasicMarkdownContent`) — discrete structured lines, never a hand-rolled stream.
-2. **Screenshots on request (D-8/D-21).** A bounded, user-initiated session: a fresh
-   still ~every 5s while open, auto-off after 5 min, always re-armable, with a visible
-   way out. Never an ambient feed. An open session is observation for the idle timer
+2. **Screenshots on request (D-8/D-21, event-driven per D-24).** A bounded,
+   user-initiated session: a fresh still the MOMENT the agent acts (the chat stream
+   stamps `noteBrowserActivity`; bursts debounce), a 15s idle heartbeat between, an
+   opt-in 2s Rapid mode, auto-off after 5 min, always re-armable, with a visible way
+   out. Never an ambient feed. An open session is observation for the idle timer
    (D-10).
 3. **Takeover stream (D-8 tier 3).** The interactive canvas appears ONLY while a person
    is driving. It claims the server-minted one-use ticket and embeds the authenticated
@@ -84,9 +86,9 @@ live form. When an agent-raised capture card is open, it takes precedence.
 
 ## Entry points
 
-- **First composer:** the globe beside the `/chat/new` composer opens the same
-  non-persisted canvas as every later conversation. A person can therefore start
-  with the cloud browser before sending the first message.
+- **First composer:** the "Cloud browser" row in the `+` attach menu (D-26 — never
+  a standing input-bar button) opens the same non-persisted canvas as every later
+  conversation; an active run shows as the context-rail pill above the input.
 - **Overlay:** `cloudBrowserWindow` — `useOpenCloudBrowserWindow()` /
   `<CloudBrowserWindowController>` (`features/overlays/openers/cloudBrowserWindow.tsx`),
   wired into `OverlayController.tsx` + `catalogue.ts` + `overlay-ids.ts`.
@@ -136,6 +138,14 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-08-21 — handoff bounded exit (server D-pair):** the handoff card gains
+  "Dismiss — let the agent continue" (`dismissHandoff` → `POST
+  /runs/{id}/dismiss-handoff`) beside "Step in and help". Server side, an
+  unclaimed handoff now also EXPIRES (lazy `expires_at` enforcement) and the
+  agent can withdraw its own via `cloud_browser action="dismiss_handoff"` — a
+  run can no longer be stranded in `handoff_requested`. Only an unclaimed
+  handoff is dismissible; a claimed episode exits via Return control.
 
 - **2026-08-21 — the D-11 credential capture card (both halves):** `credential_login
   action="capture"` on the cloud browser used to return `human_required` guidance

@@ -410,26 +410,26 @@ delete `features/ai-runs/**`, the admin route, and `utils/supabase/deprecated-ta
 Note the shim file exists **only** for this caller now: the other 12 names in
 `DEPRECATED_TABLE_NAMES` have zero callers, so closing this entry deletes the whole shim.
 
-### D215 — aidream continuation runs have no per-turn variable/context channel to deliver a NEW visible message (2026-08-18)
+### D215 — RESOLVED (was WRONG): continuation runs DO have a per-turn context channel (2026-08-18, corrected 2026-08-21)
 
-`features/agents/war-room-master-tools/handlers/message-thread.handler.ts` (fork-mode branch,
-~line 141): the war-room master delegates a message into an existing thread conversation via
-`forkConversationServer` + `executeInstance`. The message (`args.message`) is a tool-call
-argument the master agent decided, not human-typed text, so per THE USER-INPUT LAW it should
-travel as a declared variable or context entry, never as `user_input`. The FRESH-mode branch of
-this same handler was fixed that way (new instance → `setUserVariableValues({thread_message})`,
-verified against `war_room.thread`'s live `agent.definition` row, which now declares
-`thread_message` + a `{{thread_message}}` seed "user" turn). **The fork/continuation branch
-cannot use the same fix**: verified live in aidream that `ConversationResolver.from_conversation_id`
-(`services/ai_execution/agent_run.py` `_prepare_continue_run`, `packages/matrx-ai/matrx_ai/agents/resolver.py:99-146`)
-only appends a new turn from `request.user_input` — `request.variables` on a continuation is used
-solely to stage picklist wire-swap tokens, and `agent_config.messages` template substitution
-(the mechanism that fills a `{{var}}` placeholder) runs ONLY on first-turn/new-conversation
-requests. Passing `thread_message` as a variable on a continuation would silently drop the
-master's message — worse than the current violation. **Decision needed:** either aidream adds a
-continuation-turn variable/context channel that surfaces as a real visible turn, or the fork path
-gets a different delegation design (e.g. always start fresh + link history instead of forking).
-Until then `user_input` stays on the fork branch, with a loud in-code comment pointing here.
+**The original entry was factually wrong and is retained only so nobody re-files it.** It claimed
+aidream continuation runs "have no per-turn variable/context channel." The *variable* half is
+correct and is by DESIGN — a variable is a value fixed at conversation initialization
+(`agent_run.py:861`: `resolve_variables=False,  # continue turn: slots fresh, variables stay
+frozen`). The *context* half was false: `request.context` is sent on continuations
+(`execute-instance.thunk.ts:874`) and applied server-side (`agent_run.py:872,900`), and the
+manifest block is prepended to that turn's last user message without ever persisting
+(`aidream/services/conversation_context/context_objects.py:52-58`).
+
+`features/agents/war-room-master-tools/handlers/message-thread.handler.ts` fork branch now sends
+the master's directive as a context entry, with only a short activation line in `user_input` —
+because a context entry does not MINT a turn (`packages/matrx-ai/matrx_ai/agents/resolver.py:145`
+appends a turn only when `user_input` is present). That turn-minting detail is the ONLY real
+constraint, and it is satisfied, not outstanding.
+
+Law: `common-docs/systems/agents/agent-variable-binding/FEATURE.md` § VARIABLE vs CONTEXT and
+§ THE TWO CHANNELS EXIST.
+
 
 ### D214 — Google Slides export requests an UNAPPROVED scope through a hand-rolled OAuth path (2026-08-18)
 

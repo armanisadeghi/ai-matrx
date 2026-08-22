@@ -72,7 +72,10 @@ import { extractErrorMessage, operationFailed } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
-import { parseSiteCoverageMatrix } from "@/features/marketing/lib/coverage";
+import {
+  parseSiteCoverageMatrix,
+  parseSiteOverviewPageCounts,
+} from "@/features/marketing/lib/coverage";
 import {
   parseSnapshotImages,
   parseSnapshotResources,
@@ -88,6 +91,14 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { readAllRows } from "@/lib/supabase/readAllRows";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import {
+  matchPlatformsToRegistry,
+  normalizeDomain,
+  type DiscoveredPublisherInput,
+  type RegistryMatchReason,
+} from "@/features/marketing/local/endowment-portfolio";
 import {
   guardedUpdate,
   type GuardedUpdateArgs,
@@ -682,16 +693,10 @@ export async function getSiteOverview(
   const abortSignal = signal ?? new AbortController().signal;
   const [
     score,
-    pages,
-    unconfirmedCandidates,
-    resourceUrls,
+    pageRollup,
     findings,
     snapshots,
     latestCrawl,
-    targetKeywordPages,
-    pagesInGsc,
-    blockedPages,
-    serpIssues,
     sitemaps,
     crawlSessions,
   ] = await Promise.all([
@@ -701,31 +706,8 @@ export async function getSiteOverview(
       .eq("site_id", siteId)
       .abortSignal(abortSignal)
       .maybeSingle(),
-    // The headline is evidence-backed. The durable registry also retains
-    // aliases, resources, and never-confirmed crawl candidates; those remain
-    // inspectable without being presented as pages.
     db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", false)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", true)
+      .rpc("site_page_coverage", { p_site_id: siteId })
       .abortSignal(abortSignal),
     db
       .from("finding")
@@ -753,39 +735,6 @@ export async function getSiteOverview(
       .abortSignal(abortSignal)
       .maybeSingle(),
     db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .not("target_keyword", "is", null)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("in_gsc", true)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("indexability_verdict", "blocked")
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("serp_ok", false)
-      .abortSignal(abortSignal),
-    db
       .from("sitemap")
       .select("id", { count: "exact", head: true })
       .eq("site_id", siteId)
@@ -799,33 +748,31 @@ export async function getSiteOverview(
       .abortSignal(abortSignal),
   ]);
 
-  if (score.error) throw score.error;
-  if (pages.error) throw pages.error;
-  if (unconfirmedCandidates.error) throw unconfirmedCandidates.error;
-  if (resourceUrls.error) throw resourceUrls.error;
-  if (findings.error) throw findings.error;
-  if (snapshots.error) throw snapshots.error;
-  if (latestCrawl.error) throw latestCrawl.error;
-  if (targetKeywordPages.error) throw targetKeywordPages.error;
-  if (pagesInGsc.error) throw pagesInGsc.error;
-  if (blockedPages.error) throw blockedPages.error;
-  if (serpIssues.error) throw serpIssues.error;
-  if (sitemaps.error) throw sitemaps.error;
-  if (crawlSessions.error) throw crawlSessions.error;
+  for (const response of [
+    score,
+    pageRollup,
+    findings,
+    snapshots,
+    latestCrawl,
+    sitemaps,
+    crawlSessions,
+  ]) {
+    if (response.error) {
+      throw operationFailed("load this site's overview", response.error);
+    }
+  }
+  if (pageRollup.data === null) {
+    throw operationFailed("load this site's overview");
+  }
+  const pageCounts = parseSiteOverviewPageCounts(pageRollup.data);
 
   return {
     siteScore: score.data?.site_score ?? null,
     scoredPages: Number(score.data?.scored_pages ?? 0),
-    canonicalPages: pages.count ?? 0,
-    unconfirmedCandidates: unconfirmedCandidates.count ?? 0,
-    resourceUrls: resourceUrls.count ?? 0,
+    ...pageCounts,
     openFindings: findings.count ?? 0,
     snapshots: snapshots.count ?? 0,
     latestCrawl: latestCrawl.data,
-    targetKeywordPages: targetKeywordPages.count ?? 0,
-    pagesInGsc: pagesInGsc.count ?? 0,
-    blockedPages: blockedPages.count ?? 0,
-    serpIssues: serpIssues.count ?? 0,
     sitemaps: sitemaps.count ?? 0,
     crawlSessions: crawlSessions.count ?? 0,
   };
@@ -3953,6 +3900,110 @@ export async function listLocationListings(
     .order("id")
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
+}
+
+/**
+ * The COMPLETE registry — the read every existence check must use.
+ *
+ * `listListingPublishers` renders; this one DECIDES. WS7's dedup rule ("never
+ * insert a domain twice under two slugs") is a set-membership test, and a
+ * PostgREST-truncated list turns "already tracked" into a confident duplicate
+ * insert the moment the registry passes 1000 rows on its way to 300+ and up.
+ */
+export async function readAllListingPublishers(): Promise<ListingPublisher[]> {
+  const db = await authenticatedWebDb(supabase);
+  return readAllRows<ListingPublisher>(
+    ({ from, to }) =>
+      db
+        .from("listing_publisher")
+        .select(LISTING_PUBLISHER_COLUMNS, { count: "exact" })
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "web.listing_publisher" },
+  );
+}
+
+export interface AddDiscoveredPublisherResult {
+  publisher: ListingPublisher;
+  /** False = the registry already tracked this property; nothing was written. */
+  created: boolean;
+  /** How the existing row was recognized (null on a fresh insert). */
+  matchedBy: RegistryMatchReason | null;
+}
+
+/**
+ * WS7 registry intake — one agent-discovered publishing platform becomes one
+ * `web.listing_publisher` row.
+ *
+ * The contract (common-docs/systems/marketing/local-listings/PLAN.md § WS7):
+ * upsert by slug, system org, `visibility='public'`, and DEDUP BY DOMAIN FIRST
+ * — a domain already in the registry is returned as-is (`created: false`), never
+ * inserted a second time under a different slug. The dedup re-runs here at write
+ * time even though the UI already knows the answer: two operators (or two tabs)
+ * accepting the same portfolio would otherwise race each other into duplicates.
+ *
+ * The system-org registry is super-admin-writable by design (`std_insert` on the
+ * table); a non-admin gets the RLS refusal translated into plain language rather
+ * than a raw Postgres error.
+ */
+export async function addDiscoveredPublisher(
+  input: DiscoveredPublisherInput,
+): Promise<AddDiscoveredPublisherResult> {
+  const domain = normalizeDomain(input.domain);
+  const existingRows = await readAllListingPublishers();
+  const [match] = matchPlatformsToRegistry(
+    [
+      {
+        name: input.name,
+        domain,
+        suggested_slug: input.slug,
+        tier: input.tier,
+        categories: input.categories,
+        api_access_guess: input.apiAccess,
+        signup_url: input.manageUrl,
+        notes: input.apiNotes,
+        endowment: input.metadata.endowment,
+      },
+    ],
+    existingRows,
+  );
+  if (match?.existing) {
+    return { publisher: match.existing, created: false, matchedBy: match.matchedBy };
+  }
+
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
+    .from("listing_publisher")
+    .insert({
+      slug: input.slug,
+      name: input.name,
+      domain,
+      tier: input.tier,
+      is_aggregator: input.tier === "aggregator",
+      api_access: input.apiAccess,
+      api_notes: input.apiNotes || null,
+      manage_url: input.manageUrl,
+      categories: input.categories,
+      citation_weight: input.citationWeight,
+      sort_rank: input.sortRank,
+      organization_id: SYSTEM_ORGANIZATION_ID,
+      visibility: "public",
+      metadata: input.metadata as unknown as Json,
+    })
+    .select(LISTING_PUBLISHER_COLUMNS)
+    .single();
+  if (response.error) {
+    throw operationFailed(
+      `add ${input.name} to the publisher registry — the shared registry is super-admin writable`,
+      response.error,
+    );
+  }
+  return {
+    publisher: assertData(response.data, response.error),
+    created: true,
+    matchedBy: null,
+  };
 }
 
 /** Every publisher joined with this location's listing row (null = never tracked). */

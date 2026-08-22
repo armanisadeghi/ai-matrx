@@ -1742,8 +1742,8 @@ const SHAPE_BLOCK_DISPATCH = {
   },
 
   // Kind-routed (node_outcome / run_result): the RUNTIME WRAPPERS. COMPLETE
-  // bridges. Each renders provenance chrome and delegates the nested payload
-  // back to the registry — never a payload renderer of its own.
+  // bridges. Each transparently delegates the nested payload back to the
+  // registry — never wrapper chrome or a payload renderer of its own.
   node_outcome: ({ block, index }) => {
     if (block.serverData) {
       return (

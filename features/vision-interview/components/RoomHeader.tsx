@@ -106,7 +106,7 @@ export function RoomHeader({
         left={
           <>
             <ChevronLeftTapButton
-              href="/vision-interview"
+              href="/masterwork/vision-interview"
               variant="transparent"
               ariaLabel="Back to interviews"
             />

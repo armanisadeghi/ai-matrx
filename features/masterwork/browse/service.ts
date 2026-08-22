@@ -86,6 +86,7 @@ async function myOrgs(): Promise<{ ids: string[]; names: Map<string, string> }> 
  */
 interface RulebookFilterable {
   eq(column: string, value: string): this;
+  neq(column: string, value: string): this;
   in(column: string, values: string[]): this;
   or(filters: string): this;
   gte(column: string, value: string): this;
@@ -126,9 +127,22 @@ function applyScope<Q extends RulebookFilterable>(
     if (sharedIds.length === 0) return null;
     return q.in("id", sharedIds);
   }
-  if (scope.kind === "orgs" && scope.organizationId === null) {
-    if (blendedOrgIds.length === 0) return null;
-    return q.in("organization_id", blendedOrgIds);
+  // THE TABS MUST MEAN DIFFERENT THINGS (Arman, 2026-08-21): "I created this
+  // one inside my company" satisfies BOTH `created_by = me` and
+  // `organization_id in my orgs`, so a Rulebook the Expert wrote himself was
+  // listed under My Orgs as well as Mine — and finding it there reads as the
+  // product telling him it is the organization's, not his.
+  //
+  // Mine = I made it. My Orgs = work in my organizations that SOMEONE ELSE
+  // made. The union is unchanged; only the overlap moves, so nothing becomes
+  // unreachable.
+  if (scope.kind === "orgs") {
+    const notMine = q.neq("created_by", userId) as Q;
+    if (scope.organizationId === null) {
+      if (blendedOrgIds.length === 0) return null;
+      return notMine.in("organization_id", blendedOrgIds);
+    }
+    return applyListScope(notMine, scope, { userId });
   }
   return applyListScope(q, scope, { userId });
 }

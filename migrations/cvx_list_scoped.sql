@@ -205,6 +205,7 @@ RETURNS TABLE(
   workspace_name text,
   provider_account text,
   title_source text,
+  category text,
   fidelity text,
   binding_status text,
   binding_origin text,
@@ -239,7 +240,7 @@ BEGIN
   IF v_sort NOT IN ('last_activity','updated','created','title','conversation_type',
                     'origin_class','source_app','source_feature','message_count',
                     'provider','workspace_name','provider_account','title_source',
-                    'fidelity','binding_status','binding_last_seen_at',
+                    'category','fidelity','binding_status','binding_last_seen_at',
                     'organization_name','owner_email','visibility','favorite',
                     'archived') THEN
     v_sort := 'last_activity';
@@ -295,6 +296,10 @@ BEGIN
         cs.metadata->>'account_fingerprint'
       ) AS s_provider_account,
       cs.metadata->>'title_source' AS s_title_source,
+      coalesce(
+        s.metadata->'coding_session_bridge'->>'category',
+        cs.metadata->>'provider_category'
+      ) AS s_category,
       cs.fidelity AS s_fidelity,
       cs.status AS s_binding_status,
       cs.origin AS s_binding_origin,
@@ -360,6 +365,9 @@ BEGIN
       AND (NOT v_f ? 'title_source'
            OR coalesce(j.s_title_source,'__none__')
               IN (SELECT jsonb_array_elements_text(v_f->'title_source'->'values')))
+      AND (NOT v_f ? 'category'
+           OR coalesce(j.s_category,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'category'->'values')))
       AND (NOT v_f ? 'fidelity'
            OR coalesce(j.s_fidelity,'__none__')
               IN (SELECT jsonb_array_elements_text(v_f->'fidelity'->'values')))
@@ -447,7 +455,7 @@ BEGIN
     c.source_feature, c.status, c.message_count, c.is_favorite,
     (c.status = 'archived'), c.visibility::text,
     c.s_provider, c.s_provider_session_id, c.s_workspace_name,
-    c.s_provider_account, c.s_title_source, c.s_fidelity,
+    c.s_provider_account, c.s_title_source, c.s_category, c.s_fidelity,
     c.s_binding_status, c.s_binding_origin, c.s_binding_last_seen_at,
     c.organization_id, c.s_org_name, c.s_owner_email, c.created_by,
     c.initial_agent_id, c.created_at, c.updated_at, c.s_last_activity,
@@ -486,6 +494,8 @@ BEGIN
     CASE WHEN v_sort='provider_account' AND v_dir='asc' THEN lower(coalesce(c.s_provider_account,'')) END ASC,
     CASE WHEN v_sort='title_source' AND v_dir='desc' THEN lower(coalesce(c.s_title_source,'')) END DESC,
     CASE WHEN v_sort='title_source' AND v_dir='asc' THEN lower(coalesce(c.s_title_source,'')) END ASC,
+    CASE WHEN v_sort='category' AND v_dir='desc' THEN lower(coalesce(c.s_category,'')) END DESC,
+    CASE WHEN v_sort='category' AND v_dir='asc' THEN lower(coalesce(c.s_category,'')) END ASC,
     CASE WHEN v_sort='fidelity' AND v_dir='desc' THEN lower(coalesce(c.s_fidelity,'')) END DESC,
     CASE WHEN v_sort='fidelity' AND v_dir='asc' THEN lower(coalesce(c.s_fidelity,'')) END ASC,
     CASE WHEN v_sort='binding_status' AND v_dir='desc' THEN lower(coalesce(c.s_binding_status,'')) END DESC,
@@ -568,7 +578,7 @@ BEGIN
   WITH base AS (
     SELECT r.conversation_type, r.origin_class, r.source_app, r.source_feature,
            r.provider, r.workspace_name, r.provider_account, r.title_source,
-           r.fidelity, r.binding_status, r.visibility, r.owner_email,
+           r.category, r.fidelity, r.binding_status, r.visibility, r.owner_email,
            r.organization_name, r.access_level, r.message_count,
            r.is_favorite, r.is_archived
     FROM public.cvx_list_scoped(p_scope, p_org_id, p_search, p_deep, 'updated','desc',
@@ -589,6 +599,8 @@ BEGIN
   SELECT 'provider_account'::text, coalesce(b.provider_account,'__none__'), count(*) FROM base b GROUP BY 2
   UNION ALL
   SELECT 'title_source'::text, coalesce(b.title_source,'__none__'), count(*) FROM base b GROUP BY 2
+  UNION ALL
+  SELECT 'category'::text, coalesce(b.category,'__none__'), count(*) FROM base b GROUP BY 2
   UNION ALL
   SELECT 'fidelity'::text, coalesce(b.fidelity,'__none__'), count(*) FROM base b GROUP BY 2
   UNION ALL

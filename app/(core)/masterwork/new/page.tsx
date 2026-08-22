@@ -1,6 +1,8 @@
 // app/(core)/masterwork/new/page.tsx
 //
-// New Rulebook — the guided Distillation intake, a full page in the house
+// Start a Rulebook — the SECOND step of the guided start: the Expert has
+// already chosen HOW (an Approach) on /masterwork/approaches; this asks the
+// little it needs and starts. Arriving with no Approach redirects there.
 // guided-intake pattern (like /research/topics/new): big default-filled
 // option buttons, then the Approach picker. Every "New Rulebook" entry point
 // routes here.
@@ -15,7 +17,7 @@ import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/masterwork", {
-  titlePrefix: "New Rulebook",
+  titlePrefix: "Start a Rulebook",
   title: "Masterwork",
   description: "Start a new Rulebook — a guided intake, then your Approach.",
   letter: "M",

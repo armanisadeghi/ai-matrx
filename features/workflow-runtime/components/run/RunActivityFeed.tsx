@@ -27,12 +27,18 @@ import {
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 import {
   selectRunActivity,
   selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
 import { activityLine, type ActivityLine } from "./activity-copy";
+import {
+  workflowFailureAgentInput,
+  workflowFailureHuman,
+  workflowFailureInvestigationPrompt,
+} from "./run-copy";
 
 const TERMINAL = new Set(["completed", "failed", "cancelled", "errored"]);
 
@@ -137,8 +143,21 @@ export function RunActivityFeed({
           {activity.map((entry, index) => {
             const line = activityLine(entry, stepLabels);
             const isNewest = index === activity.length - 1;
+            const copyable = line.tone === "fail" || line.tone === "warn";
+            const failureView = () => ({
+              kind: "activity" as const,
+              headline: line.text,
+              runId,
+              status: line.tone === "fail" ? "failed" : "warning",
+              stepId: entry.nodeId,
+              stepLabel: line.stepLabel,
+              detail: line.detail,
+            });
             return (
-              <div key={entry.id} className="flex items-start gap-2 text-xs">
+              <div
+                key={entry.id}
+                className="group/activity flex items-start gap-2 text-xs"
+              >
                 <span className="mt-0.5">
                   <ToneIcon tone={line.tone} live={streaming && isNewest} />
                 </span>
@@ -165,6 +184,31 @@ export function RunActivityFeed({
                   <span className="shrink-0 tabular-nums text-muted-foreground/70">
                     {line.detail}
                   </span>
+                ) : null}
+                {copyable ? (
+                  <CopyButtons
+                    size="xs"
+                    label={`Workflow ${line.tone === "fail" ? "failure" : "warning"}`}
+                    human={() => workflowFailureHuman(failureView())}
+                    agent={() => workflowFailureAgentInput(failureView())}
+                    json={() => entry}
+                    agentVariant={{
+                      id: "error",
+                      label: line.tone === "fail" ? "Error" : "Warning",
+                      hint: "The activity line exactly as rendered",
+                      position: "first",
+                    }}
+                    aiVariants={[
+                      {
+                        id: "error-with-prompt",
+                        label: `${line.tone === "fail" ? "Error" : "Warning"} with prompt`,
+                        hint: "Add a root-cause investigation brief",
+                        build: () =>
+                          workflowFailureInvestigationPrompt(failureView()),
+                      },
+                    ]}
+                    className="shrink-0 opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover/activity:opacity-100 lg:group-focus-within/activity:opacity-100"
+                  />
                 ) : null}
               </div>
             );

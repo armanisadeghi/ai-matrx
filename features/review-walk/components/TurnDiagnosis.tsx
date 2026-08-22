@@ -21,11 +21,11 @@
 
 import { useMemo, useState } from "react";
 import {
-  AlertTriangle,
   Brain,
   ChevronDown,
   ChevronRight,
   FileText,
+  Flag,
   Layers,
   Link2,
   MessageSquare,
@@ -211,71 +211,59 @@ function ToolsetChips({ tools }: { tools: unknown[] }) {
   );
 }
 
-// ── "this is wrong" — deliberate two-step action ────────────────────────────
+// ── flagging — every item can be marked wrong, any number at once ───────────
 
-function WrongAction({
-  input,
+/** One flagged item. `input` carries the provenance mapping when the item
+ * corresponds to a recorded descend input (user text, context, tool result…);
+ * agent-side parts (thinking, the answer) flag with `input: null` — the fault
+ * then sits on the walked unit itself. */
+export interface FlagEntry {
+  id: string;
+  label: string;
+  input: DescendInput | null;
+}
+
+export interface FlagsApi {
+  flagged: Record<string, FlagEntry>;
+  toggle: (entry: FlagEntry) => void;
+}
+
+function FlagToggle({
+  entry,
+  flags,
   disabled,
-  onInputWrong,
 }: {
-  input: DescendInput;
+  entry: FlagEntry;
+  flags: FlagsApi;
   disabled?: boolean;
-  onInputWrong: (input: DescendInput, note: string | null) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [note, setNote] = useState("");
-  const canDescend = Boolean(input.producer.descend_ref);
-
-  if (!open) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-7 gap-1 rounded-full border-amber-500/50 px-2.5 text-[11px] text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
-        disabled={disabled}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        <AlertTriangle className="h-3 w-3" aria-hidden />
-        This is wrong
-      </Button>
-    );
-  }
-
+  const isFlagged = Boolean(flags.flagged[entry.id]);
   return (
-    <div
-      className="flex w-full flex-wrap items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2"
-      onClick={(e) => e.stopPropagation()}
+    <Button
+      type="button"
+      variant={isFlagged ? "default" : "outline"}
+      size="sm"
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        flags.toggle(entry);
+      }}
+      className={cn(
+        "h-6 gap-1 rounded-full px-2 text-[10px]",
+        isFlagged
+          ? "border-amber-600 bg-amber-500 text-amber-950 hover:bg-amber-500/90"
+          : "border-border text-muted-foreground hover:border-amber-500/50 hover:text-amber-700 dark:hover:text-amber-300",
+      )}
+      aria-pressed={isFlagged}
+      title={
+        isFlagged
+          ? "Unflag this item"
+          : "Flag this item as part of the problem — flag as many as apply"
+      }
     >
-      <input
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="What's wrong with it? (optional)"
-        className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-base text-foreground placeholder:text-muted-foreground"
-        style={{ fontSize: "16px" }}
-      />
-      <Button
-        type="button"
-        size="sm"
-        className="h-8 rounded-full px-3 text-xs"
-        disabled={disabled}
-        onClick={() => onInputWrong(input, note.trim() ? note.trim() : null)}
-      >
-        {canDescend ? "Trace where it came from" : "Pin the fault here"}
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-8 rounded-full px-2.5 text-xs"
-        onClick={() => setOpen(false)}
-      >
-        Cancel
-      </Button>
-    </div>
+      <Flag className="h-3 w-3" aria-hidden />
+      {isFlagged ? "Flagged" : "Flag"}
+    </Button>
   );
 }
 
@@ -292,10 +280,15 @@ export interface DiagCardProps {
   /** Raw payload for the global Raw mode; pretty children otherwise. */
   raw: boolean;
   rawValue?: unknown;
-  /** Wired when this item maps to a provenance-tagged descend input. */
+  /** The provenance-tagged descend input this item maps to, when one exists.
+   * Flag entries carry it so a report can pin the fault on the producer. */
   wrongInput?: DescendInput | null;
   disabled?: boolean;
-  onInputWrong?: (input: DescendInput, note: string | null) => void;
+  /** Every-item flagging. When present the card header shows a Flag toggle. */
+  flags?: FlagsApi;
+  /** Descend into the flagged input's producer (only offered when the server
+   * says the producer is walkable). */
+  onTrace?: (input: DescendInput) => void;
   children: React.ReactNode;
 }
 
@@ -311,40 +304,61 @@ export function DiagCard({
   rawValue,
   wrongInput,
   disabled,
-  onInputWrong,
+  flags,
+  onTrace,
   children,
 }: DiagCardProps) {
   const expanded = isExpanded(expand, id, defaultExpanded);
+  const isFlagged = Boolean(flags?.flagged[id]);
+  const traceable = Boolean(wrongInput?.producer.descend_ref);
   return (
-    <div className="rounded-lg border border-border bg-card">
-      <button
-        type="button"
-        onClick={() => onToggle(id, !expanded)}
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-muted/40"
-        aria-expanded={expanded}
-      >
-        {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+    <div
+      className={cn(
+        "rounded-lg border bg-card",
+        isFlagged ? "border-amber-500/60" : "border-border",
+      )}
+    >
+      <div className="flex w-full items-center gap-2 rounded-lg px-3 py-2">
+        <button
+          type="button"
+          onClick={() => onToggle(id, !expanded)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          aria-expanded={expanded}
+        >
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          )}
+          <span className="shrink-0 text-muted-foreground">{icon}</span>
+          <span className="min-w-0 truncate text-xs font-semibold text-foreground">
+            {title}
+          </span>
+          <span className="ml-auto flex shrink-0 flex-wrap items-center gap-1.5">
+            {chips}
+          </span>
+        </button>
+        {flags && (
+          <FlagToggle
+            entry={{ id, label: title, input: wrongInput ?? null }}
+            flags={flags}
+            disabled={disabled}
+          />
         )}
-        <span className="shrink-0 text-muted-foreground">{icon}</span>
-        <span className="min-w-0 truncate text-xs font-semibold text-foreground">
-          {title}
-        </span>
-        <span className="ml-auto flex shrink-0 flex-wrap items-center gap-1.5">
-          {chips}
-        </span>
-      </button>
+      </div>
       {expanded && (
         <div className="space-y-2 border-t border-border/60 px-3 py-2">
           {raw && rawValue !== undefined ? <RawValue value={rawValue} /> : children}
-          {wrongInput && onInputWrong && (
-            <WrongAction
-              input={wrongInput}
+          {traceable && onTrace && wrongInput && (
+            <button
+              type="button"
               disabled={disabled}
-              onInputWrong={onInputWrong}
-            />
+              onClick={() => onTrace(wrongInput)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              Trace where this came from
+              <ChevronRight className="h-3 w-3" aria-hidden />
+            </button>
           )}
         </div>
       )}
@@ -413,7 +427,8 @@ function AssistantPartCard({
   index,
   descendIndex,
   disabled,
-  onInputWrong,
+  flags,
+  onTrace,
 }: {
   part: AssistantPart;
   isFinalText: boolean;
@@ -424,10 +439,11 @@ function AssistantPartCard({
   index: number;
   descendIndex: DescendIndex;
   disabled?: boolean;
-  onInputWrong: (input: DescendInput, note: string | null) => void;
+  flags: FlagsApi;
+  onTrace: (input: DescendInput) => void;
 }) {
   const id = `${turnKey}:part:${part.seq}`;
-  const common = { expand, onToggle, raw, disabled, onInputWrong };
+  const common = { expand, onToggle, raw, disabled, flags, onTrace };
 
   switch (part.kind) {
     case "thinking":
@@ -576,7 +592,8 @@ export interface TurnDiagnosisViewProps {
   expand: ExpandState;
   onToggle: (id: string, expanded: boolean) => void;
   disabled?: boolean;
-  onInputWrong: (input: DescendInput, note: string | null) => void;
+  flags: FlagsApi;
+  onTrace: (input: DescendInput) => void;
 }
 
 export function TurnDiagnosisView({
@@ -586,11 +603,12 @@ export function TurnDiagnosisView({
   expand,
   onToggle,
   disabled,
-  onInputWrong,
+  flags,
+  onTrace,
 }: TurnDiagnosisViewProps) {
   const descendIndex = useMemo(() => indexDescendInputs(out), [out]);
   const turnKey = `turn:${turn.index}`;
-  const common = { expand, onToggle, raw, disabled, onInputWrong };
+  const common = { expand, onToggle, raw, disabled, flags, onTrace };
 
   const finalTextSeq = useMemo(() => {
     for (let i = turn.parts.length - 1; i >= 0; i--) {
@@ -826,7 +844,8 @@ export function TurnDiagnosisView({
             raw={raw}
             descendIndex={descendIndex}
             disabled={disabled}
-            onInputWrong={onInputWrong}
+            flags={flags}
+            onTrace={onTrace}
           />
         ))
       )}
@@ -839,7 +858,8 @@ export function TurnDiagnosisView({
         onToggle={onToggle}
         raw={raw}
         disabled={disabled}
-        onInputWrong={onInputWrong}
+        flags={flags}
+        onTrace={onTrace}
       />
     </div>
   );
@@ -855,7 +875,8 @@ function LeftoverSections({
   onToggle,
   raw,
   disabled,
-  onInputWrong,
+  flags,
+  onTrace,
 }: {
   leftovers: DescendInput[];
   keyPrefix: string;
@@ -863,7 +884,8 @@ function LeftoverSections({
   onToggle: (id: string, expanded: boolean) => void;
   raw: boolean;
   disabled?: boolean;
-  onInputWrong: (input: DescendInput, note: string | null) => void;
+  flags: FlagsApi;
+  onTrace: (input: DescendInput) => void;
 }) {
   const values = leftovers.filter((i) => i.key.startsWith("value:"));
   const rest = leftovers.filter((i) => !i.key.startsWith("value:"));
@@ -876,7 +898,8 @@ function LeftoverSections({
       onToggle={onToggle}
       raw={raw}
       disabled={disabled}
-      onInputWrong={onInputWrong}
+      flags={flags}
+      onTrace={onTrace}
     />
   );
   return (
@@ -929,7 +952,8 @@ export function DescendInputCard({
   raw,
   disabled,
   defaultExpanded = false,
-  onInputWrong,
+  flags,
+  onTrace,
 }: {
   input: DescendInput;
   id: string;
@@ -938,7 +962,8 @@ export function DescendInputCard({
   raw: boolean;
   disabled?: boolean;
   defaultExpanded?: boolean;
-  onInputWrong: (input: DescendInput, note: string | null) => void;
+  flags: FlagsApi;
+  onTrace: (input: DescendInput) => void;
 }) {
   const producerLabel =
     PRODUCER_LABELS[input.producer.kind] ?? input.producer.kind;
@@ -966,7 +991,8 @@ export function DescendInputCard({
       rawValue={input.value}
       wrongInput={input}
       disabled={disabled}
-      onInputWrong={onInputWrong}
+      flags={flags}
+      onTrace={onTrace}
     >
       {input.value == null ? (
         <div className="text-xs text-muted-foreground">No inline payload.</div>
@@ -996,14 +1022,16 @@ export function GroupedInputsView({
   expand,
   onToggle,
   disabled,
-  onInputWrong,
+  flags,
+  onTrace,
 }: {
   out: DescendOut;
   raw: boolean;
   expand: ExpandState;
   onToggle: (id: string, expanded: boolean) => void;
   disabled?: boolean;
-  onInputWrong: (input: DescendInput, note: string | null) => void;
+  flags: FlagsApi;
+  onTrace: (input: DescendInput) => void;
 }) {
   const groups = useMemo(() => {
     const user: DescendInput[] = [];
@@ -1033,7 +1061,8 @@ export function GroupedInputsView({
       raw={raw}
       disabled={disabled}
       defaultExpanded={expandedDefault}
-      onInputWrong={onInputWrong}
+      flags={flags}
+      onTrace={onTrace}
     />
   );
 

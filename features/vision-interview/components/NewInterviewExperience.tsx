@@ -56,7 +56,7 @@ export function NewInterviewExperience() {
       });
       clearVision();
       startTransition(() => {
-        router.push(`/vision-interview/${session.id}`);
+        router.push(`/masterwork/vision-interview/${session.id}`);
       });
     } catch (err) {
       toast.error(
@@ -72,7 +72,7 @@ export function NewInterviewExperience() {
         left={
           <>
             <ChevronLeftTapButton
-              href="/vision-interview"
+              href="/masterwork/vision-interview"
               variant="transparent"
               ariaLabel="Back to interviews"
             />

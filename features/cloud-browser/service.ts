@@ -856,6 +856,14 @@ export async function requestControl(runId: string): Promise<void> {
   );
 }
 
+/** Decline a pending (unclaimed) handoff — control returns to the agent
+ * immediately. A CLAIMED episode exits via returnControl instead. Half of the
+ * bounded-exit pair (server also lazily expires unclaimed handoffs), so a run
+ * can never be stranded waiting on a person (Arman 2026-08-21). */
+export async function dismissHandoff(runId: string): Promise<void> {
+  await postJson<unknown>(`/browser-manager/runs/${runId}/dismiss-handoff`, {});
+}
+
 export async function returnControl(runId: string): Promise<ControllerState> {
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/release-control`,

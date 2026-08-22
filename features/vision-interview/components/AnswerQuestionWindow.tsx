@@ -161,7 +161,7 @@ export function AnswerQuestionWindow({
             surface: "vision-interview.answer",
             entityId: sessionId ?? undefined,
             label: `Answer — ${question.question.slice(0, 60)}`,
-            href: sessionId ? `/vision-interview/${sessionId}` : undefined,
+            href: sessionId ? `/masterwork/vision-interview/${sessionId}` : undefined,
           }}
         >
           <ProTextarea

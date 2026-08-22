@@ -18,21 +18,10 @@
 
 import { readRunResultValue } from "@/features/content-ir/core/runtime-wrapper";
 import type { RunResultWrapper } from "@/features/content-ir/core/runtime-wrapper";
-import { cn } from "@/lib/utils";
-
 import NodeOutcomeBlock, { DelegatedOutput } from "./NodeOutcomeBlock";
-import {
-  DurationChip,
-  KindVerdictChip,
-  ProvenanceIds,
-  ProvenanceRow,
-} from "./wrapper-chrome";
 
 export interface RunResultBlockProps {
   serverData?: unknown;
-  className?: string;
-  /** Hide the ids row where the host already names the run (the run page). */
-  hideIds?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -46,41 +35,18 @@ function readWrapper(serverData: unknown): RunResultWrapper | null {
 
 export default function RunResultBlock({
   serverData,
-  className,
-  hideIds = false,
 }: RunResultBlockProps) {
   const wrapper = readWrapper(serverData);
   if (!wrapper) return null;
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <ProvenanceRow>
-        <span className="font-medium text-foreground">
-          {wrapper.status === "completed" ? "Run finished" : `Run ${wrapper.status}`}
-        </span>
-        <DurationChip ms={wrapper.duration_ms} />
-        {wrapper.outputs.length === 0 && wrapper.output_kind ? (
-          <KindVerdictChip
-            outputKind={wrapper.output_kind}
-            outputKindOk={null}
-          />
-        ) : null}
-        {hideIds ? null : (
-          <ProvenanceIds
-            workflowId={wrapper.workflow_id}
-            runId={wrapper.run_id}
-          />
-        )}
-      </ProvenanceRow>
-
+    <div className="space-y-2">
       {wrapper.outputs.length > 0 ? (
         wrapper.outputs.map((outcome) => (
-          <div
+          <NodeOutcomeBlock
             key={`${outcome.node_id}:${outcome.attempt}`}
-            className="rounded-lg border border-border/70 p-2.5"
-          >
-            <NodeOutcomeBlock serverData={{ wrapper: outcome }} hideIds />
-          </div>
+            serverData={{ wrapper: outcome }}
+          />
         ))
       ) : (
         <DelegatedOutput

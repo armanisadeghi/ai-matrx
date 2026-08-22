@@ -305,7 +305,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
   ]);
 
   return (
-    <div className="min-h-dvh bg-background w-full">
+    <div className="min-h-dvh w-full bg-background pt-[var(--shell-header-h)]">
       {/* Compact header — single line + doc chips. No paragraph. */}
       {/* pr-24 clears the shell's fixed top-right zone (avatar + injected tap button). */}
       <header className="border-b border-border px-4 pr-24 py-2.5 flex items-center gap-3 flex-wrap">

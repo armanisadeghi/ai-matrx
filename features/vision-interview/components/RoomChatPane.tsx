@@ -17,7 +17,7 @@
 // reachable from this bar — the chat stays MOUNTED underneath while a
 // document is on screen, so reading the document never interrupts a stream.
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   BookOpenText,
   FileText,
@@ -27,14 +27,13 @@ import {
 } from "lucide-react";
 import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
-  selectLastSubmittedText,
-  selectSubmissionPhase,
-  selectUserInputText,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+  setContextEntries,
+  removeContextEntry,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
   docViewChanged,
@@ -67,71 +66,109 @@ import { StageTabs } from "./StageTabs";
 
 // ── The answer-append rule (v3 contract) ───────────────────────────────────
 // Answers written in the left-hand questions panel ride the NEXT message the
-// Expert sends, as an XML block both the speaking expert and the Scribe read.
+// Expert sends, as a structured `answered_questions` CONTEXT entry both the
+// speaking expert and the Scribe read (never prose glued onto the Expert's
+// own words — THE USER-INPUT LAW,
+// common-docs/systems/agents/agent-variable-binding/FEATURE.md). Server-side
+// counterpart: aidream `services/vision_interview/answered_questions.py`
+// (`ANSWERED_QUESTIONS_CONTEXT_KEY` — keep the literal in step with this file).
 
-const ANSWERS_OPEN = "<answered_questions>";
-const ANSWERS_CLOSE = "</answered_questions>";
-/** Strips a leading answers block (ours, or one the Expert edited). */
-const LEADING_BLOCK_RE =
-  /^\s*<answered_questions>[\s\S]*?<\/answered_questions>\s*/;
+const ANSWERED_QUESTIONS_CONTEXT_KEY = "answered_questions";
 
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+/** The wire shape one answer takes inside the `answered_questions` context value. */
+interface AnsweredQuestionItem {
+  questionId: string;
+  questionText: string;
+  answerText: string;
 }
 
-export function buildAnsweredQuestionsBlock(answers: PendingAnswer[]): string {
-  if (answers.length === 0) return "";
-  const items = answers
-    .map(
-      (a) =>
-        `  <item question_id="${escapeXml(a.questionId)}">\n` +
-        `    <question>${escapeXml(a.questionText)}</question>\n` +
-        `    <answer>${escapeXml(a.answerText)}</answer>\n` +
-        `  </item>`,
-    )
-    .join("\n");
-  return `${ANSWERS_OPEN}\n${items}\n${ANSWERS_CLOSE}\n\n`;
+function toAnsweredQuestionItems(
+  answers: PendingAnswer[],
+): AnsweredQuestionItem[] {
+  return answers.map((a) => ({
+    questionId: a.questionId,
+    questionText: a.questionText,
+    answerText: a.answerText,
+  }));
 }
 
 /**
- * THE SEAM. The canonical chat has no "transform the outgoing message" hook —
- * its send path (`smartExecute`) reads the composer draft straight out of
- * `instanceUserInput`. So the block is written INTO that draft through
- * `setUserInputText`, the same action the Expert's own keystrokes dispatch
- * (and the same one the `input_draft` surface write target uses). Nothing
- * bespoke, and the Expert can see exactly what rides their message.
+ * THE SEAM. `request.context` is carried on every turn — first AND every
+ * continuation (`execute-instance.thunk.ts:874`, applied server-side at
+ * `agent_run.py:872,900` / `continue_conversation.py`) — so the ledger rides
+ * `setContextEntries` as a structured JSON array under
+ * `answered_questions`, never written into the Expert's own composer draft.
+ * The channel guarantees inlining (`max_inline_chars` set well above any
+ * realistic answer set) so the server durably stamps the value onto the
+ * turn's message (`cx_message.metadata.model_context`) instead of deferring
+ * it behind a `ctx_get` stub — that durable stamp is what the server's async
+ * observe pass reads back (no XML, no regex).
  *
  * Answers are never lost: they live in the slice until the send is DURABLY
  * confirmed — `submissionPhase === "persisted"` means the server reserved the
- * user request. A failed send leaves the phase behind and both the block and
- * the pending answers stay put.
+ * user request. A failed send leaves both the context entry and the pending
+ * answers in place so a retry still carries them.
+ *
+ * Context entries PERSIST on the conversation until removed, so once the
+ * carrying turn is confirmed persisted, both the context entry AND the
+ * ledger are cleared — otherwise the same answers would silently ride every
+ * later turn as stale "new" answers.
  */
 function PendingAnswersRider({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
   const answers = useAppSelector(selectPendingAnswers);
   const phase = useAppSelector(selectSubmissionPhase(conversationId));
-  const lastSubmitted = useAppSelector(selectLastSubmittedText(conversationId));
-  const block = buildAnsweredQuestionsBlock(answers);
+  const items = useMemo(() => toAnsweredQuestionItems(answers), [answers]);
 
-  // Keep the draft's answers block in step with the ledger.
+  // Keep the context entry in step with the ledger.
   useEffect(() => {
-    const text = selectUserInputText(conversationId)(store.getState());
-    const rest = text.replace(LEADING_BLOCK_RE, "");
-    const next = block ? `${block}${rest}` : rest;
-    if (next !== text)
-      dispatch(setUserInputText({ conversationId, text: next }));
-  }, [block, conversationId, dispatch, store]);
+    if (items.length === 0) {
+      dispatch(
+        removeContextEntry({
+          conversationId,
+          key: ANSWERED_QUESTIONS_CONTEXT_KEY,
+        }),
+      );
+      return;
+    }
+    dispatch(
+      setContextEntries({
+        conversationId,
+        entries: [
+          {
+            key: ANSWERED_QUESTIONS_CONTEXT_KEY,
+            value: {
+              content: items,
+              type: "json",
+              label: "Answered questions",
+              description:
+                "Questions the Expert answered in the room's questions panel, riding this turn.",
+              max_inline_chars: 20000,
+            },
+          },
+        ],
+      }),
+    );
+  }, [items, conversationId, dispatch]);
 
   // The message carrying them is durably persisted → the ledger is spent.
+  // Track whether there WAS something pending across the send so a phase
+  // flip that has nothing to do with this ledger (e.g. the ledger was
+  // already empty) never fires a stray clear.
+  const hadPendingRef = useRef(false);
   useEffect(() => {
+    if (items.length > 0) hadPendingRef.current = true;
     if (phase !== "persisted") return;
-    if (!lastSubmitted.includes(ANSWERS_OPEN)) return;
+    if (!hadPendingRef.current) return;
+    hadPendingRef.current = false;
+    dispatch(
+      removeContextEntry({
+        conversationId,
+        key: ANSWERED_QUESTIONS_CONTEXT_KEY,
+      }),
+    );
     dispatch(pendingAnswersCleared());
-  }, [phase, lastSubmitted, dispatch]);
+  }, [phase, items, conversationId, dispatch]);
 
   return null;
 }
@@ -363,8 +400,8 @@ export function RoomChatPane({
                 entityId: session?.id ?? "",
                 label: session?.title || "Vision interview",
                 href: session
-                  ? `/vision-interview/${session.id}`
-                  : "/vision-interview",
+                  ? `/masterwork/vision-interview/${session.id}`
+                  : "/masterwork/vision-interview",
               }}
             >
               <ChatRoomClient

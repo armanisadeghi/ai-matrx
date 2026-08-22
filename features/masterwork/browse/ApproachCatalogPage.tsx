@@ -19,8 +19,6 @@
 // A new Approach appears here by existing as a row — never by editing a list.
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Clock } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   fetchDistillationApproaches,
@@ -104,54 +102,27 @@ export function ApproachCatalogPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-12 pt-2">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">
-          Every way to capture what you know
-        </h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Talking, writing, uploading, or nothing at all — each one ends the
-          same way: rules in your own words that you approve, one by one. Pick
-          whichever fits the ten minutes you actually have.
-        </p>
-        <div className="flex flex-wrap items-center gap-3 pt-1">
-          <Link
-            href="/masterwork/new"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Start a Rulebook
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/masterwork/all"
-            className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-          >
-            Your Rulebooks
-          </Link>
-        </div>
-      </header>
+      <p className="text-sm text-muted-foreground">
+        Pick how you want to start. Every one ends the same way — rules in your
+        own words that you approve.
+      </p>
 
       <Section
         title="Ready now"
-        lede="Open one and start — nothing to set up."
+        lede="Start now."
         approaches={ready}
       />
       <Section
         title="Partly here"
-        lede="Some of this works today; the rest is being finished."
+        lede="Partly built."
         approaches={partial}
       />
       <Section
         title="On the way"
-        lede="Named, designed, and queued to build — listed here so none of them gets lost."
+        lede="Queued to build."
         approaches={soon}
       />
 
-      {soon.length > 0 ? (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" />
-          Want one of these sooner? Tell us which — the order is not fixed.
-        </p>
-      ) : null}
     </div>
   );
 }

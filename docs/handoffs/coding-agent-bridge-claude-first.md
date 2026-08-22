@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-19
+updated: 2026-08-21
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
@@ -47,6 +47,7 @@ individually "works". Verified ground truth below is from a three-way full-featu
 | Claude event mirror (hooks) | matrx-claude-plugin `0.2.0-alpha.6` | LIVE | 327 event_mirror sessions; capture-gap alert on 3 pages |
 | Claude history import + backfill | matrx-local (importer, `capture_reconciler.py`) | LIVE; 160-backfill done (150 ok / 10 dead-lettered by design) | 146 imported sessions in cloud |
 | Titles: Claude → AI Matrx | matrx-local `title_sync.py` + aidream ladder | LIVE | conversation titles = Claude sidebar labels |
+| Pins + categories: Claude → AI Matrx | machine sync agent (`~/.claude/sync-claude-code-sessions.py` + `claude-code-pins-extract.py` reading the app's localStorage LevelDB) → ledger → matrx-local `claude_session_index.py` → SessionMetadata → `conversation.is_favorite` + bridge-metadata category; AI Work Category column live in `cvx_list_scoped` | BUILT 2026-08-21 (matrx-local v1.4.42); one-time backfill applied: 95 favorites, 24 categories live in prod DB | ledger holds 110 pinned / 38 categorized; ongoing flow gated on the East re-login below |
 | Titles: AI Matrx → Claude (return) | matrx-local `claude_label_writer.py` | SHIPPED, manual-only (desktop "Sync titles now"; no background loop) | proof `aidream/scripts/_verify_claude_label_return_sync.py` |
 | LOCAL Claude runtime (start/resume/cancel) | matrx-local `local_runtime.py` + Broadcast bridge + composer/Continue panel | LIVE and heavily used | **146 native/matrx_local sessions**, newest today |
 | Hosted (sandbox) Claude runtime | aidream `claude_managed_runtime.py` | Backend CERTIFIED; **UI-orphaned** — `/claude/stream`+`/cancel` have zero callers | disabled placeholder button only |
@@ -82,8 +83,62 @@ individually "works". Verified ground truth below is from a three-way full-featu
 - **Deploy:** aidream `./scripts/release.sh`; matrx-local `./scripts/release.sh --message` (signed);
   frontend on push. Verify prod: `https://server.app.matrxserver.com/health/version`.
 
+## 2026-08-21 session delta (owner: Coding Integrations take)
+
+- **Titles/pins/categories unification SHIPPED end-to-end** (Arman's ruling: label drift
+  is the killer; favorites = pinned). Sources found: titles/archived in
+  `~/.claude/claude-code-sidebar-state.json` (the sync-agent ledger); pins + custom
+  groups in the desktop app's localStorage LevelDB (`dframe-local-slice`,
+  `dframe-group-scopes`). Pipeline: `~/.claude/claude-code-pins-extract.py` (venv
+  `~/.claude/.sync-venv`, ccl-chromium-reader) → ledger (extended by
+  `sync-claude-code-sessions.py`, wipe-guarded) → matrx-local
+  `claude_session_index.py` (`is_pinned`/`pinned_rank`/`category` in
+  `metadata_payload`, 8012fbfa2) → aidream SessionMetadata
+  (`apply_provider_pin_and_category` → `conversation.is_favorite` +
+  `metadata.coding_session_bridge.category`, bc2e7d98c + tests dca9686f0) → AI Work
+  Category column + facet (ada53cf00).
+- **Backfills applied to live DB (verified by query):** 193 drifted titles corrected
+  with ladder precedence (0 user renames touched); 95 favorites; 24 categories.
+- **Pin restore INTO Claude works:** `~/.claude/claude-code-pins-writeback.mjs`
+  (classic-level; refuses while app runs; full backup; keep-unknown pins). Arman ran it
+  2026-08-22; app adopted the pin list on relaunch (verified in LevelDB seq history).
+  **Category cross-account replication is impossible locally** — the app restored
+  per-account group scopes from Anthropic's server 12s after launch; categories are
+  server-synced per account. Ledger/AI Matrx still unify them read-side.
+- **Outbox 401 ROOT CAUSE FOUND (supersedes the MXL-D-079-only theory):** the packaged
+  app ships the retired Supabase project's publishable key — CI secret
+  `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` was never rotated at the East cutover
+  (URL secret was). Engine GoTrue introspection + all direct PostgREST reads 401 on
+  every install since 08-20; the stored pre-East JWT can't be replaced because token
+  verification itself uses the dead key. Fixed: secret rotated + `app/config.py` /
+  `app/bundled_config.py` (bbdc48b01). **Release v1.4.43 pending** (blocked on a
+  concurrent session's uncommitted matrx-local work), then Arman signs out/in once →
+  outbox drains (token save auto-unpauses the publisher). MXL-D-079 (large-envelope
+  TLS) remains latent beneath and may resurface during the drain.
+- Independent macOS TCC finding: Files & Folders denies the Documents watcher
+  (`~/Documents/Matrx/Notes`) since the reboot — Arman toggles it in System Settings.
+
 ## Remaining work (priority order)
 
+0. **THE BLOCKER (found 2026-08-21): the desktop engine's auth broke on the Supabase East
+   migration.** The engine holds a JWT + refresh token issued by the OLD instance; the new
+   instance rejects them (`PGRST301 No suitable key was found to decode the JWT`, surfacing as
+   HTTP 401 `token_required` on `/coding-sessions/bridge` and ORPHAN INSTANCE heartbeat errors in
+   `~/Library/Logs/MatrxLocal/system.log`). Every engine→cloud lane is dead: the outbox sits at
+   42,192 rows (was 22,126 on 08-19 — note the old TLS theory MXL-D-079 is NOT the current
+   front-line failure; 401 is), title/pin/category sync cannot deliver, settings heartbeat fails.
+   **Only a fresh sign-in in the AI Matrx desktop app can mint a new-instance token** — Arman
+   guided step, asked 2026-08-21. After re-login: watch the outbox drain
+   (`sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"`), confirm
+   pins/categories flow (v1.4.42 sends them), and only then re-evaluate MXL-D-079/080 against
+   whatever still fails.
+0b. **Projection mislabeling (found 2026-08-21, decision pending):** 137,992 entries carry
+   `projection_status='error'` but most are tool_use/tool_result/thinking-only payloads with no
+   visible text — deliberate non-messages misfiled as `malformed_event` (plus attachment/
+   last-prompt/custom-title/… kinds misfiled as `unsupported_event` errors). Recommended (asked
+   2026-08-21, awaiting his answer or silence-=-go): mark no-visible-text as `skipped`, handle the
+   known sidecar kinds, leave a small true-error remainder; do NOT dump raw tool payloads into
+   conversations. `_project_known` in aidream `service.py` is the seam.
 1. **DONE-with-a-successor (2026-08-19): the app is on v1.4.35 and the wedge was NOT fixed by it.**
    The updater installed 1.4.35 and the engine now reports it. **v1.4.35 did not drain the
    outbox** — it fixed the v1.4.34 crash (an ack-write exception raising out of the tick) but

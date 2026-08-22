@@ -180,6 +180,12 @@ export interface ActiveRequest {
   // ── Streaming Text ──────────────────────────────────────────
   /** How many raw chunk events arrived (for metrics/status checks) */
   chunkCount: number;
+  /**
+   * Monotonic sequence on the original NDJSON delivery. A rejoined response
+   * replays from frame one; this cursor makes replay idempotent when the same
+   * mounted client already rendered part of the stream before reconnecting.
+   */
+  lastTransportSeq: number;
 
   /**
    * User-applied override for the rendered text. When non-null, this

@@ -24,8 +24,15 @@ import { Loader2, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
+import { AgentAssistantMessage } from "@/features/agents/components/messages-display/assistant/AgentAssistantMessage";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import {
+  EMPTY_CONVERSATION_MESSAGES,
+  selectConversationMessages,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { useLiveRunStatus } from "./useLiveRunStatus";
+
+const selectNoConversationMessages = () => EMPTY_CONVERSATION_MESSAGES;
 
 /**
  * The run's status, with no chrome attached.
@@ -78,6 +85,18 @@ export function LiveRunDisplay({
 }: LiveRunDisplayProps) {
   const { requestId, isActive, statusText, errorMessage, chunkCount } =
     useLiveRunStatus(conversationId, requestIdProp, pending);
+  const conversationMessages = useAppSelector(
+    conversationId
+      ? selectConversationMessages(conversationId)
+      : selectNoConversationMessages,
+  );
+  const assistantMessageId = requestId
+    ? conversationMessages.findLast(
+        (message) =>
+          message.role === "assistant" &&
+          message._streamRequestId === requestId,
+      )?.id
+    : undefined;
 
   // A floating window deliberately survives the route component that launched
   // it. Retain the canonical request row for exactly as long as this viewer is
@@ -110,19 +129,25 @@ export function LiveRunDisplay({
             ref={bodyRef}
             className={cn("h-full min-h-0 overflow-y-auto", bodyClassName)}
           >
-            <MarkdownStream
-              requestId={requestId}
-              // Load-bearing, not decoration: BlockRenderer keys the
-              // `hideReasoning` / `hideToolResults` display flags off the
-              // CONVERSATION. Without it every live-run window rendered the
-              // model's private chain-of-thought even though the headless
-              // runner explicitly sets `hideReasoning` (run-headless-agent-json
-              // `showReasoning !== true`). Threaded only — it never switches
-              // the renderer's mode (that needs turnId/messageId).
-              conversationId={conversationId ?? undefined}
-              isStreamActive={isActive}
-              hideCopyButton
-            />
+            {conversationId && assistantMessageId ? (
+              <AgentAssistantMessage
+                conversationId={conversationId}
+                requestId={requestId}
+                messageId={assistantMessageId}
+                isStreamActive={isActive}
+              />
+            ) : (
+              <MarkdownStream
+                requestId={requestId}
+                // Some adopted streams have no canonical conversation/message
+                // row. They keep the renderer-only fallback; conversation-backed
+                // runs above use AgentAssistantMessage so settled content gets
+                // the canonical assistant action bar.
+                conversationId={conversationId ?? undefined}
+                isStreamActive={isActive}
+                hideCopyButton
+              />
+            )}
           </div>
         ) : null}
       </div>

@@ -12,6 +12,7 @@ import {
   type RulebookSections,
   type RulebookSource,
   type RulebookStatus,
+  type RulebookVisibility,
 } from "./types";
 
 /**
@@ -68,6 +69,22 @@ function slugify(name: string): string {
     .slice(0, 60);
 }
 
+/**
+ * THE INTAKE ANSWERS DO WORK (Arman, 2026-08-21) — "who will actually run
+ * this?" decides who can see the Rulebook from the moment it exists, instead
+ * of every Rulebook being born personal and needing a share later.
+ *
+ * `personal` means "belongs to one individual" (db-rules §6); anything that
+ * names other people is org work, so it is born `internal`. Widening past the
+ * org (link / public) stays a deliberate act in the sharing UI — an intake
+ * answer must never publish anything.
+ */
+export function visibilityFromWhoRunsIt(
+  whoRunsIt: string | undefined,
+): RulebookVisibility {
+  return whoRunsIt && whoRunsIt !== "Just me" ? "internal" : "personal";
+}
+
 export async function createDraftRulebook(
   input: CreateRulebookInput,
 ): Promise<Rulebook> {
@@ -85,6 +102,7 @@ export async function createDraftRulebook(
         rules: [] as never,
         status: "draft",
         organization_id: input.organizationId,
+        visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
         ...(input.intake
           ? { metadata: { intake: input.intake } as never }
           : {}),
@@ -577,6 +595,36 @@ export async function listMasterworksForRulebook(
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(parseMasterworkRow);
+}
+
+/**
+ * Masterworks for MANY Rulebooks in one read — the list surface needs every
+ * visible Rulebook's built systems without N round trips. Understudies are
+ * excluded: they are the always-there crude twin, shown on the Rulebook page,
+ * never as one of the systems the Expert deliberately built.
+ */
+export async function listMasterworksForRulebooks(
+  rulebookIds: string[],
+): Promise<Record<string, Masterwork[]>> {
+  const ids = [...new Set(rulebookIds)].filter(Boolean);
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("definition")
+    .select(MASTERWORK_SELECT_COLUMNS)
+    .in("metadata->>built_from_rulebook", ids)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const out: Record<string, Masterwork[]> = {};
+  for (const row of data ?? []) {
+    const mw = parseMasterworkRow(row);
+    if (mw.understudy) continue;
+    const key = mw.built_from_rulebook;
+    if (!key) continue;
+    (out[key] ??= []).push(mw);
+  }
+  return out;
 }
 
 /**

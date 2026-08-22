@@ -1,5 +1,6 @@
 // features/transcripts/service/transcriptsService.ts
 
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -439,7 +440,13 @@ export async function copyTranscript(id: string): Promise<Transcript> {
     .single();
 
   if (fetchError || !original) {
-    throw new Error("Original transcript not found");
+    throw recordUnavailable({
+      entity: "transcript",
+      reason: "unknown",
+      recordId: id,
+      token: "transcript",
+      relation: "transcripts.transcripts",
+    });
   }
 
   const userId = requireUserId();

@@ -49,7 +49,7 @@ export function NewInterviewDialog({
       setTitle("");
       clearVision();
       startTransition(() => {
-        router.push(`/vision-interview/${session.id}`);
+        router.push(`/masterwork/vision-interview/${session.id}`);
       });
     } catch (err) {
       toast.error(
@@ -108,7 +108,7 @@ export function NewInterviewButton() {
     <Button
       size="sm"
       className="h-11 lg:h-7"
-      onClick={() => startTransition(() => router.push("/vision-interview/new"))}
+      onClick={() => startTransition(() => router.push("/masterwork/vision-interview/new"))}
     >
       New
     </Button>
