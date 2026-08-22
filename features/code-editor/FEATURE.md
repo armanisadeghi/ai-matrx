@@ -1,16 +1,16 @@
-# FEATURE.md — `code-editor` (legacy / embedded)
+# FEATURE.md — `code-editor` (embedded)
 
 **Status:** `active` — **major upgrade incoming:** file-system + git repository integration + full agentic coding system
 **Tier:** `1`
-**Last updated:** `2026-07-22`
+**Last updated:** `2026-08-22`
 
-> This is the **embedded** code-editor surface — the one consumed by the agent builder, prompt-app editor, notes, and the V2 / V3 / Compact code editor variants. Its agent integration runs through the legacy widget-tool + Shortcuts pipeline.
+> This is the **embedded** code-editor surface — the one consumed by the agent builder, prompt-app editor, notes, and the V2 / V3 / Compact variants. `SmartCodeEditor` runs agents through mandate-based execution; embedded context menus expose database Shortcuts and both paths apply edits through the shared widget/surface contracts.
 >
 > **Not to be confused with [`features/code/`](../code/FEATURE.md)** — the **new** VSCode-style standalone workspace mounted at `/code`. That workspace has its own Monaco instance, its own tabs/diagnostics/patches slices, and binds to the **new agent system** via `AgentRunnerPage` rather than via Shortcuts. The two editors share `vsc_*` context-key naming (the same Shortcut can bind to either) but are otherwise independent code paths. The chat-binding split:
 >
 > | Surface | Editor code | Chat / agent integration |
 > |---|---|---|
-> | This feature (`features/code-editor/`) | embedded multi-file core in builder / notes / app pages | legacy `cx-conversation` chat where embedded; Shortcuts via the v3 context menu (Phase 5) |
+> | This feature (`features/code-editor/`) | embedded multi-file core in builder / notes / app pages | `SmartCodeEditor` mandate runner; Shortcuts via the v3 context menu |
 > | New workspace (`features/code/`) at `/code` | standalone Monaco + tabs + diagnostics + patches slices | new agents system via `AgentRunnerPage`; instance-context bridge (`editor.tab.*`, `editor.selection.*`); right-click currently uses Monaco-native actions only |
 
 ---
@@ -24,7 +24,7 @@ In-app code editing surface plus the foundation for **agentic coding** — AI-as
 ## Entry points
 
 **Feature code** (`features/code-editor/`)
-- `agent-code-editor/` — the agent integration surface (Shortcuts, tool invocations, widget wiring)
+- `agent-code-editor/` — mandate-backed agent runner, review flow, tool invocations, and widget wiring
 - `multi-file-core/` — multi-file editing engine; the foundation other layers sit on
 - `components/` — editor chrome, file tabs, panes
 - `config/` — language defs, keybindings
@@ -45,6 +45,7 @@ In-app code editing surface plus the foundation for **agentic coding** — AI-as
 - Diagnostics surfacing (errors/warnings)
 
 ### Agent integration
+- `SmartCodeEditor` is the reusable agent IDE: History + Agent + Code/Diff, with optional Files and Terminal. Hosts may open it in edit mode and omit Terminal; below `md`, Code stays primary while Agent and History move into the canonical mobile panel drawers.
 - Exposed UI context to Shortcuts via the `vsc_*` key set:
 
 | Variable | Source | Content |
@@ -151,6 +152,7 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 
 ## Change log
 
+- `2026-08-22` — codex: `SmartCodeEditor` gained opt-in `initialIsEditing` and `showTerminal` host controls, plus the canonical responsive panel treatment. The Kind Registry now embeds it in editable single-file mode with its mandate-backed Agent and History surfaces, while omitting sandbox/terminal chrome.
 - `2026-08-22` — claude: **code-editor agents are MANDATES (ROLLOUT F6 + F8).** `agent-code-editor/agents.ts` carries mandate keys only — `code_editor.code_edit` / `code_editor.prompt_app_ui_edit` / `code_editor.dynamic_context_edit` (provision `code_editor.session`); `CodeEditorAgentConfig.id` → `mandateKey`; every launch (`SmartCodeEditor` drafts, `useAICodeEditor`, both `ContextAwareCodeEditor*`, `AICodeEditorModalV2`) goes through `launchMandate` — the three `SHORTCUT_FOR_AGENT` uuid→shortcut maps and all raw UUIDs are gone. `SmartCodeEditor` resolves its roster via `useMandateSet` (history merge only; the **New** button is gated on the picked mandate resolving). `CodeBlockHeader`'s AI menu builds from the code-editor configs, not the system-agent registry. Props renamed: `defaultPickerAgentId` → `defaultPickerMandateKey`, `builtinId` → `mandateKey`.
 - `2026-08-11` — claude: made the Smart Code Editor agent-writable. `SmartCodeEditor` now mounts the `matrx-user/smart-code-editor` surface's FIRST `SurfaceRuntimeProvider` (live scope from the Monaco model via the manifest's own `createSmartCodeEditorScope`) and registers 3 ask-policy write handlers — `replace_selection`, `insert_at_cursor`, `content`. **They edit the Monaco MODEL (`pushEditOperations` between undo stops), not React state:** this editor is uncontrolled, so a state write comes back down as `initialCode` and `SmallCodeEditorImpl` applies it with `model.setValue()`, discarding the user's undo history — and the widget-level `executeEdits` would no-op against the read-only default (pencil off). A model edit fires the change event that feeds the same `handleContentChange` the user's typing feeds, so state converges and ⌘Z still works. Handlers read the editor through a ref (the writeback seam resolves staged handlers before the first confirm) and refuse while the diff-review overlay is up. Adds one optional additive prop, `onEditorMount`, to `SmallCodeEditor`/`Impl` (threaded through `CodeOrDiffColumn`) — the component previously exposed its Monaco instance to nobody.
 - `2026-07-22` — codex: unified streamed and static markdown JSON blocks onto one persistent capability shell, reduced the four view selectors to compact icon controls, and made Prism view-mode wrapping resistant to syntax-theme overrides.
