@@ -15,6 +15,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D213 — `edu_coppa_gate` is called before auth resolves and 42501s for anon (2026-08-22)
+
+Console on every `(core)` education page load before the session hydrates: `[study] coppa.getGate: permission denied for function edu_coppa_gate (42501)`. The RPC is granted `authenticated` + `service_role` only (correct — `edu_coppa_gate_for` is service-role-only by design), but the client gate fires while the page is still anon, so the first call is a guaranteed permission error that reads like a real failure. Either grant `anon` EXECUTE on the zero-arg `edu_coppa_gate` (it already returns a verdict for an anonymous session — STATE §3 says anon-with-no-band is refused by policy, not by grant) or have the client wait for `userId` before the first gate call. Seen during WP6's live assignment-loop walk; child-safety lane owns the call.
+
 ### D248 — Every expert value ruling fails on a large site: `seo.gsc_set_keyword_value` re-runs the whole resolver inside the write (2026-08-22)
 
 **"The expert always wins" does not currently work on datadestruction.com.** Clicking

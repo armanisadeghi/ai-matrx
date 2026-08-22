@@ -93,6 +93,12 @@ export function ClassProgressPanel({ classId }: { classId: string }) {
         </p>
       ) : (
         <div className="space-y-4">
+          {/* Gradebook stance (D-WP6-5): derived, live, never teacher-entered. */}
+          <p className="text-xs text-muted-foreground">
+            Completion and scores come straight from each student&apos;s study
+            activity on the assigned material — live, and never hand-entered.
+          </p>
+
           {/* Rollup */}
           <div className="grid grid-cols-3 gap-3">
             <Rollup label="Students" value={`${students.length}`} icon={Users} />
