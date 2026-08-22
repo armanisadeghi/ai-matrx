@@ -15,7 +15,23 @@
  */
 
 import { useState } from "react";
-import { AlertCircle, RotateCw, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, RotateCw, Loader2, ArrowRight } from "lucide-react";
+
+/**
+ * Structured backend refusals that have a ONE-CLICK way forward. A failure the
+ * user can fix themselves must ship with its fix (no-dead-ends doctrine) —
+ * keyed by the backend's `error_type` so the door is never guessed from copy.
+ */
+const RECOVERY_DOORS: Record<string, { label: string; href: string }> = {
+  // aidream `enforce_education_coppa` — the account (or guest session) has no
+  // declared age band / no verified guardian. /education/family is where a
+  // learner declares their age or a guardian confirms it.
+  education_coppa_consent_required: {
+    label: "Set your age or parent approval",
+    href: "/education/family",
+  },
+};
 
 interface AssistantErrorProps {
   /** Human-friendly message — always shown. */
@@ -55,6 +71,16 @@ export function AssistantError({
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {message}
         </span>
+
+        {errorType && RECOVERY_DOORS[errorType] && (
+          <Link
+            href={RECOVERY_DOORS[errorType].href}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
+          >
+            {RECOVERY_DOORS[errorType].label}
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        )}
 
         {onRetry && (
           <button
