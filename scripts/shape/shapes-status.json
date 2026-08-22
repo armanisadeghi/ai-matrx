@@ -1,5 +1,5 @@
 {
-  "generated_for": "616-kinds+2f1c0453c413",
+  "generated_for": "618-kinds+36b06a287ca8",
   "columns": [
     "definition",
     "example",
@@ -2833,6 +2833,34 @@
         "example": "missing",
         "gate_structural": "missing",
         "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "lesson_script_section",
+      "is_active": false,
+      "family": "education",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "lesson_script_set",
+      "is_active": true,
+      "family": "education",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -9537,6 +9565,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "lesson_script_set",
+      "message": "kind \"lesson_script_set\" has no content block referencing \"__kind\": \"lesson_script_set\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "local_place",
       "message": "kind \"local_place\" has no content block referencing \"__kind\": \"local_place\""
     },
@@ -13673,6 +13707,12 @@
       "code": "no-skill",
       "kind": "knowledge.section_qa.offer",
       "message": "kind \"knowledge.section_qa.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "lesson_script_set",
+      "message": "kind \"lesson_script_set\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
