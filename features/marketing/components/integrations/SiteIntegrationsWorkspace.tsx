@@ -981,6 +981,7 @@ function SiteIntegrationsEditor({
                   ) : key === "googleAnalytics4" ? (
                     <Ga4CampaignPanel
                       isSuperAdmin={isSuperAdmin}
+                      reviewMode={reviewMode}
                       diagnosis={ga4BindingDiagnosis}
                       hasAnalyticsAccess={(
                         googleInventory.data?.connections ?? []
@@ -1136,6 +1137,7 @@ function SiteIntegrationsEditor({
 
 function Ga4CampaignPanel({
   isSuperAdmin,
+  reviewMode,
   diagnosis,
   hasAnalyticsAccess,
   recovering,
@@ -1146,6 +1148,7 @@ function Ga4CampaignPanel({
   onAuthorize,
 }: {
   isSuperAdmin: boolean;
+  reviewMode: boolean;
   diagnosis: GoogleResourceBindingDiagnosis | null;
   hasAnalyticsAccess: boolean;
   recovering: boolean;
@@ -1178,7 +1181,7 @@ function Ga4CampaignPanel({
 
   if (!diagnosis?.blocking && hasAnalyticsAccess) {
     return (
-      <div className="rounded-md border border-border bg-muted/20 p-2">
+      <div className="space-y-1.5 rounded-md border border-border bg-muted/20 p-2">
         <p className="text-[10px] font-medium text-foreground">
           Read-only Analytics access is available
         </p>
@@ -1186,6 +1189,34 @@ function Ga4CampaignPanel({
           Choose the Google account and exact GA4 property above. AI Matrx can
           read reporting data but cannot edit Google Analytics.
         </p>
+        {reviewMode ? (
+          <>
+            <label className="flex items-start gap-2 rounded-sm border border-border bg-background p-2 text-[10px] leading-4 text-foreground">
+              <Checkbox
+                checked={disclosureAccepted}
+                onCheckedChange={(checked) =>
+                  onDisclosureAccepted(checked === true)
+                }
+              />
+              <span>
+                I want AI Matrx to show the complete Google consent screen again
+                and rediscover my read-only Analytics properties.
+              </span>
+            </label>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 w-full"
+              disabled={!disclosureAccepted || authorizingOwner !== null}
+              onClick={() => onAuthorize("user")}
+            >
+              {authorizingOwner === "user" ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              Show Analytics consent and rediscover properties
+            </Button>
+          </>
+        ) : null}
       </div>
     );
   }
