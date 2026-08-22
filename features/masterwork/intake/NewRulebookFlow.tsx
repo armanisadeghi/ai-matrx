@@ -315,6 +315,19 @@ export function NewRulebookFlow() {
   const step: 1 | 2 =
     searchParams.get("step") === "2" && goal.trim() ? 2 : 1;
 
+  // THE WAY COMES FIRST (Arman, 2026-08-21). Arriving here with an Approach
+  // already chosen — from the module home or the catalog — means this page is
+  // the SECOND step, not the first: ask the little it needs, then start.
+  // Arriving bare, it has no business asking questions before the Expert has
+  // chosen how they want to work, so it hands them the catalog.
+  const preChosenKey = searchParams.get("approach");
+  const chosen = preChosenKey
+    ? (approaches ?? []).find((a) => a.key === preChosenKey) ?? null
+    : null;
+  useEffect(() => {
+    if (!preChosenKey) router.replace("/masterwork/approaches");
+  }, [preChosenKey, router]);
+
   const patchDraft = (patch: Record<string, unknown>) =>
     dispatch(patchWizardDraft({ wizardId: WIZARD_ID, patch }));
 
@@ -449,17 +462,16 @@ export function NewRulebookFlow() {
     // origin says as much as the surface honestly knows and no more.
     <MasterworkDictationOrigin surface="masterwork.new_rulebook">
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
-      <StepDots step={step} />
+      {preChosenKey ? null : <StepDots step={step} />}
 
       {step === 1 ? (
         <div className="space-y-9">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Distill your expertise
+              {chosen ? chosen.label : "Start a Rulebook"}
             </h1>
             <p className="text-muted-foreground">
-              A few quick questions — we&apos;ve picked sensible answers, so
-              change only what&apos;s wrong and keep moving.
+              Answers are pre-filled — change what&apos;s wrong and start.
             </p>
           </div>
 
@@ -518,18 +530,19 @@ export function NewRulebookFlow() {
 
           <div className="flex items-center justify-between border-t border-border pt-6">
             <Button asChild variant="ghost" className="min-h-[44px] gap-2">
-              <Link href="/masterwork">
+              <Link href="/masterwork/approaches">
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Link>
             </Button>
             <Button
-              onClick={handleContinue}
-              disabled={!goal.trim()}
+              onClick={() => (preChosenKey ? void create() : handleContinue())}
+              disabled={!goal.trim() || saving}
               className="min-h-[44px] gap-2 px-6"
             >
-              Continue
-              <ArrowRight className="h-4 w-4" />
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {saving ? "Starting…" : preChosenKey ? "Start" : "Continue"}
+              {!saving && !preChosenKey ? <ArrowRight className="h-4 w-4" /> : null}
             </Button>
           </div>
         </div>
