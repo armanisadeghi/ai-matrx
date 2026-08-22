@@ -1095,6 +1095,30 @@ export interface SeoCompetitorClassificationOffer {
   classification_version: string;
 }
 
+/** Offered shape of provision `seo.competitor_opportunity_autopsy` (kind `seo.competitor_opportunity_autopsy.offer`). */
+export interface SeoCompetitorOpportunityAutopsyOffer {
+  strategist_version: string;
+  site: unknown;
+  provider_competitors: unknown;
+  owned_pages: unknown;
+  owned_backlinks: unknown;
+  provider_backlink_metrics: unknown;
+  page_autopsies: unknown;
+  owned_page_analyses: unknown;
+  page_keyword_maps: unknown;
+  limitations: unknown;
+}
+
+/** Offered shape of provision `seo.competitor_page_autopsy` (kind `seo.competitor_page_autopsy.offer`). */
+export interface SeoCompetitorPageAutopsyOffer {
+  analyst_version: string;
+  competitor_page: unknown;
+  owned_page?: unknown;
+  owned_page_analysis?: unknown;
+  page_keyword_map?: unknown;
+  owned_site: unknown;
+}
+
 /** Offered shape of provision `seo.coverage_analysis` (kind `seo.coverage_analysis.offer`). */
 export interface SeoCoverageAnalysisOffer {
   brand_name: string;
@@ -1494,6 +1518,8 @@ export interface ProvisionOffers {
   "seo.ai_visibility_analysis": SeoAiVisibilityAnalysisOffer;
   "seo.authority_routing": SeoAuthorityRoutingOffer;
   "seo.competitor_classification": SeoCompetitorClassificationOffer;
+  "seo.competitor_opportunity_autopsy": SeoCompetitorOpportunityAutopsyOffer;
+  "seo.competitor_page_autopsy": SeoCompetitorPageAutopsyOffer;
   "seo.coverage_analysis": SeoCoverageAnalysisOffer;
   "seo.finding_fix": SeoFindingFixOffer;
   "seo.keyword_classification": SeoKeywordClassificationOffer;
@@ -1654,6 +1680,8 @@ export const PROVISION_OFFER_KINDS = {
   "seo.ai_visibility_analysis": "seo.ai_visibility_analysis.offer",
   "seo.authority_routing": "seo.authority_routing.offer",
   "seo.competitor_classification": "seo.competitor_classification.offer",
+  "seo.competitor_opportunity_autopsy": "seo.competitor_opportunity_autopsy.offer",
+  "seo.competitor_page_autopsy": "seo.competitor_page_autopsy.offer",
   "seo.coverage_analysis": "seo.coverage_analysis.offer",
   "seo.finding_fix": "seo.finding_fix.offer",
   "seo.keyword_classification": "seo.keyword_classification.offer",

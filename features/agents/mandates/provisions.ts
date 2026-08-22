@@ -7,23 +7,12 @@
  * parsers, the pre-flight) live in the leaf module `./provision-shapes.ts` so
  * the SSR resolver can share them; THIS module owns the browser reads of
  * `agent.provision` (RLS — provisions are public platform rows, same posture
- * as `agent.mandate`) plus their cache.
- *
- * ── LOCAL DB-TYPE EXTENSION — DELETE when `pnpm db-types` can run here ──────
- * `agent.provision` is LIVE (columns verified against information_schema on
- * 2026-08-22) but missing from the generated `types/database.types.ts`: the
- * Supabase CLI needs an access token this environment doesn't have, and the
- * direct `--db-url` path is blocked by the HTTPS-only network.
- * `ProvisionRowLocal` mirrors the live schema written by aidream's code-owned
- * boot sync (`sync_declared_provisions`), and every field read is
- * runtime-validated at ingress — the widened client type is never trusted on
- * its own. Once `pnpm db-types` runs, replace the local Row + `Wave1Database`
- * widening with the generated types.
+ * as `agent.mandate`) plus their cache. `agent.provision` is in the generated
+ * `types/database.types.ts` (regenerated 2026-08-22); every field read is still
+ * runtime-validated at ingress.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
-import type { Database, Json } from "@/types/database.types";
 import { parseOfferedValues, type OfferedValue } from "./provision-shapes";
 
 export type {
@@ -43,45 +32,6 @@ export {
   parseOfferedValues,
   SCALAR_VALUE_KINDS,
 } from "./provision-shapes";
-
-/** Local Row mirror of `agent.provision` (columns verified live 2026-08-22).
- * Code-owned rows: aidream's boot sync wholesale-refreshes every column. */
-interface ProvisionRowLocal {
-  id: string;
-  provision_key: string;
-  label: string;
-  description: string | null;
-  offered_values: Json;
-  derived_input_kind: string | null;
-  code_path: string | null;
-  is_enabled: boolean;
-  deleted_at: string | null;
-  created_at: string;
-  updated_at: string;
-  organization_id: string;
-  metadata: Json;
-  version: number;
-}
-
-type AgentSchema = Database["agent"];
-type Wave1AgentSchema = Omit<AgentSchema, "Tables"> & {
-  Tables: AgentSchema["Tables"] & {
-    provision: {
-      Row: ProvisionRowLocal;
-      Insert: never;
-      Update: never;
-      Relationships: [];
-    };
-  };
-};
-type Wave1Database = Omit<Database, "agent"> & { agent: Wave1AgentSchema };
-
-/** The ONE widening for the missing generated table (see the header note) —
- * the same authenticated client instance, with `agent.provision` visible.
- * Every field read off it goes through the runtime parsers. */
-function wave1Client(): SupabaseClient<Wave1Database> {
-  return createClient() as unknown as SupabaseClient<Wave1Database>;
-}
 
 export interface ProvisionOffer {
   id: string;
@@ -112,7 +62,7 @@ export async function fetchProvision(
   const cached = provisionCache.get(provisionKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
-  const { data, error } = await wave1Client()
+  const { data, error } = await createClient()
     .schema("agent")
     .from("provision")
     .select("*")
@@ -164,7 +114,7 @@ export async function fetchProvisions(
   }
   if (misses.length === 0) return out;
 
-  const client = wave1Client();
+  const client = createClient();
   const chunks: string[][] = [];
   for (let i = 0; i < misses.length; i += PROVISION_BATCH_SIZE) {
     chunks.push(misses.slice(i, i + PROVISION_BATCH_SIZE));
