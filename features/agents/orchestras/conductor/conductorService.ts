@@ -1,7 +1,7 @@
-// features/agents/orchestras/orchestrator/orchestratorService.ts
+// features/agents/orchestras/conductor/conductorService.ts
 //
-// The plumbing for "generate an orchestrator agent": copy the template, dump the
-// selected agents, and inject the generated <agent> blocks into the orchestrator's
+// The plumbing for "generate an conductor agent": copy the template, dump the
+// selected agents, and inject the generated <agent> blocks into the conductor's
 // <available_agents> section. Every method returns a ScopesRpcResult and NEVER
 // throws. Running the description-generator agent itself is a THUNK (needs
 // dispatch) — see ./thunks.ts. See features/agents/docs/ORCHESTRAS.md.
@@ -23,7 +23,7 @@ import {
   AVAILABLE_AGENTS_OPEN,
   AVAILABLE_AGENTS_RE,
   MEMBER_CONFIG_COLUMNS,
-  ORCHESTRATOR_TEMPLATE_ID,
+  CONDUCTOR_TEMPLATE_ID,
 } from "./constants";
 
 type DefinitionUpdate = Database["agent"]["Tables"]["definition"]["Update"];
@@ -145,7 +145,7 @@ export interface AvailableAgentEntry {
 }
 
 /**
- * Build the orchestrator's `<available_agents>` INNER content deterministically
+ * Build the conductor's `<available_agents>` INNER content deterministically
  * from each member's resolved role/gap + declared inputs/outputs. One clean
  * `<agent id>` block per member, no duplicated id, no LLM prose. The role/gap have
  * already been made correct by the Role Describer; here we only format them.
@@ -168,12 +168,12 @@ export function buildAvailableAgentsBlock(
     .join("\n");
 }
 
-export const orchestratorService = {
-  /** Copy the "Agent Orchestrator" template into a new agent owned by the caller. */
+export const conductorService = {
+  /** Copy the "Agent Conductor" template into a new agent owned by the caller. */
   async createFromTemplate(): Promise<ScopesRpcResult<{ agentId: string }>> {
     try {
       const res = await fetch(
-        `/api/agents/templates/${ORCHESTRATOR_TEMPLATE_ID}/use`,
+        `/api/agents/templates/${CONDUCTOR_TEMPLATE_ID}/use`,
         {
           method: "POST",
         },
@@ -243,20 +243,20 @@ export const orchestratorService = {
   },
 
   /**
-   * Ensure the orchestrator's system prompt HAS an `<available_agents>` section
+   * Ensure the conductor's system prompt HAS an `<available_agents>` section
    * so "Sync agent listings" can fill it. Idempotent — a no-op when the marker
    * already exists. Otherwise appends a labelled EMPTY section to the end of the
    * system message (Sync fills it later). LOUD if there is no system message.
    */
   async ensureAvailableAgentsSection(
-    orchestratorId: string,
+    conductorId: string,
   ): Promise<ScopesRpcResult<null>> {
     try {
       const { data, error } = await supabase
         .schema("agent")
         .from("definition")
         .select("messages")
-        .eq("id", orchestratorId)
+        .eq("id", conductorId)
         .single();
       if (error) return err(...mapPgErrorPair(error));
 
@@ -302,7 +302,7 @@ export const orchestratorService = {
         .update({
           messages: newMessages as DefinitionUpdate["messages"],
         } as DefinitionUpdate)
-        .eq("id", orchestratorId);
+        .eq("id", conductorId);
       if (upErr) return err(...mapPgErrorPair(upErr));
       return ok(null);
     } catch (e) {
@@ -310,7 +310,7 @@ export const orchestratorService = {
     }
   },
 
-  /** Rename an agent (used to name the generated orchestrator). */
+  /** Rename an agent (used to name the generated conductor). */
   async rename(agentId: string, name: string): Promise<ScopesRpcResult<null>> {
     try {
       const { error } = await supabase
@@ -326,12 +326,12 @@ export const orchestratorService = {
   },
 
   /**
-   * Replace the generated orchestrator's messages with the supervisor system
+   * Replace the generated conductor's messages with the supervisor system
    * prompt + a neutral task user template (dropping the template's planner
    * messages) so it CALLS its member tools at run time. Keeps the
    * `<available_agents>` marker for "Sync agent listings".
    */
-  async setOrchestratorMessages(
+  async setConductorMessages(
     agentId: string,
     systemText: string,
     userText: string,
@@ -356,11 +356,11 @@ export const orchestratorService = {
   },
 
   /**
-   * Replace the orchestrator's <available_agents> block with `agentBlocks`. LOUD
+   * Replace the conductor's <available_agents> block with `agentBlocks`. LOUD
    * failure if the marker is absent — we never write a malformed prompt.
    */
   async injectAvailableAgents(
-    orchestratorId: string,
+    conductorId: string,
     agentBlocks: string,
   ): Promise<ScopesRpcResult<null>> {
     try {
@@ -368,7 +368,7 @@ export const orchestratorService = {
         .schema("agent")
         .from("definition")
         .select("messages")
-        .eq("id", orchestratorId)
+        .eq("id", conductorId)
         .single();
       if (error) return err(...mapPgErrorPair(error));
 
@@ -376,19 +376,19 @@ export const orchestratorService = {
         []) as unknown as AgentDefinitionMessage[];
       const sysIdx = messages.findIndex((m) => m.role === "system");
       if (sysIdx === -1)
-        return err("invalid_argument", "Orchestrator has no system message");
+        return err("invalid_argument", "Conductor has no system message");
       const sys = messages[sysIdx];
       const textIdx = sys.content.findIndex((b) => b.type === "text");
       if (textIdx === -1)
         return err(
           "invalid_argument",
-          "Orchestrator system message has no text",
+          "Conductor system message has no text",
         );
       const textBlock = sys.content[textIdx];
       if (textBlock.type !== "text")
         return err("invalid_argument", "Unexpected content block");
       if (typeof textBlock.text !== "string")
-        return err("invalid_argument", "Orchestrator system text is missing");
+        return err("invalid_argument", "Conductor system text is missing");
       if (!AVAILABLE_AGENTS_RE.test(textBlock.text)) {
         return err(
           "invalid_argument",
@@ -416,7 +416,7 @@ export const orchestratorService = {
         .update({
           messages: newMessages as DefinitionUpdate["messages"],
         } as DefinitionUpdate)
-        .eq("id", orchestratorId);
+        .eq("id", conductorId);
       if (upErr) return err(...mapPgErrorPair(upErr));
       return ok(null);
     } catch (e) {

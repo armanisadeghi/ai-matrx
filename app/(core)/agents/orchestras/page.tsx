@@ -5,7 +5,7 @@ import { OrchestrasBrowser } from "@/features/agents/orchestras/components/Orche
 
 export const metadata: Metadata = {
   title: "Orchestras",
-  description: "Orchestrators presiding over teams of agents.",
+  description: "Conductors presiding over teams of agents.",
 };
 
 export default async function OrchestrasPage() {

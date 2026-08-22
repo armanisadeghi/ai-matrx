@@ -313,7 +313,7 @@ export const smartExecute = createAsyncThunk<
 
       // The split (auto-clear "iterate") mints a NEW, historyless conversation and
       // repoints the input focus at it. That is ONLY valid for a conversation
-      // explicitly created as "iterate" (builder / tester / orchestrator generator
+      // explicitly created as "iterate" (builder / tester / Conductor generator
       // / programmatic extraction). Splitting a durable ("continuous"/undefined)
       // conversation would ORPHAN it — the exact class of failure this gate makes
       // structurally impossible: split ONLY when the stamped lifecycle says

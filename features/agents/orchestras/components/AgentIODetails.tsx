@@ -1,7 +1,7 @@
 // features/agents/orchestras/components/AgentIODetails.tsx
 //
 // The agent I/O detail block (declared Inputs + Output shape) shared by the
-// member inspector and the orchestrator inspector. Lazy-loads the full agent
+// member inspector and the conductor inspector. Lazy-loads the full agent
 // definition on demand (variables + output schema are NOT on the list row).
 // One implementation so the two inspectors can never drift.
 

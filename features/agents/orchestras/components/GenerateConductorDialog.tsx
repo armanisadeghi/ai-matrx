@@ -1,7 +1,7 @@
-// features/agents/orchestras/components/GenerateOrchestratorDialog.tsx
+// features/agents/orchestras/components/GenerateConductorDialog.tsx
 //
-// "Generate an orchestrator" — a QUICK name prompt, not an agent picker. We create
-// the orchestrator from the template immediately and drop the user into the builder,
+// "Generate an conductor" — a QUICK name prompt, not an agent picker. We create
+// the conductor from the template immediately and drop the user into the builder,
 // where they choose the agents it coordinates on the canonical rail (search / filter
 // / tabs / peek / drag-drop) and click "Sync agent listings" to fill its prompt.
 // (Deliberately NOT a modal full of agents — that's what the builder is for.)
@@ -23,18 +23,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useCreateOrchestrator } from "../orchestrator/useCreateOrchestrator";
+import { useCreateConductor } from "../conductor/useCreateConductor";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
 
-export interface GenerateOrchestratorDialogProps {
+export interface GenerateConductorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrchestratorDialogProps) {
+export function GenerateConductorDialog({ open, onOpenChange }: GenerateConductorDialogProps) {
   const router = useRouter();
-  const { create, creating, error } = useCreateOrchestrator();
+  const { create, creating, error } = useCreateConductor();
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [accent, setAccent] = useState<OrchestraAccent>(DEFAULT_ORCHESTRA_ACCENT);
@@ -56,7 +56,7 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
     try {
       const id = await create({ name, accent, tagline });
       if (id) {
-        toast.success("Orchestrator created — add the agents it coordinates, then Sync its prompt.");
+        toast.success("Conductor created — add the agents it coordinates, then Sync its prompt.");
         handleOpenChange(false);
         router.push(`/agents/orchestras/${id}`);
       }
@@ -71,10 +71,10 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Network className="h-4 w-4 text-primary" />
-            Generate an orchestrator
+            Generate an conductor
           </DialogTitle>
           <DialogDescription>
-            Just name it. We&apos;ll create an orchestrator agent from the template and
+            Just name it. We&apos;ll create an conductor agent from the template and
             open the builder — you pick the agents it coordinates there, then click
             <span className="font-medium text-foreground"> Sync agent listings</span> to
             teach it about them.
@@ -87,7 +87,7 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Defaults to “Agent Orchestrator”"
+              placeholder="Defaults to “Agent Conductor”"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !creating) handleCreate();

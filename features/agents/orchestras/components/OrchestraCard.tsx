@@ -1,6 +1,6 @@
 // features/agents/orchestras/components/OrchestraCard.tsx
 //
-// A list tile for one Orchestra on /agents/orchestras. The orchestrator agent is the
+// A list tile for one Orchestra on /agents/orchestras. The conductor agent is the
 // Orchestra's face: its name + description (or the Orchestra tagline) head the card, with an
 // accent-tinted header, a member-count strip, and an "Open in builder" action.
 //
@@ -36,8 +36,8 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
   const count = summary.memberCount;
   const strip = Math.min(count, 6);
 
-  const setHref = `/agents/orchestras/${summary.orchestratorId}`;
-  const runHref = `/agents/${summary.orchestratorId}/run`;
+  const setHref = `/agents/orchestras/${summary.conductorId}`;
+  const runHref = `/agents/${summary.conductorId}/run`;
 
   return (
     <Card
@@ -91,7 +91,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
         >
           <EntityRef
             token="agent"
-            id={summary.orchestratorId}
+            id={summary.conductorId}
             name={title}
             href={setHref}
             showIcon={false}
@@ -136,7 +136,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
                 "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium hover:bg-muted",
                 a.text,
               )}
-              title="Run this orchestrator — it delegates to its members"
+              title="Run this conductor — it delegates to its members"
             >
               <Play className="h-3.5 w-3.5" /> Run
             </Link>

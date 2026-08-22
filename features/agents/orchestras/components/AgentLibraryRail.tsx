@@ -4,7 +4,7 @@
 // CANONICAL agent filter system (the same one /agents/all uses) — its own
 // `useAgentConsumer` slot + the filtered selectors + <DesktopFilterPanel> — so
 // Mine/Shared/All tabs, category/tag filters, sort and search all work exactly as
-// elsewhere. Current members + the orchestrator are excluded. Each row is
+// elsewhere. Current members + the conductor are excluded. Each row is
 // draggable (drop onto the canvas), clickable (adds to the end), and has a peek.
 
 "use client";
@@ -41,12 +41,12 @@ function applyArrayViaToggle(current: string[], next: string[], toggle: (v: stri
 }
 
 export interface AgentLibraryRailProps {
-  orchestratorId: string;
+  conductorId: string;
   memberIds: string[];
   onAdd: (agentId: string) => void;
 }
 
-export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibraryRailProps) {
+export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibraryRailProps) {
   const consumer = useAgentConsumer(LIBRARY_CONSUMER, { initialTab: "mine" });
 
   const selOwned = useMemo(() => makeSelectFilteredOwnedAgents(LIBRARY_CONSUMER), []);
@@ -58,8 +58,8 @@ export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibr
   const totalShared = useAppSelector(selectTotalSharedAgentsCount);
 
   const excluded = useMemo(
-    () => new Set([orchestratorId, ...memberIds]),
-    [orchestratorId, memberIds],
+    () => new Set([conductorId, ...memberIds]),
+    [conductorId, memberIds],
   );
 
   const available = useMemo(() => {

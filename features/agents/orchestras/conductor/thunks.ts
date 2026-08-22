@@ -1,11 +1,11 @@
-// features/agents/orchestras/orchestrator/thunks.ts
+// features/agents/orchestras/conductor/thunks.ts
 //
 // The "Sync agent listings" flow. ONE click, ONE headless AI pass:
-// `syncOrchestratorPrompt` runs the builtin Orchestra Role Describer over the
+// `syncConductorPrompt` runs the builtin Orchestra Role Describer over the
 // WHOLE Orchestra — it reads each member's current config AND its current role
 // (Role title + gap), then returns a correct Role title + gap for EVERY member
 // (filling blanks, fixing wrong ones, confirming good ones). Those are written to
-// the member EDGES, and the orchestrator's <available_agents> block is then built
+// the member EDGES, and the conductor's <available_agents> block is then built
 // deterministically from the corrected role/gap + each member's declared I/O.
 //
 // LIVE POSTURE (2026-08-11). The describe pass is the long part — one model call
@@ -31,7 +31,7 @@ import {
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { OrchestraMember } from "../types";
 import {
-  orchestratorService,
+  conductorService,
   parseRoleDescriberOutput,
   systemPromptOf,
   inputNamesOf,
@@ -39,7 +39,7 @@ import {
   buildAvailableAgentsBlock,
   type MemberConfigRow,
   type AvailableAgentEntry,
-} from "./orchestratorService";
+} from "./conductorService";
 import {
   ORCHESTRA_ROLE_DESCRIBER_MANDATE_KEY,
   ROLE_DESCRIBER_INPUT_VAR,
@@ -69,21 +69,21 @@ interface MemberDumpEntry {
 }
 
 /**
- * One-click "make this orchestrator syncable": insert an empty
+ * One-click "make this conductor syncable": insert an empty
  * `<available_agents>` section into its system prompt when it lacks one, then
  * refresh Redux so the builder flips from the "Enable sync" (warning) action to
  * the normal "Sync agent listings" action. Idempotent at the service layer.
  */
-export function enableOrchestratorSync(args: {
-  orchestratorId: string;
+export function enableConductorSync(args: {
+  conductorId: string;
 }): AppThunk<Promise<{ ok: boolean; error?: string }>> {
   return async (dispatch) => {
-    const res = await orchestratorService.ensureAvailableAgentsSection(
-      args.orchestratorId,
+    const res = await conductorService.ensureAvailableAgentsSection(
+      args.conductorId,
     );
     if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
     try {
-      await dispatch(fetchFullAgent(args.orchestratorId)).unwrap();
+      await dispatch(fetchFullAgent(args.conductorId)).unwrap();
     } catch {
       /* non-fatal — the write succeeded; Redux refresh is best-effort */
     }
@@ -92,7 +92,7 @@ export function enableOrchestratorSync(args: {
 }
 
 /**
- * Re-describe every member and re-sync the orchestrator's <available_agents>.
+ * Re-describe every member and re-sync the conductor's <available_agents>.
  * The builder's "Sync agent listings" action.
  *
  * 1. Read the current members (with their authored Role title/gap) + each member
@@ -104,17 +104,17 @@ export function enableOrchestratorSync(args: {
  * 4. Build <available_agents> from the corrected role/gap + declared inputs/outputs
  *    and inject it. Never throws; a member the caller can't edit is skipped.
  */
-export function syncOrchestratorPrompt(args: {
-  orchestratorId: string;
+export function syncConductorPrompt(args: {
+  conductorId: string;
   memberIds: string[];
 }): AppThunk<
   Promise<{ ok: boolean; error?: string; membersUpdated?: number }>
 > {
   return async (dispatch, getState) => {
     // Cheap pre-check BEFORE the slow LLM run: bail if this agent's prompt has no
-    // <available_agents> section to fill (e.g. an arbitrary user-picked orchestrator).
-    const marker = await orchestratorService.hasAvailableAgentsSection(
-      args.orchestratorId,
+    // <available_agents> section to fill (e.g. an arbitrary user-picked conductor).
+    const marker = await conductorService.hasAvailableAgentsSection(
+      args.conductorId,
     );
     if (isScopesRpcErr(marker))
       return { ok: false, error: marker.error.message };
@@ -128,14 +128,14 @@ export function syncOrchestratorPrompt(args: {
     // The members with their CURRENT authored role/gap + position (Redux is the
     // source of truth the inspector/canvas also read).
     const members: OrchestraMember[] =
-      getState().orchestras.byId[args.orchestratorId]?.members ?? [];
+      getState().orchestras.byId[args.conductorId]?.members ?? [];
     if (members.length === 0) {
       return { ok: false, error: "Add members before syncing the prompt." };
     }
     const memberIds = members.map((m) => m.agentId);
 
     // Each member agent's config (system prompt, inputs, output shape).
-    const configsRes = await orchestratorService.fetchMemberConfigs(memberIds);
+    const configsRes = await conductorService.fetchMemberConfigs(memberIds);
     if (isScopesRpcErr(configsRes)) {
       return { ok: false, error: configsRes.error.message };
     }
@@ -173,7 +173,7 @@ export function syncOrchestratorPrompt(args: {
     // their agents instead of watching a spinner, and the builder underneath
     // never shifts. One window per Orchestra (`instanceId`), so a re-sync (and each
     // retry attempt) re-binds the SAME window instead of stacking a new one.
-    const windowInstanceId = `orchestra-sync:${args.orchestratorId}`;
+    const windowInstanceId = `orchestra-sync:${args.conductorId}`;
     const runLabel = "Reading your agents";
     dispatch(
       openLiveRunWindowAction({
@@ -198,7 +198,7 @@ export function syncOrchestratorPrompt(args: {
         const launch = await dispatch(
           launchAgentExecution({
             mandateKey: ORCHESTRA_ROLE_DESCRIBER_MANDATE_KEY,
-            surfaceKey: "orchestrator-role-describer",
+            surfaceKey: "conductor-role-describer",
             sourceFeature: "agent-generator",
             isEphemeral: true,
             autoClearConversation: true,
@@ -295,7 +295,7 @@ export function syncOrchestratorPrompt(args: {
 
       const res = await dispatch(
         saveMemberMeta({
-          orchestratorId: args.orchestratorId,
+          conductorId: args.conductorId,
           agentId: m.agentId,
           meta: { roleTitle: nextRole, gap: nextGap, pos: m.pos ?? undefined },
           // The Role Describer is an AI author, so its purpose row is grounded
@@ -318,9 +318,9 @@ export function syncOrchestratorPrompt(args: {
     // gap (never the agent's name/description). This makes the prompt identical
     // to what the member inspector shows by construction — the XML cannot carry
     // data the UI doesn't, and vice versa.
-    await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
+    await dispatch(loadOrchestra(args.conductorId, { force: true }));
     const savedMembers: OrchestraMember[] =
-      getState().orchestras.byId[args.orchestratorId]?.members ?? members;
+      getState().orchestras.byId[args.conductorId]?.members ?? members;
     const entries: AvailableAgentEntry[] = savedMembers
       .slice()
       .sort((a, b) => a.position - b.position)
@@ -336,17 +336,17 @@ export function syncOrchestratorPrompt(args: {
       });
 
     const block = buildAvailableAgentsBlock(entries);
-    const inj = await orchestratorService.injectAvailableAgents(
-      args.orchestratorId,
+    const inj = await conductorService.injectAvailableAgents(
+      args.conductorId,
       block,
     );
     if (isScopesRpcErr(inj)) {
       return { ok: false, error: inj.error.message, membersUpdated };
     }
 
-    // Refresh the orchestrator's new prompt (the Orchestra was already reloaded above).
+    // Refresh the conductor's new prompt (the Orchestra was already reloaded above).
     try {
-      await dispatch(fetchFullAgent(args.orchestratorId)).unwrap();
+      await dispatch(fetchFullAgent(args.conductorId)).unwrap();
     } catch {
       /* non-fatal — the write succeeded; Redux refresh is best-effort */
     }

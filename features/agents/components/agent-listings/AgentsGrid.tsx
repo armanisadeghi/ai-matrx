@@ -954,13 +954,13 @@ export function AgentsGrid() {
               />
             )}
 
-            {/* Orchestras (orchestrators) */}
+            {/* Orchestras (Conductors) */}
             <Link href="/agents/orchestras">
               <Button
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 rounded-full matrx-glass-thin-border hover:shadow-xl shrink-0"
-                title="Orchestras — orchestrators presiding over teams of agents"
+                title="Orchestras — Conductors presiding over teams of agents"
               >
                 <Network className="h-4 w-4" />
                 Orchestras

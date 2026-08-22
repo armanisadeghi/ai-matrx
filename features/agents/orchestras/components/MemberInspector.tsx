@@ -31,13 +31,13 @@ import {
 import type { OrchestraMember } from "../types";
 
 export interface MemberInspectorProps {
-  orchestratorId: string;
+  conductorId: string;
   member: OrchestraMember;
   accent: OrchestraAccent;
   onClose: () => void;
 }
 
-export function MemberInspector({ orchestratorId, member, accent, onClose }: MemberInspectorProps) {
+export function MemberInspector({ conductorId, member, accent, onClose }: MemberInspectorProps) {
   const dispatch = useAppDispatch();
   const a = accentClasses(accent);
   const agent = useAppSelector((s) => selectAgentById(s, member.agentId));
@@ -62,7 +62,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
     setSaving(true);
     const res = await dispatch(
       saveMemberMeta({
-        orchestratorId,
+        conductorId,
         agentId: member.agentId,
         meta: {
           roleTitle: roleTitle.trim(),
@@ -140,7 +140,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           />
         </div>
 
-        {/* Designated member (C-26): runtime-enforced — the orchestrator cannot
+        {/* Designated member (C-26): runtime-enforced — the conductor cannot
             finish cleanly without successfully consulting this member. */}
         <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-background p-3">
           <div className="min-w-0 space-y-0.5">
@@ -148,7 +148,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
               Must be consulted
             </label>
             <p className="text-[11px] leading-snug text-muted-foreground">
-              The orchestrator has to bring this member in before it can finish.
+              The conductor has to bring this member in before it can finish.
               If it tries to skip them, it is corrected automatically — and a run
               that still skips them is never marked complete.
             </p>
@@ -220,7 +220,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           size="sm"
           className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => {
-            dispatch(removeAgentFromOrchestra({ orchestratorId, agentId: member.agentId }));
+            dispatch(removeAgentFromOrchestra({ conductorId, agentId: member.agentId }));
             onClose();
           }}
         >

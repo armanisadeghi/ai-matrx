@@ -1,6 +1,6 @@
 // features/agents/orchestras/components/OrchestraMemberGrid.tsx
 //
-// The "Grid" builder view — a non-sortable orchestrator hub tile followed by an
+// The "Grid" builder view — a non-sortable conductor hub tile followed by an
 // ordered, drag-to-reorder list of member role cards. A keyboard- and
 // touch-friendly alternative to the spatial canvas; reordering persists each
 // member's position.
@@ -37,29 +37,29 @@ import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
 import type { OrchestraMember } from "../types";
 
-// The hub tile — the Grid twin of the canvas OrchestratorNode. NOT a member and
+// The hub tile — the Grid twin of the canvas ConductorNode. NOT a member and
 // NOT sortable: it renders above the sortable list, outside the DndContext.
-// Same affordances as the canvas hub: Quick look + open the OrchestratorInspector
+// Same affordances as the canvas hub: Quick look + open the ConductorInspector
 // (the whole tile is also clickable — hover toolbars don't exist on touch, and
 // Grid IS the mobile builder).
-function OrchestratorTile({
-  orchestratorId,
+function ConductorTile({
+  conductorId,
   accent,
   memberCount,
   onOpen,
 }: {
-  orchestratorId: string;
+  conductorId: string;
   accent: OrchestraAccent;
   memberCount: number;
   onOpen: () => void;
 }) {
-  const agent = useAppSelector((s) => selectAgentById(s, orchestratorId));
+  const agent = useAppSelector((s) => selectAgentById(s, conductorId));
   const a = accentClasses(accent);
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label="Orchestrator details"
+      aria-label="Conductor details"
       onClick={onOpen}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -75,20 +75,20 @@ function OrchestratorTile({
     >
       {/* Hover toolbar — mirrors the canvas hub node. */}
       <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/orch:opacity-100">
-        <AgentPeekButton agentId={orchestratorId} />
-        {/* The tile's click opens the inspector, so the orchestrator AGENT
+        <AgentPeekButton agentId={conductorId} />
+        {/* The tile's click opens the inspector, so the conductor AGENT
             itself gets its own door here rather than being peek-only. */}
         <EntityDoorControls
           token="agent"
-          id={orchestratorId}
+          id={conductorId}
           name={agent?.name ?? null}
           disablePeek
           alwaysShowActions
         />
         <button
           type="button"
-          aria-label="Orchestrator details"
-          title="Orchestrator details"
+          aria-label="Conductor details"
+          title="Conductor details"
           onClick={(e) => {
             e.stopPropagation();
             onOpen();
@@ -104,10 +104,10 @@ function OrchestratorTile({
         </div>
         <div className="min-w-0 flex-1">
           <div className={cn("text-[10px] font-bold uppercase tracking-wide", a.text)}>
-            Orchestrator
+            Conductor
           </div>
           <div className="truncate text-sm font-semibold text-foreground" title={agent?.name}>
-            {agent?.name ?? "Orchestrator"}
+            {agent?.name ?? "Conductor"}
           </div>
         </div>
       </div>
@@ -123,13 +123,13 @@ function OrchestratorTile({
 }
 
 function SortableRow({
-  orchestratorId,
+  conductorId,
   member,
   accent,
   index,
   onEdit,
 }: {
-  orchestratorId: string;
+  conductorId: string;
   member: OrchestraMember;
   accent: OrchestraAccent;
   index: number;
@@ -175,24 +175,24 @@ function SortableRow({
         variant="tile"
         showDragHandle
         onEdit={() => onEdit(member.agentId)}
-        onRemove={() => dispatch(removeAgentFromOrchestra({ orchestratorId, agentId: member.agentId }))}
+        onRemove={() => dispatch(removeAgentFromOrchestra({ conductorId, agentId: member.agentId }))}
       />
     </div>
   );
 }
 
 export function OrchestraMemberGrid({
-  orchestratorId,
+  conductorId,
   members,
   accent,
   onEdit,
-  onOpenOrchestrator,
+  onOpenConductor,
 }: {
-  orchestratorId: string;
+  conductorId: string;
   members: OrchestraMember[];
   accent: OrchestraAccent;
   onEdit: (agentId: string) => void;
-  onOpenOrchestrator: () => void;
+  onOpenConductor: () => void;
 }) {
   const dispatch = useAppDispatch();
   const sensors = useSensors(
@@ -207,16 +207,16 @@ export function OrchestraMemberGrid({
     const from = ids.indexOf(String(active.id));
     const to = ids.indexOf(String(over.id));
     if (from === -1 || to === -1) return;
-    dispatch(reorderOrchestraMembers({ orchestratorId, orderedAgentIds: arrayMove(ids, from, to) }));
+    dispatch(reorderOrchestraMembers({ conductorId, orderedAgentIds: arrayMove(ids, from, to) }));
   };
 
   return (
     <div className="mx-auto max-w-2xl space-y-3 p-4">
-      <OrchestratorTile
-        orchestratorId={orchestratorId}
+      <ConductorTile
+        conductorId={conductorId}
         accent={accent}
         memberCount={members.length}
-        onOpen={onOpenOrchestrator}
+        onOpen={onOpenConductor}
       />
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={members.map((m) => m.agentId)} strategy={verticalListSortingStrategy}>
@@ -224,7 +224,7 @@ export function OrchestraMemberGrid({
             {members.map((m, i) => (
               <SortableRow
                 key={m.agentId}
-                orchestratorId={orchestratorId}
+                conductorId={conductorId}
                 member={m}
                 accent={accent}
                 index={i}

@@ -40,10 +40,10 @@ export function AddToOrchestraDialog({
   const { orchestras, status } = useOrchestrasList();
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const add = async (orchestratorId: string, name: string) => {
-    setBusyId(orchestratorId);
+  const add = async (conductorId: string, name: string) => {
+    setBusyId(conductorId);
     const res = await dispatch(
-      addAgentToOrchestra({ orchestratorId, agentId }),
+      addAgentToOrchestra({ conductorId, agentId }),
     );
     setBusyId(null);
     if (res.ok) {
@@ -75,20 +75,20 @@ export function AddToOrchestraDialog({
         ) : (
           <div className="max-h-80 space-y-0.5 overflow-y-auto">
             {orchestras.map((orchestra) => {
-              // An Orchestra IS its orchestrator agent — `orchestratorId` is the id,
-              // and `label` overrides the orchestrator's name when authored.
+              // An Orchestra IS its conductor agent — `conductorId` is the id,
+              // and `label` overrides the conductor's name when authored.
               const orchestraLabel = orchestra.label ?? orchestra.name;
               return (
-                <div key={orchestra.orchestratorId} className="group relative">
+                <div key={orchestra.conductorId} className="group relative">
                   <button
                     type="button"
                     disabled={busyId !== null}
                     onClick={() =>
-                      void add(orchestra.orchestratorId, orchestraLabel)
+                      void add(orchestra.conductorId, orchestraLabel)
                     }
                     className="flex w-full items-center gap-2 rounded-md px-2 py-2 pr-16 text-left text-sm hover:bg-muted disabled:opacity-50"
                   >
-                    {busyId === orchestra.orchestratorId ? (
+                    {busyId === orchestra.conductorId ? (
                       <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                     ) : (
                       <Network className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -98,7 +98,7 @@ export function AddToOrchestraDialog({
                       {orchestra.memberCount}
                     </span>
                   </button>
-                  {/* THE DOOR LAW: an Orchestra IS its orchestrator agent, and the user
+                  {/* THE DOOR LAW: an Orchestra IS its conductor agent, and the user
                       is being asked to pick one with nothing but a label to go
                       on. Doors are an absolutely-positioned SIBLING because the
                       row is a `<button>` whose click means "attach" — a nested
@@ -109,7 +109,7 @@ export function AddToOrchestraDialog({
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
                     <EntityDoorControls
                       token="agent"
-                      id={orchestra.orchestratorId}
+                      id={orchestra.conductorId}
                       name={orchestraLabel}
                       alwaysShowActions
                     />

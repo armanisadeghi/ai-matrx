@@ -161,7 +161,7 @@ export type RequestInitiation = "user" | "auto";
  *                  scribe, runner, agent-apps, notes…). Must NEVER be split /
  *                  orphaned. This is the safe default (undefined ⇒ continuous).
  *   "iterate"    — a disposable "run the same prompt again against a fresh
- *                  call" surface (builder/tester, orchestrator generator,
+ *                  call" surface (builder/tester, Conductor generator,
  *                  programmatic extraction). Here the auto-clear SPLIT is the
  *                  whole point: each send mints a fresh historyless id.
  *

@@ -44,19 +44,19 @@ import type { OrchestraConfig } from "../types";
 export interface OrchestraSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  orchestratorId: string;
+  conductorId: string;
   label: string | null;
   config: OrchestraConfig;
-  orchestratorName: string;
+  conductorName: string;
   onDeleted: () => void;
 }
 
 function SettingsForm({
   onOpenChange,
-  orchestratorId,
+  conductorId,
   label,
   config,
-  orchestratorName,
+  conductorName,
   onDeleted,
 }: Omit<OrchestraSettingsDialogProps, "open">) {
   const dispatch = useAppDispatch();
@@ -77,7 +77,7 @@ function SettingsForm({
     setSaving(true);
     const res = await dispatch(
       saveOrchestraConfig({
-        orchestratorId,
+        conductorId,
         label: name.trim() || null,
         config: {
           ...config,
@@ -106,7 +106,7 @@ function SettingsForm({
       variant: "destructive",
     });
     if (!ok) return;
-    const res = await dispatch(deleteOrchestra({ orchestratorId }));
+    const res = await dispatch(deleteOrchestra({ conductorId }));
     if (!res.ok) {
       toast.error(res.error ?? "Could not delete the Orchestra.");
       return;
@@ -126,7 +126,7 @@ function SettingsForm({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={`Defaults to "${orchestratorName}"`}
+            placeholder={`Defaults to "${conductorName}"`}
           />
         </div>
         <div className="space-y-1.5">

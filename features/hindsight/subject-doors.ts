@@ -42,14 +42,14 @@ export function toolHref(toolId: string): string {
 }
 
 /**
- * An Orchestra has no table — it IS the orchestrator agent plus its member
- * edges — so its identity is the orchestrator's id and its door is the
+ * An Orchestra has no table — it IS the conductor agent plus its member
+ * edges — so its identity is the conductor's id and its door is the
  * Orchestra builder, which is where the roster the reviewer read actually
  * lives. Opening the plain agent page instead would hide the members, which
  * are the whole reason this subject kind exists.
  */
-export function orchestraHref(orchestratorId: string): string {
-  return `/agents/orchestras/${orchestratorId}`;
+export function orchestraHref(conductorId: string): string {
+  return `/agents/orchestras/${conductorId}`;
 }
 
 export function workflowHref(definitionId: string): string {

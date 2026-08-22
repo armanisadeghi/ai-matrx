@@ -36,7 +36,7 @@ const AgentRunnerPage = dynamic(
 );
 
 export interface OrchestraRunPanelProps {
-  orchestratorId: string;
+  conductorId: string;
   /** The builder's run surface key — MUST match what OrchestraBuilder observes. */
   surfaceKey: string;
   accent: OrchestraAccent;
@@ -47,7 +47,7 @@ export interface OrchestraRunPanelProps {
 }
 
 export function OrchestraRunPanel({
-  orchestratorId,
+  conductorId,
   surfaceKey,
   accent,
   conversationId,
@@ -55,8 +55,8 @@ export function OrchestraRunPanel({
 }: OrchestraRunPanelProps) {
   const a = accentClasses(accent);
   const fullRunnerHref = conversationId
-    ? `/agents/${orchestratorId}/run?conversationId=${conversationId}`
-    : `/agents/${orchestratorId}/run`;
+    ? `/agents/${conductorId}/run?conversationId=${conversationId}`
+    : `/agents/${conductorId}/run`;
 
   return (
     <div className="flex h-full w-[24rem] shrink-0 flex-col border-l border-border bg-card xl:w-[28rem]">
@@ -99,7 +99,7 @@ export function OrchestraRunPanel({
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <AgentRunnerPage
-          agentId={orchestratorId}
+          agentId={conductorId}
           surfaceKey={surfaceKey}
           sourceFeature="agent-runner"
           backHref="/agents/orchestras"

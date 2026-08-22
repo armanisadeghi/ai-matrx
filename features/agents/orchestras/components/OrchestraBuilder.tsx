@@ -1,8 +1,8 @@
 // features/agents/orchestras/components/OrchestraBuilder.tsx
 //
-// The /agents/orchestras/[orchestratorId] builder shell. Composes the agent library
+// The /agents/orchestras/[conductorId] builder shell. Composes the agent library
 // rail, the spatial canvas (or sortable grid), and the member inspector around
-// one orchestrator. Owns view + selection + settings; all data mutation flows
+// one conductor. Owns view + selection + settings; all data mutation flows
 // through the orchestras thunks.
 
 "use client";
@@ -36,15 +36,15 @@ import {
 import { useOrchestra } from "../hooks/useOrchestra";
 import { useOrchestrasList } from "../hooks/useOrchestrasList";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
-import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatus";
+import { useConductorPromptStatus } from "../hooks/useConductorPromptStatus";
 import {
   addAgentToOrchestra,
   createOrchestra,
 } from "@/features/agents/redux/orchestras/thunks";
 import {
-  enableOrchestratorSync,
-  syncOrchestratorPrompt,
-} from "../orchestrator/thunks";
+  enableConductorSync,
+  syncConductorPrompt,
+} from "../conductor/thunks";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { selectDisplayConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { OrchestraRunStatusContext } from "../run/OrchestraRunStatusContext";
@@ -53,7 +53,7 @@ import { AgentLibraryRail } from "./AgentLibraryRail";
 import OrchestraBuilderCanvas from "./OrchestraBuilderCanvas";
 import { OrchestraMemberGrid } from "./OrchestraMemberGrid";
 import { MemberInspector } from "./MemberInspector";
-import { OrchestratorInspector } from "./OrchestratorInspector";
+import { ConductorInspector } from "./ConductorInspector";
 import { OrchestraSettingsDialog } from "./OrchestraSettingsDialog";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT } from "../constants";
@@ -66,16 +66,16 @@ const OrchestraRunPanel = dynamic(
 );
 
 export function OrchestraBuilder({
-  orchestratorId,
+  conductorId,
 }: {
-  orchestratorId: string;
+  conductorId: string;
 }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { members, config, label, exists, status } =
-    useOrchestra(orchestratorId);
-  const orchestrator = useAppSelector((s) =>
-    selectAgentById(s, orchestratorId),
+    useOrchestra(conductorId);
+  const conductor = useAppSelector((s) =>
+    selectAgentById(s, conductorId),
   );
   const accent = config.accent ?? DEFAULT_ORCHESTRA_ACCENT;
   const a = accentClasses(accent);
@@ -84,7 +84,7 @@ export function OrchestraBuilder({
   // its mobile drawer) can drive it like any other sub-view.
   const searchParams = useSearchParams();
   const view = searchParams.get("view") === "grid" ? "grid" : "canvas";
-  const basePath = `/agents/orchestras/${orchestratorId}`;
+  const basePath = `/agents/orchestras/${conductorId}`;
 
   // The library rail is a static column on desktop and a slide-over below md —
   // 16rem of fixed rail on a phone left the canvas unusable. `null` = follow the
@@ -94,25 +94,25 @@ export function OrchestraBuilder({
   const libraryOpen = libraryOverride ?? !isMobile;
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [orchestratorOpen, setOrchestratorOpen] = useState(false);
+  const [conductorOpen, setConductorOpen] = useState(false);
   // The embedded run experience (desktop): AgentRunnerPage co-mounted with the
   // canvas so member nodes light up live. Mutually exclusive with the member /
-  // orchestrator inspectors — one right-side panel at a time.
+  // conductor inspectors — one right-side panel at a time.
   const [runOpen, setRunOpen] = useState(false);
-  // The right-side panel shows a member, the orchestrator, or the run — never two.
+  // The right-side panel shows a member, the conductor, or the run — never two.
   const openMember = (agentId: string) => {
-    setOrchestratorOpen(false);
+    setConductorOpen(false);
     setRunOpen(false);
     setEditingId(agentId);
   };
-  const openOrchestrator = () => {
+  const openConductor = () => {
     setEditingId(null);
     setRunOpen(false);
-    setOrchestratorOpen(true);
+    setConductorOpen(true);
   };
   const openRun = () => {
     setEditingId(null);
-    setOrchestratorOpen(false);
+    setConductorOpen(false);
     setRunOpen(true);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -126,14 +126,14 @@ export function OrchestraBuilder({
   const { orchestras } = useOrchestrasList();
 
   const memberIds = useMemo(() => members.map((m) => m.agentId), [members]);
-  const promptStatus = useOrchestratorPromptStatus(orchestratorId, memberIds);
+  const promptStatus = useConductorPromptStatus(conductorId, memberIds);
 
   // ── live member highlight ──────────────────────────────────────────────
   // The embedded runner registers under this surfaceKey; the focus registry is
   // the canonical way to observe its active conversation (no runner fork).
   // Observed even while the panel is closed — a still-streaming run keeps
   // lighting the canvas after the user closes the panel (retainOnUnmount).
-  const runSurfaceKey = `orchestra-builder:${orchestratorId}`;
+  const runSurfaceKey = `orchestra-builder:${conductorId}`;
   const runConversationId = useAppSelector(
     selectDisplayConversation(runSurfaceKey),
   );
@@ -143,38 +143,38 @@ export function OrchestraBuilder({
   const editingMember = editingId
     ? (members.find((m) => m.agentId === editingId) ?? null)
     : null;
-  const title = label?.trim() || orchestrator?.name || "Orchestra";
+  const title = label?.trim() || conductor?.name || "Orchestra";
 
   const handleAdd = (agentId: string) =>
-    dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
+    dispatch(addAgentToOrchestra({ conductorId, agentId }));
 
   const handleSyncPrompt = async () => {
     setSyncing(true);
     const res = await dispatch(
-      syncOrchestratorPrompt({ orchestratorId, memberIds }),
+      syncConductorPrompt({ conductorId, memberIds }),
     );
     setSyncing(false);
     if (res.ok) {
       const updated = res.membersUpdated ?? 0;
       toast.success(
         updated > 0
-          ? `Synced — updated the role for ${updated} agent${updated === 1 ? "" : "s"} and refreshed the orchestrator listing.`
-          : "Synced — member roles confirmed and the orchestrator listing refreshed.",
+          ? `Synced — updated the role for ${updated} agent${updated === 1 ? "" : "s"} and refreshed the conductor listing.`
+          : "Synced — member roles confirmed and the conductor listing refreshed.",
       );
-    } else toast.error(res.error ?? "Could not sync the orchestrator prompt.");
+    } else toast.error(res.error ?? "Could not sync the conductor prompt.");
   };
 
-  // The orchestrator's prompt has no <available_agents> section, so syncing is
+  // The conductor's prompt has no <available_agents> section, so syncing is
   // impossible. One click adds the section, then opens the System Instructions
   // editor (only that tab) so the user can see/adjust it. After that the normal
   // "Sync agent listings" action appears.
   const handleEnableSync = async () => {
     setEnablingSync(true);
-    const res = await dispatch(enableOrchestratorSync({ orchestratorId }));
+    const res = await dispatch(enableConductorSync({ conductorId }));
     setEnablingSync(false);
     if (res.ok) {
       openAgentContentWindow({
-        initialAgentId: orchestratorId,
+        initialAgentId: conductorId,
         initialTab: "system",
         tabs: ["system"],
       });
@@ -183,7 +183,7 @@ export function OrchestraBuilder({
       );
     } else {
       toast.error(
-        res.error ?? "Could not set up syncing for this orchestrator.",
+        res.error ?? "Could not set up syncing for this conductor.",
       );
     }
   };
@@ -200,7 +200,7 @@ export function OrchestraBuilder({
     );
   }
 
-  // The agent is not (yet) an orchestrator — offer to make it one.
+  // The agent is not (yet) an conductor — offer to make it one.
   if (status === "ready" && !exists && members.length === 0) {
     return (
       <div className="bg-textured flex h-full flex-col items-center justify-center p-6 pt-[var(--shell-header-h)] text-center">
@@ -213,7 +213,7 @@ export function OrchestraBuilder({
           <Network className="h-7 w-7" />
         </div>
         <h2 className="text-base font-semibold text-foreground">
-          Make {orchestrator?.name ?? "this agent"} an orchestrator?
+          Make {conductor?.name ?? "this agent"} an conductor?
         </h2>
         <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
           It will preside over an Orchestra you assemble — each filling a gap in
@@ -231,7 +231,7 @@ export function OrchestraBuilder({
             onClick={async () => {
               setCreating(true);
               const res = await dispatch(
-                createOrchestra({ orchestratorId, config: { accent } }),
+                createOrchestra({ conductorId, config: { accent } }),
               );
               setCreating(false);
               if (!res.ok) router.push("/agents/orchestras");
@@ -261,7 +261,7 @@ export function OrchestraBuilder({
           label: "Run",
           icon: Play,
           primary: true,
-          href: `/agents/${orchestratorId}/run`,
+          href: `/agents/${conductorId}/run`,
         }
       : {
           label: runOpen ? "Hide run panel" : "Run",
@@ -269,7 +269,7 @@ export function OrchestraBuilder({
           primary: !runOpen,
           onPress: () => (runOpen ? setRunOpen(false) : openRun()),
         },
-    // TEMPLATE orchestrators (prompt HAS the <available_agents> section our
+    // TEMPLATE conductors (prompt HAS the <available_agents> section our
     // system fills) → the Sync action; out-of-sync promotes it to a solid pill.
     ...(promptStatus.isTemplate
       ? [
@@ -298,9 +298,9 @@ export function OrchestraBuilder({
         ]
       : []),
     {
-      label: "Orchestrator",
+      label: "Conductor",
       icon: ExternalLink,
-      href: `/agents/${orchestratorId}/build`,
+      href: `/agents/${conductorId}/build`,
       newTab: true,
     },
     {
@@ -317,8 +317,8 @@ export function OrchestraBuilder({
         entityLabel={title}
         entityOptions={orchestras.map((s) => ({
           label: s.label?.trim() || s.name,
-          href: `/agents/orchestras/${s.orchestratorId}`,
-          active: s.orchestratorId === orchestratorId,
+          href: `/agents/orchestras/${s.conductorId}`,
+          active: s.conductorId === conductorId,
         }))}
         modes={[
           { name: "Canvas", href: basePath, icon: Network },
@@ -349,7 +349,7 @@ export function OrchestraBuilder({
             )}
           >
             <AgentLibraryRail
-              orchestratorId={orchestratorId}
+              conductorId={conductorId}
               memberIds={memberIds}
               onAdd={handleAdd}
             />
@@ -360,22 +360,22 @@ export function OrchestraBuilder({
           <OrchestraRunStatusContext.Provider value={runStatus}>
             {view === "canvas" ? (
               <OrchestraBuilderCanvas
-                orchestratorId={orchestratorId}
+                conductorId={conductorId}
                 accent={accent}
                 members={members}
                 config={config}
                 onEditMember={openMember}
-                onOpenOrchestrator={openOrchestrator}
+                onOpenConductor={openConductor}
               />
             ) : (
               <div className="h-full overflow-y-auto">
                 {members.length === 0 ? null : (
                   <OrchestraMemberGrid
-                    orchestratorId={orchestratorId}
+                    conductorId={conductorId}
                     members={members}
                     accent={accent}
                     onEdit={openMember}
-                    onOpenOrchestrator={openOrchestrator}
+                    onOpenConductor={openConductor}
                   />
                 )}
               </div>
@@ -398,24 +398,24 @@ export function OrchestraBuilder({
         {editingMember && (
           <MemberInspector
             key={editingMember.agentId}
-            orchestratorId={orchestratorId}
+            conductorId={conductorId}
             member={editingMember}
             accent={accent}
             onClose={() => setEditingId(null)}
           />
         )}
 
-        {orchestratorOpen && (
-          <OrchestratorInspector
-            orchestratorId={orchestratorId}
+        {conductorOpen && (
+          <ConductorInspector
+            conductorId={conductorId}
             accent={accent}
-            onClose={() => setOrchestratorOpen(false)}
+            onClose={() => setConductorOpen(false)}
           />
         )}
 
         {runOpen && !isMobile && (
           <OrchestraRunPanel
-            orchestratorId={orchestratorId}
+            conductorId={conductorId}
             surfaceKey={runSurfaceKey}
             accent={accent}
             conversationId={runConversationId}
@@ -427,10 +427,10 @@ export function OrchestraBuilder({
       <OrchestraSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        orchestratorId={orchestratorId}
+        conductorId={conductorId}
         label={label}
         config={config}
-        orchestratorName={orchestrator?.name ?? "this agent"}
+        conductorName={conductor?.name ?? "this agent"}
         onDeleted={() => router.push("/agents/orchestras")}
       />
     </div>

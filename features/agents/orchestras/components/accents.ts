@@ -1,7 +1,7 @@
 // features/agents/orchestras/components/accents.ts
 //
 // Resolves an Orchestra's `accent` key into Tailwind class fragments for its identity
-// surfaces (orchestrator glyph, card header gradient, member ring, chips). These
+// surfaces (conductor glyph, card header gradient, member ring, chips). These
 // are decorative IDENTITY colors (intentionally vivid — Orchestras should feel
 // distinct), kept dark-mode-aware. Semantic surface tokens (bg-card etc.) still
 // own structure; accents only tint identity.
@@ -9,7 +9,7 @@
 import { DEFAULT_ORCHESTRA_ACCENT, type OrchestraAccent } from "../constants";
 
 export interface AccentClasses {
-  /** Filled glyph square (orchestrator node + Orchestra card icon). */
+  /** Filled glyph square (conductor node + Orchestra card icon). */
   glyph: string;
   /** Soft tinted surface (member node header, chips). */
   soft: string;

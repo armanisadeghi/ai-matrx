@@ -36934,8 +36934,10 @@ export type Database = {
       orchestra_list: {
         Args: never
         Returns: {
+          conductor_id: string
           created_at: string
           description: string
+          label: string
           member_count: number
           metadata: Json
           name: string

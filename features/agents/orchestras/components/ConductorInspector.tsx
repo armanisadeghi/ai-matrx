@@ -1,9 +1,9 @@
-// features/agents/orchestras/components/OrchestratorInspector.tsx
+// features/agents/orchestras/components/ConductorInspector.tsx
 //
-// Right-side inspector for the ORCHESTRATOR itself — the mirror of
+// Right-side inspector for the CONDUCTOR itself — the mirror of
 // MemberInspector for the hub node. Shows the same "core items" a member gets
 // (a Quick-look snapshot + the agent's declared inputs/outputs via the shared
-// AgentIODetails), plus the one thing unique to an orchestrator: direct access
+// AgentIODetails), plus the one thing unique to an conductor: direct access
 // to its SYSTEM PROMPT, which our features can auto-generate. "View system
 // prompt" opens the Agent Advanced Editor restricted to the System Instructions
 // tab (the same single-tab panel the "Enable sync" flow uses).
@@ -23,24 +23,24 @@ import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
 
-export interface OrchestratorInspectorProps {
-  orchestratorId: string;
+export interface ConductorInspectorProps {
+  conductorId: string;
   accent: OrchestraAccent;
   onClose: () => void;
 }
 
-export function OrchestratorInspector({
-  orchestratorId,
+export function ConductorInspector({
+  conductorId,
   accent,
   onClose,
-}: OrchestratorInspectorProps) {
+}: ConductorInspectorProps) {
   const a = accentClasses(accent);
-  const agent = useAppSelector((s) => selectAgentById(s, orchestratorId));
+  const agent = useAppSelector((s) => selectAgentById(s, conductorId));
   const openAgentContentWindow = useOpenAgentContentWindow();
 
   const openSystemPrompt = () =>
     openAgentContentWindow({
-      initialAgentId: orchestratorId,
+      initialAgentId: conductorId,
       initialTab: "system",
       tabs: ["system"],
     });
@@ -52,20 +52,20 @@ export function OrchestratorInspector({
           <Network className="h-4 w-4" />
         </div>
         <div className="group/entity-ref min-w-0 flex-1">
-          {/* THE DOOR LAW: the orchestrator is an agent with a route — name it
+          {/* THE DOOR LAW: the conductor is an agent with a route — name it
               and open it. An unloaded row shows its id, never a made-up label. */}
           <div className="truncate text-sm font-semibold text-foreground">
             <EntityRef
               token="agent"
-              id={orchestratorId}
+              id={conductorId}
               name={agent?.name ?? null}
               showIcon={false}
               disablePeek
             />
           </div>
-          <div className="text-[11px] text-muted-foreground">Orchestrator</div>
+          <div className="text-[11px] text-muted-foreground">Conductor</div>
         </div>
-        <AgentPeekButton agentId={orchestratorId} />
+        <AgentPeekButton agentId={conductorId} />
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
           <X className="h-4 w-4" />
         </Button>
@@ -79,7 +79,7 @@ export function OrchestratorInspector({
           </div>
         )}
 
-        {/* Unique to the orchestrator: view/edit the system prompt (auto-generatable). */}
+        {/* Unique to the conductor: view/edit the system prompt (auto-generatable). */}
         <div className="space-y-1.5">
           <div className="text-xs font-medium text-muted-foreground">System prompt</div>
           <Button
@@ -91,21 +91,21 @@ export function OrchestratorInspector({
             <FileText className="h-3.5 w-3.5" /> View system prompt
           </Button>
           <p className="text-[11px] leading-snug text-muted-foreground">
-            The orchestrator&apos;s instructions — including its auto-generated
+            The conductor&apos;s instructions — including its auto-generated
             <span className="whitespace-nowrap"> &lt;available_agents&gt;</span> listing.
           </p>
         </div>
 
-        {/* Same core I/O detail members get — what the orchestrator consumes + produces. */}
-        <AgentIODetails agentId={orchestratorId} accent={accent} />
+        {/* Same core I/O detail members get — what the conductor consumes + produces. */}
+        <AgentIODetails agentId={conductorId} accent={accent} />
 
         <div className="flex flex-wrap gap-1.5">
-          <Link href={`/agents/${orchestratorId}/build`} target="_blank">
+          <Link href={`/agents/${conductorId}/build`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" /> Open
             </Button>
           </Link>
-          <Link href={`/agents/${orchestratorId}/run`} target="_blank">
+          <Link href={`/agents/${conductorId}/run`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <Play className="h-3.5 w-3.5" /> Run
             </Button>

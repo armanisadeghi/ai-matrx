@@ -385,7 +385,7 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
       // MATRX-EXCEPTION: RenderBlockPayload.data is the generated OpenAPI
       // contract's open bag; UnifiedImageBlock has no index signature to
       // overlap with Record<string, unknown>, so the two-step cast is
-      // required (same as the OrchestratorNode-style casts elsewhere).
+      // required (same as the ConductorNode-style casts elsewhere).
       return {
         blockId: newId("db_image_output"),
         blockIndex: index,

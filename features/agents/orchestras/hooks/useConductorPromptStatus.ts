@@ -1,6 +1,6 @@
-// features/agents/orchestras/hooks/useOrchestratorPromptStatus.ts
+// features/agents/orchestras/hooks/useConductorPromptStatus.ts
 //
-// Detects whether an orchestrator is TEMPLATE-BASED (its system prompt has the
+// Detects whether an conductor is TEMPLATE-BASED (its system prompt has the
 // `<available_agents>` section our automated system fills) and whether that section
 // is OUT OF SYNC with the Orchestra's current members (so the builder can surface a
 // "Sync agent listings" action only when it's meaningful, and flag when it's stale).
@@ -14,13 +14,13 @@ import {
   selectAgentSystemMessage,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { AVAILABLE_AGENTS_RE } from "../orchestrator/constants";
+import { AVAILABLE_AGENTS_RE } from "../conductor/constants";
 
 const UUID_RE =
   /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const SECTION_RE = /<available_agents>([\s\S]*?)<\/available_agents>/i;
 
-export interface OrchestratorPromptStatus {
+export interface ConductorPromptStatus {
   ready: boolean;
   /** The prompt has the `<available_agents>` markers → our system can auto-fill it. */
   isTemplate: boolean;
@@ -28,22 +28,22 @@ export interface OrchestratorPromptStatus {
   outOfSync: boolean;
 }
 
-export function useOrchestratorPromptStatus(
-  orchestratorId: string,
+export function useConductorPromptStatus(
+  conductorId: string,
   memberIds: string[],
-): OrchestratorPromptStatus {
+): ConductorPromptStatus {
   const dispatch = useAppDispatch();
   const ready = useAppSelector((s) =>
-    selectAgentReadyForBuilder(s, orchestratorId),
+    selectAgentReadyForBuilder(s, conductorId),
   );
   const sysMsg = useAppSelector((s) =>
-    selectAgentSystemMessage(s, orchestratorId),
+    selectAgentSystemMessage(s, conductorId),
   );
 
   // Load the full definition once (guarded on readiness) — the list row has no messages.
   useEffect(() => {
-    if (orchestratorId && !ready) dispatch(fetchFullAgent(orchestratorId));
-  }, [orchestratorId, ready, dispatch]);
+    if (conductorId && !ready) dispatch(fetchFullAgent(conductorId));
+  }, [conductorId, ready, dispatch]);
 
   return useMemo(() => {
     const block = sysMsg?.content?.find((b) => b.type === "text");

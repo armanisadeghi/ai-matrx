@@ -16,13 +16,13 @@ import type { OrchestraConfig, OrchestraMember } from "../types";
 /** Props for the Orchestra builder canvas. Defined in the shell so consumers stay typed
  *  without pulling the heavy `…Impl` (React Flow) module into their graph. */
 export interface OrchestraBuilderCanvasProps {
-  orchestratorId: string;
+  conductorId: string;
   accent: OrchestraAccent;
   members: OrchestraMember[];
   config: OrchestraConfig;
   onEditMember: (agentId: string) => void;
-  /** Open the orchestrator inspector (snapshot + details + system prompt). */
-  onOpenOrchestrator: () => void;
+  /** Open the conductor inspector (snapshot + details + system prompt). */
+  onOpenConductor: () => void;
 }
 
 const OrchestraBuilderCanvas = dynamic(

@@ -1,7 +1,7 @@
 // features/agents/orchestras/redux/selectors.ts
 //
 // Memoized selectors for the `orchestras` slice. Per-set selectors are factories
-// (bind once per orchestratorId via useMemo), mirroring the agent-consumers
+// (bind once per conductorId via useMemo), mirroring the agent-consumers
 // `makeSelect*` convention.
 
 import { createSelector } from "@reduxjs/toolkit";
@@ -40,35 +40,35 @@ const EMPTY_ENTRY: OrchestraDetailEntry = {
   error: null,
 };
 
-/** Per-set detail entry (members + config + status). Bind once per orchestratorId. */
-export function makeSelectOrchestraEntry(orchestratorId: string) {
+/** Per-set detail entry (members + config + status). Bind once per conductorId. */
+export function makeSelectOrchestraEntry(conductorId: string) {
   return createSelector(
     selectOrchestras,
-    (s): OrchestraDetailEntry => s.byId[orchestratorId] ?? EMPTY_ENTRY,
+    (s): OrchestraDetailEntry => s.byId[conductorId] ?? EMPTY_ENTRY,
   );
 }
 
 const EMPTY_MEMBERS: OrchestraMember[] = [];
 
-/** Ordered members of a set. Bind once per orchestratorId. */
-export function makeSelectOrchestraMembers(orchestratorId: string) {
+/** Ordered members of a set. Bind once per conductorId. */
+export function makeSelectOrchestraMembers(conductorId: string) {
   return createSelector(
     selectOrchestras,
-    (s): OrchestraMember[] => s.byId[orchestratorId]?.members ?? EMPTY_MEMBERS,
+    (s): OrchestraMember[] => s.byId[conductorId]?.members ?? EMPTY_MEMBERS,
   );
 }
 
-/** Set of member agent ids for fast membership checks. Bind once per orchestratorId. */
-export function makeSelectOrchestraMemberIds(orchestratorId: string) {
-  return createSelector(makeSelectOrchestraMembers(orchestratorId), (members) =>
+/** Set of member agent ids for fast membership checks. Bind once per conductorId. */
+export function makeSelectOrchestraMemberIds(conductorId: string) {
+  return createSelector(makeSelectOrchestraMembers(conductorId), (members) =>
     members.map((m) => m.agentId),
   );
 }
 
-/** Whether a given set is loaded + ready. Bind once per orchestratorId. */
-export function makeSelectOrchestraStatus(orchestratorId: string) {
+/** Whether a given set is loaded + ready. Bind once per conductorId. */
+export function makeSelectOrchestraStatus(conductorId: string) {
   return createSelector(
     selectOrchestras,
-    (s) => s.byId[orchestratorId]?.status ?? "idle",
+    (s) => s.byId[conductorId]?.status ?? "idle",
   );
 }

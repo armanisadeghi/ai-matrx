@@ -93,20 +93,20 @@ export function fetchOrchestras(opts?: {
 
 /** Load one Orchestra's members + config. Skips when already ready unless `force`. */
 export function loadOrchestra(
-  orchestratorId: string,
+  conductorId: string,
   opts?: { force?: boolean },
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    if (!orchestratorId) return;
-    const entry = getState().orchestras.byId[orchestratorId];
+    if (!conductorId) return;
+    const entry = getState().orchestras.byId[conductorId];
     if (!opts?.force && entry?.status === "ready") return;
 
-    dispatch(orchestrasActions.detailPending(orchestratorId));
-    const res = await orchestrasService.load(orchestratorId);
+    dispatch(orchestrasActions.detailPending(conductorId));
+    const res = await orchestrasService.load(conductorId);
     if (isScopesRpcErr(res)) {
       dispatch(
         orchestrasActions.detailRejected({
-          orchestratorId,
+          conductorId,
           error: res.error.message,
         }),
       );
@@ -119,14 +119,14 @@ export function loadOrchestra(
   };
 }
 
-/** Promote an agent to orchestrator / create its set (writes the marker self-edge). */
+/** Promote an agent to conductor / create its set (writes the marker self-edge). */
 export function createOrchestra(args: {
-  orchestratorId: string;
+  conductorId: string;
   label?: string;
   config?: OrchestraConfig;
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch) => {
-    const res = await orchestrasService.create(args.orchestratorId, {
+    const res = await orchestrasService.create(args.conductorId, {
       label: args.label,
       config: args.config,
     });
@@ -134,39 +134,39 @@ export function createOrchestra(args: {
     // optimistic local config + accurate summary/detail from the server
     dispatch(
       orchestrasActions.configSet({
-        orchestratorId: args.orchestratorId,
+        conductorId: args.conductorId,
         config: args.config ?? {},
         label: args.label ?? null,
       }),
     );
     await Promise.all([
       dispatch(fetchOrchestras({ force: true })),
-      dispatch(loadOrchestra(args.orchestratorId, { force: true })),
+      dispatch(loadOrchestra(args.conductorId, { force: true })),
     ]);
     return { ok: true };
   };
 }
 
-/** Persist Orchestra-level config (accent / tagline / orchestrator position / label). */
+/** Persist Orchestra-level config (accent / tagline / conductor position / label). */
 export function saveOrchestraConfig(args: {
-  orchestratorId: string;
+  conductorId: string;
   config: OrchestraConfig;
   label?: string | null;
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch) => {
     dispatch(
       orchestrasActions.configSet({
-        orchestratorId: args.orchestratorId,
+        conductorId: args.conductorId,
         config: args.config,
         label: args.label,
       }),
     );
-    const res = await orchestrasService.saveConfig(args.orchestratorId, {
+    const res = await orchestrasService.saveConfig(args.conductorId, {
       config: args.config,
       label: args.label ?? undefined,
     });
     if (isScopesRpcErr(res)) {
-      await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
+      await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: res.error.message };
     }
     return { ok: true };
@@ -175,18 +175,18 @@ export function saveOrchestraConfig(args: {
 
 /** Add an agent into a set (optimistic; reconciles on error). */
 export function addAgentToOrchestra(args: {
-  orchestratorId: string;
+  conductorId: string;
   agentId: string;
   meta?: OrchestraMemberMeta;
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch, getState) => {
-    const entry = getState().orchestras.byId[args.orchestratorId];
+    const entry = getState().orchestras.byId[args.conductorId];
     if (entry?.members.some((m) => m.agentId === args.agentId)) {
       return { ok: true }; // already a member — idempotent
     }
     const position = entry?.members.length ?? 0;
     const member: OrchestraMember = {
-      edgeId: `optimistic:${args.orchestratorId}:${args.agentId}`,
+      edgeId: `optimistic:${args.conductorId}:${args.agentId}`,
       agentId: args.agentId,
       position,
       roleTitle: args.meta?.roleTitle ?? null,
@@ -197,13 +197,13 @@ export function addAgentToOrchestra(args: {
     };
     dispatch(
       orchestrasActions.memberAdded({
-        orchestratorId: args.orchestratorId,
+        conductorId: args.conductorId,
         member,
       }),
     );
 
     const res = await orchestrasService.addMember(
-      args.orchestratorId,
+      args.conductorId,
       args.agentId,
       {
         position,
@@ -213,7 +213,7 @@ export function addAgentToOrchestra(args: {
     if (isScopesRpcErr(res)) {
       dispatch(
         orchestrasActions.memberRemoved({
-          orchestratorId: args.orchestratorId,
+          conductorId: args.conductorId,
           agentId: args.agentId,
         }),
       );
@@ -225,17 +225,17 @@ export function addAgentToOrchestra(args: {
 
 /** Remove an agent from a set (optimistic; reconciles on error). */
 export function removeAgentFromOrchestra(args: {
-  orchestratorId: string;
+  conductorId: string;
   agentId: string;
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch) => {
     dispatch(orchestrasActions.memberRemoved(args));
     const res = await orchestrasService.removeMember(
-      args.orchestratorId,
+      args.conductorId,
       args.agentId,
     );
     if (isScopesRpcErr(res)) {
-      await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
+      await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: res.error.message };
     }
     return { ok: true };
@@ -244,16 +244,16 @@ export function removeAgentFromOrchestra(args: {
 
 /** Persist a new member order (optimistic; upserts each member's position). */
 export function reorderOrchestraMembers(args: {
-  orchestratorId: string;
+  conductorId: string;
   orderedAgentIds: string[];
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch, getState) => {
     dispatch(orchestrasActions.membersReordered(args));
     const members =
-      getState().orchestras.byId[args.orchestratorId]?.members ?? [];
+      getState().orchestras.byId[args.conductorId]?.members ?? [];
     const results = await Promise.all(
       members.map((m) =>
-        orchestrasService.addMember(args.orchestratorId, m.agentId, {
+        orchestrasService.addMember(args.conductorId, m.agentId, {
           position: m.position,
           meta: {
             roleTitle: m.roleTitle ?? undefined,
@@ -270,7 +270,7 @@ export function reorderOrchestraMembers(args: {
     );
     const bad = results.find((r) => isScopesRpcErr(r));
     if (bad && isScopesRpcErr(bad)) {
-      await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
+      await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: bad.error.message };
     }
     return { ok: true };
@@ -283,7 +283,7 @@ export function reorderOrchestraMembers(args: {
  * 🚨 THIS IS THE ONE WRITER OF A MEMBER'S CHARACTERIZATION, and since C-20 that
  * means it writes it in BOTH places: the member edge (`label` = role title,
  * `metadata.gap` — the prompt-injection pipeline in
- * `orchestras/orchestrator/thunks.ts` reads exactly these to build
+ * `orchestras/conductor/thunks.ts` reads exactly these to build
  * `<available_agents>`) AND a `platform.purpose` row linked to the member agent.
  *
  * Do NOT "migrate" the gap off the edge, and do NOT add a second call site that
@@ -305,18 +305,18 @@ export function reorderOrchestraMembers(args: {
  * coverage count both catch).
  */
 export function saveMemberMeta(args: {
-  orchestratorId: string;
+  conductorId: string;
   agentId: string;
   meta: OrchestraMemberMeta;
   groundingTag?: GroundingTag;
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch, getState) => {
     dispatch(orchestrasActions.memberMetaSet(args));
-    const m = getState().orchestras.byId[args.orchestratorId]?.members.find(
+    const m = getState().orchestras.byId[args.conductorId]?.members.find(
       (x) => x.agentId === args.agentId,
     );
     const res = await orchestrasService.addMember(
-      args.orchestratorId,
+      args.conductorId,
       args.agentId,
       {
         position: m?.position,
@@ -330,7 +330,7 @@ export function saveMemberMeta(args: {
       },
     );
     if (isScopesRpcErr(res)) {
-      await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
+      await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: res.error.message };
     }
 
@@ -360,11 +360,11 @@ export function saveMemberMeta(args: {
 
 /** Delete a set (optimistic removal; restores list on error). */
 export function deleteOrchestra(args: {
-  orchestratorId: string;
+  conductorId: string;
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch) => {
-    dispatch(orchestrasActions.removeSummary(args.orchestratorId));
-    const res = await orchestrasService.deleteOrchestra(args.orchestratorId);
+    dispatch(orchestrasActions.removeSummary(args.conductorId));
+    const res = await orchestrasService.deleteOrchestra(args.conductorId);
     if (isScopesRpcErr(res)) {
       await dispatch(fetchOrchestras({ force: true }));
       return { ok: false, error: res.error.message };

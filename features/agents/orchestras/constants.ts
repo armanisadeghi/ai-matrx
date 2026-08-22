@@ -2,7 +2,7 @@
 //
 // Orchestras — canonical tokens for the platform.associations edges that model
 // an Orchestra. There is NO orchestra table, ever: an Orchestra is an
-// orchestrator agent (agent.definition row) PLUS association edges. See
+// conductor agent (agent.definition row) PLUS association edges. See
 // features/agents/docs/ORCHESTRAS.md.
 
 /** Entity-type token for an agent (platform.entity_types.token → agent.definition). */
@@ -10,7 +10,7 @@ export const AGENT_TOKEN = "agent" as const;
 
 /**
  * Role of the self-edge (agent:X) → (agent:X) that marks agent X as an
- * orchestrator / Orchestra root. Its `metadata` holds Orchestra-level config
+ * conductor / Orchestra root. Its `metadata` holds Orchestra-level config
  * (accent, tagline, saved canvas position) and its existence lets an EMPTY
  * Orchestra persist. Distinct role from MEMBER_ROLE so the two never collide on
  * the (source, target, role) unique key, and so clearing members never touches it.
@@ -27,7 +27,7 @@ export function isOrchestraMarkerRole(role: string | null | undefined): boolean 
   return role === ORCHESTRA_MARKER_ROLE;
 }
 
-/** Role of an orchestrator → member edge. Members are ordered by `position`. */
+/** Role of an conductor → member edge. Members are ordered by `position`. */
 export const MEMBER_ROLE = "member" as const;
 
 /**
@@ -54,7 +54,7 @@ export const DEFAULT_ORCHESTRA_ACCENT: OrchestraAccent = "violet";
 /**
  * How the Orchestra RUNS its members (stored in `OrchestraConfig.mode` on the
  * marker edge — the aidream runtime reads it per run). "supervisor" projects
- * members as tools the orchestrator calls; the other three compile to a
+ * members as tools the conductor calls; the other three compile to a
  * deterministic plan run on the server (D-36). An unknown value fails loudly
  * server-side — never silently degrades to a memberless run.
  */
@@ -69,7 +69,7 @@ export const DEFAULT_ORCHESTRA_MODE: OrchestraMode = "supervisor";
 export const ORCHESTRA_MODE_META: Record<OrchestraMode, { label: string; description: string }> = {
   supervisor: {
     label: "Supervisor",
-    description: "The orchestrator decides which members to bring in, and weaves their answers together.",
+    description: "The conductor decides which members to bring in, and weaves their answers together.",
   },
   sequential: {
     label: "Pipeline",
@@ -77,7 +77,7 @@ export const ORCHESTRA_MODE_META: Record<OrchestraMode, { label: string; descrip
   },
   parallel: {
     label: "Panel",
-    description: "All members work at the same time; the orchestrator combines their answers.",
+    description: "All members work at the same time; the conductor combines their answers.",
   },
   dag: {
     label: "Custom flow",
@@ -113,7 +113,7 @@ export function isOrchestraMode(value: unknown): value is OrchestraMode {
 }
 
 /**
- * How ONE member's result comes back to the orchestrator (D-40). Stored as
+ * How ONE member's result comes back to the conductor (D-40). Stored as
  * `result_mode` on the MEMBER edge's metadata jsonb; the aidream runtime puts
  * it straight onto the projected tool (`AgentToolSpec.result_mode`) and
  * strict-parses it — an unknown value fails the run loudly rather than
@@ -136,17 +136,17 @@ export const ORCHESTRA_RESULT_MODE_META: Record<
   inline: {
     label: "Read it",
     description:
-      "The orchestrator receives this member's full answer and reasons over it. Best when it has to judge, correct, or weave the answer into its own.",
+      "The conductor receives this member's full answer and reasons over it. Best when it has to judge, correct, or weave the answer into its own.",
   },
   reference: {
     label: "Pass it along without reading it",
     description:
-      "The answer is stored and the orchestrator gets only a short label for it — it can hand it to another member or return it, without spending its own context on the content. Best for long documents, transcripts, and data.",
+      "The answer is stored and the conductor gets only a short label for it — it can hand it to another member or return it, without spending its own context on the content. Best for long documents, transcripts, and data.",
   },
   inline_once: {
     label: "Read it once, then keep only the label",
     description:
-      "The orchestrator reads the full answer this turn, then keeps only a short label for it afterwards. Best when it needs the content once to decide something.",
+      "The conductor reads the full answer this turn, then keeps only a short label for it afterwards. Best when it needs the content once to decide something.",
   },
 };
 

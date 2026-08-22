@@ -6,7 +6,7 @@
 // or server chunk. See the code-splitting skill + the reactFlowStaticImportBan in
 // eslint.config.mjs.
 //
-// Renders the orchestrator as a hub node presiding over member nodes connected by
+// Renders the conductor as a hub node presiding over member nodes connected by
 // animated edges. Agents are dragged in from the library rail (native DnD) and
 // repositioned on the canvas; positions persist to each edge's metadata.
 
@@ -52,16 +52,16 @@ import { AGENT_DND_MIME } from "./AgentLibraryRail";
 import type { OrchestraBuilderCanvasProps } from "./OrchestraBuilderCanvas";
 import type { OrchestraAccent } from "../constants";
 
-const ORCH_ID = "__orchestrator__";
+const ORCH_ID = "__conductor__";
 
-interface OrchestratorData {
+interface ConductorData {
   agentId: string;
   accent: OrchestraAccent;
   memberCount: number;
   onOpen: () => void;
 }
 interface MemberData {
-  orchestratorId: string;
+  conductorId: string;
   agentId: string;
   accent: OrchestraAccent;
   index: number;
@@ -72,13 +72,13 @@ interface MemberData {
 
 // ─── nodes ──────────────────────────────────────────────────────────────
 
-function OrchestratorNode({ data }: NodeProps) {
+function ConductorNode({ data }: NodeProps) {
   // MATRX-EXCEPTION: React Flow's NodeProps.data is generically typed
   // Record<string, unknown> (the library's node-data bag); it has no index
-  // signature overlap with our concrete OrchestratorData, so the two-step
+  // signature overlap with our concrete ConductorData, so the two-step
   // cast is required. The shape is set by this file's own `nodes` builder
   // below, so it's safe.
-  const d = data as unknown as OrchestratorData;
+  const d = data as unknown as ConductorData;
   const a = accentClasses(d.accent);
   const agent = useAppSelector((s) => selectAgentById(s, d.agentId));
   return (
@@ -96,8 +96,8 @@ function OrchestratorNode({ data }: NodeProps) {
         <AgentPeekButton agentId={d.agentId} />
         <button
           type="button"
-          aria-label="Orchestrator details"
-          title="Orchestrator details"
+          aria-label="Conductor details"
+          title="Conductor details"
           onClick={(e) => {
             e.stopPropagation();
             d.onOpen();
@@ -113,10 +113,10 @@ function OrchestratorNode({ data }: NodeProps) {
         </div>
         <div className="min-w-0 flex-1">
           <div className={cn("text-[10px] font-bold uppercase tracking-wide", a.text)}>
-            Orchestrator
+            Conductor
           </div>
           <div className="truncate text-sm font-semibold text-foreground" title={agent?.name}>
-            {agent?.name ?? "Orchestrator"}
+            {agent?.name ?? "Conductor"}
           </div>
         </div>
       </div>
@@ -132,7 +132,7 @@ function OrchestratorNode({ data }: NodeProps) {
 }
 
 function MemberNode({ data }: NodeProps) {
-  // MATRX-EXCEPTION: same React Flow generic-data-bag cast as OrchestratorNode.
+  // MATRX-EXCEPTION: same React Flow generic-data-bag cast as ConductorNode.
   const d = data as unknown as MemberData;
   const dispatch = useAppDispatch();
   const a = accentClasses(d.accent);
@@ -151,7 +151,7 @@ function MemberNode({ data }: NodeProps) {
         variant="node"
         onEdit={() => d.onEdit(d.agentId)}
         onRemove={() =>
-          dispatch(removeAgentFromOrchestra({ orchestratorId: d.orchestratorId, agentId: d.agentId }))
+          dispatch(removeAgentFromOrchestra({ conductorId: d.conductorId, agentId: d.agentId }))
         }
       />
       {/* idle = the Orchestra's accent ring; running = animated accent pulse; done /
@@ -175,7 +175,7 @@ function MemberNode({ data }: NodeProps) {
 }
 
 const nodeTypes: NodeTypes = {
-  orchestrator: OrchestratorNode,
+  conductor: ConductorNode,
   member: MemberNode,
 };
 
@@ -222,7 +222,7 @@ function computeLayout(kind: LayoutKind, memberIds: string[]): LayoutResult {
     return { orch: { x: -ORCH_W / 2, y: -ORCH_H / 2 }, members };
   }
 
-  // hierarchy — dagre top-down tree (orchestrator over its members)
+  // hierarchy — dagre top-down tree (conductor over its members)
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: "TB", nodesep: 44, ranksep: 90, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
@@ -255,7 +255,7 @@ function LayoutButton({ icon: Icon, label, onClick }: { icon: LucideIcon; label:
 
 // ─── canvas ─────────────────────────────────────────────────────────────
 
-function CanvasInner({ orchestratorId, accent, members, config, onEditMember, onOpenOrchestrator }: OrchestraBuilderCanvasProps) {
+function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpenConductor }: OrchestraBuilderCanvasProps) {
   const dispatch = useAppDispatch();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const a = accentClasses(accent);
@@ -268,14 +268,14 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
       const op = prevById.get(ORCH_ID);
       const orch: Node = {
         id: ORCH_ID,
-        type: "orchestrator",
-        position: op?.position ?? config.orchestratorPos ?? { x: 0, y: 0 },
+        type: "conductor",
+        position: op?.position ?? config.conductorPos ?? { x: 0, y: 0 },
         zIndex: op?.zIndex,
         data: {
-          agentId: orchestratorId,
+          agentId: conductorId,
           accent,
           memberCount: members.length,
-          onOpen: onOpenOrchestrator,
+          onOpen: onOpenConductor,
         } as Record<string, unknown>,
       };
       const memberNodes: Node[] = members.map((m, i) => {
@@ -286,7 +286,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
           position: p?.position ?? m.pos ?? defaultMemberPos(i, members.length),
           zIndex: p?.zIndex,
           data: {
-            orchestratorId,
+            conductorId,
             agentId: m.agentId,
             accent,
             index: i + 1,
@@ -298,7 +298,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
       });
       return [orch, ...memberNodes];
     },
-    [members, config.orchestratorPos, accent, orchestratorId, onEditMember, onOpenOrchestrator],
+    [members, config.conductorPos, accent, conductorId, onEditMember, onOpenConductor],
   );
 
   // React Flow OWNS node state — a drag mutates only the dragged node (no
@@ -312,8 +312,8 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
   const sig = useMemo(
     () =>
       members.map((m) => `${m.agentId}:${m.roleTitle ?? ""}:${m.gap ?? ""}`).join("|") +
-      `#${accent}#${JSON.stringify(config.orchestratorPos ?? null)}`,
-    [members, accent, config.orchestratorPos],
+      `#${accent}#${JSON.stringify(config.conductorPos ?? null)}`,
+    [members, accent, config.conductorPos],
   );
 
   useEffect(() => {
@@ -349,15 +349,15 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
       if (node.id === ORCH_ID) {
         dispatch(
           saveOrchestraConfig({
-            orchestratorId,
-            config: { ...config, orchestratorPos: { x: node.position.x, y: node.position.y } },
+            conductorId,
+            config: { ...config, conductorPos: { x: node.position.x, y: node.position.y } },
           }),
         );
       } else {
         const m = members.find((x) => x.agentId === node.id);
         dispatch(
           saveMemberMeta({
-            orchestratorId,
+            conductorId,
             agentId: node.id,
             meta: {
               roleTitle: m?.roleTitle ?? undefined,
@@ -368,19 +368,19 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
         );
       }
     },
-    [dispatch, orchestratorId, config, members],
+    [dispatch, conductorId, config, members],
   );
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
       const agentId = event.dataTransfer.getData(AGENT_DND_MIME);
-      if (!agentId || agentId === orchestratorId) return;
+      if (!agentId || agentId === conductorId) return;
       if (members.some((m) => m.agentId === agentId)) return;
       const pos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      dispatch(addAgentToOrchestra({ orchestratorId, agentId, meta: { pos } }));
+      dispatch(addAgentToOrchestra({ conductorId, agentId, meta: { pos } }));
     },
-    [dispatch, orchestratorId, members, screenToFlowPosition],
+    [dispatch, conductorId, members, screenToFlowPosition],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -389,7 +389,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
   }, []);
 
   // Auto-arrange: recompute every node's position, snap instantly (overrides),
-  // persist (per-member pos + orchestrator pos), then frame the graph.
+  // persist (per-member pos + conductor pos), then frame the graph.
   const applyLayout = useCallback(
     (kind: LayoutKind) => {
       const layout = computeLayout(kind, members.map((m) => m.agentId));
@@ -402,10 +402,10 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
               : n,
         ),
       );
-      dispatch(saveOrchestraConfig({ orchestratorId, config: { ...config, orchestratorPos: layout.orch } }));
+      dispatch(saveOrchestraConfig({ conductorId, config: { ...config, conductorPos: layout.orch } }));
       members.forEach((m) =>
         dispatch(
-          saveMemberMeta({ orchestratorId, agentId: m.agentId, meta: { pos: layout.members[m.agentId] } }),
+          saveMemberMeta({ conductorId, agentId: m.agentId, meta: { pos: layout.members[m.agentId] } }),
         ),
       );
       // Frame after the position change has painted.
@@ -413,7 +413,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
         requestAnimationFrame(() => fitView({ padding: 0.25, maxZoom: 1, duration: 400 })),
       );
     },
-    [members, dispatch, orchestratorId, config, fitView, setNodes],
+    [members, dispatch, conductorId, config, fitView, setNodes],
   );
 
   return (

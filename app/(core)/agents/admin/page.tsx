@@ -56,11 +56,11 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/agents/orchestras/[orchestratorId]",
+      url: "/agents/orchestras/[conductorId]",
       label: "Set Builder",
       description:
         "Hub-and-spoke builder for one set — drag agents from the library onto the React Flow canvas (code-split), reorder in the grid, and author each member's role.",
-      filePath: "app/(core)/agents/orchestras/[orchestratorId]/page.tsx",
+      filePath: "app/(core)/agents/orchestras/[conductorId]/page.tsx",
       status: "Live",
     },
   ],
@@ -125,7 +125,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       name: "OrchestraBuilder",
       filePath: "features/agents/orchestras/components/OrchestraBuilder.tsx",
       description:
-        "Orchestra builder shell — composes the library rail, canvas/grid views, and the member inspector around one orchestrator.",
+        "Orchestra builder shell — composes the library rail, canvas/grid views, and the member inspector around one conductor.",
       tier: "official",
     },
     {
@@ -145,7 +145,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "OrchestraCard",
       filePath: "features/agents/orchestras/components/OrchestraCard.tsx",
-      description: "List tile for one set on /agents/orchestras (orchestrator face + member strip).",
+      description: "List tile for one set on /agents/orchestras (conductor face + member strip).",
       tier: "official",
     },
     {
@@ -215,7 +215,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "Associations (Scopes)",
       description:
-        "Orchestras ride the canonical platform.associations system (assoc_* RPCs via associationsService). No orchestra table, ever — orchestrator→member edges are the membership.",
+        "Orchestras ride the canonical platform.associations system (assoc_* RPCs via associationsService). No orchestra table, ever — conductor→member edges are the membership.",
     },
   ],
 };

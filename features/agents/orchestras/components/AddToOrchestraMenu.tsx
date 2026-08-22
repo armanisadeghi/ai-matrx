@@ -41,9 +41,9 @@ export function AddToOrchestraMenu({
   const { orchestras } = useOrchestrasList({ auto: false });
   const [createOpen, setCreateOpen] = useState(false);
 
-  const addTo = async (orchestratorId: string, name: string) => {
+  const addTo = async (conductorId: string, name: string) => {
     const res = await dispatch(
-      addAgentToOrchestra({ orchestratorId, agentId }),
+      addAgentToOrchestra({ conductorId, agentId }),
     );
     if (res.ok) toast.success(`Added to “${name}”.`);
     else toast.error(res.error ?? "Could not add to Orchestra.");
@@ -85,10 +85,10 @@ export function AddToOrchestraMenu({
             const a = accentClasses(orchestra.config.accent);
             return (
               <DropdownMenuItem
-                key={orchestra.orchestratorId}
+                key={orchestra.conductorId}
                 onSelect={() =>
                   addTo(
-                    orchestra.orchestratorId,
+                    orchestra.conductorId,
                     orchestra.label || orchestra.name,
                   )
                 }

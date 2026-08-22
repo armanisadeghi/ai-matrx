@@ -1,6 +1,6 @@
 // features/agents/orchestras/components/CreateOrchestraDialog.tsx
 //
-// Create an Orchestra from an EXISTING agent as its orchestrator. The picker reuses the
+// Create an Orchestra from an EXISTING agent as its conductor. The picker reuses the
 // CANONICAL agent filter (the same `useAgentConsumer` + filtered selectors +
 // <DesktopFilterPanel> as /agents/all and the builder rail) — Mine/Shared/All tabs,
 // category/tag filters, sort, search, and per-row peek — never an alphabetical dump.
@@ -43,7 +43,7 @@ import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
 
-const PICKER_CONSUMER = "orchestras-orchestrator-picker";
+const PICKER_CONSUMER = "orchestras-conductor-picker";
 
 /** Bridge DesktopFilterPanel's whole-array setter onto the consumer's per-item toggle. */
 function applyArrayViaToggle(
@@ -62,7 +62,7 @@ export interface CreateOrchestraDialogProps {
   onOpenChange: (open: boolean) => void;
   /** When set, this agent is added as the Orchestra's first member after creation. */
   seedMemberId?: string;
-  /** Switch to the "generate a new orchestrator" flow (for users without one). */
+  /** Switch to the "generate a new conductor" flow (for users without one). */
   onGenerateInstead?: () => void;
 }
 
@@ -92,7 +92,7 @@ export function CreateOrchestraDialog({
   const allTags = useAppSelector(selectAllAgentTags);
   const totalShared = useAppSelector(selectTotalSharedAgentsCount);
 
-  const [orchestratorId, setOrchestratorId] = useState<string | null>(null);
+  const [conductorId, setConductorId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [tagline, setTagline] = useState("");
   const [accent, setAccent] = useState<OrchestraAccent>(DEFAULT_ORCHESTRA_ACCENT);
@@ -108,8 +108,8 @@ export function CreateOrchestraDialog({
     return base.filter((a) => a.id !== seedMemberId);
   }, [consumer.tab, owned, shared, seedMemberId]);
 
-  const selected = orchestratorId
-    ? [...owned, ...shared].find((a) => a.id === orchestratorId)
+  const selected = conductorId
+    ? [...owned, ...shared].find((a) => a.id === conductorId)
     : null;
 
   const activeFilterCount =
@@ -121,7 +121,7 @@ export function CreateOrchestraDialog({
   const handleOpenChange = (next: boolean) => {
     if (busy) return;
     if (!next) {
-      setOrchestratorId(null);
+      setConductorId(null);
       setLabel("");
       setTagline("");
       setAccent(DEFAULT_ORCHESTRA_ACCENT);
@@ -130,11 +130,11 @@ export function CreateOrchestraDialog({
   };
 
   const handleCreate = async () => {
-    if (!orchestratorId) return;
+    if (!conductorId) return;
     setBusy(true);
     const res = await dispatch(
       createOrchestra({
-        orchestratorId,
+        conductorId,
         label: label.trim() || undefined,
         config: { accent, tagline: tagline.trim() || undefined },
       }),
@@ -145,10 +145,10 @@ export function CreateOrchestraDialog({
       return;
     }
     if (seedMemberId)
-      await dispatch(addAgentToOrchestra({ orchestratorId, agentId: seedMemberId }));
+      await dispatch(addAgentToOrchestra({ conductorId, agentId: seedMemberId }));
     toast.success("Orchestra created.");
     handleOpenChange(false);
-    router.push(`/agents/orchestras/${orchestratorId}`);
+    router.push(`/agents/orchestras/${conductorId}`);
   };
 
   return (
@@ -160,7 +160,7 @@ export function CreateOrchestraDialog({
             New Orchestra
           </DialogTitle>
           <DialogDescription>
-            Pick the agent that presides over this Orchestra as its orchestrator, then
+            Pick the agent that presides over this Orchestra as its conductor, then
             add members on the builder canvas.
             {onGenerateInstead && (
               <>
@@ -171,7 +171,7 @@ export function CreateOrchestraDialog({
                   onClick={onGenerateInstead}
                   className="font-medium text-primary hover:underline"
                 >
-                  Generate an orchestrator
+                  Generate an conductor
                 </button>
                 .
               </>
@@ -180,10 +180,10 @@ export function CreateOrchestraDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* orchestrator picker — canonical filter */}
+          {/* conductor picker — canonical filter */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">
-              Orchestrator agent
+              Conductor agent
             </label>
             <div className="flex items-center gap-1.5">
               <div className="relative flex-1">
@@ -241,7 +241,7 @@ export function CreateOrchestraDialog({
                   </div>
                 )}
                 {candidates.map((a) => {
-                  const isSel = a.id === orchestratorId;
+                  const isSel = a.id === conductorId;
                   return (
                     <div
                       key={a.id}
@@ -252,7 +252,7 @@ export function CreateOrchestraDialog({
                     >
                       <button
                         type="button"
-                        onClick={() => setOrchestratorId(a.id)}
+                        onClick={() => setConductorId(a.id)}
                         className="flex min-w-0 flex-1 items-center gap-2 text-left"
                       >
                         <div className="min-w-0 flex-1">
@@ -343,7 +343,7 @@ export function CreateOrchestraDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={!orchestratorId || busy}>
+          <Button onClick={handleCreate} disabled={!conductorId || busy}>
             {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
             Create Orchestra
           </Button>

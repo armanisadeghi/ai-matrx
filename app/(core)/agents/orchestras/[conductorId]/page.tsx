@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 export default async function OrchestraBuilderPage({
   params,
 }: {
-  params: Promise<{ orchestratorId: string }>;
+  params: Promise<{ conductorId: string }>;
 }) {
-  const { orchestratorId } = await params;
-  return <OrchestraBuilder orchestratorId={orchestratorId} />;
+  const { conductorId } = await params;
+  return <OrchestraBuilder conductorId={conductorId} />;
 }

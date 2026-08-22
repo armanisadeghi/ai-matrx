@@ -1,6 +1,6 @@
 // features/agents/orchestras/types.ts
 //
-// Types for Orchestras (Orchestrators). The Orchestra itself is an orchestrator agent;
+// Types for Orchestras (Conductors). The Orchestra itself is an conductor agent;
 // these types describe the relationship layer that rides on platform.associations.
 
 import type { Json } from "@/types/database.types";
@@ -15,14 +15,14 @@ export interface CanvasPos {
 /**
  * Orchestra-level config — carried in the `orchestra` self-edge `metadata` jsonb.
  * Everything here is presentational/organizational; the Orchestra's name + description
- * come from the orchestrator agent row itself.
+ * come from the conductor agent row itself.
  */
 export interface OrchestraConfig {
   accent?: OrchestraAccent;
   /** Short descriptor shown on the Orchestra card + canvas header (overrides nothing on the agent). */
   tagline?: string;
-  /** Saved orchestrator node position on the builder canvas. */
-  orchestratorPos?: CanvasPos;
+  /** Saved conductor node position on the builder canvas. */
+  conductorPos?: CanvasPos;
   /**
    * How the Orchestra runs its members. Absent = "supervisor". The aidream
    * runtime honors this per run: supervisor projects members as tools; the
@@ -50,16 +50,16 @@ export interface OrchestraMemberMeta {
   /** Saved member node position on the builder canvas. */
   pos?: CanvasPos;
   /**
-   * Designated member (C-26): the orchestrator MUST successfully consult this
+   * Designated member (C-26): the conductor MUST successfully consult this
    * member before finishing. Enforced by the server runtime (course-correction
    * + a forced turn; a run that still skips it is never marked complete).
    */
   required?: boolean;
   /**
-   * How this member's result comes back to the orchestrator (D-40). Absent =
+   * How this member's result comes back to the conductor (D-40). Absent =
    * "inline". `reference` is the routing-without-holding behaviour the
    * Orchestra is built on: the answer goes to the conversation value store and
-   * the orchestrator holds only a descriptor. Written to the edge metadata as
+   * the conductor holds only a descriptor. Written to the edge metadata as
    * `result_mode` (wire key); the server strict-parses it.
    */
   resultMode?: OrchestraResultMode;
@@ -67,10 +67,10 @@ export interface OrchestraMemberMeta {
 
 /** A Orchestra summary as returned by the `orchestra_list()` RPC (resolved/camelCased). */
 export interface OrchestraSummary {
-  orchestratorId: string;
-  /** Orchestrator agent name (the Orchestra's face). */
+  conductorId: string;
+  /** Conductor agent name (the Orchestra's face). */
   name: string;
-  /** Orchestrator agent description. */
+  /** Conductor agent description. */
   description: string | null;
   /** Optional Orchestra-label override; falls back to `name` in the UI. */
   label: string | null;
@@ -88,7 +88,7 @@ export interface OrchestraMember {
   roleTitle: string | null;
   gap: string | null;
   pos: CanvasPos | null;
-  /** Designated member (C-26): must be consulted before the orchestrator finishes. */
+  /** Designated member (C-26): must be consulted before the conductor finishes. */
   required: boolean;
   /** How its result comes back (D-40). Always resolved — "inline" by default. */
   resultMode: OrchestraResultMode;
@@ -96,7 +96,7 @@ export interface OrchestraMember {
 
 /** Full builder state for a single Orchestra: marker config + ordered members. */
 export interface OrchestraDetail {
-  orchestratorId: string;
+  conductorId: string;
   /** Whether the `orchestra` marker edge exists — false means "not an Orchestra yet". */
   exists: boolean;
   label: string | null;
@@ -106,10 +106,10 @@ export interface OrchestraDetail {
 
 /** Raw row shape returned by the `orchestra_list()` RPC (snake_case from PG). */
 export interface OrchestraListRow {
-  orchestrator_id: string;
+  conductor_id: string;
   name: string;
   description: string | null;
-  set_label: string | null;
+  label: string | null;
   metadata: Json;
   member_count: number;
   created_at: string;

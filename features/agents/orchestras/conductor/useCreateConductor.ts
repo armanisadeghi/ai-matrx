@@ -1,6 +1,6 @@
-// features/agents/orchestras/orchestrator/useCreateOrchestrator.ts
+// features/agents/orchestras/conductor/useCreateConductor.ts
 //
-// Create an orchestrator from the template and drop the user into the builder —
+// Create an conductor from the template and drop the user into the builder —
 // where they pick the agents it coordinates on the CANONICAL rail (search/filter/
 // tabs/peek/drag-drop), not in a cramped modal. The template ships an empty
 // <available_agents> placeholder; the agent descriptions are filled later by the
@@ -15,9 +15,9 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { createOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import type { OrchestraAccent } from "../constants";
-import { orchestratorService } from "./orchestratorService";
+import { conductorService } from "./conductorService";
 
-export function useCreateOrchestrator() {
+export function useCreateConductor() {
   const dispatch = useAppDispatch();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +33,12 @@ export function useCreateOrchestrator() {
       try {
         // 1) Copy the template. The new agent ships the empty <available_agents>
         //    placeholder; org is backfilled by the DB `_stamp_org_default` trigger.
-        const created = await orchestratorService.createFromTemplate();
+        const created = await conductorService.createFromTemplate();
         if (isScopesRpcErr(created)) {
           setError(created.error.message);
           return null;
         }
-        const orchestratorId = created.data.agentId;
+        const conductorId = created.data.agentId;
 
         // 2) Name it. The prompt needs no touching: the TEMPLATE itself is the
         //    supervisor definition (fixed in the DB 2026-08-16), so the copy is
@@ -48,20 +48,20 @@ export function useCreateOrchestrator() {
         //    messages with two constants in `./constants` because the template
         //    shipped an obsolete "emit a JSON dispatch plan" planner prompt that
         //    never delegated. That made the codebase the real definition of
-        //    every orchestrator anyone created, and left the template lying in
+        //    every conductor anyone created, and left the template lying in
         //    the DB where a user editing it saw no effect. The fix is the
         //    template, not a code override — and the constants are deleted so
         //    the override cannot come back.
-        await orchestratorService.rename(
-          orchestratorId,
-          args.name.trim() || "Agent Orchestrator",
+        await conductorService.rename(
+          conductorId,
+          args.name.trim() || "Agent Conductor",
         );
 
         // 3) Create the empty Orchestra. If the marker write fails we STILL route to
-        //    the created agent — the builder's "Make an orchestrator" CTA recovers.
+        //    the created agent — the builder's "Make an conductor" CTA recovers.
         await dispatch(
           createOrchestra({
-            orchestratorId,
+            conductorId,
             label: args.name.trim() || undefined,
             config: {
               accent: args.accent,
@@ -72,15 +72,15 @@ export function useCreateOrchestrator() {
 
         // 4) Hydrate the new agent so the builder renders it immediately.
         try {
-          await dispatch(fetchFullAgent(orchestratorId)).unwrap();
+          await dispatch(fetchFullAgent(conductorId)).unwrap();
         } catch {
           /* best-effort */
         }
 
-        return orchestratorId;
+        return conductorId;
       } catch (e) {
         setError(
-          e instanceof Error ? e.message : "Could not create the orchestrator.",
+          e instanceof Error ? e.message : "Could not create the conductor.",
         );
         return null;
       } finally {

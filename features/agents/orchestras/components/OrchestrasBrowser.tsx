@@ -19,7 +19,7 @@ import type { HeaderAction } from "@/features/shell/components/header/variants/t
 import { useOrchestrasList } from "../hooks/useOrchestrasList";
 import { OrchestraCard } from "./OrchestraCard";
 import { CreateOrchestraDialog } from "./CreateOrchestraDialog";
-import { GenerateOrchestratorDialog } from "./GenerateOrchestratorDialog";
+import { GenerateConductorDialog } from "./GenerateConductorDialog";
 
 export function OrchestrasBrowser() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export function OrchestrasBrowser() {
     },
     {
       icon: "Workflow",
-      label: "Generate orchestrator",
+      label: "Generate conductor",
       onPress: () => setGenerateOpen(true),
     },
   ];
@@ -108,7 +108,7 @@ export function OrchestrasBrowser() {
                 Build your first Orchestra
               </h2>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Don&apos;t have an orchestrator yet? Pick the specialists you
+                Don&apos;t have an conductor yet? Pick the specialists you
                 want and we&apos;ll generate one for you — an agent that knows
                 each member and coordinates them. Or use an agent you already
                 have.
@@ -119,7 +119,7 @@ export function OrchestrasBrowser() {
                   className="gap-1.5"
                 >
                   <Workflow className="h-4 w-4" />
-                  Generate an orchestrator
+                  Generate an conductor
                 </Button>
                 <Button
                   variant="outline"
@@ -136,7 +136,7 @@ export function OrchestrasBrowser() {
           {!loading && !empty && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((s) => (
-                <OrchestraCard key={s.orchestratorId} summary={s} />
+                <OrchestraCard key={s.conductorId} summary={s} />
               ))}
               {filtered.length === 0 && (
                 <div
@@ -160,7 +160,7 @@ export function OrchestrasBrowser() {
           setGenerateOpen(true);
         }}
       />
-      <GenerateOrchestratorDialog
+      <GenerateConductorDialog
         open={generateOpen}
         onOpenChange={setGenerateOpen}
       />

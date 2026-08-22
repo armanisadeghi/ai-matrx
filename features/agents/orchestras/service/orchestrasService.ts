@@ -6,7 +6,7 @@
 //   • Writes → `associationsService` (assoc_add / assoc_remove / assoc_set_targets)
 //   • List   → the `orchestra_list()` RPC (the one read the assoc_* family lacks)
 //
-// An Orchestra = an orchestrator agent + edges:
+// An Orchestra = an conductor agent + edges:
 //   marker : (agent:X) --role 'orchestra'--> (agent:X)   [config + existence]
 //   member : (agent:X) --role 'member'-----> (agent:Y)   [ordered by position]
 
@@ -62,10 +62,10 @@ function metaToConfig(meta: Json | null | undefined): OrchestraConfig {
       ? m.depth_budget
       : undefined;
   if (isOrchestraDepthBudget(rawBudget)) cfg.depthBudget = rawBudget;
-  if (m.orchestratorPos && typeof m.orchestratorPos === "object") {
-    const p = m.orchestratorPos as Record<string, unknown>;
+  if (m.conductorPos && typeof m.conductorPos === "object") {
+    const p = m.conductorPos as Record<string, unknown>;
     if (typeof p.x === "number" && typeof p.y === "number") {
-      cfg.orchestratorPos = { x: p.x, y: p.y };
+      cfg.conductorPos = { x: p.x, y: p.y };
     }
   }
   return cfg;
@@ -105,10 +105,10 @@ function metaToMemberMeta(
 
 function rowToSummary(r: OrchestraListRow): OrchestraSummary {
   return {
-    orchestratorId: r.orchestrator_id,
+    conductorId: r.conductor_id,
     name: r.name,
     description: r.description ?? null,
-    label: r.set_label ?? null,
+    label: r.label ?? null,
     config: metaToConfig(r.metadata),
     memberCount: r.member_count ?? 0,
     createdAt: r.created_at,
@@ -119,7 +119,7 @@ function rowToSummary(r: OrchestraListRow): OrchestraSummary {
 // ─── service ──────────────────────────────────────────────────────────
 
 export const orchestrasService = {
-  /** Enumerate every Orchestra the caller can see (orchestrators + member counts). */
+  /** Enumerate every Orchestra the caller can see (conductors + member counts). */
   async list(): Promise<ScopesRpcResult<OrchestraSummary[]>> {
     try {
       requireUserId();
@@ -133,17 +133,17 @@ export const orchestrasService = {
   },
 
   /** Load one Orchestra's marker config + ordered members in a single round-trip. */
-  async load(orchestratorId: string): Promise<ScopesRpcResult<OrchestraDetail>> {
+  async load(conductorId: string): Promise<ScopesRpcResult<OrchestraDetail>> {
     const res = await associationsService.listForSources(
       AGENT_TOKEN,
-      [orchestratorId],
+      [conductorId],
       AGENT_TOKEN,
     );
     if (isScopesRpcErr(res)) return res;
 
     const edges = res.data.edges;
     const marker = edges.find(
-      (e) => isOrchestraMarkerRole(e.role) && e.targetId === orchestratorId,
+      (e) => isOrchestraMarkerRole(e.role) && e.targetId === conductorId,
     );
     const members: OrchestraMember[] = edges
       .filter((e) => e.role === MEMBER_ROLE)
@@ -163,7 +163,7 @@ export const orchestrasService = {
       });
 
     return ok({
-      orchestratorId,
+      conductorId,
       exists: Boolean(marker),
       label: marker?.label ?? null,
       config: metaToConfig(marker?.metadata),
@@ -171,32 +171,32 @@ export const orchestrasService = {
     });
   },
 
-  /** Create (or re-mark) an Orchestra by writing the orchestrator's `orchestra` self-edge. */
+  /** Create (or re-mark) an Orchestra by writing the conductor's `orchestra` self-edge. */
   async create(
-    orchestratorId: string,
+    conductorId: string,
     opts?: { label?: string; config?: OrchestraConfig },
   ): Promise<ScopesRpcResult<{ id: string }>> {
     return associationsService.add({
       sourceType: AGENT_TOKEN,
-      sourceId: orchestratorId,
+      sourceId: conductorId,
       targetType: AGENT_TOKEN,
-      targetId: orchestratorId,
+      targetId: conductorId,
       role: ORCHESTRA_MARKER_ROLE,
       label: opts?.label,
       metadata: configToMeta(opts?.config ?? {}),
     });
   },
 
-  /** Persist Orchestra-level config (accent / tagline / orchestrator position). */
+  /** Persist Orchestra-level config (accent / tagline / conductor position). */
   async saveConfig(
-    orchestratorId: string,
+    conductorId: string,
     args: { label?: string; config: OrchestraConfig },
   ): Promise<ScopesRpcResult<{ id: string }>> {
     return associationsService.add({
       sourceType: AGENT_TOKEN,
-      sourceId: orchestratorId,
+      sourceId: conductorId,
       targetType: AGENT_TOKEN,
-      targetId: orchestratorId,
+      targetId: conductorId,
       role: ORCHESTRA_MARKER_ROLE,
       label: args.label,
       metadata: configToMeta(args.config ?? {}),
@@ -205,14 +205,14 @@ export const orchestrasService = {
 
   /** Add (or upsert) a member with its position + authored role/gap metadata. */
   async addMember(
-    orchestratorId: string,
+    conductorId: string,
     memberId: string,
     args?: { position?: number; meta?: OrchestraMemberMeta },
   ): Promise<ScopesRpcResult<{ id: string }>> {
     const meta = args?.meta ?? {};
     return associationsService.add({
       sourceType: AGENT_TOKEN,
-      sourceId: orchestratorId,
+      sourceId: conductorId,
       targetType: AGENT_TOKEN,
       targetId: memberId,
       role: MEMBER_ROLE,
@@ -238,12 +238,12 @@ export const orchestrasService = {
 
   /** Remove one member (role-scoped: never touches the marker self-edge). */
   async removeMember(
-    orchestratorId: string,
+    conductorId: string,
     memberId: string,
   ): Promise<ScopesRpcResult<null>> {
     return associationsService.remove({
       sourceType: AGENT_TOKEN,
-      sourceId: orchestratorId,
+      sourceId: conductorId,
       targetType: AGENT_TOKEN,
       targetId: memberId,
       role: MEMBER_ROLE,
@@ -251,10 +251,10 @@ export const orchestrasService = {
   },
 
   /** Delete an Orchestra: clear all members (role-scoped) then drop the marker. */
-  async deleteOrchestra(orchestratorId: string): Promise<ScopesRpcResult<null>> {
+  async deleteOrchestra(conductorId: string): Promise<ScopesRpcResult<null>> {
     const cleared = await associationsService.setTargets({
       sourceType: AGENT_TOKEN,
-      sourceId: orchestratorId,
+      sourceId: conductorId,
       targetType: AGENT_TOKEN,
       targetIds: [],
       role: MEMBER_ROLE,
@@ -262,9 +262,9 @@ export const orchestrasService = {
     if (isScopesRpcErr(cleared)) return cleared;
     return associationsService.remove({
       sourceType: AGENT_TOKEN,
-      sourceId: orchestratorId,
+      sourceId: conductorId,
       targetType: AGENT_TOKEN,
-      targetId: orchestratorId,
+      targetId: conductorId,
       role: ORCHESTRA_MARKER_ROLE,
     });
   },
