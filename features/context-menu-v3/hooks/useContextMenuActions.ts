@@ -856,11 +856,14 @@ export function useContextMenuActions(
       label: "Surface Context",
       description: "Live page values",
       icon: Braces,
-      onSelect: () =>
+      disabled: !resolvedSurfaceName,
+      onSelect: () => {
+        if (!resolvedSurfaceName) return;
         openSurfaceContextWindow({
-          surfaceName: resolvedSurfaceName ?? "",
+          surfaceName: resolvedSurfaceName,
           isEditable: Boolean(isEditable),
-        }),
+        });
+      },
     },
     ...(isAdmin
       ? ([

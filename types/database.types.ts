@@ -23620,6 +23620,14 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: undefined
       }
+      apply_platform_admin_access: {
+        Args: {
+          p_lock_out_non_admins?: boolean
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
+      }
       apply_reference_rls: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -53789,6 +53797,8 @@ export type Database = {
       }
       ui_surface: {
         Row: {
+          check_claimed_at: string | null
+          check_claimed_by: string | null
           client_name: string
           created_at: string
           description: string
@@ -53798,6 +53808,9 @@ export type Database = {
           intro: string | null
           is_active: boolean
           label: string | null
+          last_check: Json | null
+          last_checked_at: string | null
+          last_checked_by: string | null
           metadata: Json
           name: string
           overlay_id: string | null
@@ -53811,6 +53824,8 @@ export type Database = {
           value_groups: Json
         }
         Insert: {
+          check_claimed_at?: string | null
+          check_claimed_by?: string | null
           client_name: string
           created_at?: string
           description?: string
@@ -53820,6 +53835,9 @@ export type Database = {
           intro?: string | null
           is_active?: boolean
           label?: string | null
+          last_check?: Json | null
+          last_checked_at?: string | null
+          last_checked_by?: string | null
           metadata?: Json
           name: string
           overlay_id?: string | null
@@ -53833,6 +53851,8 @@ export type Database = {
           value_groups?: Json
         }
         Update: {
+          check_claimed_at?: string | null
+          check_claimed_by?: string | null
           client_name?: string
           created_at?: string
           description?: string
@@ -53842,6 +53862,9 @@ export type Database = {
           intro?: string | null
           is_active?: boolean
           label?: string | null
+          last_check?: Json | null
+          last_checked_at?: string | null
+          last_checked_by?: string | null
           metadata?: Json
           name?: string
           overlay_id?: string | null
