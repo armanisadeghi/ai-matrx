@@ -316,7 +316,17 @@ read surface, or (b) let `entity_types` permit a view-backed token that exists p
 surface (and teach the conformance checks to skip such rows rather than silently omit them).
 Either way the `trg_version_capture` check should count view-backed tokens as SKIP, not as absent.
 
-### D231 — SECURITY: `authenticated` can read `storage_uri` on `files.files` and `files.file_versions` — the column revoke was a no-op (2026-08-21)
+### D231 — ✅ RESOLVED — SECURITY: `authenticated` could read `storage_uri` on `files.files` and `files.file_versions` (2026-08-21, closed 2026-08-22)
+
+**RESOLVED 2026-08-22 — `matrx-frontend/migrations/apply_table_grants_preserve_column_design.sql`.** Re-confirmed live first (`authenticated=arwd`, 0 of 26 and 0 of 11 column grants), then closed; `aidream/scripts/validate_storage_uri_isolation.py` now reports **all four** guarded tables isolated. Non-admin probe as test@test.com: file rows readable, `storage_uri` → `permission denied` on both tables. `anon`'s own column design was left intact — it is what makes `files.files`' `pub_read` lane work (1,779 public files, verified) — but its inert `d`+`m` table grants were revoked (D184 shape).
+
+**The re-close was the easy half; the important half is that it cannot revert a FOURTH time.** This note's original diagnosis was right about the mechanism (a column REVOKE cannot subtract from a table GRANT) but incomplete about the cause. `iam.apply_table_grants` — called at the end of every `iam.apply_rls` — opens with `revoke all … from authenticated` then issues a table-level grant, so ONE policy regeneration erases a column design. The §6d-2 rail could not stop it here because the rail detects the design by looking for it, and these two tables were **already flattened** when the rail shipped: `granted_cols = 0`, the strict-subset test is false, the rail is silent. A rail that protects a living design cannot protect a dead one, so the first accident was permanent.
+
+The design is therefore **declared** now, not inferred: `platform.entity_types.client_excluded_columns` (beside `governed_columns`), which `apply_table_grants` reads and re-applies on every regeneration. Declaring rather than snapshotting is not a style choice — a snapshot from the catalog was written first and a live test killed it: `ADD COLUMN` leaves `attacl` NULL, so a brand-new column is indistinguishable from a deliberately-excluded one, and the snapshot silently withheld it from clients. An exclusion is INTENT, and intent cannot be recovered from the artifact it produced. An **undeclared** design still RAISEs exactly as before, so nothing not yet migrated lost its rail; `iam.allow_column_grant_override` still retires a design on purpose.
+
+Three `users.*` tables run column designs and are NOT registered in `entity_types` (`user_secrets`, `credential_attachments`, `integration_connections`). `apply_table_grants` is only reachable through `apply_rls`, which needs a token, so nothing regenerates them today and the RAISE lane is what will catch it if one is ever registered. Left alone deliberately.
+
+<details><summary>Original 2026-08-21 note</summary>
 
 Found while building the §6d-2 column-grant guard (D182/D184 family); **not fixed here** — the adjudication that surfaced it was scoped to pure guards and forbade changing live grants, and re-closing this channel is a real grant change that needs an explicit decision.
 
@@ -325,6 +335,8 @@ Found while building the §6d-2 column-grant guard (D182/D184 family); **not fix
 **Root cause.** `migrations/files_authenticated_table_select_grants.sql` (2026-07-07) issues `GRANT SELECT, INSERT, UPDATE ON files.files TO authenticated` and then tries to subtract it with `REVOKE SELECT (storage_uri) ON files.files FROM authenticated, anon, PUBLIC`. **In Postgres a column-level REVOKE cannot subtract from a table-level grant** — the table grant already covers every column, so the revoke is a silent no-op. That migration therefore *undid* the whole aidream `0146`/`0147`/`0149`/`0156` storage_uri lockdown lineage while reading as though it preserved it. `0156_storage_uri_grant_relock.sql` had already caught this exact regression once ("the 2026 schema-reorg silently REVERTED it by re-granting TABLE-level") — this is the third occurrence of the same class.
 
 **The fix (needs a decision, because it can 42501 the client):** drop the table-level privilege and re-`GRANT` the explicit client-safe column list — the shape `users.user_secrets`, `docproc.processed_documents`, and `rag.library_docs` all use today, and the shape the new guard (`migrations/iam_apply_table_grants_column_grant_guard.sql`) protects. Note the 2026-07-07 migration exists *because* PostgREST returned 42501 "permission denied for table files" under a column-only grant; whoever re-closes this must confirm the client column list is complete first (`features/files/filesDb.ts`) or file reads break platform-wide. **Until then the guard does not protect these two tables — there is no column ACL left to protect.**
+
+</details>
 
 ### D230 — no guard catches "schema referenced by `.schema()` but not PostgREST-exposed" (2026-08-16)
 
