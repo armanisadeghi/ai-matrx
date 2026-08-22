@@ -49,6 +49,7 @@ import { MandateResolutionRibbon } from "@/features/agents/mandates/components/M
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
 import { MandateTestBench } from "./MandateTestBench";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateContextGate } from "./MandateContextGate";
@@ -1020,6 +1021,9 @@ function FactsPanel({
 }) {
   const isSystem = row.agentType === "builtin";
   const drifted = row.drift != null;
+  // Wave-1 columns (provision_key / pins / pinned_context) ride the full row
+  // and are narrowed at ingress — see provision-shapes.ts.
+  const wave1 = parseMandateWave1(row.mandate);
   return (
     <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
       <Fact label="Agent">
@@ -1089,6 +1093,50 @@ function FactsPanel({
           </span>
         )}
       </Fact>
+      {wave1.provisionKey && (
+        <Fact label="Provision">
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <code className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]">
+              {wave1.provisionKey}
+            </code>
+            <span className="text-muted-foreground">
+              — the entire input declaration; the binding&apos;s consumption
+              map decides what the Holder consumes.
+            </span>
+          </span>
+        </Fact>
+      )}
+      {Object.keys(wave1.pins).length > 0 && (
+        <Fact label="Pins">
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(wave1.pins).map(([key, value]) => (
+              <Badge
+                key={key}
+                variant="outline"
+                className="gap-1 text-[10px] font-mono"
+                title="Set by the mandate — a code-owned lever; bindings cannot change it. Model ids are never pins."
+              >
+                <Pin className="h-2.5 w-2.5" />
+                {key}={typeof value === "string" ? value : JSON.stringify(value)}
+              </Badge>
+            ))}
+          </div>
+        </Fact>
+      )}
+      {wave1.pinnedContext.length > 0 && (
+        <Fact label="Pinned context">
+          <div className="flex flex-wrap gap-1">
+            {wave1.pinnedContext.map((name) => (
+              <code
+                key={name}
+                className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+              >
+                {name}
+              </code>
+            ))}
+          </div>
+        </Fact>
+      )}
       <Fact label="Inputs">
         <MandateInputsCell row={row} maxChips={8} />
       </Fact>

@@ -50,6 +50,8 @@ import {
   AGENT_MANDATES_WRITE_TARGETS,
 } from "@/features/surfaces/manifests/mandates.manifest";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
+import { ProvisionOfferComposer } from "./ProvisionOfferComposer";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { initInstanceOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
@@ -592,9 +594,16 @@ export function MandateTestBench({
   // The mandate's declared inputs — shown beside the composer so a test case can
   // be written without guessing the variable names.
   const contract = useMemo(() => parseMandateContract(mandate.contract), [mandate]);
+  // Provision-era mandates get a structured composer generated from the offer
+  // (the raw JSON textarea stays — it is the escape hatch and the legacy path).
+  const provisionKey = useMemo(
+    () => parseMandateWave1(mandate).provisionKey,
+    [mandate],
+  );
   const [running, setRunning] = useState(false);
   const [batch, setBatch] = useState<MandateTestBatchResponse | null>(null);
   const [adding, setAdding] = useState(false);
+  const [offerComposerOpen, setOfferComposerOpen] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newVariables, setNewVariables] = useState("{}");
   const [newUserInput, setNewUserInput] = useState("");
@@ -946,6 +955,34 @@ export function MandateTestBench({
             placeholder="Test case name — what does it exercise?"
             className="h-8 text-xs"
           />
+          {provisionKey && (
+            <div className="rounded-md border border-border">
+              <button
+                type="button"
+                className="w-full cursor-pointer px-2 py-1.5 text-left text-[11px] text-muted-foreground hover:bg-accent/40"
+                onClick={() => setOfferComposerOpen((current) => !current)}
+                aria-expanded={offerComposerOpen}
+              >
+                Fill from the offer — structured input generated from provision{" "}
+                <code className="font-mono">{provisionKey}</code>
+              </button>
+              {/* Mounted only when opened — the offer-kind path dynamic-imports
+                  the heavy KindInputForm stack. */}
+              {offerComposerOpen && (
+                <div className="border-t border-border p-2">
+                  <ProvisionOfferComposer
+                    provisionKey={provisionKey}
+                    onApply={(values) => {
+                      setNewVariables(JSON.stringify(values, null, 2));
+                      toast.success(
+                        "Variables filled from the offer — review the JSON below.",
+                      );
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           <Textarea
             value={newVariables}
             onChange={(event) => setNewVariables(event.target.value)}

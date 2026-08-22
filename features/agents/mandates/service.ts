@@ -36,6 +36,8 @@ import {
   parseMandateContract,
   type MandateContract,
 } from "./contract";
+import { parseMandateWave1, type MandateWave1Fields } from "./provision-shapes";
+import type { JsonObject } from "@/types/json";
 
 export interface ResolvedMandate {
   mandateKey: string;
@@ -48,8 +50,23 @@ export interface ResolvedMandate {
    * whose required variable is absent REFUSES (disease D4). Consumers that
    * resolve-then-launch pre-check with `assertMandateVariables` so the user
    * sees a real refusal instead of a thrown promise.
+   *
+   * A mandate carrying a `provisionKey` declares its inputs through the
+   * PROVISION instead — its contract's required-variable list is legacy and
+   * the binding's consumption map decides what the Holder consumes.
    */
   contract: MandateContract;
+  /** Declared IO kinds (`agent.mandate.input_kind` / `output_kind`). */
+  inputKind: string | null;
+  outputKind: string | null;
+  /** The Provision this mandate's inputs come from — null for legacy mandates
+   * (see `./provisions.ts`). */
+  provisionKey: string | null;
+  /** Code-owned levers the mandate PINS (reasoning/streaming — never model
+   * ids). Pins win over binding overrides at run time. */
+  pins: JsonObject;
+  /** Offered values the mandate force-delivers as context. */
+  pinnedContext: string[];
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -83,12 +100,13 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
   const supabase = createClient();
+  // `select("*")` on purpose: the wave-1 columns (provision_key, pins,
+  // pinned_context) are live but ahead of the generated Row type — they ride
+  // the full row and are narrowed at ingress by `parseMandateWave1`.
   const { data: mandate, error } = await supabase
     .schema("agent")
     .from("mandate")
-    .select(
-      "id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled, contract",
-    )
+    .select("*")
     .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
     .maybeSingle();
@@ -145,12 +163,18 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
     }
   }
 
+  const wave1: MandateWave1Fields = parseMandateWave1(mandate);
   const value: ResolvedMandate = {
     mandateKey,
     agentId,
     configOverrides,
     provenance,
     contract: parseMandateContract(mandate.contract),
+    inputKind: mandate.input_kind,
+    outputKind: mandate.output_kind,
+    provisionKey: wave1.provisionKey,
+    pins: wave1.pins,
+    pinnedContext: wave1.pinnedContext,
   };
   cache.set(mandateKey, { at: Date.now(), value });
   return value;

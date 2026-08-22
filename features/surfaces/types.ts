@@ -507,7 +507,11 @@ export function sanitizeWritePolicyMap(raw: unknown): WritePolicyMap {
 }
 
 export type ValueMappingType =
-  "surface_value" | "direct_value" | "prompt_user" | "unmapped";
+  | "surface_value"
+  | "direct_value"
+  | "prompt_user"
+  | "unmapped"
+  | "offered_value";
 
 /**
  * One mapping entry. Discriminated by `mapType`. Stored in JSONB so the DB
@@ -520,6 +524,11 @@ export type ValueMappingType =
  * - `prompt_user`   — show a one-shot dialog before launch (agent bindings
  *   only — rejected for tool arg_mappings).
  * - `unmapped`      — explicit suppression of auto-name-match for this key.
+ * - `offered_value` — the NEUTRAL consume-one-offered-value type used by the
+ *   Mandate consumption map (`agent.mandate_binding.consumption_map` — see
+ *   `features/agents/mandates/provisions.ts`). Not a surface-binding map type:
+ *   the surface resolver refuses it loudly. Legacy persisted `code_value`
+ *   entries normalize to this shape on read (ONE funnel, no second parser).
  */
 export type ValueMapping =
   | {
@@ -545,6 +554,22 @@ export type ValueMapping =
     }
   | {
       mapType: "unmapped";
+    }
+  | {
+      mapType: "offered_value";
+      /** SOURCE offered-value name — renames on delivery when it differs from
+       * the map key. */
+      target: string;
+      required?: boolean;
+      /** Delivery channel: `variable` (immutable, turn-1, prompt-substituted)
+       * or `context` (mutable, context-policy path). Structured kinds may only
+       * ride `context`. Default: `variable`. */
+      deliver?: "variable" | "context";
+      /** REQUIRED (bind-time, server-enforced) for a non-guaranteed offered
+       * value: absence is a decision, never a surprise. */
+      when_absent?: "skip" | "use_default" | "fail";
+      /** Delivered when `when_absent === "use_default"` and the value is absent. */
+      default?: unknown;
     };
 
 /** Keys are agent variable / context-policy names, or tool arg names. */
@@ -712,7 +737,8 @@ export function isValueMapping(input: unknown): input is ValueMapping {
     mt === "surface_value" ||
     mt === "direct_value" ||
     mt === "prompt_user" ||
-    mt === "unmapped"
+    mt === "unmapped" ||
+    mt === "offered_value"
   );
 }
 

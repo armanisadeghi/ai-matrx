@@ -29,6 +29,10 @@ import {
   SurfaceVariableBindingList,
   type BindingTarget,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+// The ONE buildBindingTargets (Wave 2 consolidation, 2026-08-22) — the local
+// fork this file carried omitted `defaultValue`, hiding agent defaults from
+// the shared binding rows.
+import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
@@ -567,26 +571,6 @@ function editableToPatch(form: EditableShortcut): Partial<AgentShortcut> {
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────
-
-function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
-  const out: BindingTarget[] = [];
-  const seen = new Set<string>();
-  for (const v of agent.variableDefinitions ?? []) {
-    if (seen.has(v.name)) continue;
-    seen.add(v.name);
-    out.push({
-      name: v.name,
-      description: v.helpText,
-      required: v.required ?? false,
-    });
-  }
-  for (const slot of agent.contextPolicies ?? []) {
-    if (seen.has(slot.key)) continue;
-    seen.add(slot.key);
-    out.push({ name: slot.key, label: slot.label, description: slot.description });
-  }
-  return out;
-}
 
 function cloneMappings(map: ValueMappingMap): ValueMappingMap {
   const out: ValueMappingMap = {};

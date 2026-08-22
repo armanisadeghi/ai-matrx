@@ -393,29 +393,11 @@ export interface BatchContext {
 // Binding targets (constant across the whole batch — they come from the agent)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
-  const out: BindingTarget[] = [];
-  const seen = new Set<string>();
-  for (const v of agent.variableDefinitions ?? []) {
-    if (seen.has(v.name)) continue;
-    seen.add(v.name);
-    out.push({
-      name: v.name,
-      description: v.helpText,
-      required: v.required ?? false,
-    });
-  }
-  for (const slot of agent.contextPolicies ?? []) {
-    if (seen.has(slot.key)) continue;
-    seen.add(slot.key);
-    out.push({
-      name: slot.key,
-      label: slot.label,
-      description: slot.description ?? undefined,
-    });
-  }
-  return out;
-}
+// The ONE implementation lives in features/surfaces/utils/buildBindingTargets
+// (Wave 2 consolidation, 2026-08-22) — this fork used to omit `defaultValue`,
+// so the shared SurfaceVariableBinding rows could never show agent defaults
+// here. Re-exported so every existing batch import keeps working.
+export { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
 
 /** Initial per-target binding state — defaults every target to per-row. */
 export function defaultBindingStates(

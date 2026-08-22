@@ -140,6 +140,56 @@ export function compareStoredContract(
   };
 }
 
+/**
+ * THE PROVISION-ERA COMPARE (Arman's retuned bind rule, 2026-08-22): for a
+ * mandate that carries a `provision_key`, the input side is judged ONLY by
+ * **everything consumed must be offered** — the legacy name-superset rule
+ * does not apply. An agent whose inputs are not consumed from the offer is
+ * FINE (the binding simply doesn't feed them), and offered values consumed by
+ * nothing are NORMAL, never a warning.
+ *
+ * Result mapping onto the shared `ComparisonResult` shape (so every renderer
+ * keeps working): `matchedVariables` = consumed-and-offered, `missingVariables`
+ * = consumed-but-NOT-offered (the only blocking state), `extraVariables` =
+ * offered-but-unconsumed (informational — calmly available). Policy arrays are
+ * unused. The server's bind-time verdict remains the authority.
+ */
+export function compareConsumptionAgainstOffer(
+  offeredValues: readonly { name: string; kind?: string; description?: string }[],
+  consumption: Record<string, { target?: string }>,
+): ComparisonResult {
+  const offeredByName = new Map(offeredValues.map((v) => [v.name, v]));
+  const consumedSources = new Set(
+    Object.entries(consumption).map(([name, entry]) => entry.target || name),
+  );
+  const matched: ContractRow[] = [];
+  const missing: ContractRow[] = [];
+  for (const source of consumedSources) {
+    const offered = offeredByName.get(source);
+    if (offered) {
+      matched.push({
+        name: source,
+        type: offered.kind,
+        helpText: offered.description,
+      });
+    } else {
+      missing.push({ name: source });
+    }
+  }
+  const extra = offeredValues
+    .filter((v) => !consumedSources.has(v.name))
+    .map((v) => ({ name: v.name, type: v.kind, helpText: v.description }));
+  return {
+    matchedVariables: matched,
+    missingVariables: missing,
+    extraVariables: extra,
+    matchedPolicies: [],
+    missingPolicies: [],
+    extraPolicies: [],
+    passing: missing.length === 0,
+  };
+}
+
 /** Returns just the contract rows for a system agent, for display. */
 export function systemContractRows(system: {
   variableDefinitions: VariableDefinition[] | null;

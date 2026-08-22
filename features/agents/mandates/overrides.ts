@@ -25,8 +25,9 @@ import { callApi } from "@/lib/api/call-api";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
-import { isJsonObject, type JsonObject } from "@/types/json";
+import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "./service";
+import type { ConsumptionMap } from "./provision-shapes";
 
 export type MandateDefinitionRow = Database["agent"]["Tables"]["mandate"]["Row"];
 export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
@@ -222,8 +223,34 @@ export interface MandateBindingInput {
    * client run path has no is_version channel). Null = settings-only. */
   agentId: string | null;
   /** LLMParams-shaped settings override (model, thinking_level, …). Null =
-   * agent-swap-only. At least one of the two must be set. */
+   * agent-swap-only. At least one of agent/settings/consumption must be set. */
   configOverrides: JsonObject | null;
+  /** Holder neutrality (Wave 1): 'agent' | 'workflow'. Only agent Holders
+   * execute today — a 'workflow' binding stores but refuses at run time.
+   * Omitted = 'agent'. */
+  holderType?: "agent" | "workflow";
+  /**
+   * The consumption map — which of the mandate's OFFERED values this Holder
+   * consumes and through which channel (`features/agents/mandates/
+   * provision-shapes.ts`). ⚠️ The server REPLACES the stored map with what is
+   * sent (omitted/undefined → wiped), so an editor that owns other fields must
+   * always re-send the current full map. Validated server-side at write time
+   * (422 verbatim): everything consumed must be offered; optional values need
+   * `when_absent`; structured kinds may only ride context.
+   */
+  consumptionMap?: ConsumptionMap | null;
+}
+
+/**
+ * Wave-1 fields of the bind PUT body. The generated
+ * `MandateBindingRequest` (types/python-generated/api-types.ts) predates them
+ * — production's OpenAPI has not shipped the aidream branch yet. Mirrors
+ * `aidream/api/routers/mandate_bindings.py::MandateBindingRequest`; replace
+ * with the generated shape on the next `pnpm sync-types` after deploy.
+ */
+interface MandateBindingRequestWave1Fields {
+  holder_type?: "agent" | "workflow";
+  consumption_map?: Record<string, JsonObject> | null;
 }
 
 export interface MandateBindingPrincipalInput {
@@ -235,6 +262,26 @@ export interface MandateBindingPrincipalInput {
   organizationId?: string;
 }
 
+/** Wire form of one consumption entry — JSON-safe, undefined members stripped
+ * (the strict API payload carries no `undefined`). */
+function consumptionMapForApi(
+  map: ConsumptionMap,
+): Record<string, JsonObject> {
+  const out: Record<string, JsonObject> = {};
+  for (const [name, entry] of Object.entries(map)) {
+    const wire: JsonObject = {
+      mapType: entry.mapType,
+      target: entry.target,
+      deliver: entry.deliver ?? "variable",
+    };
+    if (entry.required === true) wire.required = true;
+    if (entry.when_absent) wire.when_absent = entry.when_absent;
+    if (entry.default !== undefined) wire.default = entry.default as JsonValue;
+    out[name] = wire;
+  }
+  return out;
+}
+
 /** Create or update the principal's binding for a mandate through the ONE bind
  * path (aidream PUT, contract-enforced server-side). Throws with the server's
  * 422 detail verbatim on a contract violation. */
@@ -244,6 +291,20 @@ export async function putMandateBinding(
   principal: MandateBindingPrincipalInput,
   input: MandateBindingInput & { isEnabled?: boolean },
 ): Promise<void> {
+  // Wave-1 fields ride beside the generated body shape until sync-types
+  // catches up (see MandateBindingRequestWave1Fields). The deployed server's
+  // request model ignores unknown fields, so sending them is forward-safe.
+  const wave1: MandateBindingRequestWave1Fields = {
+    ...(input.holderType ? { holder_type: input.holderType } : {}),
+    ...(input.consumptionMap !== undefined
+      ? {
+          consumption_map:
+            input.consumptionMap === null
+              ? null
+              : consumptionMapForApi(input.consumptionMap),
+        }
+      : {}),
+  };
   const result = await dispatch(
     callApi({
       path: "/mandates/{mandate_key}/binding",
@@ -259,6 +320,7 @@ export async function putMandateBinding(
         ...(principal.organizationId
           ? { organization_id: principal.organizationId }
           : {}),
+        ...wave1,
       },
     }),
   );
