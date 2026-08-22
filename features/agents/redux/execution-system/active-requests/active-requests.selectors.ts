@@ -12,6 +12,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
+import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ActiveRequest,
@@ -946,6 +947,12 @@ export const selectUnifiedSlots = (requestId: string) =>
       // also dedupes them: the final upsert updates the block in place and
       // the existing slot picks up the new state via Redux subscription.
       const emittedBlockIds = new Set<string>();
+      // A signed URL is a handoff, never an identity — so the same picture can
+      // arrive as two blocks whose URL strings differ. Dedupe on the resolved
+      // `file_id` so a model-authored `![alt](url)` line can never render the
+      // same file the media block already showed. Scoped to ONE assistant turn,
+      // so showing an image again in a later turn still works.
+      const emittedFileIds = new Set<string>();
       let nextSeq = 0;
       let pendingStatus: UnifiedSlot | null = null;
       // Tracks how many blocks from renderBlockOrder have been emitted into slots.
@@ -974,6 +981,16 @@ export const selectUnifiedSlots = (requestId: string) =>
           // trailing sweeps never re-consider it — but emit no slot.
           emittedBlockIds.add(blockId);
           return;
+        }
+        const fileId = blockMediaFileId(blocksMap[blockId]);
+        if (fileId) {
+          if (emittedFileIds.has(fileId)) {
+            // Same file, already on screen this turn. Consume it so the later
+            // sweeps skip it too, and emit no second slot.
+            emittedBlockIds.add(blockId);
+            return;
+          }
+          emittedFileIds.add(fileId);
         }
         // Content follows the error → pin the error to its chronological spot,
         // just before this block.
