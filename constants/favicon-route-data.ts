@@ -91,6 +91,10 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/scopes", favicon: { color: "#047857", letter: "S" } },
   { href: "/war-room", favicon: { color: "#dc2626", letter: "WR" } },
   { href: "/marketing", favicon: { color: "#15803d", letter: "Mk" } },
+  {
+    href: "/google-analytics-youtube-review",
+    favicon: { color: "#1d4ed8", letter: "GY" },
+  },
   { href: "/free", favicon: { color: "#14b8a6", letter: "Fr" } },
   {
     href: "/appointment-reminder",
