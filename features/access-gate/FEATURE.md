@@ -170,18 +170,21 @@ surface means importing them too, never reimplementing the RPC call.
 
 ## Open
 
-- **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
-  measures it. **543 → 319** as the conversion waves landed: education, files,
-  rag, `features/marketing` and every `app/(core)` route are at ZERO. The
-  `lib` bucket lost its ~45 `lib/redux/app-builder/**` findings when the applet
-  feature was deleted (2026-08-13). The leaders now are `features/agents` (34)
-  and a long tail of 6–16 per feature. Forward-looking worklist (the open
-  resolver bug, the two sweep blind spots, the remaining gaps):
-  [`docs/handoffs/access-gate.md`](../../docs/handoffs/access-gate.md).
+- **The sweep is at ZERO (2026-08-21) — hold it there.** `pnpm check:access-errors`
+  (advisory, in the release gates) went 543 → 0 across every feature, with two
+  scanner blind spots closed the same day: bare JSX text (no quote characters —
+  the class that hid the research-topic 404) and **swallowed reads** (a second
+  pass walks `recordUnavailable` throwers → gated `useQuery` hooks → consumers
+  that never read `.error`/`.isError`/`.status`; it found 60 live swallow sites,
+  52 in marketing — the feature whose "zero" the 2026-08-12 `getBrand` bug had
+  already proven hollow). A zero now means both "no guessing copy" AND "no
+  silently swallowed denial". New code that guesses shows up on the next run —
+  the report is a regression tripwire now, not a worklist.
   **A line the regexes genuinely cannot judge** — a keyword absent from page
   text, an HTTP 404 our crawler observed on someone else's site — takes
-  `// access-errors: ok — <reason>`; the reason is required, and the summary
-  prints how many are marked, so a suppression is a sentence someone defends.
+  `// access-errors: ok — <reason>` (JSX children: `{/* access-errors: ok — <reason> */}`);
+  the reason is required, and the summary prints how many are marked, so a
+  suppression is a sentence someone defends (149 at the zero mark).
 - **The inbox has no live-count door outside its own header.** The page badges
   both boxes, but nothing in the shell tells an owner a request is waiting the
   way the message icon does for unread DMs — today the DM carries that signal.
@@ -207,10 +210,18 @@ surface means importing them too, never reimplementing the RPC call.
   `/api/cms/access-context` boundary. Do not add a fake Main entity/table for an
   external row, and do not add a catch-all external-token path: each project
   must prove existence, access and disclosure at its own trusted boundary.
-- **Slug-addressed records have no gate.** `access_denied_context(p_type, p_id
-uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
-  slug doesn't resolve, `OrganizationAccessGate` says the address didn't match
-  rather than inventing a reason. Same shape will hit any future slug route.
+- **Slug-addressed records: resolve, then gate (2026-08-21).**
+  `public.access_gate_resolve_slug(p_type, p_slug)` (SECURITY DEFINER,
+  signed-in only — anonymous callers get null, closing the enumeration oracle)
+  turns a slug into the uuid the context resolver needs; client half is
+  `resolveAccessGateSlug` in `service/accessDeniedContext.ts`.
+  `OrganizationAccessGate` consumes it: a slug the platform names renders the
+  full gate (browser-verified: `/organizations/accountspayable` as a
+  non-member shows kind + name + honest denial); one it won't still gets
+  "this address doesn't match…", never an invented reason. Types are
+  registered EXPLICITLY in the function (organization only today) — read the
+  migration header (`migrations/access_gate_slug_resolver.sql`) before adding
+  one; a slug that is itself content (the `web_page` test) must not go in.
 - **`check:access-errors` only sees quoted strings.** Bare JSX text
   (`<p>This doesn&apos;t exist…</p>`) is invisible to it — that is why the
   research-topic 404 went unreported for so long. The escaped-apostrophe blind
@@ -226,6 +237,21 @@ uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-08-21** — **The sweep reached ZERO, and a zero finally means something.**
+  363 findings drained in one campaign (education-wave patterns applied by
+  parallel conversion agents feature-by-feature; every conversion:
+  `operationFailed` for writes, `recordUnavailable` for ambiguous reads,
+  `<AccessGate>` for single-record UI, pragmas only for verified facts).
+  Both scanner blind spots closed: bare JSX text (four comment spellings
+  skipped, JSX `{/* */}` pragma accepted) and the swallowed-read pass
+  (throwers → gated hooks → consumers that never read the error), which found
+  60 live swallows including a real deadlock — `NewSiteForm` waited forever on
+  an unreadable `?brand=` target; now gated. Slug-addressed records got a real
+  gate via `access_gate_resolve_slug` (see Open). Findings that stay open by
+  design: the org-settings shell has no live-count door outside the inbox page
+  (the DM still carries the signal), and `requireAccess {forbid:true}` remains
+  deliberately uncalled.
 
 - **2026-08-15** — **The gate reached inside LISTS.** The four-cause ambiguity is
   not only a page-level problem: any table that joins to another table has rows
