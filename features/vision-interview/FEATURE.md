@@ -53,7 +53,7 @@ them — `normalizeStage` in `types.ts` maps them for display
   orchestrated round the Scribe used to ride on. `hooks/useObserveRoleTurns.ts`
   tells the server an exchange finished and the server does the rest
   server-side: mirror the conversation's new messages into `interview.turn`,
-  honour the `<answered_questions>` block, run the Scribe over the living
+  honour the `answered_questions` context stamp, run the Scribe over the living
   document, run the answer tracker over the open questions
   (aidream `services/vision_interview/live_turns.py`).
   **The completion signal is the real one:** the execution system's
@@ -247,17 +247,31 @@ them — `normalizeStage` in `types.ts` maps them for display
     workflow run, so a Start button here answered a question nobody asked
     while being the feature's only door to the run (removed 2026-08-18 —
     invariant 7's honesty applies to the run's home, which is now Finish).
-14. **THE ANSWER-APPEND RULE (v3).** Answers written in the left panel live in
-    the slice (`answerDrafted` / `answerDiscarded` / `selectPendingAnswers`),
-    never only in a composer, and they ride the NEXT message as an
-    `<answered_questions>` XML block so the speaking expert AND the Scribe
-    both receive them. THE SEAM: the canonical chat has no outgoing-text
-    transform, so `PendingAnswersRider` (in `RoomChatPane`) writes the block
-    into the composer draft through `setUserInputText` — the same action the
-    Expert's own keystrokes dispatch — and clears the ledger
-    (`pendingAnswersCleared`) only when `submissionPhase === "persisted"`,
-    i.e. the server reserved the request. A failed send therefore can never
-    eat an answer. The block is visible to the Expert on purpose.
+14. **THE ANSWER-APPEND RULE (v3, structured as of 2026-08-22).** Answers
+    written in the left panel live in the slice (`answerDrafted` /
+    `answerDiscarded` / `selectPendingAnswers`), never only in a composer, and
+    they ride the NEXT message as a structured `answered_questions` CONTEXT
+    entry — a JSON array of `{questionId, questionText, answerText}` — so the
+    speaking expert AND the Scribe both receive them, per THE USER-INPUT LAW
+    (`common-docs/systems/agents/agent-variable-binding/FEATURE.md`).
+    `PendingAnswersRider` (in `RoomChatPane`) writes the ledger via
+    `setContextEntries` (rich form, `max_inline_chars` set high enough to
+    guarantee inlining) and clears both the context entry
+    (`removeContextEntry`) and the ledger (`pendingAnswersCleared`) once
+    `submissionPhase === "persisted"` — context entries persist on the
+    conversation until removed, so a stale entry would otherwise ride every
+    later turn. A failed send leaves both in place, so it can never eat an
+    answer. Server side: the context pipeline durably stamps an INLINE
+    context value onto the turn's message
+    (`cx_message.metadata.model_context` —
+    `aidream/services/conversation_context/context_objects.py`
+    `to_model_context_record`), and
+    `aidream/services/vision_interview/answered_questions.py`
+    (`extract_answered_questions`) reads that structured stamp back — no XML,
+    no regex. Previously an `<answered_questions>` XML block glued onto the
+    Expert's own message via `setUserInputText`; moved off THE USER-INPUT LAW
+    violation (FOUND_DEFECTS.md history) once the context channel's
+    continuation-turn delivery was confirmed live.
 15. **THE DUPLICATE-STREAM RULE (v3).** The right-hand feed streams every
     role EXCEPT the one whose tab is live (`selectActiveRoleTab`) — that one
     is already streaming in the centre. Completed messages always land in the
