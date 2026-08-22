@@ -32,12 +32,10 @@ import {
   setContextEntries,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import {
-  selectLastSubmittedText,
   selectSubmissionPhase,
-  selectUserInputText,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
   docViewChanged,
