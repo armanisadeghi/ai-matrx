@@ -316,7 +316,9 @@ export async function searchGeoPlaces(
   const response = await (await seoDb())
     .rpc("geo_place_search", {
       p_query: query,
-      p_kinds: kinds.length > 0 ? kinds : undefined,
+      // The RPC's p_kinds has no default: an empty list means "no filter",
+      // and the whole gazetteer is the honest answer to that.
+      p_kinds: kinds,
       p_limit: limit,
     })
     .abortSignal(signal ?? new AbortController().signal);

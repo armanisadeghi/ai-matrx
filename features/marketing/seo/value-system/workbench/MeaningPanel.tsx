@@ -60,7 +60,7 @@ import type {
   ValueRule,
   VocabKind,
 } from "../types";
-import { humanizeSlug, type BandMeta } from "../lib";
+import { areaNeedsPlaces, humanizeSlug, type BandMeta } from "../lib";
 
 function SectionHeader({
   icon: Icon,
@@ -540,14 +540,24 @@ export function MeaningPanel({
                       ({humanizeSlug(area.area_kind).toLowerCase()}) →{" "}
                       {humanizeSlug(area.geo_band)}
                     </span>
-                    {area.match_tokens.length > 0 ? (
-                      <span className="block truncate text-[10px] text-muted-foreground/80">
-                        matches: {area.match_tokens.join(", ")}
+                    {areaNeedsPlaces(area) ? (
+                      <span className="block text-[10px] text-warning">
+                        No places yet — this area matches nothing. Add them and
+                        the geo gate starts working.
                       </span>
                     ) : (
-                      <span className="block text-[10px] text-warning">
-                        No place names yet — this area matches nothing. Add them
-                        and the geo gate starts working.
+                      <span className="block truncate text-[10px] text-muted-foreground/80">
+                        {area.place_ids.length > 0
+                          ? `${area.place_ids.length} place${
+                              area.place_ids.length === 1 ? "" : "s"
+                            } from the gazetteer`
+                          : null}
+                        {area.place_ids.length > 0 && area.match_tokens.length > 0
+                          ? " · "
+                          : null}
+                        {area.match_tokens.length > 0
+                          ? `matches: ${area.match_tokens.join(", ")}`
+                          : null}
                       </span>
                     )}
                   </span>

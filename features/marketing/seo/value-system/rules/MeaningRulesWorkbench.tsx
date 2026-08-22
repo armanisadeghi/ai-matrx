@@ -47,6 +47,7 @@ import type { SiteGeoArea, ValueRule } from "../types";
 import { areaNeedsPlaces, buildBandMeta, humanizeSlug, reviewWindow } from "../lib";
 import { ValueRuleEditor } from "./ValueRuleEditor";
 import { GeoAreaEditor } from "./GeoAreaEditor";
+import { PlaceDetectionStrip } from "./PlaceDetectionStrip";
 import {
   geoAreasQueryKey,
   getMeaningUsage,
@@ -301,6 +302,10 @@ export function MeaningRulesWorkbench() {
             </Button>
           </div>
 
+          {/* The other half of the geo match: an area can only fire on a
+              keyword that has been read for the places it names. */}
+          <PlaceDetectionStrip siteId={siteId} />
+
           {areas.isLoading ? (
             <div className="space-y-1.5">
               <Skeleton className="h-12 rounded-md" />
@@ -388,12 +393,24 @@ export function MeaningRulesWorkbench() {
                   </div>
                   <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
                     {humanizeSlug(area.area_kind)} ·{" "}
-                    {area.match_tokens.length === 0 ? (
+                    {areaNeedsPlaces(area) ? (
                       <span className="text-warning">
-                        no place names yet — this area matches nothing
+                        no places yet — this area matches nothing
                       </span>
                     ) : (
-                      <span>matches: {area.match_tokens.join(", ")}</span>
+                      <span>
+                        {area.place_ids.length > 0
+                          ? `${area.place_ids.length} place${
+                              area.place_ids.length === 1 ? "" : "s"
+                            } from the gazetteer`
+                          : null}
+                        {area.place_ids.length > 0 && area.match_tokens.length > 0
+                          ? " · "
+                          : null}
+                        {area.match_tokens.length > 0
+                          ? `matches: ${area.match_tokens.join(", ")}`
+                          : null}
+                      </span>
                     )}
                   </p>
                   {area.notes ? (

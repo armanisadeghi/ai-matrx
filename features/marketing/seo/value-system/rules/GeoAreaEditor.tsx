@@ -11,6 +11,13 @@
  * with empty tokens ("a pack never carries somebody else's cities"), which only
  * works if the expert can fill them in. This is that screen.
  *
+ * SINCE I3 AN AREA CAN NAME GAZETTEER PLACES, not only typed words. A picked
+ * place carries its state, its aliases and its ambiguity rule, so "columbus"
+ * stops meaning four cities and "near me" is a thing you can pick rather than a
+ * phrase you have to think of. Typed words stay — a neighbourhood or a local
+ * nickname is a real service area the gazetteer has never heard of — and an
+ * area may hold either, or both.
+ *
  * HOW MATCHING WORKS, said out loud: each token is matched as a WHOLE WORD
  * against the search. When several areas match one keyword the resolver
  * deliberately takes the LOWEST multiplier — the cautious reading — so an
@@ -25,7 +32,7 @@
  * SoR: common-docs/systems/marketing/seo/seo-keywords/value-system.md.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MapPinned, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -60,15 +67,18 @@ import { ImpactPanel } from "./ImpactPanel";
 import {
   archiveGeoArea,
   createGeoArea,
+  getGeoPlacesByIds,
   previewGeoArea,
   updateGeoArea,
   valueSurfaceQueryKeys,
 } from "./data";
+import { GeoPlacePicker } from "./GeoPlacePicker";
 import {
   AREA_KINDS,
   parseTokens,
   unsafeTokens,
   type GeoAreaFormState,
+  type GeoPlace,
 } from "./types";
 
 function areaToForm(area: SiteGeoArea): GeoAreaFormState {
@@ -76,6 +86,7 @@ function areaToForm(area: SiteGeoArea): GeoAreaFormState {
     label: area.label,
     areaKind: area.area_kind,
     tokensText: area.match_tokens.join(", "),
+    places: [],
     geoBand: area.geo_band,
     notes: area.notes ?? "",
   };
@@ -85,6 +96,7 @@ const EMPTY: GeoAreaFormState = {
   label: "",
   areaKind: "city",
   tokensText: "",
+  places: [],
   geoBand: "",
   notes: "",
 };
@@ -114,9 +126,9 @@ function draftIssues(form: GeoAreaFormState): string[] {
   if (!form.label.trim()) issues.push("Give the area a name, like “Primary service radius”.");
   if (!form.geoBand) issues.push("Choose which band this area belongs to.");
   const tokens = parseTokens(form.tokensText);
-  if (tokens.length === 0)
+  if (tokens.length === 0 && form.places.length === 0)
     issues.push(
-      "Add at least one place name. An area with no place names matches nothing — that is exactly the state this editor exists to fix.",
+      "Add at least one place — pick it from the list, or type a name. An area with nothing in it matches nothing, which is exactly the state this editor exists to fix.",
     );
   const unsafe = unsafeTokens(tokens);
   if (unsafe.length > 0)
@@ -151,6 +163,24 @@ export function GeoAreaEditor({
   const set = <K extends keyof GeoAreaFormState>(key: K, value: GeoAreaFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  /**
+   * An area edited from the ledger arrives as ids; the chips need the rows.
+   * Fetched rather than carried on `SiteGeoArea` because the list read must
+   * stay cheap — the ledger renders hundreds of areas and opens one.
+   */
+  const savedPlaces = useQuery({
+    queryKey: ["seo", "value-rules", "area-places", area?.id ?? "new"],
+    enabled: (area?.place_ids?.length ?? 0) > 0,
+    staleTime: 5 * 60_000,
+    queryFn: ({ signal }) => getGeoPlacesByIds(area?.place_ids ?? [], signal),
+  });
+
+  useEffect(() => {
+    if (savedPlaces.data) {
+      setForm((prev) => (prev.places.length === 0 ? { ...prev, places: savedPlaces.data } : prev));
+    }
+  }, [savedPlaces.data]);
+
   const geoBands = useQuery({
     queryKey: ["marketing", "value-c", "vocab", siteId, "geo_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "geo_band", signal),
@@ -168,6 +198,7 @@ export function GeoAreaEditor({
   const debounced = useDebounce(form, 450);
   const debouncedReady = draftIssues(debounced).length === 0;
   const debouncedTokens = parseTokens(debounced.tokensText);
+  const debouncedPlaceIds = debounced.places.map((place: GeoPlace) => place.id);
 
   const preview = useQuery({
     queryKey: [
@@ -179,6 +210,7 @@ export function GeoAreaEditor({
       window.end,
       area?.id ?? "new",
       debouncedTokens.join("|"),
+      debouncedPlaceIds.join("|"),
       debounced.geoBand,
     ],
     enabled: debouncedReady,
@@ -191,6 +223,7 @@ export function GeoAreaEditor({
           start: window.start,
           end: window.end,
           tokens: debouncedTokens,
+          placeIds: debouncedPlaceIds,
           geoBand: debounced.geoBand,
           areaId: area?.id ?? null,
         },
@@ -210,6 +243,7 @@ export function GeoAreaEditor({
         label: form.label,
         areaKind: form.areaKind,
         tokens: parseTokens(form.tokensText),
+        placeIds: form.places.map((place) => place.id),
         geoBand: form.geoBand,
         notes: form.notes,
       };
@@ -341,14 +375,24 @@ export function GeoAreaEditor({
             </div>
 
             <Field
-              label={`Place names${tokenCount > 0 ? ` (${tokenCount})` : ""}`}
-              hint="One per line, or separated by commas. Each is matched as a whole word inside the search — “newark” matches “data destruction newark”, not “newarkshire”."
+              label={`Places${form.places.length > 0 ? ` (${form.places.length})` : ""}`}
+              hint="Picked from the platform gazetteer — the 50 states, the 1,000 largest US cities, and the “near me” phrases. A picked place knows its own state and aliases, so “Columbus, OH” never quietly means Columbus, GA."
+            >
+              <GeoPlacePicker
+                places={form.places}
+                onChange={(next) => set("places", next)}
+              />
+            </Field>
+
+            <Field
+              label={`Other place names${tokenCount > 0 ? ` (${tokenCount})` : ""}`}
+              hint="For anywhere the gazetteer does not have — a neighbourhood, an industrial park, a local nickname. One per line or comma-separated, each matched as a whole word inside the search: “newark” matches “data destruction newark”, not “newarkshire”."
             >
               <Textarea
                 value={form.tokensText}
                 onChange={(e) => set("tokensText", e.target.value)}
-                rows={5}
-                placeholder={"new jersey\nnewark\nedison\njersey city"}
+                rows={3}
+                placeholder={"ironbound\nmeadowlands"}
                 className="text-xs"
               />
             </Field>
