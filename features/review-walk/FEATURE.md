@@ -1,17 +1,22 @@
 # review-walk — the drill-down review walk (Dynamic Agent Graph S3, oversight surfaces)
 
 A human walks DOWN from a bad AI output one layer at a time. Each layer shows
-the unit being inspected, the provider call that produced it, and every input
-that call received — and asks ONE question: **"are these inputs correct?"**
-Two verb-labeled answers:
+the whole turn — what the user sent, what the system added, what the agent
+did — and EVERY item carries a **Flag** toggle (the agent's answer and
+thinking included; any number can be flagged at once). One compact footer bar
+drives the outcome:
 
-- **"These inputs are fine — the fault is HERE"** → files a
-  `hindsight.finding` at this layer via `POST /review/findings/from-walk`
-  (typed hop evidence, pinned snapshots, elevated assist — server side is
-  aidream `services/review_descend/`, C-27/D-40).
-- per-input **"This input is wrong"** → descends into that input's producer
-  (`descend_ref`) and asks the same question one layer down. Hops accumulate;
-  breadcrumbs climb back up.
+- **Report** (`Report N flagged items` / `Report a problem`) → the report
+  form (flagged items shown as chips, a required "what went wrong" line) →
+  `POST /review/findings/from-walk` files a `hindsight.finding` (typed hop
+  evidence, pinned snapshots, elevated assist — server side is aidream
+  `services/review_descend/`, C-27/D-40). Fault placement falls out of the
+  flags: exactly one flagged RECORDED input with a producer id pins the fault
+  on that producer; anything else (none, several, agent-side parts) pins it
+  on the walked unit. The flag summary rides the hop note.
+- **"Trace where this came from"** (a quiet link on items whose producer the
+  server declares walkable via `descend_ref`) → descends one layer down.
+  Hops accumulate; breadcrumbs climb back up; flags reset per layer.
 
 ## Server contract
 
@@ -39,8 +44,8 @@ error toast):
 | `types.ts` | contract aliases + walk state shapes (`WalkLayer`, `RecordedHop`) |
 | `api.ts` | typed client (`descend`, `findingFromWalk`, `describeWalkError`) — same pattern as `features/hindsight/api.ts`, deliberately NOT merged into it (that file is admin-scoped and separately owned) |
 | `turns.ts` | the TRUE-TURN model: folds the conversation (fetched DIRECT from Supabase via the canonical `fetchConversationBundle` + parsed through `parsePersistedMessageContent` — never a second parser) into turns: user message, context items, attachments, toolset, collab notes, and the agent's response parts (thinking / tool+result / text) in order. Provider framing (tool results as "user" messages) never reaches the UI |
-| `components/ReviewWalkWindow.tsx` | the multi-instance floating window: TURN TABS at the root (switching re-roots the walk on that turn's assistant message), expand-all/collapse-all + Pretty↔Raw toggle, breadcrumb hop trail, layer header, filing panel, receipt panel |
-| `components/TurnDiagnosis.tsx` | all presentation: `TurnDiagnosisView` (root chat layer — sections You sent / Context (N, collapsed) / Call setup / What the agent did / Also on this call), `GroupedInputsView` (deeper layers + non-chat units — descend inputs grouped the same way), `DiagCard` collapsible cards, pretty renderers (toolset chips, key-value args tables — JSON only in explicit Raw mode or for unknown payloads), the deliberate two-step "This is wrong" (open → optional note → Trace/Pin), `ConfidenceBadge` |
+| `components/ReviewWalkWindow.tsx` | the multi-instance floating window: TURN TABS at the root (switching re-roots the walk on that turn's assistant message), expand-all/collapse-all + Pretty↔Raw toggle, breadcrumb hop trail, layer header, footer action bar (flag count + Report), filing panel, receipt panel, collapsed bottom `TechnicalDetails` card (ALL identifiers live there — never in the header) |
+| `components/TurnDiagnosis.tsx` | all presentation: `TurnDiagnosisView` (root chat layer — sections You sent / Context (N, collapsed) / Call setup / What the agent did / Also on this call), `GroupedInputsView` (deeper layers + non-chat units — descend inputs grouped the same way), `DiagCard` collapsible cards, pretty renderers (toolset chips, key-value args tables — JSON only in explicit Raw mode or for unknown payloads), the per-item `FlagToggle` (multi-select; flagged cards get an amber border) + the "Trace where this came from" link on walkable producers, `ConfidenceBadge` |
 | `components/NegativeVerdictFollowUp.tsx` | the entry strip — renders ONLY while a negative verdict exists on the message: `[Diagnose] [Attach your version] [?]` as rounded pills matching the tap-button bar, with a help popover explaining both actions |
 | `components/AttachVersionDialog.tsx` | O1 corrected-output editor → `captureCorrection` (`lib/output-feedback`) |
 
