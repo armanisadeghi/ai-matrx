@@ -16,8 +16,13 @@ import { PageTemplate, Card } from "@/components/official/PageTemplate";
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import MarkdownTable from "@/components/mardown-display/tables/MarkdownTable";
 import MarkdownStream from "@/components/MarkdownStream";
-import { SCRAPER_ANALYSIS_AGENTS } from "@/features/scraper/constants/analysis-agents";
+import {
+  SCRAPER_ANALYSIS_CONTENT_VARIABLE,
+  SCRAPER_ANALYSIS_MANDATES,
+} from "@/features/scraper/constants/analysis-agents";
 import { useScraperAgentAnalysis } from "@/features/scraper/hooks/useScraperAgentAnalysis";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { AnalysisMandateGate } from "./AnalysisMandateGate";
 
 interface FactCheckerPageProps {
   value: string;
@@ -29,7 +34,7 @@ interface FactCheckerPageProps {
   };
 }
 
-const { agentId, contentVariableId } = SCRAPER_ANALYSIS_AGENTS.factChecker;
+const MANDATE_KEY = SCRAPER_ANALYSIS_MANDATES.factChecker;
 
 const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   value,
@@ -37,6 +42,14 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
 }) => {
   const { runAnalysis, cancel, isLoading, error, streamingResponse } =
     useScraperAgentAnalysis();
+  // Gate: the tab runs only once its mandate resolves; unresolved renders the
+  // unbound state (picker + door), never a hardcoded agent.
+  const {
+    mandate,
+    loading: mandateLoading,
+    error: mandateError,
+  } = useMandate(MANDATE_KEY);
+  const mandateReady = Boolean(mandate);
   const [pageText, setPageText] = useState<string>(value);
 
   const pageTitle = overview?.page_title || "Content";
@@ -52,13 +65,13 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   }, [value]);
 
   useEffect(() => {
-    if (!pageText || pageText.trim().length === 0) {
+    if (!mandateReady || !pageText || pageText.trim().length === 0) {
       return undefined;
     }
 
     void runAnalysis({
-      agentId,
-      variables: { [contentVariableId]: pageText },
+      mandateKey: MANDATE_KEY,
+      variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: pageText },
     }).catch((err) => {
       console.error("[FactChecker] Agent run failed:", err);
     });
@@ -66,7 +79,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     return () => {
       cancel();
     };
-  }, [pageText, runAnalysis, cancel]);
+  }, [mandateReady, pageText, runAnalysis, cancel]);
 
   const parsedContent = useMemo(() => {
     if (!streamingResponse) return null;
@@ -89,11 +102,28 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     </Card>
   );
 
+  /** Mandate posture shared by every tab: unbound → gate; resolving → loading. */
+  const mandateGate = (title: string) => {
+    if (mandateError) {
+      return (
+        <AnalysisMandateGate
+          mandateKey={MANDATE_KEY}
+          title="Fact Checker"
+          error={mandateError}
+        />
+      );
+    }
+    if (mandateLoading) return <LoadingState title={title} />;
+    return null;
+  };
+
   const EmptyState = ({ message }: { message: string }) => (
     <p className="text-muted-foreground text-center py-8">{message}</p>
   );
 
   const FullAnalysisContent = () => {
+    const gate = mandateGate("Checking Facts");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Checking Facts" />;
@@ -108,6 +138,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   };
 
   const SummaryContent = () => {
+    const gate = mandateGate("Generating Summary");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Generating Summary" />;
@@ -148,6 +180,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   };
 
   const GeneralObservationsContent = () => {
+    const gate = mandateGate("Analyzing Content");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Analyzing Content" />;
@@ -176,6 +210,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   };
 
   const SpecificClaimsContent = () => {
+    const gate = mandateGate("Analyzing Claims");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Analyzing Claims" />;
@@ -204,6 +240,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   };
 
   const ConcernsContent = () => {
+    const gate = mandateGate("Identifying Concerns");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Identifying Concerns" />;
@@ -232,6 +270,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   };
 
   const RecommendationsContent = () => {
+    const gate = mandateGate("Generating Recommendations");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Generating Recommendations" />;
@@ -260,6 +300,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   };
 
   const ClaimsTableContent = () => {
+    const gate = mandateGate("Generating Claims Table");
+    if (gate) return gate;
     if (error) return <ErrorState />;
     if (isLoading && !streamingResponse)
       return <LoadingState title="Generating Claims Table" />;

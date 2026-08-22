@@ -10,8 +10,13 @@ import {
 } from "@/components/official/PageTemplate";
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import MarkdownTable from "@/components/mardown-display/tables/MarkdownTable";
-import { SCRAPER_ANALYSIS_AGENTS } from "@/features/scraper/constants/analysis-agents";
+import {
+  SCRAPER_ANALYSIS_CONTENT_VARIABLE,
+  SCRAPER_ANALYSIS_MANDATES,
+} from "@/features/scraper/constants/analysis-agents";
 import { useScraperAgentAnalysis } from "@/features/scraper/hooks/useScraperAgentAnalysis";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { AnalysisMandateGate } from "./AnalysisMandateGate";
 
 interface KeywordAnalysisPageProps {
   value: string;
@@ -23,7 +28,7 @@ interface KeywordAnalysisPageProps {
   };
 }
 
-const { agentId, contentVariableId } = SCRAPER_ANALYSIS_AGENTS.keywordAnalysis;
+const MANDATE_KEY = SCRAPER_ANALYSIS_MANDATES.keywordAnalysis;
 
 const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
   value,
@@ -31,19 +36,27 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
 }) => {
   const { runAnalysis, cancel, isLoading, error, streamingResponse } =
     useScraperAgentAnalysis();
+  // Gate: the tab runs only once its mandate resolves; unresolved renders the
+  // unbound state (picker + door), never a hardcoded agent.
+  const {
+    mandate,
+    loading: mandateLoading,
+    error: mandateError,
+  } = useMandate(MANDATE_KEY);
+  const mandateReady = Boolean(mandate);
 
   const pageTitle = overview?.page_title;
   const characterCount = overview?.char_count?.toLocaleString();
   const pageUrl = overview?.url;
 
   useEffect(() => {
-    if (!value || value.trim().length === 0) {
+    if (!mandateReady || !value || value.trim().length === 0) {
       return undefined;
     }
 
     void runAnalysis({
-      agentId,
-      variables: { [contentVariableId]: value },
+      mandateKey: MANDATE_KEY,
+      variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value },
     }).catch((err) => {
       console.error("[KeywordAnalysis] Agent run failed:", err);
     });
@@ -51,9 +64,18 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
     return () => {
       cancel();
     };
-  }, [value, runAnalysis, cancel]);
+  }, [mandateReady, value, runAnalysis, cancel]);
 
   const KeywordAnalysisContent = () => {
+    if (mandateError) {
+      return (
+        <AnalysisMandateGate
+          mandateKey={MANDATE_KEY}
+          title="Keyword Analysis"
+          error={mandateError}
+        />
+      );
+    }
     if (error) {
       return (
         <Card title="Error">
@@ -62,7 +84,7 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
       );
     }
 
-    if (isLoading && !streamingResponse) {
+    if (mandateLoading || (isLoading && !streamingResponse)) {
       return (
         <Card title="Analyzing Keywords">
           <div className="flex items-center justify-center p-8">
@@ -86,6 +108,15 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
   };
 
   const ContentComparisonTable = () => {
+    if (mandateError) {
+      return (
+        <AnalysisMandateGate
+          mandateKey={MANDATE_KEY}
+          title="Keyword Analysis"
+          error={mandateError}
+        />
+      );
+    }
     const tableData = parseMarkdownTable(streamingResponse);
 
     return (

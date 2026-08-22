@@ -1,17 +1,23 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import type { LLMParamsBody } from "@/lib/api/call-api";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
+import { resolveMandate } from "@/features/agents/mandates/service";
 
 export interface RunScraperAgentAnalysisOptions {
-  agentId: string;
-  /** Variable slot UUID → value (legacy broker IDs work as keys). */
+  /** The tab's mandate key (`SCRAPER_ANALYSIS_MANDATES.*`) — resolved at call time. */
+  mandateKey: string;
+  /** Variable name → value (the provision's offered values, e.g. `content`). */
   variables: Record<string, string>;
   userInput?: string;
 }
 
 /**
- * Runs a one-shot agent analysis over scraped content with live streaming text.
+ * Runs a one-shot MANDATE analysis over scraped content with live streaming
+ * text. The mandate resolves at call time (a binding saved seconds ago applies
+ * to the next run) and its `configOverrides` ride the run; a mandate that
+ * cannot resolve rejects — the tab gates on `useMandate` before calling this.
  * Replaces the deleted `run_recipe_to_chat` + socket task path.
  */
 export function useScraperAgentAnalysis() {
@@ -21,7 +27,7 @@ export function useScraperAgentAnalysis() {
 
   const runAnalysis = useCallback(
     async ({
-      agentId,
+      mandateKey,
       variables,
       userInput,
     }: RunScraperAgentAnalysisOptions): Promise<string> => {
@@ -31,8 +37,13 @@ export function useScraperAgentAnalysis() {
       resetRunAgent();
       setStreamingResponse("");
 
+      const mandate = await resolveMandate(mandateKey);
+      const configOverrides: LLMParamsBody | undefined = mandate.configOverrides
+        ? { ...mandate.configOverrides }
+        : undefined;
       const text = await run({
-        agentId,
+        agentId: mandate.agentId,
+        configOverrides,
         userInput,
         variables,
         sourceApp: "matrx-frontend",

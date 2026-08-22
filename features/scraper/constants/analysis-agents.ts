@@ -1,15 +1,19 @@
 /**
- * One-shot analysis agents mounted on full-scrape result tabs.
- * IDs are unchanged from the legacy recipe + broker slot mapping.
+ * One-shot analysis MANDATES mounted on full-scrape result tabs.
+ *
+ * Each tab resolves its mandate at render time (`useMandate`) and runs the
+ * resolved Holder at call time (`useScraperAgentAnalysis` → `resolveMandate`).
+ * Both mandates are declared against provision `scraper.page_analysis`, which
+ * offers `content` — the scraped page text — so the tabs send exactly that
+ * variable. No agent id lives here: binding an agent to a tab is a rebind on
+ * /agents/mandates, never a code change. An unresolved mandate (not yet seeded
+ * or bound) renders the tab's unbound state with the picker + the door — it
+ * never silently runs a hardcoded id.
  */
-export const SCRAPER_ANALYSIS_AGENTS = {
-  factChecker: {
-    agentId: "07e85962-71c8-4a2d-acb0-80d1771a4594",
-    /** Legacy broker UUID — still the agent variable key. */
-    contentVariableId: "59dd12d8-8bec-40ae-af24-09d2cf28a806",
-  },
-  keywordAnalysis: {
-    agentId: "0288e091-6252-4cca-b140-7ba94b4eb206",
-    contentVariableId: "86c303c3-e10f-4426-b739-f20172a4d754",
-  },
+export const SCRAPER_ANALYSIS_MANDATES = {
+  factChecker: "scraper.fact_check",
+  keywordAnalysis: "scraper.keyword_analysis",
 } as const;
+
+/** The `scraper.page_analysis` provision's offered value carrying the page text. */
+export const SCRAPER_ANALYSIS_CONTENT_VARIABLE = "content";
