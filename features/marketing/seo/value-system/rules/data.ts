@@ -31,7 +31,10 @@ import type { Json } from "@/types/database.types";
 import type {
   FacetDimension,
   GeoAreaDraft,
+  GeoPlace,
   MeaningUsageRow,
+  PlaceDetectionPass,
+  PlaceDetectionStatus,
   RuleImpact,
 } from "./types";
 import type { SiteGeoArea } from "../types";
@@ -78,6 +81,10 @@ export const geoAreasQueryKey = (siteId: string) =>
   ["seo", "value-rules", "geo-areas", siteId] as const;
 export const meaningUsageQueryKey = (siteId: string, start: string, end: string) =>
   ["seo", "value-rules", "usage", siteId, start, end] as const;
+export const placeDetectionQueryKey = (siteId: string) =>
+  ["seo", "value-rules", "place-detection", siteId] as const;
+export const geoPlaceSearchQueryKey = (query: string, kinds: string[]) =>
+  ["seo", "value-rules", "geo-places", query, kinds.join("|")] as const;
 
 /** Every query key the value workbench keeps in cache for this site. Saving a
  *  rule or an area changes what EVERY one of them says, so they invalidate
@@ -92,6 +99,7 @@ export function valueSurfaceQueryKeys(siteId: string) {
     ["marketing", "value-c", "summary", siteId],
     ["marketing", "value-c", "review", siteId],
     ["seo", "value-rules", "usage", siteId],
+    placeDetectionQueryKey(siteId),
     ["marketing", "value-b"],
     ["marketing", "value-d"],
   ];
@@ -185,6 +193,8 @@ export interface GeoAreaPreviewInput {
   start: string;
   end: string;
   tokens: string[];
+  /** Gazetteer places the proposed area covers — matched through detections. */
+  placeIds: string[];
   geoBand: string;
   /** Set when EDITING: the area's own current effect is swapped out first. */
   areaId?: string | null;
@@ -201,6 +211,7 @@ export async function previewGeoArea(
       p_start: input.start,
       p_end: input.end,
       p_tokens: input.tokens as unknown as Json,
+      p_place_ids: input.placeIds,
       p_geo_band: input.geoBand,
       p_area_id: input.areaId ?? undefined,
       p_sample: input.sample ?? 10,
@@ -216,7 +227,7 @@ export async function previewGeoArea(
 // ── seo.site_geo_area — THE write path (this module is its only writer) ─────
 
 const GEO_AREA_COLUMNS =
-  "id, site_id, label, area_kind, match_tokens, geo_band, notes";
+  "id, site_id, label, area_kind, match_tokens, place_ids, geo_band, notes";
 
 function geoAreaWriteColumns(draft: GeoAreaDraft, siteId: string) {
   return {
@@ -224,6 +235,7 @@ function geoAreaWriteColumns(draft: GeoAreaDraft, siteId: string) {
     label: draft.label.trim(),
     area_kind: draft.areaKind,
     match_tokens: draft.tokens as unknown as Json,
+    place_ids: draft.placeIds,
     geo_band: draft.geoBand,
     notes: draft.notes.trim() || null,
   };
@@ -281,4 +293,107 @@ export async function archiveGeoArea(areaId: string): Promise<void> {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", areaId);
   if (response.error) throw new Error(response.error.message);
+}
+
+// ── The gazetteer (I3) — places instead of typed words ──────────────────────
+
+/**
+ * Type-ahead over `seo.geo_place`: the 50 states + DC, the top 1,000 US cities
+ * by population, and the local-grammar phrases ("near me", "in my area").
+ *
+ * WHY A PLACE BEATS A WORD, said once here because the editor says it to the
+ * user: a picked place carries its aliases, the state that disambiguates it,
+ * and its ambiguity rule. Typing "columbus" means four cities; picking
+ * Columbus, OH means one. Typed tokens are still supported and still right for
+ * a neighbourhood or a nickname the gazetteer has never heard of.
+ */
+export async function searchGeoPlaces(
+  query: string,
+  kinds: string[],
+  limit: number,
+  signal?: AbortSignal,
+): Promise<GeoPlace[]> {
+  const response = await (await seoDb())
+    .rpc("geo_place_search", {
+      p_query: query,
+      p_kinds: kinds.length > 0 ? kinds : undefined,
+      p_limit: limit,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(
+    response.data,
+    response.error,
+    "search places",
+  ) as unknown as GeoPlace[];
+}
+
+/** The exact places an area already holds, so editing one shows its chips. */
+export async function getGeoPlacesByIds(
+  ids: string[],
+  signal?: AbortSignal,
+): Promise<GeoPlace[]> {
+  if (ids.length === 0) return [];
+  const response = await (await seoDb())
+    .from("geo_place")
+    .select("id, place_kind, name, state_code, population, ambiguity, ambiguity_reason")
+    .in("id", ids)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "read those places") as unknown as Array<
+    Omit<GeoPlace, "label" | "keyword_count">
+  >;
+  return rows.map((row) => ({
+    ...row,
+    label: row.place_kind === "city" && row.state_code ? `${row.name}, ${row.state_code}` : row.name,
+    keyword_count: 0,
+  }));
+}
+
+/**
+ * The place-detection scoreboard (`seo.keyword_place_status`). Server state, so
+ * it survives the tab — the same reason the facet backfill strip reads a ledger
+ * rather than counting in the browser.
+ */
+export async function getPlaceDetectionStatus(
+  siteId: string,
+  minImpressions: number,
+  signal?: AbortSignal,
+): Promise<PlaceDetectionStatus> {
+  const response = await (await seoDb())
+    .rpc("keyword_place_status", {
+      p_site_id: siteId,
+      p_min_impressions: minImpressions,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "read place-detection progress",
+  ) as unknown as PlaceDetectionStatus[];
+  const row = Array.isArray(rows) ? rows[0] : (rows as unknown as PlaceDetectionStatus);
+  if (!row) throw new Error("Place detection reported no status at all.");
+  return row;
+}
+
+/**
+ * One bounded, demand-ordered detection pass. Both ceilings are feature knobs
+ * read by the caller — this module never invents a number, because a knob with
+ * a code fallback is not a knob.
+ */
+export async function runPlaceDetectionPass(
+  batchKeywords: number,
+  minImpressions: number,
+): Promise<PlaceDetectionPass> {
+  const response = await (await seoDb()).rpc("fn_backfill_keyword_places", {
+    p_limit: batchKeywords,
+    p_min_impressions: minImpressions,
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "run a place-detection pass",
+  ) as unknown as PlaceDetectionPass[];
+  const row = Array.isArray(rows) ? rows[0] : (rows as unknown as PlaceDetectionPass);
+  if (!row) throw new Error("The pass reported nothing at all.");
+  return row;
 }

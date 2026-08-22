@@ -27,8 +27,12 @@ import type { SiteGeoArea } from "./types";
  * deliberately carries archetypes, never somebody else's cities), so both the
  * packs screen and the workbench ask this same question of the same rows.
  */
-export function areaNeedsPlaces(area: Pick<SiteGeoArea, "match_tokens">): boolean {
-  return (area.match_tokens?.length ?? 0) === 0;
+export function areaNeedsPlaces(
+  area: Pick<SiteGeoArea, "match_tokens" | "place_ids">,
+): boolean {
+  return (
+    (area.match_tokens?.length ?? 0) === 0 && (area.place_ids?.length ?? 0) === 0
+  );
 }
 
 /** The rule + geo bench, opened on exactly the areas that have no places. */

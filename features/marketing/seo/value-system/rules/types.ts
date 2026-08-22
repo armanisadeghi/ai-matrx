@@ -118,8 +118,62 @@ export interface GeoAreaDraft {
   areaKind: string;
   /** Whole words matched against the keyword. Regex characters are refused. */
   tokens: string[];
+  /** Gazetteer places (`seo.geo_place.id`) this area covers. */
+  placeIds: string[];
   geoBand: string;
   notes: string;
+}
+
+/**
+ * One row of the platform gazetteer (`seo.geo_place_search`). A picked place
+ * beats a typed word because it carries what the word cannot: its aliases, the
+ * state that disambiguates it, and whether its name is also an ordinary English
+ * word ("Mobile", "Orange", "Normal") that only counts with a state beside it.
+ */
+export interface GeoPlace {
+  id: string;
+  place_kind: string;
+  name: string;
+  state_code: string | null;
+  population: number | null;
+  ambiguity: string;
+  ambiguity_reason: string | null;
+  /** "Irvine, CA" / "California" / "near me" — what the chip reads. */
+  label: string;
+  keyword_count: number;
+}
+
+/** What `seo.keyword_place_status` answers — the place-detection scoreboard. */
+export interface PlaceDetectionStatus {
+  queue_total: number;
+  queue_scanned: number;
+  queue_pending: number;
+  queue_deferred: number;
+  pending_clicks: number;
+  pending_impressions: number;
+  scanned_clicks: number;
+  queue_clicks: number;
+  keywords_with_places: number;
+  keywords_explicit_local: number;
+  next_phrase: string | null;
+  last_scanned_at: string | null;
+  site_keywords: number | null;
+  site_keywords_scanned: number | null;
+  site_keywords_local: number | null;
+  site_clicks: number | null;
+  site_local_clicks: number | null;
+  areas_total: number;
+  areas_with_places: number;
+  areas_empty: number;
+  demand_window_days: number;
+}
+
+export interface PlaceDetectionPass {
+  claimed: number;
+  keywords_with_places: number;
+  places_written: number;
+  local_intent_stamped: number;
+  human_protected: number;
 }
 
 export interface GeoAreaFormState {
@@ -127,6 +181,8 @@ export interface GeoAreaFormState {
   areaKind: string;
   /** Comma / newline separated while typing; split on save and on preview. */
   tokensText: string;
+  /** Places picked from the gazetteer, kept whole so the chips can render. */
+  places: GeoPlace[];
   geoBand: string;
   notes: string;
 }

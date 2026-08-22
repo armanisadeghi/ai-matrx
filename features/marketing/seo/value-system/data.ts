@@ -173,7 +173,7 @@ export async function listSiteVocabulary(siteId: string, kind: "value_band" | "g
 export async function listGeoAreas(siteId: string): Promise<SiteGeoArea[]> {
   const response = await (await seoDb())
     .from("site_geo_area")
-    .select("id, site_id, label, area_kind, match_tokens, geo_band, notes")
+    .select("id, site_id, label, area_kind, match_tokens, place_ids, geo_band, notes")
     .eq("site_id", siteId)
     .is("deleted_at", null)
     .order("label");

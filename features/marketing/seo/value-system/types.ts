@@ -67,7 +67,14 @@ export interface SiteGeoArea {
   site_id: string;
   label: string;
   area_kind: string;
+  /** Words a human typed. Kept for names the gazetteer does not have. */
   match_tokens: string[];
+  /**
+   * Gazetteer places this area covers (`seo.geo_place.id`). Preferred over
+   * `match_tokens`: a place carries its own aliases, its state qualifier and
+   * its ambiguity rule, so "columbus" stops meaning four different cities.
+   */
+  place_ids: string[];
   geo_band: string;
   notes: string | null;
 }
