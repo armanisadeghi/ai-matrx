@@ -533,13 +533,44 @@ conversation through `useConversationResume`. **Never silently mint a new conver
 ones exist.** A fresh interview uses `preferFresh` + a bumped `freshSessionKey` so "start new" can
 never revive the surface's last conversation.
 
-**THE CORPUS CONTRACT — `getExpertCorpus(rulebookId, rules)`** (`record/service.ts`) is the ONE way
-any consumer gets everything the Expert ever said about a Rulebook. It returns
-`{ rulebookId, interviews, contributions, totalChars }` where each contribution is
-`{ id, kind: "message"|"upload"|"transcript", text, when, conversationId?, messageId?, fileId?,
-timeRange?, pageExtractionJobId?, rulesProduced? }`, ordered oldest first. Assistant turns are
-excluded on purpose — this is the Expert's record, not a chat log. **The Final Checkup auditor and
-any future Hindsight pass consume this function; a second assembly of the same corpus is a defect.**
+**THE CORPUS CONTRACT — `getExpertCorpus(rulebookId)`** (`record/service.ts`) is the ONE way any
+consumer here gets everything the Expert ever contributed to a Rulebook. 🚨 **It assembles
+nothing.** It calls `GET /masterworks/{rulebook_id}/corpus`, which runs aidream
+`services/masterwork_corpus/corpus.py::load_expert_corpus` — **the exact function the Final
+Checkup judges rules against**. Contract, the nine lanes, the limits and the access model:
+[`aidream/aidream/services/masterwork_corpus/FEATURE.md`](/Users/armanisadeghi/code/aidream/aidream/services/masterwork_corpus/FEATURE.md).
+
+Why: the 2026-08-19 integration audit found **two** assemblies of this corpus — this file and the
+Checkup's — that disagreed on **four of the nine Distillation Approaches** (`body_of_work`, `dump`,
+`chat_import`, `matrx_conversations` were invisible to one side or the other). The page and the
+audit were reading different records of the same Expert. **A second assembly, in any repo, is a
+defect.**
+
+Why the SERVER and not here: assembling it is **work**, not a DB read — it captures pages through
+the scraper, reads processed-document pages, and re-parses an uploaded chat export. "Clients go
+direct to Supabase" governs CRUD; none of this is CRUD.
+
+It returns `{ rulebookId, interviews, contributions, totalChars, laneCounts, limits,
+hiddenInterviewCount, canReadMaterial }`. Each contribution is `{ id, kind, lane, laneLabel, title?,
+text, when, truncated?, cleaned?, conversationId?, messageId?, fileId?, url?, entityToken?,
+entityId?, corpusItemId?, dictations? }`, ordered oldest first. `kind` is the server's segment kind
+(`message` · `chat_turn` · `web_page` · `document` · `recording`, or a dump row's entity token) and
+is **open-ended on purpose** — display uses `laneLabel`, never a hand-rolled union. Assistant turns
+are excluded at the source: this is the Expert's record, not a chat log.
+
+🚨 **RENDER `limits`.** `ExpertCorpusLimit[]` is what the corpus could NOT read — above all
+`lane: "source"`, text the Expert PASTED straight into the distiller, which was never stored and is
+gone for good (122 such rules on Strunk). Hiding it makes a partial record look complete, which is
+precisely the failure the audit found. The Record shows every one under "What isn't in here", and
+`corpusHuman` carries them into every copy payload.
+
+`canReadMaterial: false` means the viewer may see the Rulebook but not the raw material — a
+Rulebook shared for viewing shares its **RULES**, never the unedited hours of dictation. Say so;
+never render an empty page.
+
+**The interview LIST is a different question** and keeps its own client-direct read:
+`listRulebookInterviewsWithAccess` (`ConversationsSection`, `InterviewChooser`) answers "which
+conversation do I resume", not "what did the Expert say". It is not a corpus assembly.
 
 **Audio — the Expert's actual voice, in the Record (2026-08-17).** Arman: _"If any of it was
 audio — because I transcribed it using the smart agent input — we should even have the audio…
@@ -557,15 +588,16 @@ label?, href?}` — persisted at `transcripts.transcripts.metadata.origin` (an e
   through the shared mic chain** and every ProTextarea that declares no origin writes exactly the
   row it always wrote. `ScoutInterviewPanel`'s interview column declares
   `{surface:"masterwork.interview", entityToken:"rulebook", entityId, conversationId, label}`.
-- **In the Record.** `getExpertCorpus` gained a THIRD source — additively; it is still the ONE
-  corpus assembly: `ExpertContribution.dictations[]`, each `{transcriptId, fileId, title, when,
-durationSec, charOffset}`, rendered as a player via `InlineMediaRef` (`as="audio"` and an
-  explicit container height — a bare file id has no mime to infer and `size="fill"` is `h-full`)
-  with an `EntityRef` door to the recording. **The match is evidence, not inference:** a dictation
-  attaches to a message only when the transcript's first 120 characters appear VERBATIM in it, and
-  `charOffset` is where. A dictation that matches nothing becomes its own `transcript`
-  contribution rather than being guessed onto the nearest message — a wrong attribution is worse
-  than none.
+- **In the Record.** The audio is the ONE thing the client adds to the server's corpus, and it is
+  an **enrichment, never a tenth lane** — it puts a player on text the server already supplied.
+  `ExpertContribution.dictations[]`, each `{transcriptId, fileId, title, when, durationSec,
+charOffset}`, rendered via `InlineMediaRef` (`as="audio"` and an explicit container height — a
+  bare file id has no mime to infer and `size="fill"` is `h-full`) with an `EntityRef` door to the
+  recording. **The match is evidence, not inference:** a dictation attaches to a message only when
+  the transcript's first 120 characters appear VERBATIM in it, and `charOffset` is where. A
+  dictation that matches nothing becomes its own `recording` contribution rather than being
+  guessed onto the nearest message — a wrong attribution is worse than none, and it is the one
+  contribution the server assembly cannot see because no text row exists for it.
 - **The door back.** `RecordingOriginRef` (`features/transcripts/components/`) renders the origin
   on the transcript itself — "You dictated this into &lt;Rulebook&gt; · the conversation".
 - **Arman's own interview is backfilled.** All 7 recordings behind conversation `4706f9c0…`,
@@ -736,7 +768,8 @@ opened `chat_import`'s tab.
 **`matrx_conversations` was enabled here** — its lane (the `matrx` tab, posting
 to `/masterworks/ingest-conversations`) was finished; only the flag was left.
 
-**The assist launch contract** (`assists.ts`) gained `open: "approaches"` and
+**The assist launch contract** (`assists.ts`) carries `checkup` / `coherence` / `conduct` for
+the journey moves (2026-08-19), and gained `open: "approaches"` and
 `open: "approach:<key>"`. It supported only `interview | ingest`, so
 `masterwork.approach_selector` — the Mandate whose entire job is to name the
 next Approach — could not have opened a picker even if it had ever run.
@@ -814,6 +847,39 @@ ingest dialog. The move ledger lives on `rulebook.metadata.elicitation` (server-
 surface never writes it). A chip repeating what the page renders (the draft-review backlog) is
 deliberately never produced.
 
+### THE JOURNEY — one computation, two readers (2026-08-19)
+
+`features/masterwork/journey.ts` is the **mirror** of aidream
+`services/masterwork_assists/journey.py`, which is the system of record. It answers *where is
+this Rulebook in its life* — intake → distill → review → build → audition → release → encore →
+improve — and *what is the ONE next move*, deterministically, from facts anyone can read. The
+same computation feeds both halves of the page:
+
+- **`RulebookKpiStrip`'s next-step line IS `journey.headline`.** Before this it stopped at
+  "All caught up — Ready to Build", which it said to a Rulebook holding a finished Checkup
+  nobody had looked at, three unanswered questions, three built Masterworks and zero
+  Auditions. It also no longer promises that rejected rules are "with the interviewer" for a
+  Rulebook that never used one — they are rewritten by the Scout on its NEXT turn, so nothing
+  is happening to them while nobody is talking to it.
+- **The chips below come from `journey.moves`**, in the same order. Page and chips can no
+  longer disagree about what to do next.
+- **The page builds its facts from what it already holds** (`journeyFactsFromRulebook`): the
+  Rulebook row + the Masterworks it was built into. No extra read, no endpoint. It cannot see
+  `platform.masterwork_run`, so it declares `hasRunFacts: false` and the run-dependent moves
+  stay silent here rather than guessing — the server, which does read runs, raises those as
+  chips.
+- **Mirror discipline:** the precedence, the thresholds and the headline sentences must match
+  the Python byte for byte; every scenario has a named twin in `journey.test.ts` ↔
+  `tests/test_journey.py`. Change one, change both, same commit.
+- **The new lanes are real doors** (assists law 9): `checkup` opens the Final Checkup window,
+  `coherence` scrolls to and rings `OpenQuestionsCard` (`OPEN_QUESTIONS_ANCHOR` — the card is
+  already on the page; the chip only says "these ones, here"), `conduct` opens the Conductor
+  with this Rulebook attached, and the audition/release moves navigate to
+  `/masterwork/[id]/masterworks` where both are one button.
+- **`MasterworkHomePage` mounts the same strip UNFILTERED**, so the one thing worth doing next
+  across all your Rulebooks is on the module landing page instead of behind a guess about
+  which Rulebook the brain had something to say about.
+
 ## Registration
 
 - Entity token `rulebook` (platform.entity_types; renamed from `expertise_pack`) + FE overlay in
@@ -848,8 +914,23 @@ deliberately never produced.
    classifications), the Expert reviews the staged values (with Undo), and the existing
    `saveRules` funnel remains the only write. The sibling `masterwork.rule_cleanup` Mandate was
    retired into the improver 2026-08-17 — never re-split them.
+7. **The Expert corpus is assembled ONCE, on the server, and it names its own holes.** This
+   module reads it through `getExpertCorpus` → `GET /masterworks/{rulebook_id}/corpus` and never
+   re-derives it. A surface that shows the corpus **renders `limits`** — a partial record
+   presented as complete is the defect that contract exists to kill.
 
 ## Change log
+
+- **2026-08-19 — ONE expert corpus, nine lanes, both readers.** `getExpertCorpus` stopped
+  assembling: it calls `GET /masterworks/{rulebook_id}/corpus` (aidream
+  `services/masterwork_corpus/`), the exact function the Final Checkup judges rules against. The
+  2026-08-19 audit found two assemblies that disagreed on FOUR of the nine Approaches
+  (`body_of_work`, `dump`, `chat_import`, `matrx_conversations`), so the Record and the audit were
+  reading different records of the same Expert. The Record now shows every lane, labels each
+  contribution with where it came from, renders `limits` ("What isn't in here" — above all the
+  pasted `source` text that was never stored and is gone for good), and says so when the material
+  belongs to another Expert rather than rendering empty. The audio enrichment stayed here; it is a
+  player over text the server supplied, never a lane. Invariant 7 below.
 
 - **2026-08-19 — Every lane route carries the Rulebook surface and the canonical gate.**
   `SurfaceRuntimeProvider` was mounted ONLY on `RulebookDetailPage`, so the same Conductor and
