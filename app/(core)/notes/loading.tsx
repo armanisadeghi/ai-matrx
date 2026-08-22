@@ -1,4 +1,5 @@
 export default function NotesV2Loading() {
+  const nestedWidths = [72, 84, 66, 78];
   return (
     <div className="flex h-full w-full min-h-0">
       {/* Sidebar skeleton */}
@@ -21,7 +22,7 @@ export default function NotesV2Loading() {
                   <div
                     key={j}
                     className="h-4 ml-4 bg-muted/20 rounded animate-pulse"
-                    style={{ width: `${60 + Math.random() * 30}%` }}
+                    style={{ width: `${nestedWidths[(i + j) % nestedWidths.length]}%` }}
                   />
                 ))}
             </div>
