@@ -269,7 +269,7 @@ page level so the wizard's "request changes and keep going" flow works:
 submit, press **Keep reviewing**, and the rewrite returns to the queue when
 the agent responds (`requeue` prop on `RuleReviewWizard`). The same Mandate
 covers all three shapes of the job, selected by which variable is empty:
-`rule_json` empty = draft a brand-new rule from a plain-language description
+`rule` empty = draft a brand-new rule from a plain-language description
 (the Add-rule window's default tab); `expert_input` empty = TIDY, the
 editor's "Clean up with AI" (`applyRuleTidy` freezes quote/severity/section —
 see Invariant 6). The editor offers the feedback path from within edit

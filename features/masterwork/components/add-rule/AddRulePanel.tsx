@@ -206,7 +206,7 @@ export function AddRulePanel({
   };
 
   // IMPROVE, before the rule has ever been saved: the same
-  // `masterwork.rule_improver` Mandate, now with the draft as `rule_json` and
+  // `masterwork.rule_improver` Mandate, now with the draft as `rule` and
   // the Expert's guidance as `expert_input`. The result replaces the draft
   // in place — it still lands only through the explicit "Add as a draft".
   const improveDraft = async () => {

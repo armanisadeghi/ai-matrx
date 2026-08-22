@@ -98,18 +98,19 @@ export function useRuleImproveRun(
       organizationId,
       contextAnchor: { resource_type: "rulebook", resource_id: rulebookId },
       variables: {
-        rule_json: request.fields
-          ? JSON.stringify(
-              Object.fromEntries(
-                RULE_CONTENT_FIELDS.map((field) => [
-                  field,
-                  request.fields?.[field] ?? "",
-                ]),
-              ),
+        // Granular delivery (blob conversion 2026-08-22 with Arman): raw
+        // objects, never JSON.stringify — the server's prompt door
+        // canonicalizes. Empty string still selects DRAFT mode.
+        rule: request.fields
+          ? Object.fromEntries(
+              RULE_CONTENT_FIELDS.map((field) => [
+                field,
+                request.fields?.[field] ?? "",
+              ]),
             )
           : "",
         expert_input: request.expertInput.trim(),
-        rulebook_context: JSON.stringify(request.context),
+        rulebook_context: request.context,
       },
       expect: "json",
       timeoutMs: 120_000,

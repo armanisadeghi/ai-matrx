@@ -9,8 +9,8 @@ import type { RulebookRule, RulebookSections, RuleSeverity } from "../types";
  * `saveRules` CAS — never auto-approved. The same Mandate covers all three
  * shapes of the job, selected purely by which variables are empty:
  *
- * - `rule_json` + `expert_input`: apply the Expert's feedback to that rule.
- * - empty `rule_json`: draft a brand-new rule from the Expert's own words
+ * - `rule` + `expert_input`: apply the Expert's feedback to that rule.
+ * - empty `rule`: draft a brand-new rule from the Expert's own words
  *   (the Add-rule window's "With AI" tab).
  * - empty `expert_input`: TIDY — polish the rule's wording without changing
  *   its meaning (the editor's "Clean up with AI"). Absorbed from the retired
