@@ -46482,6 +46482,71 @@ export type Database = {
           },
         ]
       }
+      keyword_facet: {
+        Row: {
+          category_id: string
+          classifier_version: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          keyword_id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id: string
+          classifier_version?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          keyword_id: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string
+          classifier_version?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          keyword_id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_facet_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keyword_market: {
         Row: {
           competition: string | null
@@ -49428,6 +49493,33 @@ export type Database = {
         Returns: Json
       }
       facet_check_values: { Args: { p_facet: string }; Returns: string[] }
+      facet_dimension_catalog: {
+        Args: { p_site_id?: string }
+        Returns: {
+          cardinality: string
+          description: string
+          dimension_id: string
+          facet_values: Json
+          is_system: boolean
+          keyword_count: number
+          label: string
+          rule_count: number
+          scope: string
+          site_id: string
+          slug: string
+          value_count: number
+        }[]
+      }
+      facet_dimension_upsert: {
+        Args: {
+          p_cardinality?: string
+          p_description?: string
+          p_label: string
+          p_site_id?: string
+          p_slug: string
+        }
+        Returns: string
+      }
       facet_registry_add_value: {
         Args: {
           p_description?: string
@@ -49435,11 +49527,7 @@ export type Database = {
           p_label: string
           p_value: string
         }
-        Returns: {
-          id: string
-          name: string
-          slug: string
-        }[]
+        Returns: string
       }
       facet_registry_usage: {
         Args: never
@@ -49448,6 +49536,17 @@ export type Database = {
           keywords: number
           value_key: string
         }[]
+      }
+      facet_value_upsert: {
+        Args: {
+          p_description?: string
+          p_dimension: string
+          p_label: string
+          p_position?: number
+          p_site_id?: string
+          p_value: string
+        }
+        Returns: string
       }
       fn_archive_keywords: {
         Args: { p_keyword_ids: string[]; p_reason?: string }
@@ -50280,6 +50379,22 @@ export type Database = {
           site_clicks_classified: number
           site_keywords: number
           site_keywords_classified: number
+        }[]
+      }
+      keyword_facet_set: {
+        Args: {
+          p_classifier_version?: string
+          p_confidence?: number
+          p_dimension: string
+          p_keyword_ids: string[]
+          p_site_id?: string
+          p_source?: string
+          p_value?: string
+        }
+        Returns: {
+          dimension: string
+          keyword_id: string
+          value: string
         }[]
       }
       keyword_value_map: {

@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 415 active entity tokens. A token here is FK-valid for
+// 416 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -310,6 +310,7 @@ export type EntityTypeToken =
   | "seo_keyword"
   | "seo_keyword_class_rule"
   | "seo_keyword_edge"
+  | "seo_keyword_facet"
   | "seo_keyword_market"
   | "seo_keyword_market_observation"
   | "seo_keyword_topic"
@@ -1000,6 +1001,7 @@ export type ScopeableEntityToken =
   | "seo_keyword"
   | "seo_keyword_class_rule"
   | "seo_keyword_edge"
+  | "seo_keyword_facet"
   | "seo_keyword_market"
   | "seo_keyword_market_observation"
   | "seo_keyword_topic"
@@ -1467,6 +1469,7 @@ export const ENTITY_TYPE_METADATA = {
   "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "phrase", contentRole: null, referenceCategory: null },
   "seo_keyword_class_rule": { token: "seo_keyword_class_rule", schema: "seo", table: "keyword_class_rule", label: "Keyword Class Rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_edge": { token: "seo_keyword_edge", schema: "seo", table: "keyword_edge", label: "Keyword Edge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_keyword_facet": { token: "seo_keyword_facet", schema: "seo", table: "keyword_facet", label: "Keyword Facet", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_market": { token: "seo_keyword_market", schema: "seo", table: "keyword_market", label: "Keyword Market Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_market_observation": { token: "seo_keyword_market_observation", schema: "seo", table: "keyword_market_observation", label: "Keyword Market Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_topic": { token: "seo_keyword_topic", schema: "seo", table: "keyword_topic", label: "Keyword Topic Assignment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1886,6 +1889,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_keyword",
   "seo_keyword_class_rule",
   "seo_keyword_edge",
+  "seo_keyword_facet",
   "seo_keyword_market",
   "seo_keyword_market_observation",
   "seo_keyword_topic",

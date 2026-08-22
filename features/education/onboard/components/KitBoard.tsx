@@ -21,7 +21,9 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
+  Package,
 } from "lucide-react";
+import { kitHref } from "@/features/education/kits/kitService";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -131,6 +133,17 @@ export function KitBoard({
             <span className="tabular-nums text-xs text-muted-foreground">
               {formatElapsed(elapsed)}
             </span>
+          )}
+          {/* THE KIT'S OWN DOOR. Without this the kit dies with the tab: the
+              artifacts persist but the THING the learner made — one subject,
+              everything for it — was reachable from nowhere afterwards. */}
+          {done && finished > 0 && kit.source?.ref?.fileId && (
+            <Button asChild size="sm" className="gap-1.5">
+              <Link href={kitHref("file", kit.source.ref.fileId)}>
+                <Package className="h-4 w-4" />
+                Open your kit
+              </Link>
+            </Button>
           )}
           {done && (
             <Button variant="outline" size="sm" onClick={onReset}>

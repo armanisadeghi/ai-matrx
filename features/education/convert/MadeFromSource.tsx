@@ -23,8 +23,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, CornerUpLeft } from "lucide-react";
+import { FileText, CornerUpLeft, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { kitHref } from "@/features/education/kits/kitService";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   listGeneratedFrom,
@@ -92,6 +93,17 @@ export function MadeFromSource({
         <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
           Made from your material
         </span>
+        {/* The KIT door. Siblings as chips answer "what else exists"; this
+            answers "take me to the whole thing", which is the page the learner
+            actually wants when they arrive on one piece of it. */}
+        <Link
+          href={kitHref(origin.entityType, origin.entityId)}
+          title="Open the study kit this belongs to"
+          className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+        >
+          <Package className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">Open the kit</span>
+        </Link>
         {origin.href ? (
           <Link
             href={origin.href}
