@@ -46,6 +46,7 @@ export function RulingSession({
   window,
   metas,
   totalUnvalued,
+  ruledCount,
   onRule,
   rulingPending,
   onExit,
@@ -55,12 +56,19 @@ export function RulingSession({
   metas: BandMeta[];
   /** From the decomposition — the true size of the pile, not just this batch. */
   totalUnvalued: number;
+  /**
+   * Rulings that ACTUALLY LANDED this session — owned by the workbench's
+   * mutation, counted in its `onSuccess`. This component deliberately does not
+   * count its own taps: it did, and a ruling that the DB rolled back still
+   * moved the counter to "1 ruled", which is the precise class of lie this
+   * whole feature exists to refuse.
+   */
+  ruledCount: number;
   onRule: (input: SessionRuling) => void;
   rulingPending: boolean;
   onExit: () => void;
 }) {
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
-  const [ruledCount, setRuledCount] = useState(0);
   const [notes, setNotes] = useState("");
 
   const queue = useQuery({
@@ -101,7 +109,6 @@ export function RulingSession({
       notes: notes.trim() || undefined,
       label: current.keyword,
     });
-    setRuledCount((count) => count + 1);
     setNotes("");
   };
 

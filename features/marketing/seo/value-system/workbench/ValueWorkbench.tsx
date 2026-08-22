@@ -245,6 +245,8 @@ export function ValueWorkbench() {
   // The ruling session is a MODE, not an overlay: it replaces the table so the
   // one keyword in front of you is the only thing to answer.
   const [sessionOpen, setSessionOpen] = useState(false);
+  // Counted from rulings that LANDED, never from taps — see RulingSession.
+  const [sessionRuled, setSessionRuled] = useState(0);
 
   const vocab = useQuery({
     queryKey: ["marketing", "value", "vocab", siteId, "value_band"],
@@ -357,6 +359,7 @@ export function ValueWorkbench() {
       }
       setSelectedIds([]);
       setDraft(null);
+      if (sessionOpen) setSessionRuled((count) => count + resolved.length);
       void queryClient.invalidateQueries({
         queryKey: ["marketing", "value"],
       });
@@ -621,6 +624,7 @@ export function ValueWorkbench() {
           window={window}
           metas={metas}
           totalUnvalued={unvaluedQueries}
+          ruledCount={sessionRuled}
           rulingPending={ruling.isPending}
           onRule={(input) =>
             ruling.mutate({
@@ -630,7 +634,10 @@ export function ValueWorkbench() {
               label: input.label,
             })
           }
-          onExit={() => setSessionOpen(false)}
+          onExit={() => {
+            setSessionOpen(false);
+            setSessionRuled(0);
+          }}
         />
       ) : (
         <>
