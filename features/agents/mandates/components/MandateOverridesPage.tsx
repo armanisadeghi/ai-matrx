@@ -262,22 +262,37 @@ export function MandateOverridesPage() {
     const out: BoundAgentRef[] = [];
     for (const view of views) {
       if (view.provenance === "system" || !view.resolvedAgentId) continue;
+      const offer = view.provisionKey ? (offers[view.provisionKey] ?? null) : null;
       out.push({
         mandateId: view.mandate.id,
         agentId: view.resolvedAgentId,
         contract: parseMandateContract(view.mandate.contract),
         layer: view.provenance,
+        provisionKey: view.provisionKey,
+        // null while the batched offer read is still in flight — the hook
+        // treats that as "checking", never as a finding.
+        offeredValueNames: offer ? offer.values.map((v) => v.name) : null,
+        consumptionMap: parseBindingWave1(view.activeBinding).consumptionMap,
       });
     }
     return out;
-  }, [views]);
+  }, [views, offers]);
   const bindingHealth = useBindingHealth(boundRefs);
   const mappableCount = useMemo(
     () => views.filter((v) => v.provisionKey !== null).length,
     [views],
   );
-  const brokenCount = useMemo(
-    () => Object.values(bindingHealth).filter((v) => !v.passing).length,
+  const droppedCount = useMemo(
+    () =>
+      Object.values(bindingHealth).filter((v) => !v.passing && v.kind === "dropped")
+        .length,
+    [bindingHealth],
+  );
+  const staleCount = useMemo(
+    () =>
+      Object.values(bindingHealth).filter(
+        (v) => !v.passing && v.kind === "stale_inputs",
+      ).length,
     [bindingHealth],
   );
 
@@ -364,17 +379,31 @@ export function MandateOverridesPage() {
         {/* A binding the server has started dropping is the one thing on this
             page the reader cannot afford to miss — it means a customization
             they made is no longer running. */}
-        {brokenCount > 0 ? (
+        {droppedCount > 0 ? (
           <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
             <p className="text-sm font-medium text-destructive">
-              {brokenCount === 1
+              {droppedCount === 1
                 ? "1 of your agents is no longer running its job"
-                : `${brokenCount} of your agents are no longer running their jobs`}
+                : `${droppedCount} of your agents are no longer running their jobs`}
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
               The job changed and now needs something your agent doesn&apos;t
               provide, so the built-in agent is running instead. Open the ones
               marked below to see what&apos;s missing and update your agent.
+            </p>
+          </div>
+        ) : null}
+        {staleCount > 0 ? (
+          <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+              {staleCount === 1
+                ? "1 of your agents is missing an input it was set up to receive"
+                : `${staleCount} of your agents are missing inputs they were set up to receive`}
+            </p>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+              Your agent still runs, but the job stopped offering a value your
+              mapping sends it. Open the ones marked below and update the input
+              map (Map inputs).
             </p>
           </div>
         ) : null}
@@ -610,7 +639,12 @@ function MandateCard({
   // default agent is what actually runs. Render that, not the binding — a row
   // reading "runs <your agent>" when the server refuses to run it is the exact
   // false assurance this check exists to remove.
-  const dropped = Boolean(verdict && !verdict.passing);
+  // Only a LEGACY-rule failure means the server swapped agents on you; a
+  // provision-era stale map means your agent still runs, short an input.
+  const dropped = Boolean(verdict && !verdict.passing && verdict.kind === "dropped");
+  const stale = Boolean(
+    verdict && !verdict.passing && verdict.kind === "stale_inputs",
+  );
   const runningAgentId = dropped ? view.defaultAgentId : view.resolvedAgentId;
   const runningAgentName = dropped
     ? view.defaultAgentName
@@ -652,12 +686,20 @@ function MandateCard({
               {mandate.label}
             </h3>
             <ProvenancePill view={view} />
-            {verdict && !verdict.passing ? (
+            {dropped ? (
               <Badge
                 variant="outline"
                 className="gap-1 border-destructive/40 bg-destructive/10 text-[10.5px] font-medium text-destructive"
               >
                 Not running — built-in agent used
+              </Badge>
+            ) : null}
+            {stale ? (
+              <Badge
+                variant="outline"
+                className="gap-1 border-amber-500/40 bg-amber-500/10 text-[10.5px] font-medium text-amber-700 dark:text-amber-400"
+              >
+                Input map out of date
               </Badge>
             ) : null}
             {verdict?.unreadable ? (
@@ -688,6 +730,19 @@ function MandateCard({
           {mandate.description ? (
             <p className="mt-0.5 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
               {mandate.description}
+            </p>
+          ) : null}
+          {stale && verdict ? (
+            <p className="mt-1.5 rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
+              This job no longer offers{" "}
+              <span className="font-medium">{verdict.missing.join(", ")}</span>,
+              but{" "}
+              {verdict.layer === "org"
+                ? "your organization's input map"
+                : "your input map"}{" "}
+              still sends {verdict.missing.length === 1 ? "it" : "them"} — your
+              agent runs without {verdict.missing.length === 1 ? "that value" : "those values"}.
+              Open Map inputs and remove or re-point {verdict.missing.length === 1 ? "it" : "them"}.
             </p>
           ) : null}
           {dropped && verdict ? (

@@ -1,44 +1,51 @@
 "use client";
 
 /**
- * useBindingHealth — is the agent you bound still ALLOWED to run this mandate?
+ * useBindingHealth — is the agent you bound still doing this job the way the
+ * server will actually run it?
  *
  * THE PROBLEM THIS EXISTS FOR. A binding is contract-checked when you WRITE it
- * (aidream's bind endpoint + the picker's pre-flight), and again on every
- * resolution by the server. But the mandate's `contract` is owned by CODE:
- * `sync_declared_mandates` rewrites it from the declaration on every aidream
- * boot. So a mandate you validly bound on Monday can require a new variable on
- * Wednesday, and from that moment `resolve_mandate` DROPS your override and
- * silently runs the system agent instead (services/mandates/service.py — the
- * override layer is dropped loudly in the SERVER LOG and resolution continues).
+ * (aidream's bind endpoint + the picker's pre-flight). But the mandate's
+ * contract AND its Provision are owned by CODE — `sync_declared_mandates` /
+ * `sync_declared_provisions` rewrite them on every aidream boot. So a binding
+ * that was valid on Monday can stop fitting on Wednesday, and nothing told the
+ * person who made it. Until this hook, `/agents/mandates` mirrored only the
+ * runtime's PRECEDENCE, so a binding the server had stopped honouring still
+ * rendered as "Yours".
  *
- * That fallback is correct and deliberate: a stale personal binding must never
- * fail a user's request. What was missing is the other half — telling the
- * person. Until this hook, `/agents/mandates` mirrored only the runtime's
- * PRECEDENCE and not its CONTRACT CHECK, so a dropped binding still rendered as
- * "Yours" with the user's agent name. The UI asserted that a customization was
- * running when the server had already stopped running it.
+ * TWO ERAS, TWO RULES — exactly the server's own rules, never a guess:
  *
- * WHAT COUNTS AS A BREAKING CHANGE is not a guess here — it is exactly the
- * server's own rule, run against the same stored contract: the bound agent must
- * declare a SUPERSET of the mandate's required variables and context policy
- * keys (`compareStoredContract`). Adding a required variable to a mandate
- * breaks every binding whose agent lacks it; renaming one breaks them the same
- * way. Widening a mandate (dropping a requirement) never breaks anything.
+ * 1. LEGACY mandate (no `provision_key`). The server drops an override whose
+ *    agent does not declare a SUPERSET of `contract.required_variables` /
+ *    `required_context_policies` (`resolve_mandate` → `_agent_ref_contract_
+ *    problems`) and runs the SYSTEM DEFAULT instead. Verdict kind `dropped`:
+ *    "your agent isn't running; the built-in one is."
  *
- * Only BOUND agents are fetched (one canonical `fetchAgentExecutionMinimal`
- * per distinct agent, deduped, cached by the slice) — bindings are rare, so
- * this is a handful of reads, not a fan-out over the whole mandate registry.
+ * 2. PROVISION mandate (`provision_key` set — the normal case since
+ *    2026-08-22). The holder is NEVER checked against the input side; the
+ *    binding's `consumption_map` is checked at BIND time only ("everything
+ *    consumed must be offered"). If the Provision later stops offering a value
+ *    the binding consumes, the server does NOT drop the binding — your agent
+ *    still runs, it just no longer receives that value. Verdict kind
+ *    `stale_inputs`: "your agent is running but X no longer reaches it."
+ *    (`compareConsumptionAgainstOffer` — the provision-era compare.)
+ *
+ * Unused offered values are NORMAL and never a finding (the bind rule).
+ * Only BOUND agents are fetched (legacy era only), deduped, cached by the slice.
  */
 
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { compareStoredContract } from "./contract-compare";
-// The leaf module, not ./overrides — same reason contract.ts exists at all:
-// service.ts needs the shape too, and importing it via ./overrides is a cycle.
+import {
+  compareConsumptionAgainstOffer,
+  compareStoredContract,
+} from "./contract-compare";
+// Leaf modules, not ./overrides — service.ts needs these shapes too, and
+// importing them via ./overrides is a cycle.
 import type { MandateContract } from "./contract";
+import type { ConsumptionMap } from "./provision-shapes";
 
 /** One bound (mandate, agent) pair to verify. */
 export interface BoundAgentRef {
@@ -47,15 +54,29 @@ export interface BoundAgentRef {
   contract: MandateContract;
   /** Which layer bound it — only for the message the user reads. */
   layer: "user" | "org";
+  /** Provision era: the mandate's provision key (null = legacy mandate). */
+  provisionKey: string | null;
+  /** Provision era: the offer's value names — null while the offer is still
+   * loading (never accuse a binding before the offer has been read). */
+  offeredValueNames: string[] | null;
+  /** Provision era: what the deciding binding consumes. */
+  consumptionMap: ConsumptionMap;
 }
 
 export interface BindingVerdict {
-  /** False = the server is dropping this binding and running the default. */
+  /** False = something the user set up is not happening as they believe. */
   passing: boolean;
-  /** Contract names the bound agent does not declare. */
+  /**
+   * dropped      — legacy rule failed; the server runs the SYSTEM DEFAULT.
+   * stale_inputs — provision rule failed; the bound agent still runs but the
+   *                named values no longer reach it.
+   */
+  kind: "dropped" | "stale_inputs";
+  /** Contract names (legacy) or consumed-but-no-longer-offered values
+   * (provision) — what the user must fix. */
   missing: string[];
   layer: "user" | "org";
-  /** True until the agent's declaration has actually been read. */
+  /** True until the evidence (agent declaration / provision offer) is read. */
   checking: boolean;
   /** The agent could not be read at all (deleted, or no longer shared). */
   unreadable: boolean;
@@ -68,17 +89,21 @@ export function useBindingHealth(
   const store = useAppStore();
   const [checkedAt, setCheckedAt] = useState(0);
 
-  // Distinct agent ids, stable across renders so the effect doesn't re-fire on
-  // every parent render (refs is rebuilt by a useMemo upstream).
-  const agentIds = useMemo(
-    () => [...new Set(refs.map((r) => r.agentId))].sort().join(","),
+  // Only LEGACY refs need the agent's declaration; provision refs are judged
+  // purely on offer vs consumption map. Stable key so the effect doesn't
+  // re-fire on every parent render (refs is rebuilt by a useMemo upstream).
+  const legacyAgentIds = useMemo(
+    () =>
+      [...new Set(refs.filter((r) => !r.provisionKey).map((r) => r.agentId))]
+        .sort()
+        .join(","),
     [refs],
   );
 
   useEffect(() => {
-    if (!agentIds) return;
+    if (!legacyAgentIds) return;
     let cancelled = false;
-    const ids = agentIds.split(",");
+    const ids = legacyAgentIds.split(",");
     // Settled, not all — one unreadable agent must not hide every other
     // verdict. An unreadable agent is itself a finding (rendered below).
     void Promise.allSettled(
@@ -89,7 +114,7 @@ export function useBindingHealth(
     return () => {
       cancelled = true;
     };
-  }, [agentIds, dispatch]);
+  }, [legacyAgentIds, dispatch]);
 
   return useMemo(() => {
     const out: Record<string, BindingVerdict> = {};
@@ -97,10 +122,38 @@ export function useBindingHealth(
     // store, so the memo must recompute once the fetches settle.
     void checkedAt;
     for (const ref of refs) {
+      if (ref.provisionKey) {
+        if (ref.offeredValueNames === null) {
+          out[ref.mandateId] = {
+            passing: true,
+            kind: "stale_inputs",
+            missing: [],
+            layer: ref.layer,
+            checking: true,
+            unreadable: false,
+          };
+          continue;
+        }
+        const check = compareConsumptionAgainstOffer(
+          ref.offeredValueNames.map((name) => ({ name })),
+          ref.consumptionMap,
+        );
+        out[ref.mandateId] = {
+          passing: check.passing,
+          kind: "stale_inputs",
+          missing: check.missingVariables.map((r) => r.name),
+          layer: ref.layer,
+          checking: false,
+          unreadable: false,
+        };
+        continue;
+      }
+
       const payload = selectAgentExecutionPayload(store.getState(), ref.agentId);
       if (!payload.isReady) {
         out[ref.mandateId] = {
           passing: true, // never accuse an agent we simply haven't read yet
+          kind: "dropped",
           missing: [],
           layer: ref.layer,
           checking: checkedAt === 0,
@@ -114,6 +167,7 @@ export function useBindingHealth(
       });
       out[ref.mandateId] = {
         passing: check.passing,
+        kind: "dropped",
         missing: [...check.missingVariables, ...check.missingPolicies].map(
           (r) => r.name,
         ),
