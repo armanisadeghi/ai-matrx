@@ -1860,11 +1860,16 @@ export interface KeywordClassifyResult {
   updated?: number;
   skipped_error?: number;
   missing_keyword_ids?: string[];
+  facet_dimensions?: string[];
+  facet_dimensions_skipped?: string[];
+  facet_rows_written?: number;
+  rejected_unknown_value?: string[];
 }
 
 export interface KeywordResearchArtifact {
+  __kind?: "keyword_relationship_research";
   primary_keyword: string;
-  keyword_lists?: KeywordResearchList[];
+  keyword_lists: KeywordResearchList[];
 }
 
 export interface KeywordResearchIngestSummary {
@@ -1877,8 +1882,9 @@ export interface KeywordResearchIngestSummary {
 }
 
 export interface KeywordResearchList {
+  __kind?: "keyword_list";
   label: string;
-  keywords?: string[];
+  keywords: string[];
 }
 
 export interface KeywordVolumeBatchFailure {

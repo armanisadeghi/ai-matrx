@@ -4357,6 +4357,47 @@
         }
       }
     },
+    "/runtime/operations/{request_id}/rejoin": {
+      "post": {
+        "tags": [
+          "Runtime Operations (reconnect)"
+        ],
+        "summary": "Rejoin Operation Stream",
+        "description": "Replay and follow the original NDJSON response while its detached task\nis still alive. Ownership is proven through the same runtime operation\nlookup as status/follow; unavailable live delivery returns 409 so clients\nfall back to the durable lifecycle stream and final record re-query.",
+        "operationId": "rejoin_operation_stream_runtime_operations__request_id__rejoin_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/runtime/operations/by-link/{link_kind}/{link_id}": {
       "get": {
         "tags": [
@@ -15325,6 +15366,46 @@
         }
       }
     },
+    "/seo/press/source-requests/ingest": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Ingest Press Source Requests",
+        "description": "Land inbound journalist requests as scored, site-scoped rows — a DURABLE\nstreamed command.\n\nParses the batch, screens each (request, site) pairing deterministically,\ncreates one ``seo.source_request`` row per matched site, then runs the\nresponder mandate per row (minutes of paid model work on a big digest —\nhence the stream). Nothing here sends anything; a human reviews every\ndraft in the Press Room. Rejoin with ``POST /seo/collections/{run_id}/rejoin``.",
+        "operationId": "ingest_press_source_requests_seo_press_source_requests_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceRequestIngestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/web-url-changes/{site_id}/{token}": {
       "post": {
         "tags": [
@@ -21396,6 +21477,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ArchiveOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/enrollments/{enrollment_id}/pending-examples": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Get Pending Examples",
+        "description": "What the next review WOULD read — including runs the settle window still\nexcludes, each flagged (owner or admin).\n\nThis is the honesty surface for \"Review now\": an ``unsettled`` ref is the\nsubject's newest activity, which a window review will silently NOT read —\nthe blind test's worst failure. The UI warns and offers the ``example_ids``\nfocused-review door instead.",
+        "operationId": "get_pending_examples_hindsight_enrollments__enrollment_id__pending_examples_get",
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingExamplesOut"
                 }
               }
             }
@@ -50446,6 +50570,49 @@
         }
       }
     },
+    "/browser-manager/runs/{run_id}/dismiss-handoff": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Dismiss Handoff",
+        "description": "The person declines a pending (unclaimed) handoff — the panel's Dismiss\ndoor. Control returns to the agent immediately; a CLAIMED episode exits via\nrelease-control instead. This is half of the bounded-exit pair (the other\nhalf is the lazy `expires_at` enforcement) that guarantees a run can never\nbe stranded in `handoff_requested` (ruled by Arman 2026-08-21).",
+        "operationId": "dismiss_handoff_browser_manager_runs__run_id__dismiss_handoff_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseControlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser-manager/ops/snapshot": {
       "get": {
         "tags": [
@@ -61499,6 +61666,22 @@
             "description": "Agent variable overrides for this invocation.",
             "ui:widget": "json"
           },
+          "variable_resource_context": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variable Resource Context",
+            "description": "Per-request media-context presentation policy keyed by agent variable name (promote/exclude a resource's representations). Changes context presentation only, never the saved agent definition. Validated against the host's ResourceContextPolicy model per key on entry.",
+            "ui:widget": "json"
+          },
           "config_overrides": {
             "anyOf": [
               {
@@ -61555,6 +61738,42 @@
             "title": "Is New",
             "description": "Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was."
           },
+          "prior_messages": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Prior Messages",
+            "description": "Transcript of THIS ephemeral run, owned by the caller and ordered oldest-first — appended after the agent's own definition messages and before user_input. The server still owns the agent (model, tools, system prompt); only the history comes from here. ONLY valid with store=false — a persisted conversation's history is the DB's, and the host request refuses a second, conflicting transcript. Validated against the host's ChatMessageInput model on entry.",
+            "ui:widget": "json"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Client capability envelope: surface, active capabilities (editor-state, sandbox-fs, browser-dom, desktop-native, ...), and their typed state payloads. Gates every client-capability tool bundle and desktop-instance targeting (client.state['desktop-native'].target_instance_id).",
+            "ui:widget": "json"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-request user-level tool inclusion/exclusion overrides (add/remove, apply_policy). Highest inclusion precedence: user.remove beats everything, user.add beats agent.forbidden.",
+            "ui:widget": "json"
+          },
           "ide_state": {
             "anyOf": [
               {
@@ -61569,6 +61788,22 @@
             ],
             "title": "Ide State",
             "description": "IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.",
+            "ui:widget": "json"
+          },
+          "sandbox": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox",
+            "description": "Sandbox binding for this step (container/session identity for sandbox-delegated tool calls). Validated against the host's SandboxBindingRequest model on entry.",
             "ui:widget": "json"
           },
           "context": {
@@ -61691,6 +61926,59 @@
             "description": "Persist each item's conversation and messages when true.",
             "default": true
           },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller's global picker, membership-validated server-side. Threads the selected scopes' context cells to the agent even when the entity carries no scope tags of its own."
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Anchor",
+            "description": "Durable resource identity ({resource_type, resource_id}) from which authoritative organization/project/task context is reloaded, overruling ambient picker values. Validated against the host's ContextAnchor model on entry.",
+            "ui:widget": "json"
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps."
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "Stream the agent's tokens as they are produced.",
+            "default": true
+          },
           "debug": {
             "type": "boolean",
             "title": "Debug",
@@ -61701,6 +61989,12 @@
             "type": "boolean",
             "title": "Block Mode",
             "description": "Return block-oriented output events when supported by the agent.",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Run the full pre-LLM assembly (context, system-prompt render, message + tool merge) and return it as JSON instead of streaming an LLM turn. Pair with store=false for a true read-only preview — enables preview/approval/cost-estimate steps.",
             "default": false
           },
           "snapshot": {
@@ -61776,6 +62070,22 @@
             "title": "Max Retries Per Iteration",
             "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
+          },
+          "skill_config": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Config",
+            "description": "Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.",
+            "ui:widget": "json"
           }
         },
         "additionalProperties": false,
@@ -67452,6 +67762,98 @@
         "title": "AutoTagPassRequest",
         "description": "Trigger the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many included+scraped sources the pass tags this\nrun. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\ntags ALL eligible sources — the user explicitly asked for it, so it must\nnever silently no-op."
       },
+      "BackfillPassResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "keywords.facet_backfill",
+            "title": "Result Kind",
+            "default": "keywords.facet_backfill"
+          },
+          "refreshed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueueRefreshResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claimed": {
+            "type": "integer",
+            "title": "Claimed",
+            "default": 0
+          },
+          "classified": {
+            "type": "integer",
+            "title": "Classified",
+            "default": 0
+          },
+          "returned_to_queue": {
+            "type": "integer",
+            "title": "Returned To Queue",
+            "default": 0
+          },
+          "quarantined": {
+            "type": "integer",
+            "title": "Quarantined",
+            "default": 0
+          },
+          "classified_today": {
+            "type": "integer",
+            "title": "Classified Today",
+            "default": 0
+          },
+          "daily_ceiling": {
+            "type": "integer",
+            "title": "Daily Ceiling",
+            "default": 0
+          },
+          "ceiling_reached": {
+            "type": "boolean",
+            "title": "Ceiling Reached",
+            "default": false
+          },
+          "queue_pending": {
+            "type": "integer",
+            "title": "Queue Pending",
+            "default": 0
+          },
+          "queue_deferred": {
+            "type": "integer",
+            "title": "Queue Deferred",
+            "default": 0
+          },
+          "pending_clicks": {
+            "type": "integer",
+            "title": "Pending Clicks",
+            "default": 0
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "top_phrases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Phrases"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BackfillPassResult",
+        "description": "What one pass actually did. Every field is measured, never assumed."
+      },
       "BackgroundInteractionStart": {
         "properties": {
           "organization_id": {
@@ -68334,6 +68736,52 @@
         "type": "object",
         "title": "BgRemoveParams"
       },
+      "BindingOfferConsumption": {
+        "properties": {
+          "binding_id": {
+            "type": "string",
+            "title": "Binding Id"
+          },
+          "principal_type": {
+            "type": "string",
+            "title": "Principal Type"
+          },
+          "holder_type": {
+            "type": "string",
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "consumed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Consumed"
+          },
+          "available": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available"
+          },
+          "unoffered": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unoffered"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "binding_id",
+          "principal_type"
+        ],
+        "title": "BindingOfferConsumption",
+        "description": "Offer-aware reporting for ONE binding of a provision-carrying mandate.\n\n``consumed`` is what this binding's consumption map (plus the mandate's\n``pinned_context``) actually delivers to the Holder; ``available`` is the\nrest of the offer. AVAILABLE IS NOT A DEFECT: a holder consuming a subset\nof the offered values is the design (ruled 2026-08-22) — never report it\nas missing, dropped, or drift."
+      },
       "BindingResult": {
         "properties": {
           "id": {
@@ -68366,6 +68814,15 @@
           "organization_id": {
             "type": "string",
             "title": "Organization Id"
+          },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
           },
           "agent_id": {
             "anyOf": [
@@ -68406,6 +68863,20 @@
               }
             ],
             "title": "Config Overrides"
+          },
+          "consumption_map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption Map"
           },
           "is_enabled": {
             "type": "boolean",
@@ -82264,7 +82735,8 @@
         "required": [
           "target"
         ],
-        "title": "CodeValueMapping"
+        "title": "CodeValueMapping",
+        "description": "LEGACY spelling of :class:`OfferedValueMapping`.\n\nKept in the union so persisted maps still VALIDATE, but the one read funnel\n(:func:`parse_value_mapping`) normalizes every ``code_value`` to the neutral\n``offered_value`` before any consumer sees it — a persisted shape has ONE\ndeserializer, and post-funnel code never branches on ``code_value``."
       },
       "CodingSessionBridgeRestRequest": {
         "properties": {
@@ -86876,6 +87348,22 @@
               }
             ],
             "title": "Skill Config"
+          },
+          "max_iterations": {
+            "type": "integer",
+            "maximum": 500,
+            "minimum": 1,
+            "title": "Max Iterations",
+            "description": "Maximum agent reasoning/tool-loop iterations.",
+            "default": 100
+          },
+          "max_retries_per_iteration": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Max Retries Per Iteration",
+            "description": "Maximum provider retries allowed within one agent iteration.",
+            "default": 2
           }
         },
         "type": "object",
@@ -87555,7 +88043,7 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "description": "Short snake_case identifier / name for the agent."
+            "description": "The agent's display name — a Title Case Pretty Name ('Keyword Analysis Master'), never snake_case (Arman, 2026-08-22)."
           },
           "goals": {
             "type": "string",
@@ -89483,9 +89971,9 @@
             "title": "Task Id",
             "description": "Optional associated task selected by the caller."
           },
-          "orchestrator_agent_id": {
+          "conductor_agent_id": {
             "type": "string",
-            "title": "Orchestrator Agent Id"
+            "title": "Conductor Agent Id"
           },
           "execute": {
             "type": "boolean",
@@ -89495,7 +89983,7 @@
         },
         "type": "object",
         "required": [
-          "orchestrator_agent_id"
+          "conductor_agent_id"
         ],
         "title": "CrystallizationRunIn",
         "description": "Run one crystallization pass over one Orchestra.\n\n🚨 `execute=true` SPENDS: a frontier review over several long transcripts,\nthen up to `CRYSTALLIZE_MAX_HELDOUT_RUNS` REAL workflow runs (every member\nagent paid in full — D-17/D-23, there is no sandbox). `execute=false` stops\nafter the plan compiles and says plainly that nothing was proven."
@@ -105848,6 +106336,22 @@
             ],
             "title": "Skill Config"
           },
+          "max_iterations": {
+            "type": "integer",
+            "maximum": 500,
+            "minimum": 1,
+            "title": "Max Iterations",
+            "description": "Maximum agent reasoning/tool-loop iterations.",
+            "default": 100
+          },
+          "max_retries_per_iteration": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Max Retries Per Iteration",
+            "description": "Maximum provider retries allowed within one agent iteration.",
+            "default": 2
+          },
           "up_to_position": {
             "anyOf": [
               {
@@ -112669,6 +113173,32 @@
             },
             "type": "array",
             "title": "Missing Keyword Ids"
+          },
+          "facet_dimensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Facet Dimensions"
+          },
+          "facet_dimensions_skipped": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Facet Dimensions Skipped"
+          },
+          "facet_rows_written": {
+            "type": "integer",
+            "title": "Facet Rows Written",
+            "default": 0
+          },
+          "rejected_unknown_value": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rejected Unknown Value"
           }
         },
         "additionalProperties": false,
@@ -112807,25 +113337,35 @@
       },
       "KeywordResearchArtifact": {
         "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "keyword_relationship_research",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of.",
+            "default": "keyword_relationship_research"
+          },
           "primary_keyword": {
             "type": "string",
-            "title": "Primary Keyword"
+            "title": "Primary Keyword",
+            "description": "The seed keyword all lists relate to."
           },
           "keyword_lists": {
             "items": {
               "$ref": "#/components/schemas/KeywordResearchList"
             },
             "type": "array",
-            "title": "Keyword Lists"
+            "title": "Keyword Lists",
+            "description": "Categorized lists of keywords related to the primary keyword."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "primary_keyword"
+          "primary_keyword",
+          "keyword_lists"
         ],
         "title": "KeywordResearchArtifact",
-        "description": "The research agent's structured output — the registered content_ir kind\n``keyword_relationship_research``, which is byte-identical to what\n``seo.fn_ingest_keyword_research`` accepts. Typed here so the artifact is a\nreal contract on the wire instead of an opaque object the client re-guesses."
+        "description": "The research agent's structured output — the ``keyword_relationship_research`` kind."
       },
       "KeywordResearchBody": {
         "properties": {
@@ -112949,25 +113489,35 @@
       },
       "KeywordResearchList": {
         "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "keyword_list",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of.",
+            "default": "keyword_list"
+          },
           "label": {
             "type": "string",
-            "title": "Label"
+            "title": "Label",
+            "description": "The category name for this list (e.g. Parent Keywords, Child Keywords, Natural LSIs, Related Keywords)."
           },
           "keywords": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Keywords"
+            "title": "Keywords",
+            "description": "The keyword strings in this category."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "label"
+          "label",
+          "keywords"
         ],
         "title": "KeywordResearchList",
-        "description": "One categorized list from the research artifact. Mirrors the registered\n``keyword_relationship_research`` kind item schema exactly, including its\n``additionalProperties: false``."
+        "description": "One categorized list from the research artifact."
       },
       "KeywordResearchResult": {
         "properties": {
@@ -118463,6 +119013,15 @@
             "title": "Principal Type",
             "default": "user"
           },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -118509,6 +119068,20 @@
               }
             ],
             "title": "Config Overrides"
+          },
+          "consumption_map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption Map"
           },
           "is_enabled": {
             "type": "boolean",
@@ -118692,6 +119265,31 @@
             },
             "type": "array",
             "title": "Bound Agent Spilled Variables"
+          },
+          "provision_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provision Key"
+          },
+          "offered_values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Offered Values"
+          },
+          "offer_consumption": {
+            "items": {
+              "$ref": "#/components/schemas/BindingOfferConsumption"
+            },
+            "type": "array",
+            "title": "Offer Consumption"
           },
           "source": {
             "anyOf": [
@@ -118898,6 +119496,39 @@
           "provenance": {
             "type": "string",
             "title": "Provenance"
+          },
+          "provision_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provision Key"
+          },
+          "offered_values": {
+            "items": {
+              "$ref": "#/components/schemas/OfferedValueResponse"
+            },
+            "type": "array",
+            "title": "Offered Values",
+            "default": []
+          },
+          "consumption_map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption Map"
           }
         },
         "additionalProperties": false,
@@ -119497,6 +120128,9 @@
                   "$ref": "#/components/schemas/CodeValueMapping"
                 },
                 {
+                  "$ref": "#/components/schemas/OfferedValueMapping"
+                },
+                {
                   "$ref": "#/components/schemas/DirectValueMapping"
                 },
                 {
@@ -119511,6 +120145,7 @@
                 "mapping": {
                   "code_value": "#/components/schemas/CodeValueMapping",
                   "direct_value": "#/components/schemas/DirectValueMapping",
+                  "offered_value": "#/components/schemas/OfferedValueMapping",
                   "prompt_user": "#/components/schemas/PromptUserValueMapping",
                   "unmapped": "#/components/schemas/UnmappedValueMapping"
                 }
@@ -124350,6 +124985,96 @@
           "definition_id"
         ],
         "title": "OccurrenceOutcome"
+      },
+      "OfferedValueMapping": {
+        "properties": {
+          "mapType": {
+            "type": "string",
+            "const": "offered_value",
+            "title": "Maptype",
+            "default": "offered_value"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "deliver": {
+            "type": "string",
+            "enum": [
+              "variable",
+              "context"
+            ],
+            "title": "Deliver",
+            "default": "variable"
+          },
+          "when_absent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "skip",
+                  "use_default",
+                  "fail"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When Absent"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "OfferedValueMapping",
+        "description": "The neutral map type: consume one offered/code-supplied value.\n\n``target`` names the SOURCE value (the offered value / code value name);\nwhen it differs from the map key the value is renamed on delivery.\n``deliver`` decides the channel: ``variable`` (immutable, turn-1,\nprompt-substituted) or ``context`` (mutable, context-policy path).\n``when_absent`` is REQUIRED for a non-guaranteed offered value at bind\ntime (validated by the binding write path): ``skip`` delivers nothing,\n``use_default`` delivers ``default``, ``fail`` makes absence fatal."
+      },
+      "OfferedValueResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "guaranteed": {
+            "type": "boolean",
+            "title": "Guaranteed",
+            "default": true
+          },
+          "lazy": {
+            "type": "boolean",
+            "title": "Lazy",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "OfferedValueResponse",
+        "description": "One value the mandate's Provision offers — the client's copy of the\ncode declaration, so it never has to guess a value's kind or optionality."
       },
       "OfficeConvertRequest": {
         "properties": {
@@ -129368,6 +130093,81 @@
           "tool_name"
         ],
         "title": "PendingCallSummary"
+      },
+      "PendingExampleOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "settled": {
+            "type": "boolean",
+            "title": "Settled",
+            "default": true
+          },
+          "stats": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Stats"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "title": "PendingExampleOut",
+        "description": "One run the NEXT review would read, settled or not."
+      },
+      "PendingExamplesOut": {
+        "properties": {
+          "settle_cutoff_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Settle Cutoff At"
+          },
+          "settle_minutes": {
+            "type": "integer",
+            "title": "Settle Minutes"
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/PendingExampleOut"
+            },
+            "type": "array",
+            "title": "Examples"
+          },
+          "unsettled_count": {
+            "type": "integer",
+            "title": "Unsettled Count",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "settle_cutoff_at",
+          "settle_minutes"
+        ],
+        "title": "PendingExamplesOut",
+        "description": "What the next review would read — the honesty surface for \"Review now\".\n\n``unsettled_count`` > 0 is the warning: the subject's newest activity is\nexcluded by the settle window; the \"review THIS conversation\" door\n(``example_ids`` on the review trigger) is the way to read it anyway."
       },
       "PermissionRecord": {
         "properties": {
@@ -135693,6 +136493,33 @@
           "hot_off_press"
         ],
         "title": "QueryVariant"
+      },
+      "QueueRefreshResult": {
+        "properties": {
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned",
+            "default": 0
+          },
+          "now_pending": {
+            "type": "integer",
+            "title": "Now Pending",
+            "default": 0
+          },
+          "now_done": {
+            "type": "integer",
+            "title": "Now Done",
+            "default": 0
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "QueueRefreshResult"
       },
       "QuickScrapeRequest": {
         "properties": {
@@ -142552,6 +143379,18 @@
             "title": "Id",
             "default": ""
           },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
           "stats": {
             "additionalProperties": true,
             "type": "object",
@@ -148153,6 +148992,9 @@
                     "$ref": "#/components/schemas/AiVisibilityResult"
                   },
                   {
+                    "$ref": "#/components/schemas/BackfillPassResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/BacklinkEnrichmentResult"
                   },
                   {
@@ -148195,6 +149037,9 @@
                     "$ref": "#/components/schemas/RobotsCheckResult"
                   },
                   {
+                    "$ref": "#/components/schemas/SourceRequestIngestResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/StoryAngleGenerateResult"
                   },
                   {
@@ -148211,10 +149056,12 @@
                     "findings.draft_fix": "#/components/schemas/FindingFixResult",
                     "keywords.assign_topics": "#/components/schemas/TopicAssignResult",
                     "keywords.classify": "#/components/schemas/KeywordClassifyResult",
+                    "keywords.facet_backfill": "#/components/schemas/BackfillPassResult",
                     "keywords.relationship_research": "#/components/schemas/KeywordResearchResult",
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
                     "pages.analyze": "#/components/schemas/PageAnalysisResult",
                     "pages.map_keywords": "#/components/schemas/PageKeywordMapResult",
+                    "press.source_requests.ingest": "#/components/schemas/SourceRequestIngestResult",
                     "press.story_angles.generate": "#/components/schemas/StoryAngleGenerateResult",
                     "public.page_audit": "#/components/schemas/PageAuditResult",
                     "public.robots_check": "#/components/schemas/RobotsCheckResult",
@@ -152506,6 +153353,240 @@
           "scraped_at"
         ],
         "title": "SourceContentResponse"
+      },
+      "SourceRequestIngestBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Platform",
+            "default": "haro"
+          },
+          "raw_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Text"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array",
+                "maxItems": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
+          },
+          "site_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Ids"
+          },
+          "evaluate": {
+            "type": "boolean",
+            "title": "Evaluate",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SourceRequestIngestBody",
+        "description": "One inbound batch of journalist source requests.\n\nEither a raw digest email (``raw_text`` — the HARO/Source-of-Sources shape)\nor pre-parsed ``items`` from a webhook or manual entry. One of the two is\nrequired. Site scoping follows the 2026-08-22 ruling: one row per matched\nsite; ``site_ids`` omitted means every site the caller can edit in the\neffective organization."
+      },
+      "SourceRequestIngestOutcome": {
+        "properties": {
+          "query_title": {
+            "type": "string",
+            "title": "Query Title"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "created",
+              "duplicate",
+              "screened_out",
+              "evaluate_failed"
+            ],
+            "title": "Outcome"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "screen_score": {
+            "type": "integer",
+            "title": "Screen Score",
+            "default": 0
+          },
+          "matched_terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Terms"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query_title",
+          "site_id",
+          "outcome"
+        ],
+        "title": "SourceRequestIngestOutcome",
+        "description": "What happened to one (request, site) pairing. Never silent."
+      },
+      "SourceRequestIngestResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "press.source_requests.ingest",
+            "title": "Result Kind",
+            "default": "press.source_requests.ingest"
+          },
+          "parsed": {
+            "type": "integer",
+            "title": "Parsed"
+          },
+          "sites_considered": {
+            "type": "integer",
+            "title": "Sites Considered"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "duplicates": {
+            "type": "integer",
+            "title": "Duplicates",
+            "default": 0
+          },
+          "screened_out": {
+            "type": "integer",
+            "title": "Screened Out",
+            "default": 0
+          },
+          "evaluated": {
+            "type": "integer",
+            "title": "Evaluated",
+            "default": 0
+          },
+          "drafted": {
+            "type": "integer",
+            "title": "Drafted",
+            "default": 0
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRequestIngestOutcome"
+            },
+            "type": "array",
+            "title": "Outcomes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parsed",
+          "sites_considered"
+        ],
+        "title": "SourceRequestIngestResult",
+        "description": "Durable result shared by the HTTP route and workflow node."
       },
       "SourceResponse": {
         "properties": {

@@ -1935,6 +1935,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runtime/operations/{request_id}/rejoin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rejoin Operation Stream
+         * @description Replay and follow the original NDJSON response while its detached task
+         *     is still alive. Ownership is proven through the same runtime operation
+         *     lookup as status/follow; unavailable live delivery returns 409 so clients
+         *     fall back to the durable lifecycle stream and final record re-query.
+         */
+        post: operations["rejoin_operation_stream_runtime_operations__request_id__rejoin_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runtime/operations/by-link/{link_kind}/{link_id}": {
         parameters: {
             query?: never;
@@ -6327,6 +6350,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/press/source-requests/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Press Source Requests
+         * @description Land inbound journalist requests as scored, site-scoped rows — a DURABLE
+         *     streamed command.
+         *
+         *     Parses the batch, screens each (request, site) pairing deterministically,
+         *     creates one ``seo.source_request`` row per matched site, then runs the
+         *     responder mandate per row (minutes of paid model work on a big digest —
+         *     hence the stream). Nothing here sends anything; a human reviews every
+         *     draft in the Press Room. Rejoin with ``POST /seo/collections/{run_id}/rejoin``.
+         */
+        post: operations["ingest_press_source_requests_seo_press_source_requests_ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/web-url-changes/{site_id}/{token}": {
         parameters: {
             query?: never;
@@ -8618,6 +8668,32 @@ export interface paths {
         head?: never;
         /** Patch Enrollment */
         patch: operations["patch_enrollment_hindsight_enrollments__enrollment_id__patch"];
+        trace?: never;
+    };
+    "/hindsight/enrollments/{enrollment_id}/pending-examples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pending Examples
+         * @description What the next review WOULD read — including runs the settle window still
+         *     excludes, each flagged (owner or admin).
+         *
+         *     This is the honesty surface for "Review now": an ``unsettled`` ref is the
+         *     subject's newest activity, which a window review will silently NOT read —
+         *     the blind test's worst failure. The UI warns and offers the ``example_ids``
+         *     focused-review door instead.
+         */
+        get: operations["get_pending_examples_hindsight_enrollments__enrollment_id__pending_examples_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/hindsight/costs": {
@@ -19308,6 +19384,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/browser-manager/runs/{run_id}/dismiss-handoff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Handoff
+         * @description The person declines a pending (unclaimed) handoff — the panel's Dismiss
+         *     door. Control returns to the agent immediately; a CLAIMED episode exits via
+         *     release-control instead. This is half of the bounded-exit pair (the other
+         *     half is the lazy `expires_at` enforcement) that guarantees a run can never
+         *     be stranded in `handoff_requested` (ruled by Arman 2026-08-21).
+         */
+        post: operations["dismiss_handoff_browser_manager_runs__run_id__dismiss_handoff_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/browser-manager/ops/snapshot": {
         parameters: {
             query?: never;
@@ -23142,6 +23242,13 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
+             * Variable Resource Context
+             * @description Per-request media-context presentation policy keyed by agent variable name (promote/exclude a resource's representations). Changes context presentation only, never the saved agent definition. Validated against the host's ResourceContextPolicy model per key on entry.
+             */
+            variable_resource_context?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
              * Config Overrides
              * @description LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.
              */
@@ -23166,10 +23273,28 @@ export interface components {
              */
             is_new?: boolean | null;
             /**
+             * Prior Messages
+             * @description Transcript of THIS ephemeral run, owned by the caller and ordered oldest-first — appended after the agent's own definition messages and before user_input. The server still owns the agent (model, tools, system prompt); only the history comes from here. ONLY valid with store=false — a persisted conversation's history is the DB's, and the host request refuses a second, conflicting transcript. Validated against the host's ChatMessageInput model on entry.
+             */
+            prior_messages?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** @description Client capability envelope: surface, active capabilities (editor-state, sandbox-fs, browser-dom, desktop-native, ...), and their typed state payloads. Gates every client-capability tool bundle and desktop-instance targeting (client.state['desktop-native'].target_instance_id). */
+            client?: components["schemas"]["ClientContext"] | null;
+            /** @description Per-request user-level tool inclusion/exclusion overrides (add/remove, apply_policy). Highest inclusion precedence: user.remove beats everything, user.add beats agent.forbidden. */
+            user?: components["schemas"]["UserOverrides"] | null;
+            /**
              * Ide State
              * @description IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.
              */
             ide_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Sandbox
+             * @description Sandbox binding for this step (container/session identity for sandbox-delegated tool calls). Validated against the host's SandboxBindingRequest model on entry.
+             */
+            sandbox?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
@@ -23236,6 +23361,29 @@ export interface components {
              */
             store?: boolean;
             /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller's global picker, membership-validated server-side. Threads the selected scopes' context cells to the agent even when the entity carries no scope tags of its own.
+             */
+            scope_ids?: string[] | null;
+            /**
+             * Context Anchor
+             * @description Durable resource identity ({resource_type, resource_id}) from which authoritative organization/project/task context is reloaded, overruling ambient picker values. Validated against the host's ContextAnchor model on entry.
+             */
+            context_anchor?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Initiation
+             * @description How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps.
+             */
+            initiation?: ("user" | "auto") | null;
+            /**
+             * Stream
+             * @description Stream the agent's tokens as they are produced.
+             * @default true
+             */
+            stream?: boolean;
+            /**
              * Debug
              * @description Enable verbose execution diagnostics for the agent run.
              * @default false
@@ -23247,6 +23395,12 @@ export interface components {
              * @default false
              */
             block_mode?: boolean;
+            /**
+             * Dry Run
+             * @description Run the full pre-LLM assembly (context, system-prompt render, message + tool merge) and return it as JSON instead of streaming an LLM turn. Pair with store=false for a true read-only preview — enables preview/approval/cost-estimate steps.
+             * @default false
+             */
+            dry_run?: boolean;
             /**
              * Snapshot
              * @description Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events.
@@ -23287,6 +23441,13 @@ export interface components {
              * @default 2
              */
             max_retries_per_iteration?: number;
+            /**
+             * Skill Config
+             * @description Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.
+             */
+            skill_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * AgentSummary
@@ -25669,6 +25830,72 @@ export interface components {
              */
             max_calls?: number | null;
         };
+        /**
+         * BackfillPassResult
+         * @description What one pass actually did. Every field is measured, never assumed.
+         */
+        BackfillPassResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "keywords.facet_backfill";
+            refreshed?: components["schemas"]["QueueRefreshResult"] | null;
+            /**
+             * Claimed
+             * @default 0
+             */
+            claimed?: number;
+            /**
+             * Classified
+             * @default 0
+             */
+            classified?: number;
+            /**
+             * Returned To Queue
+             * @default 0
+             */
+            returned_to_queue?: number;
+            /**
+             * Quarantined
+             * @default 0
+             */
+            quarantined?: number;
+            /**
+             * Classified Today
+             * @default 0
+             */
+            classified_today?: number;
+            /**
+             * Daily Ceiling
+             * @default 0
+             */
+            daily_ceiling?: number;
+            /**
+             * Ceiling Reached
+             * @default false
+             */
+            ceiling_reached?: boolean;
+            /**
+             * Queue Pending
+             * @default 0
+             */
+            queue_pending?: number;
+            /**
+             * Queue Deferred
+             * @default 0
+             */
+            queue_deferred?: number;
+            /**
+             * Pending Clicks
+             * @default 0
+             */
+            pending_clicks?: number;
+            /** Error */
+            error?: string | null;
+            /** Top Phrases */
+            top_phrases?: string[];
+        };
         /** BackgroundInteractionStart */
         BackgroundInteractionStart: {
             /**
@@ -26047,6 +26274,33 @@ export interface components {
              */
             post_process_mask?: boolean;
         };
+        /**
+         * BindingOfferConsumption
+         * @description Offer-aware reporting for ONE binding of a provision-carrying mandate.
+         *
+         *     ``consumed`` is what this binding's consumption map (plus the mandate's
+         *     ``pinned_context``) actually delivers to the Holder; ``available`` is the
+         *     rest of the offer. AVAILABLE IS NOT A DEFECT: a holder consuming a subset
+         *     of the offered values is the design (ruled 2026-08-22) — never report it
+         *     as missing, dropped, or drift.
+         */
+        BindingOfferConsumption: {
+            /** Binding Id */
+            binding_id: string;
+            /** Principal Type */
+            principal_type: string;
+            /**
+             * Holder Type
+             * @default agent
+             */
+            holder_type?: string;
+            /** Consumed */
+            consumed?: string[];
+            /** Available */
+            available?: string[];
+            /** Unoffered */
+            unoffered?: string[];
+        };
         /** BindingResult */
         BindingResult: {
             /** Id */
@@ -26062,6 +26316,12 @@ export interface components {
             subject_user_id?: string | null;
             /** Organization Id */
             organization_id: string;
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
@@ -26070,6 +26330,10 @@ export interface components {
             use_latest: boolean;
             /** Config Overrides */
             config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Consumption Map */
+            consumption_map?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Is Enabled */
@@ -31317,7 +31581,15 @@ export interface components {
             /** Line */
             line: number;
         };
-        /** CodeValueMapping */
+        /**
+         * CodeValueMapping
+         * @description LEGACY spelling of :class:`OfferedValueMapping`.
+         *
+         *     Kept in the union so persisted maps still VALIDATE, but the one read funnel
+         *     (:func:`parse_value_mapping`) normalizes every ``code_value`` to the neutral
+         *     ``offered_value`` before any consumer sees it — a persisted shape has ONE
+         *     deserializer, and post-funnel code never branches on ``code_value``.
+         */
         CodeValueMapping: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -33018,6 +33290,18 @@ export interface components {
             skill_config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Max Iterations
+             * @description Maximum agent reasoning/tool-loop iterations.
+             * @default 100
+             */
+            max_iterations?: number;
+            /**
+             * Max Retries Per Iteration
+             * @description Maximum provider retries allowed within one agent iteration.
+             * @default 2
+             */
+            max_retries_per_iteration?: number;
         };
         /** ConversationExecutionsResponse */
         ConversationExecutionsResponse: {
@@ -33315,7 +33599,7 @@ export interface components {
         CreateAgentInput: {
             /**
              * Name
-             * @description Short snake_case identifier / name for the agent.
+             * @description The agent's display name — a Title Case Pretty Name ('Keyword Analysis Master'), never snake_case (Arman, 2026-08-22).
              */
             name: string;
             /**
@@ -34033,8 +34317,8 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Orchestrator Agent Id */
-            orchestrator_agent_id: string;
+            /** Conductor Agent Id */
+            conductor_agent_id: string;
             /**
              * Execute
              * @default true
@@ -40251,6 +40535,18 @@ export interface components {
             skill_config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Max Iterations
+             * @description Maximum agent reasoning/tool-loop iterations.
+             * @default 100
+             */
+            max_iterations?: number;
+            /**
+             * Max Retries Per Iteration
+             * @description Maximum provider retries allowed within one agent iteration.
+             * @default 2
+             */
+            max_retries_per_iteration?: number;
             /** Up To Position */
             up_to_position?: number | null;
             /** From Message Id */
@@ -43093,6 +43389,17 @@ export interface components {
             skipped_error?: number;
             /** Missing Keyword Ids */
             missing_keyword_ids?: string[];
+            /** Facet Dimensions */
+            facet_dimensions?: string[];
+            /** Facet Dimensions Skipped */
+            facet_dimensions_skipped?: string[];
+            /**
+             * Facet Rows Written
+             * @default 0
+             */
+            facet_rows_written?: number;
+            /** Rejected Unknown Value */
+            rejected_unknown_value?: string[];
         };
         /** KeywordCreate */
         KeywordCreate: {
@@ -43148,16 +43455,26 @@ export interface components {
         };
         /**
          * KeywordResearchArtifact
-         * @description The research agent's structured output — the registered content_ir kind
-         *     ``keyword_relationship_research``, which is byte-identical to what
-         *     ``seo.fn_ingest_keyword_research`` accepts. Typed here so the artifact is a
-         *     real contract on the wire instead of an opaque object the client re-guesses.
+         * @description The research agent's structured output — the ``keyword_relationship_research`` kind.
          */
         KeywordResearchArtifact: {
-            /** Primary Keyword */
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of.
+             * @default keyword_relationship_research
+             * @constant
+             */
+            __kind?: "keyword_relationship_research";
+            /**
+             * Primary Keyword
+             * @description The seed keyword all lists relate to.
+             */
             primary_keyword: string;
-            /** Keyword Lists */
-            keyword_lists?: components["schemas"]["KeywordResearchList"][];
+            /**
+             * Keyword Lists
+             * @description Categorized lists of keywords related to the primary keyword.
+             */
+            keyword_lists: components["schemas"]["KeywordResearchList"][];
         };
         /** KeywordResearchBody */
         KeywordResearchBody: {
@@ -43241,15 +43558,26 @@ export interface components {
         };
         /**
          * KeywordResearchList
-         * @description One categorized list from the research artifact. Mirrors the registered
-         *     ``keyword_relationship_research`` kind item schema exactly, including its
-         *     ``additionalProperties: false``.
+         * @description One categorized list from the research artifact.
          */
         KeywordResearchList: {
-            /** Label */
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of.
+             * @default keyword_list
+             * @constant
+             */
+            __kind?: "keyword_list";
+            /**
+             * Label
+             * @description The category name for this list (e.g. Parent Keywords, Child Keywords, Natural LSIs, Related Keywords).
+             */
             label: string;
-            /** Keywords */
-            keywords?: string[];
+            /**
+             * Keywords
+             * @description The keyword strings in this category.
+             */
+            keywords: string[];
         };
         /** KeywordResearchResult */
         KeywordResearchResult: {
@@ -45039,6 +45367,12 @@ export interface components {
              * @enum {string}
              */
             principal_type?: "user" | "org";
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
@@ -45047,6 +45381,10 @@ export interface components {
             use_latest?: boolean | null;
             /** Config Overrides */
             config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Consumption Map */
+            consumption_map?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
@@ -45120,6 +45458,12 @@ export interface components {
             spill_variables?: string[];
             /** Bound Agent Spilled Variables */
             bound_agent_spilled_variables?: string[];
+            /** Provision Key */
+            provision_key?: string | null;
+            /** Offered Values */
+            offered_values?: string[];
+            /** Offer Consumption */
+            offer_consumption?: components["schemas"]["BindingOfferConsumption"][];
             source?: components["schemas"]["CodeTruthSource"] | null;
             /** Inputs */
             inputs?: components["schemas"]["CodeTruthField"][];
@@ -45200,6 +45544,17 @@ export interface components {
             };
             /** Provenance */
             provenance: string;
+            /** Provision Key */
+            provision_key?: string | null;
+            /**
+             * Offered Values
+             * @default []
+             */
+            offered_values?: components["schemas"]["OfferedValueResponse"][];
+            /** Consumption Map */
+            consumption_map?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** MandateResultPromoteRequest */
         MandateResultPromoteRequest: {
@@ -45420,7 +45775,7 @@ export interface components {
             };
             /** Mapping */
             mapping?: {
-                [key: string]: components["schemas"]["CodeValueMapping"] | components["schemas"]["DirectValueMapping"] | components["schemas"]["UnmappedValueMapping"] | components["schemas"]["PromptUserValueMapping"];
+                [key: string]: components["schemas"]["CodeValueMapping"] | components["schemas"]["OfferedValueMapping"] | components["schemas"]["DirectValueMapping"] | components["schemas"]["UnmappedValueMapping"] | components["schemas"]["PromptUserValueMapping"];
             };
             /** Spill Variables */
             spill_variables?: string[];
@@ -47560,6 +47915,62 @@ export interface components {
             updated_at?: string | null;
         };
         /**
+         * OfferedValueMapping
+         * @description The neutral map type: consume one offered/code-supplied value.
+         *
+         *     ``target`` names the SOURCE value (the offered value / code value name);
+         *     when it differs from the map key the value is renamed on delivery.
+         *     ``deliver`` decides the channel: ``variable`` (immutable, turn-1,
+         *     prompt-substituted) or ``context`` (mutable, context-policy path).
+         *     ``when_absent`` is REQUIRED for a non-guaranteed offered value at bind
+         *     time (validated by the binding write path): ``skip`` delivers nothing,
+         *     ``use_default`` delivers ``default``, ``fail`` makes absence fatal.
+         */
+        OfferedValueMapping: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mapType: "offered_value";
+            /** Target */
+            target: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            /**
+             * Deliver
+             * @default variable
+             * @enum {string}
+             */
+            deliver?: "variable" | "context";
+            /** When Absent */
+            when_absent?: ("skip" | "use_default" | "fail") | null;
+            default?: components["schemas"]["JsonValue"] | null;
+        };
+        /**
+         * OfferedValueResponse
+         * @description One value the mandate's Provision offers — the client's copy of the
+         *     code declaration, so it never has to guess a value's kind or optionality.
+         */
+        OfferedValueResponse: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Guaranteed
+             * @default true
+             */
+            guaranteed?: boolean;
+            /**
+             * Lazy
+             * @default false
+             */
+            lazy?: boolean;
+        };
+        /**
          * OfficeConvertRequest
          * @description Conversion options. `target` exists for forward-compat; only "pdf".
          */
@@ -49438,6 +49849,51 @@ export interface components {
             execution_authorization?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /**
+         * PendingExampleOut
+         * @description One run the NEXT review would read, settled or not.
+         */
+        PendingExampleOut: {
+            /** Kind */
+            kind: string;
+            /** Id */
+            id: string;
+            /** At */
+            at?: string | null;
+            /**
+             * Settled
+             * @default true
+             */
+            settled?: boolean;
+            /** Stats */
+            stats?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * PendingExamplesOut
+         * @description What the next review would read — the honesty surface for "Review now".
+         *
+         *     ``unsettled_count`` > 0 is the warning: the subject's newest activity is
+         *     excluded by the settle window; the "review THIS conversation" door
+         *     (``example_ids`` on the review trigger) is the way to read it anyway.
+         */
+        PendingExamplesOut: {
+            /**
+             * Settle Cutoff At
+             * Format: date-time
+             */
+            settle_cutoff_at: string;
+            /** Settle Minutes */
+            settle_minutes: number;
+            /** Examples */
+            examples?: components["schemas"]["PendingExampleOut"][];
+            /**
+             * Unsettled Count
+             * @default 0
+             */
+            unsettled_count?: number;
         };
         /**
          * PermissionRecord
@@ -52072,6 +52528,29 @@ export interface components {
          * @enum {string}
          */
         QueryVariant: "keyword" | "advanced_operator" | "resource_page" | "listicle" | "hot_off_press";
+        /** QueueRefreshResult */
+        QueueRefreshResult: {
+            /**
+             * Scanned
+             * @default 0
+             */
+            scanned?: number;
+            /**
+             * Now Pending
+             * @default 0
+             */
+            now_pending?: number;
+            /**
+             * Now Done
+             * @default 0
+             */
+            now_done?: number;
+            /**
+             * Window Days
+             * @default 0
+             */
+            window_days?: number;
+        };
         /** QuickScrapeRequest */
         QuickScrapeRequest: {
             /**
@@ -54744,6 +55223,8 @@ export interface components {
              * @default
              */
             id?: string;
+            /** At */
+            at?: string | null;
             /** Stats */
             stats?: {
                 [key: string]: unknown;
@@ -57006,7 +57487,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -58704,6 +59185,121 @@ export interface components {
             }[];
             /** Scraped At */
             scraped_at: string;
+        };
+        /**
+         * SourceRequestIngestBody
+         * @description One inbound batch of journalist source requests.
+         *
+         *     Either a raw digest email (``raw_text`` — the HARO/Source-of-Sources shape)
+         *     or pre-parsed ``items`` from a webhook or manual entry. One of the two is
+         *     required. Site scoping follows the 2026-08-22 ruling: one row per matched
+         *     site; ``site_ids`` omitted means every site the caller can edit in the
+         *     effective organization.
+         */
+        SourceRequestIngestBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Platform
+             * @default haro
+             */
+            platform?: string;
+            /** Raw Text */
+            raw_text?: string | null;
+            /** Items */
+            items?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /** Site Ids */
+            site_ids?: string[] | null;
+            /**
+             * Evaluate
+             * @default true
+             */
+            evaluate?: boolean;
+        };
+        /**
+         * SourceRequestIngestOutcome
+         * @description What happened to one (request, site) pairing. Never silent.
+         */
+        SourceRequestIngestOutcome: {
+            /** Query Title */
+            query_title: string;
+            /** Site Id */
+            site_id: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "created" | "duplicate" | "screened_out" | "evaluate_failed";
+            /** Request Id */
+            request_id?: string | null;
+            /**
+             * Screen Score
+             * @default 0
+             */
+            screen_score?: number;
+            /** Matched Terms */
+            matched_terms?: string[];
+            /** Status */
+            status?: string | null;
+            /** Match Score */
+            match_score?: number | null;
+        };
+        /**
+         * SourceRequestIngestResult
+         * @description Durable result shared by the HTTP route and workflow node.
+         */
+        SourceRequestIngestResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "press.source_requests.ingest";
+            /** Parsed */
+            parsed: number;
+            /** Sites Considered */
+            sites_considered: number;
+            /**
+             * Created
+             * @default 0
+             */
+            created?: number;
+            /**
+             * Duplicates
+             * @default 0
+             */
+            duplicates?: number;
+            /**
+             * Screened Out
+             * @default 0
+             */
+            screened_out?: number;
+            /**
+             * Evaluated
+             * @default 0
+             */
+            evaluated?: number;
+            /**
+             * Drafted
+             * @default 0
+             */
+            drafted?: number;
+            /** Outcomes */
+            outcomes?: components["schemas"]["SourceRequestIngestOutcome"][];
         };
         /** SourceResponse */
         SourceResponse: {
@@ -70151,6 +70747,37 @@ export interface operations {
             };
         };
     };
+    rejoin_operation_stream_runtime_operations__request_id__rejoin_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     operations_by_link_runtime_operations_by_link__link_kind___link_id__get: {
         parameters: {
             query?: {
@@ -77761,6 +78388,39 @@ export interface operations {
             };
         };
     };
+    ingest_press_source_requests_seo_press_source_requests_ingest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceRequestIngestBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     receive_url_changes_web_url_changes__site_id___token__post: {
         parameters: {
             query?: never;
@@ -81671,6 +82331,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnrollmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pending_examples_hindsight_enrollments__enrollment_id__pending_examples_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingExamplesOut"];
                 };
             };
             /** @description Validation Error */
@@ -100590,6 +101281,37 @@ export interface operations {
         };
     };
     release_control_browser_manager_runs__run_id__release_control_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseControlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_handoff_browser_manager_runs__run_id__dismiss_handoff_post: {
         parameters: {
             query?: never;
             header?: never;
