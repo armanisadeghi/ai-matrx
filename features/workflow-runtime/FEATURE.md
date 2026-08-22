@@ -33,10 +33,11 @@ that is the exit-test surface.
 |---|---|---|
 | Event vocabulary | `types.ts` → `@/types/python-generated/workflow-events` | GENERATED from `matrx_graph/types/events.py` (the durable events) + aidream's `services/runtime/workflow_events.py` (ephemeral `node_stream`, router handshake, `run_announce`). `types.ts` re-exports them and adds the FE-only pieces: the REST projections (`RunEventRecord`, `RunRow`) and the helpers. **Never hand-edit an event shape** — this file and workflow-studio's were two hand mirrors that drifted; both now consume ONE artifact, refreshed by `pnpm sync-types` (bundle `workflow-events-ts`) and guarded by aidream's `generate_types.py --check` in `release.sh`. `invocationKeyOf(nodeId, dispatchId, itemIndex)` is THE lane identity — `node_id` alone is never a completion key. |
 | SSE client | `transport/sse.ts` | Fetch-based (EventSource can't set Authorization). Handles CRLF, partial frames, comment heartbeats. |
+| Render-block frames | `transport/render-block-frames.ts` | Reassembles the SLICED `render_block` frames of the ephemeral channel: a server render block is a full snapshot that routinely exceeds the wire's 8000-byte pg_notify cap, so it arrives as ordered slices sharing a `frame_id`. A set that never completes, or one that does not parse, is DROPPED — half a JSON document never reaches a renderer. Contract: `../../../common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md` §7b. |
 | Run event source | `transport/run-event-source.ts` | SSE preferred + poller fallback on ONE `after_seq` cursor; claim-on-first-frame; 20s stall detector; ported from workflow-studio's proven pair. `node_stream` frames carry no seq and never advance the cursor. |
 | **The slice** | `redux/workflow-runs.slice.ts` | Tree-aware (`byRunId`, children auto-attach on `subgraph_run_linked`). Every node TRACKED: invocation states with fan-out aggregation, costs, progress, emissions, work sets, interrupt, capped text tails. |
 | Selectors | `redux/workflow-runs.selectors.ts` | Memoized, per-property, stable-empty. `selectNodeAggregate` derives the aggregate phase (a node is settled only when `invocations.length >= expectedCount`). |
-| **Lane manager** | `redux/lane-manager.ts` | THE LANE BUDGET (`MAX_STREAMED_LANES = 12`): every node tracked, only a bounded set streamed. ONE shared flush timer for all lanes (never one per stream). Lanes are real `activeRequests` rows + canonical accumulators; retention rules apply (`LIVE_RUN_RETENTION.md`). |
+| **Lane manager** | `redux/lane-manager.ts` | THE LANE BUDGET (`MAX_STREAMED_LANES = 12`): every node tracked, only a bounded set streamed. ONE shared flush timer for all lanes (never one per stream). Lanes are real `activeRequests` rows + canonical accumulators; retention rules apply (`LIVE_RUN_RETENTION.md`). A lane has exactly ONE producer of blocks: `pushRenderBlock` stores the SERVER's blocks (typed partial kinds included) through the same `upsertRenderBlock` the chat stream uses, and a lane whose text arrives marked `block_shadowed` stops feeding its own accumulator — two producers over one region render the answer twice, under two sets of block ids. |
 | **The adapter** | `redux/adopt-workflow-run.thunk.ts` | `adoptWorkflowRun({runId})`: attach → run row + heartbeat tails → durable replay (`?after_seq=`, paged) → live follow → lane routing → child runs (depth ≤ 3, count ≤ 10, shared budget). Token history is unreplayable BY DESIGN — refresh resumes from tails + durable outcomes. |
 | Trigger points | `trigger-points.ts` | Ruling R2: named, enumerable moments derived from the DEFINITION (`run:*`, `node:<id>:*`, `edge:<id>:traversed` — client-DERIVED, the engine emits no edge events — `deliverable:ready`, `mark:<name>`), resolved against run state. Pure module. |
 | Hooks | `hooks/useWorkflowRun.ts`, `hooks/useWorkflowRunControls.ts` | Adoption is refcounted per runId (two watchers share one adapter). Controls are the ONLY lifecycle verbs — start/pause/resume/cancel/answer-interrupt/retry/skip via `callApi`. |
@@ -150,6 +151,21 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-08-21 — **Typed partial kinds now render on the run page.** A workflow agent's
+  answer used to reach a run page as raw text only: the server's block-stream scope never
+  engaged for a detached run (its node emitter is not a `StreamEmitter`), AND the step
+  handed its runner the pre-scope context so the scope was bypassed even when attached.
+  Both fixed server-side; here, `transport/render-block-frames.ts` reassembles the sliced
+  frames and `lane-manager.ts::pushRenderBlock` puts the completed block onto the node's
+  lane through the SAME `upsertRenderBlock` the chat stream dispatches — so `BlockRenderer`,
+  `resolveProvisionalKindRender` and `MarkdownStream` render a workflow node exactly as they
+  render a chat turn. No new renderer, no new parser, no new slice state; every wire-boundary
+  rule moved into ONE funnel (`execution-system/utils/inbound-render-block.ts`) that
+  `processStream` was rewired onto rather than copied from. Proven by replaying a verbatim
+  capture of a real run's wire (`__tests__/real-run-partial-kinds.test.ts`): a `quiz_set`
+  partial fills 4 → 10 questions, then produces no provisional render once it completes.
+  Mechanism: `../../../common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md` §7b.
 
 - 2026-08-21 — **The §6 content channel stopped being dropped on the floor.**
   `matrx-ai` has always sent `content` on the agent-run envelope
