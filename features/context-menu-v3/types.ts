@@ -62,9 +62,21 @@ export type ContextMenuLayout = "classic" | "tiered" | "command";
 /** Row height / font / icon size. */
 export type ContextMenuDensity = "comfortable" | "compact";
 
-/** The defaults every surface inherits unless it passes a knob. */
-export const DEFAULT_MENU_LAYOUT: ContextMenuLayout = "classic";
+/**
+ * The defaults every surface inherits unless it passes a knob.
+ * `command` chosen by Arman 2026-08-22 after the /demos/context-menu/layouts
+ * bake-off (tiered + type-to-filter).
+ */
+export const DEFAULT_MENU_LAYOUT: ContextMenuLayout = "command";
 export const DEFAULT_MENU_DENSITY: ContextMenuDensity = "comfortable";
+
+/**
+ * Canonical v3 menu revision. Shown (admins only) inside the surface submenu
+ * as `v3.<n> · V<menuVersion>` so a surface's wiring version is inspectable
+ * without a footer every user has to look at. Bump when the v3 menu's
+ * structure/behavior changes.
+ */
+export const CANONICAL_MENU_VERSION_V3 = 2;
 
 // ---------------------------------------------------------------------------
 // Surface passthrough — the declarative contract for surface-specific items.

@@ -47,11 +47,11 @@ over the model, never a second renderer.
 
 | `menuLayout`  | What the user sees |
 | ------------- | ------------------ |
-| `classic`     | The historical flat column — every section top-level (~30 rows on a full note). **Default** (`DEFAULT_MENU_LAYOUT`). |
+| `classic`     | The historical flat column — every section top-level (~30 rows on a full note). |
 | `tiered`      | Compact one-line header (hover shows the text) + icon strip (Copy · Cut · Paste · Undo · Redo · Find). **Every other Classic row stays, by its own name:** Copy as / JSON / Select All · AI Actions / Agents / Content Blocks / My Items / Org Items · the surface's section folded under the surface's label (notes → "Note") · **History** (Undo / Redo / View History / Compare — the ONE approved grouping) · Export / Convert / Attach To / Share · Chat / Quick Actions · Save / Delete · Admin Tools. Greyed when unavailable exactly like Classic — never hidden. |
 | `command`     | Tiered + a type-to-filter box. Typing flattens EVERY leaf in the model (nested agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb; ↵ runs the first match. Printable keys typed while an item has focus are routed back into the box. |
 
-`menuDensity` = `comfortable` (default) | `compact` (tighter rows / icons /
+**Platform default is `command`** (Arman, 2026-08-22 — chosen on `/demos/context-menu/layouts`). `menuDensity` = `comfortable` (default) | `compact` (tighter rows / icons /
 labels). Both knobs are props on the wrappers (`ContextMenuV3CoreProps`); the
 defaults are CAPS constants in `types.ts` — flipping the platform default is a
 one-line change, and a per-user preference (settings-system) is the natural
@@ -71,6 +71,22 @@ unreachable.
 
 Side-by-side proving ground: `/demos/context-menu/layouts` (the exact /notes
 menu, four ways).
+
+## The surface submenu — the page's identity, last in every menu
+
+The footer (`matrx-user/notes · v3.1 · V1`) is gone — dev/testing info every
+user had to look at. In its place the engine builds ONE submenu titled with the
+surface's display label (`getSurfaceDisplayLabel`, e.g. "Notes", "Marketing
+Site Workspace") and places it LAST in every layout and on mobile. It mirrors
+the shell-header Agents button (`SurfaceAgentsPanelImpl`) item for item: the
+location (`matrx-user/notes`, click to copy) · Surface Context · Surface
+Context Admin (admins) · **Agents on this page ▸** (the bound agents + "Bind an
+agent to this page…") · Related surfaces ▸ (ancestry / children, when the
+manifest has lineage) · the menu revision `v3.N · V<menuVersion>` (admins). It
+is built in `useContextMenuActions` as a `ContextMenuExtraSection`
+(`surfaceSection`) so both renderers draw it with their existing extra-item
+code — never a second implementation. Surface resolution: the menu's own
+`surfaceName`, else `detectActiveSurface()`.
 
 ## No fake menus — the headline invariant
 
@@ -302,6 +318,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-22` (final) — **Command is the platform default; footer → surface submenu; filter placeholder smaller.** `DEFAULT_MENU_LAYOUT = "command"`. The version footer is deleted from the shell; the engine's new `surfaceSection` (surface label → location / Surface Context / Surface Context Admin / Agents on this page + Bind / Related surfaces / revision) renders last on desktop (all layouts) and mobile. `CANONICAL_MENU_VERSION_V3` moved to `types.ts` and bumped to 2. Live-verified on /notes.
 
 - `2026-08-22` (later) — **Tiered made lossless + compact header with hover text.** Arman's review: keep the compact "Content (N chars)" header but put the text one hover away (Tooltip); keep the icon strip exactly; NEVER remove a feature — the first tiered cut folded Copy as / Export / Convert / Compare / Attach / Share under "Share & Export" and Select All / View History / Chat / Quick Actions under "More", and hid "inapplicable" rows, which read as deletion. Rewritten: every Classic row by name; the only grouping is **History** (Undo / Redo / View History / Compare), which he suggested; `inapplicable` removed from the model. Law recorded above.
 

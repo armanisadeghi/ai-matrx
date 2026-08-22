@@ -423,9 +423,9 @@ export default function MenuContent(props: MenuContentProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onFilterKeyDown}
-          placeholder="Type to find an action…"
+          placeholder="Find an action…"
           aria-label="Filter menu actions"
-          className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/70"
+          className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-xs placeholder:text-muted-foreground/60"
           autoComplete="off"
           spellCheck={false}
         />

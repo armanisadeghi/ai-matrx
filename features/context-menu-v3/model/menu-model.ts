@@ -174,7 +174,8 @@ export type MenuGroup =
   | "ai"
   | "quick"
   | "editable"
-  | "admin";
+  | "admin"
+  | "surface-info";
 
 export interface MenuSection {
   id: string;
@@ -224,6 +225,8 @@ export interface MenuRoles {
   save: MenuItemNode | null;
   del: MenuItemNode | null;
   admin: MenuSubmenuNode | null;
+  /** The engine-built surface submenu section (location / context / agents / related). */
+  surfaceInfo: MenuSection;
   /** Surface `extraSections`, by anchor, already converted to model nodes. */
   extras: Record<ExtraSectionAnchor, MenuSection[]>;
 }
@@ -798,6 +801,13 @@ export function buildMenuModel(
     : null;
 
   const extras = extrasByAnchor(extraSections);
+  // The surface submenu (engine-built, shared with mobile) — always LAST, where
+  // the version footer used to sit.
+  const surfaceInfo: MenuSection = {
+    id: "surface-info",
+    group: "surface-info",
+    nodes: m.surfaceSection.items.map(fromExtraItem),
+  };
 
   // ── Classic order (the historical arrangement, separator for separator) ──
   const sections: MenuSection[] = [];
@@ -841,6 +851,7 @@ export function buildMenuModel(
     });
   }
   if (admin) sections.push({ id: "admin", group: "admin", nodes: [admin] });
+  sections.push(surfaceInfo);
 
   return {
     header,
@@ -868,6 +879,7 @@ export function buildMenuModel(
       del,
       admin,
       extras,
+      surfaceInfo,
     },
   };
 }

@@ -9,7 +9,6 @@
 //   - lightweight selection capture (the hard-won macOS-safe logic),
 //   - the DOM-text fallback capture that makes Copy/AI work with zero wiring,
 //   - the floating-icon button + open state,
-//   - the version footer.
 //
 // On the FIRST open it renders `MenuContent` via next/dynamic({ssr:false}).
 // MenuContent owns ALL the weight — the unified-menu + bound-agent hooks (which
@@ -49,22 +48,18 @@ import {
   type SelectionRange,
 } from "./utils/selection-tracking";
 import {
+  CANONICAL_MENU_VERSION_V3,
   DEFAULT_MENU_DENSITY,
   DEFAULT_MENU_LAYOUT,
   type ContextMenuV3Props,
   type MenuContentProps,
 } from "./types";
+
+// Re-exported for the few callers that read the revision (admin tooling).
+export { CANONICAL_MENU_VERSION_V3 };
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 
-/**
- * Canonical v3 menu revision. Rendered in the footer as
- * `v3.<n> · V<menuVersion>` (e.g. `v3.1 · V1`) so a v3 surface is INSTANTLY
- * distinguishable from a v2 one (which renders `C1V1`). Bump when the v3 menu's
- * structure/behavior changes. A surface on a bespoke (non-v3) menu shows no
- * `v3.·V` tag at all — that absence flags it as un-migrated.
- */
-export const CANONICAL_MENU_VERSION_V3 = 1;
 
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
@@ -622,12 +617,9 @@ export function ContextMenuV3({
     },
   };
 
-  const footer = (
-    <div className="select-none border-t border-border/50 px-2 py-1 text-[10px] leading-none text-muted-foreground/70">
-      {surfaceName ?? "(no surface)"} · v3.{CANONICAL_MENU_VERSION_V3} · V
-      {menuVersion}
-    </div>
-  );
+  // The version footer is gone (Arman, 2026-08-22: dev/testing info, not for
+  // users). The surface name + revision now live in the surface submenu the
+  // engine builds (`surfaceSection`), admin-only for the revision.
 
   // ── Mobile: a 70dvh bottom-sheet drill-down (long-press / floating icon) ──
   if (isMobile) {
@@ -714,7 +706,6 @@ export function ContextMenuV3({
                 />
               </div>
             )}
-            {footer}
           </DrawerContent>
         </Drawer>
       </>
@@ -759,7 +750,6 @@ export function ContextMenuV3({
           onCloseAutoFocus={onCloseAutoFocus}
         >
           <MenuContent variant="context" {...menuContentProps} />
-          {footer}
         </ContextMenuContent>
       </ContextMenu>
 
@@ -790,7 +780,6 @@ export function ContextMenuV3({
             onCloseAutoFocus={onCloseAutoFocus}
           >
             <MenuContent variant="dropdown" {...menuContentProps} />
-            {footer}
           </DropdownMenuContent>
         </DropdownMenu>
       )}

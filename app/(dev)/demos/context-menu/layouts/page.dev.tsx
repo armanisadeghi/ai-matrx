@@ -9,7 +9,7 @@
  * knobs (`features/context-menu-v3/model/layouts.ts`). Behaviour is identical:
  * one engine, one model, one renderer.
  *
- *   1. Current  — classic / comfortable  (what /notes ships today)
+ *   1. Classic  — classic / comfortable  (the previous platform default)
  *   2. Compact  — classic / compact      (same rows, tighter)
  *   3. Tiered   — compact header (hover = text) + icon strip; EVERY classic row
  *                 stays by name (History groups Undo/Redo/View History/Compare)
@@ -78,8 +78,8 @@ export default function MenuLayoutsDemoPage() {
       <div className="flex-1 overflow-auto p-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <NotesDemoPanel
-            title="1. Current — classic"
-            description="What /notes ships today: every section at the top level (~30 rows on a full note)."
+            title="1. Classic — the previous default"
+            description="Every section at the top level (~30 rows on a full note). Command (panel 4) is the platform default since 2026-08-22."
             initialContent={SAMPLE}
             minHeightClass="min-h-[240px]"
             menuOverrides={{ menuLayout: "classic", menuDensity: "comfortable" }}

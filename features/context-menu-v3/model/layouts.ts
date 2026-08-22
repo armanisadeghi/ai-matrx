@@ -153,6 +153,9 @@ export function arrangeMenu(
   // Admin.
   if (r.admin) sections.push({ id: "admin", group: "admin", nodes: [r.admin] });
 
+  // The page's surface — always last (where the footer used to be).
+  sections.push(r.surfaceInfo);
+
   return { strip, sections: sections.filter((s) => s.nodes.length > 0) };
 }
 

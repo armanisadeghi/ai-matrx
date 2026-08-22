@@ -673,6 +673,12 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     });
   }
 
+  // The page's surface submenu (engine-built, identical to desktop) — last.
+  push({ kind: "separator", id: "surface-info-sep" });
+  for (const item of m.surfaceSection.items) {
+    for (const n of extraItemToNodes(item)) push(n);
+  }
+
   // ── Drill-down navigation ───────────────────────────────────────────────────
   // The path is a list of submenu ids. The current page is re-derived from the
   // freshly-built rootNodes every render, so a page reflects LIVE data (agents

@@ -19,11 +19,26 @@
 
 import { useEffect } from "react";
 import {
+  AppWindow,
+  Braces,
+  BrainCircuit,
   Building,
+  ClipboardCopy,
   FileText,
+  Info,
+  Layers,
+  Plus,
   Rocket,
+  ShieldCheck,
   User,
 } from "lucide-react";
+import { CANONICAL_MENU_VERSION_V3 } from "../types";
+import type { ContextMenuExtraSection, ContextMenuExtraItem } from "../types";
+import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
+import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { getIconComponent } from "@/components/official/icons/IconResolver";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -245,6 +260,15 @@ export interface ContextMenuActions {
   handleToggleAdminIndicator: () => void;
   // Quick actions (pass-through so renderers need no extra hook)
   quickActions: ReturnType<typeof useQuickActions>;
+  /**
+   * The page's surface, as ONE nested menu entry titled with the surface's
+   * display label (e.g. "Notes", "Marketing Site Workspace") — the same data
+   * and actions the shell-header Agents button offers: location, Surface
+   * Context, Surface Context Admin, the bound agents + bind action, related
+   * surfaces, and (admins) the menu revision. Shaped as an extra section so
+   * BOTH renderers draw it with their existing extra-item code.
+   */
+  surfaceSection: ContextMenuExtraSection;
 }
 
 export function useContextMenuActions(
@@ -253,6 +277,7 @@ export function useContextMenuActions(
   const {
     sourceFeature,
     surfaceName,
+    menuVersion,
     getApplicationScope,
     contextData,
     selectedText,
@@ -759,6 +784,151 @@ export function useContextMenuActions(
   };
 
   // ── Admin ─────────────────────────────────────────────────────────────────
+  // ── Surface submenu (mirrors the shell-header Agents panel) ────────────────
+  const openSurfaceContextWindow = useOpenSurfaceContextWindow();
+  const openBindAgent = useOpenSurfaceAgentBindWindow();
+  const resolvedSurfaceName = surfaceName ?? detectActiveSurface();
+  const surfaceLabel = resolvedSurfaceName
+    ? getSurfaceDisplayLabel(resolvedSurfaceName)
+    : "This page";
+  const related = getRelatedSurfaces(resolvedSurfaceName);
+  const copyText = (text: string) => {
+    void navigator.clipboard?.writeText(text).then(
+      () => toast({ title: "Copied", description: text }),
+      () => toast({ title: "Copy failed", variant: "destructive" }),
+    );
+  };
+  const surfaceAgentItems: ContextMenuExtraItem[] = [];
+  boundAgentSections
+    .filter((section) => section.agents.length > 0)
+    .forEach((section, idx) => {
+      if (idx > 0)
+        surfaceAgentItems.push({ kind: "separator", id: `sa:${section.key}:sep` });
+      for (const agent of section.agents) {
+        surfaceAgentItems.push({
+          kind: "item",
+          id: `sa:${section.key}:${agent.agentId}`,
+          label: agent.name,
+          description: section.label,
+          icon: BrainCircuit,
+          onSelect: () => void handleBoundAgentExecute(agent),
+        });
+      }
+    });
+  if (surfaceAgentItems.length > 0)
+    surfaceAgentItems.push({ kind: "separator", id: "sa:bind-sep" });
+  surfaceAgentItems.push({
+    kind: "item",
+    id: "sa:bind",
+    label: "Bind an agent to this page…",
+    icon: Plus,
+    disabled: !resolvedSurfaceName,
+    onSelect: () => {
+      if (resolvedSurfaceName) openBindAgent({ surfaceName: resolvedSurfaceName });
+    },
+  });
+  const relatedItems: ContextMenuExtraItem[] = [
+    ...related.ancestry,
+    ...related.children,
+  ].map((ref) => ({
+    kind: "item",
+    id: `sr:${ref.name}`,
+    label: ref.label,
+    description: `${ref.kind === "ancestor" ? "Parent" : "Child"} · ${ref.name}`,
+    icon: AppWindow,
+    onSelect: () =>
+      openSurfaceContextWindow({ surfaceName: ref.name, isEditable: false }),
+  }));
+  const surfaceChildren: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "surface:location",
+      label: resolvedSurfaceName ?? "No surface registered for this page",
+      description: resolvedSurfaceName ? "Surface location · click to copy" : undefined,
+      icon: ClipboardCopy,
+      disabled: !resolvedSurfaceName,
+      onSelect: () => resolvedSurfaceName && copyText(resolvedSurfaceName),
+    },
+    { kind: "separator", id: "surface:sep1" },
+    {
+      kind: "item",
+      id: "surface:context",
+      label: "Surface Context",
+      description: "Live page values",
+      icon: Braces,
+      onSelect: () =>
+        openSurfaceContextWindow({
+          surfaceName: resolvedSurfaceName ?? "",
+          isEditable: Boolean(isEditable),
+        }),
+    },
+    ...(isAdmin
+      ? ([
+          {
+            kind: "item",
+            id: "surface:context-admin",
+            label: "Surface Context Admin",
+            description: "Contract, provenance & settings",
+            icon: ShieldCheck,
+            onSelect: () =>
+              openSurfaceInspector({
+                surfaceName: resolvedSurfaceName ?? null,
+                scope,
+                isEditable: Boolean(isEditable),
+                preferRuntime: true,
+              }),
+          },
+        ] satisfies ContextMenuExtraItem[])
+      : []),
+    { kind: "separator", id: "surface:sep2" },
+    {
+      kind: "submenu",
+      id: "surface:agents",
+      label: "Agents on this page",
+      icon: BrainCircuit,
+      children: surfaceAgentItems,
+    },
+    ...(relatedItems.length > 0
+      ? ([
+          {
+            kind: "submenu",
+            id: "surface:related",
+            label: "Related surfaces",
+            icon: Layers,
+            children: relatedItems,
+          },
+        ] satisfies ContextMenuExtraItem[])
+      : []),
+    ...(isAdmin
+      ? ([
+          { kind: "separator", id: "surface:sep3" },
+          {
+            kind: "item",
+            id: "surface:version",
+            label: `Menu v3.${CANONICAL_MENU_VERSION_V3} · V${menuVersion}`,
+            description: "Menu revision · surface wiring version",
+            icon: Info,
+            onSelect: () =>
+              copyText(
+                `${resolvedSurfaceName ?? "(no surface)"} · v3.${CANONICAL_MENU_VERSION_V3} · V${menuVersion}`,
+              ),
+          },
+        ] satisfies ContextMenuExtraItem[])
+      : []),
+  ];
+  const surfaceSection: ContextMenuExtraSection = {
+    id: "surface-info",
+    items: [
+      {
+        kind: "submenu",
+        id: "surface",
+        label: surfaceLabel,
+        icon: AppWindow,
+        children: surfaceChildren,
+      },
+    ],
+  };
+
   const handleInspectValues = () => {
     openSurfaceInspector({
       surfaceName: surfaceName ?? null,
@@ -817,5 +987,6 @@ export function useContextMenuActions(
     handleToggleDebugMode,
     handleToggleAdminIndicator,
     quickActions,
+    surfaceSection,
   };
 }
