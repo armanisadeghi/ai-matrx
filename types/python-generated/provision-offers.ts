@@ -38,6 +38,23 @@ export interface OfferedValueMapping {
 /** agent.mandate_binding.consumption_map — offered value name → how the bound Holder consumes it. */
 export type ConsumptionMap = Record<string, OfferedValueMapping>;
 
+/** Offered shape of provision `agent_apps.auto_create_request` (kind `agent_apps.auto_create_request.offer`). */
+export interface AgentAppsAutoCreateRequestOffer {
+  prompt_object: unknown;
+  sample_response: string;
+  input_fields_to_include: string;
+  page_layout_format: string;
+  response_display_component: string;
+  response_display_mode: string;
+  color_pallet_options: string;
+  custom_instructions: string;
+}
+
+/** Offered shape of provision `agent_apps.metadata_request` (kind `agent_apps.metadata_request.offer`). */
+export interface AgentAppsMetadataRequestOffer {
+  prompt_config: unknown;
+}
+
 /** Offered shape of provision `agent_factory.build_request` (kind `agent_factory.build_request.offer`). */
 export interface AgentFactoryBuildRequestOffer {
   prompt_purpose: string;
@@ -63,6 +80,11 @@ export interface ContentIrKindAuthoringOffer {
   task_brief?: string;
   kind_schema?: unknown;
   user_data_sample?: string;
+}
+
+/** Offered shape of provision `content_ir.kind_builder` (kind `content_ir.kind_builder.offer`). */
+export interface ContentIrKindBuilderOffer {
+  user_data_sample: string;
 }
 
 /** Offered shape of provision `content_plan.entity_attachment` (kind `content_plan.entity_attachment.offer`). */
@@ -617,12 +639,30 @@ export interface KnowledgeSectionQaOffer {
   content: string;
 }
 
+/** Offered shape of provision `marketing.image_prompt` (kind `marketing.image_prompt.offer`). */
+export interface MarketingImagePromptOffer {
+  intent_or_content: string;
+  style: string;
+}
+
 /** Offered shape of provision `marketing.local_endowment` (kind `marketing.local_endowment.offer`). */
 export interface MarketingLocalEndowmentOffer {
   company_name?: string;
   industry: string;
   location?: string;
   context_notes?: string;
+}
+
+/** Offered shape of provision `marketing.page_image` (kind `marketing.page_image.offer`). */
+export interface MarketingPageImageOffer {
+  image_description: string;
+}
+
+/** Offered shape of provision `marketing.page_image_all_in_one` (kind `marketing.page_image_all_in_one.offer`). */
+export interface MarketingPageImageAllInOneOffer {
+  intent_or_content: string;
+  style: string;
+  count: number;
 }
 
 /** Offered shape of provision `marketing.video_metadata` (kind `marketing.video_metadata.offer`). */
@@ -945,6 +985,13 @@ export interface PodcastClientEpisodeContentOffer {
   style_guidance?: string;
 }
 
+/** Offered shape of provision `podcast_client.topic_idea_request` (kind `podcast_client.topic_idea_request.offer`). */
+export interface PodcastClientTopicIdeaRequestOffer {
+  concept: string;
+  content_format: string;
+  idea_count: string;
+}
+
 /** Offered shape of provision `podcast_client.web_source` (kind `podcast_client.web_source.offer`). */
 export interface PodcastClientWebSourceOffer {
   scraped_content: string;
@@ -1061,6 +1108,22 @@ export interface ResearchTaggedPagesOffer {
 /** Offered shape of provision `research.topic_setup` (kind `research.topic_setup.offer`). */
 export interface ResearchTopicSetupOffer {
   subject_name_or_description: string;
+}
+
+/** Offered shape of provision `research_client.context_bundle` (kind `research_client.context_bundle.offer`). */
+export interface ResearchClientContextBundleOffer {
+  research_brief?: string;
+  research_inventory?: string;
+  research_report?: string;
+  search_results?: string;
+  scraped_pages?: string;
+  page_analyses?: string;
+  page_scoring?: string;
+  keyword_syntheses?: string;
+  tag_map?: string;
+  source_quality?: string;
+  media_inventory?: string;
+  resource_refs?: unknown;
 }
 
 /** Offered shape of provision `research_client.report_output` (kind `research_client.report_output.offer`). */
@@ -1307,10 +1370,27 @@ export interface SurfacesClientBindingContextOffer {
   agent_contract: unknown;
 }
 
+/** Offered shape of provision `tool_viz.component_generation` (kind `tool_viz.component_generation.offer`). */
+export interface ToolVizComponentGenerationOffer {
+  complete_tool_object: unknown;
+  output_schema: unknown;
+  sample_stream: unknown;
+  sample_database_entry: unknown;
+}
+
 /** Offered shape of provision `tools.content_summarization` (kind `tools.content_summarization.offer`). */
 export interface ToolsContentSummarizationOffer {
   instructions: string;
   content: string;
+}
+
+/** Offered shape of provision `transcript_studio.session_context` (kind `transcript_studio.session_context.offer`). */
+export interface TranscriptStudioSessionContextOffer {
+  recording_transcripts?: string;
+  all_raw?: string;
+  session_cleaned?: string;
+  audio_citations?: string;
+  working_document?: string;
 }
 
 /** Offered shape of provision `vision_interview.answer_tracking` (kind `vision_interview.answer_tracking.offer`). */
@@ -1344,6 +1424,19 @@ export interface VisionInterviewScribePassOffer {
   round_directive: string;
   current_document: string;
   open_questions: string;
+}
+
+/** Offered shape of provision `war_room.room_context` (kind `war_room.room_context.offer`). */
+export interface WarRoomRoomContextOffer {
+  war_room: unknown;
+}
+
+/** Offered shape of provision `war_room.thread_context` (kind `war_room.thread_context.offer`). */
+export interface WarRoomThreadContextOffer {
+  war_room: unknown;
+  session_transcripts?: string;
+  thread_message?: string;
+  master_directive?: string;
 }
 
 /** Offered shape of provision `web.endpoint_family_judgment` (kind `web.endpoint_family_judgment.offer`). */
@@ -1407,10 +1500,13 @@ export interface WorkflowRunRecoveryOffer {
 
 /** provision_key → its whole offered shape. */
 export interface ProvisionOffers {
+  "agent_apps.auto_create_request": AgentAppsAutoCreateRequestOffer;
+  "agent_apps.metadata_request": AgentAppsMetadataRequestOffer;
   "agent_factory.build_request": AgentFactoryBuildRequestOffer;
   "code_editor.session": CodeEditorSessionOffer;
   "content_ir.component_target": ContentIrComponentTargetOffer;
   "content_ir.kind_authoring": ContentIrKindAuthoringOffer;
+  "content_ir.kind_builder": ContentIrKindBuilderOffer;
   "content_plan.entity_attachment": ContentPlanEntityAttachmentOffer;
   "content_plan.entity_roster": ContentPlanEntityRosterOffer;
   "content_plan.family_naming": ContentPlanFamilyNamingOffer;
@@ -1469,7 +1565,10 @@ export interface ProvisionOffers {
   "knowledge.document_verification": KnowledgeDocumentVerificationOffer;
   "knowledge.section_derivation": KnowledgeSectionDerivationOffer;
   "knowledge.section_qa": KnowledgeSectionQaOffer;
+  "marketing.image_prompt": MarketingImagePromptOffer;
   "marketing.local_endowment": MarketingLocalEndowmentOffer;
+  "marketing.page_image": MarketingPageImageOffer;
+  "marketing.page_image_all_in_one": MarketingPageImageAllInOneOffer;
   "marketing.video_metadata": MarketingVideoMetadataOffer;
   "masterwork.approach_select": MasterworkApproachSelectOffer;
   "masterwork.audition_judgment": MasterworkAuditionJudgmentOffer;
@@ -1515,6 +1614,7 @@ export interface ProvisionOffers {
   "podcast.title_optimization": PodcastTitleOptimizationOffer;
   "podcast.video_render": PodcastVideoRenderOffer;
   "podcast_client.episode_content": PodcastClientEpisodeContentOffer;
+  "podcast_client.topic_idea_request": PodcastClientTopicIdeaRequestOffer;
   "podcast_client.web_source": PodcastClientWebSourceOffer;
   "podcast_client.youtube_source": PodcastClientYoutubeSourceOffer;
   "purpose.unit_config": PurposeUnitConfigOffer;
@@ -1533,6 +1633,7 @@ export interface ProvisionOffers {
   "research.source_triage": ResearchSourceTriageOffer;
   "research.tagged_pages": ResearchTaggedPagesOffer;
   "research.topic_setup": ResearchTopicSetupOffer;
+  "research_client.context_bundle": ResearchClientContextBundleOffer;
   "research_client.report_output": ResearchClientReportOutputOffer;
   "scraper.page_analysis": ScraperPageAnalysisOffer;
   "seo.ai_visibility_analysis": SeoAiVisibilityAnalysisOffer;
@@ -1555,11 +1656,15 @@ export interface ProvisionOffers {
   "seo.site_strategy_interview": SeoSiteStrategyInterviewOffer;
   "seo.topic_assignment": SeoTopicAssignmentOffer;
   "surfaces_client.binding_context": SurfacesClientBindingContextOffer;
+  "tool_viz.component_generation": ToolVizComponentGenerationOffer;
   "tools.content_summarization": ToolsContentSummarizationOffer;
+  "transcript_studio.session_context": TranscriptStudioSessionContextOffer;
   "vision_interview.answer_tracking": VisionInterviewAnswerTrackingOffer;
   "vision_interview.finalize_deliverable": VisionInterviewFinalizeDeliverableOffer;
   "vision_interview.room_activation": VisionInterviewRoomActivationOffer;
   "vision_interview.scribe_pass": VisionInterviewScribePassOffer;
+  "war_room.room_context": WarRoomRoomContextOffer;
+  "war_room.thread_context": WarRoomThreadContextOffer;
   "web.endpoint_family_judgment": WebEndpointFamilyJudgmentOffer;
   "workflow.extract_sweep": WorkflowExtractSweepOffer;
   "workflow.node_steward": WorkflowNodeStewardOffer;
@@ -1572,10 +1677,13 @@ export type ProvisionKey = keyof ProvisionOffers;
 
 /** provision_key → its registered derived input kind slug. */
 export const PROVISION_OFFER_KINDS = {
+  "agent_apps.auto_create_request": "agent_apps.auto_create_request.offer",
+  "agent_apps.metadata_request": "agent_apps.metadata_request.offer",
   "agent_factory.build_request": "agent_factory.build_request.offer",
   "code_editor.session": "code_editor.session.offer",
   "content_ir.component_target": "content_ir.component_target.offer",
   "content_ir.kind_authoring": "content_ir.kind_authoring.offer",
+  "content_ir.kind_builder": "content_ir.kind_builder.offer",
   "content_plan.entity_attachment": "content_plan.entity_attachment.offer",
   "content_plan.entity_roster": "content_plan.entity_roster.offer",
   "content_plan.family_naming": "content_plan.family_naming.offer",
@@ -1634,7 +1742,10 @@ export const PROVISION_OFFER_KINDS = {
   "knowledge.document_verification": "knowledge.document_verification.offer",
   "knowledge.section_derivation": "knowledge.section_derivation.offer",
   "knowledge.section_qa": "knowledge.section_qa.offer",
+  "marketing.image_prompt": "marketing.image_prompt.offer",
   "marketing.local_endowment": "marketing.local_endowment.offer",
+  "marketing.page_image": "marketing.page_image.offer",
+  "marketing.page_image_all_in_one": "marketing.page_image_all_in_one.offer",
   "marketing.video_metadata": "marketing.video_metadata.offer",
   "masterwork.approach_select": "masterwork.approach_select.offer",
   "masterwork.audition_judgment": "masterwork.audition_judgment.offer",
@@ -1680,6 +1791,7 @@ export const PROVISION_OFFER_KINDS = {
   "podcast.title_optimization": "podcast.title_optimization.offer",
   "podcast.video_render": "podcast.video_render.offer",
   "podcast_client.episode_content": "podcast_client.episode_content.offer",
+  "podcast_client.topic_idea_request": "podcast_client.topic_idea_request.offer",
   "podcast_client.web_source": "podcast_client.web_source.offer",
   "podcast_client.youtube_source": "podcast_client.youtube_source.offer",
   "purpose.unit_config": "purpose.unit_config.offer",
@@ -1698,6 +1810,7 @@ export const PROVISION_OFFER_KINDS = {
   "research.source_triage": "research.source_triage.offer",
   "research.tagged_pages": "research.tagged_pages.offer",
   "research.topic_setup": "research.topic_setup.offer",
+  "research_client.context_bundle": "research_client.context_bundle.offer",
   "research_client.report_output": "research_client.report_output.offer",
   "scraper.page_analysis": "scraper.page_analysis.offer",
   "seo.ai_visibility_analysis": "seo.ai_visibility_analysis.offer",
@@ -1720,11 +1833,15 @@ export const PROVISION_OFFER_KINDS = {
   "seo.site_strategy_interview": "seo.site_strategy_interview.offer",
   "seo.topic_assignment": "seo.topic_assignment.offer",
   "surfaces_client.binding_context": "surfaces_client.binding_context.offer",
+  "tool_viz.component_generation": "tool_viz.component_generation.offer",
   "tools.content_summarization": "tools.content_summarization.offer",
+  "transcript_studio.session_context": "transcript_studio.session_context.offer",
   "vision_interview.answer_tracking": "vision_interview.answer_tracking.offer",
   "vision_interview.finalize_deliverable": "vision_interview.finalize_deliverable.offer",
   "vision_interview.room_activation": "vision_interview.room_activation.offer",
   "vision_interview.scribe_pass": "vision_interview.scribe_pass.offer",
+  "war_room.room_context": "war_room.room_context.offer",
+  "war_room.thread_context": "war_room.thread_context.offer",
   "web.endpoint_family_judgment": "web.endpoint_family_judgment.offer",
   "workflow.extract_sweep": "workflow.extract_sweep.offer",
   "workflow.node_steward": "workflow.node_steward.offer",
