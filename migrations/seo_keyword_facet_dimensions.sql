@@ -210,7 +210,7 @@ CREATE OR REPLACE FUNCTION seo.facet_dimension_upsert(
   p_cardinality text DEFAULT 'single'
 ) RETURNS uuid
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
-SET search_path = seo, platform, web, pg_temp
+SET search_path = seo, platform, web, iam, pg_temp
 AS $fn$
 DECLARE
   v_uid  uuid := (SELECT auth.uid());
@@ -237,7 +237,17 @@ BEGIN
     IF NOT public.is_super_admin() THEN
       RAISE EXCEPTION 'seo_registry_forbidden: platform dimensions are facts every site shares, so only super admins create them. Create it on this site instead and it is yours to shape.';
     END IF;
-    SELECT o.id INTO v_org FROM iam.organizations o WHERE o.global_readable ORDER BY o.created_at LIMIT 1;
+    -- The org that already owns the platform facets, read from the data rather
+    -- than from a guessed flag: self-consistent, and correct even if the
+    -- system org is ever renamed or replaced.
+    SELECT c.organization_id INTO v_org
+    FROM platform.categories c
+    WHERE c.dimension = 'seo_facet' AND c.parent_id IS NULL
+      AND c.is_system AND c.deleted_at IS NULL
+    ORDER BY c.created_at LIMIT 1;
+    IF v_org IS NULL THEN
+      RAISE EXCEPTION 'seo_registry_no_platform_org: no platform facet exists to inherit an owner from';
+    END IF;
   ELSE
     PERFORM seo.gsc_assert_site_access(p_site_id);
     SELECT s.organization_id INTO v_org FROM web.site s WHERE s.id = p_site_id;
