@@ -9,9 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
+import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -33,6 +31,7 @@ export function EndowmentAnalysisCard({
   brandId: string;
 }) {
   const dispatch = useAppDispatch();
+  const openLiveRun = useOpenLiveRunWindow();
   const [company, setCompany] = useState(defaultCompany ?? "");
   const [industry, setIndustry] = useState(defaultIndustry ?? "");
   const [location, setLocation] = useState("");
@@ -45,8 +44,13 @@ export function EndowmentAnalysisCard({
       return;
     }
     setRunning(true);
+    const handle = openLiveRun({
+      instanceId: `endowment:${brandId}`,
+      label: `Endowment analysis — ${company.trim() || industry.trim()}`,
+      pending: true,
+    });
     try {
-      const launch = await dispatch(
+      await dispatch(
         launchAgentExecution({
           mandateKey: ENDOWMENT_ANALYSIS_MANDATE,
           surfaceKey: `marketing-local:endowment:${brandId}`,
@@ -60,24 +64,13 @@ export function EndowmentAnalysisCard({
               context_notes: notes.trim(),
             },
           },
-          config: { autoRun: false, displayMode: "direct" },
+          config: { autoRun: true, displayMode: "direct" },
+          onConversationCreated: (conversationId) =>
+            handle.update({ conversationId, pending: false }),
         }),
       ).unwrap();
-      dispatch(
-        setUserInputText({
-          conversationId: launch.conversationId,
-          text: "Analyze this business's endowments and produce the ranked authority portfolio.",
-        }),
-      );
-      dispatch(
-        openLiveRunWindowAction({
-          instanceId: `endowment:${brandId}`,
-          conversationId: launch.conversationId,
-          label: `Endowment analysis — ${company.trim() || industry.trim()}`,
-        }),
-      );
-      await dispatch(executeInstance({ conversationId: launch.conversationId })).unwrap();
     } catch (error) {
+      handle.close();
       toast.error(
         error instanceof Error ? error.message : "The endowment analysis failed to start.",
       );

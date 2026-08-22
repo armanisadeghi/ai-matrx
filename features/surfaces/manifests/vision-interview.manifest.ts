@@ -1,7 +1,7 @@
 /**
  * Surface manifest — Vision Interview (`matrx-user/vision-interview`).
  *
- * `/vision-interview` (the session list) and `/vision-interview/[sessionId]`
+ * `/masterwork/vision-interview` (the session list) and `/masterwork/vision-interview/[sessionId]`
  * (one interview). A session is a multi-round conversation between the user and
  * six named roles (amplifier, cartographer, archaeologist, adversary, architect,
  * scribe) that interrogates a vision statement into a living document, with an
@@ -159,7 +159,7 @@ export const visionInterviewManifest: SurfaceManifest = {
   readinessNote:
     "Vocabulary declared 2026-08-17 to close an entirely undeclared agent-shaped feature. Not yet audited against the session page's loaded data (turns, per-role bindings, settings), and no runtime emitter is wired.",
   label: "Vision Interview",
-  urlPattern: "/vision-interview/[sessionId]",
+  urlPattern: "/masterwork/vision-interview/[sessionId]",
   intro: `<surface_intro>
 You are on a Vision Interview: a multi-round interrogation of the user's vision statement by six named roles — amplifier, cartographer, archaeologist, adversary, architect, and scribe. The interview's output is the living document, which ONLY the scribe writes.
 Read vision_statement as the thing under examination and session_document as what has been established so far. The Questions & holes group is what the next round exists to close: an open question is unfinished business, and a hole classified fatal means the vision is not ready regardless of how complete the document looks.

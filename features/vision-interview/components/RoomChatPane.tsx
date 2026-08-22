@@ -363,8 +363,8 @@ export function RoomChatPane({
                 entityId: session?.id ?? "",
                 label: session?.title || "Vision interview",
                 href: session
-                  ? `/vision-interview/${session.id}`
-                  : "/vision-interview",
+                  ? `/masterwork/vision-interview/${session.id}`
+                  : "/masterwork/vision-interview",
               }}
             >
               <ChatRoomClient

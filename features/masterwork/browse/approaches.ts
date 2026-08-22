@@ -42,7 +42,7 @@ export interface DistillationApproach {
   availability: ApproachAvailability;
   /**
    * For a lane that is NOT a `/masterwork/[id]` query param, the page that IS
-   * its door (`metadata.launch_href`) — e.g. `/vision-interview/new`.
+   * its door (`metadata.launch_href`) — e.g. `/masterwork/vision-interview/new`.
    */
   launchHref: string | null;
   /** The number Arman approved it under in the 2026-08-17 catalog, if any. */

@@ -32,7 +32,7 @@ export function useSessionRowActions(
   const [deleting, setDeleting] = useState(false);
 
   const openRow = (row: SessionListRow) => {
-    router.push(`/vision-interview/${row.id}`);
+    router.push(`/masterwork/vision-interview/${row.id}`);
   };
 
   const menuFor = (row: SessionListRow) => (): ItemMenuConfig => {
@@ -42,7 +42,7 @@ export function useSessionRowActions(
         label: "Open room",
         icon: DoorOpen,
         kind: "link",
-        href: `/vision-interview/${row.id}`,
+        href: `/masterwork/vision-interview/${row.id}`,
       },
     ];
     const manage: ItemMenuEntry[] = row.is_owner

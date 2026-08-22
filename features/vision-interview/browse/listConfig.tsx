@@ -42,7 +42,7 @@ export const sessionListConfig: EntityListConfig<SessionListRow> = {
   getRowId: (row) => row.id,
   getRowName: (row) => row.title,
   door: {
-    hrefFor: (row) => `/vision-interview/${row.id}`,
+    hrefFor: (row) => `/masterwork/vision-interview/${row.id}`,
   },
   useRowActions: useSessionRowActions,
   edit: {

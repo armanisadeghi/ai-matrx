@@ -21,7 +21,9 @@ export default async function AllRulebooksRoute() {
           </h1>
         </div>
       </PageHeader>
-      <MasterworkStudioPage />
+      <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">
+        <MasterworkStudioPage />
+      </div>
     </>
   );
 }

@@ -63,7 +63,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/camera", surface: "matrx-user/camera" },
   { prefix: "/reports", surface: "matrx-user/reports" },
   { prefix: "/vault", surface: "matrx-user/vault" },
-  { prefix: "/vision-interview", surface: "matrx-user/vision-interview" },
+  { prefix: "/masterwork/vision-interview", surface: "matrx-user/vision-interview" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
   // The three outreach work surfaces sit UNDER /crm and must be listed before
