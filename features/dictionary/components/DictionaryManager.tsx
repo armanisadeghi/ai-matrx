@@ -72,7 +72,11 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
     level,
     ownerId,
   );
-  const { open: openAssistant } = useOpenDictionaryAssistant();
+  const {
+    open: openAssistant,
+    unavailable: assistantUnavailable,
+    mandateError: assistantError,
+  } = useOpenDictionaryAssistant();
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -208,6 +212,8 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
           size="sm"
           variant="outline"
           className="gap-1.5"
+          disabled={assistantUnavailable}
+          title={assistantError ?? undefined}
           onClick={() => void openAssistant({ level, ownerId, ownerName })}
         >
           <MessageSquare className="h-4 w-4" /> Ask assistant

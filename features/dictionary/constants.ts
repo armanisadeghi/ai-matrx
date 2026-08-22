@@ -5,16 +5,13 @@
 import type { DictLevel } from "@/features/dictionary/types";
 
 /**
- * Builtin Dictionary Assistant agent (agx_agent id) — built via the aidream
- * Agent Factory (internal_agents/dictionary_assistant.md), real UUID assigned
- * at build time. The "Ask assistant" buttons launch this agent as a
- * floating-chat widget. The discoverable global shortcut + the two skills it
- * uses live in the DB (seeded by migrations/dict_*.sql) and are referenced
- * there by their own ids — not from frontend code.
+ * The Mandate behind every "Ask assistant" button — resolved at launch
+ * (`launchMandate` / `useMandate`), never a frozen agent id. The system default
+ * is the factory-built Dictionary Assistant (aidream
+ * `internal_agents/dictionary_assistant.md`); users rebind at `/agents/mandates`.
+ * The discoverable global shortcut + the two skills it uses live in the DB.
  */
-export const DICTIONARY_AGENT_IDS = {
-  assistant: "ab1a868e-b866-4ade-9383-fd63b0928c7c",
-} as const;
+export const DICTIONARY_ASSISTANT_MANDATE_KEY = "dictionary.workspace_guide";
 
 /**
  * Explicit per-surface dictionary key. Ambient audio (read-aloud playback + STT)
