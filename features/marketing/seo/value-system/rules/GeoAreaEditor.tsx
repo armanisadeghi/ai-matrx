@@ -435,6 +435,11 @@ export function GeoAreaEditor({
                   : "Add place names and choose a band, and this will show exactly which of your keywords this area catches — before you save."
               }
               windowLabel={windowLabel}
+              nothingMatchedHint={
+                debounced.places.length > 0
+                  ? "A picked place is never a spelling mistake: either no search in this window named it, or those keywords have not been read for places yet — the place-detection strip on the rules bench says which."
+                  : undefined
+              }
             />
           </div>
         </div>

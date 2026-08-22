@@ -65,6 +65,7 @@ export function ImpactPanel({
   bandMetas,
   incomplete,
   windowLabel,
+  nothingMatchedHint,
 }: {
   impact: RuleImpact | undefined;
   isPending: boolean;
@@ -75,6 +76,13 @@ export function ImpactPanel({
   /** Plain-language reason there is nothing to measure yet, if any. */
   incomplete: string | null;
   windowLabel: string;
+  /**
+   * What to try when nothing matched. The default advice is about spelling and
+   * match kinds, which is right for a word somebody typed and wrong for a place
+   * picked from the gazetteer — that name is not misspelled, the keywords simply
+   * have not been read for it yet.
+   */
+  nothingMatchedHint?: string;
 }) {
   if (incomplete) {
     return (
@@ -125,8 +133,9 @@ export function ImpactPanel({
           <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
           <p className="text-[11px] leading-4 text-warning">
             This matches <strong>none</strong> of your keywords, so saving it
-            would change nothing. Check the spelling, or try “contains anywhere”
-            instead of a whole-word match.
+            would change nothing.{" "}
+            {nothingMatchedHint ??
+              "Check the spelling, or try “contains anywhere” instead of a whole-word match."}
           </p>
         </div>
       ) : (
