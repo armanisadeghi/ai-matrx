@@ -85,6 +85,10 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
+import {
+  LoadingTapButton,
+  RefreshCwTapButton,
+} from "@/components/icons/tap-buttons";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */
@@ -307,6 +311,13 @@ function useConversationHistoryController(
     void dispatch(fetchConversationHistory({ scopeId, replace: false }));
   }, [dispatch, scopeId, hasMore, status]);
 
+  const onRefresh = () => {
+    void dispatch(fetchConversationHistory({ scopeId, replace: true }));
+    if (surfaceId) {
+      void dispatch(fetchSourceFacets({ force: true }));
+    }
+  };
+
   // ── Favorites — DB-backed by default, overridable per surface ────────────
   const isFavoriteResolved = useCallback(
     (conversationId: string): boolean => {
@@ -452,6 +463,7 @@ function useConversationHistoryController(
     onSearchChange,
     onGroupingChange,
     onLoadMore,
+    onRefresh,
     isFavoriteResolved,
     onToggleFavoriteResolved,
     favorites,
@@ -508,6 +520,7 @@ const DenseView: React.FC<
     onSearchChange,
     onGroupingChange,
     onLoadMore,
+    onRefresh,
     isFavoriteResolved,
     onToggleFavoriteResolved,
     favorites,
@@ -547,6 +560,21 @@ const DenseView: React.FC<
                 aria-label="Search conversations"
               />
             </div>
+          )}
+          {status === "loading" ? (
+            <LoadingTapButton
+              variant="transparent"
+              disabled
+              ariaLabel="Refreshing conversations"
+              className="h-6 w-6"
+            />
+          ) : (
+            <RefreshCwTapButton
+              variant="transparent"
+              onClick={onRefresh}
+              ariaLabel="Refresh conversations"
+              className="h-6 w-6"
+            />
           )}
           {surfaceId && (
             <ConversationSourceFilterTree
@@ -734,6 +762,7 @@ const ConsumerView: React.FC<
     searchTerm,
     onSearchChange,
     onLoadMore,
+    onRefresh,
     favorites,
     resolveHref,
     getSourceMenuCtx,
@@ -770,11 +799,28 @@ const ConsumerView: React.FC<
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
             Filtered Chats
           </span>
-          <ConversationSourceFilterTree
-            scopeId={scopeId}
-            surfaceId={surfaceId}
-            align="end"
-          />
+          <div className="flex items-center gap-1">
+            {status === "loading" ? (
+              <LoadingTapButton
+                variant="transparent"
+                disabled
+                ariaLabel="Refreshing conversations"
+                className="h-7 w-7"
+              />
+            ) : (
+              <RefreshCwTapButton
+                variant="transparent"
+                onClick={onRefresh}
+                ariaLabel="Refresh conversations"
+                className="h-7 w-7"
+              />
+            )}
+            <ConversationSourceFilterTree
+              scopeId={scopeId}
+              surfaceId={surfaceId}
+              align="end"
+            />
+          </div>
         </div>
       )}
 

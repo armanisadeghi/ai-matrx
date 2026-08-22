@@ -122,4 +122,64 @@ describe("WindowPanel minimize boundary", () => {
     expect(entry.traySlot).toBe(0);
     expect(entry.preMinimizedRect).not.toBeNull();
   });
+
+  it("retains a stateful body across minimize and restore when opted in", async () => {
+    const store = configureStore({
+      reducer: {
+        overlays: overlayReducer,
+        windowManager: windowManagerReducer,
+        adminDebug: adminDebugReducer,
+        urlSync: urlSyncReducer,
+      },
+    });
+    const onMount = jest.fn();
+    const onUnmount = jest.fn();
+
+    function StatefulBody() {
+      React.useEffect(() => {
+        onMount();
+        return onUnmount;
+      }, []);
+      return <div>live context</div>;
+    }
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <WindowPanel
+            id="retained-body-window"
+            title="Retained body"
+            overlayId="agentRunWindow"
+            retainBodyOnMinimize
+          >
+            <StatefulBody />
+          </WindowPanel>
+        </Provider>,
+      );
+      await Promise.resolve();
+    });
+
+    const minimize = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Minimize"]',
+    );
+    await act(async () => {
+      minimize?.click();
+      await Promise.resolve();
+    });
+
+    expect(onMount).toHaveBeenCalledTimes(1);
+    expect(onUnmount).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("live context");
+
+    const restore = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Restore"]',
+    );
+    await act(async () => {
+      restore?.click();
+      await Promise.resolve();
+    });
+
+    expect(onMount).toHaveBeenCalledTimes(1);
+    expect(onUnmount).not.toHaveBeenCalled();
+  });
 });

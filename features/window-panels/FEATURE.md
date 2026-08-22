@@ -58,6 +58,10 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ## Change Log
 
+- 2026-08-21 — **Stateful windows can retain their body across minimize.**
+  `WindowPanel retainBodyOnMinimize` keeps a live body mounted offscreen while
+  its minimized preview is shown; `AgentRunWindow` opts in so launcher focus,
+  streams, variables, and unsent composer state survive minimize/restore.
 - 2026-08-15 — **Floating windows gained canonical multi-run binding.**
   `RunSetWindowController` passes a stable `runSetKey` through `liveRunWindow`; the window
   renders the full `RunSetDisplay` and reopens from retained Redux entries after host remounts.
@@ -397,6 +401,7 @@ All three live under `lib/redux/slices/`:
 - `constants/tray.ts` is the only geometry source. Minimize, resize recomputation, release, reorder, restore, reveal, maximize, unregister, and pop-out update slot order and rendered rectangles together; a slot number must never move without its rectangle.
 - Header structure is fixed by `WindowPanel`: 32px tall, traffic lights plus a single truncated 11px title. Rich `titleNode`, consumer header actions, sidebars, and footers do not enter the minimized chrome.
 - Preview priority is semantic registry preview → explicitly supplied local screenshot → quiet title fallback. Eleven of the 106 registered windows have semantic previews, including all five preservation pilots, so their normal minimize path performs no raster capture. Capture is an explicit per-window opt-in for a window whose value cannot be represented semantically; it runs once per minimize against a briefly retained offscreen body and is capped at a 320px longest edge, WebP quality 0.62, and an 800ms budget.
+- Full bodies unmount after preview capture by default. **Stateful/live panels use `retainBodyOnMinimize`** to keep the body mounted offscreen so minimize never tears down drafts, streams, launcher focus, or component-local context; `AgentRunWindow` is the reference consumer.
 - Snapshots are in-memory `Blob` object URLs only: no cloud upload, localStorage, IndexedDB, Redux payload, polling, or refresh loop. The cache holds at most 16 snapshots and revokes URLs on replacement, eviction, restore, and unmount.
 - Runtime window ids key screenshots; overlay ids key static metadata/preview registration. This prevents multi-instance windows from sharing an image accidentally.
 

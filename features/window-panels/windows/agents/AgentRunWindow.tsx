@@ -119,7 +119,7 @@ function AgentRunWindowSidebar({
       variant="consumer"
       scopeId={`agent-run-window:${canonicalAgentId}`}
       agentIds={[canonicalAgentId]}
-      surfaceId="chat"
+      surfaceId="agent-runner"
       activeConversationId={activeConversationId}
       onOpenConversation={handleOpenConversation}
       openInPlace
@@ -575,6 +575,7 @@ function AgentRunWindowInner({
       sidebarDefaultSize={AGENT_RUN_SIDEBAR_DEFAULT_SIZE}
       sidebarMinSize={160}
       defaultSidebarOpen
+      retainBodyOnMinimize
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       {agentId ? (
