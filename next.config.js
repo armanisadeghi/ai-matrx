@@ -271,16 +271,19 @@ const nextConfig = {
     // and features/access-gate/FEATURE.md; app/forbidden.tsx +
     // app/(core)/forbidden.tsx are the boundaries it renders.
     authInterrupts: true,
-    // MEMORY KNOBS REMOVED (2026-07-28, Arman ruling): `turbopackMemoryLimit`
-    // and `cpus` were reactive shields for build-graph memory bombs, not
-    // genuine tuning. The 2026-07 OOM eras were CODE, both times: v0.4.130-136
+    // MEMORY KNOBS were removed (2026-07-28, Arman ruling) because they were
+    // reactive shields for build-graph memory bombs, not genuine tuning. The
+    // 2026-07 OOM eras were CODE, both times: v0.4.130-136
     // = the edge lazy-import fragmentation (reverted v0.4.137); v0.4.199-210
     // = ONE `await import()` of the content-ir registry from the ubiquitous
     // toolStateEffects (bisect-proven, reverted v0.4.212 — D115, and the
     // code-splitting skill's rule-6 caveat). With the bombs out, Next
-    // defaults get to prove themselves. If a future build OOMs, do NOT
-    // reach for these knobs first — hunt the new import edge (code-splitting
-    // skill, "Build-time bloat" section); the knobs only ever bought margin.
+    // defaults got to prove themselves. Two consecutive 60 GB Vercel builds
+    // (v0.4.1015/1016) later completed compilation, then OOMed only when page
+    // data collection spawned 29 workers. This evidence supports bounding that
+    // post-compile fan-out; compile-phase OOMs still require hunting the import
+    // edge first (code-splitting skill, "Build-time bloat" section).
+    cpus: 12,
     serverActions: {
       bodySizeLimit: "10mb",
     },
