@@ -539,26 +539,30 @@ export function NewRulebookFlow() {
               question={q}
               value={answers[q.key]}
               onChange={(v) => {
-                setAnswers((prev) => {
-                  // A multi-select answer is a SET: tapping toggles, and the
-                  // last one standing cannot be turned off (an empty answer
-                  // would leave the next step with nothing to work from).
-                  const next = q.multi
-                    ? (() => {
-                        const cur = splitMulti(prev[q.key]);
-                        const has = cur.includes(v);
-                        const out =
-                          has && cur.length > 1
-                            ? cur.filter((x) => x !== v)
-                            : has
-                              ? cur
-                              : [...cur, v];
-                        return out.join(MULTI_SEP);
-                      })()
-                    : v;
-                  patchDraft({ [q.key]: next });
-                  return { ...prev, [q.key]: next };
-                });
+                // A multi-select answer is a SET: tapping toggles, and the last
+                // one standing cannot be turned off (an empty answer would
+                // leave the next step with nothing to work from).
+                //
+                // The next value is computed OUTSIDE the state updater on
+                // purpose. React runs an updater during render, so dispatching
+                // the draft-save from inside it updates another component
+                // mid-render — the "Cannot update a component while rendering a
+                // different component" warning. Compute, then set, then save.
+                const current = answers[q.key];
+                let next = v;
+                if (q.multi) {
+                  const cur = splitMulti(current);
+                  const has = cur.includes(v);
+                  const out =
+                    has && cur.length > 1
+                      ? cur.filter((x) => x !== v)
+                      : has
+                        ? cur
+                        : [...cur, v];
+                  next = out.join(MULTI_SEP);
+                }
+                setAnswers((prev) => ({ ...prev, [q.key]: next }));
+                patchDraft({ [q.key]: next });
               }}
             />
           ))}
