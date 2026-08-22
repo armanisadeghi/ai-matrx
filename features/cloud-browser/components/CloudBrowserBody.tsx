@@ -20,7 +20,7 @@ import React, { useCallback, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 import { Globe, FileText, Camera, MonitorPlay, BellRing } from "lucide-react";
 
@@ -117,7 +117,7 @@ export function CloudBrowserBody({
       await openStream();
       toast.info("You are now driving this browser.");
     } catch (error) {
-      toast.error(
+      toastErrorAlreadyCaptured(
         error instanceof Error ? error.message : "Could not take control of this browser.",
       );
     } finally {
@@ -140,7 +140,7 @@ export function CloudBrowserBody({
         description: "You will get the browser when they hand it back.",
       });
     } catch (error) {
-      toast.error(
+      toastErrorAlreadyCaptured(
         error instanceof Error
           ? error.message
           : "Could not ask for control of this browser.",
@@ -156,6 +156,12 @@ export function CloudBrowserBody({
       await cb.returnControl();
       setTicket(null);
       toast.success("Control returned to the agent.");
+    } catch (error) {
+      toastErrorAlreadyCaptured(
+        error instanceof Error
+          ? error.message
+          : "Could not return control to the agent.",
+      );
     } finally {
       setBusy(false);
     }

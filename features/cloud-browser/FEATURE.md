@@ -139,6 +139,12 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-22 — control failures stay at one diagnostic boundary:**
+  `CloudBrowserBody` catches claim, request, and return control rejections and
+  renders their messages through `toastErrorAlreadyCaptured`; `postJson` already
+  owns the structured API capture, so the UI adds neither a generic unhandled
+  rejection nor a second toast diagnostic.
+
 - **2026-08-21 — handoff bounded exit (server D-pair):** the handoff card gains
   "Dismiss — let the agent continue" (`dismissHandoff` → `POST
   /runs/{id}/dismiss-handoff`) beside "Step in and help". Server side, an
