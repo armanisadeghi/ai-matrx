@@ -38,9 +38,11 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SourceFavicon } from "@/features/research/components/results/SourceFavicon";
 import { useAuthenticator } from "../../hooks/use-authenticator";
+import { useVault, useVaultDefinitions } from "../../vault-hooks";
+import { WEBSITE_LOGIN_DEFINITION_KEY } from "../../types";
 import type { AuthenticatorEntry } from "../../authenticator-types";
 import { safeVaultLoginUrl } from "../../utils";
-import { AuthenticatorEnrollDialog } from "./AuthenticatorEnrollDialog";
+import { VaultCreateDialog } from "../VaultCreateDialog";
 import { AuthenticatorCode } from "./AuthenticatorCode";
 
 /** `totp_label` holds the URI's raw `Issuer:account` path. Show the account
@@ -196,8 +198,20 @@ function AuthenticatorListSkeleton() {
 }
 
 export function AuthenticatorWorkspace() {
-  const { entries, enrollable, loading, busy, error, refresh, actions } =
-    useAuthenticator();
+  const {
+    entries,
+    loading,
+    busy: authenticatorBusy,
+    error,
+    refresh,
+    actions,
+  } = useAuthenticator();
+  const vault = useVault({ kind: "mine" });
+  const { definitions } = useVaultDefinitions();
+  const websiteDefinition = definitions.find(
+    (definition) => definition.key === WEBSITE_LOGIN_DEFINITION_KEY,
+  );
+  const busy = authenticatorBusy || vault.busy;
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<AuthenticatorEntry | null>(
     null,
@@ -244,7 +258,7 @@ export function AuthenticatorWorkspace() {
             )}
             <Button
               onClick={() => setEnrollOpen(true)}
-              disabled={busy}
+              disabled={busy || !websiteDefinition}
               variant="outline"
               className="h-11 shrink-0 gap-1.5 px-3"
             >
@@ -273,7 +287,7 @@ export function AuthenticatorWorkspace() {
               <Button
                 className="mt-4 h-11 gap-1.5"
                 onClick={() => setEnrollOpen(true)}
-                disabled={busy}
+                disabled={busy || !websiteDefinition}
               >
                 <Plus className="h-4 w-4" />
                 Add authenticator
@@ -302,13 +316,23 @@ export function AuthenticatorWorkspace() {
         </div>
       </div>
 
-      <AuthenticatorEnrollDialog
-        open={enrollOpen}
-        onOpenChange={setEnrollOpen}
-        enrollable={enrollable}
-        busy={busy}
-        onEnroll={actions.enroll}
-      />
+      {websiteDefinition && (
+        <VaultCreateDialog
+          open={enrollOpen}
+          onOpenChange={setEnrollOpen}
+          principal={{ type: "user" }}
+          definitions={definitions}
+          busy={busy}
+          initialDefinitionKey={WEBSITE_LOGIN_DEFINITION_KEY}
+          onCreate={(body, attachments) =>
+            attachments?.length
+              ? vault.actions.createItemWithAttachments(body, attachments)
+              : vault.actions.createItem(body)
+          }
+          onAssign={vault.actions.assign}
+          onSaved={refresh}
+        />
+      )}
 
       <ConfirmDialog
         open={pendingDelete !== null}

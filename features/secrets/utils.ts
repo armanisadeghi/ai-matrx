@@ -22,6 +22,30 @@ export function safeVaultLoginUrl(input: string): string | null {
   }
 }
 
+/** Normalize user-entered login destinations for storage.
+ *
+ * A bare host is the normal mobile input, so it becomes HTTPS. Explicit
+ * HTTP(S) is preserved for local/intranet use. Queries and fragments are not
+ * stable login identity and are deliberately excluded from browser matching.
+ */
+export function normalizeVaultLoginUrlInput(input: string): string | null {
+  const candidate = input.trim();
+  if (!candidate) return null;
+  try {
+    const parsed = new URL(
+      /^[a-z][a-z\d+.-]*:/i.test(candidate)
+        ? candidate
+        : `https://${candidate}`,
+    );
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return null;
+    }
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
 const PASSWORD_LOWERCASE = "abcdefghijkmnopqrstuvwxyz";
 const PASSWORD_UPPERCASE = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const PASSWORD_DIGITS = "23456789";

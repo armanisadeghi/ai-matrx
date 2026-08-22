@@ -1,5 +1,6 @@
 import {
   generateVaultPassword,
+  normalizeVaultLoginUrlInput,
   parseEnvAssignment,
   safeVaultLoginUrl,
 } from "@/features/secrets/utils";
@@ -104,5 +105,20 @@ describe("safeVaultLoginUrl", () => {
     "not a url",
   ])("refuses unsafe or ambiguous destination %s", (value) => {
     expect(safeVaultLoginUrl(value)).toBeNull();
+  });
+});
+
+describe("normalizeVaultLoginUrlInput", () => {
+  test("turns a bare host into a stable HTTPS origin and path", () => {
+    expect(
+      normalizeVaultLoginUrlInput("npmjs.com/login?next=/settings#two-factor"),
+    ).toBe("https://npmjs.com/login");
+  });
+
+  test("preserves explicit HTTP(S) and rejects executable schemes", () => {
+    expect(normalizeVaultLoginUrlInput("http://localhost:3000/login")).toBe(
+      "http://localhost:3000/login",
+    );
+    expect(normalizeVaultLoginUrlInput("javascript:alert(1)")).toBeNull();
   });
 });

@@ -14,7 +14,10 @@ import {
   ArrowLeftRight,
   Building2,
   Check,
+  Copy,
   Download,
+  Eye,
+  EyeOff,
   ExternalLink,
   FileKey2,
   GitFork,
@@ -54,6 +57,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -80,7 +84,7 @@ import {
   primarySecretFieldOf,
   recommendedHandlingForFieldKey,
 } from "../credential-identity";
-import { SecretValue } from "./SecretValue";
+import { SecretValue, useFieldSecret } from "./SecretValue";
 import {
   HANDLING_PRESENTATION,
   VaultHandlingControl,
@@ -139,12 +143,17 @@ export function VaultItemDetail({
   // in as, then the value that protects it. Everything else is subordinate.
   const identityField = identityFieldOf(item);
   const secretField = primarySecretFieldOf(item);
+  const recoveryCodesField = item.fields.find(
+    (field) => field.field_key === "recovery_codes",
+  );
   const primaryIds = new Set(
     [identityField?.id, secretField?.id].filter((id): id is string =>
       Boolean(id),
     ),
   );
-  const otherFields = item.fields.filter((f) => !primaryIds.has(f.id));
+  const otherFields = item.fields.filter(
+    (field) => !primaryIds.has(field.id) && field.id !== recoveryCodesField?.id,
+  );
 
   const renderField = (field: VaultField, emphasis: boolean) => (
     <FieldRow
@@ -336,6 +345,14 @@ export function VaultItemDetail({
 
       {/* Two-factor — the other half of the sign-in recipe, on the same item */}
       <AuthenticatorSection item={item} />
+
+      <RecoveryCodesSection
+        item={item}
+        field={recoveryCodesField}
+        busy={busy}
+        actions={actions}
+        editMode={editingCredential}
+      />
 
       {/* Notes and other details — deliberately plaintext, loudly labelled */}
       <NotEncryptedSection
@@ -1280,6 +1297,223 @@ function AddFieldPanel({
  * see them, and a value nobody can read cannot be matched against a page.
  * The server re-checks every match before it decrypts anything.
  */
+function RecoveryCodesSection({
+  item,
+  field,
+  busy,
+  actions,
+  editMode,
+}: {
+  item: VaultItem;
+  field: VaultField | undefined;
+  busy: boolean;
+  actions: VaultActions;
+  editMode: boolean;
+}) {
+  const [newCodes, setNewCodes] = useState("");
+
+  if (field) {
+    return (
+      <StoredRecoveryCodes
+        item={item}
+        field={field}
+        busy={busy}
+        actions={actions}
+        editMode={editMode}
+      />
+    );
+  }
+
+  if (!editMode || !item.capabilities.can_edit) return null;
+
+  return (
+    <section className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+      <div>
+        <h3 className="text-sm font-semibold">Recovery codes</h3>
+        <p className="text-xs text-muted-foreground">
+          Paste one code per line. They are encrypted and hidden until you
+          explicitly reveal them.
+        </p>
+      </div>
+      <Textarea
+        value={newCodes}
+        onChange={(event) => setNewCodes(event.target.value)}
+        rows={5}
+        className="font-mono"
+        placeholder="Paste one recovery code per line"
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          disabled={busy || !newCodes.trim()}
+          onClick={async () => {
+            await actions.addField(item.id, {
+              field_key: "recovery_codes",
+              value: newCodes.trim(),
+              handling: "revealable",
+              editable: true,
+              inject_into_sandbox: false,
+              description: "One-time account recovery codes",
+            });
+            setNewCodes("");
+          }}
+        >
+          Add recovery codes
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function StoredRecoveryCodes({
+  item,
+  field,
+  busy,
+  actions,
+  editMode,
+}: {
+  item: VaultItem;
+  field: VaultField;
+  busy: boolean;
+  actions: VaultActions;
+  editMode: boolean;
+}) {
+  const secret = useFieldSecret(item, field);
+  const [replacement, setReplacement] = useState("");
+  const codes = (secret.value ?? "")
+    .split(/\r?\n/)
+    .map((code) => code.trim())
+    .filter(Boolean);
+
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success("Recovery code copied.");
+    } catch {
+      toast.error("Your browser blocked clipboard access.");
+    }
+  };
+
+  const markUsed = async (index: number) => {
+    const remaining = codes.filter((_, currentIndex) => currentIndex !== index);
+    secret.clear();
+    if (remaining.length === 0) {
+      await actions.deleteField(item.id, field.id);
+      return;
+    }
+    await actions.updateFieldValue(item.id, field.id, remaining.join("\n"));
+  };
+
+  return (
+    <section className="space-y-2 rounded-lg border border-border bg-card p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold">Recovery codes</h3>
+          <p className="text-xs text-muted-foreground">
+            One-time fallback codes. Reveal only when you need one, then mark it
+            used so it cannot be chosen again.
+          </p>
+        </div>
+        {secret.sealed ? (
+          <Badge variant="outline">Automation only</Badge>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy || secret.working || !secret.allowed}
+            onClick={() => secret.toggle()}
+          >
+            {secret.value === null ? (
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+            ) : (
+              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {secret.value === null ? "Show codes" : "Hide codes"}
+          </Button>
+        )}
+      </div>
+
+      {secret.value !== null ? (
+        <div className="space-y-2">
+          {codes.map((code, index) => (
+            <div
+              key={`${code}-${index}`}
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background p-2"
+            >
+              <code className="min-w-0 flex-1 break-all font-mono text-sm">
+                {code}
+              </code>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => void copyCode(code)}
+              >
+                <Copy className="mr-1.5 h-3.5 w-3.5" />
+                Copy
+              </Button>
+              {item.capabilities.can_edit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void markUsed(index)}
+                >
+                  <Check className="mr-1.5 h-3.5 w-3.5" />
+                  Mark used
+                </Button>
+              )}
+            </div>
+          ))}
+          <p className="text-[11px] text-muted-foreground">
+            Revealed codes hide automatically after about 30 seconds.
+          </p>
+        </div>
+      ) : (
+        <p className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Hidden
+        </p>
+      )}
+
+      {editMode && item.capabilities.can_edit && (
+        <div className="space-y-2 border-t border-border pt-3">
+          <Label htmlFor={`replace-recovery-codes-${field.id}`}>
+            Replace all recovery codes
+          </Label>
+          <Textarea
+            id={`replace-recovery-codes-${field.id}`}
+            value={replacement}
+            onChange={(event) => setReplacement(event.target.value)}
+            rows={4}
+            className="font-mono"
+            placeholder="Paste the complete new set, one code per line"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              disabled={busy || !replacement.trim()}
+              onClick={async () => {
+                secret.clear();
+                await actions.updateFieldValue(
+                  item.id,
+                  field.id,
+                  replacement.trim(),
+                );
+                setReplacement("");
+              }}
+            >
+              Replace codes
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 /**
  * Two-factor authentication — part of the login's ONE recipe (Arman
  * 2026-08-21): the seed lives on the website_login it protects, and the login
@@ -1450,7 +1684,6 @@ function AuthenticatorSection({ item }: { item: VaultItem }) {
     </div>
   );
 }
-
 
 function DestinationSection({
   item,

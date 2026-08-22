@@ -27,9 +27,11 @@ import {
   ChevronDown,
   Eye,
   EyeOff,
+  FileKey2,
   Globe,
   KeyRound,
   Loader2,
+  NotebookPen,
   Plus,
   RefreshCw,
   Search,
@@ -51,6 +53,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { QrCodeInput } from "@/components/qr/QrCodeInput";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import {
   Credenza,
@@ -60,7 +64,11 @@ import {
   CredenzaTitle,
 } from "@/components/ui/credenza-modal/credenza";
 
-import { generateVaultPassword, parseEnvAssignment } from "../utils";
+import {
+  generateVaultPassword,
+  normalizeVaultLoginUrlInput,
+  parseEnvAssignment,
+} from "../utils";
 import {
   InvalidEnrollmentInputError,
   parseEnrollmentInput,
@@ -111,6 +119,11 @@ interface VaultCreateDialogProps {
     }[],
   ) => Promise<VaultItem>;
   onAssign: (body: VaultAssignRequest) => Promise<VaultAssignResponse>;
+  /** Opens directly in one canonical definition form. Authenticator uses this
+   *  for Website login instead of maintaining a second create UI. */
+  initialDefinitionKey?: string;
+  /** Fires after all optional follow-up work, including TOTP enrollment. */
+  onSaved?: (item: VaultItem) => void | Promise<void>;
 }
 
 type Step =
@@ -176,15 +189,24 @@ export function VaultCreateDialog({
   busy,
   onCreate,
   onAssign,
+  initialDefinitionKey,
+  onSaved,
 }: VaultCreateDialogProps) {
-  const [step, setStep] = useState<Step>({ kind: "pick" });
+  const initialDefinition = initialDefinitionKey
+    ? definitions.find((definition) => definition.key === initialDefinitionKey)
+    : undefined;
+  const initialStep = (): Step =>
+    initialDefinition
+      ? { kind: "form", definition: initialDefinition }
+      : { kind: "pick" };
+  const [step, setStep] = useState<Step>(initialStep);
   const [mode, setMode] = useState<CreateMode>("self");
   const [assigned, setAssigned] = useState<VaultAssignResponse | null>(null);
 
   const close = (next: boolean) => {
     onOpenChange(next);
     if (!next) {
-      setStep({ kind: "pick" });
+      setStep(initialStep());
       setMode("self");
       setAssigned(null);
     }
@@ -271,6 +293,7 @@ export function VaultCreateDialog({
                   busy={busy}
                   onCreate={submitCreate}
                   onAssign={submitAssign}
+                  onSaved={onSaved}
                 />
               )}
               {step.kind === "custom" && (
@@ -698,6 +721,20 @@ interface FieldDraft {
   inject: boolean;
 }
 
+interface AttachmentDraft {
+  file: File | null;
+  label: string;
+  description: string;
+  handling: VaultHandling;
+}
+
+const emptyAttachmentDraft = (): AttachmentDraft => ({
+  file: null,
+  label: "",
+  description: "",
+  handling: "revealable",
+});
+
 function FieldRuntimeSettings({
   draft,
   onChange,
@@ -759,6 +796,7 @@ function DefinitionForm({
   busy,
   onCreate,
   onAssign,
+  onSaved,
 }: {
   definition: CredentialDefinition;
   definitions: CredentialDefinition[];
@@ -775,6 +813,7 @@ function DefinitionForm({
     }[],
   ) => Promise<VaultItem>;
   onAssign: (body: VaultAssignRequest) => Promise<void>;
+  onSaved?: (item: VaultItem) => void | Promise<void>;
 }) {
   const byKey = useMemo(
     () => new Map(definitions.map((d) => [d.key, d])),
@@ -823,6 +862,14 @@ function DefinitionForm({
   // method is recorded so agents know to hand control back at verification.
   const [twoFactor, setTwoFactor] = useState<TwoFactorChoice>("off");
   const [totpInput, setTotpInput] = useState("");
+  const [totpDecodeError, setTotpDecodeError] = useState<string | null>(null);
+  const [secureNotes, setSecureNotes] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState("");
+  const [showSecureNotes, setShowSecureNotes] = useState(false);
+  const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
+  const [supplementalAttachments, setSupplementalAttachments] = useState<
+    AttachmentDraft[]
+  >([]);
   const [notes, setNotes] = useState("");
   const [metaValues, setMetaValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(extraMetaDefs.map((d) => [d.field_key, ""])),
@@ -843,7 +890,11 @@ function DefinitionForm({
       current.map((d, i) => (i === index ? { ...d, ...patch } : d)),
     );
 
-  const urls = loginUrls.map((u) => u.trim()).filter(Boolean);
+  const enteredUrls = loginUrls.map((url) => url.trim()).filter(Boolean);
+  const urls = enteredUrls.flatMap((url) => {
+    const normalized = normalizeVaultLoginUrlInput(url);
+    return normalized ? [normalized] : [];
+  });
   const assigning = mode === "assign";
   const canGenerate = drafts.some(
     (d) => d.def.field_key === GENERATED_FIELD_KEY,
@@ -866,7 +917,12 @@ function DefinitionForm({
     );
   }
   if (attachmentOnly && !attachmentFile) problems.push("Choose a file.");
-  if (isWebsiteLogin && !assigning && twoFactor === "totp") {
+  if (
+    isWebsiteLogin &&
+    !assigning &&
+    twoFactor === "totp" &&
+    totpInput.trim()
+  ) {
     try {
       parseEnrollmentInput(totpInput);
     } catch (err) {
@@ -879,10 +935,16 @@ function DefinitionForm({
   }
   if (attachmentOnly && !attachmentLabel.trim())
     problems.push("A file label is required.");
+  supplementalAttachments.forEach((attachment, index) => {
+    if (!attachment.file)
+      problems.push(`Protected file ${index + 1}: choose a file.`);
+    if (!attachment.label.trim())
+      problems.push(`Protected file ${index + 1}: add a label.`);
+  });
   for (const draft of drafts) {
     if (isGeneratedField(draft.def.field_key)) continue;
     const label = draft.def.label;
-    if ((draft.def.required ?? true) && !draft.value) {
+    if ((draft.def.required ?? true) && !draft.value && !isWebsiteLogin) {
       problems.push(`${label} is required.`);
     }
     if (draft.value && draft.def.validation_regex) {
@@ -905,20 +967,31 @@ function DefinitionForm({
       problems.push(`${label}: sandbox injection needs an environment key.`);
     }
   }
-  if (loginUrlDef && (loginUrlDef.required ?? true) && urls.length === 0) {
+  if (
+    loginUrlDef &&
+    (loginUrlDef.required ?? true) &&
+    urls.length === 0 &&
+    !isWebsiteLogin
+  ) {
     problems.push(`${loginUrlDef.label} is required.`);
+  }
+  if (enteredUrls.length !== urls.length) {
+    problems.push("Enter a valid HTTP or HTTPS login address.");
   }
   const hasAnyValue =
     drafts.some((d) => d.value) ||
     urls.length > 0 ||
     Boolean(notes.trim()) ||
+    Boolean(secureNotes.trim()) ||
+    Boolean(recoveryCodes.trim()) ||
+    supplementalAttachments.length > 0 ||
     Object.values(metaValues).some((v) => v.trim());
   if (!hasAnyValue && !generating && !attachmentOnly) {
     problems.push("Enter at least one value.");
   }
 
-  const buildFields = (): VaultFieldIn[] =>
-    drafts
+  const buildFields = (): VaultFieldIn[] => {
+    const fields: VaultFieldIn[] = drafts
       .filter((d) => d.value && !isGeneratedField(d.def.field_key))
       .map((d) => ({
         field_key: d.def.field_key,
@@ -929,6 +1002,28 @@ function DefinitionForm({
         inject_into_sandbox: d.inject && Boolean(d.envKey),
         description: d.def.description ?? null,
       }));
+    if (secureNotes.trim()) {
+      fields.push({
+        field_key: "secure_notes",
+        value: secureNotes.trim(),
+        handling: "revealable",
+        editable: true,
+        inject_into_sandbox: false,
+        description: "Encrypted notes",
+      });
+    }
+    if (recoveryCodes.trim()) {
+      fields.push({
+        field_key: "recovery_codes",
+        value: recoveryCodes.trim(),
+        handling: "revealable",
+        editable: true,
+        inject_into_sandbox: false,
+        description: "One-time account recovery codes",
+      });
+    }
+    return fields;
+  };
 
   /** Plaintext item metadata — never `fields[]`. */
   const buildMetadata = () => {
@@ -944,7 +1039,11 @@ function DefinitionForm({
     // KNOW to hand control back at the verification step instead of failing.
     // (The authenticator-app case writes nothing here — enrollment stamps the
     // server-owned totp_* metadata on this same item.)
-    if (isWebsiteLogin && !assigning && (twoFactor === "sms" || twoFactor === "other")) {
+    if (
+      isWebsiteLogin &&
+      !assigning &&
+      (twoFactor === "sms" || twoFactor === "other")
+    ) {
       extras.push({
         key: "mfa_method",
         label: "Two-factor method",
@@ -994,24 +1093,45 @@ function DefinitionForm({
         source: "manual",
         ...buildMetadata(),
       },
-      attachmentOnly && attachmentFile
-        ? [
-            {
-              file: attachmentFile,
-              label: attachmentLabel.trim(),
-              description: attachmentPurpose.trim() || undefined,
-              handling: attachmentHandling,
-            },
-          ]
-        : undefined,
+      [
+        ...(attachmentOnly && attachmentFile
+          ? [
+              {
+                file: attachmentFile,
+                label: attachmentLabel.trim(),
+                description: attachmentPurpose.trim() || undefined,
+                handling: attachmentHandling,
+              },
+            ]
+          : []),
+        ...supplementalAttachments.flatMap((attachment) =>
+          attachment.file
+            ? [
+                {
+                  file: attachment.file,
+                  label: attachment.label.trim(),
+                  description: attachment.description.trim() || undefined,
+                  handling: attachment.handling,
+                },
+              ]
+            : [],
+        ),
+      ],
     );
     // The 2FA half of the recipe: the seed enrolls on the SAME item, in the
     // same user action. The login itself was created — an enrollment failure
     // must not roll that back, only tell the person how to finish.
-    if (isWebsiteLogin && twoFactor === "totp" && created?.id) {
+    if (
+      isWebsiteLogin &&
+      twoFactor === "totp" &&
+      totpInput.trim() &&
+      created?.id
+    ) {
       try {
         await enrollAuthenticator(created.id, totpInput.trim());
-        toast.success("Login saved with its authenticator — sign-in is fully automatic.");
+        toast.success(
+          "Login saved with its authenticator — sign-in is fully automatic.",
+        );
       } catch {
         toast.error(
           "The login was saved, but the authenticator could not be enrolled. " +
@@ -1019,6 +1139,7 @@ function DefinitionForm({
         );
       }
     }
+    await onSaved?.(created);
   };
 
   return (
@@ -1143,7 +1264,7 @@ function DefinitionForm({
             <p className="text-xs font-semibold">
               {loginUrlDef?.label ?? "Login URL(s)"}
             </p>
-            {loginUrlDef?.required === false && (
+            {(isWebsiteLogin || loginUrlDef?.required === false) && (
               <span className="text-xs text-muted-foreground">optional</span>
             )}
           </div>
@@ -1169,6 +1290,10 @@ function DefinitionForm({
                 inputMode="url"
                 autoComplete="off"
                 aria-label={`Login URL ${index + 1}`}
+                aria-invalid={
+                  Boolean(url.trim()) &&
+                  normalizeVaultLoginUrlInput(url) === null
+                }
               />
               {loginUrls.length > 1 && (
                 <Button
@@ -1269,14 +1394,26 @@ function DefinitionForm({
             </Select>
           </div>
           {twoFactor === "totp" && (
-            <div className="space-y-1">
+            <div className="space-y-2">
+              <QrCodeInput
+                disabled={busy}
+                hint="Paste, drop, choose, or scan the site's QR code. The image is read here and never uploaded."
+                onDecoded={(value) => {
+                  setTotpDecodeError(null);
+                  setTotpInput(value);
+                }}
+                onError={setTotpDecodeError}
+              />
               <Label htmlFor="vault-create-totp" className="text-xs">
-                Authenticator setup key
+                Authenticator setup key (optional)
               </Label>
               <Input
                 id="vault-create-totp"
                 value={totpInput}
-                onChange={(e) => setTotpInput(e.target.value)}
+                onChange={(e) => {
+                  setTotpDecodeError(null);
+                  setTotpInput(e.target.value);
+                }}
                 placeholder="Paste the otpauth:// link or the manual setup key"
                 autoComplete="off"
                 spellCheck={false}
@@ -1284,17 +1421,251 @@ function DefinitionForm({
               />
               <p className="text-xs text-muted-foreground">
                 From the site&apos;s &ldquo;set up an authenticator app&rdquo;
-                step. The seed is sealed on this login — codes are generated
-                and typed for you; nobody, including agents, can read it back.
+                step. The seed is sealed on this login — codes are generated and
+                typed for you; nobody, including agents, can read it back. You
+                can leave this blank, save the login now, and add it later.
               </p>
+              {totpDecodeError && (
+                <p className="text-xs text-destructive">{totpDecodeError}</p>
+              )}
             </div>
           )}
           {(twoFactor === "sms" || twoFactor === "other") && (
             <p className="text-xs text-muted-foreground">
-              Saved with the login so Matrx knows to hand control back to you
-              at the verification step instead of getting stuck.
+              Saved with the login so Matrx knows to hand control back to you at
+              the verification step instead of getting stuck.
             </p>
           )}
+        </div>
+      )}
+
+      {isWebsiteLogin && !assigning && !attachmentOnly && (
+        <div className="space-y-3 rounded-md border border-border p-3">
+          <div>
+            <p className="text-xs font-semibold">Additional protected items</p>
+            <p className="text-xs text-muted-foreground">
+              Add any pieces you already have. Everything here is encrypted, and
+              every piece can also be added later from the saved login.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {!showRecoveryCodes && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecoveryCodes(true)}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Recovery codes
+              </Button>
+            )}
+            {!showSecureNotes && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSecureNotes(true)}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Secure note
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setSupplementalAttachments((current) => [
+                  ...current,
+                  emptyAttachmentDraft(),
+                ])
+              }
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Protected file
+            </Button>
+          </div>
+
+          {showRecoveryCodes && (
+            <div className="space-y-1.5 rounded-md bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="vault-create-recovery-codes">
+                  Recovery codes
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setRecoveryCodes("");
+                    setShowRecoveryCodes(false);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+              <Textarea
+                id="vault-create-recovery-codes"
+                value={recoveryCodes}
+                onChange={(event) => setRecoveryCodes(event.target.value)}
+                rows={5}
+                className="font-mono"
+                placeholder="Paste one recovery code per line"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="text-xs text-muted-foreground">
+                Stored as a Restricted encrypted field. After using one, open
+                this login and mark that code used.
+              </p>
+            </div>
+          )}
+
+          {showSecureNotes && (
+            <div className="space-y-1.5 rounded-md bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label
+                  htmlFor="vault-create-secure-notes"
+                  className="flex items-center gap-1.5"
+                >
+                  <NotebookPen className="h-3.5 w-3.5" />
+                  Secure note
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSecureNotes("");
+                    setShowSecureNotes(false);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+              <Textarea
+                id="vault-create-secure-notes"
+                value={secureNotes}
+                onChange={(event) => setSecureNotes(event.target.value)}
+                rows={4}
+                placeholder="Private account details, security answers, or setup notes"
+              />
+              <p className="text-xs text-muted-foreground">
+                Encrypted and hidden until you explicitly reveal it.
+              </p>
+            </div>
+          )}
+
+          {supplementalAttachments.map((attachment, index) => (
+            <div key={index} className="space-y-3 rounded-md bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold">
+                  <FileKey2 className="h-3.5 w-3.5" />
+                  Protected file {index + 1}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setSupplementalAttachments((current) =>
+                      current.filter(
+                        (_, currentIndex) => currentIndex !== index,
+                      ),
+                    )
+                  }
+                >
+                  Remove
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor={`vault-create-file-${index}`}>File</Label>
+                  <Input
+                    id={`vault-create-file-${index}`}
+                    type="file"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setSupplementalAttachments((current) =>
+                        current.map((currentAttachment, currentIndex) =>
+                          currentIndex === index
+                            ? {
+                                ...currentAttachment,
+                                file,
+                                label:
+                                  currentAttachment.label || file?.name || "",
+                              }
+                            : currentAttachment,
+                        ),
+                      );
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`vault-create-file-label-${index}`}>
+                    Label
+                  </Label>
+                  <Input
+                    id={`vault-create-file-label-${index}`}
+                    value={attachment.label}
+                    onChange={(event) =>
+                      setSupplementalAttachments((current) =>
+                        current.map((currentAttachment, currentIndex) =>
+                          currentIndex === index
+                            ? {
+                                ...currentAttachment,
+                                label: event.target.value,
+                              }
+                            : currentAttachment,
+                        ),
+                      )
+                    }
+                    placeholder="npm recovery codes"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor={`vault-create-file-purpose-${index}`}>
+                    Purpose (optional)
+                  </Label>
+                  <Input
+                    id={`vault-create-file-purpose-${index}`}
+                    value={attachment.description}
+                    onChange={(event) =>
+                      setSupplementalAttachments((current) =>
+                        current.map((currentAttachment, currentIndex) =>
+                          currentIndex === index
+                            ? {
+                                ...currentAttachment,
+                                description: event.target.value,
+                              }
+                            : currentAttachment,
+                        ),
+                      )
+                    }
+                    placeholder="Backup codes downloaded during 2FA setup"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Download protection</Label>
+                  <VaultHandlingControl
+                    value={attachment.handling}
+                    onValueChange={(handling) =>
+                      setSupplementalAttachments((current) =>
+                        current.map((currentAttachment, currentIndex) =>
+                          currentIndex === index
+                            ? { ...currentAttachment, handling }
+                            : currentAttachment,
+                        ),
+                      )
+                    }
+                    disabled={busy}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1306,7 +1677,7 @@ function DefinitionForm({
                 <Label htmlFor={`vault-field-${draft.def.field_key}`}>
                   {draft.def.label}
                 </Label>
-                {!(draft.def.required ?? true) && (
+                {(isWebsiteLogin || !(draft.def.required ?? true)) && (
                   <span className="text-xs text-muted-foreground">
                     optional
                   </span>
@@ -1486,12 +1857,12 @@ function DefinitionForm({
               <Label htmlFor="vault-create-notes" className="text-xs">
                 {notesDef?.label ?? "Notes"}
               </Label>
-              <textarea
+              <Textarea
                 id="vault-create-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
-                className="w-full rounded border border-border bg-background p-2 text-xs"
+                className="text-xs"
                 placeholder="Anything that is not a secret — account numbers, support contacts, reminders."
               />
             </div>

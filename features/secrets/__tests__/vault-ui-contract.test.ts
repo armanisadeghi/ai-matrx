@@ -174,28 +174,56 @@ describe("shared vault UI contract", () => {
     expect(hooksSource).toContain("requestId !== requestIdRef.current");
   });
 
-  test("creates one complete login and authenticator bundle", () => {
-    const enrollSource = readFileSync(
+  test("uses the canonical Vault form for authenticator login creation", () => {
+    const workspaceSource = readFileSync(
       join(
         process.cwd(),
-        "features/secrets/components/authenticator/AuthenticatorEnrollDialog.tsx",
+        "features/secrets/components/authenticator/AuthenticatorWorkspace.tsx",
       ),
       "utf8",
     );
-    const hookSource = readFileSync(
-      join(process.cwd(), "features/secrets/hooks/use-authenticator.ts"),
+    const createSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
       "utf8",
     );
 
-    expect(enrollSource).toContain("New login details");
-    expect(enrollSource).toContain("Username or email");
-    expect(enrollSource).toContain("Password for this website");
-    expect(enrollSource).not.toContain(
-      "add the username and password to afterwards",
+    expect(workspaceSource).toContain("<VaultCreateDialog");
+    expect(workspaceSource).toContain(
+      "initialDefinitionKey={WEBSITE_LOGIN_DEFINITION_KEY}",
     );
-    expect(hookSource).toContain('field_key: "username"');
-    expect(hookSource).toContain('field_key: "password"');
-    expect(hookSource).toContain("browser_fill_enabled: true");
+    expect(createSource).toContain("Authenticator setup key");
+    expect(createSource).toContain("can leave this blank");
+  });
+
+  test("supports partial login saves and first-class protected additions", () => {
+    const createSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
+      "utf8",
+    );
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+
+    expect(createSource).toContain("!isWebsiteLogin");
+    expect(createSource).toContain('field_key: "recovery_codes"');
+    expect(createSource).toContain('field_key: "secure_notes"');
+    expect(createSource).toContain("supplementalAttachments");
+    expect(detailSource).toContain("Mark used");
+    expect(detailSource).toContain("Replace all recovery codes");
+  });
+
+  test("keeps mobile credential dialogs scrollable without iOS input zoom", () => {
+    const credenzaSource = readFileSync(
+      join(process.cwd(), "components/ui/credenza-modal/credenza.tsx"),
+      "utf8",
+    );
+
+    expect(credenzaSource).toContain("h-[92dvh]");
+    expect(credenzaSource).toContain("overflow-hidden");
+    expect(credenzaSource).toContain("flex-1 overflow-y-auto");
+    expect(credenzaSource).toContain("[&_input]:text-base");
+    expect(credenzaSource).toContain("[&_textarea]:text-base");
   });
 
   test("offers authenticator rename without leaving the manage surface", () => {

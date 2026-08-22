@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-08-21
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-08-22
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -172,6 +172,14 @@ Personal and organization credentials render through the same
 - New credential starts with four plain-purpose choices: Website login, API
   key, Environment value, Secure file, and Custom credential. The full catalog remains
   searchable behind **Browse all**.
+- Website-login creation is progressive: name is the item identity; website,
+  username, password, authenticator setup, recovery codes, secure notes, and
+  protected files are independent optional parts. Save whatever is known now
+  and complete the same item later. `/vault/authenticator` opens this exact
+  canonical form directly at Website login; it has no second creation form.
+- Recovery codes are a Restricted encrypted field, never plaintext notes. The
+  detail view reveals them transiently, copies one code at a time, and removes
+  a code through **Mark used**. Secure notes are also Restricted fields.
 - Protected files live in the same single Edit credential mode. Users can add
   multiple files, edit label/purpose/download filename/protection, replace
   bytes, download, and delete. Sealing is confirmed as a permanent one-way
@@ -186,6 +194,9 @@ Personal and organization credentials render through the same
 - A scope switch immediately presents an empty loading view keyed to the new
   scope. Late responses from Mine, Shared with me, or another organization are
   discarded and can never appear under the newly selected scope label.
+- Every Credenza form is a bounded 92dvh mobile Drawer with one flex scroll
+  body, safe-area padding, 16px inputs/comboboxes/textareas, and 44px buttons;
+  variable content can never push its save action outside a non-scrolling view.
 
 ## Files and entry points
 
@@ -198,62 +209,40 @@ Personal and organization credentials render through the same
 | [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | Full three-pane route workspace plus compact embedded presentation, both sharing the same list/search/family filters, detail, create, and import flows (Credenza = Dialog/Drawer responsive).                                                                                                    |
 | [`components/VaultHandlingControl.tsx`](./components/VaultHandlingControl.tsx) | Shared Standard / Restricted / Automation-only protection selector and current-state presentation for fields and protected files.                                                                                                                                                                |
 | [`components/SecretValue.tsx`](./components/SecretValue.tsx)                   | Canonical masked value row with audited reveal, direct copy, compact icon actions, and transient plaintext countdown/auto-clear.                                                                                                                                                                 |
-| [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Basic-purpose picker first, searchable full catalog second, then definition-driven form + Custom builder (with `KEY=value` paste-to-fill); login passwords support local generation and Show/Hide.                                                                                               |
-| [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode (name, description, field values/metadata, notes, URLs, other details), plus share, transfer, fork, soft delete, and audit trail.                                                                                            |
+| [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | The one create form for Vault and Authenticator: basic-purpose picker/full catalog, progressive website login parts, TOTP, recovery codes, secure notes, protected files, local password generation, and Custom builder.                                                                         |
+| [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode, including authenticator, protected files, and first-class recovery-code copy/Mark-used behavior, plus share, transfer, fork, soft delete, and audit trail.                                                                  |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                   |
 | [`authenticator-service.ts`](./authenticator-service.ts)                       | `/api/authenticator/*` client — metadata plus the signed-in owner's short-lived current-code request; never a seed.                                                                                                                                                                              |
 | [`authenticator-otpauth.ts`](./authenticator-otpauth.ts)                       | Pure client parse of a setup key / `otpauth://` URI, kept in lockstep with aidream's `otpauth.py`, for the instant enrollment preview.                                                                                                                                                           |
-| [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | THE authenticator hook: entries, enrollable items, and a create-login-then-enroll `enroll` action.                                                                                                                                                                                               |
-| [`components/authenticator/`](./components/authenticator/)                     | The `/vault/authenticator` workspace, compact account rows with a rotating-code countdown ring, and enrollment dialog that shows the first code immediately (Credenza = Dialog/Drawer responsive).                                                                                               |
+| [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | Authenticator metadata/manage hook: list, rename, enable/disable, and remove. Login creation/enrollment stays in the canonical Vault form.                                                                                                                                                       |
+| [`components/authenticator/`](./components/authenticator/)                     | The `/vault/authenticator` code-first workspace; Add opens `VaultCreateDialog` directly at Website login, and saved rows expose rotating codes plus Vault/rename/enable/remove actions.                                                                                                          |
 | [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` (single dotenv-line paste-to-fill) + `generateVaultPassword` (Web Crypto, unambiguous alphabet, all basic character groups).                                                                                                                                                |
 
-## Authenticator enrollment (2026-08-20)
+## Authenticator enrollment (2026-08-22)
 
 `/vault/authenticator` is the GA manage surface for the Matrx Authenticator
 (cross-repo spec: `common-docs/systems/clients/matrx-authenticator/FEATURE.md`). It is
 **enroll + use + manage** — the signed-in owner sees the current rotating code;
 the sealed setup seed has no reveal path at any privilege.
 
-**The secret comes first, the account second** — the same order Google,
-1Password, and Bitwarden use, because the only thing a person standing at a
-site's two-factor screen can act on is the code in front of them.
-
-- **Every intake route, in one control.** `<QrCodeInput>`
-  ([`components/qr/QrCodeInput.tsx`](../../components/qr/QrCodeInput.tsx)) takes
-  a **pasted** screenshot (⌘V anywhere inside it), a **dropped** image, a
-  **chosen** file, or a live **camera scan**, and the setup key can always be
-  typed instead. Reach for that component for ANY QR intake — never build a
-  second one.
-- **Decoding is LOCAL and instant.** [`lib/qr/decode.ts`](../../lib/qr/decode.ts)
-  is the platform decoder (`BarcodeDetector` → lazily-imported `jsqr`
-  fallback). Nothing is uploaded, stored, or persisted: the image lives in a
-  canvas for one call. The server's multipart `/enroll/qr` route still exists
-  for clients with no local decoder; this client does not use it.
-- **The parse is echoed back before anything is written.**
-  [`authenticator-otpauth.ts`](./authenticator-otpauth.ts) mirrors aidream's
-  `otpauth.py` / `otp.py` rules, so the surface can say "GitHub · me@x.com ·
-  6 digits · every 30s" the moment it can read the code, and refuse an
-  unusable one in plain words. 🚨 Keep the two in lockstep — a preview that
-  accepts what the server refuses is worse than no preview.
-- **A new login can be created inline as one complete credential.** "Save it
-  on" always offers **A new login** alongside every existing vault item. The
-  form has explicit Login name, Website, Username or email, and Password labels;
-  all four are required, the website accepts a bare host and normalizes it to
-  HTTPS, and the password is created as a Restricted encrypted field. The
-  subsequent enrollment adds the sealed `totp_seed` to that same item. A failed
-  TOTP enrollment can therefore leave only a valid complete login, never the old
-  hollow name-only item. Selecting an existing Vault item still attaches the
-  authenticator to that item instead of creating a sibling record.
-- **Consent is its own step.** Step 2 carries the plain-language explanation
-  the spec requires (D-14 first capture) with the trade-off paragraph one click
-  away — not stacked on the intake, in front of someone who has not decided
-  anything yet. Competitors show 2-3 sentences at intake; the extra disclosure
-  here is earned by what enrollment actually grants, and it is placed where the
-  decision is made.
-- **Enrollment finishes in the same flow.** After saving, the dialog immediately
-  shows the current large code so it can be entered back into the provider.
-  Saved entries lead with the app/account name and rotating code; algorithm and
-  period metadata do not compete with the task.
+- **One add process.** Authenticator's Add action opens the same
+  `VaultCreateDialog` used by Vault, directly at Website login. Name, URL,
+  username, password, 2FA method/setup key, recovery codes, secure notes, and
+  protected files are parts of one item instead of separate records or forms.
+- **Save progress at any point.** Website fields override catalog-required
+  presentation: any meaningful known value can be saved. Selecting
+  Authenticator app without having its setup key does not block save; the key
+  can be added later from the saved item's Two-factor section.
+- **Every TOTP intake route stays available.** The canonical form reuses
+  `<QrCodeInput>` for pasted/dropped/chosen QR images and live camera scan,
+  plus a manual setup-key field. QR images decode locally and are never
+  uploaded.
+- **Enrollment is additive.** A valid setup key is enrolled after the login is
+  created. If enrollment fails, the login and every other protected part stay
+  saved, and the error points back to that item's Two-factor section.
+- **Existing logins are completed in place.** Open the item from Authenticator
+  or Vault and use its Two-factor section; never create a sibling
+  authenticator-only credential.
 - **Every entry is a door.** The account name and its row menu open THAT
   credential via `/vault?item=<id>` (the deep link `VaultPage` now owns); the
   menu also offers Rename login and a new-tab door without cluttering the
@@ -297,6 +286,15 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-22** — Unified Authenticator Add with the canonical Website login
+  form; website parts now save progressively instead of requiring URL,
+  username, password, and TOTP together. Added optional Restricted recovery
+  codes with per-code Copy/Mark-used behavior, Restricted secure notes, and
+  multi-file protected attachments during login creation. Hardened the shared
+  Credenza mobile primitive to 92dvh, one scroll body, safe-area padding, 16px
+  controls, and 44px buttons so variable content cannot trigger iOS zoom or
+  hide Save below an unscrollable sheet.
 
 - **2026-08-21** — The website-login create flow is now the ONE recipe (Arman's
   ruling: username + password + 2FA captured together; SoR
