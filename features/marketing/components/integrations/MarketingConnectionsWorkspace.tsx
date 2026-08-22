@@ -65,15 +65,19 @@ import {
   canUseGoogleYouTube,
 } from "@/features/marketing/google/youtube-campaign";
 
-export function MarketingConnectionsWorkspace() {
+export function MarketingConnectionsWorkspace({
+  reviewMode = false,
+}: {
+  reviewMode?: boolean;
+} = {}) {
   return (
     <LazyGoogleAPIProvider scopes={[...GOOGLE_CONNECTION_SCOPES]}>
-      <MarketingConnectionsContent />
+      <MarketingConnectionsContent reviewMode={reviewMode} />
     </LazyGoogleAPIProvider>
   );
 }
 
-function MarketingConnectionsContent() {
+function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
   const sites = useSiteOptions();
   const organizations = useActiveOrganizationPicker();
   const inventory = useGoogleConnectionInventory();
@@ -197,9 +201,11 @@ function MarketingConnectionsContent() {
           "Confirm the read-only YouTube disclosure before continuing.",
         );
       }
-      const code = await google.requestAuthorizationCode([
-        ...GOOGLE_YOUTUBE_SCOPES,
-      ]);
+      const code = await google.requestAuthorizationCode(
+        [...GOOGLE_YOUTUBE_SCOPES],
+        undefined,
+        reviewMode ? { forceConsent: true } : undefined,
+      );
       const result = await connect.mutateAsync({
         code,
         owner:
@@ -258,7 +264,12 @@ function MarketingConnectionsContent() {
 
   return (
     <>
-      <main className="h-full overflow-y-auto bg-textured px-3 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+      <main
+        className={cn(
+          "h-full overflow-y-auto bg-textured px-3 pb-4 sm:px-4",
+          reviewMode ? "pt-3" : "pt-[calc(var(--shell-header-h)+0.5rem)]",
+        )}
+      >
         <div className="space-y-3">
           <section className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-card p-3">
             <div>
@@ -270,14 +281,16 @@ function MarketingConnectionsContent() {
               </Link>
               <h2 className="mt-0.5 text-sm font-semibold">Google</h2>
               <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
-                Connect an account for Search Console, then configure Google
-                services for each managed site.
+                {reviewMode
+                  ? "Authorize read-only YouTube access, choose an owned channel, and load its live channel and recent-video metadata."
+                  : "Connect an account for Search Console, then configure Google services for each managed site."}
               </p>
             </div>
           </section>
 
           <section
             id="google-connections"
+            hidden={reviewMode}
             className="rounded-lg border border-border bg-card"
           >
             <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
@@ -442,6 +455,7 @@ function MarketingConnectionsContent() {
 
           <section
             id="site-bindings"
+            hidden={reviewMode}
             className="rounded-lg border border-border bg-card"
           >
             <div className="border-b border-border px-3 py-2">
@@ -500,7 +514,10 @@ function MarketingConnectionsContent() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-3">
+          <section
+            id="youtube-review"
+            className="rounded-lg border border-border bg-card p-3"
+          >
             <div className="flex items-start gap-2.5">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-500/10 text-red-600">
                 <Youtube className="h-4 w-4" />
@@ -681,7 +698,10 @@ function MarketingConnectionsContent() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-3">
+          <section
+            hidden={reviewMode}
+            className="rounded-lg border border-border bg-card p-3"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2.5">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -727,7 +747,10 @@ function MarketingConnectionsContent() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-3">
+          <section
+            hidden={reviewMode}
+            className="rounded-lg border border-border bg-card p-3"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2.5">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">

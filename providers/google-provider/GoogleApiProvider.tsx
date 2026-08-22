@@ -61,7 +61,13 @@ interface CodeClientConfig {
   error_callback?: (error: ErrorResponse) => void;
   include_granted_scopes?: boolean;
   enable_granular_consent?: boolean;
+  prompt?: "consent" | "select_account";
   login_hint?: string;
+}
+
+export interface GoogleAuthorizationCodeOptions {
+  /** Re-display consent for a user-facing verification walkthrough. */
+  forceConsent?: boolean;
 }
 
 interface CodeClient {
@@ -106,6 +112,7 @@ interface GoogleAPIContextType {
   requestAuthorizationCode: (
     scopesToRequest: string[],
     loginHint?: string,
+    options?: GoogleAuthorizationCodeOptions,
   ) => Promise<string>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
@@ -294,6 +301,7 @@ export default function GoogleAPIProvider({
   const requestAuthorizationCode = async (
     scopesToRequest: string[],
     loginHint?: string,
+    options?: GoogleAuthorizationCodeOptions,
   ): Promise<string> => {
     if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
       throw new Error("Google authorization is still loading.");
@@ -315,6 +323,7 @@ export default function GoogleAPIProvider({
         select_account: true,
         include_granted_scopes: false,
         enable_granular_consent: true,
+        ...(options?.forceConsent ? { prompt: "consent" as const } : {}),
         ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: CodeResponse) => {
           setAuthInProgress(false);

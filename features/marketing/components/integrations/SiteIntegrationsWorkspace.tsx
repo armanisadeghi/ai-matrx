@@ -73,6 +73,7 @@ import {
   BackendFailureDetails,
   formatCompactDate,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
 import {
   describeBackendFailure,
   type BackendFailureExplanation,
@@ -214,16 +215,30 @@ const builtIns: Array<{
   },
 ];
 
-export function SiteIntegrationsWorkspace() {
+export function SiteIntegrationsWorkspace({
+  reviewMode = false,
+}: {
+  reviewMode?: boolean;
+} = {}) {
   const { site } = useMarketingSite();
   return (
     <LazyGoogleAPIProvider scopes={[...GOOGLE_CONNECTION_SCOPES]}>
-      <SiteIntegrationsEditor key={`${site.id}:${site.version}`} site={site} />
+      <SiteIntegrationsEditor
+        key={`${site.id}:${site.version}`}
+        site={site}
+        reviewMode={reviewMode}
+      />
     </LazyGoogleAPIProvider>
   );
 }
 
-function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
+function SiteIntegrationsEditor({
+  site,
+  reviewMode,
+}: {
+  site: MarketingSite;
+  reviewMode: boolean;
+}) {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
@@ -286,6 +301,9 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     ],
     [draft, ga4BindingDiagnosis],
   );
+  const visibleIssues = reviewMode
+    ? issues.filter((issue) => issue.field.startsWith("googleAnalytics4"))
+    : issues;
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const update = useMutation({
     mutationFn: updateSiteIntegrations,
@@ -529,6 +547,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         const code = await google.requestAuthorizationCode(
           [...GOOGLE_ANALYTICS_SCOPES],
           loginHint ?? undefined,
+          reviewMode ? { forceConsent: true } : undefined,
         );
         const result = await connectGoogle.mutateAsync({
           code,
@@ -594,9 +613,11 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           "Confirm the read-only Google Analytics disclosure before continuing.",
         );
       }
-      const code = await google.requestAuthorizationCode([
-        ...GOOGLE_ANALYTICS_SCOPES,
-      ]);
+      const code = await google.requestAuthorizationCode(
+        [...GOOGLE_ANALYTICS_SCOPES],
+        undefined,
+        reviewMode ? { forceConsent: true } : undefined,
+      );
       const result = await connectGoogle.mutateAsync({
         code,
         owner:
@@ -644,7 +665,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   };
 
   const save = () => {
-    if (issues.length) return;
+    if (visibleIssues.length) return;
     try {
       update.mutate(
         {
@@ -740,6 +761,9 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     ],
     attributes: { site_id: site.id, dirty },
   });
+  const visibleBuiltIns = reviewMode
+    ? builtIns.filter(({ key }) => key === "googleAnalytics4")
+    : builtIns;
 
   return (
     <SurfaceRuntimeProvider
@@ -830,10 +854,13 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-base font-semibold">Site integrations</h1>
+              <h1 className="text-base font-semibold">
+                {reviewMode ? "Google Analytics proof" : "Site integrations"}
+              </h1>
               <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
-                Connect data sources for {site.domain}, then choose the property
-                that belongs to this website.
+                {reviewMode
+                  ? `Authorize read-only Analytics, choose the exact property for ${site.domain}, run a bounded sync, and inspect the persisted report below.`
+                  : `Connect data sources for ${site.domain}, then choose the property that belongs to this website.`}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -855,17 +882,22 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             the one question only they can answer. A checklist that vanishes the
             moment it passes is its own dead end.
           */}
-          <GuidedChecklist
-            definition={siteSetupChecklist}
-            context={setupContext}
-            scope={
-              site.organization_id
-                ? { organizationId: site.organization_id, targetKey: site.id }
-                : null
-            }
-          />
+          {!reviewMode ? (
+            <GuidedChecklist
+              definition={siteSetupChecklist}
+              context={setupContext}
+              scope={
+                site.organization_id
+                  ? { organizationId: site.organization_id, targetKey: site.id }
+                  : null
+              }
+            />
+          ) : null}
 
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <section
+            hidden={reviewMode}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3"
+          >
             <div className="flex min-w-0 items-start gap-2.5">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <KeyRound className="h-4 w-4" />
@@ -918,8 +950,8 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             </div>
           </section>
 
-          <div className="grid gap-3 xl:grid-cols-3">
-            {builtIns.map(({ key, ...provider }) => (
+          <div className={cn("grid gap-3", !reviewMode && "xl:grid-cols-3")}>
+            {visibleBuiltIns.map(({ key, ...provider }) => (
               <BuiltInProviderCard
                 key={key}
                 providerKey={key}
@@ -997,15 +1029,22 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             ))}
           </div>
 
-          <UrlChangeIntakeCard
-            site={site}
-            setup={urlChangeWebhook}
-            evidenceQuery={urlChangeEvidenceQuery}
-            configuring={configureUrlChangeWebhook.isPending}
-            onConfigure={() => configureUrlChangeWebhook.mutate()}
-          />
+          {reviewMode ? <SiteAnalyticsCard site={site} /> : null}
 
-          <section className="rounded-lg border border-border bg-card">
+          {!reviewMode ? (
+            <UrlChangeIntakeCard
+              site={site}
+              setup={urlChangeWebhook}
+              evidenceQuery={urlChangeEvidenceQuery}
+              configuring={configureUrlChangeWebhook.isPending}
+              onConfigure={() => configureUrlChangeWebhook.mutate()}
+            />
+          ) : null}
+
+          <section
+            hidden={reviewMode}
+            className="rounded-lg border border-border bg-card"
+          >
             <div className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
               <div>
                 <h2 className="text-sm font-semibold">Additional providers</h2>
@@ -1042,16 +1081,16 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             )}
           </section>
 
-          {issues.length ? (
+          {visibleIssues.length ? (
             <Alert variant="destructive" className="py-2.5">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle className="text-xs">
-                Resolve {issues.length} configuration issue
-                {issues.length === 1 ? "" : "s"}
+                Resolve {visibleIssues.length} configuration issue
+                {visibleIssues.length === 1 ? "" : "s"}
               </AlertTitle>
               <AlertDescription>
                 <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px]">
-                  {issues.map((issue) => (
+                  {visibleIssues.map((issue) => (
                     <li key={`${issue.field}:${issue.message}`}>
                       {issue.message}
                     </li>
@@ -1078,7 +1117,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             <Button
               size="sm"
               className="gap-1.5"
-              disabled={!dirty || issues.length > 0 || update.isPending}
+              disabled={!dirty || visibleIssues.length > 0 || update.isPending}
               onClick={save}
             >
               {update.isPending ? (
