@@ -1356,6 +1356,7 @@ export interface SeoTopicAssignmentOffer {
   keywords: unknown;
   existing_topic_branches: unknown;
   territory: string;
+  business_guidelines: string;
   assigner_version: string;
 }
 

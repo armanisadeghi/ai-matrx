@@ -16,4 +16,4 @@ export const SCRAPER_ANALYSIS_MANDATES = {
 } as const;
 
 /** The `scraper.page_analysis` provision's offered value carrying the page text. */
-export const SCRAPER_ANALYSIS_CONTENT_VARIABLE = "content";
+export const SCRAPER_ANALYSIS_CONTENT_VARIABLE = "page_content";
