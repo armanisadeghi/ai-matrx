@@ -63,6 +63,7 @@ import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_MANDATES } from "../../data/mandates";
 import { fcService } from "../../data/fcService";
@@ -104,6 +105,8 @@ export function CreateFromSource() {
       : null,
   );
   const cardGen = useEntitlementGuard("education.generate_cards");
+  // COPPA before billing, and before any AI work (see useAiComplianceGate).
+  const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
 
   const [step, setStep] = useState<Step>("pick-doc");
@@ -172,6 +175,7 @@ export function CreateFromSource() {
 
   const handleGenerate = async () => {
     if (!selectedDoc || !canGenerate) return;
+    if (!(await coppa.ensureAllowed())) return;
     // Meter generate_cards: server-truth check BEFORE any work; a cap opens the
     // respectful paywall and never starts the run.
     await cardGen.guard(runGeneration);
@@ -281,6 +285,7 @@ export function CreateFromSource() {
 
   return (
     <div className="min-h-full w-full bg-textured">
+      <coppa.Gate />
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <div className="flex items-center gap-3">

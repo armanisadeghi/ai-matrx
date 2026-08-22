@@ -43,6 +43,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_MANDATES } from "../../data/mandates";
 import { fcService } from "../../data/fcService";
@@ -69,6 +70,8 @@ export function CreateFromTopic() {
   const router = useRouter();
   const { generate, isGenerating, activeRequestId } = useGenerateCards();
   const cardGen = useEntitlementGuard("education.generate_cards");
+  // COPPA before billing, and before any AI work (see useAiComplianceGate).
+  const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
 
 
@@ -122,6 +125,7 @@ export function CreateFromTopic() {
 
   const handleGenerate = async () => {
     if (!canSubmit) return;
+    if (!(await coppa.ensureAllowed())) return;
     // Meter the generate_cards capability: server-truth check BEFORE any work;
     // on a cap it opens the respectful paywall and never starts the run.
     await cardGen.guard(runGeneration);
@@ -370,6 +374,7 @@ export function CreateFromTopic() {
               {/* Actions — the limit is shown BEFORE the action (never a
                   mid-workflow surprise), per the TRUST mandate. */}
               <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                <coppa.Gate />
                 <EntitlementMeter
                   capability="education.generate_cards"
                   className="mr-auto"

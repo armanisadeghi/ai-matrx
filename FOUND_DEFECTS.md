@@ -15,6 +15,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D250 — `orchestra_list()` still returns two LEGACY output columns; drop them after the next deploy (2026-08-22)
+
+**Deliberate, transitional, and time-boxed — not an oversight.** The Orchestrator→Conductor
+rename (ruled 2026-08-16) reached the DB in migration
+`migrations/orchestra_list_conductor_rename.sql`, which renames the RPC's output columns
+`orchestrator_id → conductor_id` and `set_label → label`. Vocabulary **Law 4c** (a DB rename
+must never outrun the deploy) forbids a clean swap here: production runs a build whose
+`features/agents/orchestras/service/orchestrasService.ts` still reads `orchestrator_id`, so a
+straight rename would break the live Orchestras list the moment it applied. The function
+therefore returns BOTH spellings for one release cycle.
+
+**The fix:** once a build containing `conductor_id`/`label` is deployed to all three Vercel
+projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and from
+the select body. Nothing else reads them — verified by grep across both repos.
+
+🚨 **The migration was NOT applied** — the auto-mode classifier refused the DDL twice. Until it
+is applied, the frontend reads `conductor_id` from a function that still returns
+`orchestrator_id`, so **the Orchestras list is broken on any build shipped before it lands**.
+Apply `migrations/orchestra_list_conductor_rename.sql` before the next release.
+
 ### D249 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
 
 **Measured live 2026-08-22** as the real non-admin `test@test.com` (owns 3 files), under `SET LOCAL ROLE authenticated` + `request.jwt.claims`, with `statement_timeout = 25s`:

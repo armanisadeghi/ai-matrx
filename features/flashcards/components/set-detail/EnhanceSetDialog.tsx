@@ -37,6 +37,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { fcService } from "../../data/fcService";
@@ -94,6 +95,8 @@ export function EnhanceSetDialog({
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const enrichGuard = useEntitlementGuard("education.card_enrichment");
+  // COPPA before billing, and before any AI work (see useAiComplianceGate).
+  const coppa = useAiComplianceGate();
   const [depth, setDepth] = useState<Depth>("applied");
   const [work, setWork] = useState<Record<string, CardWork>>({});
 
@@ -144,6 +147,7 @@ export function EnhanceSetDialog({
   }, [dispatch]);
 
   const run = async (card: CardWithDetails, mode: Mode): Promise<void> => {
+    if (!(await coppa.ensureAllowed())) return;
     // Meter the card_enrichment capability: server-truth check BEFORE the agent
     // runs; a cap opens the respectful paywall and never starts the work.
     await enrichGuard.guard(() => runAgent(card, mode));
@@ -282,6 +286,7 @@ export function EnhanceSetDialog({
             ))}
           </div>
           {/* Limit shown BEFORE the action (TRUST mandate). */}
+          <coppa.Gate />
           <EntitlementMeter
             capability="education.card_enrichment"
             className="ml-auto"

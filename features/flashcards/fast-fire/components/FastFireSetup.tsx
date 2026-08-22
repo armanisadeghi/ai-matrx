@@ -60,9 +60,15 @@ import {
   getHelperAudioReadiness,
 } from "../helper-audio/generateHelperAudio.thunk";
 import { FastFireSetPicker } from "./FastFireSetPicker";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
+  // COPPA runs BEFORE the entitlement gate and BEFORE any AI work, once per
+  // session — never per card, which would stall the timed loop. A blocked
+  // learner is told here, with the one-tap way to fix it, instead of speaking
+  // through a whole drill whose every grade is refused server-side.
+  const coppa = useAiComplianceGate();
   const config = useAppSelector(selectFastFireConfig);
   const { start, starting, startError } = useFastFireLauncher();
   // FastFire grades every spoken answer with AI — meter the live_grade
@@ -87,6 +93,7 @@ export function FastFireSetup() {
 
   const prepareAudio = async (): Promise<void> => {
     if (!config.setId) return;
+    if (!(await coppa.ensureAllowed())) return;
     setPrepping(true);
     setPrepDone(false);
     setPrepProgress(null);
@@ -124,6 +131,7 @@ export function FastFireSetup() {
 
   const prepareHelpAudio = async (): Promise<void> => {
     if (!config.setId) return;
+    if (!(await coppa.ensureAllowed())) return;
     setHelpPrepping(true);
     setHelpPrepDone(false);
     setHelpPrepProgress(null);
@@ -593,6 +601,7 @@ export function FastFireSetup() {
         )}
 
         <div className="mb-2 flex justify-center">
+          <coppa.Gate />
           <EntitlementMeter capability="education.live_grade" />
         </div>
         <Button
@@ -600,13 +609,16 @@ export function FastFireSetup() {
           className="w-full gap-2 bg-orange-600 hover:bg-orange-700"
           disabled={!selectedSet || starting || liveGrade.isChecking}
           onClick={() =>
-            void liveGrade.guard(async () => {
+            void (async () => {
+              if (!(await coppa.ensureAllowed())) return;
+              await liveGrade.guard(async () => {
               // Metered ONCE at session start (never per card — a per-card
               // check would stall the timed loop). Commit only on a real
               // start; a failed/aborted start never burns quota.
-              const started = await start();
-              if (started) await liveGrade.commit();
-            })
+                const started = await start();
+                if (started) await liveGrade.commit();
+              });
+            })()
           }
         >
           {starting ? (

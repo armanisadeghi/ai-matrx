@@ -29,6 +29,7 @@ import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { gradeTypedAnswer, type TypedGrade } from "../../utils/textSimilarity";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import {
   gradeTypedSemantic,
   type TypedGradeVerdict,
@@ -67,6 +68,11 @@ export function WriteSurface({ setId }: { setId: string }) {
   // mandate). The Levenshtein suggestion shows instantly; this upgrades it.
   const [verdict, setVerdict] = useState<TypedGradeVerdict | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
+  // COPPA, non-blocking by design: the semantic upgrade is fire-and-forget
+  // inside the study loop, so an await here would stall every submit. A
+  // blocked learner keeps the instant string-distance grade and a full study
+  // session — we simply don't call the grader that would be refused.
+  const coppa = useAiComplianceGate();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -103,7 +109,7 @@ export function WriteSurface({ setId }: { setId: string }) {
     // suggestion. Fire-and-forget — the learner is never blocked, and the
     // live-id guard drops a verdict that arrives after they moved on.
     const cardId = current.id;
-    if (typed.trim().length > 0) {
+    if (typed.trim().length > 0 && !coppa.blocked) {
       setVerdictLoading(true);
       void dispatch(
         gradeTypedSemantic({

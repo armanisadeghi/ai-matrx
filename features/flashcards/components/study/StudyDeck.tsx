@@ -105,6 +105,7 @@ import {
   type ReviewSessionResult,
 } from "@/features/education/tutor/lanes/reviewSession";
 import { microCoach } from "@/features/education/tutor/lanes/microCoach";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import {
   buildRecentSessionContext,
@@ -412,9 +413,16 @@ export function StudyDeck(props: StudyDeckProps) {
   // session already paid for.
   const shownHelp = help ?? (current ? storedHelpFor(current.id) : null);
   const shownTip = current ? storedTipFor(current.id) : null;
+  // COPPA. `ensureAllowed()` blocks the EXPLICIT ask (the learner clicked and
+  // is waiting); the per-card coach below reads the reactive `blocked` flag
+  // instead — an await inside the grade loop would stall advancing to the next
+  // card, and a blocked learner should still get their full study session,
+  // just without the AI extras.
+  const coppa = useAiComplianceGate();
 
   const askAi = async (): Promise<void> => {
     if (!current) return;
+    if (!(await coppa.ensureAllowed())) return;
     setHelpLoading(true);
     setHelp(null);
     setHelpAsked(true);
@@ -629,7 +637,7 @@ export function StudyDeck(props: StudyDeckProps) {
       // Phase 4 stretch: cheap-model per-card micro-coaching. Fire-and-forget
       // (never blocks advancing to the next card); resolves through the
       // flashcards.micro_coach mandate (features/flashcards/data/mandates.ts).
-      if (ok && card) {
+      if (ok && card && !coppa.blocked) {
         void dispatch(
           microCoach({
             front: card.front,
@@ -961,6 +969,8 @@ export function StudyDeck(props: StudyDeckProps) {
             />
           </>
         )}
+
+        <coppa.Gate />
 
         {enableMemoryAids && currentKind !== CARD_KIND.matching && (
           <MemoryAidButton
