@@ -8,7 +8,9 @@ import { selectUserInputText } from "@/features/agents/redux/execution-system/in
 import {
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
+  type ChatQuickAction,
 } from "./chat-quick-actions.config";
+import { useMandateSet } from "@/features/agents/mandates/useMandateSet";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
@@ -31,12 +33,22 @@ interface NewChatGreetingProps {
  *   greeting → 5 primary action chips (compact, wrapping — deliberately NOT
  *   the same width/shape as the input) → hero input → 4 secondary chips.
  *
- * Clicking a chip carries any in-progress draft to the destination agent via
- * sessionStorage and routes to `/chat/a/[agentId]`. Submitting the hero input
- * fires `smartExecute` against the default agent.
+ * Every chip is a MANDATE (`chat.quick_*`), resolved for this user in one pass
+ * by `useMandateSet` (system default → their own binding). Clicking a chip
+ * carries any in-progress draft to the RESOLVED agent via sessionStorage and
+ * routes to `/chat/a/[agentId]` — a navigation to the agent's fresh-chat
+ * route, never a launch with a resolved id. A chip whose mandate cannot
+ * resolve renders disabled with the reason as its title (the unresolved
+ * posture: no silent UUID fallback, no hidden failure).
  *
  * Chip catalog lives in `chat-quick-actions.config.ts`.
  */
+
+const ALL_QUICK_ACTION_KEYS: readonly string[] = [
+  ...PRIMARY_QUICK_ACTIONS,
+  ...SECONDARY_QUICK_ACTIONS,
+].map((action) => action.mandateKey);
+
 export function NewChatGreeting({
   sourceConversationId,
   surfaceKey,
@@ -45,6 +57,22 @@ export function NewChatGreeting({
   const store = useAppStore();
   const userName = useAppSelector(selectActiveUserName);
   const firstName = (userName ?? "").trim().split(/\s+/)[0] || "";
+  const mandates = useMandateSet(ALL_QUICK_ACTION_KEYS);
+
+  const chipState = (action: ChatQuickAction) => {
+    const state = mandates[action.mandateKey];
+    const agentId = state?.mandate?.agentId ?? null;
+    const unavailable = Boolean(state && !state.loading && state.error);
+    return {
+      agentId,
+      unavailable,
+      // Disabled while resolving (no flash of a dead click) and when unresolved.
+      disabled: !agentId,
+      title: unavailable
+        ? `"${action.label}" is not available yet — its agent has not been assigned (${action.mandateKey}).`
+        : undefined,
+    };
+  };
 
   const handleChipClick = (agentId: string) => {
     // Snapshot the draft at click time via getState — no per-keystroke
@@ -77,26 +105,33 @@ export function NewChatGreeting({
           aria-label="Suggested agents"
           className="flex flex-wrap items-center justify-center gap-2"
         >
-          {PRIMARY_QUICK_ACTIONS.map((action) => (
-            <button
-              key={action.id}
-              type="button"
-              onClick={() => handleChipClick(action.id)}
-              className={cn(
-                "group inline-flex items-center gap-1.5 cursor-pointer",
-                "h-10 rounded-full border border-border/80 bg-card",
-                "px-4 text-sm text-foreground/90",
-                "shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_1px_2px_0_rgba(0,0,0,0.06)]",
-                "dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
-                "hover:bg-accent hover:border-border hover:text-foreground",
-                "active:translate-y-px active:shadow-none",
-                "transition-all",
-              )}
-            >
-              <span>{action.label}</span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-            </button>
-          ))}
+          {PRIMARY_QUICK_ACTIONS.map((action) => {
+            const chip = chipState(action);
+            return (
+              <button
+                key={action.mandateKey}
+                type="button"
+                disabled={chip.disabled}
+                title={chip.title}
+                onClick={() => chip.agentId && handleChipClick(chip.agentId)}
+                className={cn(
+                  "group inline-flex items-center gap-1.5 cursor-pointer",
+                  "disabled:cursor-not-allowed",
+                  chip.unavailable && "opacity-50",
+                  "h-10 rounded-full border border-border/80 bg-card",
+                  "px-4 text-sm text-foreground/90",
+                  "shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_1px_2px_0_rgba(0,0,0,0.06)]",
+                  "dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+                  "hover:bg-accent hover:border-border hover:text-foreground",
+                  "active:translate-y-px active:shadow-none",
+                  "transition-all",
+                )}
+              >
+                <span>{action.label}</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
+              </button>
+            );
+          })}
         </section>
 
         {/* Hero input */}
@@ -124,24 +159,31 @@ export function NewChatGreeting({
           aria-label="More actions"
           className="flex flex-wrap items-center justify-center gap-2"
         >
-          {SECONDARY_QUICK_ACTIONS.map((action) => (
-            <button
-              key={action.id}
-              type="button"
-              onClick={() => handleChipClick(action.id)}
-              className={cn(
-                "inline-flex items-center cursor-pointer border border-border/70 bg-card/60",
-                "rounded-full px-3 py-1.5 text-xs",
-                "shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_1px_1px_0_rgba(0,0,0,0.04)]",
-                "dark:shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_1px_1px_0_rgba(0,0,0,0.3)]",
-                "text-muted-foreground hover:text-foreground hover:bg-accent",
-                "active:translate-y-px active:shadow-none",
-                "transition-all",
-              )}
-            >
-              {action.label}
-            </button>
-          ))}
+          {SECONDARY_QUICK_ACTIONS.map((action) => {
+            const chip = chipState(action);
+            return (
+              <button
+                key={action.mandateKey}
+                type="button"
+                disabled={chip.disabled}
+                title={chip.title}
+                onClick={() => chip.agentId && handleChipClick(chip.agentId)}
+                className={cn(
+                  "inline-flex items-center cursor-pointer border border-border/70 bg-card/60",
+                  "disabled:cursor-not-allowed",
+                  chip.unavailable && "opacity-50",
+                  "rounded-full px-3 py-1.5 text-xs",
+                  "shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_1px_1px_0_rgba(0,0,0,0.04)]",
+                  "dark:shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_1px_1px_0_rgba(0,0,0,0.3)]",
+                  "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  "active:translate-y-px active:shadow-none",
+                  "transition-all",
+                )}
+              >
+                {action.label}
+              </button>
+            );
+          })}
         </section>
       </div>
     </div>

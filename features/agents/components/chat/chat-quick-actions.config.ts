@@ -2,16 +2,21 @@
  * Chat new-page configuration — the agents wired to the landing surface.
  *
  * Edit this file to change what shows up on `/chat/new` without touching any
- * component code. Each entry is an `{ id, label }` pair; the `id` is the
- * `agent.definition.id` and the `label` is what the user sees on the chip.
+ * component code. Each entry is a `{ mandateKey, label }` pair: the chip is a
+ * MANDATE (`agent.mandate.mandate_key`, resolved at render time via
+ * `useMandateSet` — system default → the user's binding) and the `label` is
+ * what the user sees. No agent id lives here: swapping what a chip opens is a
+ * rebind on `/agents/mandates`, never a code change. A chip whose mandate
+ * cannot resolve (not yet seeded, disabled) renders DISABLED with the reason —
+ * never a silent fallback to a UUID.
  *
  * Ordering reflects render order — first entry is leftmost (or topmost on
  * narrow widths). Remove or add entries freely; the chip grid will reflow.
  */
 
 export interface ChatQuickAction {
-  /** Canonical `agent.definition.id`. */
-  id: string;
+  /** Canonical `agent.mandate.mandate_key` (`chat.quick_*`). */
+  mandateKey: string;
   /** Chip label as the user sees it. */
   label: string;
 }
@@ -41,23 +46,23 @@ export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
  */
 export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
-    id: "9650acee-e21f-4cea-a0dd-b826908a0815", // Confirmed.
+    mandateKey: "chat.quick_showcase",
     label: "Show off what you can do",
   },
   {
-    id: "3d1da24e-8907-442a-a4d9-0db9428c1ece",
+    mandateKey: "chat.quick_fair_news",
     label: "I want fair news",
   },
   {
-    id: "96b75336-5447-4277-b5ec-0336241cffe2",
+    mandateKey: "chat.quick_writing_partner",
     label: "Help me write something",
   },
   {
-    id: "8b205923-3efa-4018-bb68-2088af362e4c",
+    mandateKey: "chat.quick_flashcards",
     label: "Make me flashcards",
   },
   {
-    id: "edb51696-ed8b-4a36-ae64-8c837d0c6c0b",
+    mandateKey: "chat.quick_org_chart",
     label: "Make an Org Chart",
   },
 ];
@@ -67,19 +72,19 @@ export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
  */
 export const SECONDARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
-    id: "bcc69216-d4fa-4e28-a090-8a7749123bc5",
+    mandateKey: "chat.quick_image",
     label: "Create an Image",
   },
   {
-    id: "11fcc4f0-62a0-4b39-a75e-fd2adf395192",
+    mandateKey: "chat.quick_research",
     label: "Conduct Research",
   },
   {
-    id: "a6f1dac1-8155-4813-8e56-3bdb201b0fe3",
+    mandateKey: "chat.quick_audio_plan",
     label: "Audio to Structured Plan",
   },
   {
-    id: "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8",
+    mandateKey: "chat.cx_default",
     label: "Customize Chat",
   },
 ];

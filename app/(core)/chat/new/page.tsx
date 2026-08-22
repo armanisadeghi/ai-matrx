@@ -91,7 +91,7 @@ function NewChatLandingFallback() {
           >
             {PRIMARY_QUICK_ACTIONS.map((action) => (
               <div
-                key={action.id}
+                key={action.mandateKey}
                 className="group inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card px-4 text-sm text-foreground/90 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_1px_2px_0_rgba(0,0,0,0.06)]"
               >
                 <span>{action.label}</span>
@@ -128,7 +128,7 @@ function NewChatLandingFallback() {
           >
             {SECONDARY_QUICK_ACTIONS.map((action) => (
               <div
-                key={action.id}
+                key={action.mandateKey}
                 className="inline-flex rounded-full border border-border/70 bg-card/60 px-3 py-1.5 text-xs text-muted-foreground shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_1px_1px_0_rgba(0,0,0,0.04)]"
               >
                 {action.label}
