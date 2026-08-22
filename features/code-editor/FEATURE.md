@@ -8,9 +8,9 @@
 >
 > **Not to be confused with [`features/code/`](../code/FEATURE.md)** — the **new** VSCode-style standalone workspace mounted at `/code`. That workspace has its own Monaco instance, its own tabs/diagnostics/patches slices, and binds to the **new agent system** via `AgentRunnerPage` rather than via Shortcuts. The two editors share `vsc_*` context-key naming (the same Shortcut can bind to either) but are otherwise independent code paths. The chat-binding split:
 >
-> | Surface | Editor code | Chat / agent integration |
-> |---|---|---|
-> | This feature (`features/code-editor/`) | embedded multi-file core in builder / notes / app pages | `SmartCodeEditor` mandate runner; Shortcuts via the v3 context menu |
+> | Surface                                     | Editor code                                             | Chat / agent integration                                                                                                                                       |
+> | ------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | This feature (`features/code-editor/`)      | embedded multi-file core in builder / notes / app pages | `SmartCodeEditor` mandate runner; Shortcuts via the v3 context menu                                                                                            |
 > | New workspace (`features/code/`) at `/code` | standalone Monaco + tabs + diagnostics + patches slices | new agents system via `AgentRunnerPage`; instance-context bridge (`editor.tab.*`, `editor.selection.*`); right-click currently uses Monaco-native actions only |
 
 ---
@@ -24,6 +24,7 @@ In-app code editing surface plus the foundation for **agentic coding** — AI-as
 ## Entry points
 
 **Feature code** (`features/code-editor/`)
+
 - `agent-code-editor/` — mandate-backed agent runner, review flow, tool invocations, and widget wiring
 - `multi-file-core/` — multi-file editing engine; the foundation other layers sit on
 - `components/` — editor chrome, file tabs, panes
@@ -32,6 +33,7 @@ In-app code editing surface plus the foundation for **agentic coding** — AI-as
 - `hooks/`, `utils/`, `index.ts`
 
 **Routes / consumers**
+
 - The editor is embedded in multiple surfaces rather than a dedicated route. Consumers include: the authenticated app area for direct code editing, agent builder surfaces that need code input, documentation tools.
 
 ---
@@ -39,28 +41,31 @@ In-app code editing surface plus the foundation for **agentic coding** — AI-as
 ## Current capabilities
 
 ### Multi-file core
+
 - Open multiple files; tabs; pane splits
 - Per-file state (cursor, selection, dirty flag, undo history)
 - Language-aware syntax highlighting
 - Diagnostics surfacing (errors/warnings)
 
 ### Agent integration
+
 - `SmartCodeEditor` is the reusable agent IDE: History + Agent + Code/Diff, with optional Files and Terminal. Hosts may open it in edit mode and omit Terminal; below `md`, Code stays primary while Agent and History move into the canonical mobile panel drawers.
 - Exposed UI context to Shortcuts via the `vsc_*` key set:
 
-| Variable | Source | Content |
-|---|---|---|
-| `vsc_active_file_path` | active file | Full path |
-| `vsc_active_file_content` | active file | Full text |
-| `vsc_active_file_language` | active file | Language ID (`python`, etc.) |
-| `vsc_selected_text` | selection | Current highlight |
-| `vsc_diagnostics` | diagnostics | Formatted errors/warnings |
-| `vsc_workspace_name` / `vsc_workspace_folders` | workspace | Workspace metadata |
-| `vsc_git_branch` / `vsc_git_status` | git | Git state |
+| Variable                                       | Source      | Content                      |
+| ---------------------------------------------- | ----------- | ---------------------------- |
+| `vsc_active_file_path`                         | active file | Full path                    |
+| `vsc_active_file_content`                      | active file | Full text                    |
+| `vsc_active_file_language`                     | active file | Language ID (`python`, etc.) |
+| `vsc_selected_text`                            | selection   | Current highlight            |
+| `vsc_diagnostics`                              | diagnostics | Formatted errors/warnings    |
+| `vsc_workspace_name` / `vsc_workspace_folders` | workspace   | Workspace metadata           |
+| `vsc_git_branch` / `vsc_git_status`            | git         | Git state                    |
 
 These keys are the **contract** between the editor and Shortcuts running inside it. Adding or renaming a key means updating every Shortcut whose `scopeMappings` reference it.
 
 ### Agent output integration (widget tools)
+
 - Agents call `widget_text_replace`, `widget_text_insert_before/after/prepend/append`, `widget_text_patch` to mutate file content
 - Widget handles dispatch these via `dispatchWidgetAction` — stream does NOT pause
 - See [`../agents/docs/WIDGET_HANDLE_SYSTEM.md`](../agents/docs/WIDGET_HANDLE_SYSTEM.md) for the canonical contract
@@ -108,16 +113,19 @@ These keys are the **contract** between the editor and Shortcuts running inside 
 This section is **explicitly forward-looking**. Treat everything in it as planned, not shipped, unless also present in the "Current capabilities" section.
 
 ### File-system integration
+
 - Mount local / remote file systems
 - Unified file storage backing the multi-file-core
 - Open folders as workspaces, not just individual files
 
 ### Git repository integration
+
 - Branch awareness, diffs, commits, remote sync
 - Git-aware diagnostics and history
 - Branch-scoped conversations
 
 ### Full agentic coding system
+
 - Agents **drive** the editor rather than respond to prompts from it
 - Multi-file coordinated edits executed via tool calls, not individual widget actions
 - Test + lint loops driven by the agent
@@ -125,6 +133,7 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 - First-class integration with the broader agent orchestration system ([`../agents/docs/AGENT_ORCHESTRATION.md`](../agents/docs/AGENT_ORCHESTRATION.md))
 
 ### Targets
+
 - All of the above land as part of phase-15 (`features/agents/migration/phases/phase-15-native-code-editor.md`) and subsequent phases.
 
 ---
