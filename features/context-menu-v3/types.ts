@@ -137,6 +137,11 @@ export interface ContextMenuExtraSection {
   id: string;
   /** Optional label rendered as a muted group heading. */
   label?: string;
+  /**
+   * Optional icon. In the tiered/command layouts a long section folds into ONE
+   * submenu named by `label`; this is that submenu's icon (default: ellipsis).
+   */
+  icon?: LucideIcon;
   anchor?: ExtraSectionAnchor;
   items: ContextMenuExtraItem[];
 }

@@ -44,6 +44,10 @@ A surface with both modes (editor + preview) uses **both** — one per mode.
 - **Open the menu on the surface and watch the console.** v3 SCREAMS in dev if the menu opens inert ("INERT MENU on …") or a surface dropped a declared value ("VALUE MAPPING GAP on …"). A clean open = the values are wired. A scream = fix the wiring (provide `getApplicationScope`/`contextData.content`, or make the wrapped content selectable for the DOM fallback).
 - The acceptance test for any content surface: right-click **without selecting** → **Export → Download as Markdown** saves the whole content as `.md`; highlight first → saves the selection.
 
+## Layout & density knobs (2026-08-22)
+
+The desktop menu is model-driven: `model/menu-model.ts` (what exists) → `model/layouts.ts` (`classic` | `tiered` | `command`) → `MenuContent.tsx` (density `comfortable` | `compact`). Pass `menuLayout` / `menuDensity` on the wrapper only when a surface must deviate; the platform defaults are the CAPS constants in `types.ts`. A surface's `extraSections` need NO layout awareness — a long section folds into one submenu named by its `label` (+ optional `icon`) in tiered/command. Never add a layout by writing JSX in the renderer — add an arrangement in `layouts.ts`. Compare all four on `/demos/context-menu/layouts`.
+
 ## Doctrine
 
 - **Reuse, never fork.** Every action (copy/export/convert/print/attach/share/AI) delegates to an existing system. A surface contributes its own items via **`extraSections`** (declarative anchors), never a bespoke menu.

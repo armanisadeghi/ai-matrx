@@ -81,7 +81,7 @@ function surfaceSections(sections: MenuSection[]): MenuSection[] {
         kind: "submenu",
         id: `${s.id}:fold`,
         label: s.label ?? "More",
-        icon: Ellipsis,
+        icon: s.icon ?? Ellipsis,
         width: "w-60",
         children: nodes,
       };

@@ -187,6 +187,8 @@ export interface MenuSection {
   group: MenuGroup;
   /** Muted heading rendered above the section (surface sections). */
   label?: string;
+  /** Icon for the fold a layout may collapse this section into. */
+  icon?: LucideIcon;
   /** Classic rendering: no separator between this and the previous section. */
   joinPrevious?: boolean;
   nodes: MenuNode[];
@@ -320,6 +322,7 @@ function extrasByAnchor(
       id: `extra:${s.id}`,
       group: "surface",
       label: s.label,
+      icon: s.icon,
       nodes: s.items.map(fromExtraItem),
     });
   }

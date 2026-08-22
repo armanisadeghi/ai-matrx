@@ -8,6 +8,7 @@ import {
   FolderClosed,
   FolderPlus,
   Shapes,
+  StickyNote,
   X,
   Trash2,
 } from "lucide-react";
@@ -223,5 +224,13 @@ export function createNotesEditorExtraSections(
     });
   }
 
-  return [{ id: "notes-ops", label: "Note", anchor: "after-compare", items }];
+  return [
+    {
+      id: "notes-ops",
+      label: "Note",
+      icon: StickyNote,
+      anchor: "after-compare",
+      items,
+    },
+  ];
 }

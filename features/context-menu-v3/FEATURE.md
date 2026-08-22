@@ -36,6 +36,40 @@ Rules: the handle registration lives in the SHELL, not MenuContent — MenuConte
 
 ---
 
+## Layouts & density — ONE model, three arrangements
+
+The desktop renderer is model-driven (2026-08-22): `useContextMenuActions` →
+**`model/menu-model.ts`** (`buildMenuModel` — WHAT exists, one declarative
+`MenuNode` tree with every handler already bound) → **`model/layouts.ts`**
+(`arrangeMenu` — HOW it is laid out) → `MenuContent.tsx` (draws nodes at a
+density). Behaviour never changes between layouts; a layout is a pure function
+over the model, never a second renderer.
+
+| `menuLayout`  | What the user sees |
+| ------------- | ------------------ |
+| `classic`     | The historical flat column — every section top-level (~30 rows on a full note). **Default** (`DEFAULT_MENU_LAYOUT`). |
+| `tiered`      | Icon strip (Copy · Cut · Paste · Undo · Redo · Find) + ≤ ~8 grouped rows: AI Actions / Agents / **Library** (content blocks + my/org items as labelled groups) · the surface's own section · **Share & Export** (Copy-as / Export / Convert groups + Attach / Share / Compare) · **More** (Select All, View History, Chat, Quick Actions) · Save/Delete · Admin. Rows the surface can **never** do (`inapplicable`) are hidden, not greyed. |
+| `command`     | Tiered + a type-to-filter box. Typing flattens EVERY leaf in the model (nested agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb; ↵ runs the first match. Printable keys typed while an item has focus are routed back into the box. |
+
+`menuDensity` = `comfortable` (default) | `compact` (tighter rows / icons /
+labels). Both knobs are props on the wrappers (`ContextMenuV3CoreProps`); the
+defaults are CAPS constants in `types.ts` — flipping the platform default is a
+one-line change, and a per-user preference (settings-system) is the natural
+next step once a layout is chosen.
+
+**Surface sections stay "minor local changes":** in tiered/command a section
+with ≤ `INLINE_SURFACE_MAX` (3) rows renders inline; a longer one folds into
+ONE submenu named by its `label` with its optional `icon` (notes → "Note" with
+`StickyNote`). The surface never knows which layout is active.
+
+**Overflow law:** the desktop menus cap at the Radix available height and
+scroll (`max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto`) —
+the classic /notes menu measured 1136px in a 900px viewport and its tail was
+unreachable.
+
+Side-by-side proving ground: `/demos/context-menu/layouts` (the exact /notes
+menu, four ways).
+
 ## No fake menus — the headline invariant
 
 A menu that opens but Copy does nothing and the selection bar is empty is a **bug**, killed at two layers (`value-resolution.ts`):
@@ -266,6 +300,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-22` — **Model-driven desktop renderer + layout/density knobs + overflow fix.** (1) `MenuContent.tsx` no longer hand-renders ~30 rows: `model/menu-model.ts` builds ONE declarative `MenuNode` tree from the engine (every handler bound), `model/layouts.ts` arranges it (`classic` = byte-identical historical column; `tiered` = icon strip + ≤ 8 grouped rows with Library / Share & Export / More / surface folds; `command` = tiered + type-to-filter over every leaf incl. nested agents and content blocks, ↵ runs the first match), and the renderer draws nodes at `comfortable` | `compact` density. Knobs: `menuLayout` / `menuDensity` props; defaults `DEFAULT_MENU_LAYOUT` / `DEFAULT_MENU_DENSITY` (classic / comfortable — unchanged UX by default). (2) Desktop menus cap at the Radix available height and scroll — the /notes menu measured 1136px in a 900px viewport with Agents / Library / Quick Actions / Admin unreachable, and Radix never shrinks. (3) Surface `extraSections` ids are namespaced `x:` in the model — notes' `export` item vs the core `export` submenu was a duplicate React key. (4) `ContextMenuExtraSection.icon` (optional) names the fold's icon; notes passes `StickyNote`. (5) `components/BoundAgentsMenuSection.tsx` deleted — its rendering lives in the model (`boundAgentsNode`), and it had no other consumer. (6) Proving ground `/demos/context-menu/layouts`: the exact /notes menu (incl. super-admin rows, ⌘Z hints) in all four arrangements; `NotesDemoPanel` gained parity with the live editor. Live-verified on /notes: classic identical + scrolls; tiered 1136px → ~220px; command filter `mark` → 4 ranked hits with breadcrumbs, ↵ ran the first match. Mobile renderer untouched (its 70dvh drill-down is already tiered by construction).
 
 - `2026-08-16` — **The mobile shell stopped inserting an illegal wrapper.** The MOBILE branch wrapped children in a `display:contents` `<div>` to carry the touch/contextmenu handlers; wrapping a `<tr>` put that div between `<tbody>` and `<tr>`, so `/cms/html-pages` logged hydration errors at mobile widths ("`<div>` cannot be a child of `<tbody>`"). No element is legal there, so the handlers now merge onto the child itself via Radix `Slot` — the same mechanism desktop already gets from `ContextMenuTrigger asChild`, composing the child's existing handlers and ref rather than replacing them, with the wrapper kept only for the multi-children/Fragment fallback. Nested triggers stop propagation after the native-text-menu guard so one row gesture opens one correctly scoped sheet. Verified at 375px on `/cms/html-pages`: 169 `<tr>` directly under `<tbody>`, zero wrapper divs, the row's own `onClick` still present alongside the merged touch handlers, zero hydration errors, and long-press still opens the bottom sheet with the correct per-row scope.
 - `2026-08-14` — **Visual Maps adopted v3 as its node-aware right-click seam.**
