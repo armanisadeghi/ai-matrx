@@ -373,6 +373,21 @@ export interface EducationStudyPackOffer {
   tone?: string;
 }
 
+/** Offered shape of provision `education.study_pack_v2` (kind `education.study_pack_v2.offer`). */
+export interface EducationStudyPackV2Offer {
+  topic: string;
+  audience: string;
+  material: string;
+  count?: number;
+  difficulty_mix?: string;
+  mcq_count?: number;
+  free_response_count?: number;
+  fill_in_blank_count?: number;
+  target_section_count?: number;
+  target_duration_seconds_per_section?: number;
+  tone?: string;
+}
+
 /** Offered shape of provision `education.tutor_message` (kind `education.tutor_message.offer`). */
 export interface EducationTutorMessageOffer {
   learner_memory: string;
@@ -594,6 +609,14 @@ export interface KnowledgeSectionDerivationOffer {
 /** Offered shape of provision `knowledge.section_qa` (kind `knowledge.section_qa.offer`). */
 export interface KnowledgeSectionQaOffer {
   content: string;
+}
+
+/** Offered shape of provision `marketing.local_endowment` (kind `marketing.local_endowment.offer`). */
+export interface MarketingLocalEndowmentOffer {
+  company_name?: string;
+  industry: string;
+  location?: string;
+  context_notes?: string;
 }
 
 /** Offered shape of provision `masterwork.approach_select` (kind `masterwork.approach_select.offer`). */
@@ -1083,7 +1106,14 @@ export interface SeoCoverageAnalysisOffer {
 
 /** Offered shape of provision `seo.finding_fix` (kind `seo.finding_fix.offer`). */
 export interface SeoFindingFixOffer {
-  fix_context: unknown;
+  fix_context: {
+  page: unknown;
+  site: unknown;
+  limits: unknown;
+  finding: unknown;
+  finding_id: string;
+  fixer_version: string;
+};
   fixer_version: string;
 }
 
@@ -1093,6 +1123,7 @@ export interface SeoKeywordClassificationOffer {
   language: string;
   classifier_version: string;
   business_guidelines: string;
+  facet_vocabulary: string;
 }
 
 /** Offered shape of provision `seo.keyword_research` (kind `seo.keyword_research.offer`). */
@@ -1194,7 +1225,18 @@ export interface SeoSerpIntentAnalysisOffer {
 
 /** Offered shape of provision `seo.site_intake` (kind `seo.site_intake.offer`). */
 export interface SeoSiteIntakeOffer {
-  intake_bundle: unknown;
+  intake_bundle: {
+  domain: string;
+  periods?: unknown[];
+  site_id: string;
+  site_name?: string | null;
+  brand_name?: string | null;
+  juice_pages: unknown;
+  data_max_date?: string | null;
+  data_min_date?: string | null;
+  cannibalization: unknown;
+  current_brand_aliases?: string[];
+};
 }
 
 /** Offered shape of provision `seo.site_strategy_interview` (kind `seo.site_strategy_interview.offer`). */
@@ -1357,6 +1399,7 @@ export interface ProvisionOffers {
   "education.spoken_practice_grade": EducationSpokenPracticeGradeOffer;
   "education.spoken_practice_review": EducationSpokenPracticeReviewOffer;
   "education.study_pack": EducationStudyPackOffer;
+  "education.study_pack_v2": EducationStudyPackV2Offer;
   "education.tutor_message": EducationTutorMessageOffer;
   "extend.page_capture": ExtendPageCaptureOffer;
   "flashcards.enrich_card": FlashcardsEnrichCardOffer;
@@ -1384,6 +1427,7 @@ export interface ProvisionOffers {
   "knowledge.document_verification": KnowledgeDocumentVerificationOffer;
   "knowledge.section_derivation": KnowledgeSectionDerivationOffer;
   "knowledge.section_qa": KnowledgeSectionQaOffer;
+  "marketing.local_endowment": MarketingLocalEndowmentOffer;
   "masterwork.approach_select": MasterworkApproachSelectOffer;
   "masterwork.audition_judgment": MasterworkAuditionJudgmentOffer;
   "masterwork.bad_draft_write": MasterworkBadDraftWriteOffer;
@@ -1515,6 +1559,7 @@ export const PROVISION_OFFER_KINDS = {
   "education.spoken_practice_grade": "education.spoken_practice_grade.offer",
   "education.spoken_practice_review": "education.spoken_practice_review.offer",
   "education.study_pack": "education.study_pack.offer",
+  "education.study_pack_v2": "education.study_pack_v2.offer",
   "education.tutor_message": "education.tutor_message.offer",
   "extend.page_capture": "extend.page_capture.offer",
   "flashcards.enrich_card": "flashcards.enrich_card.offer",
@@ -1542,6 +1587,7 @@ export const PROVISION_OFFER_KINDS = {
   "knowledge.document_verification": "knowledge.document_verification.offer",
   "knowledge.section_derivation": "knowledge.section_derivation.offer",
   "knowledge.section_qa": "knowledge.section_qa.offer",
+  "marketing.local_endowment": "marketing.local_endowment.offer",
   "masterwork.approach_select": "masterwork.approach_select.offer",
   "masterwork.audition_judgment": "masterwork.audition_judgment.offer",
   "masterwork.bad_draft_write": "masterwork.bad_draft_write.offer",

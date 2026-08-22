@@ -23490,6 +23490,10 @@ export type Database = {
       }
     }
     Functions: {
+      _client_grant_column_list: {
+        Args: { p_excluded: string[]; p_rel: unknown }
+        Returns: string
+      }
       _container_authz: {
         Args: {
           p_actor: string
@@ -27720,6 +27724,7 @@ export type Database = {
           audit_class_reason: string | null
           base_tier: number
           category: string | null
+          client_excluded_columns: string[] | null
           content_role: string | null
           default_auto_ingest: boolean
           default_members_can_add: boolean
@@ -27757,6 +27762,7 @@ export type Database = {
           audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
+          client_excluded_columns?: string[] | null
           content_role?: string | null
           default_auto_ingest?: boolean
           default_members_can_add?: boolean
@@ -27796,6 +27802,7 @@ export type Database = {
           audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
+          client_excluded_columns?: string[] | null
           content_role?: string | null
           default_auto_ingest?: boolean
           default_members_can_add?: boolean
