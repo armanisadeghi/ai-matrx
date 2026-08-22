@@ -208,7 +208,7 @@ export async function setTopicWorth(
 ): Promise<string | null> {
   const response = await (await seoDb()).rpc("gsc_set_topic_value", {
     p_site_id: siteId,
-    p_topic_id: topicId,
+    p_topic_id: topicId ?? undefined,
     p_weight: input.weight ?? undefined,
     p_lead_quality: input.leadQuality ?? undefined,
     p_service_match: input.serviceMatch ?? undefined,
@@ -235,7 +235,7 @@ export async function setKeywordPrimaryTopic(
   const response = await (await seoDb()).rpc("gsc_set_keyword_topic", {
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
-    p_topic_id: topicId,
+    p_topic_id: topicId ?? undefined,
   });
   return assertGoverned(
     response.data,
