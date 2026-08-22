@@ -2,16 +2,16 @@
 
 The portability boundary for the AI Matrx client execution system.
 
-Today the stream wire kernel is genuinely framework-independent; the Redux
-surface is still a façade over matrx-frontend and is not yet consumable by a
-different repository. See [`FEATURE.md`](FEATURE.md) for the exact maturity
-line and versioned convergence plan.
+The portable wire and presentation runtime now ships independently as
+`@ai-matrx/agents`. This private workspace package temporarily contains only
+the host-coupled Redux façade while that larger extraction proceeds. See
+[`FEATURE.md`](FEATURE.md) for the exact maturity line and convergence plan.
 
 ## What's in the box
 
 | Layer            | Contents                                                                                                                                                                                               |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Portable now** | NDJSON framing, UTF-8/read-ahead, cancellation, full + compact event normalization (`@matrx/agents/stream/ndjson`)                                                                                     |
+| **Portable now** | Installed from public `@ai-matrx/agents`: NDJSON framing and normalization plus Creator-safe result projection                                                                                          |
 | **Façade only**  | Redux state, thunks, selectors, hooks, reducer map, adapters                                                                                                                                           |
 | **Thunks**       | `launchConversation`, `loadConversation`, `executeInstance`, `executeChatInstance`, `createManualInstance`, `editMessage`, `forkConversation`, `softDeleteConversation`, `invalidateConversationCache` |
 | **Types**        | `ConversationInvocation`, `ConversationRecord`, `MessageRecord`, `CxUserRequestRecord`, `CxRequestRecord`, `CxToolCallRecord`, `ApiEndpointMode`, full stream-event discriminators                     |
@@ -19,15 +19,15 @@ line and versioned convergence plan.
 
 ## Who consumes this
 
-- **matrx-frontend** — canonical authoring point and first consumer.
-- **Workflow Studio + administrative Dashboard** — consume the verbatim
-  wire-kernel twin.
-- **Future clients** — consume the same twin as v2+ land.
+- **matrx-frontend** — exact-version npm consumer.
+- **Workflow Studio + administrative Dashboard** — workspace consumers of the
+  same public package source.
+- **Future clients** — install the same published runtime as v2+ land.
 
 ## Usage
 
 ```ts
-import { readMatrxNdjsonStream } from "@matrx/agents/stream/ndjson";
+import { readMatrxNdjsonStream } from "@ai-matrx/agents/stream/ndjson";
 
 for await (const event of readMatrxNdjsonStream(response.body!)) {
   // event is normalized regardless of full or compact server syntax.

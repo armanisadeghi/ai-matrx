@@ -10,8 +10,6 @@
     "./redux/thunks": "./src/redux/thunks.ts",
     "./redux/selectors": "./src/redux/selectors.ts",
     "./redux/hooks": "./src/redux/hooks.ts",
-    "./stream/ndjson": "./src/stream/ndjson.ts",
-    "./presentation/result": "./src/presentation/result.ts",
     "./adapters/auth": "./src/adapters/auth.ts",
     "./adapters/callback-manager": "./src/adapters/callback-manager.ts",
     "./adapters/fetch": "./src/adapters/fetch.ts",
@@ -19,8 +17,7 @@
     "./adapters/supabase": "./src/adapters/supabase.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "type-check:stream": "tsc --noEmit --strict --target ES2022 --lib DOM,ES2022 --module ESNext --moduleResolution Bundler src/stream/ndjson.ts"
+    "type-check": "tsc --noEmit"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "^2.0.0",

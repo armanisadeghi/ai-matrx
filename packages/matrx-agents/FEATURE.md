@@ -7,16 +7,13 @@ events, state transitions, Content IR blocks, and run lifecycle everywhere.
 
 ## Current truth
 
-The package has two very different maturity levels:
+The client runtime now has two deliberately separate maturity levels:
 
-- `src/stream/ndjson.ts` is a real, framework-independent implementation. It
-  owns NDJSON framing, UTF-8 boundary handling, read-ahead, compact event
-  expansion, cancellation, and loud malformed/unknown-line hooks. It is twinned
-  into `aidream/apps/shared/matrx-agents` and consumed by Workflow Studio.
-- `src/presentation/result.ts` is the canonical Creator-facing visibility
-  boundary for settled agent results. It removes provider-private reasoning
-  blocks and signature material without mutating the execution/checkpoint
-  value, and is twinned into AI Dream for Studio result rendering and exports.
+- Published `@ai-matrx/agents@0.1.0` is the canonical framework-independent
+  implementation for NDJSON framing, UTF-8 boundary handling, read-ahead,
+  compact-event expansion, cancellation, malformed/unknown-line hooks, and the
+  Creator-facing settled-result projection. Matrix installs the immutable npm
+  artifact; Studio and Dashboard consume its authoring workspace.
 - The Redux barrels are still a façade over `matrx-frontend/features/agents`.
   Their `@/` imports make them unusable outside this repository. The adapter
   registry is a target contract, not proof that the live thunks use it.
@@ -34,13 +31,14 @@ directives, and callbacks. Treating this as a mechanical file move is wrong.
 
 ## Versioned convergence plan
 
-### v1 — wire parity (implemented)
+### v1 — wire + presentation package (implemented)
 
 - Canonical portable NDJSON reader + full/compact envelope normalization.
-- Matrix's `lib/api/stream-parser.ts` delegates framing to it.
-- Workflow Studio and the administrative Dashboard delegate every NDJSON
-  reader to the verbatim twin.
-- A manifest + drift check prevents the two copies from silently diverging.
+- Canonical copy-on-write projection for Creator-safe settled output.
+- Matrix's `lib/api/stream-parser.ts` installs and delegates to public
+  `@ai-matrx/agents`; Workflow Studio and Dashboard use the same package.
+- The former source twin and manifest/sync scripts are deleted. Registry and
+  packed-artifact gates now prevent implementation drift structurally.
 
 This closes byte-to-event drift. It does not yet make Redux projection or
 effects identical.
@@ -105,8 +103,9 @@ parallel parser or lifecycle.
 - Agent-building UI is not part of this package.
 - No app imports (`@/`, Next.js, toast/overlay UI, host `RootState`) may enter a
   package-owned implementation module.
-- New stream syntax starts in `src/stream/ndjson.ts`, then is synced; never patch
-  a consuming app's parser independently.
+- New stream syntax and presentation policy start in
+  `aidream/apps/shared/matrx-agents`, then ship as an immutable npm release;
+  never patch a consuming app's parser independently.
 - Provider reasoning/signature material stays in execution persistence for
   replay, but every Creator-facing result renderer, JSON tab, and export first
   applies `projectAgentResultForDisplay`. Never hand-roll a host-specific
@@ -114,10 +113,9 @@ parallel parser or lifecycle.
 
 ## Verification
 
-```bash
-pnpm --filter @matrx/agents type-check:stream
-pnpm test --runTestsByPath packages/matrx-agents/src/stream/ndjson.test.ts
-```
+`pnpm type-check` verifies Matrix against the exact public dependency. The
+public package's own typecheck, focused tests, packed declaration analysis, and
+empty-project import canary run from the AI Dream repository before release.
 
-The full package `type-check` remains a deliberate red gate until the Redux
-façade stops compiling through the host application graph.
+The private façade package's full `type-check` remains a deliberate red gate
+until its Redux modules stop compiling through the host application graph.

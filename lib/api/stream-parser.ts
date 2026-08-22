@@ -39,7 +39,7 @@ import {
   isRecordReservedEvent,
   isRecordUpdateEvent,
 } from "./types";
-import { readMatrxNdjsonStream } from "@matrx/agents/stream/ndjson";
+import { readMatrxNdjsonStream } from "@ai-matrx/agents/stream/ndjson";
 import { BackendApiError, StreamTransportError } from "./errors";
 import {
   captureStreamEvent,

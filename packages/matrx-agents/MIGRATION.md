@@ -7,7 +7,7 @@ matrx-frontend effects.
 
 The authoritative, versioned plan now lives in [`FEATURE.md`](FEATURE.md):
 
-- v1 wire parity — implemented;
+- v1 public wire + presentation package — implemented and consumed from npm;
 - v2 pure event projection;
 - v3 portable execution Redux store;
 - v4 definitions/versions + shortcut/slot/binding resolution;
