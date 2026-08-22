@@ -23,7 +23,7 @@ import { ChangeHistoryPanel } from "./ChangeHistoryPanel";
 import { EnrollDialog } from "./EnrollDialog";
 import { EnrollmentDetailPanel } from "./EnrollmentDetailPanel";
 import { FindingEffectivenessPanel } from "./FindingEffectivenessPanel";
-import { selectEnrollmentId } from "./select-enrollment";
+import { selectEnrollmentId, type EnrollmentSelection } from "./select-enrollment";
 import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
 
 export function HindsightPage() {
@@ -35,7 +35,7 @@ export function HindsightPage() {
   const deepLinkedTool = params.get("enroll_tool");
 
   const [enrollOpen, setEnrollOpen] = useState(Boolean(deepLinkedTool));
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<EnrollmentSelection | null>(null);
 
   const enrollments = useQuery({
     queryKey: ["hindsight", "enrollments"],
@@ -57,7 +57,7 @@ export function HindsightPage() {
   // into a queued 404.
   const selected = selectEnrollmentId(
     deepLinkedEnrollment,
-    selectedId,
+    selection,
     active[0]?.id,
   );
 
@@ -115,7 +115,9 @@ export function HindsightPage() {
               <button
                 key={e.id}
                 type="button"
-                onClick={() => setSelectedId(e.id)}
+                onClick={() =>
+                  setSelection({ id: e.id, deepLinkAtClick: deepLinkedEnrollment })
+                }
                 data-testid="hindsight-enrollment-row"
                 className={cn(
                   "flex w-full items-center gap-2.5 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/60",
@@ -159,7 +161,7 @@ export function HindsightPage() {
           {selected ? (
             <EnrollmentDetailPanel
               enrollmentId={selected}
-              onArchived={() => setSelectedId(null)}
+              onArchived={() => setSelection(null)}
             />
           ) : (
             <Card className="p-8 text-center text-sm text-muted-foreground">

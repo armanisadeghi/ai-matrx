@@ -77,8 +77,26 @@ describe("Hindsight enrollment selection", () => {
   });
 
   it("falls back from the URL to the user's selection and then the active list", () => {
-    expect(selectEnrollmentId(null, "selected", "first-active")).toBe("selected");
+    const picked = { id: "selected", deepLinkAtClick: null };
+    expect(selectEnrollmentId(null, picked, "first-active")).toBe("selected");
     expect(selectEnrollmentId(null, null, "first-active")).toBe("first-active");
     expect(selectEnrollmentId(null, null)).toBeNull();
+  });
+
+  it("lets the user click a DIFFERENT enrollment after arriving from a chip", () => {
+    // The bug: `deepLinked ?? selected` meant that once `?enrollment=` was in
+    // the URL, every other row in the list was dead on click, forever.
+    const clickedWhileDeepLinked = { id: "clicked", deepLinkAtClick: "from-chip" };
+    expect(selectEnrollmentId("from-chip", clickedWhileDeepLinked, "first-active")).toBe(
+      "clicked",
+    );
+  });
+
+  it("still lets a NEW chip override what the user had selected", () => {
+    // Recency, not precedence: a newer navigation is a newer intent.
+    const clickedWhileDeepLinked = { id: "clicked", deepLinkAtClick: "from-chip" };
+    expect(selectEnrollmentId("from-a-newer-chip", clickedWhileDeepLinked, "first")).toBe(
+      "from-a-newer-chip",
+    );
   });
 });
