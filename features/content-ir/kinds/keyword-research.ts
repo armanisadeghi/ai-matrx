@@ -25,7 +25,7 @@ import type { CanonicalBlockIR } from "../core/ir-types";
 import type { KindSchema } from "../core/kind-schema.types";
 import { KIND_KEY } from "../core/kind-schema.types";
 import type { KindDefinition } from "../registry/kind-registry.types";
-import { isRecord } from "./legacy-bridge-utils";
+import { isRecord, makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
@@ -65,6 +65,79 @@ export const keywordListKindSchema: KindSchema = {
     keywords: { type: "string[]", required: true },
   },
 };
+
+/**
+ * `seo_keyword_relationship_research_result` — the settled result of the
+ * `seo.keywords.relationships.research` node (python-owned; this compiled
+ * schema mirrors `aidream.kinds.seo_keywords.SeoKeywordRelationshipResearchResult`).
+ *
+ * An ENVELOPE, not an answer: `artifact` IS a `keyword_relationship_research`
+ * instance — declared as a nested kind so the discriminator on the wire is
+ * part of the contract, not a stowaway — and everything else is a number about
+ * the run. Its component delegates the artifact straight back to the registry
+ * (`SeoKeywordResearchResultBlock`), so this kind never becomes a second
+ * renderer for a shape that already has one.
+ */
+export const seoKeywordRelationshipResearchResultKindSchema: KindSchema = {
+  kind: "seo_keyword_relationship_research_result",
+  fields: {
+    artifact: {
+      type: "object",
+      kind: "keyword_relationship_research",
+      required: true,
+      description:
+        "The research artifact — the content of this result, rendered by the keyword_relationship_research component.",
+    },
+    primary_keyword: {
+      type: "string",
+      description: "The seed keyword the run researched.",
+    },
+    research_doc_id: {
+      type: "string",
+      description: "The kind_instance the raw artifact was persisted as.",
+    },
+    result_kind: { type: "string", description: "The node's result tag." },
+    ingest: {
+      type: "json",
+      description: "Counters from the relationship-ingestion RPC.",
+    },
+    volume: {
+      type: "json",
+      nullable: true,
+      description: "The market-volume refresh receipt, when volume ran.",
+    },
+    classification: {
+      type: "json",
+      nullable: true,
+      description: "The classification batch counters, when classify ran.",
+    },
+  },
+};
+
+export interface SeoKeywordResearchResultData {
+  artifact: unknown;
+  ingest: Record<string, unknown> | null;
+  volume: Record<string, unknown> | null;
+  classification: Record<string, unknown> | null;
+}
+
+/**
+ * COMPLETE bridge (a finished node result has no half-state to render), and
+ * `strip: "root"` deliberately: the nested artifact's `__kind` is exactly what
+ * the component delegates on — a deep strip would re-create the anonymous
+ * payload this whole path exists to fix.
+ */
+export const seoKeywordResearchResultServerDataFromEnvelope =
+  makeCompleteEnvelopeBridge<SeoKeywordResearchResultData & Record<string, unknown>>(
+    "seo_keyword_relationship_research_result",
+    (value) => ({
+      artifact: value.artifact,
+      ingest: isRecord(value.ingest) ? value.ingest : null,
+      volume: isRecord(value.volume) ? value.volume : null,
+      classification: isRecord(value.classification) ? value.classification : null,
+    }),
+    { strip: "root" },
+  );
 
 export const keywordClassificationBatchKindSchema: KindSchema = {
   kind: "keyword_classification_batch_v1",
@@ -482,6 +555,16 @@ export const KEYWORD_RESEARCH_KIND_DEFINITIONS: KindDefinition[] = [
     schemaSource: "system",
     tier: "eager",
     schema: keywordClassificationKindSchema,
+  },
+  {
+    kind: "seo_keyword_relationship_research_result",
+    schemaSource: "system",
+    tier: "eager",
+    legacyBlockType: "seo_keyword_research_result",
+    toLegacyServerData: seoKeywordResearchResultServerDataFromEnvelope,
+    persistence: { persistStructured: true },
+    loadingComponent: "list",
+    schema: seoKeywordRelationshipResearchResultKindSchema,
   },
   {
     kind: "keyword_serp_intent_analysis_v1",

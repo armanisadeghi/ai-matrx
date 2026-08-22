@@ -352,6 +352,7 @@ export type FeSynthesizedBlockType =
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
+  | "seo_keyword_research_result"
   | "page_brief"
   | "media_chapters"
   | "generated_image_set"
@@ -461,6 +462,7 @@ export type ShapeBlockType =
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
+  | "seo_keyword_research_result"
   | "page_brief"
   | "media_chapters"
   | "generated_image_set"
@@ -1509,6 +1511,31 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.KeywordSerpIntentAnalysisBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (seo_keyword_relationship_research_result →
+  // seo_keyword_research_result): an ENVELOPE kind. COMPLETE bridge — a
+  // settled node result has no half-state — and the component DELEGATES the
+  // nested artifact back to the registry rather than drawing keywords itself.
+  seo_keyword_research_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SeoKeywordResearchResultBlock
           key={index}
           serverData={block.serverData}
         />

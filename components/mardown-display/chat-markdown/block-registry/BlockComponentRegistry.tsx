@@ -20,6 +20,7 @@ import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoProm
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
 import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
 import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
+import SeoKeywordResearchResultBlock from "../../blocks/keyword-research/SeoKeywordResearchResultBlock";
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
@@ -297,6 +298,13 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <KeywordSerpIntentAnalysisBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SeoKeywordResearchResultBlock: (
+    props: React.ComponentProps<typeof SeoKeywordResearchResultBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <SeoKeywordResearchResultBlock {...props} />
     </LazyBlockWrapper>
   ),
   PageBriefBlock: (props: React.ComponentProps<typeof PageBriefBlock>) => (
