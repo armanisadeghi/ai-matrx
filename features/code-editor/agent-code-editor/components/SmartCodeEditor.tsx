@@ -32,8 +32,15 @@
  *     and to map an existing conversation back to its job config.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { editor as MonacoEditorNs } from "monaco-editor";
+import { Bot, History } from "lucide-react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   SurfaceRuntimeProvider,
@@ -54,6 +61,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { pct } from "@/components/matrx/resizable/pct";
+import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useCodeEditorWindowState } from "@/features/window-panels/windows/code/useCodeEditorWindowState";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
@@ -100,6 +108,10 @@ export interface SmartCodeEditorProps {
   language: string;
   /** Fires every time the active file's code changes. */
   onCodeChange?: (code: string, filePath: string | null) => void;
+  /** Open the Monaco buffer in edit mode instead of preview mode. */
+  initialIsEditing?: boolean;
+  /** Show the terminal placeholder beneath the editor. Defaults to true. */
+  showTerminal?: boolean;
 
   /** Multi-file mode — when provided, activates the Files column. */
   files?: CodeFile[];
@@ -129,6 +141,8 @@ export function SmartCodeEditor({
   initialCode = "",
   language,
   onCodeChange,
+  initialIsEditing = false,
+  showTerminal = true,
   files,
   initialActiveFilePath,
   filePath,
@@ -219,8 +233,8 @@ export function SmartCodeEditor({
 
   const editorState = useCodeEditorWindowState({
     initialFiles: seedFiles,
-    initialActiveFile:
-      initialActiveFilePath ?? seedFiles[0]?.path ?? null,
+    initialActiveFile: initialActiveFilePath ?? seedFiles[0]?.path ?? null,
+    initialIsEditing,
   });
 
   const {
@@ -301,13 +315,13 @@ export function SmartCodeEditor({
         label: f.name,
       }));
     if (entries.length === 0) return;
-    import(
-      "@/features/agents/redux/execution-system/instance-context/instance-context.slice"
-    ).then(({ setContextEntries }) => {
-      dispatch(
-        setContextEntries({ conversationId: activeConversationId, entries }),
-      );
-    });
+    import("@/features/agents/redux/execution-system/instance-context/instance-context.slice").then(
+      ({ setContextEntries }) => {
+        dispatch(
+          setContextEntries({ conversationId: activeConversationId, entries }),
+        );
+      },
+    );
   }, [activeConversationId, isMultiFile, currentFiles, activeTab, dispatch]);
 
   // ── Variable sync (first-turn only; context takes over after) ────────────
@@ -364,8 +378,9 @@ export function SmartCodeEditor({
           },
         });
         const launchedAgentId =
-          store.getState().conversations?.byConversationId[result.conversationId]
-            ?.agentId ?? null;
+          store.getState().conversations?.byConversationId[
+            result.conversationId
+          ]?.agentId ?? null;
         setActiveConversationId(result.conversationId);
         setActiveAgentId(launchedAgentId);
         setActiveMandateKey(mandateKey);
@@ -625,6 +640,122 @@ export function SmartCodeEditor({
     ? mapLanguageForMonaco(currentFile.language)
     : "plaintext";
 
+  const codeColumn = (
+    <CodeOrDiffColumn
+      files={currentFiles}
+      openTabs={openTabs}
+      activeTab={activeTab}
+      currentFile={currentFile}
+      onTabClick={selectTab}
+      onTabClose={closeTab}
+      onContentChange={wrappedHandleContentChange}
+      onEditorMount={handleEditorMount}
+      editorWrapperRef={editorWrapperRef}
+      editorHeight={editorHeight}
+      editorPath={editorPath}
+      monacoLanguage={monacoLanguage}
+      isEditing={isEditing}
+      onToggleEditing={() => setIsEditing(!isEditing)}
+      showWrapLines={showWrapLines}
+      onToggleWordWrap={() => setShowWrapLines(!showWrapLines)}
+      minimapEnabled={minimapEnabled}
+      onToggleMinimap={() => setMinimapEnabled(!minimapEnabled)}
+      formatTrigger={formatTrigger}
+      onFormat={handleFormat}
+      isCopied={isCopied}
+      onCopy={handleCopy}
+      state={state}
+      parsedEdits={parsedEdits}
+      modifiedCode={modifiedCode}
+      rawAIResponse={rawAIResponse}
+      errorMessage={errorMessage}
+      reviewIsCopied={reviewIsCopied}
+      diffStats={diffStats}
+      onApply={handleApplyChanges}
+      onDiscard={handleRejectEdits}
+      onCopyResponse={handleCopyResponse}
+      onBackToInput={() => setState("input")}
+    />
+  );
+
+  const historyColumn = (
+    <CodeEditorHistoryPanel
+      agents={agents}
+      rosterAgentIds={rosterAgentIds}
+      mandateErrors={mandateErrors}
+      mandatesLoading={mandatesLoading}
+      pickerMandateKey={pickerMandateKey}
+      onPickerMandateKeyChange={setPickerMandateKey}
+      activeConversationId={activeConversationId}
+      onSelectConversation={handleSelectConversation}
+      onCreateDraft={handleCreateDraft}
+    />
+  );
+
+  const agentColumn = (
+    <AgentRunnerColumn
+      conversationId={activeConversationId}
+      activeAgentId={activeAgentId}
+    />
+  );
+
+  const desktopEditor = (
+    <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
+      <ResizablePanel defaultSize={pct(18)} minSize={pct(12)} maxSize={pct(30)}>
+        {historyColumn}
+      </ResizablePanel>
+      <ResizableHandle />
+
+      <ResizablePanel defaultSize={pct(30)} minSize={pct(18)}>
+        {agentColumn}
+      </ResizablePanel>
+      <ResizableHandle />
+
+      <ResizablePanel
+        defaultSize={pct(isMultiFile ? 36 : 52)}
+        minSize={pct(20)}
+      >
+        {showTerminal ? (
+          <ResizablePanelGroup
+            orientation="vertical"
+            className="h-full w-full min-h-0"
+          >
+            <ResizablePanel defaultSize={pct(75)} minSize={pct(40)}>
+              {codeColumn}
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel
+              defaultSize={pct(25)}
+              minSize={pct(8)}
+              maxSize={pct(60)}
+            >
+              <TerminalPlaceholder />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          codeColumn
+        )}
+      </ResizablePanel>
+
+      {isMultiFile && (
+        <>
+          <ResizableHandle />
+          <ResizablePanel
+            defaultSize={pct(16)}
+            minSize={pct(10)}
+            maxSize={pct(28)}
+          >
+            <FilesPanel
+              files={currentFiles}
+              activeFilePath={activeTab}
+              onSelectFile={openFile}
+            />
+          </ResizablePanel>
+        </>
+      )}
+    </ResizablePanelGroup>
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={smartCodeEditorManifest.surfaceName}
@@ -632,118 +763,31 @@ export function SmartCodeEditor({
       isEditable
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-    <div className={`h-full w-full flex flex-col ${className ?? ""}`}>
-      <div className="flex-1 min-h-0">
-        <ResizablePanelGroup
-          orientation="horizontal"
-          className="h-full min-h-0"
-        >
-          {/* Column 1: History */}
-          <ResizablePanel
-            defaultSize={pct(18)}
-            minSize={pct(12)}
-            maxSize={pct(30)}
-          >
-            <CodeEditorHistoryPanel
-              agents={agents}
-              rosterAgentIds={rosterAgentIds}
-              mandateErrors={mandateErrors}
-              mandatesLoading={mandatesLoading}
-              pickerMandateKey={pickerMandateKey}
-              onPickerMandateKeyChange={setPickerMandateKey}
-              activeConversationId={activeConversationId}
-              onSelectConversation={handleSelectConversation}
-              onCreateDraft={handleCreateDraft}
-            />
-          </ResizablePanel>
-          <ResizableHandle />
-
-          {/* Column 2: Agent runner */}
-          <ResizablePanel defaultSize={pct(30)} minSize={pct(18)}>
-            <AgentRunnerColumn
-              conversationId={activeConversationId}
-              activeAgentId={activeAgentId}
-            />
-          </ResizablePanel>
-          <ResizableHandle />
-
-          {/* Column 3: Code / Diff on top, Terminal below */}
-          <ResizablePanel
-            defaultSize={pct(isMultiFile ? 36 : 52)}
-            minSize={pct(20)}
-          >
-            <ResizablePanelGroup
-              orientation="vertical"
-              className="h-full w-full min-h-0"
-            >
-              <ResizablePanel defaultSize={pct(75)} minSize={pct(40)}>
-                <CodeOrDiffColumn
-                  files={currentFiles}
-                  openTabs={openTabs}
-                  activeTab={activeTab}
-                  currentFile={currentFile}
-                  onTabClick={selectTab}
-                  onTabClose={closeTab}
-                  onContentChange={wrappedHandleContentChange}
-                  onEditorMount={handleEditorMount}
-                  editorWrapperRef={editorWrapperRef}
-                  editorHeight={editorHeight}
-                  editorPath={editorPath}
-                  monacoLanguage={monacoLanguage}
-                  isEditing={isEditing}
-                  onToggleEditing={() => setIsEditing(!isEditing)}
-                  showWrapLines={showWrapLines}
-                  onToggleWordWrap={() => setShowWrapLines(!showWrapLines)}
-                  minimapEnabled={minimapEnabled}
-                  onToggleMinimap={() => setMinimapEnabled(!minimapEnabled)}
-                  formatTrigger={formatTrigger}
-                  onFormat={handleFormat}
-                  isCopied={isCopied}
-                  onCopy={handleCopy}
-                  state={state}
-                  parsedEdits={parsedEdits}
-                  modifiedCode={modifiedCode}
-                  rawAIResponse={rawAIResponse}
-                  errorMessage={errorMessage}
-                  reviewIsCopied={reviewIsCopied}
-                  diffStats={diffStats}
-                  onApply={handleApplyChanges}
-                  onDiscard={handleRejectEdits}
-                  onCopyResponse={handleCopyResponse}
-                  onBackToInput={() => setState("input")}
-                />
-              </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel
-                defaultSize={pct(25)}
-                minSize={pct(8)}
-                maxSize={pct(60)}
-              >
-                <TerminalPlaceholder />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-
-          {/* Column 4: Files (multi-file only) */}
-          {isMultiFile && (
-            <>
-              <ResizableHandle />
-              <ResizablePanel
-                defaultSize={pct(16)}
-                minSize={pct(10)}
-                maxSize={pct(28)}
-              >
-                <FilesPanel
-                  files={currentFiles}
-                  activeFilePath={activeTab}
-                  onSelectFile={openFile}
-                />
-              </ResizablePanel>
-            </>
-          )}
-        </ResizablePanelGroup>
+      <div className={`h-full w-full flex flex-col ${className ?? ""}`}>
+        <div className="flex-1 min-h-0">
+          <MobilePanelShell
+            desktop={desktopEditor}
+            main={codeColumn}
+            mainClassName="overflow-hidden"
+            menuIcon={Bot}
+            menuLabel="IDE panels"
+            panels={[
+              {
+                id: "agent",
+                label: "Agent",
+                icon: Bot,
+                content: agentColumn,
+              },
+              {
+                id: "history",
+                label: "History",
+                icon: History,
+                content: historyColumn,
+              },
+            ]}
+          />
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

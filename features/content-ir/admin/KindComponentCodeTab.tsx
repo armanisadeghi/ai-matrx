@@ -12,14 +12,14 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Code2, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
+import { SmartCodeEditor } from "@/features/code-editor/agent-code-editor/components/SmartCodeEditor";
+import { GENERIC_CODE_EDITOR_AGENT } from "@/features/code-editor/agent-code-editor/agents";
 import {
   listKindComponentCode,
   saveKindComponentCode,
   type KindComponentCodeRecord,
 } from "@/features/content-ir/studio/kind-component-code-service";
 import { supabase } from "@/utils/supabase/client";
-import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { isJsonObject } from "@/types/json";
 import { toast } from "@/lib/toast";
 import {
@@ -37,6 +37,8 @@ type LoadState =
   | { status: "error"; message: string }
   | { status: "ready"; rows: KindComponentCodeRecord[] };
 
+const KIND_COMPONENT_EDITOR_AGENTS = [GENERIC_CODE_EDITOR_AGENT];
+
 function componentOptionLabel(row: KindComponentCodeRecord): string {
   return `${row.platform} · ${row.role} · ${row.componentKey} · ${row.source}`;
 }
@@ -53,7 +55,6 @@ export default function KindComponentCodeTab({
   kindDefinitionId,
   kind,
 }: KindComponentCodeTabProps) {
-  const mode = useThemeMode();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [selectedId, setSelectedId] = useState("");
   const [draft, setDraft] = useState("");
@@ -228,24 +229,20 @@ export default function KindComponentCodeTab({
       </div>
 
       {editable ? (
-        <div className="h-[calc(100dvh-13rem)] min-h-[28rem] min-w-0">
-          <SmallCodeEditor
+        <div className="h-[calc(100dvh-13rem)] min-h-[32rem] min-w-0">
+          <SmartCodeEditor
             key={selectedComponent.id}
+            agents={KIND_COMPONENT_EDITOR_AGENTS}
             language={
               isHtmlComponent(selectedComponent) ? "html" : "typescript"
             }
-            fileExtension={
-              isHtmlComponent(selectedComponent) ? ".html" : ".tsx"
-            }
-            path={`kind-component://${selectedComponent.id}${isHtmlComponent(selectedComponent) ? ".html" : ".tsx"}`}
+            filePath={`kind-component://${selectedComponent.id}${isHtmlComponent(selectedComponent) ? ".html" : ".tsx"}`}
             initialCode={draft}
-            onChange={(value) =>
-              setDraft(typeof value === "string" ? value : "")
-            }
-            mode={mode}
-            height="100%"
-            defaultWordWrap="on"
-            showResetButton={false}
+            onCodeChange={(value) => setDraft(value)}
+            initialIsEditing
+            showTerminal={false}
+            title={`${kind} component`}
+            className="min-h-0"
           />
         </div>
       ) : (

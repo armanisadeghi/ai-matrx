@@ -46,6 +46,8 @@ export interface UseCodeEditorWindowStateProps {
   fileIds?: string[];
   /** Path or fileId of the tab to show on open. */
   initialActiveFile?: string | null;
+  /** Whether the editor should open in edit mode. Defaults to read-only. */
+  initialIsEditing?: boolean;
 }
 
 // Persisted mode uses the file `id` as the tab path (unique + stable).
@@ -65,6 +67,7 @@ export function useCodeEditorWindowState({
   initialFiles,
   fileIds,
   initialActiveFile,
+  initialIsEditing = false,
 }: UseCodeEditorWindowStateProps) {
   const dispatch = useAppDispatch();
   const isPersisted = Array.isArray(fileIds) && fileIds.length > 0;
@@ -115,7 +118,7 @@ export function useCodeEditorWindowState({
   }, [files, initialActiveFile, openTabs.length]);
 
   // ── Editor settings ───────────────────────────────────────────────────────
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialIsEditing);
   const [showWrapLines, setShowWrapLines] = useState(false);
   const [minimapEnabled, setMinimapEnabled] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);

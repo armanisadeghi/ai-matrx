@@ -1,40 +1,41 @@
 ---
 status: active
-updated: 2026-07-28
-repos: [matrx-frontend, aidream]
+updated: 2026-08-22
+repos: [matrx-frontend]
+scope: feature
+feature: Agents
+vision: []
 ---
 
-# Agent Find Usages + Drift Detection
+# Agent Usage & Relationships
 
-Shipped and live in prod; verified end-to-end at the data/RPC layer. What remains is a browser
-click-through tail — no new design needed.
+**What this is:** Make every Agent expose a complete, navigable inventory of its executable bindings, platform relationships, lineage, history, and drift, plus one all-Agent inventory.
+**Scope:** Feature
+**Feature:** Agents
+**Vision:** VISION MISSING — Arman supplied the direction in the 2026-08-22 Codex task, but it has no durable document link yet.
 
 ## Resources
 
-- `features/agents/FEATURE.md` → "Find Usages & Drift" (canonical detail + change log).
-- Thunks: `features/agents/redux/usages/usages.thunks.ts` (`agx_usage_scan[_admin]` / `agx_usage_report[_admin]` / `agx_usage_history_counts` + the two remediation RPCs); drift-only row filter in `usages.selectors.ts` (`userRowHasDrift` / `adminRowHasDrift`, applied in `makeSelectReportSorted` + `makeSelectReportTotals`).
-- Engine UI: `features/agents/components/usages/AgentUsagesEngine.tsx`; windows in `features/window-panels/windows/agents/`.
-- Routes: `app/(core)/reports/agent-drift/` + `app/(admin)/administration/agents/reports/agent-drift/`; `/agents/admin`, `/reports/admin` maps.
-- DB: `agent.usage` / `agent.drift_alert` (post schema-reorg) — RPC names unchanged. Weekly cron = `scheduler.sch_task` "Agent drift weekly scan" (Mondays 13:00 UTC; check `scheduler.sch_run`).
-- aidream: `aidream/aidream/services/agent_usage/{registry_sync,weekly_scan,drift_dm}.py`, `aidream/aidream/api/routers/agent_usage_admin.py` (`/agent-usage/{sync,scan,registry,report}`, super-admin bearer auth).
-- DM identities (env-overridable, defaults in `drift_dm.py`, registered in aidream `REQUIRED_ENV`): sender = "Matrx System" bot `71b55cc0-f333-462f-8176-f558f866ea5d` (`MATRX_SYSTEM_DM_SENDER_USER_ID`); ownerless-usage recipient = platform operator `4cf62e4e-…` (`MATRX_PLATFORM_OPERATOR_USER_ID`). Never point the sender var at a human; never route recipients to the bot.
-- Drift surfacing on `/agents`: severity-tinted `AgentsListHeader` link (the old banner was deliberately removed 2026-06-20; do not resurrect).
-- Test login: `/login` → admin@admin.com / Password1234# (owns a breaking demo-shortcut alert on agent `42971fe0` "Cleanup Surface Demo Reporter" — a ready-made drift fixture). DM chip fixture: `dm_messages` `5c7383b6-…`.
+- Canonical feature doc: `features/agents/FEATURE.md` → Find Usages & Drift.
+- Existing engine: `features/agents/components/usages/AgentUsagesEngine.tsx`.
+- Existing data layer: `features/agents/redux/usages/` and live `agx_usage_*` RPCs.
+- Existing compact windows: `features/window-panels/windows/agents/`.
+- Existing drift routes: `/reports/agent-drift` and `/administration/agents/reports/agent-drift`.
+- Canonical association reader: `features/scopes/service/associationsService.ts` → `public.assoc_for_entity` → `platform.associations_live`.
+- Canonical Agent action registry: `features/agents/browse/agentActionRegistry.tsx`.
 
 ## Remaining work
 
-1. **Browser click-through tail:** remediation flows ("Update to active" / "Update all" → toast → row clears), "Notify" / "Inform all" dialogs, DM action chips in `MessageBubble`, mobile drawers. The Find Usages window, the header drift tint, and `/reports/agent-drift` are already browser-verified.
-2. **Browser-confirm the drift-only rollup filter:** `/reports/agent-drift` for admin@admin.com should show exactly the drifted agents ("1 agent with drift" for the `42971fe0` fixture), matching the `AgentsListHeader` tint.
-3. **Fix the stale window-panels inventory doc.** `features/window-panels/docs/inventory/agents-debug.md` still asserts the Find Usages registry entries "say deprecated-stub" and prescribes clearing them — that was done 2026-07-08 and the code is clean (`windowRegistryMetadata.ts` `agent-find-usages-window` / `agent-admin-find-usages-window` carry no `deprecated` key). Correct the doc; also drop the "(new)" labels in `tools-grid/toolsGridTiles.ts:483,807` if still wanted.
-
-**Trap while browser-testing:** `/messages` can render an empty conversation list. Partially fixed 2026-07-15 (`a07e8b9ff`: own-send skip + 750 ms debounced reload in `hooks/useSupabaseMessaging.ts`), but `useConversations` still subscribes **per mount** across 5 consumers and manual broadcast still double-delivers — open backlog recorded in `.claude/skills/supabase-realtime/SKILL.md`. Not this handoff's work; don't chase it here.
+1. Obtain approval for the 2026-08-22 deep-dive plan before changing product code or the database.
+2. Extend the canonical usage scan to classify current executable bindings: Mandate defaults and bindings, modern Workflow input bindings, Apps, Shortcuts, Schedules, Surface roles/preferences/bindings, Approaches, and other known agent-reference sources.
+3. Extend the canonical association edge shape to return `payload_kind` and `payload`; show every live edge touching an Agent, in either direction, without conflating associations with execution drift.
+4. Add a server-paged all-Agent inventory RPC/service with counts and worst-drift summaries; do not perform per-row association queries.
+5. Build `/agents/usages` with the canonical entity-list system and `/agents/[id]/usages` as the durable per-Agent detail page; keep `/reports/agent-drift` as the attention-only filtered view.
+6. Make usage types open-ended: known presentation metadata plus a generic fallback grouped under Other, so new relationship/binding types remain visible.
+7. Wire every Agent door: canonical and legacy menus, Agent detail mode tabs/mobile navigation, system/classic surfaces, drift chips, and compact windows. Fix the current singleton-window retarget bug.
+8. Add coverage/drift ratchets, focused tests, browser verification, feature documentation, review registration, and commit/push through the normal completion workflow.
 
 ## Done
 
-- Full feature built + data/RPC-layer verified live — see `features/agents/FEATURE.md` "Find Usages & Drift".
-- Prod activation verified over real HTTP: `/agent-usage/report|registry|scan` (registry 48/48 in-code↔DB, 0 import failures); weekly cron live in `scheduler.sch_run` (28 real DMs landed 2026-06-15).
-- FOUND_DEFECTS D3 closed: DM sender = "Matrx System" bot (aidream `b12d8c186` + `419dc9942`); operator-recipient split so ownerless alerts still reach a human.
-- DM send path repaired + verified live: explicit org stamping (aidream `095310b92`); real bot-authored drift DM landed end-to-end.
-- Drift-only rollup filter landed 2026-07-13 — `agx_usage_report` was correct; the bug was the FE rollup listing every in-scope agent.
-- Stale `deprecated: "Stub"` flags removed from both Find Usages window registry entries (code verified clean).
-- Drift-alert access no longer depends on `project_id` (2026-07-28).
+- Audited current frontend routes, menus, windows, selectors, accessibility, and reusable list/navigation primitives.
+- Audited the live database scanner and reference graph. The current scanner misses Mandates, modern Workflow bindings, generic Agent associations, and several current binding sources; its closed frontend type model also hides unknown future categories.
