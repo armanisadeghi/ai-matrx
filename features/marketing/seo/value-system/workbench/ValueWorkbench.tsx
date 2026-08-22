@@ -507,7 +507,16 @@ export function ValueWorkbench() {
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-hidden p-3 sm:p-4">
+    // The page scrolls; the TABLE does not scroll inside it.
+    //
+    // This was a fixed-viewport pane (`overflow-hidden`, the table bounded by
+    // `flex-1 min-h-0`) when it was one variant among four and carried only a
+    // scoreboard above the table. Converged, it also carries the verdict, the
+    // setup rows and the work-queue callout — and `flex-1` shrinks, so the
+    // table's scroll box collapsed to 8px and rendered 50 rows into nothing.
+    // One scroll surface, at natural height, is what the rest of this family
+    // does (topics, rules, packs) and what a 50-row page wants.
+    <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3 sm:p-4">
       {/* Header */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 pr-14">
         <div className="min-w-0">
@@ -663,7 +672,7 @@ export function ValueWorkbench() {
       )}
 
       {/* Review table */}
-      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-border bg-card p-2">
+      <div className="flex flex-col rounded-lg border border-border bg-card p-2">
         <p className="mb-1.5 flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
           <Gavel className="h-3.5 w-3.5 text-primary" />
           {formatCount(total)} GSC-active keywords in this window · every tier
@@ -866,7 +875,6 @@ export function ValueWorkbench() {
                 ? "Clear the tier tile, the filters, or the search to widen the view."
                 : "Connect Search Console and run a sync — keyword value starts from real search traffic.",
           }}
-          className="min-h-0 flex-1"
         />
       </div>
 
