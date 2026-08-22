@@ -22,6 +22,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
+import { parseCallApiError } from "@/lib/api/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
@@ -324,7 +325,10 @@ export async function putMandateBinding(
       },
     }),
   );
-  if (result.error) throw new Error(result.error.message);
+  // ONE parser for the server body: the contract gate answers 422 with the
+  // exact mismatch in `detail`; `result.error.message` alone flattened it to a
+  // generic "Invalid request" toast (found live 2026-08-22).
+  if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
   invalidateMandateCache(mandateKey);
 }
 
@@ -348,6 +352,9 @@ export async function removeMandateBinding(
       },
     }),
   );
-  if (result.error) throw new Error(result.error.message);
+  // ONE parser for the server body: the contract gate answers 422 with the
+  // exact mismatch in `detail`; `result.error.message` alone flattened it to a
+  // generic "Invalid request" toast (found live 2026-08-22).
+  if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
   invalidateMandateCache(mandateKey);
 }
