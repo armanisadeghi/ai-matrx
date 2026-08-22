@@ -561,17 +561,6 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
-  redaction_mapping: {
-    resourceType: "redaction_mapping",
-    tableName: "redaction_mapping",
-    schemaName: "pdf",
-    idColumn: "id",
-    ownerColumn: "owner_id",
-    isPublicColumn: null,
-    displayLabel: "Redaction Mapping",
-    urlPathTemplate: "/files/{id}",
-    rlsUsesHasPermission: false,
-  },
   research_template: {
     resourceType: "research_template",
     tableName: "rs_template",

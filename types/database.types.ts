@@ -26064,9 +26064,10 @@ export type Database = {
           metadata: Json
           mode: string
           nonce: string | null
-          owner_id: string
+          organization_id: string
           page_id: string | null
           pattern_id: string
+          redacted_by: string
           revoked_at: string | null
           session_id: string
           span_id: string
@@ -26087,9 +26088,10 @@ export type Database = {
           metadata?: Json
           mode: string
           nonce?: string | null
-          owner_id: string
+          organization_id: string
           page_id?: string | null
           pattern_id: string
+          redacted_by: string
           revoked_at?: string | null
           session_id: string
           span_id: string
@@ -26110,9 +26112,10 @@ export type Database = {
           metadata?: Json
           mode?: string
           nonce?: string | null
-          owner_id?: string
+          organization_id?: string
           page_id?: string | null
           pattern_id?: string
+          redacted_by?: string
           revoked_at?: string | null
           session_id?: string
           span_id?: string
