@@ -189,6 +189,15 @@ export const MARKETING_SITE_SECTIONS = [
     group: "Search",
   },
   {
+    slug: "value",
+    name: "Value",
+    titlePrefix: "Keyword Value",
+    description:
+      "Rule what this site's search traffic is actually worth: dimensions, qualifier rules, geo areas, the topic tree, and the value tiers they produce.",
+    letter: "Vl",
+    group: "Search",
+  },
+  {
     slug: "ranks",
     name: "Ranks",
     titlePrefix: "Site Ranks",

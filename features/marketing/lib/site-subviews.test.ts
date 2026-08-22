@@ -138,8 +138,8 @@ describe("marketing site sub-view registry", () => {
     // `seo.coverage_mention` — added a day earlier and never counted here, so
     // this suite was already red) and `ai-visibility:panels` (a saved prompt
     // set asked on a cadence, `seo.ai_visibility_panel`). 41 + 2 = 43,
-    // 62 + 2 = 64.
-    expect(MARKETING_SITE_SECTIONS.length).toBe(21);
+    // 62 + 2 + the keyword-value section = 65.
+    expect(MARKETING_SITE_SECTIONS.length).toBe(22);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
@@ -147,7 +147,7 @@ describe("marketing site sub-view registry", () => {
       ),
     ).toBe(43);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      64,
+      65,
     );
   });
 });
