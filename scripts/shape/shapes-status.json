@@ -1,5 +1,5 @@
 {
-  "generated_for": "618-kinds+36b06a287ca8",
+  "generated_for": "635-kinds+f50d9f879678",
   "columns": [
     "definition",
     "example",
@@ -10,6 +10,34 @@
     "surface"
   ],
   "rows": [
+    {
+      "kind": "agent_apps.auto_create_request.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_apps.metadata_request.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
     {
       "kind": "agent_assignment_batch_result",
       "is_active": true,
@@ -599,6 +627,20 @@
       }
     },
     {
+      "kind": "code_editor.session.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "combined_page_text",
       "is_active": true,
       "family": "ai_pipeline",
@@ -712,6 +754,20 @@
     },
     {
       "kind": "content_ir.kind_authoring.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "content_ir.kind_builder.offer",
       "is_active": false,
       "family": "provision_offer",
       "assets": {
@@ -2965,7 +3021,63 @@
       }
     },
     {
+      "kind": "marketing.image_prompt.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "marketing.local_endowment.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "marketing.page_image_all_in_one.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "marketing.page_image.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "marketing.video_metadata.offer",
       "is_active": false,
       "family": "provision_offer",
       "assets": {
@@ -4071,6 +4183,20 @@
       }
     },
     {
+      "kind": "podcast_client.topic_idea_request.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "podcast_client.web_source.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -4897,6 +5023,20 @@
       }
     },
     {
+      "kind": "research_client.context_bundle.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "research_client.report_output.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -5450,6 +5590,20 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "scraper.page_analysis.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
         "component": "missing",
         "skill": "missing",
         "content_block": "missing",
@@ -6213,6 +6367,34 @@
       }
     },
     {
+      "kind": "seo.competitor_opportunity_autopsy.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "seo.competitor_page_autopsy.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "seo.coverage_analysis.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -6927,6 +7109,20 @@
       }
     },
     {
+      "kind": "tool_viz.component_generation.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "tools.content_summarization.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -7022,6 +7218,20 @@
         "skill": "ok",
         "content_block": "ok",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "transcript_studio.session_context.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -7300,6 +7510,34 @@
         "gate_structural": "ok",
         "component": "ok",
         "skill": "ok",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "war_room.room_context.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "war_room.thread_context.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
       }
@@ -8707,6 +8945,18 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "agent_apps.auto_create_request.offer",
+      "message": "kind \"agent_apps.auto_create_request.offer\" has no content block referencing \"__kind\": \"agent_apps.auto_create_request.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_apps.metadata_request.offer",
+      "message": "kind \"agent_apps.metadata_request.offer\" has no content block referencing \"__kind\": \"agent_apps.metadata_request.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "agent_assignment_batch_result",
       "message": "kind \"agent_assignment_batch_result\" has no content block referencing \"__kind\": \"agent_assignment_batch_result\""
     },
@@ -8869,6 +9119,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "code_editor.session.offer",
+      "message": "kind \"code_editor.session.offer\" has no content block referencing \"__kind\": \"code_editor.session.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "combined_page_text",
       "message": "kind \"combined_page_text\" has no content block referencing \"__kind\": \"combined_page_text\""
     },
@@ -8895,6 +9151,12 @@
       "code": "no-content-block",
       "kind": "content_ir.kind_authoring.offer",
       "message": "kind \"content_ir.kind_authoring.offer\" has no content block referencing \"__kind\": \"content_ir.kind_authoring.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "content_ir.kind_builder.offer",
+      "message": "kind \"content_ir.kind_builder.offer\" has no content block referencing \"__kind\": \"content_ir.kind_builder.offer\""
     },
     {
       "severity": "yellow",
@@ -9601,8 +9863,32 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "marketing.image_prompt.offer",
+      "message": "kind \"marketing.image_prompt.offer\" has no content block referencing \"__kind\": \"marketing.image_prompt.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "marketing.local_endowment.offer",
       "message": "kind \"marketing.local_endowment.offer\" has no content block referencing \"__kind\": \"marketing.local_endowment.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "marketing.page_image_all_in_one.offer",
+      "message": "kind \"marketing.page_image_all_in_one.offer\" has no content block referencing \"__kind\": \"marketing.page_image_all_in_one.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "marketing.page_image.offer",
+      "message": "kind \"marketing.page_image.offer\" has no content block referencing \"__kind\": \"marketing.page_image.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "marketing.video_metadata.offer",
+      "message": "kind \"marketing.video_metadata.offer\" has no content block referencing \"__kind\": \"marketing.video_metadata.offer\""
     },
     {
       "severity": "yellow",
@@ -9913,6 +10199,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "podcast_client.topic_idea_request.offer",
+      "message": "kind \"podcast_client.topic_idea_request.offer\" has no content block referencing \"__kind\": \"podcast_client.topic_idea_request.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "podcast_client.web_source.offer",
       "message": "kind \"podcast_client.web_source.offer\" has no content block referencing \"__kind\": \"podcast_client.web_source.offer\""
     },
@@ -10165,6 +10457,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "research_client.context_bundle.offer",
+      "message": "kind \"research_client.context_bundle.offer\" has no content block referencing \"__kind\": \"research_client.context_bundle.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "research_client.report_output.offer",
       "message": "kind \"research_client.report_output.offer\" has no content block referencing \"__kind\": \"research_client.report_output.offer\""
     },
@@ -10293,6 +10591,12 @@
       "code": "no-content-block",
       "kind": "scraper_crawl_result",
       "message": "kind \"scraper_crawl_result\" has no content block referencing \"__kind\": \"scraper_crawl_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "scraper.page_analysis.offer",
+      "message": "kind \"scraper.page_analysis.offer\" has no content block referencing \"__kind\": \"scraper.page_analysis.offer\""
     },
     {
       "severity": "yellow",
@@ -10603,6 +10907,18 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "seo.competitor_opportunity_autopsy.offer",
+      "message": "kind \"seo.competitor_opportunity_autopsy.offer\" has no content block referencing \"__kind\": \"seo.competitor_opportunity_autopsy.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "seo.competitor_page_autopsy.offer",
+      "message": "kind \"seo.competitor_page_autopsy.offer\" has no content block referencing \"__kind\": \"seo.competitor_page_autopsy.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "seo.coverage_analysis.offer",
       "message": "kind \"seo.coverage_analysis.offer\" has no content block referencing \"__kind\": \"seo.coverage_analysis.offer\""
     },
@@ -10819,6 +11135,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "tool_viz.component_generation.offer",
+      "message": "kind \"tool_viz.component_generation.offer\" has no content block referencing \"__kind\": \"tool_viz.component_generation.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "tools.content_summarization.offer",
       "message": "kind \"tools.content_summarization.offer\" has no content block referencing \"__kind\": \"tools.content_summarization.offer\""
     },
@@ -10827,6 +11149,12 @@
       "code": "no-content-block",
       "kind": "topic_relevance",
       "message": "kind \"topic_relevance\" has no content block referencing \"__kind\": \"topic_relevance\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "transcript_studio.session_context.offer",
+      "message": "kind \"transcript_studio.session_context.offer\" has no content block referencing \"__kind\": \"transcript_studio.session_context.offer\""
     },
     {
       "severity": "yellow",
@@ -10893,6 +11221,18 @@
       "code": "no-content-block",
       "kind": "visual_qc_result",
       "message": "kind \"visual_qc_result\" has no content block referencing \"__kind\": \"visual_qc_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "war_room.room_context.offer",
+      "message": "kind \"war_room.room_context.offer\" has no content block referencing \"__kind\": \"war_room.room_context.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "war_room.thread_context.offer",
+      "message": "kind \"war_room.thread_context.offer\" has no content block referencing \"__kind\": \"war_room.thread_context.offer\""
     },
     {
       "severity": "yellow",
@@ -11461,8 +11801,26 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "agent_apps.auto_create_request.offer",
+      "message": "kind \"agent_apps.auto_create_request.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "agent_apps.metadata_request.offer",
+      "message": "kind \"agent_apps.metadata_request.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "agent_factory.build_request.offer",
       "message": "kind \"agent_factory.build_request.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "code_editor.session.offer",
+      "message": "kind \"code_editor.session.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -11475,6 +11833,12 @@
       "code": "no-example",
       "kind": "content_ir.kind_authoring.offer",
       "message": "kind \"content_ir.kind_authoring.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "content_ir.kind_builder.offer",
+      "message": "kind \"content_ir.kind_builder.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -11833,8 +12197,32 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "marketing.image_prompt.offer",
+      "message": "kind \"marketing.image_prompt.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "marketing.local_endowment.offer",
       "message": "kind \"marketing.local_endowment.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "marketing.page_image_all_in_one.offer",
+      "message": "kind \"marketing.page_image_all_in_one.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "marketing.page_image.offer",
+      "message": "kind \"marketing.page_image.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "marketing.video_metadata.offer",
+      "message": "kind \"marketing.video_metadata.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -12031,6 +12419,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "podcast_client.topic_idea_request.offer",
+      "message": "kind \"podcast_client.topic_idea_request.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "podcast_client.web_source.offer",
       "message": "kind \"podcast_client.web_source.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -12139,6 +12533,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "research_client.context_bundle.offer",
+      "message": "kind \"research_client.context_bundle.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "research_client.report_output.offer",
       "message": "kind \"research_client.report_output.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -12217,6 +12617,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "scraper.page_analysis.offer",
+      "message": "kind \"scraper.page_analysis.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "seo.ai_visibility_analysis.offer",
       "message": "kind \"seo.ai_visibility_analysis.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -12231,6 +12637,18 @@
       "code": "no-example",
       "kind": "seo.competitor_classification.offer",
       "message": "kind \"seo.competitor_classification.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "seo.competitor_opportunity_autopsy.offer",
+      "message": "kind \"seo.competitor_opportunity_autopsy.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "seo.competitor_page_autopsy.offer",
+      "message": "kind \"seo.competitor_page_autopsy.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -12325,8 +12743,20 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "tool_viz.component_generation.offer",
+      "message": "kind \"tool_viz.component_generation.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "tools.content_summarization.offer",
       "message": "kind \"tools.content_summarization.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "transcript_studio.session_context.offer",
+      "message": "kind \"transcript_studio.session_context.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -12351,6 +12781,18 @@
       "code": "no-example",
       "kind": "vision_interview.scribe_pass.offer",
       "message": "kind \"vision_interview.scribe_pass.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "war_room.room_context.offer",
+      "message": "kind \"war_room.room_context.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "war_room.thread_context.offer",
+      "message": "kind \"war_room.thread_context.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -12889,6 +13331,18 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "agent_apps.auto_create_request.offer",
+      "message": "kind \"agent_apps.auto_create_request.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_apps.metadata_request.offer",
+      "message": "kind \"agent_apps.metadata_request.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "agent_assignment_batch_result",
       "message": "kind \"agent_assignment_batch_result\" has no render_block skill teaching it"
     },
@@ -13045,6 +13499,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "code_editor.session.offer",
+      "message": "kind \"code_editor.session.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "combined_page_text",
       "message": "kind \"combined_page_text\" has no render_block skill teaching it"
     },
@@ -13071,6 +13531,12 @@
       "code": "no-skill",
       "kind": "content_ir.kind_authoring.offer",
       "message": "kind \"content_ir.kind_authoring.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "content_ir.kind_builder.offer",
+      "message": "kind \"content_ir.kind_builder.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -13747,8 +14213,32 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "marketing.image_prompt.offer",
+      "message": "kind \"marketing.image_prompt.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "marketing.local_endowment.offer",
       "message": "kind \"marketing.local_endowment.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "marketing.page_image_all_in_one.offer",
+      "message": "kind \"marketing.page_image_all_in_one.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "marketing.page_image.offer",
+      "message": "kind \"marketing.page_image.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "marketing.video_metadata.offer",
+      "message": "kind \"marketing.video_metadata.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -14053,6 +14543,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "podcast_client.topic_idea_request.offer",
+      "message": "kind \"podcast_client.topic_idea_request.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "podcast_client.web_source.offer",
       "message": "kind \"podcast_client.web_source.offer\" has no render_block skill teaching it"
     },
@@ -14299,6 +14795,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "research_client.context_bundle.offer",
+      "message": "kind \"research_client.context_bundle.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "research_client.report_output.offer",
       "message": "kind \"research_client.report_output.offer\" has no render_block skill teaching it"
     },
@@ -14391,6 +14893,12 @@
       "code": "no-skill",
       "kind": "scraper_crawl_result",
       "message": "kind \"scraper_crawl_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "scraper.page_analysis.offer",
+      "message": "kind \"scraper.page_analysis.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -14689,6 +15197,18 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "seo.competitor_opportunity_autopsy.offer",
+      "message": "kind \"seo.competitor_opportunity_autopsy.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "seo.competitor_page_autopsy.offer",
+      "message": "kind \"seo.competitor_page_autopsy.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "seo.coverage_analysis.offer",
       "message": "kind \"seo.coverage_analysis.offer\" has no render_block skill teaching it"
     },
@@ -14887,6 +15407,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "tool_viz.component_generation.offer",
+      "message": "kind \"tool_viz.component_generation.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "tools.content_summarization.offer",
       "message": "kind \"tools.content_summarization.offer\" has no render_block skill teaching it"
     },
@@ -14895,6 +15421,12 @@
       "code": "no-skill",
       "kind": "topic_relevance",
       "message": "kind \"topic_relevance\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "transcript_studio.session_context.offer",
+      "message": "kind \"transcript_studio.session_context.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -14949,6 +15481,18 @@
       "code": "no-skill",
       "kind": "vision_interview.scribe_pass.offer",
       "message": "kind \"vision_interview.scribe_pass.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "war_room.room_context.offer",
+      "message": "kind \"war_room.room_context.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "war_room.thread_context.offer",
+      "message": "kind \"war_room.thread_context.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
