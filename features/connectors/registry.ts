@@ -50,12 +50,16 @@ export const CONNECTORS: ConnectorDefinition[] = [
     logo: lucideMark(SearchCheck),
     // Connectable today — just too specific to earn a slot under the input.
     surfaces: ["directory"],
-    manageHref: GOOGLE_WORKSPACE_SETTINGS_HREF,
+    // Its OAuth grant and property management live on the marketing surface,
+    // not the Workspace settings page.
+    manageHref: "/marketing/connections/google",
   },
 ];
 
 /** Every connector allowed on one surface, in catalogue order. */
-export function connectorsFor(surface: ConnectorSurface): ConnectorDefinition[] {
+export function connectorsFor(
+  surface: ConnectorSurface,
+): ConnectorDefinition[] {
   return CONNECTORS.filter((connector) => connector.surfaces.includes(surface));
 }
 

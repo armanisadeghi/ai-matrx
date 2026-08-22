@@ -19,13 +19,13 @@
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
 import { fetchCatalog } from "@/features/agents/redux/mcp/mcp.slice";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { toast } from "@/lib/toast";
 import { ConnectorStrip } from "./ConnectorStrip";
+import { googleConnectedIds } from "./google-status";
 import type { ConnectorId } from "./types";
 
 export interface ChatConnectorStripProps {
@@ -39,17 +39,7 @@ export function ChatConnectorStrip({ className }: ChatConnectorStripProps) {
   const openGoogleConnect = useOpenGoogleConnectWindow();
 
   const rows = inventory.data?.connections ?? [];
-  const live = rows.filter((row) => row.health === "connected");
-  const connectedIds: ConnectorId[] = [];
-  if (live.some((row) => row.scopes.includes(GOOGLE_SCOPE.driveFile))) {
-    connectedIds.push("google-workspace");
-  }
-  if (live.some((row) => row.scopes.includes(GOOGLE_SCOPE.gmailSend))) {
-    connectedIds.push("gmail");
-  }
-  if (live.some((row) => row.scopes.includes(GOOGLE_SCOPE.webmastersReadonly))) {
-    connectedIds.push("google-search-console");
-  }
+  const connectedIds: ConnectorId[] = googleConnectedIds(rows);
   for (const server of mcp.catalog) {
     if (server.connectionStatus === "connected") {
       connectedIds.push(server.slug);

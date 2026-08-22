@@ -66,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
+import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -345,6 +346,9 @@ export default function IntegrationsPage() {
         )}
 
         <GitHubConnectionCard />
+
+        {/* First-party Google connectors (no MCP server backs these) */}
+        <DirectoryConnectorCards />
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
