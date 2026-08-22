@@ -31,6 +31,12 @@ const RECOVERY_DOORS: Record<string, { label: string; href: string }> = {
     label: "Set your age or parent approval",
     href: "/education/family",
   },
+  // Guest session with no declared age — the education area asks on entry
+  // (EducationAgeGateMount) and offers sign-in.
+  education_age_declaration_required: {
+    label: "Tell us your age to continue",
+    href: "/education",
+  },
 };
 
 interface AssistantErrorProps {
