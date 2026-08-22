@@ -27763,6 +27763,7 @@ export type Database = {
           taxonomy_node_id: string | null
           title_column: string | null
           token: string
+          user_artifact_kind: string | null
           version_store: string
           version_store_ref: unknown
         }
@@ -27803,6 +27804,7 @@ export type Database = {
           taxonomy_node_id?: string | null
           title_column?: string | null
           token: string
+          user_artifact_kind?: string | null
           version_store?: string
           version_store_ref?: unknown
         }
@@ -27843,6 +27845,7 @@ export type Database = {
           taxonomy_node_id?: string | null
           title_column?: string | null
           token?: string
+          user_artifact_kind?: string | null
           version_store?: string
           version_store_ref?: unknown
         }
@@ -38064,6 +38067,26 @@ export type Database = {
       transfer_organization_ownership: {
         Args: { current_owner_id: string; new_owner_id: string; org_id: string }
         Returns: boolean
+      }
+      trash_counts: {
+        Args: never
+        Returns: {
+          artifact_kind: string
+          label: string
+          n: number
+        }[]
+      }
+      trash_list: {
+        Args: { p_kinds?: string[]; p_limit?: number; p_offset?: number }
+        Returns: {
+          artifact_kind: string
+          deleted_at: string
+          entity_token: string
+          id: string
+          label: string
+          organization_id: string
+          title: string
+        }[]
       }
       triage_feedback_item: {
         Args: {

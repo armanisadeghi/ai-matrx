@@ -64,6 +64,12 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   udt_documents: FileText,
   structured_list: ListChecks,
   udt_workbooks: Table,
+  // Registry TOKENS for the same three (the keys above are table names). The
+  // trash surface keys off entity_types.token, so both spellings resolve.
+  dataset: Table,
+  workbook: Table,
+  udt_document: FileText,
+  sandbox_instance: Boxes,
   wc_claim: Building2,
   feature_doc: FileText,
 };

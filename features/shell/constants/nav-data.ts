@@ -1804,6 +1804,18 @@ export const settingsItem: ShellNavItem = {
       iconName: NAV_WINDOW_PANEL_ICON,
       panelAction: "open-preferences-panel",
     },
+    {
+      // Cross-cutting, not per-feature: one page for everything the user has
+      // soft-deleted, driven by entity_types.user_artifact_kind.
+      label: "Trash",
+      href: "/trash",
+      iconName: "Trash2",
+      description: "Restore anything you've deleted",
+      color: "slate",
+      profileMenu: true,
+      dashboard: false,
+      exact: true,
+    },
   ],
 };
 
