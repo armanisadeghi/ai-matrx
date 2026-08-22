@@ -66,6 +66,19 @@ you cannot state the deliverable exactly, you are not ready to create an agent.
 - A **conversational agent** is a deliberate shape: zero variables, system prompt only,
   because the user's typed text IS the first turn. Run and test it with `user_message`,
   never `variables`.
+- **THE SYSTEM-PROMPT LAW (Arman, 2026-08-22).** The system prompt carries the agent's
+  core, static instructions — role, rules, definitions, output format, earned examples.
+  The specifics of THIS run — ids, the object being worked on, the task — go in the
+  **first user message** (immutable values as variables embedded in conversational human
+  language) or in **context** (anything that can change during the conversation). Models
+  were trained on a static system prompt + specific user turns; breaking that shape
+  degrades every result, and interpolating a "current snapshot" into the system prompt
+  guarantees it is stale by message two. The only legitimate system-prompt variable is a
+  **behavior switch** (verbose/terse, strict/exploratory, audience) — never the task — and
+  it sits LOW in the prompt, after the core guidelines. Canonical offender: the Plan
+  Steward opened its system prompt with `{{plan_id}}`, `{{definition_id}}` and a
+  `{{plan_snapshot}}` block — converted 2026-08-22 (ids → opening user message, snapshot →
+  a `plan_snapshot` context policy the client re-delivers each turn).
 
 ### 3. Decide tools and skills — minimal by design
 
@@ -105,14 +118,22 @@ exercise both. A kind without a registered shape/component is useless — and so
 component-less `__kind` wrapper.
 
 - Via MCP: run the kind-builder agents with `agent_run` — **`kind_architect`**
-  (`9d484ce1-1e2b-4db7-8469-d3ba8550cdd8`, admin one-shot: schema + live-quality
-  interactive component + content blocks + activation) or **`kind_creator`**
-  (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`, conversational guided loop). Both are
-  conversational — drive them with `user_message`.
+  (`9d484ce1-1e2b-4db7-8469-d3ba8550cdd8`, admin one-shot) or **`kind_creator`**
+  (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`, conversational guided loop, v15+). Both are
+  conversational — drive them with `user_message`. Since 2026-08-22 the tools behind them
+  build a COMPOSED shape in one `kind_create` call (mark nested items with their own
+  `__kind` in the sample; child kinds + `kind_edge` rows are minted for you), store the
+  example in marked block shape (the stored example IS the render block), and gate every
+  component write with an import allowlist + an esbuild TSX syntax check.
 - Component bar: dense (minimal padding, no wasted space), mobile-friendly, interactive
   where the data invites it (drag-and-drop, sort, edit, add/remove for lists), one-click
   copy per section plus compact whole-result copy affordances (JSON / MD / CSV / TXT /
-  XML-for-AI). Expect to iterate with the builder agent several times — first output is
+  XML-for-AI), and **streaming-first — a requirement, not a feature**: the value arrives
+  progressively during the LLM stream, so the component ships its own brief skeleton that
+  mimics the finished layout (never the generic fallback, never spinner-until-complete),
+  renders each list item the moment it parses, lets prose grow as it streams, and reveals
+  structured details in chunks. A component that waits for the complete object is broken
+  by definition. Expect to iterate with the builder agent several times — first output is
   never the final component.
 - Never hand-insert `content_ir` rows or build a parallel registry.
 
@@ -196,6 +217,8 @@ What the Keyword Analysis Master shows, and every agent you create should have:
    > "I need assistance with keyword research for this extremely important project.
    > Please give me an in-depth list of keywords for {{primary_keyword}}. …"
    Never a bare `{{variable}}` dump, never a wall of key: value pairs as the user turn.
+   The user message is also WHERE the run's specifics live (ids, the object in hand) —
+   per THE SYSTEM-PROMPT LAW the system prompt never anchors itself to one run.
 5. **Teaching help text on every variable.** Help text is critical for humans AND for
    agent-to-agent calling. It teaches — what the value is, how to choose it, what to do
    when you don't have one — not "enter a value":
@@ -276,6 +299,8 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Skills attached by default | Instructions belong in the system prompt; skills are for highly-agentic exceptions |
 | Tool piles "just in case" | Agents get exactly what they need; they don't forage |
 | Variables on a conversational agent | Zero-variable shape is deliberate; run with `user_message` |
+| Task ids / the current object / a snapshot in the SYSTEM prompt | THE SYSTEM-PROMPT LAW — specifics ride the first user message (ids) or context (mutable); a snapshot in the system prompt is stale by turn 2 |
+| Mutable value sent as a variable every turn | Variables substitute once at turn 1; later sends reach nothing — declare a context policy |
 | Flat `__kind` wrapper around raw JSON | Kinds are nested; lists get item kinds; ~2 levels typical |
 | Kind emitted with no registered shape/component | A kind without a component is useless |
 | Invented category/tags | Reuse the live facet tree |
