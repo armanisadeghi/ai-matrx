@@ -504,7 +504,19 @@ export function useContextMenuActions(
   });
 
   const handleSelectAll = () => {
-    if (!selectionRange) return;
+    // No captured selection (the common right-click-without-selecting case):
+    // an editable surface still knows its field — select all of it. A no-op
+    // here is the "fake menu" class this feature exists to kill.
+    if (!selectionRange) {
+      const field = getTextarea?.();
+      if (field) {
+        requestAnimationFrame(() => {
+          field.focus();
+          field.select();
+        });
+      }
+      return;
+    }
     if (selectionRange.type === "editable") {
       const element = selectionRange.element;
       if (
