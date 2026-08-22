@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
-import { useAiChat } from '../hooks/useAiChat';
+import { useAiChat } from '@/hooks/flashcard-app/useAiChat';
+import { LiveRunDisplay } from '@/features/agents/components/live-run/LiveRunDisplay';
 import { addMessage } from '@/lib/redux/slices/flashcardChatSlice';
 import {
     selectActiveFlashcard,
@@ -36,7 +37,7 @@ const QUICK_ACTIONS = {
     'Create Bullet Points': 'Can you put the most important information into bullet points?',
 } as const;
 
-const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName }) => {
+const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
     const [message, setMessage] = useState('');
     const [activeTab, setActiveTab] = useState('current');
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,7 +52,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName })
 
     const allChats = useAppSelector((state) => state.flashcardChat.flashcards);
 
-    const { isLoading, streamingMessage, sendInitialMessage, sendMessage } = useAiChat();
+    const { isLoading, conversationId, sendInitialMessage, sendMessage } = useAiChat();
 
     const allChatHistory = useMemo(() => {
         return Object.values(allChats).flatMap(flashcard =>
@@ -70,9 +71,9 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName })
 
     useEffect(() => {
         if (isOpen && currentFlashcard && currentChat.length === 0) {
-            sendInitialMessage(currentFlashcard, firstName);
+            sendInitialMessage(currentFlashcard);
         }
-    }, [isOpen, currentFlashcard, firstName, sendInitialMessage, currentChat.length]);
+    }, [isOpen, currentFlashcard, sendInitialMessage, currentChat.length]);
 
     useEffect(() => {
         const handleBlur = () => {
@@ -92,13 +93,12 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName })
     const handleSubmit = (customMessage?: string) => {
         const messageToSend = customMessage || message.trim();
         const flashcardId = currentFlashcard?.id;
-        if (messageToSend && !isLoading && flashcardId) {
+        if (messageToSend && !isLoading && currentFlashcard && flashcardId) {
             dispatch(addMessage({
                 flashcardId,
                 message: { role: 'user', content: messageToSend }
             }));
-            const chatHistory = activeTab === 'current' ? currentChat : allChatHistory;
-            sendMessage(messageToSend, flashcardId, chatHistory);
+            sendMessage(messageToSend, currentFlashcard);
             setMessage('');
         }
     };
@@ -195,11 +195,14 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName })
                                 {renderMessage(msg.content, msg.role as 'user' | 'assistant')}
                             </React.Fragment>
                         ))}
-                        {streamingMessage && renderMessage(streamingMessage, 'assistant')}
-                        {isLoading && !streamingMessage && (
-                            <div className="text-center py-2 text-muted-foreground animate-pulse">
-                                AI is thinking...
-                            </div>
+                        {isLoading && (
+                            <LiveRunDisplay
+                                conversationId={conversationId}
+                                pending={!conversationId}
+                                label="Your tutor is answering"
+                                variant="bare"
+                                className="px-4"
+                            />
                         )}
                     </div>
                 </ScrollArea>

@@ -1,129 +1,110 @@
-// hooks/useAiChat.ts
+// hooks/flashcard-app/useAiChat.ts
+//
+// The legacy flashcard-app "Ask AI" chat, routed through THE UNIVERSAL LAW
+// (common-docs/systems/agents/mandates/RUNTIME.md): every AI invocation
+// resolves through a Mandate. This hook used to hold an OpenAI browser client
+// and an in-code system prompt (F12); now it runs the same
+// `flashcards.help_live` lane every study surface uses
+// (features/education/tutor/lanes/helpLive.ts) — the agent, its prompt and its
+// model live in the DATABASE and are swapped at /agents/mandates.
+//
+// Live posture: the answer streams into `<LiveRunDisplay conversationId>` the
+// host mounts (no spinner while AI works); the finished answer is then written
+// to the per-card Redux chat and the live instance is released, so the text is
+// never on screen twice.
 
-import { useState, useCallback } from 'react';
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
-import { Flashcard, ChatMessage } from "@/types/flashcards.types";
-import { flashcardQuestionOne, systemContentOne } from "@/constants/flashcard-constants";
+"use client";
 
-import { openai } from "@/lib/ai/openAiBrowserClient";
-import { addMessage } from '@/lib/redux/slices/flashcardChatSlice';
-import { selectActiveFlashcardChat } from '@/lib/redux/selectors/flashcardSelectors';
-import { ChatCompletionMessageParam } from 'openai/resources/chat/index.mjs';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import type { FlashcardData } from "@/types/flashcards.types";
+import { addMessage } from "@/lib/redux/slices/flashcardChatSlice";
+import { selectActiveFlashcardChat } from "@/lib/redux/selectors/flashcardSelectors";
+import { helpLive } from "@/features/education/tutor/lanes/helpLive";
+import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { toast } from "@/lib/toast";
 
-
-const APP_MESSAGE_TEMPLATES = {
-    flashcards: {
-        flashcardQuestionOne: flashcardQuestionOne,
-        systemContentOne: systemContentOne,
-    }
+export interface UseAiChat {
+  isLoading: boolean;
+  /** Live handle — mount `<LiveRunDisplay conversationId={…} />` while set. */
+  conversationId: string | null;
+  /** Opens the chat for a card with the lane's default "I'm confused" ask. */
+  sendInitialMessage: (flashcard: FlashcardData) => Promise<void>;
+  /** Sends what the learner typed (or a quick-action prompt) about a card. */
+  sendMessage: (message: string, flashcard: FlashcardData) => Promise<void>;
 }
 
+export const useAiChat = (): UseAiChat => {
+  const dispatch = useAppDispatch();
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  // The kept-alive instance THIS hook owns (lane runs with keepInstance:true
+  // whenever a binder is supplied) — released on completion, re-run, unmount.
+  const ownedRef = useRef<string | null>(null);
+  const currentChat = useAppSelector(selectActiveFlashcardChat);
 
-const CHAT_DEFAULTS = {
-    defaultAiModel: "gpt-4.1-mini-2025-04-14",
+  const release = useCallback(() => {
+    const owned = ownedRef.current;
+    ownedRef.current = null;
+    setConversationId(null);
+    if (owned) dispatch(destroyInstanceIfAllowed(owned));
+  }, [dispatch]);
 
-}
+  useEffect(() => release, [release]);
 
-
-
-export const useAiChat = () => {
-    const dispatch = useAppDispatch();
-    const [isLoading, setIsLoading] = useState(false);
-    const [streamingMessage, setStreamingMessage] = useState('');
-    const defaultAiModel = CHAT_DEFAULTS.defaultAiModel;
-
-    const currentChat = useAppSelector(selectActiveFlashcardChat);
-
-    const sendInitialMessage = useCallback(async (
-        flashcard: Flashcard,
-        firstName: string
-    ) => {
-        if (isLoading || currentChat.length > 0 || !flashcard.id) return;
-
-        setIsLoading(true);
-        setStreamingMessage('');
-
-        const aIFlashcardContext = `
-            Topic: ${flashcard.topic || 'Unknown'}
-            Lesson: ${flashcard.lesson || 'Unknown'}
-            Grade Level: ${flashcard.gradeLevel || 'Unknown'}
-            Front: ${flashcard.front || 'Unknown'}
-            Back: ${flashcard.back || 'Unknown'}
-            Example: ${flashcard.example || 'Unknown'}
-            Detailed Explanation: ${flashcard.detailedExplanation || 'Unknown'}
-            Audio Explanation: ${flashcard.audioExplanation || 'Unknown'}
-        `;
-
-        const initialMessages: ChatCompletionMessageParam[] = [
-            { role: 'system', content: systemContentOne },
-            { role: 'user', content: flashcardQuestionOne(firstName, aIFlashcardContext) },
-        ];
-
-        try {
-            const stream = await openai.chat.completions.create({
-                model: defaultAiModel,
-                messages: initialMessages,
-                stream: true,
-            });
-
-            let aiResponse = '';
-            for await (const chunk of stream) {
-                const content = chunk.choices[0]?.delta?.content || '';
-                aiResponse += content;
-                setStreamingMessage(aiResponse);
-            }
-
-            dispatch(addMessage({ flashcardId: flashcard.id, message: { role: 'assistant', content: aiResponse } }));
-        } catch (error) {
-            console.error('Error fetching AI response:', error);
-        } finally {
-            setIsLoading(false);
-            setStreamingMessage('');
+  const ask = useCallback(
+    async (flashcard: FlashcardData, question?: string): Promise<void> => {
+      const flashcardId = flashcard.id;
+      if (isLoading || !flashcardId) return;
+      setIsLoading(true);
+      release();
+      try {
+        const result = await dispatch(
+          helpLive({
+            front: flashcard.front,
+            back: flashcard.back,
+            cardId: flashcardId,
+            question,
+            onConversationCreated: (cid) => {
+              ownedRef.current = cid;
+              setConversationId(cid);
+            },
+          }),
+        );
+        if (!result) {
+          toast.error("Your tutor couldn't answer right now. Try again.");
+          return;
         }
-    }, [dispatch, isLoading, currentChat]);
+        dispatch(
+          addMessage({
+            flashcardId,
+            message: { role: "assistant", content: result.answer },
+          }),
+        );
+      } finally {
+        release();
+        setIsLoading(false);
+      }
+    },
+    [dispatch, isLoading, release],
+  );
 
-    const sendMessage = useCallback(async (
-        message: string,
-        flashcardId: string,
-        chatHistory: ChatMessage[]
-    ) => {
-        if (isLoading) return;
-        setIsLoading(true);
-        setStreamingMessage('');
+  const sendInitialMessage = useCallback(
+    async (flashcard: FlashcardData): Promise<void> => {
+      if (currentChat.length > 0) return;
+      await ask(flashcard);
+    },
+    [ask, currentChat.length],
+  );
 
-        try {
-            const messages: ChatCompletionMessageParam[] = [
-                { role: 'system', content: systemContentOne },
-                ...chatHistory.map(msg => ({ role: msg.role, content: msg.content } as ChatCompletionMessageParam)),
-                { role: 'user', content: message }
-            ];
+  const sendMessage = useCallback(
+    async (message: string, flashcard: FlashcardData): Promise<void> => {
+      const trimmed = message.trim();
+      if (!trimmed) return;
+      await ask(flashcard, trimmed);
+    },
+    [ask],
+  );
 
-            const stream = await openai.chat.completions.create({
-                model: defaultAiModel,
-                messages: messages,
-                stream: true,
-            });
-
-            let aiResponse = '';
-            for await (const chunk of stream) {
-                const content = chunk.choices[0]?.delta?.content || '';
-                aiResponse += content;
-                setStreamingMessage(aiResponse);
-            }
-
-            dispatch(addMessage({ flashcardId, message: { role: 'assistant', content: aiResponse } }));
-        } catch (error) {
-            console.error('Error fetching AI response:', error);
-        } finally {
-            setIsLoading(false);
-            setStreamingMessage('');
-        }
-    }, [dispatch, isLoading]);
-
-    return {
-        isLoading,
-        streamingMessage,
-        sendInitialMessage,
-        sendMessage,
-    };
+  return { isLoading, conversationId, sendInitialMessage, sendMessage };
 };
