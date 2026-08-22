@@ -97,16 +97,43 @@ function forgetRun(masterworkId: string): void {
   }
 }
 
-/** Node-id → plain language. Auditors are per-section (audit_X). */
+/** A section code (`rankability`, `page_purpose`) as the Expert wrote it. */
+function sectionName(code: string): string {
+  const words = code.replaceAll("_", " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * Node-id → plain language.
+ *
+ * Arman, 2026-08-21, reading his own run: the list said "fan purpose", "cite
+ * structure", "Writing variant expansion" — internal node ids leaking through a
+ * `replaceAll("_", " ")` fallback, plus one label that was simply wrong (`mk_X`
+ * prepares the checks; it does not write a variant). Every id BOTH shapes can
+ * emit is named here, and the fallback says something true rather than
+ * something internal. If you add a node to build.py, add it here in the same
+ * change — an unnamed step is a step the Expert watches with no idea what it is.
+ */
 function stageLabel(nodeId: string): string {
   if (nodeId === "ask") return "Reading your submission";
-  if (nodeId.startsWith("audit_")) return `Checking rules (${nodeId.slice(6)})`;
-  if (nodeId.startsWith("mk_")) return `Writing variant ${nodeId.slice(3)}`;
-  if (nodeId === "maker") return "Writing variants";
+  if (nodeId === "maker") return "Writing the drafts";
   if (nodeId === "editor") return "Applying corrections";
   if (nodeId === "chief") return "The expert's final ruling";
+  if (nodeId === "show") return "Preparing your result";
   if (nodeId === "understudy") return "Doing the whole job (first cut)";
-  return nodeId.replaceAll("_", " ");
+
+  const section = (prefix: string) => sectionName(nodeId.slice(prefix.length));
+  if (nodeId.startsWith("audit_")) return `Checking your ${section("audit_")} rules`;
+  if (nodeId.startsWith("mk_")) return `Preparing the ${section("mk_")} checks`;
+  if (nodeId.startsWith("fan_")) return `Checking every draft — ${section("fan_")}`;
+  if (nodeId.startsWith("flat_")) return `Gathering the ${section("flat_")} findings`;
+  // cite_ + gate_ are the citation gate: every finding must point at a real
+  // rule of yours, or the run stops rather than hand you something untraceable.
+  if (nodeId.startsWith("cite_") || nodeId.startsWith("gate_"))
+    return `Making sure every ${section(nodeId.startsWith("cite_") ? "cite_" : "gate_")} finding points at a real rule`;
+  if (nodeId.startsWith("collect_")) return `Collecting the ${section("collect_")} findings`;
+  if (nodeId.startsWith("fmt_")) return `Writing up the ${section("fmt_")} findings`;
+  return "Working";
 }
 
 export function TryMasterworkBox({
