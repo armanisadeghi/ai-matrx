@@ -25,9 +25,10 @@ Turn a surface that already exists (has a `ui_surface` row + a manifest) into a 
 
 ## Version tag (how to see which menu a surface runs)
 
-The menu renders a footer: `<surfaceName> · v3.<canonical> · V<surface>` (e.g. `matrx-user/notes · v3.1 · V1`).
-- **v3.n** = `CANONICAL_MENU_VERSION_V3` (exported from `features/context-menu-v3/ContextMenuV3.tsx`) — bumped when the canonical menu itself changes.
+The footer is gone (2026-08-22). Right-click → the LAST entry of the menu is the surface's own submenu, titled with its canonical label (e.g. **Notes**): location `matrx-user/notes` (click to copy) · Surface Context · Surface Context Admin · Agents on this page · Related surfaces · (admins) `Menu v3.<canonical> · V<surface>`.
+- **v3.n** = `CANONICAL_MENU_VERSION_V3` (`features/context-menu-v3/types.ts`) — bumped when the canonical menu itself changes.
 - **V** = the surface's `menuVersion` prop (default `1`) — bump when a surface customizes its wiring beyond the standard.
+- A wrong label or "This page" there means the surface is not registered / not mapped — fix S1 of the `surface-check` checklist.
 - A surface still on a BESPOKE menu shows **no footer tag** — that absence means "not migrated."
 
 ## The platform guarantees you can rely on (do NOT re-implement)
