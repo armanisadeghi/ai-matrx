@@ -4084,7 +4084,6 @@ export type Database = {
           source: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -4098,7 +4097,6 @@ export type Database = {
           source?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -4112,7 +4110,6 @@ export type Database = {
           source?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: []
@@ -4148,7 +4145,6 @@ export type Database = {
           tokens_out: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -4181,7 +4177,6 @@ export type Database = {
           tokens_out?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -4214,7 +4209,6 @@ export type Database = {
           tokens_out?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: []
@@ -4259,7 +4253,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           urgency: string
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -4301,7 +4294,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           urgency?: string
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -4343,7 +4335,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           urgency?: string
-          user_id?: string | null
           version?: number
         }
         Relationships: [
