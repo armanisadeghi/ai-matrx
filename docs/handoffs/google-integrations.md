@@ -110,8 +110,13 @@ a connections directory page. Each carries a real design question stated there.
 - **Attach is web-only.** The `__google_files` context key works on the web client; the
   extension and desktop offer the Google tools but have no attach affordance. Their agents can
   still reach files via `list_resources`.
-- **The connector strip's directory half has no page.** `features/connectors/` already marks
-  Search Console directory-only; the surface that renders it does not exist.
+- ~~The connector strip's directory half has no page~~ **DONE 2026-08-22.** The claim was also
+  half-wrong: `/user-settings/integrations` existed all along (MCP catalog + GitHub) but never
+  consumed the connectors registry. Now `features/connectors/DirectoryConnectorCards.tsx`
+  renders the Google connectors there via the shared scope mapping
+  (`features/connectors/google-status.ts`, also used by the chat strip), and Search Console's
+  manage door points at `/marketing/connections/google` where its OAuth actually lives.
+  Browser-verified desktop + mobile.
 - **YouTube's grant was revoked and never restored** — restoring it is part of that campaign.
 
 ---
