@@ -26,6 +26,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/agent-connections", favicon: { color: "#0f172a", letter: "Ax" } },
   { href: "/assists", favicon: { color: "#0c4a6e", letter: "As" } },
   { href: "/research", favicon: { color: "#7c3aed", letter: "R" } },
+  { href: "/search", favicon: { color: "#2563eb", letter: "Sr" } },
   { href: "/camera", favicon: { color: "#166534", letter: "CA" } },
   { href: "/chat", favicon: { color: "#2563eb", letter: "C" } },
   { href: "/organizations", favicon: { color: "#b91c1c", letter: "O" } },

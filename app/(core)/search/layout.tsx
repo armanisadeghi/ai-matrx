@@ -21,7 +21,7 @@ export const metadata = createRouteMetadata("/search", {
   title: "Matrx Search",
   description:
     "Search the web and get finished pieces back — direct answers, places with hours and ratings, news, video and discussions. Every search keeps its own link.",
-  letter: "S",
+  letter: "Sr",
   canonicalPath: "/search",
   keywords: ["search", "web search", "AI search", "Matrx Search"],
 });
