@@ -285,9 +285,10 @@ const nextConfig = {
     // then failed twice more in v0.4.1064/1065, both 6-7 seconds into page-data
     // collection after successful compilation. Four workers let v0.4.1066/1068
     // complete, but v0.4.1069 still OOMed in the same phase on the 60 GB machine.
-    // Two is now the evidence-backed ceiling; compile-phase OOMs still require
+    // Two workers then OOMed after a successful 16.1-minute compile in v0.4.1088.
+    // One is now the evidence-backed ceiling; compile-phase OOMs still require
     // hunting the import edge first (code-splitting skill, "Build-time bloat").
-    cpus: 2,
+    cpus: 1,
     serverActions: {
       bodySizeLimit: "10mb",
     },
