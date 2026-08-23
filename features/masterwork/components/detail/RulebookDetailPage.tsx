@@ -771,6 +771,22 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const userId = useAppSelector(selectUserId);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openAddRule = useOpenAddRuleWindow();
+
+  // Resolved once, and only for the admins who can actually issue a grant.
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    let cancelled = false;
+    resolveLibraryOrgId()
+      .then((id) => {
+        if (!cancelled) setLibraryOrgId(id);
+      })
+      .catch((e) => {
+        console.error("[RulebookDetailPage] could not resolve the Library org:", e);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperAdmin]);
   const openBuild = useOpenBuildWindow();
   const openYourWords = useOpenMasterworkYourWordsWindow();
 
@@ -1429,6 +1445,47 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   variant="ghost"
                   showStatus={false}
                 />
+                {/* THE MATRX LIBRARY — sharing by NAME (above) reaches people
+                    you can name; this reaches a whole INDUSTRY, or everyone.
+                    ONE spine, one panel: `platform.entity_grants` via
+                    `public.library_publish`
+                    (common-docs/systems/platform/library/STATE.md). Only a
+                    Library-owned Rulebook can be published — the RPC asserts
+                    it — so the door appears nowhere else. */}
+                {isSuperAdmin &&
+                libraryOrgId &&
+                rulebook.organization_id === libraryOrgId ? (
+                  <>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label="Give this Rulebook to an industry"
+                          onClick={() => setPublishOpen(true)}
+                        >
+                          <Library className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          Give this Rulebook to a whole industry, one
+                          organization, or everyone. Each recipient gets their
+                          own editable copy.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <LibraryPublishPanel
+                      isOpen={publishOpen}
+                      onClose={() => setPublishOpen(false)}
+                      entityType="rulebook"
+                      entityId={rulebook.id}
+                      entityName={rulebook.name}
+                      recipientHint="Each organization that adds it gets its OWN editable copy of these rules — never a view of yours."
+                    />
+                  </>
+                ) : null}
                 {/* THE ONE CANONICAL MASTERWORK SYSTEM (Arman, 2026-08-18):
                     "the only thing that ever makes a Masterwork is our one
                     single canonical Masterwork system." The Conductor is the
