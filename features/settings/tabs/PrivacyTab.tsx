@@ -73,9 +73,9 @@ export default function PrivacyTab() {
 
       <SettingsSection title="Your data" icon={DatabaseZap}>
         <SettingsLink
-          label="What's scheduled to be deleted"
-          description="Anything of yours on its way to permanent deletion, when it goes, and a one-click way to keep it."
-          href="/settings/data"
+          label="Trash"
+          description="Everything you've deleted, when anything with a deletion date goes for good, and a one-click way to keep it."
+          href="/trash"
           actionLabel="Open"
           last
         />

@@ -1,11 +1,14 @@
 "use client";
 
-// features/settings/data-lifecycle/lifecycleService.ts
+// features/trash/lifecycleService.ts
 //
 // The client half of the data-lifecycle warning stage — thin, typed wrappers
 // over `platform.lifecycle_user_notice` / `platform.lifecycle_user_keep`.
 // Both are SECURITY DEFINER, granted to `authenticated`, and resolve identity
 // from `auth.uid()`, so these are plain direct-to-Supabase RPCs (no server hop).
+//
+// This is the lifecycle half of /trash: the same list of soft-deleted things,
+// answering "when does this actually go away?". There is no second page for it.
 //
 // The notice function is the SAME source of truth the weekly digest email reads
 // (aidream/aidream/services/data_lifecycle/digest.py), so the page can never
@@ -70,8 +73,12 @@ export async function fetchLifecycleNotice(): Promise<LifecycleNotice> {
 
 /**
  * Take the caller's rows of one entity back out of every lifecycle window by
- * clearing `deleted_at`. Passing no ids keeps ALL of that entity's pending
- * rows — which is exactly what the page's per-group "Keep" button means.
+ * clearing `deleted_at`. Passing no ids keeps ALL of that entity's pending rows.
+ *
+ * 🚨 This is the BULK action only — "keep everything of this kind". A single
+ * item is restored with `entity_undelete` (see `service.ts`), which is the
+ * generic per-item path db-rules §8 already defines. Two functions, two
+ * scopes; never wire both to the same button.
  */
 export async function keepPendingEntity(
   entityToken: string,

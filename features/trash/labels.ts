@@ -1,7 +1,7 @@
-// features/settings/data-lifecycle/labels.ts
+// features/trash/labels.ts
 //
 // THE RULE: a person never sees `entity_token`. "fc_card" is a table name, and
-// this page has to make sense to someone who does not know what a table is.
+// /trash has to make sense to someone who does not know what a table is.
 //
 // Three sources, in order:
 //   1. the canonical entity registry (`platform.entity_types.label`, already

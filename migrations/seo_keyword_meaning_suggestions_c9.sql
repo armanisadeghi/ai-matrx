@@ -189,10 +189,12 @@ SECURITY DEFINER
 SET search_path TO 'seo', 'platform', 'web', 'auth', 'pg_temp'
 AS $function$
 DECLARE
-  v_uid uuid := (SELECT auth.uid());
-  v_org uuid;
-  v_dim record;
-  v_id  uuid;
+  v_uid    uuid := (SELECT auth.uid());
+  v_org    uuid;
+  v_dim    record;
+  v_id     uuid;
+  v_amount numeric;
+  v_notes  text := NULLIF(btrim(COALESCE(p_notes,'')),'');
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'seo_worth_unauthenticated';
@@ -212,7 +214,7 @@ BEGIN
     RAISE EXCEPTION 'seo_worth_bad_origin: %', p_origin;
   END IF;
 
-  SELECT v.id AS value_id,
+  SELECT v.id AS id,
          d.slug AS dimension_slug,
          COALESCE(d.metadata->>'scope','platform') AS scope,
          (d.metadata->>'site_id')::uuid AS dim_site_id
@@ -234,22 +236,35 @@ BEGIN
     RETURN;
   END IF;
 
-  -- svw_effect_check owns the amount rules (add: any; scale: 0.05–5; never: NULL).
-  INSERT INTO seo.site_value_worth
-    (site_id, value_id, effect, amount, origin, notes, organization_id, created_by, updated_by)
-  VALUES
-    (p_site_id, p_value_id, p_effect,
-     CASE WHEN p_effect = 'never' THEN NULL ELSE p_amount END,
-     p_origin, NULLIF(btrim(COALESCE(p_notes,'')),''), v_org, v_uid, v_uid)
-  ON CONFLICT (site_id, value_id) WHERE deleted_at IS NULL
-  DO UPDATE SET
-     effect     = EXCLUDED.effect,
-     amount     = EXCLUDED.amount,
-     origin     = EXCLUDED.origin,
-     notes      = COALESCE(EXCLUDED.notes, seo.site_value_worth.notes),
-     updated_by = v_uid,
-     updated_at = now()
-  RETURNING site_value_worth.id INTO v_id;
+  v_amount := CASE WHEN p_effect = 'never' THEN NULL ELSE p_amount END;
+
+  -- Explicit find-then-write, NOT `ON CONFLICT (site_id, value_id)`: this
+  -- function's RETURNS TABLE out-params are named after the very columns the
+  -- conflict target names, and PL/pgSQL resolves that to "column reference
+  -- site_id is ambiguous" AT RUN TIME — the function creates cleanly and then
+  -- fails on the first real call (found live, 2026-08-23, by the first batch
+  -- approval). svw_site_value_uniq still guarantees one row per (site, value).
+  SELECT w.id INTO v_id
+    FROM seo.site_value_worth w
+   WHERE w.site_id = p_site_id AND w.value_id = p_value_id AND w.deleted_at IS NULL
+   LIMIT 1;
+
+  IF v_id IS NULL THEN
+    INSERT INTO seo.site_value_worth AS w
+      (site_id, value_id, effect, amount, origin, notes, organization_id, created_by, updated_by)
+    VALUES
+      (p_site_id, p_value_id, p_effect, v_amount, p_origin, v_notes, v_org, v_uid, v_uid)
+    RETURNING w.id INTO v_id;
+  ELSE
+    UPDATE seo.site_value_worth w
+       SET effect     = p_effect,
+           amount     = v_amount,
+           origin     = p_origin,
+           notes      = COALESCE(v_notes, w.notes),
+           updated_by = v_uid,
+           updated_at = now()
+     WHERE w.id = v_id;
+  END IF;
 
   RETURN QUERY
   SELECT w.id, w.site_id, w.value_id, w.effect, w.amount, w.origin, w.notes, w.updated_at
@@ -496,6 +511,15 @@ GRANT EXECUTE ON FUNCTION seo.keyword_meaning_suggest(uuid,jsonb,text,text,text,
 -- at most one per source family (presentation-cycle.ts), so a full queue never
 -- floods the corner. Starting value chosen 2026-08-23; review by 2026-11-23
 -- against the real accept/reject ratio on DDI (limits-are-knobs).
+--
+-- 🚨 presentation_enabled = TRUE, and this producer is (as of 2026-08-23) the
+-- only one. `platform.list_my_presentable_assists` filters on it, so a producer
+-- with presentation off renders NOWHERE — not in the dock, not in a page strip.
+-- Every other row is off pending the Chip Rescue audit. This one is on because
+-- an approval queue that renders nothing is not a quiet feature, it is a broken
+-- one: a proposal nobody can see can never be approved or rejected, and the
+-- agent keeps re-proposing into a void. It meets the rubric those rows are
+-- judged against — accepting completes a small, named, reversible domain write.
 INSERT INTO platform.assist_producer_policy
   (source_pattern, match_kind, display_name, feature_key, disposition,
    audit_status, production_enabled, presentation_enabled, cost_class,
@@ -503,7 +527,7 @@ INSERT INTO platform.assist_producer_policy
 VALUES
   ('seo.keyword_meaning.', 'prefix',
    'Keyword meaning suggestions', 'seo', 'assist',
-   'approved', true, false, 'agent',
+   'approved', true, true, 'agent',
    40, 1,
    'P12: an agent may only SUGGEST a change to keyword meaning. Accepting replays the proposal through the ordinary human write path (matcher upsert / worth upsert / gsc_set_keyword_class / keyword_facet_set / gsc_set_site_kw_guidelines), so every acceptance completes a real, reversible domain write. Rejection records a reason and the payload hash is never re-proposed.')
 ON CONFLICT (source_pattern, match_kind) DO UPDATE
@@ -512,6 +536,7 @@ ON CONFLICT (source_pattern, match_kind) DO UPDATE
       disposition        = EXCLUDED.disposition,
       audit_status       = EXCLUDED.audit_status,
       production_enabled = EXCLUDED.production_enabled,
+      presentation_enabled = EXCLUDED.presentation_enabled,
       cost_class         = EXCLUDED.cost_class,
       rationale          = EXCLUDED.rationale,
       max_pending_per_user = GREATEST(platform.assist_producer_policy.max_pending_per_user,

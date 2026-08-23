@@ -271,15 +271,16 @@ export function DataOwnershipPage() {
         onConfirm={onDeleteStudy}
       />
 
-      {/* The platform-wide deletion clock. Deleting above starts a countdown;
-          this is the only page that shows when it runs out and lets a learner
-          call it off (THE DOOR LAW). Same surface the weekly digest links to. */}
+      {/* The platform-wide trash — and the deletion clock on it. Deleting above
+          starts a countdown; /trash is the ONE surface that lists what you
+          deleted, shows when it runs out, and lets a learner call it off
+          (THE DOOR LAW). Same surface the weekly digest links to. */}
       <section className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
         <div className="flex items-center gap-3">
           <CalendarClock className="h-5 w-5 text-muted-foreground" />
           <div>
             <h2 className="text-sm font-semibold text-foreground">
-              What&apos;s scheduled to be deleted
+              Trash
             </h2>
             <p className="text-xs text-muted-foreground">
               Anything you&apos;ve deleted, when it goes for good, and a
@@ -288,7 +289,7 @@ export function DataOwnershipPage() {
           </div>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href="/settings/data">Open</Link>
+          <Link href="/trash">Open</Link>
         </Button>
       </section>
 
