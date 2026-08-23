@@ -65596,10 +65596,13 @@ export interface components {
         };
         /**
          * VisibilityRequest
-         * @description Set a workflow's canonical ``visibility`` — the platform enum
-         *     (personal | internal | link | public). There is no boolean alias: a
-         *     two-state flag cannot express the four canonical states, and the
-         *     ``is_public`` wire shape was retired with the column it named.
+         * @description Set a workflow's canonical ``visibility`` — the platform enum values a
+         *     BODY may hold (personal | internal | link). ``public`` is deliberately
+         *     absent: a workflow body is never public (DB CHECK
+         *     ``workflow_definition_body_not_public_chk``); public reach is the CARD
+         *     (``card_visibility``). There is no boolean alias: a two-state flag cannot
+         *     express the canonical states, and the ``is_public`` wire shape was
+         *     retired with the column it named.
          */
         VisibilityRequest: {
             /**
@@ -65621,7 +65624,7 @@ export interface components {
              * Visibility
              * @enum {string}
              */
-            visibility: "personal" | "internal" | "link" | "public";
+            visibility: "personal" | "internal" | "link";
         };
         /**
          * VisibilityResponse
