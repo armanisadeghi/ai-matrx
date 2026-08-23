@@ -234,6 +234,7 @@ export interface NodeEmittedEvent {
   component_ref: string | null;
   surface: string;
   title: string | null;
+  presentation: "panel" | "showcase";
 }
 
 export interface NodeCostEvent {
