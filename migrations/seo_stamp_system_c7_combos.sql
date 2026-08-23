@@ -101,9 +101,11 @@ COMMENT ON TABLE seo.site_value_combo IS
 -- Extracted verbatim out of seo.keyword_value_map (C2) so the resolver and
 -- every previewer read the SAME precedence. A combo asks about values that
 -- carry no worth of their own, so it cannot be answered from the receipt.
-CREATE OR REPLACE FUNCTION seo.fn_effective_stamps(p_site_id uuid, p_keyword_ids uuid[])
+DROP FUNCTION IF EXISTS seo.fn_effective_stamps(uuid, uuid[]);
+CREATE FUNCTION seo.fn_effective_stamps(p_site_id uuid, p_keyword_ids uuid[])
 RETURNS TABLE(kw_id uuid, value_id uuid, dim_id uuid, dim_slug text, dim_label text,
-              value_key text, value_label text, source text, matcher_id uuid)
+              value_key text, value_label text, source text, matcher_id uuid,
+              nature text, as_of timestamptz)
 LANGUAGE sql STABLE
 SET search_path TO 'pg_catalog', 'public'
 AS $$
@@ -112,6 +114,8 @@ WITH stamps AS (
          cd.slug AS dim_slug, cd.name AS dim_label,
          COALESCE(cv.metadata->>'value', split_part(cv.slug, ':', 2)) AS value_key,
          cv.name AS value_label, kf.source, kf.matcher_id,
+         -- situational fields (C5): the dimension's nature and when the stamp was true
+         COALESCE(cd.metadata->>'nature','intrinsic') AS nature, kf.as_of,
          COALESCE(cd.metadata->>'cardinality','single') = 'single' AS single_card,
          -- pinned = human-grade > human > site matcher/pack/rule/import > universal AI
          CASE WHEN kf.pinned THEN 0 ELSE CASE kf.source
@@ -130,7 +134,7 @@ ranked AS (
   FROM stamps s
 )
 SELECT r.kw_id, r.value_id, r.dim_id, r.dim_slug, r.dim_label,
-       r.value_key, r.value_label, r.source, r.matcher_id
+       r.value_key, r.value_label, r.source, r.matcher_id, r.nature, r.as_of
 FROM ranked r
 WHERE (NOT r.single_card) OR r.rn = 1;
 $$;
@@ -386,7 +390,7 @@ contrib AS (
            'kind','stamp','dimension',es.dim_slug,'dimension_label',es.dim_label,
            'value',es.value_key,'value_label',es.value_label,'value_id',es.value_id,
            'effect',w.effect,'amount',w.amount,'source',es.source,'matcher_id',es.matcher_id,
-           'notes',w.notes) AS reason
+           'nature',es.nature,'as_of',es.as_of,'notes',w.notes) AS reason
   FROM effective_stamps es JOIN worth w ON w.value_id = es.value_id
   UNION ALL
   SELECT ch.kw_id, ch.effect, ch.amount, 1 AS kind_rank,
