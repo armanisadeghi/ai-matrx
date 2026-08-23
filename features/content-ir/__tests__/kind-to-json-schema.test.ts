@@ -212,9 +212,11 @@ describe("kindSchemaToJsonSchema — transitive $defs", () => {
     });
     expect(Object.keys(asRecord(schema.$defs)).sort()).toEqual([
       "basic_card",
+      "citation",
       "enhanced_flashcard",
       "flashcard",
       "tiered_flashcard",
+      "trust_envelope",
     ]);
 
     // flashcard.back is required + nullable.
