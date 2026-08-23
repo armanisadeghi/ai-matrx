@@ -19,18 +19,41 @@ export const STALE_CHUNK_EVENT = "matrx:stale-chunk";
  *  script checks it to decide reload (pre-boot) vs event (post-boot). */
 export const APP_BOOTED_FLAG = "__MATRX_APP_BOOTED__";
 
+/**
+ * THE one pattern set for "this page's JS graph is stale or incomplete".
+ * Every detector in the app tests against this list — a second, drifting copy
+ * is how the Turbopack case below went unrecognised for a whole error class.
+ *
+ * The last entry is Turbopack's own wording, seen in production 2026-08-22 on
+ * `/work/conversations/[id]` back-navigation: "Module 7163177 was instantiated
+ * because it was required from module 5477232, but the module factory is not
+ * available". It is the SAME failure — a module the runtime expects is missing
+ * because the page was assembled from a deployment that has since been
+ * replaced — but it never says "chunk", so it reached the raw error boundary
+ * instead of the "This page is out of date → Refresh" toast. A plain reload
+ * recovered it, which is exactly what the toast offers.
+ */
+export const STALE_CHUNK_PATTERNS: RegExp[] = [
+  /ChunkLoadError/i,
+  /Loading( CSS)? chunk [\w-]+ failed/i,
+  /Failed to load chunk/i,
+  /Failed to fetch dynamically imported module/i,
+  /error loading dynamically imported module/i,
+  /Importing a module script failed/i,
+  /module factory is not available/i,
+];
+
+/** True when `haystack` carries any stale-graph signature. */
+export function hasStaleChunkSignature(haystack: string): boolean {
+  return STALE_CHUNK_PATTERNS.some((pattern) => pattern.test(haystack));
+}
+
 export function isChunkLoadError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const e = error as { name?: unknown; message?: unknown };
   if (e.name === "ChunkLoadError") return true;
   const msg = typeof e.message === "string" ? e.message : "";
-  return (
-    /ChunkLoadError/i.test(msg) ||
-    /Loading chunk [\w-]+ failed/i.test(msg) ||
-    /Failed to load chunk/i.test(msg) ||
-    /Failed to fetch dynamically imported module/i.test(msg) ||
-    /Importing a module script failed/i.test(msg)
-  );
+  return hasStaleChunkSignature(msg);
 }
 
 /**

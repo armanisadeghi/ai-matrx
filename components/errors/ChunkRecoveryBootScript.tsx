@@ -17,7 +17,9 @@
 //
 // This script is intentionally tiny and dependency-free — it must never
 // itself depend on a chunk. Keep the flag/event names in sync with
-// chunk-load-recovery.ts (APP_BOOTED_FLAG / STALE_CHUNK_EVENT).
+// chunk-load-recovery.ts (APP_BOOTED_FLAG / STALE_CHUNK_EVENT), and keep the
+// patterns below in sync with STALE_CHUNK_PATTERNS there — this script is a
+// standalone string that cannot import them, so it is the ONE allowed copy.
 
 import Script from "next/script";
 
@@ -32,7 +34,8 @@ const SCRIPT = `(function(){
         || /Loading chunk [\\w-]+ failed/i.test(msg)
         || /Failed to load chunk/i.test(msg)
         || /Failed to fetch dynamically imported module/i.test(msg)
-        || /Importing a module script failed/i.test(msg);
+        || /Importing a module script failed/i.test(msg)
+        || /module factory is not available/i.test(msg);
     }
     function onChunkErr(msg) {
       if (!isChunkErr(msg)) return;

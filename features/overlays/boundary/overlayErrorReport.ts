@@ -19,6 +19,7 @@ import {
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
 import { collectOverlayDiagnostics } from "@/features/overlays/boundary/overlayDiagnostics";
+import { hasStaleChunkSignature } from "@/components/errors/chunk-load-recovery";
 
 export interface OverlayErrorContext {
   /** Module path of the failed dynamic import, if we could derive it. */
@@ -89,13 +90,11 @@ export function normalizeError(error: unknown): {
   const stack = error instanceof Error && error.stack ? error.stack : null;
   // ChunkLoadError is the signature failure here — a dynamic import whose JS
   // chunk 404s or stalls (stale deploy / cache / fragmented chunk graph).
+  // The patterns live in ONE place; this used to carry its own copy, which
+  // drifted and missed Turbopack's "module factory is not available" wording.
   const haystack = `${name} ${message} ${stack ?? ""}`;
   const isChunkLoadError =
-    name === "ChunkLoadError" ||
-    /Loading( CSS)? chunk [\w-]+ failed/i.test(haystack) ||
-    /ChunkLoadError|Failed to fetch dynamically imported module|error loading dynamically imported module/i.test(
-      haystack,
-    );
+    name === "ChunkLoadError" || hasStaleChunkSignature(haystack);
   return { name, message, stack, isChunkLoadError };
 }
 
