@@ -1,0 +1,110 @@
+name: CI
+
+# Per-PR checks. Until this file existed, every gate in this repo lived inside
+# `scripts/run-release-gates.sh` — which runs at RELEASE time, by hand. A
+# regression to the `__kind` marker law, the type surface, or the content-IR /
+# workflow-runtime contracts could therefore sit on `main` undetected until
+# somebody happened to cut a release. This closes that window.
+#
+# SCOPE, deliberately: this is NOT the release gate. It runs the four checks
+# that must never regress silently and that are cheap enough to run on every
+# push. The full gate (migrations, schema drift, access matrices, the ~40 other
+# `check:*` scripts) stays where it belongs — in `run-release-gates.sh`, owned
+# by `./ship.sh`. Adding a slow check here trains people to ignore a red X.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`
+  # is part of the data (KINDS_EVERYWHERE_PLAN §4.2); stripping it outside the
+  # three lawful doors is what made the workflow engine validate against shapes
+  # its own renderers could not identify. Pure static scan, ~1s, and it needs
+  # nothing installed beyond tsx — so it gets its own job and reports first.
+  # aidream runs the same law as its own step in `.github/workflows/test.yml`;
+  # a kind crosses both repos, so both halves must be guarded.
+  # ---------------------------------------------------------------------------
+  marker-law:
+    name: the __kind marker law
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
+        run: pnpm check:kind-marker-law
+      - name: CLAUDE.md's machine-checkable claims still hold
+        # Includes the claim that THIS workflow runs the four gates below.
+        # Without it here, deleting a step from this file would silently make
+        # CLAUDE.md promise a gate that no longer runs — and an agent that
+        # trusts the promise skips its own verification.
+        run: pnpm check:doc-claims --strict
+
+  # ---------------------------------------------------------------------------
+  # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
+  # build proves NOTHING about types and Vercel will happily deploy a repo full
+  # of type errors. `pnpm type-check` is the only type gate this repo has.
+  # ---------------------------------------------------------------------------
+  type-check:
+    name: type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: TypeScript type-check
+        # Matches the ceiling `pnpm dev` uses; tsc over this repo outgrew the
+        # default heap once already.
+        run: NODE_OPTIONS='--max-old-space-size=6144' pnpm type-check
+
+  # ---------------------------------------------------------------------------
+  # suites — the two feature suites that pin cross-repo contracts, so a change
+  # here can break a producer in aidream (and vice versa):
+  #   content-ir      the kind registry, block dispatch, the partial-kind wire
+  #                   reader whose fixture aidream generates
+  #   workflow-runtime the run surface that renders those kinds live
+  # Both run even if the other fails — a masked second failure is how two
+  # regressions ship as one.
+  # ---------------------------------------------------------------------------
+  suites:
+    name: content-ir + workflow-runtime suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Content IR / kinds suite
+        id: content_ir
+        run: pnpm test:content-ir
+
+      - name: Workflow runtime suite
+        # `always()` so a content-IR failure never hides a workflow-runtime one.
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm test:workflow-runtime

@@ -119,8 +119,15 @@ const INLINE_PATTERNS: Array<{ re: RegExp; what: string; needsDestructure?: bool
 ];
 
 function scan(): string[] {
+  // `--others --exclude-standard` includes files that exist but are not yet
+  // committed. Without it the guard was blind to exactly the file an agent is
+  // most likely to be writing right now: a NEW module. Run it locally after
+  // adding one and it reported a clean pass; CI then failed on the same file
+  // the moment the branch was pushed, because a PR checkout has it committed.
+  // A guard whose local answer differs from its CI answer teaches people to
+  // ignore it. .gitignore is still honoured, so build output stays out.
   const files = execSync(
-    `git ls-files ${SCAN_DIRS.map((d) => `'${d}'`).join(" ")} | grep -E '\\.(ts|tsx)$'`,
+    `git ls-files --cached --others --exclude-standard ${SCAN_DIRS.map((d) => `'${d}'`).join(" ")} | grep -E '\\.(ts|tsx)$'`,
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   )
     .split("\n")

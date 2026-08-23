@@ -387,6 +387,36 @@ const claims: Claim[] = [
     fix: "Install the hook, or delete the pre-commit sentences. Claiming enforcement that does not exist is how every other drift in this file survived.",
   },
   {
+    id: "per-pr-ci",
+    claim: "per-PR CI runs the marker law, type-check, and the content-IR + workflow-runtime suites",
+    where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
+    check: () => {
+      // The claim in CLAUDE.md is now the opposite of what it used to be: for
+      // years this repo genuinely had no CI, and the file said so. A doc that
+      // promises a gate which does not run is worse than one admitting there is
+      // none — an agent skips its own verification on the strength of it.
+      const workflow = readIfExists(".github/workflows/ci.yml");
+      if (!workflow) {
+        return "CLAUDE.md says per-PR CI runs, but .github/workflows/ci.yml does not exist";
+      }
+      const required = [
+        "check:kind-marker-law",
+        "pnpm type-check",
+        "test:content-ir",
+        "test:workflow-runtime",
+      ];
+      const missing = required.filter((cmd) => !workflow.includes(cmd));
+      if (missing.length) {
+        return `.github/workflows/ci.yml does not run: ${missing.join(", ")} — CLAUDE.md names them as gated`;
+      }
+      // A workflow that never triggers on a PR is a file, not a gate.
+      return /^\s*pull_request:/m.test(workflow)
+        ? null
+        : ".github/workflows/ci.yml has no pull_request trigger, so nothing runs per PR";
+    },
+    fix: "Restore the missing step in .github/workflows/ci.yml, or correct the CLAUDE.md sentence. The file must never promise a gate that does not run.",
+  },
+  {
     id: "stack-versions",
     claim: "the stack line's version numbers match what is installed",
     where: "CLAUDE.md § Architecture (Stack)",
