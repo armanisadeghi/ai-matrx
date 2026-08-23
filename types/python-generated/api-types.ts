@@ -31612,13 +31612,23 @@ export interface components {
         CodingSessionIdentityList: {
             /**
              * Schema Version
-             * @default 1
+             * @default 2
              */
             schema_version?: number;
             /** Provider */
             provider: string;
             /** Sessions */
             sessions: components["schemas"]["CodingSessionIdentity"][];
+            /** Total Count */
+            total_count: number;
+            /** Page Count */
+            page_count: number;
+            /** Has More */
+            has_more: boolean;
+            /** Complete */
+            complete: boolean;
+            /** Next Cursor */
+            next_cursor?: string | null;
         };
         /** CollectionReceipt */
         CollectionReceipt: {
@@ -72709,6 +72719,7 @@ export interface operations {
             query?: {
                 provider?: string;
                 limit?: number;
+                cursor?: string | null;
             };
             header?: never;
             path?: never;

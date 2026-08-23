@@ -7117,6 +7117,22 @@
               "default": 500,
               "title": "Limit"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
           }
         ],
         "responses": {
@@ -82260,7 +82276,7 @@
           "schema_version": {
             "type": "integer",
             "title": "Schema Version",
-            "default": 1
+            "default": 2
           },
           "provider": {
             "type": "string",
@@ -82272,12 +82288,43 @@
             },
             "type": "array",
             "title": "Sessions"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
           }
         },
         "type": "object",
         "required": [
           "provider",
-          "sessions"
+          "sessions",
+          "total_count",
+          "page_count",
+          "has_more",
+          "complete"
         ],
         "title": "CodingSessionIdentityList"
       },
