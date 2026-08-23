@@ -122597,6 +122597,10 @@
             "type": "string",
             "title": "Agent Id"
           },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
           "is_version": {
             "type": "boolean",
             "title": "Is Version"
@@ -122648,6 +122652,7 @@
         "required": [
           "mandate_key",
           "agent_id",
+          "organization_id",
           "is_version",
           "node_id",
           "node_label",

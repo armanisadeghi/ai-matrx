@@ -47139,6 +47139,8 @@ export interface components {
             mandate_key: string;
             /** Agent Id */
             agent_id: string;
+            /** Organization Id */
+            organization_id: string;
             /** Is Version */
             is_version: boolean;
             /**
