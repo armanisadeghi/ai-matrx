@@ -543,7 +543,9 @@ begin
       'state', case
         when v.id is null then 'missing'
         when v.deleted_at is not null or not v.active then 'archived'
-        when (v.label, v.config, v.sort) is distinct from (i.label, i.config, i.sort) then 'changed'
+        -- label + config only: `sort` is renumbered by every vocabulary save and
+        -- is not meaning, so it must never read as "changed from pack"
+        when (v.label, v.config) is distinct from (i.label, i.config) then 'changed'
         else 'as_adopted' end,
       'sort', i.sort) as item
     from seo.starter_pack_item i
