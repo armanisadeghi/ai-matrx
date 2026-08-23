@@ -19,6 +19,7 @@
 // everything else reads/writes direct-to-Supabase via existing RPCs.
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, FileUp, Layers, Library, Package, SearchCheck } from "lucide-react";
 import type { SharedKnowledgeDirectory } from "../types";
@@ -33,7 +34,15 @@ export function SharedKnowledgeAdminClient({
 }: {
   directory: SharedKnowledgeDirectory;
 }) {
-  const [tab, setTab] = useState("industries");
+  // `?tab=packs` (and `?pack=<id>`, read by the packs tab) are the console's own
+  // deep links — the Access explorer and the review queue point at them.
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [tab, setTab] = useState(
+    initialTab && ["industries", "stores", "packs", "ingest", "explorer"].includes(initialTab)
+      ? initialTab
+      : "industries",
+  );
 
   return (
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden px-4 pt-3">

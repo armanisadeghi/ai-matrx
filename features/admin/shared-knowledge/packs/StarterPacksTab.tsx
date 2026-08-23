@@ -11,6 +11,7 @@
 // lifecycle inside a Linear-density list.
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,7 +92,8 @@ function PackRow({
 
 export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirectory }) {
   const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get("pack"));
   const [filter, setFilter] = useState("");
   const [proposeOpen, setProposeOpen] = useState(false);
   const [creating, setCreating] = useState(false);
