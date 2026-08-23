@@ -105,6 +105,12 @@ if $STRICT; then
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
+        # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
+        # shortcut mappings / write twins, values a sync would delete out from
+        # under a consumer, and children shadowing a parent's value. Advisory —
+        # it reads the LIVE DB and must never block a release when creds or the
+        # network are missing (it exits 3 and says so).
+        "Surface value blast radius|pnpm exec tsx scripts/check-surface-impact.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
         "Entity registry generation drift|pnpm check:entity-types"
         # --live pulls the deployed agx_sync_linked_agents() and diffs the TS
@@ -238,6 +244,12 @@ else
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
+        # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
+        # shortcut mappings / write twins, values a sync would delete out from
+        # under a consumer, and children shadowing a parent's value. Advisory —
+        # it reads the LIVE DB and must never block a release when creds or the
+        # network are missing (it exits 3 and says so).
+        "Surface value blast radius|pnpm exec tsx scripts/check-surface-impact.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Entity registry generation drift|pnpm check:entity-types"
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"

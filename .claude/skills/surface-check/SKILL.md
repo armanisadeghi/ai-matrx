@@ -85,10 +85,30 @@ Admin view of the ledger: `/administration/ui/surfaces` (Last checked column, ne
 
 Product semantics only: hierarchy/naming of a surface, whether a feature exists, a grouping of menu rows not yet approved, whether a text field's length *matters* when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it), whether an agent-purpose surface should ALSO expose itself to other agents (default: provider mounted, own launch `surfaceName: null`). Everything else has a rule — apply it.
 
+## The blast-radius screamer — run it BEFORE you touch vocabulary
+
+`pnpm check:surface-impact <surface>` is the only thing in the repo that can see
+who is mapped to a Surface Value, because a value is a NAME that outside things
+bind to by string and TypeScript never sees it. It reads the live DB and reports
+five consumer kinds — agent bindings (`platform.associations`), shortcut
+mappings (`agent.shortcut`, checked by nothing else), write twins
+(`updates_value`), `data-surface-value` DOM attributes, and descendants — plus
+`SHADOWED_VALUE` where a child re-declares what its parent conveys.
+
+Per-value verdicts: `DO NOT RENAME/REMOVE` (live consumers) · `inherited —
+changes ripple` (descendants depend on the name) · `safe to change`.
+
+Rules: run it before AND after any vocabulary change; `--strict` exits 1 on
+breakage; every consumer it lists is migrated in the SAME change. A baseline
+name on a `skipBaselineValues` surface is a WARN (the launch floor fills it) —
+never "fix" that by re-adding baselines to a surface that deliberately opted out.
+It is also an advisory release gate ("Surface value blast radius").
+
 ## Open items for this system (build when you hit them; chip if out of scope)
 
-1. Ledger columns (`last_checked_at`, `last_checked_by`, `last_check`, `check_claimed_at`, `check_claimed_by`) — migration `migrations/ui_surface_check_ledger.sql`; applied by release.sh's migration step; regenerate `pnpm db-types` after.
-2. `/administration/ui/surfaces` — Last checked column + sort + "never checked" filter + the per-section result popover.
+1. ~~Ledger columns~~ — LIVE (`ui.ui_surface.last_checked_at / last_checked_by / last_check / check_claimed_at / check_claimed_by`).
+2. ~~`/administration/ui/surfaces` Checked column + never/stale filter~~ — LIVE (sortable; never-checked first). Still missing: the per-section result popover reading `last_check.sections`.
 3. `pnpm check:textareas` ratchet — non-Pro textarea count per feature, baseline only goes down (S7 has no guard today; ~528 sites).
 4. A structural guard for S5 — an eslint rule or test that every `launchAgentExecution`/`launchMandate` call inside an agent-purpose feature passes `surfaceName: null` or a literal string (never `undefined`).
 5. `agents/battle` has no surface wiring at all — first S1–S6 pass there is a full build.
+6. `create<X>Scope` builders are hand-written and drift silently — nothing validates that a builder's param keys match its manifest's value names. A generated `ValueNameOf<M>` type would make a rename a compile error.
