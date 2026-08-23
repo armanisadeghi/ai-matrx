@@ -19,7 +19,11 @@ bulk writes, and richer data operations.
 ## Route
 
 `/lists` → index (sidebar + select-a-list prompt)  
-`/lists/[id]` → detail view (grouped items, CRUD, bookmarks)
+`/lists/[id]` → detail view (grouped items, CRUD, bookmarks) — the surface
+`matrx-user/lists`. The pane carries ONE `NonEditableContextMenu`
+(`ListDetailClient`) that resolves the right-clicked item/group on open via the
+attributes in `dom-anchors.ts`; add a new region here and give its rows those
+attributes rather than wrapping them in a second menu.
 
 ## Architecture
 
@@ -157,6 +161,39 @@ before changing them.
 
 ## Change Log
 
+- `2026-08-22` — claude: **surface-check `matrx-user/lists` — pass-with-arman-items
+  (checklist v1, 4 fixes).** S2: five values added
+  (`active_list_url`, `active_list_group_count`, `active_list_created_at`,
+  `active_list_updated_at`, `list_group_names`); `selected_item_*` now also
+  track the right-clicked row, so their descriptions say so — 16 → 21 values,
+  DB-synced. S3: **`update_list_item`** added to the SHARED
+  `surface-write-targets.ts` / `surface-write-handlers.ts`, so the route mount
+  AND the List Manager window gained in-place item editing (including moving
+  an item between groups) in one change — 3 → 4 targets. Because its item id is
+  now agent-supplied, `updateItemAction` is scoped `.eq("list_id").eq("user_id")`
+  so a foreign id MISSES instead of quietly editing an off-screen row. S6: the
+  detail pane had **no canonical context menu at all**; one
+  `NonEditableContextMenu` now wraps it with `surfaceName` +
+  `getApplicationScope` + the `structured_list` entity (Attach To / Share), and
+  `resolveContextOnOpen` resolves the right-clicked item/group off the
+  `data-list-item-id` / `data-list-group` attributes in the new
+  `dom-anchors.ts` — single-instance delegation, so there is ONE menu shell and
+  no nested Radix triggers, and every extra row calls the same handler the
+  kebab already did. S7: every content textarea is `ProTextarea` and every
+  single-line content field is `ProInput` (search/filter inputs stay bare);
+  THE LENGTH RULE → `enableTextStats` OFF on all four descriptions (item 500 /
+  list 300 typical chars). **Fixed an unfinished intent:** `EditItemDialog`
+  took `existingGroups` and never rendered a Group field, so an item could
+  never be moved between headings from the UI. Removed the dead
+  `getLucideIcon` placeholder in `ListItem`. ARMAN ITEMS (chipped, not
+  decided here): `list_visibility` means DIFFERENT things on the two list
+  surfaces (`public|authenticated|private` here vs `public|personal` on
+  list-manager, which hand-rolls it instead of calling `getListVisibility`),
+  and seven values are declared verbatim in both manifests — the
+  missing-parent smell, but introducing a parent surface is a hierarchy call.
+  `ListItemsTableView` / `ListsTableView` are built and mounted nowhere a user
+  can reach; chipped, NOT deleted. Header/mobile/theme were checked
+  statically only (no browser in that session) — clean, but unverified by eye.
 - `2026-08-11` — claude: **The `/lists/[id]` ROUTE is now agent-writable too
   (`matrx-user/lists`), sharing ONE vocabulary with the List Manager window.**
   The two are mounts of the same state, so the three targets and their

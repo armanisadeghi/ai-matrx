@@ -267,7 +267,7 @@ export const listsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/lists",
   readiness: "partial",
   readinessNote:
-    "Manifest audited against the live /lists/[id] route and the emitter + write handlers are wired on ListDetailClient (asRoute); write path live-verified with a real agent run. Not yet DB-synced. The /lists index is a static landing page and deliberately emits nothing, so values here describe the detail route only.",
+    "surface-check 2026-08-22 (checklist v1): registration, values, write targets, context menu and text inputs all pass and are DB-synced; the original three write targets were live-verified with a real agent run. Still `partial` for two honest reasons: the new update_list_item target has not yet been exercised end-to-end in a live run, and header/mobile/theme were checked statically only. The /lists index is a static landing page and deliberately emits nothing, so values here describe the detail route only.",
   label: "Lists",
   urlPattern: "/lists/[id]",
   intro: `<surface_intro>
