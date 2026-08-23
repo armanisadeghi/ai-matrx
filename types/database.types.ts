@@ -46878,6 +46878,96 @@ export type Database = {
         }
         Relationships: []
       }
+      dimension_value_matcher: {
+        Row: {
+          condition_rule_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enabled: boolean
+          fact_value_id: string | null
+          id: string
+          kind: string
+          last_evaluated_at: string | null
+          match_count: number | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          origin: string
+          pack_id: string | null
+          pattern: string | null
+          place_id: string | null
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          value_id: string
+          version: number
+        }
+        Insert: {
+          condition_rule_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          fact_value_id?: string | null
+          id?: string
+          kind: string
+          last_evaluated_at?: string | null
+          match_count?: number | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          origin?: string
+          pack_id?: string | null
+          pattern?: string | null
+          place_id?: string | null
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          value_id: string
+          version?: number
+        }
+        Update: {
+          condition_rule_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          fact_value_id?: string | null
+          id?: string
+          kind?: string
+          last_evaluated_at?: string | null
+          match_count?: number | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          origin?: string
+          pack_id?: string | null
+          pattern?: string | null
+          place_id?: string | null
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dvm_condition_fk"
+            columns: ["condition_rule_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_dig_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dvm_place_fk"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "geo_place"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geo_place: {
         Row: {
           aliases: Json
@@ -47378,6 +47468,7 @@ export type Database = {
       }
       keyword_facet: {
         Row: {
+          as_of: string | null
           category_id: string
           classifier_version: string | null
           confidence: number | null
@@ -47386,9 +47477,12 @@ export type Database = {
           deleted_at: string | null
           id: string
           keyword_id: string
+          matcher_id: string | null
           metadata: Json
           notes: string | null
           organization_id: string
+          pinned: boolean
+          site_id: string | null
           source: string
           updated_at: string
           updated_by: string | null
@@ -47396,6 +47490,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          as_of?: string | null
           category_id: string
           classifier_version?: string | null
           confidence?: number | null
@@ -47404,9 +47499,12 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           keyword_id: string
+          matcher_id?: string | null
           metadata?: Json
           notes?: string | null
           organization_id: string
+          pinned?: boolean
+          site_id?: string | null
           source?: string
           updated_at?: string
           updated_by?: string | null
@@ -47414,6 +47512,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          as_of?: string | null
           category_id?: string
           classifier_version?: string | null
           confidence?: number | null
@@ -47422,9 +47521,12 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           keyword_id?: string
+          matcher_id?: string | null
           metadata?: Json
           notes?: string | null
           organization_id?: string
+          pinned?: boolean
+          site_id?: string | null
           source?: string
           updated_at?: string
           updated_by?: string | null
@@ -47437,6 +47539,13 @@ export type Database = {
             columns: ["keyword_id"]
             isOneToOne: false
             referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keyword_facet_matcher_fk"
+            columns: ["matcher_id"]
+            isOneToOne: false
+            referencedRelation: "dimension_value_matcher"
             referencedColumns: ["id"]
           },
         ]
@@ -49659,6 +49768,63 @@ export type Database = {
           },
         ]
       }
+      site_value_worth: {
+        Row: {
+          amount: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effect: string
+          id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          origin: string
+          pack_id: string | null
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          value_id: string
+          version: number
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effect: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          origin?: string
+          pack_id?: string | null
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          value_id: string
+          version?: number
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effect?: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          origin?: string
+          pack_id?: string | null
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       site_vocabulary: {
         Row: {
           active: boolean
@@ -50488,6 +50654,25 @@ export type Database = {
       }
     }
     Functions: {
+      _ensure_site_dimension: {
+        Args: {
+          p_description: string
+          p_key: string
+          p_label: string
+          p_nature: string
+          p_site_id: string
+        }
+        Returns: string
+      }
+      _ensure_value: {
+        Args: {
+          p_dimension_id: string
+          p_extra: Json
+          p_label: string
+          p_value_slug: string
+        }
+        Returns: string
+      }
       _pack_geo_archetypes: {
         Args: { p_geo_place_ids?: Json; p_geo_places: Json; p_pack_id: string }
         Returns: {
@@ -50528,6 +50713,7 @@ export type Database = {
           site_id: string
         }[]
       }
+      _slugify: { Args: { p: string }; Returns: string }
       adopt_starter_pack: {
         Args: {
           p_geo_place_ids?: Json
@@ -50731,6 +50917,10 @@ export type Database = {
           marked_pending: number
           quarantined: number
         }[]
+      }
+      fn_evaluate_matchers: {
+        Args: { p_keyword_ids?: string[]; p_site_id: string }
+        Returns: Json
       }
       fn_ingest_keyword_research: {
         Args: {

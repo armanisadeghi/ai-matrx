@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 419 active entity tokens. A token here is FK-valid for
+// 421 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -307,6 +307,7 @@ export type EntityTypeToken =
   | "seo_competitor_opportunity"
   | "seo_coverage_mention"
   | "seo_coverage_tracker"
+  | "seo_dimension_value_matcher"
   | "seo_geo_place"
   | "seo_gsc_dig_rule"
   | "seo_keyword"
@@ -337,6 +338,7 @@ export type EntityTypeToken =
   | "seo_site_geo_area"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_site_value_worth"
   | "seo_site_vocabulary"
   | "seo_source_request"
   | "seo_starter_pack"
@@ -676,6 +678,7 @@ export type ComponentEntityToken =
   | "seo_competitor_opportunity"
   | "seo_coverage_mention"
   | "seo_coverage_tracker"
+  | "seo_dimension_value_matcher"
   | "seo_keyword_market_observation"
   | "seo_landscape_brief"
   | "seo_link_gap_domain"
@@ -696,6 +699,7 @@ export type ComponentEntityToken =
   | "seo_site_geo_area"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_site_value_worth"
   | "seo_site_vocabulary"
   | "seo_web_analytics_daily"
   | "sms_message"
@@ -1001,6 +1005,7 @@ export type ScopeableEntityToken =
   | "seo_competitor_opportunity"
   | "seo_coverage_mention"
   | "seo_coverage_tracker"
+  | "seo_dimension_value_matcher"
   | "seo_geo_place"
   | "seo_gsc_dig_rule"
   | "seo_keyword"
@@ -1031,6 +1036,7 @@ export type ScopeableEntityToken =
   | "seo_site_geo_area"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_site_value_worth"
   | "seo_site_vocabulary"
   | "seo_source_request"
   | "seo_starter_pack"
@@ -1191,7 +1197,9 @@ export type ListedEntityToken =
   | "purpose"
   | "research_context_bundle"
   | "rulebook"
+  | "seo_dimension_value_matcher"
   | "seo_geo_place"
+  | "seo_site_value_worth"
   | "seo_starter_pack"
   | "structured_list"
   | "surface"
@@ -1473,6 +1481,7 @@ export const ENTITY_TYPE_METADATA = {
   "seo_competitor_opportunity": { token: "seo_competitor_opportunity", schema: "seo", table: "competitor_opportunity", label: "Competitor Opportunity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_coverage_mention": { token: "seo_coverage_mention", schema: "seo", table: "coverage_mention", label: "Coverage Mention", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_coverage_tracker": { token: "seo_coverage_tracker", schema: "seo", table: "coverage_tracker", label: "Coverage Tracker", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_dimension_value_matcher": { token: "seo_dimension_value_matcher", schema: "seo", table: "dimension_value_matcher", label: "Dimension Value Matcher", baseTier: 1, isComponent: true, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_geo_place": { token: "seo_geo_place", schema: "seo", table: "geo_place", label: "Geo Place", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_gsc_dig_rule": { token: "seo_gsc_dig_rule", schema: "seo", table: "gsc_dig_rule", label: "GSC Dig Rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "phrase", contentRole: null, referenceCategory: null },
@@ -1503,6 +1512,7 @@ export const ENTITY_TYPE_METADATA = {
   "seo_site_geo_area": { token: "seo_site_geo_area", schema: "seo", table: "site_geo_area", label: "Site Geo Area", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_keyword_value": { token: "seo_site_keyword_value", schema: "seo", table: "site_keyword_value", label: "Site Keyword Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_site_value_worth": { token: "seo_site_value_worth", schema: "seo", table: "site_value_worth", label: "Site Value Worth", baseTier: 1, isComponent: true, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_vocabulary": { token: "seo_site_vocabulary", schema: "seo", table: "site_vocabulary", label: "Site Vocabulary", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_source_request": { token: "seo_source_request", schema: "seo", table: "source_request", label: "SEO Source Request", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_starter_pack": { token: "seo_starter_pack", schema: "seo", table: "starter_pack", label: "SEO Industry Starter Pack", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1896,6 +1906,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_competitor_opportunity",
   "seo_coverage_mention",
   "seo_coverage_tracker",
+  "seo_dimension_value_matcher",
   "seo_geo_place",
   "seo_gsc_dig_rule",
   "seo_keyword",
@@ -1926,6 +1937,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_site_geo_area",
   "seo_site_keyword_value",
   "seo_site_topic_value",
+  "seo_site_value_worth",
   "seo_site_vocabulary",
   "seo_source_request",
   "seo_starter_pack",
