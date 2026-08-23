@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 421 active entity tokens. A token here is FK-valid for
+// 422 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -338,6 +338,7 @@ export type EntityTypeToken =
   | "seo_site_geo_area"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_site_value_combo"
   | "seo_site_value_worth"
   | "seo_site_vocabulary"
   | "seo_source_request"
@@ -699,6 +700,7 @@ export type ComponentEntityToken =
   | "seo_site_geo_area"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_site_value_combo"
   | "seo_site_value_worth"
   | "seo_site_vocabulary"
   | "seo_web_analytics_daily"
@@ -1036,6 +1038,7 @@ export type ScopeableEntityToken =
   | "seo_site_geo_area"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_site_value_combo"
   | "seo_site_value_worth"
   | "seo_site_vocabulary"
   | "seo_source_request"
@@ -1199,6 +1202,7 @@ export type ListedEntityToken =
   | "rulebook"
   | "seo_dimension_value_matcher"
   | "seo_geo_place"
+  | "seo_site_value_combo"
   | "seo_site_value_worth"
   | "seo_starter_pack"
   | "structured_list"
@@ -1512,6 +1516,7 @@ export const ENTITY_TYPE_METADATA = {
   "seo_site_geo_area": { token: "seo_site_geo_area", schema: "seo", table: "site_geo_area", label: "Site Geo Area", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_keyword_value": { token: "seo_site_keyword_value", schema: "seo", table: "site_keyword_value", label: "Site Keyword Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_site_value_combo": { token: "seo_site_value_combo", schema: "seo", table: "site_value_combo", label: "Site Value Combination", baseTier: 1, isComponent: true, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_value_worth": { token: "seo_site_value_worth", schema: "seo", table: "site_value_worth", label: "Site Value Worth", baseTier: 1, isComponent: true, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_vocabulary": { token: "seo_site_vocabulary", schema: "seo", table: "site_vocabulary", label: "Site Vocabulary", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_source_request": { token: "seo_source_request", schema: "seo", table: "source_request", label: "SEO Source Request", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1937,6 +1942,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_site_geo_area",
   "seo_site_keyword_value",
   "seo_site_topic_value",
+  "seo_site_value_combo",
   "seo_site_value_worth",
   "seo_site_vocabulary",
   "seo_source_request",
