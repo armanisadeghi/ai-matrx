@@ -1762,12 +1762,6 @@ export interface WorkflowPlanNotesWriterOffer {
 export interface WorkflowPlanRoomOffer {
   plan_id: string;
   definition_id: string;
-  plan_name: string;
-  intent?: string;
-  notes?: string;
-  phase?: string;
-  input_shape?: unknown;
-  output_shape?: unknown;
 }
 
 /** Offered shape of provision `workflow.plan_shape_designer` (kind `workflow.plan_shape_designer.offer`). */
