@@ -8,10 +8,14 @@
  *                              segment / embedding counts, a pipeline status
  *                              badge, a rollup of corpus totals, and the live
  *                              ingest jobs this session started.
- *   - `/knowledge/library-catalog` — the DISCOVERABLE shared knowledge libraries
- *                              (`rag.fn_list_library_catalog`) with the
- *                              caller's true entitlement per row, plus
- *                              self-service subscribe / unsubscribe.
+ *   - `/knowledge/library-catalog` — THE MATRX LIBRARY, whole
+ *                              (`public.library_catalog`): every shared
+ *                              resource of every registered entity_type —
+ *                              knowledge libraries (data stores) AND industry
+ *                              starter packs — with the caller's true
+ *                              entitlement per row, self-service subscribe /
+ *                              unsubscribe for the reference types, and a
+ *                              hand-off to the site for the copy types.
  *
  * One surface covers both because they answer the same question from two
  * sides — "what knowledge can I retrieve from?" — and the same agents belong
@@ -93,7 +97,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "library_view",
     label: "Library view",
     description:
-      '"library" when the user is on /knowledge/library (their own processed documents), "catalog" when on /knowledge/library-catalog (shared knowledge libraries). Always present — it tells you which of the other groups carry values.',
+      '"library" when the user is on /knowledge/library (their own processed documents), "catalog" when on /knowledge/library-catalog (the Matrx Library — every shared resource published to this organization). Always present — it tells you which of the other groups carry values.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 8,
@@ -378,9 +382,9 @@ const surfaceSpecific: SurfaceValue[] = [
   // ── Shared library catalog (460-499) ──────────────────────────────────
   {
     name: "catalog_library_count",
-    label: "Discoverable libraries",
+    label: "Library resources",
     description:
-      "Total number of discoverable shared knowledge libraries returned to this caller, before the search box narrows them. Absent in the library view.",
+      "Total number of Matrx Library resources returned to this caller — knowledge libraries (data stores) AND industry starter packs — before any filter narrows them. Absent in the library view.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -389,9 +393,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "catalog_visible_count",
-    label: "Libraries listed",
+    label: "Resources listed",
     description:
-      'Libraries left after the catalog search box and the "only libraries I can read" checkbox. Absent in the library view.',
+      'Library resources left after the catalog search box, the type chips and the "Only what my organization has" checkbox. Absent in the library view.',
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -402,7 +406,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "catalog_search_query",
     label: "Catalog search query",
     description:
-      "Text in the catalog search box (matches library name, description, short code, and entitling industry). Empty when not searching, and in the library view.",
+      "Text in the catalog search box (matches resource name, description, slug/short code, entitling industry, and type label). Empty when not searching, and in the library view.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 20,
@@ -413,7 +417,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "catalog_entitled_only",
     label: "Entitled-only filter",
     description:
-      'True when the user checked "Only libraries I can read", hiding libraries they are not entitled to. Absent in the library view.',
+      'True when the user checked "Only what my organization has", hiding resources the organization is not entitled to. Absent in the library view.',
     valueType: "boolean",
     alwaysAvailable: false,
     typicalCharCount: 5,
@@ -424,7 +428,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "catalog_filters",
     label: "Catalog filters",
     description:
-      "Composite of everything narrowing the catalog list right now: `{ search_query, entitled_only }`. This is the READ TWIN of the write target of the same name — read it before narrowing further, because a write REPLACES only the keys it names. Absent in the library view.",
+      "Composite of everything narrowing the catalog list right now: `{ search_query, entitled_only, type_filter }`. `type_filter` is \"all\", \"data_store\" or \"seo_starter_pack\". This is the READ TWIN of the write target of the same name — read it before narrowing further, because a write REPLACES only the keys it names. Absent in the library view.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 50,
@@ -433,9 +437,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "catalog_entitled_count",
-    label: "Entitled libraries",
+    label: "Entitled resources",
     description:
-      "How many of the discoverable libraries this caller can actually read right now (any entitlement route). Absent in the library view.",
+      "How many of the listed Library resources this caller's organization actually holds right now (any entitlement route). Absent in the library view.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -444,9 +448,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "catalog_selected_library_id",
-    label: "Open library ID",
+    label: "Open resource ID",
     description:
-      "UUID of the `rag.data_stores` row the user opened in the catalog detail pane (mirrored in `?store_id`). Empty when no library is open, and in the library view.",
+      "UUID of the Library resource the user opened in the catalog detail pane (mirrored in `?id=`, with `?type=` naming its entity_type). Empty when nothing is open, and in the library view.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -455,9 +459,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "catalog_selected_library",
-    label: "Open library",
+    label: "Open resource",
     description:
-      "Composite for the opened catalog row: `{ id, name, short_code, description, kind, member_count, subscribed, entitled_via, entitled_industry_name }`. `entitled_via` is \"organization\", \"industry\", \"global\", or null (not entitled) — it is the honest answer to \"why can I read this?\". Absent when nothing is open, and in the library view.",
+      "Composite for the opened catalog row: `{ id, name, short_code, description, kind, member_count, subscribed, entitled_via, entitled_industry_name }`. `kind` is the Library entity_type (\"data_store\" or \"seo_starter_pack\") and `member_count` counts documents for a data store, packaged defaults for a starter pack. `entitled_via` is \"organization\", \"industry\", \"global\", \"curator\", \"admin\", or null (not entitled) — the honest answer to \"why do we have this?\". Absent when nothing is open, and in the library view.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 340,
@@ -468,7 +472,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "catalog_libraries",
     label: "Catalog libraries",
     description:
-      "Array of the catalog rows currently listed, each `{ id, name, short_code, description, kind, member_count, subscribed, entitled_via, entitled_industry_name }`, in display order. Empty array when nothing matches. Absent in the library view.",
+      "Array of the catalog rows currently listed, each `{ id, name, short_code, description, kind, member_count, subscribed, entitled_via, entitled_industry_name }`, in display order. `kind` is the Library entity_type — \"data_store\" (subscribed, read in place) or \"seo_starter_pack\" (copied onto one website). Empty array when nothing matches. Absent in the library view.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3500,
@@ -573,12 +577,13 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "catalog_filters",
     label: "Catalog filters",
     description:
-      "Narrows the shared-library list on /knowledge/library-catalog — the same search box and checkbox the user clicks. " +
+      "Narrows the Matrx Library list on /knowledge/library-catalog — the same search box, type chips and checkbox the user clicks. " +
       "Value is an OBJECT containing ONLY the keys you want to change; each key you send REPLACES that filter outright. " +
-      'Keys: `search_query` (string, matched client-side against library name, description, short code and entitling industry; pass "" to clear it), ' +
-      'and `entitled_only` (boolean; true hides libraries the user cannot read — the "Only libraries I can read" checkbox). ' +
-      "Send both in ONE call rather than two. " +
-      "This ONLY changes what is on screen — it does NOT subscribe the user to anything, unsubscribe them, or change what they are entitled to read. " +
+      'Keys: `search_query` (string, matched client-side against resource name, description, slug and entitling industry; pass "" to clear it), ' +
+      '`entitled_only` (boolean; true hides resources the organization does not hold — the "Only what my organization has" checkbox), ' +
+      'and `type_filter` ("all" | "data_store" | "seo_starter_pack" — the type chips). ' +
+      "Send them in ONE call rather than three. " +
+      "This ONLY changes what is on screen — it does NOT give the organization anything, take anything away, or change what it is entitled to. " +
       "After this lands, `catalog_libraries` and `catalog_visible_count` are STALE — they describe the list from before your write.",
     valueType: "object",
     updatesValue: "catalog_filters",
@@ -608,10 +613,14 @@ Read library_view FIRST:
                 documents_pending, segment_count, embeddings_voyage) describe
                 the whole corpus; the query values describe the table in front
                 of them; visible_documents holds the rows themselves.
-  - "catalog" — the user is on /knowledge/library-catalog browsing SHARED knowledge
-                libraries published by Matrx. These are read-only and belong
-                to someone else. catalog_* values apply; every library_* value
-                is empty.
+  - "catalog" — the user is on /knowledge/library-catalog browsing THE MATRX
+                LIBRARY: everything published to them through the one sharing
+                spine. Each row's "kind" is its entity_type, and the type
+                decides what TAKING it means: a "data_store" is SUBSCRIBED and
+                read in place; an "seo_starter_pack" is USED ON ONE WEBSITE —
+                its defaults are copied onto that site, so it is never
+                subscribed to from this page. catalog_* values apply; every
+                library_* value is empty.
 
 Diagnosis vocabulary the user shares with you: a document is "pending" when it
 never persisted a page (ingestion failed early), "extracted" when pages exist
@@ -621,8 +630,8 @@ of the corpus cannot be retrieved yet.
 
 This surface holds document SUMMARIES only, never their text. To read a
 document's pages or segments, use its id on the document viewer surface.
-In the catalog, entitled_via is the honest answer to "why can I read this?" —
-null means the user cannot read that library at all.
+In the catalog, entitled_via is the honest answer to "why do we have this?" —
+null means the organization has no grant for that resource at all.
 
 YOU CAN NAVIGATE THIS CORPUS AND NAME ONE DOCUMENT — NOTHING ELSE.
 Four targets are writable, and they exist to serve one flow: FIND a document

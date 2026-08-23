@@ -141,7 +141,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                     {unlocked.map((lib) => (
                       <Link
                         key={lib.id}
-                        href={`/knowledge/library-catalog?store_id=${lib.id}`}
+                        href={`/knowledge/library-catalog?type=data_store&id=${lib.id}`}
                         className="rounded-full bg-primary/10 px-2 py-0.5 text-primary hover:underline"
                       >
                         {lib.name}
@@ -226,7 +226,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                 className="flex items-center gap-2 rounded-md border border-border/70 bg-background/40 px-2.5 py-1.5"
               >
                 <Link
-                  href={`/knowledge/library-catalog?store_id=${it.id}`}
+                  href={`/knowledge/library-catalog?type=data_store&id=${it.id}`}
                   className="min-w-0 truncate text-xs font-medium text-foreground hover:underline"
                 >
                   {it.name}

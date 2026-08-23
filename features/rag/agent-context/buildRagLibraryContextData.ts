@@ -19,7 +19,11 @@ import {
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { DocStatus, LibraryDocSummary, LibrarySummary } from "@/features/rag/types/library";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
-import type { LibraryCatalogItem } from "@/features/rag/hooks/useLibraryCatalog";
+import {
+  itemNoun,
+  LIBRARY_TYPE_LABEL,
+  type LibraryResource,
+} from "@/features/rag/hooks/useLibraryResources";
 
 /** Cap the emitted document list so one huge corpus can't blow the payload. */
 const MAX_DOCUMENTS = 200;
@@ -61,14 +65,16 @@ function toJobEntry(j: ProcessingJob): RagLibraryJobEntry {
   };
 }
 
-function toCatalogEntry(c: LibraryCatalogItem): RagLibraryCatalogEntry {
+function toCatalogEntry(c: LibraryResource): RagLibraryCatalogEntry {
   return {
     id: c.id,
     name: c.name,
-    short_code: c.shortCode,
+    short_code: c.slug,
     description: c.description,
-    kind: c.kind,
-    member_count: c.memberCount,
+    // The Library type, not the data-store sub-kind: a catalog row can be a
+    // data store or a starter pack, and the agent must be able to tell.
+    kind: c.entityType,
+    member_count: c.itemCount,
     subscribed: c.subscribed,
     entitled_via: c.entitledVia,
     entitled_industry_name: c.entitledIndustryName,
@@ -96,7 +102,7 @@ function documentsText(docs: readonly LibraryDocSummary[]): string {
 }
 
 /** Readable one-line-per-row rendering of the catalog list. */
-function catalogText(items: readonly LibraryCatalogItem[]): string {
+function catalogText(items: readonly LibraryResource[]): string {
   return items
     .map((it) => {
       const entitlement = it.subscribed
@@ -108,7 +114,10 @@ function catalogText(items: readonly LibraryCatalogItem[]): string {
             : it.entitledVia === "organization"
               ? "granted to your organization"
               : "not entitled";
-      return `${it.name} · ${it.memberCount} members · ${entitlement}${it.description ? ` — ${it.description}` : ""}`;
+      return `${it.name} · ${LIBRARY_TYPE_LABEL[it.entityType]} · ${it.itemCount} ${itemNoun(
+        it.entityType,
+        it.itemCount,
+      )} · ${entitlement}${it.description ? ` — ${it.description}` : ""}`;
     })
     .join("\n")
     .slice(0, CONTENT_CHARS);
@@ -139,15 +148,17 @@ export interface BuildRagLibraryContextDataArgs {
   jobs?: readonly ProcessingJob[];
 
   // ── /knowledge/library-catalog ────────────────────────────────────────────
-  /** Every discoverable library returned to this caller. */
-  catalogItems?: readonly LibraryCatalogItem[];
-  /** The subset left after the catalog search box + entitled-only checkbox. */
-  catalogVisible?: readonly LibraryCatalogItem[];
+  /** Every Library resource returned to this caller, of every type. */
+  catalogItems?: readonly LibraryResource[];
+  /** The subset left after the search box, type chips and entitled-only checkbox. */
+  catalogVisible?: readonly LibraryResource[];
   /** Text in the catalog search box. */
   catalogQuery?: string;
-  /** State of the "Only libraries I can read" checkbox. */
+  /** State of the "Only what my organization has" checkbox. */
   catalogEntitledOnly?: boolean;
-  /** Library id open in the detail pane (`?store_id`). */
+  /** Type chip in force: "all" · a registered Library `entity_type`. */
+  catalogTypeFilter?: string;
+  /** Resource id open in the detail pane (`?id=`). */
   catalogSelectedId?: string | null;
 
   /** Browser text selection scoped to this surface, when the user made one. */
@@ -175,6 +186,7 @@ export function buildRagLibraryContextData(
     catalogVisible,
     catalogQuery = "",
     catalogEntitledOnly = false,
+    catalogTypeFilter = "all",
     catalogSelectedId = null,
     selectionText = "",
   } = args;
@@ -225,9 +237,11 @@ export function buildRagLibraryContextData(
         view,
         search_query: catalogQuery.trim() || undefined,
         entitled_only: catalogEntitledOnly || undefined,
+        type_filter: catalogTypeFilter === "all" ? undefined : catalogTypeFilter,
         libraries: catalogItems.length,
         listed: shownCatalog.length,
         entitled: catalogItems.filter((c) => c.entitledVia != null).length,
+        by_type: countBy(catalogItems, (c) => c.entityType),
       };
 
   return createRagLibraryScope({
@@ -307,7 +321,11 @@ export function buildRagLibraryContextData(
     // `library_filters` above.
     catalog_filters: isLibrary
       ? undefined
-      : { search_query: catalogQuery.trim(), entitled_only: catalogEntitledOnly },
+      : {
+          search_query: catalogQuery.trim(),
+          entitled_only: catalogEntitledOnly,
+          type_filter: catalogTypeFilter,
+        },
     catalog_entitled_count: isLibrary
       ? undefined
       : catalogItems.filter((c) => c.entitledVia != null).length,

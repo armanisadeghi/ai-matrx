@@ -69,7 +69,7 @@ export function RagHomePage() {
                 {entitledLibraries.map((it) => (
                   <Link
                     key={it.id}
-                    href={`/knowledge/library-catalog?store_id=${it.id}`}
+                    href={`/knowledge/library-catalog?type=data_store&id=${it.id}`}
                     className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-primary/50"
                   >
                     <FileText className="h-4 w-4 shrink-0 text-primary" />

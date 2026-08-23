@@ -10,15 +10,30 @@
  *   organization → "Subscribed"
  *   industry     → "via {industry name}"
  *   global       → "Available to everyone"
+ *   curator      → "You curate this"
  *   null         → "Not entitled"
+ *
+ * Type-agnostic on purpose: every Matrx Library resource (data store, starter
+ * pack, whatever registers next) is entitled through the ONE spine
+ * (`platform.entity_grants`), so it wears the ONE chip.
  */
 
-import { Building2, Check, Globe, Lock, ShieldCheck } from "lucide-react";
+import {
+  Building2,
+  Check,
+  Globe,
+  Lock,
+  PenLine,
+  ShieldCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CatalogEntitlement } from "@/features/rag/hooks/useLibraryCatalog";
 
+/** Every entitlement value any Library type can report. */
+export type LibraryEntitlement = CatalogEntitlement | "curator";
+
 export function entitlementLabel(
-  entitledVia: CatalogEntitlement,
+  entitledVia: LibraryEntitlement,
   industryName: string | null,
 ): string {
   switch (entitledVia) {
@@ -28,6 +43,8 @@ export function entitlementLabel(
       return industryName ? `via ${industryName}` : "via industry";
     case "global":
       return "Available to everyone";
+    case "curator":
+      return "You curate this";
     case "admin":
       return "Admin access";
     default:
@@ -40,7 +57,7 @@ export function EntitlementChip({
   industryName,
   className,
 }: {
-  entitledVia: CatalogEntitlement;
+  entitledVia: LibraryEntitlement;
   industryName: string | null;
   className?: string;
 }) {
@@ -55,7 +72,9 @@ export function EntitlementChip({
           ? Globe
           : entitledVia === "admin"
             ? ShieldCheck
-            : Lock;
+            : entitledVia === "curator"
+              ? PenLine
+              : Lock;
   return (
     <span
       className={cn(
@@ -67,8 +86,8 @@ export function EntitlementChip({
       )}
       title={
         entitled
-          ? `You can read this library — ${label}`
-          : "Your organization has no grant for this library yet"
+          ? `Your organization has this — ${label}`
+          : "Your organization has no grant for this yet"
       }
     >
       <Icon className="h-3 w-3" />

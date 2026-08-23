@@ -72,7 +72,7 @@ export function LibraryCatalogPane() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link
-                      href={`/knowledge/library-catalog?store_id=${it.id}`}
+                      href={`/knowledge/library-catalog?type=data_store&id=${it.id}`}
                       className="block truncate text-sm font-medium text-foreground hover:underline"
                     >
                       {it.name}
