@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
-    "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:pdfjs-worker && next build",
+    "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:pdfjs-worker && pnpm build:next",
+    "build:next": "next build --experimental-build-mode compile && next build --experimental-build-mode generate",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
     "postinstall": "tsx scripts/copy-pdfjs-worker.ts",

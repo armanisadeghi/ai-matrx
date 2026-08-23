@@ -285,9 +285,11 @@ const nextConfig = {
     // then failed twice more in v0.4.1064/1065, both 6-7 seconds into page-data
     // collection after successful compilation. Four workers let v0.4.1066/1068
     // complete, but v0.4.1069 still OOMed in the same phase on the 60 GB machine.
-    // Two workers then OOMed after a successful 16.1-minute compile in v0.4.1088.
-    // One is now the evidence-backed ceiling; compile-phase OOMs still require
-    // hunting the import edge first (code-splitting skill, "Build-time bloat").
+    // Two workers then OOMed after a successful 16.1-minute compile in v0.4.1088,
+    // and one worker OOMed as page-data collection began in v0.4.1090. Keep the
+    // evidence-backed single-worker ceiling; package.json runs Next's compile
+    // and generate modes as separate processes so compile memory is released
+    // before static generation begins.
     cpus: 1,
     serverActions: {
       bodySizeLimit: "10mb",
