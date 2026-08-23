@@ -39132,6 +39132,7 @@ export type Database = {
           deleted_at: string
           entity_token: string
           id: string
+          is_mine: boolean
           label: string
           organization_id: string
           title: string
