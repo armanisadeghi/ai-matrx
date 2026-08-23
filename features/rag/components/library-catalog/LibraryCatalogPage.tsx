@@ -67,6 +67,7 @@ import {
 } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { PackDetailPanel } from "@/features/rag/components/library-catalog/PackDetailPanel";
 import { RulebookDetailPanel } from "@/features/rag/components/library-catalog/RulebookDetailPanel";
+import { LibraryLabelChip } from "@/features/rag/components/library-catalog/LibraryLabelChip";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import {
@@ -124,7 +125,11 @@ export function LibraryCatalogPage() {
   const curatorships = useMyCuratorships();
   const isCurator = (curatorships.data?.length ?? 0) > 0;
   const [query, setQuery] = useState("");
-  const [entitledOnly, setEntitledOnly] = useState(false);
+  // DEFAULT: only what this organization has. THE OPEN LIBRARY (Arman,
+  // 2026-08-23): the filter exists "to remove noise from people who don't need
+  // it … However, if I want to see them, the system shouldn't stop me." So the
+  // default is quiet, and the escape hatch below is one click and says so.
+  const [entitledOnly, setEntitledOnly] = useState(true);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
   const select = useCallback(
@@ -345,14 +350,19 @@ export function LibraryCatalogPage() {
                 );
               })}
             </div>
+            {/* The inverse sense on purpose: the quiet view is the default, and
+                the loud one is the deliberate act. The state stays
+                `entitledOnly` because that is what the surface's
+                `catalog_filters` write target and the agent context both
+                mean. */}
             <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
               <input
                 type="checkbox"
-                checked={entitledOnly}
-                onChange={(e) => setEntitledOnly(e.target.checked)}
+                checked={!entitledOnly}
+                onChange={(e) => setEntitledOnly(!e.target.checked)}
                 className="h-3 w-3 accent-[var(--primary)]"
               />
-              Only what my organization has
+              Show everything in the Library, not just my industry
             </label>
           </div>
           <div className="flex-1 overflow-auto">
@@ -512,10 +522,17 @@ function CatalogListRow({
           {item.itemCount} {itemNoun(item.entityType, item.itemCount)}
         </span>
       </div>
-      <div className="mt-1 flex items-center gap-1.5">
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <EntitlementChip
           entitledVia={item.entitledVia}
           industryName={item.entitledIndustryName}
+        />
+        <LibraryLabelChip
+          sourceAuthority={item.sourceAuthority}
+          sourceAuthorityLabel={item.sourceAuthorityLabel}
+          assuranceLevel={item.assuranceLevel}
+          assuranceLevelLabel={item.assuranceLevelLabel}
+          assuranceLevelBlurb={item.assuranceLevelBlurb}
         />
         <span className="truncate text-[10px] text-muted-foreground">
           {LIBRARY_TYPE_LABEL[item.entityType]}

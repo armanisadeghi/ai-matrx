@@ -27550,6 +27550,39 @@ export type Database = {
           },
         ]
       }
+      assurance_level: {
+        Row: {
+          blurb: string
+          created_at: string
+          is_active: boolean
+          label: string
+          metadata: Json
+          rank: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          blurb: string
+          created_at?: string
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          rank: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          blurb?: string
+          created_at?: string
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          rank?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           color: string | null
@@ -29869,6 +29902,7 @@ export type Database = {
       }
       rulebook: {
         Row: {
+          assurance_level: string | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -29882,6 +29916,7 @@ export type Database = {
           sections: Json
           slug: string
           source: Json
+          source_authority: string | null
           source_rulebook_id: string | null
           source_synced_at: string | null
           source_version: number | null
@@ -29892,6 +29927,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          assurance_level?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -29905,6 +29941,7 @@ export type Database = {
           sections?: Json
           slug: string
           source?: Json
+          source_authority?: string | null
           source_rulebook_id?: string | null
           source_synced_at?: string | null
           source_version?: number | null
@@ -29915,6 +29952,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          assurance_level?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -29928,6 +29966,7 @@ export type Database = {
           sections?: Json
           slug?: string
           source?: Json
+          source_authority?: string | null
           source_rulebook_id?: string | null
           source_synced_at?: string | null
           source_version?: number | null
@@ -29939,11 +29978,25 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "rulebook_assurance_level_fkey"
+            columns: ["assurance_level"]
+            isOneToOne: false
+            referencedRelation: "assurance_level"
+            referencedColumns: ["slug"]
+          },
+          {
             foreignKeyName: "rulebook_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rulebook_source_authority_fkey"
+            columns: ["source_authority"]
+            isOneToOne: false
+            referencedRelation: "source_authority"
+            referencedColumns: ["slug"]
           },
           {
             foreignKeyName: "rulebook_source_rulebook_id_fkey"
@@ -30101,6 +30154,39 @@ export type Database = {
           table_name?: string
           updated_at?: string
           url_path_template?: string
+        }
+        Relationships: []
+      }
+      source_authority: {
+        Row: {
+          blurb: string
+          created_at: string
+          is_active: boolean
+          label: string
+          metadata: Json
+          rank: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          blurb: string
+          created_at?: string
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          rank: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          blurb?: string
+          created_at?: string
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          rank?: number
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -31098,6 +31184,9 @@ export type Database = {
       rulebook_library_catalog: {
         Args: { p_organization_id?: string }
         Returns: {
+          assurance_level: string
+          assurance_level_blurb: string
+          assurance_level_label: string
           description: string
           entitled_via: string
           id: string
@@ -31106,6 +31195,8 @@ export type Database = {
           item_count: number
           name: string
           slug: string
+          source_authority: string
+          source_authority_label: string
           status: string
           subscribed: boolean
           subscriber_count: number
@@ -37420,6 +37511,9 @@ export type Database = {
       library_catalog: {
         Args: { p_organization_id?: string }
         Returns: {
+          assurance_level: string
+          assurance_level_blurb: string
+          assurance_level_label: string
           description: string
           entitled_industry_name: string
           entitled_industry_slug: string
@@ -37430,6 +37524,8 @@ export type Database = {
           kind: string
           name: string
           slug: string
+          source_authority: string
+          source_authority_label: string
           status: string
           subscribed: boolean
           subscriber_count: number
@@ -37464,6 +37560,10 @@ export type Database = {
           organization_id: string
           store_id: string
         }[]
+      }
+      library_is_open: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: boolean
       }
       library_list_grants: {
         Args: { p_entity_id: string; p_entity_type: string }

@@ -56,6 +56,18 @@ export interface LibraryResource {
    *  archived. Null for data stores. */
   status: string | null;
   updatedAt: string | null;
+  /**
+   * WHAT THIS IS — two axes, never merged into one score
+   * (`platform.source_authority` / `platform.assurance_level`):
+   *   • source    — how authoritative the ORIGIN is, before we touched it;
+   *   • assurance — what MATRX did to it, and therefore what we stand behind.
+   * Null on types that do not carry the labels yet (data stores, packs).
+   */
+  sourceAuthority: string | null;
+  sourceAuthorityLabel: string | null;
+  assuranceLevel: string | null;
+  assuranceLevelLabel: string | null;
+  assuranceLevelBlurb: string | null;
 }
 
 interface RpcRow {
@@ -73,6 +85,11 @@ interface RpcRow {
   subscriber_count: number | null;
   status: string | null;
   updated_at: string | null;
+  source_authority: string | null;
+  source_authority_label: string | null;
+  assurance_level: string | null;
+  assurance_level_label: string | null;
+  assurance_level_blurb: string | null;
 }
 
 const KNOWN_TYPES: readonly string[] = [
@@ -108,6 +125,11 @@ function toResource(row: RpcRow): LibraryResource | null {
     subscriberCount: Number(row.subscriber_count ?? 0),
     status: row.status ?? null,
     updatedAt: row.updated_at ?? null,
+    sourceAuthority: row.source_authority ?? null,
+    sourceAuthorityLabel: row.source_authority_label ?? null,
+    assuranceLevel: row.assurance_level ?? null,
+    assuranceLevelLabel: row.assurance_level_label ?? null,
+    assuranceLevelBlurb: row.assurance_level_blurb ?? null,
   };
 }
 

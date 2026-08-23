@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { LibraryLabelChip } from "@/features/rag/components/library-catalog/LibraryLabelChip";
 import type { LibraryResource } from "@/features/rag/hooks/useLibraryResources";
 import type { RulebookRule } from "@/features/masterwork/types";
 
@@ -214,6 +215,13 @@ export function RulebookDetailPanel({
             entitledVia={item.entitledVia}
             industryName={item.entitledIndustryName}
           />
+          <LibraryLabelChip
+            sourceAuthority={item.sourceAuthority}
+            sourceAuthorityLabel={item.sourceAuthorityLabel}
+            assuranceLevel={item.assuranceLevel}
+            assuranceLevelLabel={item.assuranceLevelLabel}
+            assuranceLevelBlurb={item.assuranceLevelBlurb}
+          />
           <div className="ml-auto flex items-center gap-1.5">
             {copy ? (
               <Link
@@ -284,6 +292,30 @@ export function RulebookDetailPanel({
       </header>
 
       <div className="flex-1 space-y-4 overflow-auto p-4">
+        {item.sourceAuthorityLabel || item.assuranceLevelLabel ? (
+          <section className="space-y-1.5 rounded-md border border-border bg-muted/20 p-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              What this is
+            </h2>
+            {item.sourceAuthorityLabel ? (
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  Source · {item.sourceAuthorityLabel}
+                </span>{" "}
+                — where it came from, before we touched it.
+              </p>
+            ) : null}
+            {item.assuranceLevelLabel ? (
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {item.assuranceLevelLabel}
+                </span>{" "}
+                — {item.assuranceLevelBlurb ?? "what Matrx did to it."}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
         <section className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             What it carries
