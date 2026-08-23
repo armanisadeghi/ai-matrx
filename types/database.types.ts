@@ -51920,6 +51920,7 @@ export type Database = {
       starter_pack_preview: {
         Args: {
           p_end: string
+          p_item_ids?: string[]
           p_pack_id: string
           p_rule_ids?: string[]
           p_sample?: number
