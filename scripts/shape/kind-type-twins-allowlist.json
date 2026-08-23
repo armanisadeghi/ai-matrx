@@ -1,0 +1,11 @@
+{
+  "$comment": "Exceptions to THE ONE-TYPE LAW (check-kind-type-twins.ts). BOTH lists ONLY EVER SHRINK: a stale entry — one whose twin or coverage gap no longer exists — fails the gate just as loudly as an unlisted one. Every entry states WHY the generated type cannot be used, not merely that it isn't.",
+  "allow": [],
+  "unregistered": [
+    {
+      "kind": "keyword_classification_v1",
+      "declaredIn": "features/content-ir/kinds/keyword-research.ts",
+      "reason": "The code declares this child KindSchema, but the live registry has no kind_definition row for it — its shape survives only as an ANONYMOUS inline array item inside keyword_classification_batch_v1, so there is no name to generate a type under. Fix is a registry change (give the item its own row or its own $def), not a code change. Delete this entry the moment it lands."
+    }
+  ]
+}
