@@ -364,68 +364,29 @@ UPDATEs (4.2%), `note` 2,072 of 13,965 (14.8%), `app_instance` 0 of 17,370. A no
 behavior across all ~158 capturing tokens (anything using a version row as a "who touched this" log
 would see fewer rows), so it is a platform decision rather than a fix.
 
-### D233 — `agent_card`: a permission key the registry guard cannot hold (2026-08-21; **took prod down once, now restored**)
+### D233 — ✅ RESOLVED 2026-08-23 — view-backed permission tokens are now `relation_kind='projection'`
 
-`agent.card` is a security VIEW over `agent.definition` whose WHERE clause ends in
-`has_permission('agent_card', id, 'viewer')`, and `public.has_permission_for()` RAISES
-`P0001 'Unknown entity token'` unless the token has an **active** `platform.entity_types` row.
-So the token must stay registered and active — but `platform._enforce_entity_is_table` refuses any
-active row whose relation is `relkind='v'`. Those two rules contradict each other on this one token.
+`agent.card` and `workflow.card` are security views whose `WHERE` ends in `has_permission('<token>', id, 'viewer')`.
+`public.has_permission_for()` opens with an `entity_types` existence check and RAISES `P0001 'Unknown entity token'`,
+so such a token MUST be registered and active — while `platform._enforce_entity_is_table` refused any active
+view-backed row. Two individually-correct rules that together made these tokens impossible.
 
-**This already bit.** Clearing the versioned-without-capture backlog, a session deleted the
-`agent_card` registry row (and its composition edge). Every read of `agent.card` then raised —
-while `platform.shareable_resource_registry` still routed `agent_card -> agent.card` (is_active=true)
-and `iam.permissions` still held 2 live grants. Restored by `migrations/agent_card_registry_restore_d233.sql`,
-which re-inserts the row with `is_versioned=false` (correct: a view cannot capture, and agent
-definitions are already versioned by the certified custom store `agent.definition_version`),
-re-arms the guard, and asserts `select count(*) from agent.card` succeeds. Verified live: 343 rows.
-**The restore had to DISABLE `_enforce_entity_is_table` for one insert.** That is a revert to the
-state that ran for months, not a new design — but it means the row is currently in a shape the guard
-would reject, so the contradiction is live, not theoretical.
+Both views were broken. `agent_card` when its registry row was deleted 2026-08-21 clearing the
+versioned-without-capture backlog (every read raised, while the sharing registry still routed to it and 2
+`iam.permissions` grants were outstanding) — restored by `migrations/agent_card_registry_restore_d233.sql`.
+`workflow_card` was broken **always**: never registered at all, granted to `authenticated` and `anon`, raising on
+every read, unnoticed only because the feature has no callers yet.
 
-**Arman's call — pick one:**
-- **(a) Recommended.** Teach `has_permission_for` (and `_enforce_entity_is_table`) about a
-  *permission-surface* token: registered and active for permission checks, exempt from the
-  relkind rule, skipped by the canonical checks instead of silently omitted. Cleanest, and fixes the
-  reporting blind spot below at the same time.
-- **(b)** Repoint `agent_card` at `agent.definition`. Blocked today by
-  `UNIQUE(schema_name, table_name)` — the `agent` token already holds that pair.
-- **(c)** Drop the `has_permission` arm from the view. Loses explicit-share visibility on agent cards
-  (2 live grants would stop resolving). Cheapest, and a real product regression.
+Fixed by `migrations/entity_types_projection_relation_kind.sql`: `relation_kind` (`'table'` default |
+`'projection'`) + `projects_token`, a CHECK forcing projections to be `audit_class='machinery'` with a written
+reason, and a **stricter** guard (unlabelled views still refused; projections over tables refused; projections
+with a dead `projects_token` refused). Verified in rolled-back transactions and after `audit.refresh()`: both
+views read, all four rejections fire, 0 `trg_version_capture` FAILs, no new stale-registry rows. Canon: db-rules §1.
 
-**Related reporting bug, unfixed:** the `trg_version_capture` check only scans `relkind='r'`, so a
-view-backed token is invisible to it — that is why `audit.canonical_findings` reported 46 FAILs where
-the live registry-joined-to-`pg_trigger` count was 47. Any conformance number taken from
-`canonical_findings` under-reports view-backed tokens. (db-rules §7.)
-
-### D233 — `agent_card` is a registered ACTIVE entity pointing at a VIEW, and the conformance check can't see it (2026-08-21)
-
-Found clearing the versioned-without-capture backlog (`migrations/platform_versioned_without_capture_adjudication.sql`).
-
-`platform.entity_types.agent_card` → `agent.card`, which is **`relkind='v'`** — a security view over
-`agent.definition` (`WHERE deleted_at IS NULL AND (auth.uid() = created_by OR card_visibility='public'
-OR … OR has_permission('agent_card', id, 'viewer'))`). Three consequences:
-
-1. **Its registry row says `is_versioned=true, version_store='history'`, which is unsatisfiable.** A view
-   cannot carry a row trigger, and agent definitions are *already* versioned by the certified custom store
-   `agent.definition_version` — so the flag is duplicate versioning aimed at a non-table.
-2. **The gate is blind to it.** `audit.canonical_findings`' `trg_version_capture` check only scans
-   `relkind='r'`, so it reported **46** FAILs while the live registry-joined-to-`pg_trigger` query found
-   **47**. Any count taken from `canonical_findings` under-reports view-backed tokens. (db-rules §7.)
-3. **The obvious repair is blocked.** `platform.entity_types` carries a CHECK that refuses *any* update to
-   an active row whose relation is a view — "only base/partitioned tables may be registered as active
-   entities … register the underlying table instead, or leave the view out of the registry". So
-   `is_versioned=false` cannot be set without also setting `is_active=false`.
-
-**Why it was not fixed here — this is Arman's call, not an agent's.** Deregistering is not free:
-`agent_card` is a **live sharing surface** — 2 rows in `iam.permissions` with `resource_type='agent_card'`,
-1 row in `platform.shareable_resource_registry`, and the view's own `WHERE` clause calls
-`has_permission('agent_card', …)`. Flipping `is_active=false` may break agent-card sharing.
-
-**The decision:** either (a) repoint the token at `agent.definition` and let the view stay an unregistered
-read surface, or (b) let `entity_types` permit a view-backed token that exists purely as a permission
-surface (and teach the conformance checks to skip such rows rather than silently omit them).
-Either way the `trg_version_capture` check should count view-backed tokens as SKIP, not as absent.
+⚠️ **Do not re-run the 2026-08-21 reasoning.** That ruling deregistered `agent_card` believing it safe because
+"`has_permission`/`iam.has_access` do not read `entity_types`". `iam.has_access` does not — but
+`public.has_permission()` → `has_permission_for()` **does**, and the deregistration took the surface down.
+Corrected in the db-rules change log; reproducible on demand in a rolled-back transaction.
 
 ### D231 — ✅ RESOLVED — SECURITY: `authenticated` could read `storage_uri` on `files.files` and `files.file_versions` (2026-08-21, closed 2026-08-22)
 
