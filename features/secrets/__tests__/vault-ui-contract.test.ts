@@ -185,6 +185,12 @@ describe("shared vault UI contract", () => {
       "Add a runtime key before enabling sandboxes",
     );
     expect(detailSource).toContain("Additional fields");
+    expect(detailSource).toContain(
+      'className="flex min-w-0 flex-wrap items-end gap-2"',
+    );
+    expect(detailSource).not.toContain(
+      '<div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">',
+    );
     expect(detailSource).not.toContain("Replace stored value");
     expect(detailSource).not.toContain("runtime key required");
     expect(detailSource).not.toContain(
