@@ -42,7 +42,7 @@
  * declare it on the model) — never delete the identity to suit a reader.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
 
@@ -141,7 +141,12 @@ function scan(): string[] {
     if (EXCLUDE.some((re) => re.test(rel))) continue;
     if (/__tests__|\.test\.tsx?$|\.spec\.tsx?$|\.dev\.tsx?$/.test(rel)) continue;
 
-    const source = readFileSync(path.join(ROOT, rel), "utf8");
+    const livePath = path.join(ROOT, rel);
+    const parkedPath = rel.startsWith("app/(admin)/")
+      ? path.join(ROOT, rel.replace(/^app\/\(admin\)/, "app/_admin_build_excluded"))
+      : livePath;
+    const sourcePath = existsSync(livePath) ? livePath : parkedPath;
+    const source = readFileSync(sourcePath, "utf8");
     if (!source.includes("__kind") && !source.includes("KIND_KEY")) continue;
 
     source.split("\n").forEach((line, i) => {
