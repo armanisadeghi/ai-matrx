@@ -33,6 +33,7 @@ import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/u
 import { fetchConversationToolCallsPage } from "@/features/tool-call-visualization/service/fetchConversationToolCalls";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
+import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { workspaceName } from "../lib/codingSessionPresentation";
 import type { ProviderConversationDetail } from "../service/providerConversation";
 import {
@@ -499,7 +500,14 @@ function LiveTranscriptIndicator({ status }: { status: LiveTranscriptStatus }) {
         </span>
       ) : (
         <span className="text-muted-foreground">
+          {/* WHEN it went quiet is the fact that makes "idle" actionable — a
+              session that stopped two minutes ago and one that stopped last
+              week read identically without it, and a tester reading only
+              "idle" cannot tell a settled session from a broken feature. */}
           This session is idle, so live updates are paused.
+          {status.lastSeenAt
+            ? ` It last delivered on ${formatSessionTimestamp(status.lastSeenAt)}.`
+            : " It has never delivered a session."}
         </span>
       )}
       <button
