@@ -16,8 +16,9 @@ interface EnhancedImageCardProps {
               }
             | string;
         url?: string; // For backward compatibility and simpler usage
-        alt_description?: string;
-        description?: string; // Alternative to alt_description
+        // Unsplash returns null (not undefined) for a photo with no caption.
+        alt_description?: string | null;
+        description?: string | null; // Alternative to alt_description
         user?: {
             name?: string;
         };

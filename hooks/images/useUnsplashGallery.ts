@@ -18,11 +18,30 @@ export type ImageOrientation =
   | undefined;
 export type PremiumFilter = "mixed" | "only" | "none";
 
-/** Minimal Unsplash photo shape used by this hook */
+/**
+ * Unsplash photo shape used by this hook and its consumers.
+ *
+ * Widened 2026-08-22: the declaration used to stop at `id`/`tags`/`links`,
+ * so every consumer that needed the image itself (`urls`, `user`,
+ * `alt_description`) cast the row to `any`. The API returns these fields —
+ * declaring them is what lets a consumer read a photo without a cast.
+ * Optional because the hook also holds rows from list/collection endpoints
+ * that omit some of them.
+ */
 export type UnsplashPhoto = {
   id: string;
   tags?: Array<{ title: string }>;
-  links: { download_location: string };
+  links: { download_location: string; html?: string };
+  urls?: {
+    raw?: string;
+    full?: string;
+    regular?: string;
+    small?: string;
+    thumb?: string;
+  };
+  user?: { name?: string; username?: string; links?: { html?: string } };
+  alt_description?: string | null;
+  description?: string | null;
 };
 
 type UnsplashCollection = {

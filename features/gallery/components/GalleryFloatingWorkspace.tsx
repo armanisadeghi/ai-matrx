@@ -69,6 +69,18 @@ const QUICK_TOPICS = [
   "Colorful",
 ];
 
+/** How many loaded results the surface describes to an agent at once. */
+const VISIBLE_DESCRIPTION_LIMIT = 40;
+
+/** One canonical way to describe an Unsplash photo in words. */
+function describePhoto(photo: any): string {
+  return (
+    photo?.alt_description ||
+    photo?.description ||
+    (photo?.user?.name ? `Photo by ${photo.user.name}` : "Untitled photo")
+  );
+}
+
 const ORIENTATION_OPTIONS: { value: OrientationFilter; label: string }[] = [
   { value: "all", label: "Any" },
   { value: "landscape", label: "Wide" },
@@ -105,6 +117,11 @@ export function GalleryFloatingWorkspace() {
     }
   });
   const [showTopics, setShowTopics] = useState(false);
+  // The last image the user opened from this gallery. There is no persistent
+  // "selected image" affordance in the UI, so this — the image they chose to
+  // look at — IS the surface's notion of the image in focus, and is what
+  // `image_description` resolves to first.
+  const [focusedPhotoId, setFocusedPhotoId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -176,6 +193,7 @@ export function GalleryFloatingWorkspace() {
   // ── Photo actions ───────────────────────────────────────────────────────
   const handleViewPhoto = useCallback(
     (photo: any, index: number) => {
+      setFocusedPhotoId(photo?.id ?? null);
       const urls = photos.map((p: any) => p.urls?.regular || p.urls?.small);
       const alts = photos.map(
         (p: any) =>
@@ -224,6 +242,18 @@ export function GalleryFloatingWorkspace() {
     }
   }, []);
 
+  const copyLoadedImageLinks = useCallback(() => {
+    const links = photos
+      .map((p: any) => p.urls?.regular || p.urls?.small || p.links?.html)
+      .filter(Boolean);
+    if (!links.length) {
+      toast.error("No images loaded yet");
+      return;
+    }
+    navigator.clipboard.writeText(links.join("\n"));
+    toast.success(`Copied ${links.length} image links`);
+  }, [photos]);
+
   const handleToggleFavorite = useCallback(
     (photo: any, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -255,6 +285,57 @@ export function GalleryFloatingWorkspace() {
     [favorites],
   );
 
+  // ── Surface values (derived) ────────────────────────────────────────────
+  // Plain derivations — React Compiler memoizes; no manual useMemo.
+  const focusedPhoto =
+    (focusedPhotoId
+      ? photos.find((p: any) => p.id === focusedPhotoId)
+      : undefined) ?? undefined;
+  const focusedFavorite = focusedPhotoId
+    ? favorites.find((f) => f.id === focusedPhotoId)
+    : undefined;
+
+  const focusedImage = focusedPhoto
+    ? {
+        id: String(focusedPhoto.id),
+        url: focusedPhoto.urls?.regular || focusedPhoto.urls?.small || "",
+        description: describePhoto(focusedPhoto),
+        credit: focusedPhoto.user?.name || "",
+        sourceUrl: focusedPhoto.links?.html || "",
+      }
+    : focusedFavorite
+      ? {
+          id: focusedFavorite.id,
+          url: focusedFavorite.url,
+          description: focusedFavorite.alt || "",
+          credit: focusedFavorite.author,
+          sourceUrl: "",
+        }
+      : null;
+
+  // The one always-available "which image do you mean" slot. Falls back down
+  // the chain the user actually experiences: what they opened → what they
+  // searched → what they are typing.
+  const imageDescription =
+    focusedImage?.description || activeQuery || searchInput || "";
+
+  const visibleImageDescriptions = photos
+    .slice(0, VISIBLE_DESCRIPTION_LIMIT)
+    .map(
+      (p: any, i: number) =>
+        `${i + 1}. ${describePhoto(p)}${p.user?.name ? ` — ${p.user.name}` : ""}`,
+    )
+    .join("\n");
+
+  const favoriteImageDescriptions = favorites.length
+    ? favorites
+        .map(
+          (f, i) =>
+            `${i + 1}. ${f.alt || "Untitled"}${f.author ? ` — ${f.author}` : ""}`,
+        )
+        .join("\n")
+    : undefined;
+
   // ── Sidebar ─────────────────────────────────────────────────────────────
   const sidebar = useMemo(
     () => (
@@ -284,6 +365,7 @@ export function GalleryFloatingWorkspace() {
                 key={fav.id}
                 type="button"
                 onClick={() => {
+                  setFocusedPhotoId(fav.id);
                   openImageViewer(dispatch, {
                     images: favorites.map((f) => f.url),
                     initialIndex: idx,
@@ -348,6 +430,16 @@ export function GalleryFloatingWorkspace() {
     orientationFilter,
     photoCount: photos.length,
     favoriteCount: favorites.length,
+    // Surface values — read at trigger time through the window's scope builder.
+    imageDescription,
+    visibleImageDescriptions,
+    favoriteImageDescriptions,
+    quickTopics: QUICK_TOPICS.join(", "),
+    focusedImage,
+    // Real handlers the window's context menu binds its extra section to.
+    resetSearch: handleReset,
+    copyLoadedImageLinks,
+    toggleTopics: () => setShowTopics((v) => !v),
     body: (
       <div className="flex flex-col h-full min-h-0">
         {/* Search bar */}
@@ -523,10 +615,7 @@ function PhotoCard({
   onToggleFavorite,
 }: PhotoCardProps) {
   const thumbUrl = photo.urls?.small || photo.urls?.thumb;
-  const alt =
-    photo.alt_description ||
-    photo.description ||
-    `Photo by ${photo.user?.name}`;
+  const alt = describePhoto(photo);
   const author = photo.user?.name || "Unknown";
 
   const isCompact = viewMode === "compact";
