@@ -207,12 +207,16 @@ verify against `list_models`, favorites change monthly):
 - **Anthropic Sonnet (current gen)** — intelligence WITH tool calls.
 
 Then tune `settings` for that model (max_tokens, temperature, streaming) and re-check the
-`tools` assignment. 🚨 **When moving an agent ONTO an Anthropic model, strip any
-`reasoning_effort` / `reasoning_summary` keys from `settings` if the agent has an output
-schema** — the reasoning + structured-output combination silently truncates at ~800
-tokens and backfills required fields with literal "placeholder" strings (feedback
-`0788c8a5`, found 2026-08-23 when ten re-tiered agents carried legacy Gemini settings).
-Also drop any legacy `settings.response_format` block — the platform derives structured
+`tools` assignment. 🚨 **The "placeholder collapse" (feedback
+`0788c8a5`, corrected 2026-08-23):** structured-output runs can stochastically end early
+with schema-VALID JSON whose remaining required fields hold literal "placeholder" strings.
+A controlled A/B on the real translator proved reasoning settings are NOT the cause
+(the earlier "strip reasoning on Anthropic + schema" rule is retired) — this is a
+model-side constrained-decoding failure, and the platform now rejects it loudly at the
+parse gate (`DegenerateOutputError`, aidream `349de5742`): a placeholder-stuffed result
+screams and is never persisted. Your job as an author: judge the TEST RUN's content, not
+just its schema-validity — and if a run dies with DegenerateOutputError, re-run; it is
+stochastic, not a definition defect. Also drop any legacy `settings.response_format` block — the platform derives structured
 output from `output_schema`; a stale provider-tuned duplicate is a second copy of the
 schema that can only drift.
 
