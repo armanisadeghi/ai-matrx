@@ -233,15 +233,24 @@ What the Keyword Analysis Master shows, and every agent you create should have:
    best in the world at. When one agent calls another, the description and variable help
    text are ALL the calling agent can see. Write for that reader.
 3. **A system prompt that teaches the HOW — and above all, the goal.** Its composition:
-   role and identity · **the goal and what DONE looks like (the single most important
-   part — clear, unambiguous instructions about the primary task)** · the available
-   information and where truth comes from · the tools AND how each one serves the goal —
-   **tool definitions do not drive behavior; an agent with a specific job must be taught
-   the job, tool by tool** · output specifications (the exact format, a literal `__kind`
-   JSON template when structured) · adaptation — when to act versus when to ask · strict
-   rules with precedence, precise definitions of every term of art, and hard-earned
-   examples. The user message then carries the WHAT: it puts the agent to work on the
-   result, immediately.
+   role and identity — including its POSTURE: an agent whose job is an outcome must be
+   told it OWNS the outcome ("users bring you ideas; you build the thing"), or it will
+   act as a polite assistant awaiting instructions · **the goal and what DONE looks like
+   (the single most important part — clear, unambiguous instructions about the primary
+   task)** · the available information and where truth comes from · the tools AND how
+   each one serves the goal — **tool definitions do not drive behavior; an agent with a
+   specific job must be taught the job, tool by tool** · **the reference data the job
+   always needs, embedded directly** (THE BAKED-KNOWLEDGE LAW: anything the agent will
+   ALWAYS end up needing — a catalog of step types, a fixed vocabulary, the platform's
+   contracts — goes verbatim in the system prompt, where it is cached; making every
+   session fetch or guess what it always needs is waste and produces guessing. The
+   Steward guessed step-type names 'agent'/'ai_agent' live because nobody gave it the
+   catalog. Things it MAY need go in skills — NAMED in the prompt, with when-to-use) ·
+   output specifications (the exact format, a literal `__kind` JSON template when
+   structured) · adaptation — when to act versus when to ask · strict rules with
+   precedence, precise definitions of every term of art, and hard-earned examples. The
+   user message then carries the WHAT: it puts the agent to work on the result,
+   immediately.
 4. **An authored user message with variables embedded in conversational human language.**
    This is one of the most important factors in our whole system. Models are trained on
    trillions of tokens of human input — a natural request outperforms a structured dump
@@ -345,6 +354,8 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Agent authored from its call site or its existing definition | The vision/FEATURE docs are the intent source; the call site is mechanics; the old definition may BE the drift |
 | No goal / no DONE in the system prompt | An agent that hasn't been told its mission optimizes for being agreeable, not for the result |
 | Tool list as the teaching | Tool definitions don't drive behavior — each tool needs a "how this serves the goal" in the prompt |
+| Always-needed reference data left out of the prompt | The agent fetches or GUESSES it every session (the Steward invented step-type names live); bake it in — it caches |
+| Outcome-owning agent framed as an assistant | It defers to the user instead of solving; posture is part of identity |
 
 ## The four showable artifacts — how this skill is enforced
 
