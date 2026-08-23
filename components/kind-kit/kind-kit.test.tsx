@@ -208,6 +208,18 @@ describe("kind-kit", () => {
     expect(container.querySelectorAll("button").length).toBeGreaterThan(0);
   });
 
+  it("KindHeaderBar accepts an already-created icon element", () => {
+    act(() => {
+      root.render(
+        <KindHeaderBar
+          title="QME report"
+          icon={<svg data-testid="qme-icon" />}
+        />,
+      );
+    });
+    expect(container.querySelector('[data-testid="qme-icon"]')).not.toBeNull();
+  });
+
   it("TagList: chips wrap (never truncate), add/remove/edit/toggle wire through", () => {
     const onAdd = jest.fn();
     const onRemove = jest.fn();

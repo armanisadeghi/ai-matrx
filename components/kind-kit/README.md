@@ -202,7 +202,7 @@ One row that wraps on narrow widths; the copy bar stays on the right.
 | Prop | Type | Default | Meaning |
 |---|---|---|---|
 | `title` | `ReactNode` | required | Usually `data[title_key]`. |
-| `icon` | `ComponentType<{ className?: string }>` | — | Lucide icon. |
+| `icon` | `ComponentType<{ className?: string }> \| ReactElement` | — | Lucide component (`icon={SearchCheck}`) or element (`icon={<SearchCheck />}`). |
 | `subtitle` | `ReactNode` | — | Muted line under the title. |
 | `stats` | `{ label: string; value: ReactNode; icon?; title?: string }[]` | — | Compact "value label" stats (e.g. `{ label: "keywords", value: 42 }`). |
 | `streaming` | `boolean` | `false` | Spinner + `streamingLabel` while the instance is still arriving. |
@@ -331,6 +331,9 @@ commits, Esc cancels), and an inline "Add" input.
 
 ## Change log
 
+- 2026-08-23 — `KindHeaderBar.icon` accepts both component references and
+  already-created elements; DB-authored components cannot crash React by using
+  the common `icon={<Icon />}` form.
 - 2026-08-23 — Created: SortableList, KindPanelGrid, KindPanel, KindHeaderBar,
   StreamingSkeleton (+ useStreamingValue / streamList / streamText),
   KeywordChip / TagList. Allowlisted in `features/agent-apps/utils/allowed-imports.ts`.

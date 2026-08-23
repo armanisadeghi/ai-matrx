@@ -29,7 +29,8 @@ export interface KindHeaderStat {
 export interface KindHeaderBarProps {
   /** The instance title (usually `data[title_key]`). */
   title: React.ReactNode;
-  icon?: React.ComponentType<{ className?: string }>;
+  /** Lucide component or an already-created icon element. */
+  icon?: React.ComponentType<{ className?: string }> | React.ReactElement;
   /** Small muted line under the title (a primary keyword, a subtitle). */
   subtitle?: React.ReactNode;
   /** At-a-glance numbers rendered as compact "value label" stats. */
@@ -53,7 +54,7 @@ export interface KindHeaderBarProps {
 
 export function KindHeaderBar({
   title,
-  icon: Icon,
+  icon,
   subtitle,
   stats,
   streaming = false,
@@ -65,6 +66,19 @@ export function KindHeaderBar({
 }: KindHeaderBarProps) {
   const titleCls = size === "md" ? "text-base" : "text-sm";
   const iconCls = size === "md" ? "h-5 w-5" : "h-4 w-4";
+  const iconNode = React.isValidElement(icon)
+    ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
+        className: cn(
+          "mt-0.5 shrink-0 text-primary",
+          iconCls,
+          (icon.props as { className?: string }).className,
+        ),
+      })
+    : icon
+      ? React.createElement(icon, {
+          className: cn("mt-0.5 shrink-0 text-primary", iconCls),
+        })
+      : null;
   return (
     <div
       className={cn(
@@ -73,7 +87,7 @@ export function KindHeaderBar({
       )}
     >
       <div className="flex min-w-0 flex-1 basis-48 items-start gap-2">
-        {Icon && <Icon className={cn("mt-0.5 shrink-0 text-primary", iconCls)} />}
+        {iconNode}
         <div className="min-w-0 flex-1">
           <div
             className={cn(
