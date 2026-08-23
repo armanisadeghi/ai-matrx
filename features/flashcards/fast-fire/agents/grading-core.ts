@@ -22,6 +22,7 @@ import {
 } from "@/features/audio/utils/audio-mime";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
+  verdictResult,
   verdictFromResult,
   resultFromScore,
   type GradeVerdict,
@@ -79,6 +80,29 @@ export interface SpokenGrade {
    * delivery (Language & Pronunciation mode); null for content-only drills.
    */
   pronunciation: PronunciationAssessment | null;
+}
+
+/** The registered structured-content kind emitted by the spoken grader. */
+export const ANSWER_GRADE_KIND = "answer_grade" as const;
+
+/**
+ * Reassemble the normalized grade into the canonical kind payload so every
+ * spoken-answer surface renders through the registry's one component.
+ */
+export function answerGradeValue(grade: SpokenGrade): Record<string, unknown> {
+  return {
+    __kind: ANSWER_GRADE_KIND,
+    result: verdictResult(grade.verdict),
+    correct: grade.verdict.correct,
+    partial: grade.verdict.partial,
+    misconception: grade.verdict.misconception,
+    explanation: grade.verdict.explanation,
+    score: grade.score,
+    rubric: grade.rubric,
+    transcript: grade.transcript,
+    missing: grade.missing,
+    pronunciation: grade.pronunciation,
+  };
 }
 
 /** Narrow the grader's optional `pronunciation` object (null when absent/empty). */
