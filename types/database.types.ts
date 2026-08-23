@@ -51325,6 +51325,20 @@ export type Database = {
         }
         Returns: number
       }
+      gsc_effective_stamps: {
+        Args: { p_keyword_ids?: string[]; p_site_id: string }
+        Returns: {
+          dimension: string
+          dimension_label: string
+          keyword_id: string
+          pinned: boolean
+          site_scoped: boolean
+          source: string
+          value: string
+          value_id: string
+          value_label: string
+        }[]
+      }
       gsc_geo_area_preview: {
         Args: {
           p_area_id?: string
@@ -51414,6 +51428,18 @@ export type Database = {
           suppression_reason: string
           total_count: number
           traffic_class: string
+        }[]
+      }
+      gsc_keyword_value_for: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          class_source: string
+          keyword_id: string
+          reasons: Json
+          traffic_class: string
+          value_band: string
+          value_score: number
+          value_source: string
         }[]
       }
       gsc_keyword_value_review: {
@@ -51954,6 +51980,12 @@ export type Database = {
           detail: string
           headline: string
           severity: string
+        }[]
+      }
+      gsc_stamp_keyword_set: {
+        Args: { p_site_id: string; p_stamps: Json }
+        Returns: {
+          kw_id: string
         }[]
       }
       gsc_topic_offering_split: {

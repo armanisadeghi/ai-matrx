@@ -11,6 +11,10 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import {
+  parseLevelFilter,
+  parseStampFilter,
+} from "@/features/marketing/search-console/types";
 import type { Json } from "@/types/database.types";
 import type {
   GscBreakdownQuery,
@@ -32,11 +36,24 @@ async function seoDb() {
 const assertData = makeAssertData("reach your Search Console data");
 
 function cleanFilters(filters: GscFilters): Json {
-  const out: Record<string, string> = {};
+  const out: Record<string, Json> = {};
   for (const [key, value] of Object.entries(filters)) {
-    if (typeof value === "string" && value.trim() !== "") {
-      out[key] = value.trim();
+    if (typeof value !== "string" || value.trim() === "") continue;
+    if (key === "stamps") {
+      // C6: `dim:value|dim:value` → [{dimension, value}] (all-of) for the RPC
+      const pairs = parseStampFilter(value).map((p) => ({
+        dimension: p.dimension,
+        value: p.value,
+      }));
+      if (pairs.length > 0) out.stamps = pairs;
+      continue;
     }
+    if (key === "levels") {
+      const levels = parseLevelFilter(value);
+      if (levels.length > 0) out.levels = levels;
+      continue;
+    }
+    out[key] = value.trim();
   }
   return out;
 }

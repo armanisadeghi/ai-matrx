@@ -58,6 +58,8 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["country", "country"],
   ["device", "device"],
   ["search_appearance", "appearance"],
+  ["stamps", "st"],
+  ["levels", "lv"],
 ];
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -259,6 +261,9 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "query_neq",
   "page_contains",
   "page_eq",
+  // C6: dimension stamps + levels are keyword-level — the query/page group
+  "stamps",
+  "levels",
 ];
 const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "country",

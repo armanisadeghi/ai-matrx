@@ -235,3 +235,29 @@ export async function getGscTrend(
   const rows = assertData(response.data, response.error);
   return { rows, total: rows[0]?.total_count ?? 0 };
 }
+
+/**
+ * C6 — Class / Score / Level for EXACTLY the keyword rows a table is showing
+ * (THE SCOPE RULE: never the whole site from the browser). One RPC, one map.
+ */
+export interface GscKeywordValueRow {
+  keyword_id: string;
+  traffic_class: string | null;
+  class_source: string | null;
+  value_score: number | null;
+  value_band: string | null;
+  value_source: string | null;
+}
+
+export async function getGscKeywordValueFor(
+  siteId: string,
+  keywordIds: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, GscKeywordValueRow>> {
+  if (keywordIds.length === 0) return new Map();
+  const response = await (await seoDb())
+    .rpc("gsc_keyword_value_for", { p_site_id: siteId, p_keyword_ids: keywordIds })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error) as GscKeywordValueRow[];
+  return new Map(rows.map((r) => [r.keyword_id, r]));
+}

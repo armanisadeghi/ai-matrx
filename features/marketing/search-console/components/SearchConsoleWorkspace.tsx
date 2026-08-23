@@ -753,6 +753,7 @@ export function SearchConsoleWorkspace() {
                 <FilterBar
                   filters={filters}
                   allowedKeys={allowedFilterKeysForTab(state.tab)}
+                  siteId={state.siteId}
                   onChange={(next) => applyState({ ...state, filters: next })}
                 />
               ) : null}

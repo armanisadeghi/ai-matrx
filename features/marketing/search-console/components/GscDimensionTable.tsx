@@ -14,7 +14,7 @@
  */
 
 import { useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Columns2,
   Eye,
@@ -43,6 +43,9 @@ import {
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
+import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
@@ -143,6 +146,19 @@ export function GscDimensionTable({
   const rows = breakdown.data?.rows ?? [];
   const total = breakdown.data?.total ?? 0;
 
+  // C6 — the spreadsheet columns: Class · Score · Level for the rows on screen.
+  const rowKeywordIds = dimension === "query"
+    ? rows.map((r) => r.keyword_id).filter((id): id is string => !!id).sort()
+    : [];
+  const keywordValues = useQuery({
+    queryKey: ["marketing", "gsc", "keyword-value-for", siteId, rowKeywordIds],
+    queryFn: ({ signal }) => getGscKeywordValueFor(siteId, rowKeywordIds, signal),
+    enabled: dimension === "query" && rowKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const valueFor = (row: GscBreakdownRow) =>
+    row.keyword_id ? keywordValues.data?.get(row.keyword_id) : undefined;
+
   const queryClient = useQueryClient();
   // Watch column wiring (query/page only; hook order stays stable).
   const watchKind = dimension === "page" ? "page" : "query";
@@ -229,6 +245,66 @@ export function GscDimensionTable({
         ? marketingRoutes.sitePage(null, siteId, row.page_id)
         : null,
     ),
+    ...(dimension === "query"
+      ? [
+          {
+            id: "traffic_class",
+            header: "Class",
+            sortable: false,
+            filter: false,
+            width: 110,
+            accessorFn: (row) => valueFor(row)?.traffic_class ?? "",
+            cell: (row) => {
+              const v = valueFor(row);
+              if (!v) return <span className="text-[11px] text-muted-foreground">—</span>;
+              return <ClassChip trafficClass={v.traffic_class} />;
+            },
+          } satisfies MatrxColumnDef<GscBreakdownRow>,
+          {
+            id: "value_score",
+            header: "Score",
+            sortable: false,
+            filter: false,
+            align: "right",
+            width: 80,
+            accessorFn: (row) => valueFor(row)?.value_score ?? null,
+            cell: (row) => {
+              const v = valueFor(row);
+              return (
+                <span className="text-xs tabular-nums text-foreground">
+                  {v?.value_score === null || v?.value_score === undefined ? "—" : Math.round(Number(v.value_score)).toLocaleString()}
+                </span>
+              );
+            },
+          } satisfies MatrxColumnDef<GscBreakdownRow>,
+          {
+            id: "value_band",
+            header: "Level",
+            sortable: false,
+            filter: false,
+            width: 110,
+            accessorFn: (row) => valueFor(row)?.value_band ?? "",
+            cell: (row) => {
+              const v = valueFor(row);
+              if (!v?.value_band) return <span className="text-[11px] text-muted-foreground">—</span>;
+              const tone =
+                v.value_band === "negative"
+                  ? "text-destructive"
+                  : v.value_band === "unvalued"
+                    ? "text-muted-foreground"
+                    : "text-foreground";
+              return (
+                <span
+                  className={`rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium ${tone}`}
+                  title={v.value_source === "override" ? "Your ruling" : v.value_source === "computed" ? "Computed from your dimensions and worth" : "No worth reaches this keyword yet"}
+                >
+                  {humanizeSlug(v.value_band)}
+                </span>
+              );
+            },
+          } satisfies MatrxColumnDef<GscBreakdownRow>,
+        ]
+      : []),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
 

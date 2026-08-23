@@ -72,6 +72,14 @@ export interface GscFilters {
   country?: string;
   device?: string;
   search_appearance?: string;
+  /**
+   * C6 — DIMENSION STAMPS (all-of). Encoded `dimension:value|dimension:value`
+   * in the URL (`st=`); `cleanFilters` sends the RPC `stamps: [{dimension,value}]`.
+   * Keyword-level, so it rides the query / query_page profiles like a query filter.
+   */
+  stamps?: string;
+  /** C6 — value LEVELS, encoded `level|level` (`lv=`); RPC `levels: [...]`. */
+  levels?: string;
 }
 
 export type GscFilterKey = keyof GscFilters;
@@ -85,7 +93,42 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "country",
   "device",
   "search_appearance",
+  "stamps",
+  "levels",
 ];
+
+export interface GscStampFilter {
+  dimension: string;
+  value: string;
+}
+
+/** `dimension:value|dimension:value` → pairs (blank / malformed parts dropped). */
+export function parseStampFilter(encoded: string | undefined): GscStampFilter[] {
+  if (!encoded) return [];
+  return encoded
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const idx = part.indexOf(":");
+      if (idx <= 0) return null;
+      return { dimension: part.slice(0, idx), value: part.slice(idx + 1) };
+    })
+    .filter((p): p is GscStampFilter => !!p && p.value !== "");
+}
+
+export function encodeStampFilter(pairs: readonly GscStampFilter[]): string {
+  return pairs.map((p) => `${p.dimension}:${p.value}`).join("|");
+}
+
+export function parseLevelFilter(encoded: string | undefined): string[] {
+  if (!encoded) return [];
+  return encoded.split("|").map((v) => v.trim()).filter(Boolean);
+}
+
+export function encodeLevelFilter(levels: readonly string[]): string {
+  return levels.join("|");
+}
 
 export type GscRangeKey =
   | "1d"
