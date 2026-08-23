@@ -138,6 +138,7 @@ export const SOURCE_FEATURES = [
   "education_card_images",
   "education_study_pack",
   "education_study_pack_v2",
+  "agent_foundry_v1",
   "endpoint_family_sweep",
   "external_url_change",
   "fork_and_run",
