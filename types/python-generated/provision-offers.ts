@@ -66,6 +66,13 @@ export interface CodeEditorSessionOffer {
   dynamic_context?: string;
 }
 
+/** Offered shape of provision `content_ir.component_authoring` (kind `content_ir.component_authoring.offer`). */
+export interface ContentIrComponentAuthoringOffer {
+  kind: string;
+  component_key?: string;
+  design_brief?: string;
+}
+
 /** Offered shape of provision `content_ir.component_target` (kind `content_ir.component_target.offer`). */
 export interface ContentIrComponentTargetOffer {
   kind_slug: string;
@@ -1811,6 +1818,7 @@ export interface ProvisionOffers {
   "agent_apps.metadata_request": AgentAppsMetadataRequestOffer;
   "agent_factory.build_request": AgentFactoryBuildRequestOffer;
   "code_editor.session": CodeEditorSessionOffer;
+  "content_ir.component_authoring": ContentIrComponentAuthoringOffer;
   "content_ir.component_target": ContentIrComponentTargetOffer;
   "content_ir.kind_authoring": ContentIrKindAuthoringOffer;
   "content_ir.kind_builder": ContentIrKindBuilderOffer;
@@ -2027,6 +2035,7 @@ export const PROVISION_OFFER_KINDS = {
   "agent_apps.metadata_request": "agent_apps.metadata_request.offer",
   "agent_factory.build_request": "agent_factory.build_request.offer",
   "code_editor.session": "code_editor.session.offer",
+  "content_ir.component_authoring": "content_ir.component_authoring.offer",
   "content_ir.component_target": "content_ir.component_target.offer",
   "content_ir.kind_authoring": "content_ir.kind_authoring.offer",
   "content_ir.kind_builder": "content_ir.kind_builder.offer",
