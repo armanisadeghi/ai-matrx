@@ -57,10 +57,19 @@ export function readSearchKindValue<S extends GeneratedKindSlug>(
 }
 
 /**
- * Temporary collection-only reader while the live registry still exposes the
- * pre-cutover Brave schema for `web_search_results`. The richer compiled
- * collection is validated field-by-field by its renderer; item kinds already
- * use the generated registry types through `readSearchKindValue` above.
+ * ESCAPE HATCH — ONE caller, ONE reason. The `web_search_results` SLUG IS
+ * COLLIDED on the live registry: the active row is the 2026-08-09 named-shapes
+ * `workflow_io` registration (a FLAT `{query, urls, results[]}`, no `data[]`,
+ * no `kind_edge` children), while the search pilot's sectioned collection
+ * (`news`/`videos`/`faqs`/`discussions`/`places`/`entity`/`ai_answer`, declared
+ * TS-owned in `features/content-ir/kinds/search-results.ts`) never landed under
+ * that slug. The generated types are CORRECT — they mirror the registry — so
+ * typing this collection against them would bind it to the WRONG shape.
+ *
+ * Until the collision is resolved (KINDS_EVERYWHERE_PLAN §10g GAP 1 follow-on;
+ * FOUND_DEFECTS), this ONE collection reads defensively. Every ITEM inside it
+ * still renders through a fully registry-typed component. Do not add callers:
+ * `check:kind-type-twins` allowlists exactly this file for exactly this reason.
  */
 export function readWebSearchCollectionValue(serverData: unknown): {
   value: Record<string, unknown>;
@@ -100,34 +109,6 @@ export function strings(value: unknown): string[] {
 export function items<T>(value: PartialKind<T>[] | undefined): PartialKind<T>[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is PartialKind<T> => isRecord(item));
-}
-
-/**
- * ESCAPE HATCH — ONE caller, ONE reason. The `web_search_results` SLUG IS
- * COLLIDED on the live registry: the active row is the 2026-08-09 named-shapes
- * `workflow_io` registration (a FLAT `{query, urls, results[]}`), while the
- * search pilot's sectioned collection (`news`/`videos`/`faqs`/`discussions`/
- * `places`/`entity`/`ai_answer`, declared TS-owned in
- * `features/content-ir/kinds/search-results.ts`) never landed under that slug.
- * The generated types are correct — they mirror the registry — so typing this
- * collection against them would type it against the WRONG shape.
- *
- * Until the collision is resolved (KINDS_EVERYWHERE_PLAN §10g GAP 1 follow-on;
- * FOUND_DEFECTS), this one collection reads defensively. Every ITEM inside it
- * still renders through a fully registry-typed component. Do not add callers:
- * `check:kind-type-twins` allowlists exactly this file for exactly this reason.
- */
-export function readCollidedKindValue(serverData: unknown): {
-  value: Record<string, unknown>;
-  isComplete: boolean;
-} {
-  if (isRecord(serverData)) {
-    if (isRecord(serverData.value)) {
-      return { value: serverData.value, isComplete: serverData.isComplete !== false };
-    }
-    return { value: serverData, isComplete: true };
-  }
-  return { value: {}, isComplete: true };
 }
 
 /** Untyped escape hatch for genuinely open payload corners (`Record<string, unknown>`). */
