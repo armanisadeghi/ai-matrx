@@ -49,11 +49,24 @@ export const SCALAR_VALUE_KINDS: ReadonlySet<string> = new Set([
   "boolean",
 ]);
 
+/** THE MEDIA CHANNEL (aidream, 2026-08-22): `file` is ONE durable media
+ * reference (a file id, or a MediaRef wire object `{file_id | url | file_uri,
+ * mime_type?}` — never a signed URL, never inline bytes); `file_list` is an
+ * ordered list of them. The one family besides scalars that may be delivered
+ * as a `variable` — it becomes the turn's image block, never text. As
+ * `context` it is a context entry carrying the durable ref. Mirror of aidream
+ * `MEDIA_VALUE_KINDS`. */
+export const MEDIA_VALUE_KINDS: ReadonlySet<string> = new Set([
+  "file",
+  "file_list",
+]);
+
 /** Generic slugs with fixed schemas — NOT registered content_ir kinds, so a
  * kind chip for one never links to `/shapes/[kind]`. Mirror of aidream
  * `GENERIC_VALUE_SCHEMAS`. */
 export const GENERIC_VALUE_KINDS: ReadonlySet<string> = new Set([
   ...SCALAR_VALUE_KINDS,
+  ...MEDIA_VALUE_KINDS,
   "string_list",
   "json",
 ]);
@@ -269,7 +282,8 @@ export function consumptionMapProblems(
     }
     if (
       (entry.deliver ?? "variable") === "variable" &&
-      !SCALAR_VALUE_KINDS.has(value.kind)
+      !SCALAR_VALUE_KINDS.has(value.kind) &&
+      !MEDIA_VALUE_KINDS.has(value.kind)
     ) {
       problems.push(
         `"${name}" has structured kind "${value.kind}" — deliver it as context, never as a blob variable`,

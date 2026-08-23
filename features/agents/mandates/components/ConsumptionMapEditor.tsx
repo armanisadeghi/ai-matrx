@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   GENERIC_VALUE_KINDS,
+  MEDIA_VALUE_KINDS,
   SCALAR_VALUE_KINDS,
   type ConsumptionEntry,
   type ConsumptionMap,
@@ -141,8 +142,12 @@ function OfferedValueRow({
   onChange: (entry: ConsumptionEntry | null) => void;
 }) {
   const scalar = SCALAR_VALUE_KINDS.has(offered.kind);
+  // Scalars substitute into the prompt; media rides the variable channel as
+  // the turn's image block (THE MEDIA CHANNEL). Everything else is context-only.
+  const media = MEDIA_VALUE_KINDS.has(offered.kind);
+  const canRideVariable = scalar || media;
   const consumed = entry !== undefined;
-  const deliver = entry?.deliver ?? (scalar ? "variable" : "context");
+  const deliver = entry?.deliver ?? (canRideVariable ? "variable" : "context");
 
   const toggleConsumed = (on: boolean) => {
     if (!on) {
@@ -153,7 +158,7 @@ function OfferedValueRow({
       mapType: "offered_value",
       target: offered.name,
       // Structured kinds may only ride context — the server 422s a variable.
-      deliver: scalar ? "variable" : "context",
+      deliver: canRideVariable ? "variable" : "context",
       ...(offered.guaranteed ? {} : { when_absent: "skip" as const }),
     });
   };
@@ -256,23 +261,29 @@ function OfferedValueRow({
                     deliver: v === "context" ? "context" : "variable",
                   })
                 }
-                disabled={disabled || !scalar}
+                disabled={disabled || !canRideVariable}
               >
                 <SelectTrigger className="h-6 w-28 text-[11px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="variable" disabled={!scalar}>
+                  <SelectItem value="variable" disabled={!canRideVariable}>
                     variable
                   </SelectItem>
                   <SelectItem value="context">context</SelectItem>
                 </SelectContent>
               </Select>
             </label>
-            {!scalar && (
+            {!canRideVariable && (
               <span className="text-[10px] text-muted-foreground">
                 Structured kind — context only (never serialized into a blob
                 variable).
+              </span>
+            )}
+            {media && (
+              <span className="text-[10px] text-muted-foreground">
+                Media — as a variable the agent sees it as an image on the
+                first turn; as context it receives the file reference.
               </span>
             )}
             {!offered.guaranteed && (
