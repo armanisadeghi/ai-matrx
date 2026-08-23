@@ -95,7 +95,7 @@ export async function login(redirectToArg: string, formData: FormData) {
 
   // Success lands via a FULL-DOCUMENT navigation (see HardRedirectForm):
   // a soft redirect() here runs in a possibly-stale tab's old runtime and
-  // 404s on the destination's chunks ("This page is out of date" on /welcome).
+  // 404s on the destination's chunks (the chunk-load recovery page on /welcome).
   return { hardRedirect: finalRedirect };
 }
 

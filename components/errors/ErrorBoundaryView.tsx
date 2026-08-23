@@ -386,11 +386,11 @@ export function ErrorBoundaryView({
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const router = useRouter();
   const [resetting, setResetting] = useState(false);
-  const isStaleChunk = isChunkLoadError(error);
+  const isChunkFailure = isChunkLoadError(error);
 
   useEffect(() => {
     console.error(`[ErrorBoundary${context ? ` — ${context}` : ""}]`, error);
-    if (!isStaleChunk) {
+    if (!isChunkFailure) {
       // Feed the systemwide Error Inspector. One place here covers every
       // route-level error.tsx (they all delegate to ErrorBoundaryView).
       captureReactRenderError(error, {
@@ -399,22 +399,21 @@ export function ErrorBoundaryView({
         componentStack: error.digest ? `digest: ${error.digest}` : null,
       });
     }
-  }, [error, context, isStaleChunk]);
+  }, [error, context, isChunkFailure]);
 
-  // Stale chunk after a deploy: the user refreshes on THEIR terms — an
+  // A required chunk failed to load. The user refreshes on THEIR terms — an
   // auto-reload here once destroyed a page full of unsaved work. Other parts
   // of the app (and other tabs) may still hold state; never reload for them.
-  if (isStaleChunk) {
+  if (isChunkFailure) {
     return (
       <div className="h-full flex items-center justify-center py-12 px-4">
         <div className="text-center max-w-md">
           <RefreshCw className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
           <h2 className="text-base font-semibold mb-1">
-            This page is out of date
+            This page couldn&apos;t finish loading
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            A new version of the app was deployed while this tab was open, and
-            part of this page could not load. Refresh when you&apos;re ready.
+            A required part of the page failed to load. Refresh to retry.
           </p>
           <div className="flex items-center justify-center gap-2">
             <Button

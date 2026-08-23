@@ -11,9 +11,9 @@
 //      Protection, so it always answers from the latest deployment) and prompt
 //      when the ids diverge. Polling runs only while the tab is visible, plus
 //      an immediate check when the tab regains visibility/focus.
-//   2. Reactive: the "matrx:stale-chunk" window event (from the boot script's
-//      global listeners or notifyStaleChunk) means a chunk already 404'd —
-//      prompt immediately with firmer copy.
+//   2. Reactive: the "matrx:chunk-load-error" window event (from the boot script's
+//      global listeners or notifyChunkLoadError) means a required module fetch
+//      failed — prompt immediately with firmer, cause-neutral copy.
 //
 // It also raises the __MATRX_APP_BOOTED__ flag that forbids the pre-hydration
 // boot script from ever reloading a live session.
@@ -22,7 +22,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import {
   APP_BOOTED_FLAG,
-  STALE_CHUNK_EVENT,
+  CHUNK_LOAD_ERROR_EVENT,
 } from "@/components/errors/chunk-load-recovery";
 
 const POLL_INTERVAL_MS = 5 * 60_000;
@@ -53,13 +53,13 @@ export function NewVersionWatcher({ deploymentId }: NewVersionWatcherProps) {
       promptedRef.current = true;
       toast(
         kind === "chunk"
-          ? "This page is out of date"
+          ? "Part of this page failed to load"
           : "A new version is available",
         {
           id: TOAST_ID,
           description:
             kind === "chunk"
-              ? "A new version was deployed and part of this page could not load. Refresh when you're ready — unsaved work is kept until you do."
+              ? "Refresh to retry. Unsaved work is kept until you do."
               : "Refresh to see the latest changes.",
           duration: Infinity,
           action: {
@@ -78,11 +78,12 @@ export function NewVersionWatcher({ deploymentId }: NewVersionWatcherProps) {
       );
     };
 
-    const onStaleChunk = () => showPrompt("chunk");
-    window.addEventListener(STALE_CHUNK_EVENT, onStaleChunk);
+    const onChunkLoadError = () => showPrompt("chunk");
+    window.addEventListener(CHUNK_LOAD_ERROR_EVENT, onChunkLoadError);
 
     if (!deploymentId) {
-      return () => window.removeEventListener(STALE_CHUNK_EVENT, onStaleChunk);
+      return () =>
+        window.removeEventListener(CHUNK_LOAD_ERROR_EVENT, onChunkLoadError);
     }
 
     let cancelled = false;
@@ -116,7 +117,7 @@ export function NewVersionWatcher({ deploymentId }: NewVersionWatcherProps) {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
-      window.removeEventListener(STALE_CHUNK_EVENT, onStaleChunk);
+      window.removeEventListener(CHUNK_LOAD_ERROR_EVENT, onChunkLoadError);
     };
   }, [deploymentId]);
 

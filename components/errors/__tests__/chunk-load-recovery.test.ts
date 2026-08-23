@@ -1,16 +1,40 @@
 import {
-  hasStaleChunkSignature,
+  hasChunkLoadErrorSignature,
   isChunkLoadError,
 } from "@/components/errors/chunk-load-recovery";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-describe("stale-graph detection", () => {
-  it("recognises Turbopack's module-factory wording", () => {
-    // Seen in production 2026-08-22 on /work/conversations/[id] back-nav; it
-    // reached the raw error boundary because no pattern matched it.
+describe("chunk-load failure detection", () => {
+  it("does not invent deploy skew from Turbopack's runtime-integrity wording", () => {
+    // Refresh can recover this error, but that does not prove a stale tab. It
+    // also occurs on fresh document loads and must remain diagnostically loud.
     const message =
       "Module 7163177 was instantiated because it was required from module 5477232, but the module factory is not available.";
-    expect(hasStaleChunkSignature(message)).toBe(true);
-    expect(isChunkLoadError(new Error(message))).toBe(true);
+    expect(hasChunkLoadErrorSignature(message)).toBe(false);
+    expect(isChunkLoadError(new Error(message))).toBe(false);
+
+    const bootScriptSource = readFileSync(
+      join(process.cwd(), "components/errors/ChunkRecoveryBootScript.tsx"),
+      "utf8",
+    );
+    expect(bootScriptSource).not.toContain(
+      "/module factory is not available/i.test(msg)",
+    );
+  });
+
+  it("keeps reactive recovery UI free of unsupported deploy claims", () => {
+    for (const relativePath of [
+      "app/global-error.tsx",
+      "components/errors/ErrorBoundaryView.tsx",
+      "components/errors/NewVersionWatcher.tsx",
+    ]) {
+      const source = readFileSync(join(process.cwd(), relativePath), "utf8");
+      expect(source).not.toContain("This page is out of date");
+      expect(source).not.toContain(
+        "A new version of the app was deployed while this tab was open",
+      );
+    }
   });
 
   it("still recognises the webpack-era chunk failures", () => {

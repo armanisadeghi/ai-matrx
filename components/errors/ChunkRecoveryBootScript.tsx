@@ -7,7 +7,7 @@
 // CRITICAL: once React boots (NewVersionWatcher sets __MATRX_APP_BOOTED__),
 // this script must NEVER reload — a mid-session reload destroys unsaved work
 // (this exact bug once wiped a user's page while they opened a context menu).
-// Post-boot it only dispatches the "matrx:stale-chunk" event; NewVersionWatcher
+// Post-boot it only dispatches the "matrx:chunk-load-error" event; NewVersionWatcher
 // turns that into a consent-based "Refresh / Not now" toast.
 //
 // Why inline / pre-hydration: ChunkLoadError can fire during the very first
@@ -17,8 +17,8 @@
 //
 // This script is intentionally tiny and dependency-free — it must never
 // itself depend on a chunk. Keep the flag/event names in sync with
-// chunk-load-recovery.ts (APP_BOOTED_FLAG / STALE_CHUNK_EVENT), and keep the
-// patterns below in sync with STALE_CHUNK_PATTERNS there — this script is a
+// chunk-load-recovery.ts (APP_BOOTED_FLAG / CHUNK_LOAD_ERROR_EVENT), and keep the
+// patterns below in sync with CHUNK_LOAD_ERROR_PATTERNS there — this script is a
 // standalone string that cannot import them, so it is the ONE allowed copy.
 
 import Script from "next/script";
@@ -34,15 +34,14 @@ const SCRIPT = `(function(){
         || /Loading chunk [\\w-]+ failed/i.test(msg)
         || /Failed to load chunk/i.test(msg)
         || /Failed to fetch dynamically imported module/i.test(msg)
-        || /Importing a module script failed/i.test(msg)
-        || /module factory is not available/i.test(msg);
+        || /Importing a module script failed/i.test(msg);
     }
     function onChunkErr(msg) {
       if (!isChunkErr(msg)) return;
       if (window.__MATRX_APP_BOOTED__) {
         // App is live — the user may have unsaved work. NEVER reload here.
         try {
-          window.dispatchEvent(new CustomEvent("matrx:stale-chunk", {
+          window.dispatchEvent(new CustomEvent("matrx:chunk-load-error", {
             detail: { message: String(msg) }
           }));
         } catch (e) {}

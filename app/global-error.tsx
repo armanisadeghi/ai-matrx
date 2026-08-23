@@ -69,7 +69,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   const [voteOption, setVoteOption] = useState<string | null>(null);
-  const isStaleChunk = isChunkLoadError(error);
+  const isChunkFailure = isChunkLoadError(error);
 
   useEffect(() => {
     console.error("[GlobalError]", error);
@@ -95,21 +95,19 @@ export default function GlobalError({
     window.location.href = "/";
   };
 
-  // Stale-tab UI: a new deploy invalidated this tab's chunks. Render a calm
-  // prompt instead of the "Fire Arman" joke — and NEVER auto-reload: the user
-  // may have unsaved work elsewhere on the page. They refresh on their terms.
-  if (isStaleChunk) {
+  // A required chunk failed to load. Render a calm recovery prompt and NEVER
+  // infer the cause: chunk failures also happen on fresh document loads. The
+  // user refreshes on their terms because another surface may hold draft work.
+  if (isChunkFailure) {
     return (
       <html>
         <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-dvh flex items-center justify-center p-4">
           <div className="text-center max-w-md">
             <h2 className="text-lg font-semibold mb-1">
-              This page is out of date
+              This page couldn&apos;t finish loading
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              A new version of the app was deployed while this tab was open,
-              and part of this page could not load. Refresh when you&apos;re
-              ready.
+              A required part of the page failed to load. Refresh to retry.
             </p>
             <button
               onClick={() => window.location.reload()}
