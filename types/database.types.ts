@@ -21552,24 +21552,6 @@ export type Database = {
   }
   history: {
     Tables: {
-      _purge_sandbox_noop: {
-        Row: {
-          id: number | null
-          occurred_at: string | null
-          part: string | null
-        }
-        Insert: {
-          id?: number | null
-          occurred_at?: string | null
-          part?: string | null
-        }
-        Update: {
-          id?: number | null
-          occurred_at?: string | null
-          part?: string | null
-        }
-        Relationships: []
-      }
       row_versions: {
         Row: {
           actor_id: string | null
