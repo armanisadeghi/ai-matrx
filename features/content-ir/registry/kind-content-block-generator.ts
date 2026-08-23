@@ -25,8 +25,7 @@
  */
 
 import type { Json } from "@/types/database.types";
-import { formatBlockLabel } from "@ai-matrx/content-ir";
-import { withRootKind } from "@/features/content-ir/core/emit-payload";
+import { formatBlockLabel, withRootKind } from "@ai-matrx/content-ir";
 
 export type ContentBlockTier = "basic" | "detailed";
 

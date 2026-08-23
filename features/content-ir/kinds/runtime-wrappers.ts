@@ -49,7 +49,7 @@ import {
   readRunResultValue,
   type NodeOutcomeWrapper,
   type RunResultWrapper,
-} from "../core/runtime-wrapper";
+} from "@ai-matrx/content-ir";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import { humanizeKind, joinBlocks } from "./kind-markdown-utils";
 
@@ -111,7 +111,7 @@ export const nodeOutcomeKindSchema: KindSchema = {
         "The nested data-kind instance — delegated to its own component, never re-rendered here.",
     },
     // Declared so the parser keeps it in the value rather than pushing it into
-    // residue. Resolved ONCE at the ingest gate (core/runtime-wrapper.ts) and
+    // residue. Resolved ONCE at the ingest gate (@ai-matrx/content-ir wire/runtime-wrapper) and
     // never read again past it.
     output_ref: {
       type: "string",

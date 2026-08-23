@@ -27,13 +27,13 @@ import {
   type WorkflowRunEvent,
   type WorkflowRunStatus,
 } from "@/features/workflow-runtime/types";
-import { readObjectKind } from "@ai-matrx/content-ir";
 import {
+  readObjectKind,
   rehydrateNodeOutcome,
   rehydrateRunResult,
   type NodeOutcomeWrapper,
   type RunResultWrapper,
-} from "@/features/content-ir/core/runtime-wrapper";
+} from "@ai-matrx/content-ir";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";

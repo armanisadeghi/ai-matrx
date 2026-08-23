@@ -17,7 +17,7 @@
  * The moment this file renders a payload itself, the layer model is dead.
  *
  * The nested payload is ALREADY rehydrated: the elision (`output_ref`) is
- * resolved ONCE at the ingest gate (`features/content-ir/core/runtime-wrapper.ts`),
+ * resolved ONCE at the ingest gate (`@ai-matrx/content-ir` `wire/runtime-wrapper`),
  * before anything reads the wrapper. Nothing here goes looking for a frame.
  *
  * Bare by construction: the host (a readout step box, a deliverable card, a
@@ -25,9 +25,8 @@
  */
 
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { readObjectKind } from "@ai-matrx/content-ir";
-import { readNodeOutcomeValue } from "@/features/content-ir/core/runtime-wrapper";
-import type { NodeOutcomeWrapper } from "@/features/content-ir/core/runtime-wrapper";
+import { readNodeOutcomeValue, readObjectKind } from "@ai-matrx/content-ir";
+import type { NodeOutcomeWrapper } from "@ai-matrx/content-ir";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { SettledOutputBody } from "@/features/workflow-runtime/components/SettledOutputBody";
 export interface NodeOutcomeBlockProps {

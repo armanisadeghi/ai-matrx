@@ -10,7 +10,7 @@
  */
 
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
-import { IR_PARTIAL_KEY } from "../core/partial-kind";
+import { IR_PARTIAL_KEY } from "@ai-matrx/content-ir";
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
 import {
   envelopeFromPartialKind,

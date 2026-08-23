@@ -142,7 +142,7 @@ describe("HOLE B — evicted fingerprint slugs still arrive on the wire as outpu
 
 test.todo(
   "runtime wrapper elision (output_ref) — rehydrateNodeOutcome/rehydrateRunResult " +
-    "(features/content-ir/core/runtime-wrapper.ts) have ZERO callers: the ingest gate " +
+    "(@ai-matrx/content-ir wire/runtime-wrapper) have ZERO callers: the ingest gate " +
     "(workflow-runs.slice node_completed) never reads event.wrapper, despite the module " +
     "doc claiming rehydration happens there. Pin the reducer's wrapper ingestion the " +
     "moment the in-flight wrapper render half lands (module is untracked as of 2026-08-21).",

@@ -27,7 +27,7 @@ import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import {
   emitPayloadFence,
   emitPayloadJson,
-} from "@/features/content-ir/core/emit-payload";
+} from "@ai-matrx/content-ir";
 
 interface KindExamplePreviewProps {
   kind: string;

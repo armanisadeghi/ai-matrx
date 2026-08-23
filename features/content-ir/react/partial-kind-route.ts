@@ -3,7 +3,7 @@
  *
  * Cross-repo system-of-record (read it before changing anything here):
  * `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md` §8.
- * The reader/validator half lives in `../core/partial-kind.ts`; the wire gate
+ * The reader/validator half lives in `@ai-matrx/content-ir` (`wire/partial-kind`); the wire gate
  * runs in the execution system's `process-stream.ts`.
  *
  * WHAT THIS DOES
@@ -56,8 +56,8 @@ import {
   IR_PARTIAL_KEY,
   isProvisionalKind,
   readPartialKindEvent,
-} from "../core/partial-kind";
-import type { PartialKindEvent } from "../core/partial-kind";
+} from "@ai-matrx/content-ir";
+import type { PartialKindEvent } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import { readEnvelope } from "../redux/render-block-envelope";
 import { applyIrKindRoute } from "./kind-route";

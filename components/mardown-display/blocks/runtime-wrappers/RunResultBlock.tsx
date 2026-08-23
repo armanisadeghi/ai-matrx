@@ -16,8 +16,8 @@
  * showing both is the duplication the wrapper exists to prevent.
  */
 
-import { readRunResultValue } from "@/features/content-ir/core/runtime-wrapper";
-import type { RunResultWrapper } from "@/features/content-ir/core/runtime-wrapper";
+import { readRunResultValue } from "@ai-matrx/content-ir";
+import type { RunResultWrapper } from "@ai-matrx/content-ir";
 import NodeOutcomeBlock, { DelegatedOutput } from "./NodeOutcomeBlock";
 
 export interface RunResultBlockProps {

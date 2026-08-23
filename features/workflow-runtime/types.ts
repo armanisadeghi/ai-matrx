@@ -147,7 +147,7 @@ export interface RunRow {
   /**
    * The `run_result` runtime wrapper — additive, and absent on a server that
    * predates it. Rehydrated (and typed) at the ingest gate; see
-   * `features/content-ir/core/runtime-wrapper.ts`.
+   * `@ai-matrx/content-ir` (`wire/runtime-wrapper`).
    */
   result?: Record<string, unknown> | null;
 }

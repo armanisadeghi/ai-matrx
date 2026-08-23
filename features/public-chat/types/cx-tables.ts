@@ -72,7 +72,7 @@ export interface CxTextContent {
    * Open metadata bag (mirrors the python-generated `TextPart.metadata`).
    * Carries `__ir` — the content-ir `IrEnvelopeCache` stamped at stream
    * commit (`assembleMessageParts`) so reloads reuse parsed envelopes
-   * instead of re-parsing. See features/content-ir/core/envelope-cache.ts.
+   * instead of re-parsing. See `@ai-matrx/content-ir` (core/envelope-cache).
    */
   metadata?: Record<string, unknown>;
 }

@@ -206,7 +206,7 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { patchAgentConversationMetadata } from "@/features/agents/redux/conversation-list/conversation-list.slice";
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
-import { makePartialKindStalenessGate } from "@/features/content-ir/core/partial-kind";
+import { makePartialKindStalenessGate } from "@ai-matrx/content-ir";
 import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
 import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
