@@ -8,6 +8,7 @@
  * add its descriptor here — a kind without one renders a disabled action.
  */
 
+import { describeKeywordMeaningProposal } from "@/features/marketing/seo/value-system/suggestions/proposal";
 import type { AssistAction } from "../types";
 
 export interface AssistActionDescriptor {
@@ -54,6 +55,17 @@ export function describeAssistAction(
           "Makes this change on the server. You can undo it afterwards.",
         receipt: "Done — the change has been made.",
       };
+    case "apply_keyword_meaning": {
+      // The verb, the explainer and the receipt all read the ONE describer in
+      // proposal.ts, so the sentence the user approves is the sentence that
+      // names the write that happens.
+      const { writePath } = describeKeywordMeaningProposal(action.proposal);
+      return {
+        verb: "Approve",
+        explainer: `${writePath} Until you approve it, no agent can see this suggestion.`,
+        receipt: "Approved — this is now part of how your keywords are read.",
+      };
+    }
     case "apply_page_meta": {
       const what = action.metaTitle
         ? action.metaDescription

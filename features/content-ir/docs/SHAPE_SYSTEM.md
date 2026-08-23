@@ -140,7 +140,7 @@ Until this shipped **nothing could write `is_active`**: the agent toolset hardco
 - **Version pins are FRESH, never page-load snapshots:** save and rebind re-read the definition's live `version` (+ `emitted_json_schema` for rebind) at write time; a mid-session bump surfaces as `versionBumped` → inline notice on the Test tab ("Shape updated to v{n} since you opened this page").
 - **Repin is honest:** `repinKindInstance` (a kind-instance schema-version repin, not a Mandate Rebind) validates the data against the CURRENT `emitted_json_schema` first and refuses loudly on failure — never a blind version bump (P-1 parity).
 - **Edit round-trip preserves stored `""`:** `emptyStringSeededFields` + `assembleKindInstance`'s `emptyStringFields` option keep a string field legitimately holding `""` from being omitted on re-save (test-pinned).
-- **Reserved slugs:** `RESERVED_SHAPE_SLUGS` (studio/constants.ts — the static `/shapes` segments: `instances`, `new`, `admin`) are refused at creation (`findTakenSlugs` + CreateShapeDialog "reserved" status); a kind with one of these slugs is unreachable by routing. New static segment under /shapes = add its slug.
+- **Reserved slugs:** `RESERVED_SHAPE_SLUGS` (studio/constants.ts — the static `/shapes` segments: `all`, `id`, `instances`, `new`, `admin`) are refused at creation (`findTakenSlugs` + CreateShapeDialog "reserved" status); a kind with one of these slugs is unreachable by routing. New static segment under /shapes = add its slug.
 - **Surfaces:** Test tab Save (`ShapeTestTab`) → toast + "View in Instances"; `/shapes/[kind]/instances` (`ShapeInstancesTab`, ssr:false loader) — list (validation dot, pinned-version chip when `kind_version` < current), render through `KindInstanceRender`, Edit via `KindInputForm initialValue` (the additive prefill prop; inverse seeding = `initialValuesFromInstance`, test-pinned round-trip), soft Delete (`ConfirmDialog`), Rebind.
 - **Permalink:** `/shapes/instances/[id]` resolves kind → redirects to `/shapes/[kind]/instances?i=<id>`; it IS the sharing-registry `url_path_template` for `content_ir_kind_instance` — keep them in lockstep (`shapeInstancePermalink`).
 - **Save-from-chat:** assistant-message action "Save to my Shapes" (`messageActionRegistry` → lazy `studio/message-kind-instances.ts`); hot-path gate is `studio/message-kind-gate.ts` (marker substring + auth). Extraction reuses the materialization detection (splitter → envelope `reconstructRegionValue` → JSON-parse fallback), gated on registry resolution — never a bespoke re-parse.
@@ -182,6 +182,8 @@ Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/sy
 - Python enablement shipped in aidream: `.claude/skills/workflow-io-kinds/` + `docs/workflow/KINDS_ROLLOUT.md`.
 
 ## Change Log
+
+- 2026-08-23 — **Canonical Shape discovery shipped.** `/shapes` is the public module landing; `/shapes/all` is the authenticated `EntityListPage` inventory with server-ranked search, URL-backed sort/filter/pagination, Mine/My Orgs/Shared/Public scope counts, and explicit origin/visibility facets. Shape UUID EntityRefs open through `/shapes/id/[id]`; the old split catalog/list implementation is deleted.
 
 - 2026-08-23 — **kind-kit shipped** (`components/kind-kit/`): six allowlisted primitives for DB-authored kind components so the Artisan imports rather than rebuilds drag-and-drop, grids, panels, header/copy bars, skeletons and chips; contracts in its README, proof page `/demos/kind-kit`, contract tests `components/kind-kit/kind-kit.test.tsx`. See "DB kind components".
 

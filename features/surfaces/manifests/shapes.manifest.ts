@@ -9,7 +9,8 @@
  *
  * Routes covered (all real, all RLS-scoped with the viewer's JWT — never an
  * admin RPC):
- *   /shapes                    → the list (mine + platform library)
+ *   /shapes                    → the public module landing (no runtime emitter)
+ *   /shapes/all                → the canonical scoped inventory
  *   /shapes/[kind]             → Preview: canonical examples through the real
  *                                render route + the owner editor
  *   /shapes/[kind]/schema      → the stored field elements + emitted JSON Schema
@@ -103,7 +104,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Shape catalog",
     sortOrder: 700,
     description:
-      "The /shapes list view: the viewer's own shapes and the platform library.",
+      "The /shapes/all inventory: Mine, My Orgs, Shared, and Public Shapes.",
   },
   {
     key: "shape_draft",
@@ -672,13 +673,13 @@ export const shapesManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are in the Shape Studio — the user-facing registry of the Matrx Shape System. A "shape" is the product word; the technical noun is a KIND, and its slug (kind_slug) is the token that every \`__kind\` payload and every Shape System tool uses. Always refer to a shape by its slug when acting on it.
 WHICH VALUES EXIST DEPENDS ON THE ROUTE — nothing here is guaranteed, so check for emptiness before reasoning:
-  - /shapes (studio_tab "list") — shape_count, my_shapes, platform_shapes, shape_search_query. NO kind-detail values.
+  - /shapes/all (studio_tab "list") — shape_count, my_shapes, platform_shapes, shape_search_query. NO kind-detail values. The /shapes route is the public landing and emits nothing.
   - /shapes/[kind] and /shapes/[kind]/schema (studio_tab "preview" / "schema") — the full kind identity, kind_field_data and kind_emitted_json_schema, the samples (kind_examples, counts, canonical flag) and, for the owner, the activation verdict.
   - /shapes/[kind]/instances (studio_tab "instances") — kind identity plus kind_instances, kind_instance_count, and the focused instance. The schema and activation values are NOT emitted here.
   - /shapes/[kind]/test (studio_tab "test") — kind identity plus test_draft_instance and test_save_state. The schema, samples, and activation values are NOT emitted here.
   - /shapes/new (studio_tab "new") — only new_shape_intent, new_shape_sample, shape_creator_agent_id.
   - /shapes/instances/[id] is a permalink resolver that redirects; it renders nothing and emits nothing.
-Three things to get right. First, the emitted JSON Schema is the AUTHORITY on validity — validate any payload you propose against it rather than inferring structure from a sample. Second, \`is_active\` is a VERDICT from a dual gate, not a flag you may recommend flipping casually: both the structural leg (the canonical sample validates) and the render leg (that sample lights up a real component) must pass, and activation_reasons tells you exactly what is blocking. Third, instances store the PURE payload with the \`__kind\` wrapper stripped, pinned to the kind version they were saved at — a pinned version older than kind_version means the instance may not satisfy the current schema.
+Three things to get right. First, the emitted JSON Schema is the AUTHORITY on validity — validate any payload you propose against it rather than inferring structure from a sample. Second, \`is_active\` is a VERDICT from a dual gate, not a flag you may recommend flipping casually: both the structural leg (the canonical sample validates) and the render leg (that sample lights up a real component) must pass, and activation_reasons tells you exactly what is blocking. Third, instances store the root \`__kind\` marker as part of the payload and pin the kind version they were saved at — a pinned version older than kind_version means the instance may not satisfy the current schema.
 Detection rows (which XML tag or fence language maps to this kind) are deliberately not part of this surface — no studio route loads them, so never claim a kind is or is not detected from what you see here.
 </surface_intro>`,
   groups,

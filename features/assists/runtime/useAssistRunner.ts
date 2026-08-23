@@ -34,6 +34,7 @@ import type { Assist } from "../types";
 
 // Built-in capabilities register by side-effect import. New handlers are
 // added by importing them here.
+import "./handlers/apply-keyword-meaning";
 import "./handlers/apply-page-meta";
 import "./handlers/launch-agent";
 import "./handlers/run-mandate";
