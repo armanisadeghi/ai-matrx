@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 405 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 417 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "c23441f10d8d";
+export const KIND_REGISTRY_FINGERPRINT = "0af369f09d65";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6452,6 +6452,50 @@ export interface DigitalPrReputationBriefV1 {
 }
 
 /**
+ * Kind `directory_create_result` (registry v3).
+ */
+export interface DirectoryCreateResult {
+  path?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "directory_create_result";
+  created?: string;
+}
+
+/**
+ * Kind `directory_entry` (registry v4).
+ */
+export interface DirectoryEntry {
+  name?: string;
+  path?: string;
+  size?: number | null;
+  mtime?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "directory_entry";
+  is_dir?: boolean;
+}
+
+/**
+ * Kind `directory_listing` (registry v4).
+ */
+export interface DirectoryListing {
+  path?: string;
+  count?: number;
+  limit?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "directory_listing";
+  entries?: DirectoryEntry[];
+  pattern?: string | null;
+  recursive?: boolean | null;
+  truncated?: boolean | null;
+}
+
+/**
  * Kind `discussion_result` (registry v6).
  */
 export interface DiscussionResult {
@@ -6702,6 +6746,110 @@ export interface FileDownloadResult {
 }
 
 /**
+ * Kind `file_edit_applied` (registry v3).
+ */
+export interface FileEditApplied {
+  mode?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_edit_applied";
+  edit_index?: number;
+  added_chars?: number | null;
+  delta_chars?: number | null;
+  matches_replaced?: number | null;
+}
+
+/**
+ * Kind `file_edit_failure` (registry v3).
+ */
+export interface FileEditFailure {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_edit_failure";
+  reason?: string;
+  edit_index?: number;
+  old_text_preview?: string;
+}
+
+/**
+ * Kind `file_edit_result` (registry v4).
+ */
+export interface FileEditResult {
+  path?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_edit_result";
+  replaced?: number;
+  size_after?: number | null;
+  size_before?: number | null;
+  old_str_count?: number;
+}
+
+/**
+ * Kind `file_patch_result` (registry v4).
+ */
+export interface FilePatchResult {
+  path?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_patch_result";
+  created?: boolean;
+  size_after?: number | null;
+  size_before?: number | null;
+  edits_failed?: FileEditFailure[];
+  edits_applied?: FileEditApplied[];
+}
+
+/**
+ * Kind `file_read_result` (registry v3).
+ */
+export interface FileReadResult {
+  path?: string;
+  size?: number;
+  limit?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_read_result";
+  offset?: number | null;
+  content?: string;
+  truncated?: boolean;
+  next_offset?: number | null;
+}
+
+/**
+ * Kind `file_search_match` (registry v3).
+ */
+export interface FileSearchMatch {
+  path?: string;
+  size?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_search_match";
+  matches?: string[];
+}
+
+/**
+ * Kind `file_search_results` (registry v3).
+ */
+export interface FileSearchResults {
+  path?: string | null;
+  count?: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_search_results";
+  pattern?: string | null;
+  results?: FileSearchMatch[];
+  content_search?: boolean | null;
+}
+
+/**
  * Kind `file_text_content` (registry v5).
  */
 export interface FileTextContent {
@@ -6743,6 +6891,26 @@ export interface FileUploadResult {
   mime_type?: string | null;
   size_bytes?: number;
   visibility?: string | null;
+}
+
+/**
+ * Kind `file_write_result` (registry v4).
+ */
+export interface FileWriteResult {
+  mode?: string | null;
+  path?: string;
+  size?: number | null;
+  stat?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "file_write_result";
+  bytes_written?: number | null;
 }
 
 /**
@@ -12215,6 +12383,23 @@ export interface Timeline {
 }
 
 /**
+ * What a ``bundle:list_<name>`` lister returns after swapping the toolset.
+ *  *
+ *  * Kind `tool_bundle_listing` (registry v3).
+ */
+export interface ToolBundleListing {
+  count?: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "tool_bundle_listing";
+  bundle?: string;
+  server_slug?: string | null;
+  tools_loaded?: string[];
+  skipped_unresolved?: string[];
+}
+
+/**
  * Kind `topic_assignment_batch_v1` (registry v4).
  */
 export interface TopicAssignmentBatchV1 {
@@ -16208,6 +16393,9 @@ export type GeneratedKindSlug =
   | "decision_tree"
   | "diagram_spec"
   | "digital_pr_reputation_brief_v1"
+  | "directory_create_result"
+  | "directory_entry"
+  | "directory_listing"
   | "discussion_result"
   | "dispatch_result"
   | "document_quad_detection"
@@ -16222,9 +16410,17 @@ export type GeneratedKindSlug =
   | "file_binary_content"
   | "file_discovery_result"
   | "file_download_result"
+  | "file_edit_applied"
+  | "file_edit_failure"
+  | "file_edit_result"
+  | "file_patch_result"
+  | "file_read_result"
+  | "file_search_match"
+  | "file_search_results"
   | "file_text_content"
   | "file_tree_result"
   | "file_upload_result"
+  | "file_write_result"
   | "filter_result"
   | "flashcard_set"
   | "flattened_list_result"
@@ -16447,6 +16643,7 @@ export type GeneratedKindSlug =
   | "text_quality_check_result"
   | "text_result"
   | "timeline"
+  | "tool_bundle_listing"
   | "topic_assignment_batch_v1"
   | "topic_idea"
   | "topic_ideas"
@@ -16616,6 +16813,9 @@ export interface KindPayloadBySlug {
   "decision_tree": DecisionTree;
   "diagram_spec": DiagramSpec;
   "digital_pr_reputation_brief_v1": DigitalPrReputationBriefV1;
+  "directory_create_result": DirectoryCreateResult;
+  "directory_entry": DirectoryEntry;
+  "directory_listing": DirectoryListing;
   "discussion_result": DiscussionResult;
   "dispatch_result": DispatchResult;
   "document_quad_detection": DocumentQuadDetection;
@@ -16630,9 +16830,17 @@ export interface KindPayloadBySlug {
   "file_binary_content": FileBinaryContent;
   "file_discovery_result": FileDiscoveryResult;
   "file_download_result": FileDownloadResult;
+  "file_edit_applied": FileEditApplied;
+  "file_edit_failure": FileEditFailure;
+  "file_edit_result": FileEditResult;
+  "file_patch_result": FilePatchResult;
+  "file_read_result": FileReadResult;
+  "file_search_match": FileSearchMatch;
+  "file_search_results": FileSearchResults;
   "file_text_content": FileTextContent;
   "file_tree_result": FileTreeResult;
   "file_upload_result": FileUploadResult;
+  "file_write_result": FileWriteResult;
   "filter_result": FilterResult;
   "flashcard_set": FlashcardSet;
   "flattened_list_result": FlattenedListResult;
@@ -16855,6 +17063,7 @@ export interface KindPayloadBySlug {
   "text_quality_check_result": TextQualityCheckResult;
   "text_result": TextResult;
   "timeline": Timeline;
+  "tool_bundle_listing": ToolBundleListing;
   "topic_assignment_batch_v1": TopicAssignmentBatchV1;
   "topic_idea": TopicIdea;
   "topic_ideas": TopicIdeas;
@@ -17028,6 +17237,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "decision_tree",
   "diagram_spec",
   "digital_pr_reputation_brief_v1",
+  "directory_create_result",
+  "directory_entry",
+  "directory_listing",
   "discussion_result",
   "dispatch_result",
   "document_quad_detection",
@@ -17042,9 +17254,17 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "file_binary_content",
   "file_discovery_result",
   "file_download_result",
+  "file_edit_applied",
+  "file_edit_failure",
+  "file_edit_result",
+  "file_patch_result",
+  "file_read_result",
+  "file_search_match",
+  "file_search_results",
   "file_text_content",
   "file_tree_result",
   "file_upload_result",
+  "file_write_result",
   "filter_result",
   "flashcard_set",
   "flattened_list_result",
@@ -17267,6 +17487,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "text_quality_check_result",
   "text_result",
   "timeline",
+  "tool_bundle_listing",
   "topic_assignment_batch_v1",
   "topic_idea",
   "topic_ideas",

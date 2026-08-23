@@ -1,0 +1,14 @@
+{
+  "directory_create_result": { "path": null, "__kind": "directory_create_result", "created": "notes/2026" },
+  "directory_entry": { "name": "todo.md", "path": "notes/todo.md", "size": 24, "mtime": 1755993600, "__kind": "directory_entry", "is_dir": false },
+  "directory_listing": { "path": "notes", "count": 1, "limit": null, "__kind": "directory_listing", "entries": [{ "name": "todo.md", "path": "notes/todo.md", "size": 24, "mtime": null, "__kind": "directory_entry", "is_dir": false }], "pattern": null, "recursive": null, "truncated": null },
+  "file_edit_applied": { "mode": "replace", "__kind": "file_edit_applied", "edit_index": 0, "added_chars": null, "delta_chars": -12, "matches_replaced": null },
+  "file_edit_failure": { "__kind": "file_edit_failure", "reason": "old_text not found", "edit_index": 1, "old_text_preview": "def gone(" },
+  "file_edit_result": { "path": "src/main.py", "__kind": "file_edit_result", "replaced": 1, "size_after": 500, "size_before": 512, "old_str_count": 1 },
+  "file_patch_result": { "path": "src/main.py", "__kind": "file_patch_result", "created": false, "size_after": 500, "size_before": 512, "edits_failed": [], "edits_applied": [{ "mode": "replace", "__kind": "file_edit_applied", "edit_index": 0, "added_chars": null, "delta_chars": -12, "matches_replaced": null }] },
+  "file_read_result": { "path": "notes/todo.md", "size": 24, "limit": null, "__kind": "file_read_result", "offset": null, "content": "- ship the tools sweep\n", "truncated": false, "next_offset": null },
+  "file_search_match": { "path": "notes/todo.md", "size": null, "__kind": "file_search_match", "matches": ["- ship the tools sweep"] },
+  "file_search_results": { "path": null, "count": 1, "__kind": "file_search_results", "pattern": null, "results": [{ "path": "notes/todo.md", "size": null, "__kind": "file_search_match", "matches": ["- ship the tools sweep"] }], "content_search": true },
+  "file_write_result": { "mode": "write", "path": "notes/todo.md", "size": null, "stat": null, "__kind": "file_write_result", "bytes_written": 24 },
+  "tool_bundle_listing": { "count": 2, "__kind": "tool_bundle_listing", "bundle": "supabase", "server_slug": "supabase", "tools_loaded": ["execute_sql", "list_tables"], "skipped_unresolved": [] }
+}
