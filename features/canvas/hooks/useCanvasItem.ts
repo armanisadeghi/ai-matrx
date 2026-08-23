@@ -96,6 +96,12 @@ export interface UseCanvasItemOptions {
    * like mermaid show user edits made after materialization).
    */
   resolve?: "exact" | "latest";
+  /**
+   * Report a missing row through the record-unavailable boundary. Disable
+   * only when the caller has a durable inline fallback and absence is an
+   * expected, recoverable state.
+   */
+  reportUnavailable?: boolean;
 }
 
 export function useCanvasItem(
@@ -107,6 +113,7 @@ export function useCanvasItem(
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const resolve = options?.resolve ?? "exact";
+  const reportUnavailable = options?.reportUnavailable ?? true;
 
   useEffect(() => {
     let cancelled = false;
@@ -124,7 +131,7 @@ export function useCanvasItem(
         if (cancelled) return;
         setRow(r);
         setLoading(false);
-        if (!r) {
+        if (!r && reportUnavailable) {
           setError(
             recordUnavailable({
               entity: "artifact",
@@ -144,7 +151,7 @@ export function useCanvasItem(
     return () => {
       cancelled = true;
     };
-  }, [artifactId, nonce, resolve]);
+  }, [artifactId, nonce, reportUnavailable, resolve]);
 
   const refetch = useCallback(() => {
     if (artifactId) {

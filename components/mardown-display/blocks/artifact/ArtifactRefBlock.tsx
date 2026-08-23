@@ -80,8 +80,14 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
   const hintWantsLatest = Boolean(
     artifactTypeHint && getArtifactDef(artifactTypeHint)?.userEditable,
   );
+  // A wire body is the durable recovery source. Missing backing rows are
+  // expected here: reconciliation rebuilds them asynchronously while this
+  // renderer immediately shows the inline archive. Do not file that handled
+  // state as a red system error; refs without a fallback still report loudly.
+  const reportUnavailable = fallbackContent == null;
   const exact = useCanvasItem(hintWantsLatest ? null : artifactId, {
     resolve: "exact",
+    reportUnavailable,
   });
   const discoveredWantsLatest = Boolean(
     !hintWantsLatest &&
@@ -90,7 +96,7 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
   );
   const latest = useCanvasItem(
     hintWantsLatest || discoveredWantsLatest ? artifactId : null,
-    { resolve: "latest" },
+    { resolve: "latest", reportUnavailable },
   );
   const row = hintWantsLatest || discoveredWantsLatest ? latest.row : exact.row;
   const loading =
