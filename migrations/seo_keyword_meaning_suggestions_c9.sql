@@ -274,6 +274,12 @@ GRANT EXECUTE ON FUNCTION seo.site_value_worth_upsert(uuid,uuid,text,numeric,tex
 --     "a rejected suggestion is never re-proposed verbatim", the same rule the
 --     rejected keyword edges use, keyed on the payload hash;
 --   * a payload already PENDING is refreshed, never stacked.
+-- The proposal arrives carrying SLUGS — an agent names a dimension and a value
+-- in words, never a uuid. Enrichment fills in the ids and the human labels
+-- BEFORE hashing, so the stored payload is canonical, the review card never
+-- renders an opaque id, and the same proposal always produces the same hash.
+DROP FUNCTION IF EXISTS seo.keyword_meaning_suggest(uuid,jsonb,text,text,text,real,jsonb,jsonb);
+
 CREATE OR REPLACE FUNCTION seo.keyword_meaning_suggest(
   p_site_id    uuid,
   p_proposal   jsonb,
@@ -285,7 +291,8 @@ CREATE OR REPLACE FUNCTION seo.keyword_meaning_suggest(
   p_provenance jsonb   DEFAULT '{}'::jsonb
 )
 RETURNS TABLE(
-  assist_id uuid, status text, dedupe_key text, payload_hash text, addressee uuid
+  assist_id uuid, status text, dedupe_key text, payload_hash text,
+  addressee uuid, proposal jsonb
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -295,12 +302,19 @@ DECLARE
   v_uid       uuid := (SELECT auth.uid());
   v_site      record;
   v_kind      text := p_proposal ->> 'proposal';
+  v_p         jsonb := p_proposal;
   v_hash      text;
   v_dedupe    text;
   v_existing  record;
   v_action    jsonb;
   v_id        uuid;
   v_source    text;
+  v_dim       record;
+  v_val       record;
+  v_fact      record;
+  v_label     text;
+  v_ids       uuid[];
+  v_phrases   jsonb;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'seo_suggest_unauthenticated';
@@ -314,7 +328,8 @@ BEGIN
     RAISE EXCEPTION 'seo_suggest_title_required: say in one line what you are proposing';
   END IF;
 
-  SELECT s.id, s.organization_id, s.created_by, COALESCE(s.name, s.domain) AS label
+  SELECT s.id AS id, s.organization_id AS organization_id, s.created_by AS created_by,
+         COALESCE(s.name, s.domain) AS label
     INTO v_site
     FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL;
   IF v_site.id IS NULL THEN
@@ -324,20 +339,106 @@ BEGIN
     RAISE EXCEPTION 'seo_suggest_no_addressee: site % has no owner to approve this', p_site_id;
   END IF;
 
-  -- jsonb text is already canonical (sorted keys, no whitespace), so the same
-  -- proposal always hashes the same regardless of how the agent ordered it.
-  v_hash   := md5(p_proposal::text);
+  IF v_kind IN ('matcher','worth','stamp') THEN
+    SELECT d.id AS id, d.slug AS slug, d.name AS label,
+           COALESCE(d.metadata->>'scope','platform') AS scope,
+           (d.metadata->>'site_id')::uuid AS dim_site_id
+      INTO v_dim
+    FROM platform.categories d
+    WHERE d.dimension = 'seo_facet' AND d.parent_id IS NULL AND d.deleted_at IS NULL
+      AND d.slug = (v_p ->> 'dimensionSlug');
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'seo_suggest_unknown_dimension: there is no dimension named "%"', COALESCE(v_p ->> 'dimensionSlug','(none)');
+    END IF;
+    IF v_dim.scope = 'site' AND v_dim.dim_site_id IS DISTINCT FROM p_site_id THEN
+      RAISE EXCEPTION 'seo_suggest_forbidden: "%" belongs to another site', v_dim.slug;
+    END IF;
+
+    SELECT v.id AS id, v.name AS label
+      INTO v_val
+    FROM platform.categories v
+    WHERE v.parent_id = v_dim.id AND v.deleted_at IS NULL
+      AND v.slug = v_dim.slug || ':' || (v_p ->> 'valueSlug');
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'seo_suggest_unknown_value: "%" is not a value of "%". Propose it on the dimension first.', COALESCE(v_p ->> 'valueSlug','(none)'), v_dim.slug;
+    END IF;
+
+    v_p := v_p || jsonb_build_object(
+      'valueId',        v_val.id,
+      'dimensionSlug',  v_dim.slug,
+      'dimensionLabel', v_dim.label,
+      'valueSlug',      v_p ->> 'valueSlug',
+      'valueLabel',     v_val.label
+    );
+  END IF;
+
+  IF v_kind = 'matcher' THEN
+    IF (v_p ->> 'matcherKind') = 'place' AND (v_p ->> 'placeId') IS NOT NULL THEN
+      SELECT g.name INTO v_label FROM seo.geo_place g
+       WHERE g.id = (v_p ->> 'placeId')::uuid AND g.deleted_at IS NULL;
+      IF v_label IS NULL THEN
+        RAISE EXCEPTION 'seo_suggest_unknown_place: % is not a place in the gazetteer', v_p ->> 'placeId';
+      END IF;
+      v_p := v_p || jsonb_build_object('placeLabel', v_label);
+    ELSIF (v_p ->> 'matcherKind') = 'fact' THEN
+      SELECT v.id AS id, d.name || ' -> ' || v.name AS label
+        INTO v_fact
+      FROM platform.categories v
+      JOIN platform.categories d ON d.id = v.parent_id AND d.deleted_at IS NULL
+      WHERE v.deleted_at IS NULL AND v.dimension = 'seo_facet'
+        AND d.slug = (v_p ->> 'factDimensionSlug')
+        AND v.slug = (v_p ->> 'factDimensionSlug') || ':' || (v_p ->> 'factValueSlug');
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'seo_suggest_unknown_fact: "%:%" is not a dimension value', COALESCE(v_p ->> 'factDimensionSlug','(none)'), COALESCE(v_p ->> 'factValueSlug','(none)');
+      END IF;
+      v_p := v_p || jsonb_build_object('factValueId', v_fact.id, 'factLabel', v_fact.label);
+    ELSIF (v_p ->> 'matcherKind') = 'condition' AND (v_p ->> 'conditionRuleId') IS NOT NULL THEN
+      SELECT r.name INTO v_label FROM seo.gsc_dig_rule r
+       WHERE r.id = (v_p ->> 'conditionRuleId')::uuid AND r.deleted_at IS NULL;
+      IF v_label IS NULL THEN
+        RAISE EXCEPTION 'seo_suggest_unknown_condition: % is not a Dig Here rule', v_p ->> 'conditionRuleId';
+      END IF;
+      v_p := v_p || jsonb_build_object('conditionLabel', v_label);
+    END IF;
+  END IF;
+
+  IF v_kind = 'stamp' THEN
+    SELECT array_agg(x::uuid) INTO v_ids
+      FROM jsonb_array_elements_text(COALESCE(v_p -> 'keywordIds','[]'::jsonb)) AS t(x);
+    IF v_ids IS NULL OR cardinality(v_ids) = 0 THEN
+      RAISE EXCEPTION 'gsc_no_keywords: choose at least one keyword';
+    END IF;
+    SELECT jsonb_agg(k.phrase ORDER BY k.phrase) INTO v_phrases
+      FROM seo.keyword k WHERE k.id = ANY(v_ids) AND k.deleted_at IS NULL;
+    IF v_phrases IS NULL THEN
+      RAISE EXCEPTION 'seo_suggest_unknown_keywords: none of those keyword ids exist';
+    END IF;
+    v_p := v_p || jsonb_build_object('keywordPhrases', v_phrases);
+  END IF;
+
+  IF v_kind = 'guideline_edit' THEN
+    v_p := v_p || jsonb_build_object(
+      'baseVersion',
+      COALESCE((SELECT (s.settings -> 'kw_guidelines' ->> 'version')::int
+                  FROM web.site s WHERE s.id = p_site_id), 0)
+    );
+    IF NULLIF(btrim(COALESCE(v_p ->> 'proposedText','')),'') IS NULL THEN
+      RAISE EXCEPTION 'seo_suggest_empty_guidelines: send the FULL proposed document, not a patch';
+    END IF;
+  END IF;
+
+  v_hash   := md5(v_p::text);
   v_dedupe := 'seo.keyword_meaning:' || p_site_id::text || ':' || v_hash;
   v_source := 'seo.keyword_meaning.' || v_kind;
 
-  SELECT a.id, a.status INTO v_existing
+  SELECT a.id AS id, a.status AS status INTO v_existing
     FROM platform.assists a
    WHERE a.dedupe_key = v_dedupe AND a.deleted_at IS NULL
    ORDER BY (a.status = 'pending') DESC, a.created_at DESC
    LIMIT 1;
 
   IF v_existing.id IS NOT NULL AND v_existing.status IN ('accepted','dismissed') THEN
-    RETURN QUERY SELECT v_existing.id, 'already_decided'::text, v_dedupe, v_hash, v_site.created_by;
+    RETURN QUERY SELECT v_existing.id, 'already_decided'::text, v_dedupe, v_hash, v_site.created_by, v_p;
     RETURN;
   END IF;
 
@@ -351,7 +452,7 @@ BEGIN
            occurrences = a.occurrences + 1,
            updated_at  = now()
      WHERE a.id = v_existing.id;
-    RETURN QUERY SELECT v_existing.id, 'already_pending'::text, v_dedupe, v_hash, v_site.created_by;
+    RETURN QUERY SELECT v_existing.id, 'already_pending'::text, v_dedupe, v_hash, v_site.created_by, v_p;
     RETURN;
   END IF;
 
@@ -359,7 +460,7 @@ BEGIN
     'kind',        'apply_keyword_meaning',
     'siteId',      p_site_id,
     'siteLabel',   v_site.label,
-    'proposal',    p_proposal,
+    'proposal',    v_p,
     'provenance',  COALESCE(p_provenance, '{}'::jsonb) || jsonb_build_object('proposedBy', v_uid),
     'payloadHash', v_hash
   );
@@ -376,12 +477,12 @@ BEGIN
      0, v_site.organization_id, p_evidence, now())
   RETURNING assists.id INTO v_id;
 
-  RETURN QUERY SELECT v_id, 'created'::text, v_dedupe, v_hash, v_site.created_by;
+  RETURN QUERY SELECT v_id, 'created'::text, v_dedupe, v_hash, v_site.created_by, v_p;
 END;
 $function$;
 
 COMMENT ON FUNCTION seo.keyword_meaning_suggest(uuid,jsonb,text,text,text,real,jsonb,jsonb) IS
-  'THE one door for an agent-proposed change to keyword MEANING (P12/C9). Writes exactly one platform.assists row and nothing else — the matcher/worth/stamp/guidelines tables are untouched until a human approves, so an unapproved suggestion is invisible to the next agent run. Refuses a payload a human already decided (dedupe by md5 of the canonical proposal jsonb); refreshes one already pending.';
+  'THE one door for an agent-proposed change to keyword MEANING (P12/C9). Writes exactly one platform.assists row and NOTHING else - the matcher/worth/stamp/guidelines tables are untouched until a human approves, which is what makes an unapproved suggestion invisible to the next agent run. Enriches slugs into ids + human labels before hashing, so the review card never shows a uuid. Refuses a payload a human already decided (dedupe by md5 of the canonical proposal); refreshes one already pending.';
 
 REVOKE ALL ON FUNCTION seo.keyword_meaning_suggest(uuid,jsonb,text,text,text,real,jsonb,jsonb) FROM public;
 GRANT EXECUTE ON FUNCTION seo.keyword_meaning_suggest(uuid,jsonb,text,text,text,real,jsonb,jsonb) TO authenticated, service_role;

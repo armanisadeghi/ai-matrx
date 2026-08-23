@@ -17,6 +17,7 @@ import {
   CircleHelp,
   Gavel,
   Landmark,
+  Layers2,
   MapPin,
   SlidersHorizontal,
   Timer,
@@ -84,6 +85,39 @@ function reasonView(reason: ValueReason): ReasonView {
               ? `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value adds ${reason.amount} to the score.`
               : `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value scales the score by ${reason.amount}.${reason.source === "human" ? " Stamped by a person." : reason.source === "matcher" ? " Stamped by one of your matchers." : reason.source === "classifier" ? " Stamped by the AI classifier." : ""}${reason.nature === "situational" ? ` This is a situational stamp — it describes where the keyword sits right now, worked out ${reason.as_of ? formatRelativeTime(reason.as_of, { style: "long" }) : "never"}, and it moves as the data moves.` : ""}`,
         tone: reason.effect === "never" ? "text-destructive" : reason.effect === "scale" && (reason.amount ?? 1) < 1 ? "text-warning" : undefined,
+      };
+    }
+    case "combo": {
+      // C7 — "two strikes against you". A combination is not the sum of its
+      // parts, so the receipt names every value that had to be true at once;
+      // reading only the pairing's effect would hide WHY it fired.
+      const names = reason.values
+        .map((value) => `${value.dimension_label} “${value.value_label}”`)
+        .join(" and ");
+      const name =
+        reason.label ?? reason.values.map((value) => value.value_label).join(" + ");
+      return {
+        icon: Layers2,
+        text:
+          reason.effect === "never"
+            ? `${name} — never`
+            : reason.effect === "add"
+              ? `${name} ${reason.amount !== null && reason.amount >= 0 ? "+" : ""}${reason.amount}`
+              : `${name} ${multiplierText(reason.amount ?? 1)}`,
+        detail:
+          `This keyword is ${names} — all at once, which is what this combination looks for. ` +
+          (reason.effect === "never"
+            ? "Together they are a dead end for this business, so the score is zero no matter what else the keyword has going for it."
+            : reason.effect === "add"
+              ? `Together they add ${reason.amount} to the score.`
+              : `Together they scale the score by ${reason.amount}.`) +
+          (reason.notes ? ` ${reason.notes}` : ""),
+        tone:
+          reason.effect === "never"
+            ? "text-destructive"
+            : reason.effect === "scale" && (reason.amount ?? 1) < 1
+              ? "text-warning"
+              : undefined,
       };
     }
     case "override":
