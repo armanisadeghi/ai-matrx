@@ -15,6 +15,21 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D253 — two pre-existing red suites seen during the content-ir 0.2.0 cutover, not content-ir's (2026-08-23)
+
+Found while running the adjacent suites for the `@ai-matrx/content-ir` 0.2.0 migration (the
+content-ir + workflow-runtime suites themselves are 99/99 green). Both fail on code paths that do
+not import content-ir; left for their owners:
+
+- `components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx` — 3 tests:
+  `TypeError: useAppDispatch is not a function` from
+  `features/agents/redux/execution-system/active-requests/useRetainRequestForViewer.ts:46` — the
+  test's `@/lib/redux/hooks` mock predates 23f0b05ef4 (viewer retention) and lacks `useAppDispatch`.
+- `features/agents/redux/execution-system/selectors/__tests__/assembled-request-preview.test.ts` —
+  2 tests: "Select an organization before sending this message" thrown by the org resolver; the
+  fixture state carries no organization since org gating landed.
+
+
 ### D252 — the global admin-lane backfill exposes personal rows in ordinary app sessions (2026-08-22)
 
 Aidream migrations `0465_admin_lane_apply_rls_and_verify_canonical.sql` and
@@ -1828,17 +1843,3 @@ side. The placement ledger deliberately matches the screen it renders on rather 
 queue — a strip that disagreed with the headline directly above it would read as a lie — so the
 fix is to move every seo topic read onto winner-run dedupe in ONE change, not to flip the ledger
 alone. Not mine to do inside the placement build; the numbers are internally consistent today.
-
-## 2026-08-23 — two pre-existing red suites seen during the content-ir 0.2.0 cutover (NOT content-ir)
-
-Found while running the adjacent suites for the `@ai-matrx/content-ir` 0.2.0 migration (the
-content-ir + workflow-runtime suites themselves are 99/99 green). Both fail on code paths that do
-not import content-ir; left for their owners:
-
-- `components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx` — 3 tests:
-  `TypeError: useAppDispatch is not a function` from
-  `features/agents/redux/execution-system/active-requests/useRetainRequestForViewer.ts:46` — the
-  test's `@/lib/redux/hooks` mock predates 23f0b05ef4 (viewer retention) and lacks `useAppDispatch`.
-- `features/agents/redux/execution-system/selectors/__tests__/assembled-request-preview.test.ts` —
-  2 tests: "Select an organization before sending this message" thrown by the org resolver; the
-  fixture state carries no organization since org gating landed.
