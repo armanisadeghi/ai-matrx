@@ -617,6 +617,11 @@ function PhotoCard({
   const thumbUrl = photo.urls?.small || photo.urls?.thumb;
   const alt = describePhoto(photo);
   const author = photo.user?.name || "Unknown";
+  // Unsplash attribution guideline + THE DOOR LAW: the photographer is named,
+  // so the name must open their profile.
+  const authorProfile = photo.user?.links?.html
+    ? `${photo.user.links.html}?utm_source=ai_matrx&utm_medium=referral`
+    : null;
 
   const isCompact = viewMode === "compact";
   const isMasonry = viewMode === "masonry";
@@ -655,11 +660,23 @@ function PhotoCard({
           isCompact ? "p-0.5" : "p-1.5",
         )}
       >
-        {!isCompact && (
-          <p className="text-[9px] text-white/80 truncate leading-tight">
-            {author}
-          </p>
-        )}
+        {!isCompact &&
+          (authorProfile ? (
+            <a
+              href={authorProfile}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title={`View ${author} on Unsplash`}
+              className="text-[9px] text-white/80 hover:text-white hover:underline truncate leading-tight block"
+            >
+              {author}
+            </a>
+          ) : (
+            <p className="text-[9px] text-white/80 truncate leading-tight">
+              {author}
+            </p>
+          ))}
 
         {/* Action buttons */}
         <div
