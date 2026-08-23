@@ -175,7 +175,17 @@ export function ListManagerFloatingWorkspace() {
              <Loader2 className="h-6 w-6 animate-spin text-primary" />
            </div>
         ) : activeListData ? (
-          <ListDetailClient list={activeListData} userId={user?.id ?? null} />
+          <ListDetailClient
+            list={activeListData}
+            userId={user?.id ?? null}
+            // The detail pane's context menu belongs to THIS surface, and it
+            // emits THIS surface's scope — the window is the registered
+            // provider here, so the pane must not guess at either.
+            surfaceName="matrx-user/list-manager"
+            getSurfaceScopeOverride={
+              getSurfaceScope as () => Record<string, unknown>
+            }
+          />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center px-6">
             <div className="h-12 w-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/50">

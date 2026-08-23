@@ -13,6 +13,7 @@ import type { GroupedItem } from "../types";
 import type { ListGroupBookmark } from "../types";
 import { BookmarkCopyButton } from "./BookmarkCopyButton";
 import { ListItem } from "./ListItem";
+import { LIST_GROUP_DOM_ATTR } from "../dom-anchors";
 
 interface GroupSectionProps {
   groupName: string;
@@ -49,7 +50,14 @@ export function GroupSection({
   };
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className="space-y-1">
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="space-y-1"
+      // Read by the pane's ONE context menu to work out which group heading
+      // (and therefore which "Add item to …") the right-click landed in.
+      {...{ [LIST_GROUP_DOM_ATTR]: groupName }}
+    >
       {/* Group header */}
       <div
         className={cn(

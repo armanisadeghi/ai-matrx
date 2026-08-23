@@ -34,7 +34,11 @@
  */
 
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { addItemAction, updateListAction } from "./actions/list-actions";
+import {
+  addItemAction,
+  updateItemAction,
+  updateListAction,
+} from "./actions/list-actions";
 import { LIST_WRITE_TARGET_NAMES } from "./surface-write-targets";
 
 export interface ListSurfaceWriteOptions {
@@ -159,6 +163,77 @@ export function buildListSurfaceWriteHandlers(
       for (const item of items) {
         await addItemAction({ listId, ...item });
       }
+      await afterWrite(listId);
+    },
+
+    [LIST_WRITE_TARGET_NAMES.updateListItem]: async (value: unknown) => {
+      const target = LIST_WRITE_TARGET_NAMES.updateListItem;
+      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+        throw new Error(
+          `${target} expects a single OBJECT { id, label?, description?, ` +
+            `help_text?, group? } — not ${Array.isArray(value) ? "an array" : typeof value}. ` +
+            `To edit several items, apply this target once per item.`,
+        );
+      }
+      const row = value as Record<string, unknown>;
+      if (typeof row.id !== "string" || !row.id.trim()) {
+        throw new Error(
+          `${target} needs the item's "id" — a non-empty string copied from an ` +
+            `entry of all_items. Read all_items and use the id of the item you ` +
+            `mean; the item is never matched by its label.`,
+        );
+      }
+      // Absent = leave alone; null = clear. Anything else is the agent
+      // misreading the contract, so it hears about it rather than us writing
+      // a stringified object into the user's list.
+      const patchField = (
+        key: string,
+      ): string | null | undefined => {
+        if (!(key in row)) return undefined;
+        const raw = row[key];
+        if (raw === null) return null;
+        if (typeof raw !== "string") {
+          throw new Error(
+            `${target} field "${key}" must be plain text, or null to clear it — ` +
+              `received ${Array.isArray(raw) ? "an array" : typeof raw}.`,
+          );
+        }
+        return raw.trim() || null;
+      };
+      let label: string | undefined;
+      if ("label" in row) {
+        if (typeof row.label !== "string" || !row.label.trim()) {
+          throw new Error(
+            `${target} field "label" must be a non-empty string when sent — an ` +
+              `item cannot be left without a label. Omit the field to keep the ` +
+              `current one.`,
+          );
+        }
+        label = row.label.trim();
+      }
+      const description = patchField("description");
+      const helpText = patchField("help_text");
+      const groupName = patchField("group");
+      if (
+        label === undefined &&
+        description === undefined &&
+        helpText === undefined &&
+        groupName === undefined
+      ) {
+        throw new Error(
+          `${target} was sent an id with nothing to change. Include at least ` +
+            `one of label, description, help_text, or group.`,
+        );
+      }
+      const listId = resolveListId(target);
+      await updateItemAction({
+        itemId: row.id.trim(),
+        listId,
+        label,
+        description,
+        helpText,
+        groupName,
+      });
       await afterWrite(listId);
     },
   };

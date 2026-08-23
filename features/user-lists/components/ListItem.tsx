@@ -14,15 +14,7 @@ import { Button } from "@/components/ui/button";
 import type { GroupedItem } from "../types";
 import type { ListItemBookmark } from "../types";
 import { BookmarkCopyButton } from "./BookmarkCopyButton";
-
-// Lazy dynamic icon rendering — avoids importing entire lucide bundle
-let lucide: Record<string, React.ComponentType<{ className?: string }>> | null =
-  null;
-function getLucideIcon(
-  name: string,
-): React.ComponentType<{ className?: string }> | null {
-  return null; // Placeholder — icon_name support is additive
-}
+import { LIST_ITEM_DOM_ATTR } from "../dom-anchors";
 
 interface ListItemProps {
   item: GroupedItem;
@@ -54,6 +46,9 @@ export function ListItem({
 
   return (
     <div
+      // Read by the pane's ONE context menu (`resolveContextOnOpen` in
+      // ListDetailClient) to work out which item was right-clicked.
+      {...{ [LIST_ITEM_DOM_ATTR]: item.id }}
       className={cn(
         "group relative flex items-start gap-3 px-4 py-3 rounded-lg",
         "bg-card border border-border/50",

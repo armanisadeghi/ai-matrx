@@ -153,6 +153,13 @@ export async function updateItemAction(params: {
     .from("udt_structured_list_items")
     .update(patch)
     .eq("id", params.itemId)
+    // Scoped to the list AND the owner on purpose. This action is now reachable
+    // from an agent write target (`update_list_item`), where the item id is a
+    // value the model supplies — an id from another list, or from another
+    // user's list, must MISS (and `.single()` then throws) rather than quietly
+    // edit a row the caller never had on screen.
+    .eq("list_id", params.listId)
+    .eq("user_id", user.id)
     .select()
     .single();
 

@@ -39,8 +39,9 @@
  * reasoning): deleting a list or an item and bulk-clearing are never targets
  * at any policy — the agent proposes, the human presses the button in
  * `DeleteConfirmDialog`. Visibility (`list_visibility`) is permission-shaped
- * and stays human-only. Editing an EXISTING item's text is a legitimate future
- * target but belongs to the shared module so both mounts gain it together.
+ * and stays human-only. Editing an existing item IS writable, as
+ * `update_list_item` — it landed in the shared module so both mounts gained it
+ * in one change.
  *
  * Writes additionally require OWNERSHIP: a list reached through a shared link
  * renders read-only, and the handler refuses rather than attempting a write
@@ -110,6 +111,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "active_list",
   },
   {
+    name: "active_list_url",
+    label: "Link to this list",
+    description:
+      "The canonical deep link to the list open at this route (…/lists/<id>) — exactly what the header's Copy link button puts on the clipboard. Use it when writing a reference to this list somewhere else.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 60,
+    sortOrder: 315,
+    group: "active_list",
+  },
+  {
     name: "active_list_item_count",
     label: "List item count",
     description:
@@ -118,6 +130,41 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 5,
     sortOrder: 325,
+    group: "active_list",
+  },
+  {
+    name: "active_list_group_count",
+    label: "List group count",
+    description:
+      "Number of distinct group headings the items are filed under, counting \"Ungrouped\". Zero when the list is empty.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 3,
+    sortOrder: 326,
+    group: "active_list",
+  },
+  {
+    name: "active_list_created_at",
+    label: "List created at",
+    description:
+      "ISO-8601 timestamp of when this list was created. Not shown on the page; available for an agent that needs to reason about age.",
+    valueType: "string",
+    alwaysAvailable: true,
+    autoContext: false,
+    typicalCharCount: 30,
+    sortOrder: 327,
+    group: "active_list",
+  },
+  {
+    name: "active_list_updated_at",
+    label: "List last updated at",
+    description:
+      "ISO-8601 timestamp of the last edit to the list's own name/description. Absent when the list has never been edited since creation. Item edits do not move it.",
+    valueType: "string",
+    alwaysAvailable: false,
+    autoContext: false,
+    typicalCharCount: 30,
+    sortOrder: 328,
     group: "active_list",
   },
   {
@@ -171,10 +218,21 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "list_items",
   },
   {
-    name: "selected_item_id",
-    label: "Selected item ID",
+    name: "list_group_names",
+    label: "Group names",
     description:
-      "ID of the item the user has open in the Edit Item dialog. Absent when that dialog is closed — this route has no other notion of a focused item.",
+      'The group headings of this list, in the order they are rendered — the exact strings to reuse for an item\'s `group`. Includes "Ungrouped" when ungrouped items exist. Empty array when the list has no items.',
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 120,
+    sortOrder: 355,
+    group: "list_items",
+  },
+  {
+    name: "selected_item_id",
+    label: "Focused item ID",
+    description:
+      "ID of the item the user is pointing at: the one open in the Edit Item dialog, or the one they just right-clicked to open the context menu. Absent when neither is true.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -183,9 +241,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "selected_item_label",
-    label: "Selected item label",
+    label: "Focused item label",
     description:
-      "Label of the item open in the Edit Item dialog. Absent when that dialog is closed.",
+      "Label of the focused item (open in the Edit Item dialog, or right-clicked). Absent when there is no focused item.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 120,
@@ -194,9 +252,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "selected_item_description",
-    label: "Selected item description",
+    label: "Focused item description",
     description:
-      "Description of the item open in the Edit Item dialog. Absent when that dialog is closed or the item has no description.",
+      "Description of the focused item (open in the Edit Item dialog, or right-clicked). Absent when there is no focused item, or it has no description.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -215,13 +273,13 @@ export const listsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the ROUTE page for ONE custom list (/lists/[id]) — its name, description, and items, grouped under headings. Everything you can see is in active_list_* and all_items / items_grouped.
 
-You can WRITE to this list through apply_surface_write: rename it, rewrite its description, or add items. There is no draft here — each of those saves to the database as soon as the user approves, so propose the exact values you intend before applying, and read all_items first so you never re-add something that is already there.
+You can WRITE to this list through apply_surface_write: rename it, rewrite its description, add items, or edit one existing item in place (update_list_item, by the item's id from all_items — that is also how an item moves to another group). There is no draft here — each of those saves to the database as soon as the user approves, so propose the exact values you intend before applying, and read all_items first so you never re-add something that is already there.
 
 Two things you cannot do, by design. You cannot delete the list or any item, and you cannot bulk-clear it — removal stays a human gesture, so describe what you would remove and let the user press the button. You cannot change list_visibility either; who can reach a list is a permission decision, not a content edit.
 
 Check list_is_owner before proposing an edit. When it is false the viewer arrived through a shared link, the page is read-only, and every write will be refused.
 
-This is the same list state as the List Manager window (matrx-user/list-manager) and offers the same three write targets under the same names — the window is that state's other home.
+This is the same list state as the List Manager window (matrx-user/list-manager) and offers the same write targets under the same names — the window is that state's other home.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -249,16 +307,23 @@ export interface ListsItemEntry {
 export function createListsScope(values: {
   active_list_id: string;
   active_list_name: string;
+  active_list_url: string;
   active_list_item_count: number;
+  active_list_group_count: number;
+  active_list_created_at: string;
   list_visibility: string;
   list_is_owner: boolean;
   all_items: ListsItemEntry[];
   items_grouped: Record<string, unknown>;
+  list_group_names: string[];
   active_list_description?: string;
+  active_list_updated_at?: string;
   selected_item_id?: string;
   selected_item_label?: string;
   selected_item_description?: string;
   selection?: string;
+  text_before?: string;
+  text_after?: string;
   content?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {

@@ -42,11 +42,11 @@
  *     `list_visibility`). Permission-shaped changes stay human-only by the
  *     same doctrine list-manager set: an agent widening who can read a list is
  *     not a content edit.
- *   - **Editing an EXISTING item's text.** `updateItemAction` exists and would
- *     be a legitimate target, but it belongs on BOTH mounts at once so the
- *     shared vocabulary stays shared. Adding it to one mount only is exactly
- *     the drift this file is built to prevent — it is a follow-up for this
- *     module, not a per-mount extra.
+ * EDITING AN EXISTING ITEM (`update_list_item`) was that follow-up, and it
+ * landed here — in the shared module, so BOTH mounts gained it in the same
+ * change, which is the whole point of this file. It is deliberately an
+ * IN-PLACE edit of ONE item: it can never create an item (that is
+ * `add_list_items`) and can never remove one (removal stays human-only).
  */
 
 import type { SurfaceWriteTarget } from "@/features/surfaces/types";
@@ -65,6 +65,7 @@ export const LIST_WRITE_TARGET_NAMES = {
   activeListName: "active_list_name",
   activeListDescription: "active_list_description",
   addListItems: "add_list_items",
+  updateListItem: "update_list_item",
 } as const;
 
 /**
@@ -113,5 +114,17 @@ export const LIST_SURFACE_WRITE_TARGETS: SurfaceWriteTarget[] = [
     applyPolicy: "ask",
     group: "list_items",
     sortOrder: 420,
+  },
+  {
+    name: LIST_WRITE_TARGET_NAMES.updateListItem,
+    label: "Update a list item",
+    description:
+      'EDITS ONE EXISTING item of the ACTIVE list, in place. Saved to the database immediately — there is no draft to review. Value: an object { id, label?, description?, help_text?, group? }. `id` is REQUIRED and must be the `id` of an item you read from all_items — it is how the item is found, and a wrong id is refused rather than guessed at. Only the fields you send are changed: omit a field to leave it exactly as it is, and send null to CLEAR description, help_text, or group (an empty group means Ungrouped). Changing `group` is how an item moves between headings — reuse an exact name from items_grouped rather than inventing a near-duplicate. This target can never create an item (use add_list_items) and can never remove one (removal stays a human gesture).',
+    valueType: "object",
+    updatesValue: "all_items",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "list_items",
+    sortOrder: 430,
   },
 ];
