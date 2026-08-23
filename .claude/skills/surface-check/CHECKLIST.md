@@ -47,13 +47,16 @@ stores which version a surface passed).
 - MUST: the live verification protocol in the skill (ask dialog → Apply lands → "Keep as is" declines → undeclared refused → invalid value throws verbatim → Error Inspector clean).
 - Evidence: target names, live-run proof (screenshot or Error Inspector clean line).
 
-## S4 · Inheritance & own identity — `surface-authoring` §inheritance
+## S4 · Family: inheritance & own identity — `surface-authoring` § THE FAMILY DOCTRINE
 
-- MUST: `inheritsFrom` only when the parent's vocabulary is TRUE on this surface (a sibling that doesn't emit the parent's values must NOT inherit).
-- MUST: the child still declares its OWN `label`, `readiness`, `intro`, curated `groups`, and its own scope builder where inherited `alwaysAvailable` keys become REQUIRED params (`...base` spread first; child keys win). Leaning on the parent for identity = fail; inheriting vocabulary + bindings = correct.
-- MUST: take as much from the parent as is true (don't redeclare what inheritance gives you).
-- Check: registry throws at module init on unknown parent / cycle / depth > 3 — a clean `pnpm type-check` + page load is the gate.
-- Evidence: parent name (or "none, deliberately").
+- MUST: run **`pnpm check:surface-impact <surface>`** first. It prints this surface's parent, every descendant, and every consumer (bindings, shortcuts, write twins, DOM attributes) per value, with a per-value verdict. Nothing else in the repo can see those consumers — TypeScript never sees a value NAME.
+- MUST: `inheritsFrom` only when the parent's vocabulary is TRUE here (a sibling that can't emit the parent's values must NOT inherit).
+- MUST: no `SHADOWED_VALUE` findings for this surface — a child never re-declares what the parent conveys. Same meaning → delete the child's copy; different meaning → give it its own name.
+- MUST: the child still declares its OWN `label`, `readiness`, `intro`, curated `groups`, and its own scope builder, where inherited `alwaysAvailable` keys are REQUIRED params and `...base` is spread FIRST.
+- DECIDE: two siblings declaring the same concept = the missing-parent smell → push it up (introduce the parent if needed) and delete both copies. If a family would be > 3 deep or you only want to avoid retyping, do NOT inherit.
+- MUST: before renaming/removing ANY value, re-run the screamer with `--strict`; zero new breakage, and every consumer it lists is migrated in the SAME change.
+- Check: `pnpm check:surface-impact <surface>` · `pnpm check:surface-impact --strict` · registry throws at init on unknown parent / cycle / depth > 3.
+- Evidence: parent (or "root, deliberately"), descendant count, screamer output before → after.
 
 ## S5 · Agent-purpose boundary (the self-context loop) — `features/agents/components/chat/FEATURE.md` §self-referential loop
 

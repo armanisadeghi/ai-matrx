@@ -212,10 +212,17 @@ import { adminDocumentationManifest } from "./admin-documentation.manifest";
 import { quickDataManifest } from "./quick-data.manifest";
 
 /**
- * Manifests exactly as authored. Do NOT consume directly — generic baselines
- * are injected below. Use `ALL_MANIFESTS`.
+ * Manifests exactly as authored. Do NOT consume directly at runtime — generic
+ * baselines are injected below and inheritance is unresolved. Use
+ * `ALL_MANIFESTS`.
+ *
+ * Exported for TOOLING only (`scripts/check-surface-impact.ts`): the resolved
+ * list cannot distinguish "the child inherits this value" from "the child
+ * re-declares it", and that difference is the whole shadowing question — a
+ * child that redeclares a name its parent already conveys splits the family's
+ * vocabulary in two. See THE FAMILY DOCTRINE in `.claude/skills/surface-authoring`.
  */
-const RAW_MANIFESTS: readonly SurfaceManifest[] = [
+export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentShortcutsManifest,
   aiWorkManifest,
   aiWorkComposerManifest,

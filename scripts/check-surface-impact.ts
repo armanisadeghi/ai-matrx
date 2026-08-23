@@ -38,6 +38,8 @@
  *   ORPHAN_WRITE_TWIN  write_target.updates_value points at a missing value
  *   SURFACE_ORPHANED   active DB surface with no manifest but with consumers/children
  *   ORPHAN_SHORTCUT    a shortcut maps a value name the surface no longer has
+ *   SHADOWED_VALUE     a child re-declares a name its parent already conveys —
+ *                      one concept, two declarations, split bindings
  *   RENAME_SUSPECT     a removed value + an added value of the same type on the
  *                      same surface → almost certainly a rename that must carry
  *                      its consumers across
@@ -74,6 +76,7 @@ interface Finding {
     | "ORPHAN_WRITE_TWIN"
     | "SURFACE_ORPHANED"
     | "ORPHAN_SHORTCUT"
+    | "SHADOWED_VALUE"
     | "RENAME_SUSPECT";
   severity: Severity;
   surface: string;
@@ -496,6 +499,39 @@ async function main() {
           detail: `${d} inherits it${v.alwaysAvailable ? " (REQUIRED param in its scope builder)" : ""}`,
         });
       }
+    }
+  }
+
+  // 3b) shadowing — a child re-declaring a name the parent already conveys.
+  //     Inheritance exists so the child does NOT restate the family vocabulary;
+  //     two declarations of one concept mean bindings land on whichever copy
+  //     the author happened to see. Same meaning → delete the child's copy.
+  //     Different meaning → it needs its own name, not a shadow.
+  for (const child of RAW) {
+    if (!child.inheritsFrom) continue;
+    const ownNames = new Set((child.values ?? []).map((v) => v.name));
+    let cur: string | undefined = child.inheritsFrom;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur)) {
+      seen.add(cur);
+      const parent = RAW.find((m) => m.surfaceName === cur);
+      for (const pv of parent?.values ?? []) {
+        if (!ownNames.has(pv.name) || BASELINE.has(pv.name)) continue;
+        const childV = child.values.find((v) => v.name === pv.name);
+        findings.push({
+          kind: "SHADOWED_VALUE",
+          severity: "warn",
+          surface: child.surfaceName,
+          value: pv.name,
+          detail: `re-declares "${pv.name}", which ${cur} already conveys by inheritance${
+            childV && childV.valueType !== pv.valueType
+              ? ` — and with a DIFFERENT type (${childV.valueType} vs ${pv.valueType}), so the same name means two things in one family`
+              : ""
+          }`,
+          fix: `Same meaning → delete the child's declaration and let inheritance carry it (the scope builder still takes it as a param). Different meaning → give the child's value its own name.`,
+        });
+      }
+      cur = parent?.inheritsFrom;
     }
   }
 
