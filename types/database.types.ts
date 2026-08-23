@@ -51612,6 +51612,7 @@ export type Database = {
           dimension_id: string
           dimension_label: string
           enabled: boolean
+          fill_remaining: number
           last_evaluated_at: string
           match_count: number
           matcher_id: string
