@@ -29,6 +29,7 @@ import {
   Link2,
   Loader2,
   ImageIcon,
+  ImageOff,
   Star,
   X,
   RotateCcw,
@@ -95,6 +96,7 @@ export function GalleryFloatingWorkspace() {
   const {
     photos,
     loading,
+    photoError,
     hasMore,
     handleSearch,
     loadMore,
@@ -566,16 +568,45 @@ export function GalleryFloatingWorkspace() {
           onScroll={handleScroll}
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-1.5 scrollbar-thin"
         >
-          {photos.length === 0 && !loading ? (
+          {photos.length === 0 && !loading && photoError ? (
+            // A failed fetch is NOT an empty result — saying "no results"
+            // here tells the user their search matched nothing when the
+            // service is actually down.
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <div className="w-10 h-10 rounded-full border border-destructive/40 bg-destructive/10 flex items-center justify-center mb-2">
+                <ImageOff className="w-5 h-5 text-destructive" />
+              </div>
+              <p className="text-xs text-foreground">
+                Could not load images
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
+                {photoError}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  activeQuery ? executeSearch(activeQuery) : handleRecentPhotos()
+                }
+                className="mt-2 h-7 max-sm:h-11 px-3 max-sm:px-4 rounded-md border border-border text-[11px] max-sm:text-sm text-foreground hover:bg-accent transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          ) : photos.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
               <div className="w-10 h-10 rounded-full border border-border bg-muted flex items-center justify-center mb-2">
                 <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
               </div>
               <p className="text-xs text-muted-foreground">
                 {activeQuery
-                  ? "No results found"
+                  ? `No photos match "${activeQuery}"`
                   : "Search for images or browse topics"}
               </p>
+              {activeQuery && (
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                  Try a broader term, or a topic chip.
+                </p>
+              )}
             </div>
           ) : (
             <div className={gridClass}>
@@ -596,8 +627,15 @@ export function GalleryFloatingWorkspace() {
           )}
 
           {loading && (
-            <div className="flex items-center justify-center py-4">
+            <div className="flex items-center justify-center gap-1.5 py-4">
               <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+              <span className="text-[10px] text-muted-foreground">
+                {photos.length > 0
+                  ? "Loading more photos…"
+                  : activeQuery
+                    ? `Searching photos for "${activeQuery}"…`
+                    : "Loading recent photos…"}
+              </span>
             </div>
           )}
         </div>

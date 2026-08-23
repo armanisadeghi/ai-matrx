@@ -119,6 +119,16 @@ export function useUnsplashGallery() {
   const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  /**
+   * Last photo-fetch failure, in words a user can read.
+   *
+   * Added 2026-08-22: every failure path here console.error'd and left
+   * `photos` empty, so an Unsplash outage or a missing key rendered as
+   * "No results found" — the UI told the user their search was fine and
+   * matched nothing. Consumers that render results MUST show this instead of
+   * their empty state when it is set.
+   */
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<UnsplashPhoto | null>(null);
@@ -163,6 +173,7 @@ export function useUnsplashGallery() {
       });
 
       if (result.type === "success") {
+        setPhotoError(null);
         if (pageNum === 1) {
           setPhotos(result.response.results);
         } else {
@@ -171,6 +182,9 @@ export function useUnsplashGallery() {
         setHasMore(result.response.results.length > 0);
       } else {
         console.error("Search failed:", result.errors);
+        setPhotoError(
+          result.errors?.[0] || "Image search is unavailable right now.",
+        );
       }
       setLoading(false);
     },
@@ -192,6 +206,7 @@ export function useUnsplashGallery() {
       });
 
       if (result.type === "success") {
+        setPhotoError(null);
         if (pageNum === 1) {
           setPhotos(result.response.results);
         } else {
@@ -200,6 +215,9 @@ export function useUnsplashGallery() {
         setHasMore(result.response.results.length > 0);
       } else {
         console.error("Fetch recent photos failed:", result.errors);
+        setPhotoError(
+          result.errors?.[0] || "Recent photos are unavailable right now.",
+        );
       }
       setLoading(false);
     },
@@ -607,6 +625,8 @@ export function useUnsplashGallery() {
   return {
     photos,
     loading,
+    /** Set when the last photo fetch FAILED — render it instead of "no results". */
+    photoError,
     hasMore,
     selectedPhoto,
     relatedPhotos,
