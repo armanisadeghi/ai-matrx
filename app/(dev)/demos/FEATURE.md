@@ -8,12 +8,12 @@ See: app/(dev)/demos/demo-status.md (Arman's Vision for this route)
 
 Filesystem scan at request time — no manual link lists.
 
-| Layer | Primitive | File |
-|---|---|---|
-| Folder index (menu page) | `RouteIndexPage` + `scanRoutes()` | `page.dev.tsx` or `page.tsx` |
-| Child-page nav strip | `RouteHeaderData` | `layout.dev.tsx` |
-| Root `/demos` | `RouteIndexPage` (recursive) | `page.dev.tsx` |
-| Full demo-tree header | `RouteTreeBreadcrumbHeader` + `scanRoutes()` | `layout.tsx` |
+| Layer                    | Primitive                                    | File                         |
+| ------------------------ | -------------------------------------------- | ---------------------------- |
+| Folder index (menu page) | `RouteIndexPage` + `scanRoutes()`            | `page.dev.tsx` or `page.tsx` |
+| Child-page nav strip     | `RouteHeaderData`                            | `layout.dev.tsx`             |
+| Root `/demos`            | `RouteIndexPage` (recursive)                 | `page.dev.tsx`               |
+| Full demo-tree header    | `RouteTreeBreadcrumbHeader` + `scanRoutes()` | `layout.tsx`                 |
 
 ```tsx
 // index
@@ -36,8 +36,13 @@ competing with the one persistent shell header.
 
 **Hand-maintained (do not auto-wire):** `context-menu/`, `local-tools/`, `scraper/`, `upgrade/`, `lists-junk/`.
 
+## Canonical flashcards proof
+
+`/demos/canonical-flashcards` is the isolated comparison and migration proof for one context-aware flashcard player. Its four variant routes use fixture `flashcard_set` data only; they do not write production data or execute production AI. **Start at the hub** for the selected candidate, source-to-style mapping, proof boundary, and additive migration sequence.
+
 ## Change log
 
+- 2026-08-23 — Added `/demos/canonical-flashcards` with four interactive variants and a recommended non-breaking convergence path for Chat, Education, and Canvas flashcards.
 - 2026-08-23 — Added `/demos/kind-kit`: exercises every `components/kind-kit/` primitive (SortableList, KindPanelGrid, KindPanel, KindHeaderBar, StreamingSkeleton, KeywordChip/TagList) with keyword-research sample data.
 
 - 2026-07-20 — Deleted the obsolete Metadata Test duplicate; `/seo/metadata` remains the maintained Meta Width Calculator.
