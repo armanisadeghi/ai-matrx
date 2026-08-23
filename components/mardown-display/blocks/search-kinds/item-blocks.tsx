@@ -31,7 +31,7 @@ import {
   formatDuration,
   num,
   readSearchKindValue,
-  records,
+  items,
   text,
 } from "./search-kind-data";
 import {
@@ -71,7 +71,7 @@ const Thumb: React.FC<{ src: string; className?: string; alt?: string }> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function WebResultBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"web_result">(serverData);
   const title = text(value.title);
   const url = text(value.url);
   if (!title) return null;
@@ -79,8 +79,8 @@ export function WebResultBlock({ serverData, className }: SearchKindBlockProps) 
   const siteName = text(value.site_name);
   const snippet = text(value.snippet);
   const date = dateLine(value, formatDate);
-  const rating = records([value.rating])[0];
-  const sitelinks = records(value.sitelinks);
+  const rating = value.rating ?? null;
+  const sitelinks = items(value.sitelinks);
   const thumbnail = text(value.thumbnail);
 
   return (
@@ -174,7 +174,7 @@ export function WebResultBlock({ serverData, className }: SearchKindBlockProps) 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function NewsResultBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"news_result">(serverData);
   const title = text(value.title);
   const url = text(value.url);
   if (!title) return null;
@@ -238,7 +238,7 @@ export function NewsResultBlock({ serverData, className }: SearchKindBlockProps)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function VideoResultBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"video_result">(serverData);
   const title = text(value.title);
   const url = text(value.url);
   if (!title) return null;
@@ -301,7 +301,7 @@ export function VideoResultBlock({ serverData, className }: SearchKindBlockProps
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function FaqItemBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"faq_item">(serverData);
   const question = text(value.question);
   if (!question) return null;
 
@@ -350,7 +350,7 @@ export function DiscussionResultBlock({
   serverData,
   className,
 }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"discussion_result">(serverData);
   const title = text(value.title);
   const url = text(value.url);
   if (!title) return null;

@@ -14,7 +14,7 @@ import {
   isRecord,
   num,
   readSearchKindValue,
-  records,
+  items,
   strings,
   text,
 } from "./search-kind-data";
@@ -54,7 +54,7 @@ const ExtThumb: React.FC<{ src: string; className?: string }> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LocalPlaceBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"local_place">(serverData);
   const name = text(value.name);
   if (!name) return null;
 
@@ -162,15 +162,15 @@ export function LocalPlaceBlock({ serverData, className }: SearchKindBlockProps)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function EntityCardBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"entity_card">(serverData);
   const name = text(value.name);
   if (!name) return null;
 
   const image = text(value.image);
   const website = text(value.website_url);
   const sourceUrl = text(value.source_url);
-  const facts = records(value.facts);
-  const profiles = records(value.profiles);
+  const facts = items(value.facts);
+  const profiles = items(value.profiles);
   const description = text(value.long_description) ?? text(value.description);
 
   return (
@@ -295,10 +295,10 @@ export function EntityCardBlock({ serverData, className }: SearchKindBlockProps)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AiAnswerKindBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
-  const blocks = records(value.blocks);
+  const { value } = readSearchKindValue<"ai_answer">(serverData);
+  const blocks = items(value.blocks);
   if (blocks.length === 0) return null;
-  const references = records(value.references);
+  const references = items(value.references);
 
   return (
     <div

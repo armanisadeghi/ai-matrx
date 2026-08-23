@@ -43,6 +43,7 @@ import {
   PostalAddressBlock,
   RatingBlock,
 } from "./primitive-blocks";
+import { isRecord } from "./search-kind-data";
 
 const noop = () => {};
 
@@ -84,9 +85,15 @@ export function SearchKindNested({
   value,
   className,
 }: {
-  value: Record<string, unknown>;
+  /**
+   * A nested kind instance — typed by the parent as its generated
+   * `PartialKind<Child>`. The registry (not this component) decides the shape;
+   * the seam only needs an object carrying `__kind`.
+   */
+  value: object;
   className?: string;
 }) {
+  if (!isRecord(value)) return null;
   const kind = readObjectKind(value);
   if (!kind) return null;
 

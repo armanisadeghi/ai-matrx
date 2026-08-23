@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import {
   isRecord,
   num,
-  readSearchKindValue,
+  readWebSearchCollectionValue,
   records,
   strings,
   text,
@@ -44,15 +44,15 @@ interface WebSearchResultsBlockProps {
 }
 
 /** Items are renderable once their identity fields exist (streaming gate). */
-function renderable(items: Record<string, unknown>[], key: string) {
-  return items.filter((item) => text(item[key]) !== null);
+function renderable<T extends object>(list: T[], key: string): T[] {
+  return list.filter((item) => text((item as Record<string, unknown>)[key]) !== null);
 }
 
 export default function WebSearchResultsBlock({
   serverData,
   className,
 }: WebSearchResultsBlockProps) {
-  const { value, isComplete } = readSearchKindValue(serverData);
+  const { value, isComplete } = readWebSearchCollectionValue(serverData);
 
   const query = text(value.query);
   const source = text(value.source);

@@ -10,7 +10,7 @@
 import React from "react";
 import { Clock, MapPin, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isRecord, num, readSearchKindValue, records, text } from "./search-kind-data";
+import { items, num, readSearchKindValue, text } from "./search-kind-data";
 import { RatingStars } from "./search-kind-shared";
 
 interface SearchKindBlockProps {
@@ -21,7 +21,7 @@ interface SearchKindBlockProps {
 // ── rating ──────────────────────────────────────────────────────────────────
 
 export function RatingBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"rating">(serverData);
   const rating = num(value.value);
   if (rating === null) return null;
   return (
@@ -41,9 +41,9 @@ function dayLabel(day: string): string {
 }
 
 export function OpeningHoursBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
-  const days = records(value.days);
-  const today = isRecord(value.today) ? value.today : null;
+  const { value } = readSearchKindValue<"opening_hours">(serverData);
+  const days = items(value.days);
+  const today = value.today ?? null;
   const todayName = today ? text(today.day) : null;
 
   if (days.length === 0 && !today) return null;
@@ -94,7 +94,7 @@ export function OpeningHoursBlock({ serverData, className }: SearchKindBlockProp
 // ── postal_address ──────────────────────────────────────────────────────────
 
 export function PostalAddressBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"postal_address">(serverData);
   const display = text(value.display);
   if (!display) return null;
   return (
@@ -113,7 +113,7 @@ export function PostalAddressBlock({ serverData, className }: SearchKindBlockPro
 // ── geo_coordinates — a coordinate pair is a door to a map (No Dead Ends). ──
 
 export function GeoCoordinatesBlock({ serverData, className }: SearchKindBlockProps) {
-  const { value } = readSearchKindValue(serverData);
+  const { value } = readSearchKindValue<"geo_coordinates">(serverData);
   const lat = num(value.latitude);
   const lon = num(value.longitude);
   if (lat === null || lon === null) return null;
