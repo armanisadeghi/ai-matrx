@@ -15,13 +15,19 @@
 //
 // Each resolver streams progress via `onProgress(text)` and returns the final
 // text. Callers own the editable textarea + the eventual generate call.
+//
+// The two agent-backed resolvers run through `useLiveAgentRun` on their
+// MANDATE KEYS (2026-08-23) — never resolve-then-`agentId`, which dropped the
+// binding's `config_overrides` and produced no live requestId (the
+// useEpisodeChapters migration is the precedent).
 
 import { useCallback } from "react";
+import { useAppStore } from "@/lib/redux/hooks";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
-import { useRunAgent } from "@/features/agents/run/useRunAgent";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useAudioTranscription } from "@/features/audio/hooks/useAudioTranscription";
-import { resolveMandate } from "@/features/agents/mandates/service";
 import {
   DEFAULT_EXTRACTOR_FOCUS,
   DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
@@ -54,11 +60,56 @@ export interface UseSourceResolvers {
   audioBusy: boolean;
 }
 
+// DB-managed mandates (declared in aidream client mandates; rebind from
+// /administration/agents/mandates). Passed as `mandateKey` so resolution —
+// binding `config_overrides` included — happens inside the canonical launcher.
+const WEB_EXTRACTOR_MANDATE_KEY = "podcast_client.web_content_extractor";
+const YOUTUBE_RESEARCH_MANDATE_KEY = "podcast_client.youtube_research";
+
 export function useSourceResolvers(): UseSourceResolvers {
   const { scrapeUrl } = useScraperApi();
-  const { run, running: agentRunning } = useRunAgent();
+  // ONE live-run hook for both URL resolvers: the panel resolves one source at
+  // a time, and the hook's own lifecycle (destroy the previous instance on
+  // re-run/unmount) is exactly the reuse we want between fetches.
+  const { run, isRunning: agentRunning } = useLiveAgentRun();
+  const store = useAppStore();
   const { upload, uploading } = useFileUpload();
   const { transcribe, isTranscribing } = useAudioTranscription();
+
+  /**
+   * Bridge the run's live answer text into the caller's `onProgress` — the
+   * same text-into-textarea behavior the old `onChunk` gave, read off the
+   * canonical request selectors (answer text only, never chain-of-thought).
+   * Returns the `onRequestId` to pass to the run plus a `stop` for cleanup.
+   */
+  const progressFeed = useCallback(
+    (onProgress?: (text: string) => void) => {
+      if (!onProgress) {
+        return { onRequestId: undefined, stop: () => {} } as const;
+      }
+      let unsubscribe: (() => void) | null = null;
+      let last = "";
+      const onRequestId = (requestId: string) => {
+        const answerText = selectAnswerText(requestId);
+        unsubscribe?.();
+        unsubscribe = store.subscribe(() => {
+          const text = answerText(store.getState());
+          if (text && text !== last) {
+            last = text;
+            onProgress(text);
+          }
+        });
+      };
+      return {
+        onRequestId,
+        stop: () => {
+          unsubscribe?.();
+          unsubscribe = null;
+        },
+      } as const;
+    },
+    [store],
+  );
 
   const resolveWebsite = useCallback(
     async (url: string, onProgress?: (text: string) => void) => {
@@ -78,44 +129,57 @@ export function useSourceResolvers(): UseSourceResolvers {
             `different URL, or paste the content directly.`,
         );
       }
-      const mandate = await resolveMandate("podcast_client.web_content_extractor");
-      const cleaned = await run({
-        agentId: mandate.agentId,
-        configOverrides: mandate.configOverrides ?? undefined,
-        sourceApp: "matrx-frontend",
-        sourceFeature: "podcasts",
-        variables: {
-          scraped_content: raw,
-          focus_area: DEFAULT_EXTRACTOR_FOCUS,
-        },
-        onChunk: onProgress,
-      });
-      return (cleaned || raw).trim();
+      const feed = progressFeed(onProgress);
+      try {
+        const cleaned = await run<string>({
+          mandateKey: WEB_EXTRACTOR_MANDATE_KEY,
+          surfaceKey: "podcast-source:web-extractor",
+          sourceFeature: "podcasts",
+          // The cleaned text IS the product — no JSON middleman.
+          expect: "text",
+          variables: {
+            scraped_content: raw,
+            focus_area: DEFAULT_EXTRACTOR_FOCUS,
+          },
+          ...(feed.onRequestId ? { onRequestId: feed.onRequestId } : {}),
+          coerce: (value) => (typeof value === "string" ? value : ""),
+        });
+        return (cleaned || raw).trim();
+      } finally {
+        feed.stop();
+      }
     },
-    [scrapeUrl, run],
+    [scrapeUrl, run, progressFeed],
   );
 
   const resolveYouTube = useCallback(
     async (url: string, onProgress?: (text: string) => void) => {
-      const mandate = await resolveMandate("podcast_client.youtube_research");
-      const text = await run({
-        agentId: mandate.agentId,
-        configOverrides: mandate.configOverrides ?? undefined,
-        sourceApp: "matrx-frontend",
-        sourceFeature: "podcasts",
-        variables: {
-          youtube_url: url,
-          timestamp_instruction: DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
-        },
-        onChunk: onProgress,
-      });
+      const feed = progressFeed(onProgress);
+      let text: string;
+      try {
+        text = await run<string>({
+          mandateKey: YOUTUBE_RESEARCH_MANDATE_KEY,
+          surfaceKey: "podcast-source:youtube-research",
+          sourceFeature: "podcasts",
+          // Transcript + research prose IS the product — no JSON middleman.
+          expect: "text",
+          variables: {
+            youtube_url: url,
+            timestamp_instruction: DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
+          },
+          ...(feed.onRequestId ? { onRequestId: feed.onRequestId } : {}),
+          coerce: (value) => (typeof value === "string" ? value : ""),
+        });
+      } finally {
+        feed.stop();
+      }
       const trimmed = text.trim();
       if (!trimmed) {
         throw new Error("The video returned no transcript or research text.");
       }
       return trimmed;
     },
-    [run],
+    [run, progressFeed],
   );
 
   const resolveAudioFile = useCallback(

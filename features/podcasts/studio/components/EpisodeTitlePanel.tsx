@@ -16,25 +16,25 @@
 // never grows mid-run, so the episode content below it does not shift.
 
 import { useEffect, useState } from "react";
-import { Check, Loader2, RefreshCw, Sparkles, Type } from "lucide-react";
+import { Loader2, RefreshCw, Sparkles, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import EpisodeTitleOptionsBlock from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import { podcastService } from "@/features/podcasts/service";
 import { useEpisodeTitleOptions } from "@/features/podcasts/generator/useEpisodeTitleOptions";
 import type { PcEpisodeWithShow } from "@/features/podcasts/types";
 
 export function EpisodeTitlePanel({
   episodeId,
-  onTitleApplied,
 }: {
   episodeId: string;
-  /** Reflect a title this panel just persisted into the run page's own state,
-   *  so the hero above stops showing the superseded one. The agent-driven
-   *  `episode_title` write target lands through the SAME
-   *  `podcastService.updateEpisode` call and reflects the same way. */
+  /** Kept for the mount site's API: applying now goes through the
+   *  `episode_title` surface write target, whose handler reflects into the run
+   *  state itself (`run.applyEpisodeMetadata`), so this callback is no longer
+   *  invoked by this panel. */
   onTitleApplied?: (title: string) => void;
 }) {
   const [episode, setEpisode] = useState<PcEpisodeWithShow | null>(null);
-  const { options, currentTitle, busy, applying, generate, apply } =
+  const { options, workingTitle, busy, generate } =
     useEpisodeTitleOptions(episode);
 
   useEffect(() => {
@@ -83,50 +83,31 @@ export function EpisodeTitlePanel({
         </p>
       )}
 
+      {/* 🚨 THE CANONICAL COMPONENT LAW (EpisodeChaptersPanel precedent).
+          Settled options ARE an `episode_title_options` payload, so they
+          render through that kind's ONE component — the same cards the live
+          run window streams. The card's "Use this title" applies through the
+          `episode_title` surface write target (PodcastRunWriteTargets →
+          run.applyEpisodeMetadata), and the surface's published
+          `episode_title_selection` state marks the current title — this panel
+          used to hand-roll its own <ul> + Use button beside all of that.
+          `hideHeader` because the card above already draws the title row. */}
       {hasOptions && (
-        <ul className="mt-3 space-y-2">
-          {options.map((opt) => {
-            const isCurrent = opt.title === currentTitle;
-            return (
-              <li
-                key={opt.title}
-                className="flex items-start justify-between gap-2.5 rounded-lg border border-border/60 p-2.5"
-              >
-                <span className="min-w-0 text-sm">
-                  <span className="font-medium text-foreground">
-                    {opt.title}
-                  </span>
-                  {opt.subtitle && (
-                    <span className="text-muted-foreground"> — {opt.subtitle}</span>
-                  )}
-                  {opt.rationale && (
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {opt.rationale}
-                    </span>
-                  )}
-                </span>
-                <Button
-                  size="sm"
-                  variant={isCurrent ? "ghost" : "outline"}
-                  className="shrink-0 gap-1"
-                  disabled={isCurrent || applying != null}
-                  onClick={() =>
-                    void apply(opt.title).then(() =>
-                      onTitleApplied?.(opt.title),
-                    )
-                  }
-                >
-                  {applying === opt.title ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : isCurrent ? (
-                    <Check className="h-3 w-3" />
-                  ) : null}
-                  {isCurrent ? "Current" : "Use"}
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-3">
+          <EpisodeTitleOptionsBlock
+            hideHeader
+            serverData={{
+              workingTitle,
+              options: options.map(({ title, subtitle, rationale }) => ({
+                title,
+                subtitle,
+                rationale,
+                complete: true,
+              })),
+              isComplete: true,
+            }}
+          />
+        </div>
       )}
     </div>
   );

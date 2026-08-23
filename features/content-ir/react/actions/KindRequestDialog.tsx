@@ -167,7 +167,11 @@ export interface KindRequestField {
 export interface KindRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agentId: string;
+  /** Exact agent to run. Mutually exclusive with `mandateKey`. */
+  agentId?: string;
+  /** DB-managed mandate resolved inside the canonical launcher (preferred —
+   *  the caller's binding + `config_overrides` apply). */
+  mandateKey?: string;
   title: string;
   description?: string;
   /** Input fields collected from the user (name === agent variable name). */
@@ -194,6 +198,7 @@ export function KindRequestDialog({
   open,
   onOpenChange,
   agentId,
+  mandateKey,
   title,
   description,
   fields,
@@ -247,7 +252,11 @@ export function KindRequestDialog({
     // running phase subscribes to the live stream and renders options as they
     // arrive. `run()` still resolves/rejects for error handling.
     void run({
-      agentId,
+      ...(mandateKey !== undefined
+        ? { mandateKey }
+        : agentId !== undefined
+          ? { agentId }
+          : {}),
       variables: { ...(fixedVariables ?? {}), ...values },
       expectedKind,
       ...(onBatch ? { onBatch } : {}),

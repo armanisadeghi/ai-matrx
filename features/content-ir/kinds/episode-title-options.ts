@@ -130,36 +130,74 @@ function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
+/** One parsed option plus its RAW index in the source array (the key the
+ *  envelope's `nodeIndex` uses — filtered-out blanks shift the output index). */
+export interface EpisodeTitleOptionValue {
+  title: string;
+  subtitle: string | null;
+  rationale: string | null;
+  index: number;
+}
+
+/** The whole `episode_title_options` payload, read off a plain value. */
+export interface EpisodeTitleOptionsValue {
+  workingTitle: string | null;
+  options: EpisodeTitleOptionValue[];
+}
+
+/**
+ * THE ONE reader for `episode_title_options` values — the envelope bridge
+ * below and the podcast hook (`useEpisodeTitleOptions`) both read through it,
+ * so a live stream, a settled run result, and a reloaded row can never parse
+ * differently. Titleless entries are dropped (mid-stream a card exists before
+ * its title closes; a blank row would flicker), and absent subtitle/rationale
+ * stay `null` — never coerced to `""`.
+ */
+export function readEpisodeTitleOptionsValue(
+  value: unknown,
+): EpisodeTitleOptionsValue {
+  const root = isRecord(value) ? value : {};
+  const rawOptions = root.options;
+  const options: EpisodeTitleOptionValue[] = [];
+  if (Array.isArray(rawOptions)) {
+    for (let i = 0; i < rawOptions.length; i++) {
+      const option = rawOptions[i];
+      if (!isRecord(option)) continue;
+      const title = nonEmptyString(option.title);
+      if (!title) continue;
+      options.push({
+        title,
+        subtitle: nonEmptyString(option.subtitle),
+        rationale: nonEmptyString(option.rationale),
+        index: i,
+      });
+    }
+  }
+  return {
+    workingTitle: nonEmptyString(root.working_title),
+    options,
+  };
+}
+
 export function episodeTitleOptionsServerDataFromEnvelope(
   envelope: CanonicalBlockIR,
 ): (EpisodeTitleOptionsData & Record<string, unknown>) | undefined {
   if (envelope.root.kind !== "episode_title_options") return undefined;
 
-  const rawOptions = envelope.root.value.options;
   const setComplete = envelope.root.status === "complete";
-  const options: EpisodeTitleOptionData[] = [];
-
-  if (Array.isArray(rawOptions)) {
-    for (let i = 0; i < rawOptions.length; i++) {
-      const option = rawOptions[i];
-      if (!isRecord(option)) continue;
-      // A title that has not arrived yet is not a card — a blank row would
-      // flicker in and out on every flush.
-      const title = nonEmptyString(option.title);
-      if (!title) continue;
-      const meta = envelope.nodeIndex?.[`options.${i}`];
-      options.push({
-        title,
-        subtitle: nonEmptyString(option.subtitle),
-        rationale: nonEmptyString(option.rationale),
-        complete: setComplete || meta?.status === "complete",
-      });
-    }
-  }
+  const parsed = readEpisodeTitleOptionsValue(envelope.root.value);
 
   return {
-    workingTitle: nonEmptyString(envelope.root.value.working_title),
-    options,
+    workingTitle: parsed.workingTitle,
+    options: parsed.options.map(({ title, subtitle, rationale, index }) => {
+      const meta = envelope.nodeIndex?.[`options.${index}`];
+      return {
+        title,
+        subtitle,
+        rationale,
+        complete: setComplete || meta?.status === "complete",
+      };
+    }),
     isComplete: setComplete,
   };
 }

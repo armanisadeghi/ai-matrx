@@ -20,7 +20,16 @@ import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJs
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export interface KindRequestInput {
-  agentId: string;
+  /** Exact agent to run. Mutually exclusive with `mandateKey`. */
+  agentId?: string;
+  /**
+   * DB-managed mandate to resolve INSIDE the canonical launcher — the
+   * preferred identity. Resolution happens in `launchAgentExecution`'s mandate
+   * path, so the caller's binding (`config_overrides` included) applies and
+   * the run is mandate-attributed. Never resolve-then-pass a bare `agentId` —
+   * that drops the overrides and the attribution.
+   */
+  mandateKey?: string;
   /** Variable values keyed by the agent's variable NAME. */
   variables: Record<string, string>;
   /** Stamped as `__kind` on the result if the agent didn't emit one. */
@@ -82,9 +91,15 @@ export function useKindRequest(): UseKindRequest {
     useHeadlessAgentJson();
 
   async function run(input: KindRequestInput): Promise<KindRequestResult> {
+    // The underlying thunk enforces exactly-one-of; this hook just forwards
+    // whichever identity the caller declared.
     return runHeadless<KindRequestResult>({
-      agentId: input.agentId,
-      surfaceKey: `kind-request:${input.agentId}`,
+      ...(input.mandateKey !== undefined
+        ? { mandateKey: input.mandateKey }
+        : input.agentId !== undefined
+          ? { agentId: input.agentId }
+          : {}),
+      surfaceKey: `kind-request:${input.mandateKey ?? input.agentId}`,
       sourceFeature: "ai-results",
       // The surface renders the stream live off `conversationId` and reads the
       // result kind component after completion — keep the instance alive; the

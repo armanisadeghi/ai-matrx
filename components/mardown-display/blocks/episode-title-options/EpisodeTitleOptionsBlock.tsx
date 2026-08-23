@@ -46,6 +46,9 @@ import {
 
 export interface EpisodeTitleOptionsBlockProps {
   serverData?: unknown;
+  /** Hide the block's own title row — for a host card that already draws one
+   *  (same seam as MediaChaptersBlock's `hideHeader`). */
+  hideHeader?: boolean;
 }
 
 /**
@@ -186,6 +189,7 @@ function TitleOptionCard({
 
 export default function EpisodeTitleOptionsBlock({
   serverData,
+  hideHeader = false,
 }: EpisodeTitleOptionsBlockProps) {
   // Whatever page this block landed on, if it offers the title. Undefined
   // everywhere else — chat renders the same block read-only.
@@ -202,15 +206,17 @@ export default function EpisodeTitleOptionsBlock({
 
   return (
     <div className="my-2 space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <Type className="h-4 w-4 text-primary" />
-        <span className="text-sm font-semibold text-foreground">
-          Title options
-        </span>
-        {!data.isComplete && (
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-        )}
-      </div>
+      {!hideHeader && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Type className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">
+            Title options
+          </span>
+          {!data.isComplete && (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      )}
       {data.workingTitle ? (
         <p className="text-xs text-muted-foreground">
           Current title: {data.workingTitle}

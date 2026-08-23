@@ -1,4 +1,5 @@
 import type { Database, Json } from "@/types/database.types";
+import { readChapterList } from "@/features/content-ir/kinds/media-chapters";
 
 export type PcDisplayMode = "audio_only" | "with_metadata" | "with_video";
 
@@ -205,26 +206,18 @@ function parseSpeakers(raw: Json | null): PcEpisodeSpeaker[] | null {
   return out.length ? out : null;
 }
 
+/**
+ * Read `{ chapters: [...] }` (episode `metadata` or an agent's
+ * `media_chapters` payload) into the persisted chapter list. Thin wrapper over
+ * `readChapterList` — the `media_chapters` kind bridge's reader, THE one
+ * canonical chapter reader (a duplicate copy here drifted; collapsed
+ * 2026-08-23). `MediaChapterData` is field-identical to `PcEpisodeChapter`.
+ * Returns null (not []) when nothing usable is present, for the row mappers.
+ */
 export function parseChapters(raw: unknown): PcEpisodeChapter[] | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const list = "chapters" in raw ? raw.chapters : null;
-  if (!Array.isArray(list)) return null;
-  const out: PcEpisodeChapter[] = [];
-  for (const item of list) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-    const start =
-      "start_hint" in item && typeof item.start_hint === "string"
-        ? item.start_hint
-        : "";
-    const title =
-      "title" in item && typeof item.title === "string" ? item.title : "";
-    const summary =
-      "summary" in item && typeof item.summary === "string"
-        ? item.summary
-        : "";
-    if (title) out.push({ start_hint: start, title, summary });
-  }
-  return out.length ? out : null;
+  const list = readChapterList((raw as { chapters?: unknown }).chapters);
+  return list.length ? list : null;
 }
 
 function parseRssSettings(raw: Json | null): PcShowRssSettings | null {

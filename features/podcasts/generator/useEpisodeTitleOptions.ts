@@ -36,44 +36,26 @@ import {
 } from "@/features/overlays/openers/liveRunWindow";
 import { podcastService } from "@/features/podcasts/service";
 import { episodeMetadata } from "@/features/podcasts/generator/useEpisodeArticles";
+import {
+  readEpisodeTitleOptionsValue,
+  type EpisodeTitleOptionValue,
+} from "@/features/content-ir/kinds/episode-title-options";
 import type { PcEpisodeWithShow } from "@/features/podcasts/types";
 
 const TITLE_OPTIMIZER_MANDATE_KEY = "podcast.title_optimizer";
 
-export interface EpisodeTitleOption {
-  title: string;
-  subtitle: string;
-  rationale: string;
-}
-
-/**
- * Read the agent's structured result. The wire shape is the
- * `episode_title_options` envelope (`__kind` + `options[]`); the
- * discriminators are ignored here because this list is the panel's own
- * fallback rendering — the kind component is what consumes them.
- */
-function parseTitleOptions(value: unknown): EpisodeTitleOption[] {
-  if (!value || typeof value !== "object") return [];
-  const options = (value as { options?: unknown }).options;
-  if (!Array.isArray(options)) return [];
-  const out: EpisodeTitleOption[] = [];
-  for (const raw of options) {
-    if (!raw || typeof raw !== "object") continue;
-    const o = raw as Record<string, unknown>;
-    const title = typeof o.title === "string" ? o.title.trim() : "";
-    if (!title) continue;
-    out.push({
-      title,
-      subtitle: typeof o.subtitle === "string" ? o.subtitle.trim() : "",
-      rationale: typeof o.rationale === "string" ? o.rationale.trim() : "",
-    });
-  }
-  return out;
-}
+/** One ranked option, in the kind bridge's shape (nullable subtitle/rationale
+ *  — never coerced to `""`). Parsed by the ONE canonical reader,
+ *  `readEpisodeTitleOptionsValue` (features/content-ir/kinds/
+ *  episode-title-options.ts), the same one the streaming envelope bridge uses,
+ *  so the live window and this settled list can never disagree. */
+export type EpisodeTitleOption = EpisodeTitleOptionValue;
 
 export interface UseEpisodeTitleOptions {
   /** Ranked options from the last generation (this session, this episode). */
   options: EpisodeTitleOption[];
+  /** The current title the agent echoed back (`working_title`), if any. */
+  workingTitle: string | null;
   /** The episode's current title after any apply. */
   currentTitle: string | null;
   busy: boolean;
@@ -96,6 +78,7 @@ export function useEpisodeTitleOptions(
   // Keyed by episode so a stale result can never leak across episodes.
   const [generated, setGenerated] = useState<{
     episodeId: string;
+    workingTitle: string | null;
     options: EpisodeTitleOption[];
   } | null>(null);
   const [appliedTitle, setAppliedTitle] = useState<{
@@ -107,6 +90,10 @@ export function useEpisodeTitleOptions(
 
   const options =
     generated && generated.episodeId === episode?.id ? generated.options : [];
+  const workingTitle =
+    generated && generated.episodeId === episode?.id
+      ? generated.workingTitle
+      : null;
   const currentTitle =
     appliedTitle && appliedTitle.episodeId === episode?.id
       ? appliedTitle.title
@@ -146,11 +133,15 @@ export function useEpisodeTitleOptions(
           handle.update({ conversationId, pending: false });
         },
       });
-      const list = parseTitleOptions(result);
-      if (!list.length) {
+      const parsed = readEpisodeTitleOptionsValue(result);
+      if (!parsed.options.length) {
         throw new Error("The title agent returned no usable options.");
       }
-      setGenerated({ episodeId: episode.id, options: list });
+      setGenerated({
+        episodeId: episode.id,
+        workingTitle: parsed.workingTitle,
+        options: parsed.options,
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Title generation failed.";
@@ -182,6 +173,7 @@ export function useEpisodeTitleOptions(
 
   return {
     options,
+    workingTitle,
     currentTitle,
     busy: isRunning,
     applying,

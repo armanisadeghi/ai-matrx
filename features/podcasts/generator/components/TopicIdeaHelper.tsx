@@ -20,6 +20,7 @@ import { KindRequestDialog } from "@/features/content-ir/react/actions/KindReque
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
 import { podcastService } from "@/features/podcasts/service";
+import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
 
 /** Bank the whole generated batch on the show (D151). Never throws at the UI. */
 const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
@@ -32,47 +33,8 @@ const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
  * if the mandate can't resolve, the affordance disables and says why. */
 const TOPIC_IDEAS_MANDATE_KEY = "podcast_client.topic_ideas";
 
-/** Fields we never echo into the topic box — plumbing, not the idea. */
-const IDEA_META_FIELDS = new Set(["__kind", "id", "index", "selected"]);
-
-/** Turn a field name into a human label ("why_now" → "Why now"). */
-function labelFor(key: string): string {
-  const words = key.replace(/[_-]+/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-/**
- * Flatten a chosen idea into the topic field.
- *
- * 🚨 FOUND_DEFECTS D151 — this used to keep `title` and `hook` and silently
- * drop EVERY other field the generator wrote (angle, audience, why-now, the
- * suggested segments…). The user picked an idea and got a third of it. Now the
- * whole idea comes across: title and hook lead, and every other field the agent
- * emitted follows as a labeled line.
- */
-function topicFromIdea(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
-  const o = value as Record<string, unknown>;
-  const title = typeof o.title === "string" ? o.title.trim() : "";
-  const hook = typeof o.hook === "string" ? o.hook.trim() : "";
-
-  const rest: string[] = [];
-  for (const [key, raw] of Object.entries(o)) {
-    if (key === "title" || key === "hook" || IDEA_META_FIELDS.has(key)) continue;
-    const text =
-      typeof raw === "string"
-        ? raw.trim()
-        : Array.isArray(raw)
-          ? raw.filter((x) => typeof x === "string").join("; ")
-          : typeof raw === "number" || typeof raw === "boolean"
-            ? String(raw)
-            : "";
-    if (text) rest.push(`${labelFor(key)}: ${text}`);
-  }
-
-  return [title, hook, rest.join("\n")].filter(Boolean).join("\n\n");
-}
+// `topicFromIdea` (the D151 "whole idea comes across" flattener) lives in
+// `../topic-idea` — a pure module shared with the parser tests.
 
 export function TopicIdeaHelper({
   onPick,
@@ -113,10 +75,15 @@ export function TopicIdeaHelper({
         </Button>
       </div>
 
+      {/* The mandate resolves INSIDE the canonical launcher — passing the key
+          (not a pre-resolved agentId) is what keeps the caller's binding
+          `config_overrides` and the mandate attribution on the run. The
+          `useMandate` call above is ONLY the availability affordance (disable
+          + explain when the mandate can't resolve), never the run identity. */}
       <KindRequestDialog
         open={open}
         onOpenChange={setOpen}
-        agentId={mandate?.agentId ?? ""}
+        mandateKey={TOPIC_IDEAS_MANDATE_KEY}
         title="Get topic ideas"
         description="Describe a concept or area of interest. We'll suggest a few episode ideas — pick the one you like."
         fields={[

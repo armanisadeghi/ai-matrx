@@ -113,11 +113,12 @@ function stringOr(value: unknown, fallback: string): string {
 }
 
 /**
- * Mid-stream a chapter object exists before its fields close, so a
- * title-less entry is normal — it is dropped rather than rendered as a blank
- * row, exactly as `parseChapters` drops it on the persistence side. Keeping
- * the two readers identical is what lets the same component render a live run
- * and a reloaded episode.
+ * THE one chapter reader. Mid-stream a chapter object exists before its
+ * fields close, so a title-less entry is normal — it is dropped rather than
+ * rendered as a blank row. The persistence side's `parseChapters`
+ * (features/podcasts/types.ts) WRAPS this function (duplicate collapsed
+ * 2026-08-23), so a live run and a reloaded episode can never parse
+ * differently.
  */
 export function readChapterList(value: unknown): MediaChapterData[] {
   if (!Array.isArray(value)) return [];

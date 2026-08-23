@@ -106,6 +106,24 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-23 — **Wave-3 frontend lane (agent-manifest campaign): mandate keys
+  everywhere, one reader per shape, canonical title cards.** (1)
+  `useKindRequest`/`KindRequestDialog` accept `mandateKey` (resolved inside
+  the canonical launcher, so binding `config_overrides` + mandate attribution
+  survive); `TopicIdeaHelper` passes `podcast_client.topic_ideas` instead of a
+  pre-resolved agent id. (2) `useSourceResolvers`' website/YouTube resolvers
+  migrated off resolve-then-`useRunAgent` onto `useLiveAgentRun` +
+  `mandateKey` (`expect:"text"`), same variables, same
+  progress-into-textarea behavior. (3) `EpisodeTitlePanel` mounts the
+  registered `episode_title_options` component (`EpisodeTitleOptionsBlock`,
+  new `hideHeader`) instead of a hand-rolled `<ul>`; applying goes through
+  the `episode_title` surface write target. (4) Duplicate readers collapsed:
+  titles → `readEpisodeTitleOptionsValue` (kind bridge; keeps
+  `working_title`, nulls stay null), chapters → `parseChapters` now wraps
+  `readChapterList`. (5) Parser tests added
+  (`features/podcasts/__tests__/podcast-parsers.test.ts`); `topicFromIdea`
+  extracted to `generator/topic-idea.ts`.
+
 - 2026-08-21 — **Shows and episodes admin tables are copyable and exportable.**
   `PodcastsTable` gains, per tab, one toolbar `CopyButtons` group (human /
   Copy-for-AI / export) with JSON and a "Key fields" AI variant, and a
@@ -244,13 +262,13 @@ is easy to fill in.
   rendering was structurally impossible and the user watched a spinner while
   the model wrote (class B in `docs/handoffs/live-run-streaming-sweep.md` §6,
   THE FLOATING LAW's exact violation). Three changes, one flow. (1) The
-  `podcast.title_optimizer` agent (master `077108a1…`, now **v4**, re-authored
+  agent behind the `podcast.title_optimizer` mandate (re-authored
   via `agent_author`) emits the canonical `episode_title_options` envelope
   instead of a bare `{options:[…]}`; `slug` was dropped, because no consumer
   ever read it and a title edit deliberately never touches the episode slug or
   public URL. The mandate is FLOATING (`use_latest`, no version pin) and the FE
-  resolves the MASTER agent id, so its one consumer picked v4 up with no
-  rebind — there is no second usage anywhere in either repo. (2) The hook runs
+  resolves the MASTER agent id, so its one consumer picked the new version up
+  with no rebind — there is no second usage anywhere in either repo. (2) The hook runs
   through `useLiveAgentRun` on the mandate (`mandateKey`, so `config_overrides`
   survive inside the canonical launcher) and opens the floating
   `LiveRunWindow` **before** the launch, so the window is what the user

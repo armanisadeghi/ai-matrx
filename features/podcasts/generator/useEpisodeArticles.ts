@@ -68,7 +68,7 @@ export function episodeMetadata(
  * Returns null when the agent produced no H1, so the caller falls back rather
  * than inventing one.
  */
-function headingTitle(markdown: string): string | null {
+export function headingTitle(markdown: string): string | null {
   for (const line of markdown.split("\n", 20)) {
     const t = line.trim();
     if (!t) continue;
