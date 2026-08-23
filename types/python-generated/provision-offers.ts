@@ -40,6 +40,7 @@ export type ConsumptionMap = Record<string, OfferedValueMapping>;
 
 /** Offered shape of provision `agent_apps.auto_create_request` (kind `agent_apps.auto_create_request.offer`). */
 export interface AgentAppsAutoCreateRequestOffer {
+  __kind?: "agent_apps.auto_create_request.offer";
   prompt_object: unknown;
   sample_response: string;
   input_fields_to_include: string;
@@ -52,22 +53,26 @@ export interface AgentAppsAutoCreateRequestOffer {
 
 /** Offered shape of provision `agent_apps.metadata_request` (kind `agent_apps.metadata_request.offer`). */
 export interface AgentAppsMetadataRequestOffer {
+  __kind?: "agent_apps.metadata_request.offer";
   prompt_config: unknown;
 }
 
 /** Offered shape of provision `agent_factory.build_request` (kind `agent_factory.build_request.offer`). */
 export interface AgentFactoryBuildRequestOffer {
+  __kind?: "agent_factory.build_request.offer";
   prompt_purpose: string;
 }
 
 /** Offered shape of provision `code_editor.session` (kind `code_editor.session.offer`). */
 export interface CodeEditorSessionOffer {
+  __kind?: "code_editor.session.offer";
   current_code?: string;
   dynamic_context?: string;
 }
 
 /** Offered shape of provision `content_ir.component_authoring` (kind `content_ir.component_authoring.offer`). */
 export interface ContentIrComponentAuthoringOffer {
+  __kind?: "content_ir.component_authoring.offer";
   kind: string;
   component_key?: string;
   design_brief?: string;
@@ -75,6 +80,7 @@ export interface ContentIrComponentAuthoringOffer {
 
 /** Offered shape of provision `content_ir.component_target` (kind `content_ir.component_target.offer`). */
 export interface ContentIrComponentTargetOffer {
+  __kind?: "content_ir.component_target.offer";
   kind_slug: string;
   kind_label: string;
   platform: string;
@@ -84,6 +90,7 @@ export interface ContentIrComponentTargetOffer {
 
 /** Offered shape of provision `content_ir.kind_authoring` (kind `content_ir.kind_authoring.offer`). */
 export interface ContentIrKindAuthoringOffer {
+  __kind?: "content_ir.kind_authoring.offer";
   task_brief?: string;
   kind_schema?: unknown;
   user_data_sample?: string;
@@ -91,11 +98,13 @@ export interface ContentIrKindAuthoringOffer {
 
 /** Offered shape of provision `content_ir.kind_builder` (kind `content_ir.kind_builder.offer`). */
 export interface ContentIrKindBuilderOffer {
+  __kind?: "content_ir.kind_builder.offer";
   user_data_sample: string;
 }
 
 /** Offered shape of provision `content_ir.kind_creator` (kind `content_ir.kind_creator.offer`). */
 export interface ContentIrKindCreatorOffer {
+  __kind?: "content_ir.kind_creator.offer";
   user_data_sample: string;
   kind_schema: string;
   task_brief: string;
@@ -103,6 +112,7 @@ export interface ContentIrKindCreatorOffer {
 
 /** Offered shape of provision `content_plan.entity_attachment` (kind `content_plan.entity_attachment.offer`). */
 export interface ContentPlanEntityAttachmentOffer {
+  __kind?: "content_plan.entity_attachment.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -112,6 +122,7 @@ export interface ContentPlanEntityAttachmentOffer {
 
 /** Offered shape of provision `content_plan.entity_roster` (kind `content_plan.entity_roster.offer`). */
 export interface ContentPlanEntityRosterOffer {
+  __kind?: "content_plan.entity_roster.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -120,6 +131,7 @@ export interface ContentPlanEntityRosterOffer {
 
 /** Offered shape of provision `content_plan.family_naming` (kind `content_plan.family_naming.offer`). */
 export interface ContentPlanFamilyNamingOffer {
+  __kind?: "content_plan.family_naming.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -132,6 +144,7 @@ export interface ContentPlanFamilyNamingOffer {
 
 /** Offered shape of provision `content_plan.keyword_strategy` (kind `content_plan.keyword_strategy.offer`). */
 export interface ContentPlanKeywordStrategyOffer {
+  __kind?: "content_plan.keyword_strategy.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -142,6 +155,7 @@ export interface ContentPlanKeywordStrategyOffer {
 
 /** Offered shape of provision `content_plan.page_brief` (kind `content_plan.page_brief.offer`). */
 export interface ContentPlanPageBriefOffer {
+  __kind?: "content_plan.page_brief.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -152,6 +166,7 @@ export interface ContentPlanPageBriefOffer {
 
 /** Offered shape of provision `content_plan.page_build` (kind `content_plan.page_build.offer`). */
 export interface ContentPlanPageBuildOffer {
+  __kind?: "content_plan.page_build.offer";
   site_name: string;
   site_domain?: string;
   site_brand?: unknown;
@@ -171,6 +186,7 @@ export interface ContentPlanPageBuildOffer {
 
 /** Offered shape of provision `content_plan.page_family` (kind `content_plan.page_family.offer`). */
 export interface ContentPlanPageFamilyOffer {
+  __kind?: "content_plan.page_family.offer";
   page_route: string;
   page_label: string;
   page_node_type: string;
@@ -187,6 +203,7 @@ export interface ContentPlanPageFamilyOffer {
 
 /** Offered shape of provision `content_plan.page_review` (kind `content_plan.page_review.offer`). */
 export interface ContentPlanPageReviewOffer {
+  __kind?: "content_plan.page_review.offer";
   page_route: string;
   page_label: string;
   page_node_type: string;
@@ -205,6 +222,7 @@ export interface ContentPlanPageReviewOffer {
 
 /** Offered shape of provision `content_plan.page_route` (kind `content_plan.page_route.offer`). */
 export interface ContentPlanPageRouteOffer {
+  __kind?: "content_plan.page_route.offer";
   page_title: string;
   primary_keyword?: string;
   family_route: string;
@@ -213,6 +231,7 @@ export interface ContentPlanPageRouteOffer {
 
 /** Offered shape of provision `content_plan.page_write` (kind `content_plan.page_write.offer`). */
 export interface ContentPlanPageWriteOffer {
+  __kind?: "content_plan.page_write.offer";
   page_route: string;
   page_label: string;
   page_node_type: string;
@@ -231,6 +250,7 @@ export interface ContentPlanPageWriteOffer {
 
 /** Offered shape of provision `content_plan.plan_review` (kind `content_plan.plan_review.offer`). */
 export interface ContentPlanPlanReviewOffer {
+  __kind?: "content_plan.plan_review.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -239,6 +259,7 @@ export interface ContentPlanPlanReviewOffer {
 
 /** Offered shape of provision `content_plan.plan_shape` (kind `content_plan.plan_shape.offer`). */
 export interface ContentPlanPlanShapeOffer {
+  __kind?: "content_plan.plan_shape.offer";
   research_report: string;
   site_domain?: string;
   guidance?: string;
@@ -250,11 +271,13 @@ export interface ContentPlanPlanShapeOffer {
 
 /** Offered shape of provision `conversation.analysis` (kind `conversation.analysis.offer`). */
 export interface ConversationAnalysisOffer {
+  __kind?: "conversation.analysis.offer";
   conversation_id: string;
 }
 
 /** Offered shape of provision `crm.journalist_beat_analysis` (kind `crm.journalist_beat_analysis.offer`). */
 export interface CrmJournalistBeatAnalysisOffer {
+  __kind?: "crm.journalist_beat_analysis.offer";
   person_name: string;
   outlet_name?: string;
   articles: string;
@@ -263,6 +286,7 @@ export interface CrmJournalistBeatAnalysisOffer {
 
 /** Offered shape of provision `crm.media_list_ranker` (kind `crm.media_list_ranker.offer`). */
 export interface CrmMediaListRankerOffer {
+  __kind?: "crm.media_list_ranker.offer";
   goal_context: string;
   candidates_json: string;
   shortlist_size?: string;
@@ -270,12 +294,14 @@ export interface CrmMediaListRankerOffer {
 
 /** Offered shape of provision `crm.outreach_personalization_writer` (kind `crm.outreach_personalization_writer.offer`). */
 export interface CrmOutreachPersonalizationWriterOffer {
+  __kind?: "crm.outreach_personalization_writer.offer";
   campaign_context: string;
   targets_json: string;
 }
 
 /** Offered shape of provision `crm.outreach_recipient_shortlister` (kind `crm.outreach_recipient_shortlister.offer`). */
 export interface CrmOutreachRecipientShortlisterOffer {
+  __kind?: "crm.outreach_recipient_shortlister.offer";
   pitch_context: string;
   recipients_json: string;
   shortlist_size?: string;
@@ -283,6 +309,7 @@ export interface CrmOutreachRecipientShortlisterOffer {
 
 /** Offered shape of provision `crm.outreach_reply_drafter` (kind `crm.outreach_reply_drafter.offer`). */
 export interface CrmOutreachReplyDrafterOffer {
+  __kind?: "crm.outreach_reply_drafter.offer";
   campaign_context: string;
   thread_json: string;
   record_facts?: string;
@@ -290,6 +317,7 @@ export interface CrmOutreachReplyDrafterOffer {
 
 /** Offered shape of provision `crm.party_kind_judgment` (kind `crm.party_kind_judgment.offer`). */
 export interface CrmPartyKindJudgmentOffer {
+  __kind?: "crm.party_kind_judgment.offer";
   display_name: string;
   platform_label: string;
   profile_url: string;
@@ -298,6 +326,7 @@ export interface CrmPartyKindJudgmentOffer {
 
 /** Offered shape of provision `crm.save_contact_selection` (kind `crm.save_contact_selection.offer`). */
 export interface CrmSaveContactSelectionOffer {
+  __kind?: "crm.save_contact_selection.offer";
   selection: string;
   hints?: string;
   origin: string;
@@ -305,11 +334,13 @@ export interface CrmSaveContactSelectionOffer {
 
 /** Offered shape of provision `dictionary.workspace` (kind `dictionary.workspace.offer`). */
 export interface DictionaryWorkspaceOffer {
+  __kind?: "dictionary.workspace.offer";
   dictionary_workspace: string;
 }
 
 /** Offered shape of provision `education.analytics_narrate` (kind `education.analytics_narrate.offer`). */
 export interface EducationAnalyticsNarrateOffer {
+  __kind?: "education.analytics_narrate.offer";
   item_label: string;
   accuracy_pct: string;
   mastered_count: number;
@@ -324,6 +355,7 @@ export interface EducationAnalyticsNarrateOffer {
 
 /** Offered shape of provision `education.card_image` (kind `education.card_image.offer`). */
 export interface EducationCardImageOffer {
+  __kind?: "education.card_image.offer";
   card_front: string;
   card_back: string;
   topic: string;
@@ -349,6 +381,7 @@ export interface EducationCardImageOffer {
 
 /** Offered shape of provision `education.convert_source` (kind `education.convert_source.offer`). */
 export interface EducationConvertSourceOffer {
+  __kind?: "education.convert_source.offer";
   source_content: string;
   title: string;
   focus?: string;
@@ -356,6 +389,7 @@ export interface EducationConvertSourceOffer {
 
 /** Offered shape of provision `education.grade_handwritten` (kind `education.grade_handwritten.offer`). */
 export interface EducationGradeHandwrittenOffer {
+  __kind?: "education.grade_handwritten.offer";
   question: string;
   expected_answer: string;
   work_photo: string | {
@@ -369,6 +403,7 @@ export interface EducationGradeHandwrittenOffer {
 
 /** Offered shape of provision `education.memory_hint` (kind `education.memory_hint.offer`). */
 export interface EducationMemoryHintOffer {
+  __kind?: "education.memory_hint.offer";
   front: string;
   back: string;
   topic?: string;
@@ -376,6 +411,7 @@ export interface EducationMemoryHintOffer {
 
 /** Offered shape of provision `education.plan_generate` (kind `education.plan_generate.offer`). */
 export interface EducationPlanGenerateOffer {
+  __kind?: "education.plan_generate.offer";
   goal_title: string;
   start_date: string;
   exam_date: string;
@@ -386,6 +422,7 @@ export interface EducationPlanGenerateOffer {
 
 /** Offered shape of provision `education.quiz_deepen_item` (kind `education.quiz_deepen_item.offer`). */
 export interface EducationQuizDeepenItemOffer {
+  __kind?: "education.quiz_deepen_item.offer";
   prompt: string;
   correct_answer: string;
   question_type: string;
@@ -398,6 +435,7 @@ export interface EducationQuizDeepenItemOffer {
 
 /** Offered shape of provision `education.quiz_generate` (kind `education.quiz_generate.offer`). */
 export interface EducationQuizGenerateOffer {
+  __kind?: "education.quiz_generate.offer";
   topic: string;
   grade_level?: string;
   count: number;
@@ -410,6 +448,7 @@ export interface EducationQuizGenerateOffer {
 
 /** Offered shape of provision `education.quiz_generate_from_source` (kind `education.quiz_generate_from_source.offer`). */
 export interface EducationQuizGenerateFromSourceOffer {
+  __kind?: "education.quiz_generate_from_source.offer";
   source_content: string;
   source_label: string;
   count: number;
@@ -422,6 +461,7 @@ export interface EducationQuizGenerateFromSourceOffer {
 
 /** Offered shape of provision `education.spoken_practice_design` (kind `education.spoken_practice_design.offer`). */
 export interface EducationSpokenPracticeDesignOffer {
+  __kind?: "education.spoken_practice_design.offer";
   mode?: string;
   focus: string;
   study_material?: string;
@@ -431,6 +471,7 @@ export interface EducationSpokenPracticeDesignOffer {
 
 /** Offered shape of provision `education.spoken_practice_grade` (kind `education.spoken_practice_grade.offer`). */
 export interface EducationSpokenPracticeGradeOffer {
+  __kind?: "education.spoken_practice_grade.offer";
   front: string;
   back: string;
   rubric: string;
@@ -446,6 +487,7 @@ export interface EducationSpokenPracticeGradeOffer {
 
 /** Offered shape of provision `education.spoken_practice_review` (kind `education.spoken_practice_review.offer`). */
 export interface EducationSpokenPracticeReviewOffer {
+  __kind?: "education.spoken_practice_review.offer";
   mode: string;
   transcript: string;
   aggregate: string;
@@ -453,6 +495,7 @@ export interface EducationSpokenPracticeReviewOffer {
 
 /** Offered shape of provision `education.study_pack` (kind `education.study_pack.offer`). */
 export interface EducationStudyPackOffer {
+  __kind?: "education.study_pack.offer";
   topic: string;
   audience: string;
   material: string;
@@ -468,6 +511,7 @@ export interface EducationStudyPackOffer {
 
 /** Offered shape of provision `education.study_pack_v2` (kind `education.study_pack_v2.offer`). */
 export interface EducationStudyPackV2Offer {
+  __kind?: "education.study_pack_v2.offer";
   topic: string;
   audience: string;
   material: string;
@@ -483,6 +527,7 @@ export interface EducationStudyPackV2Offer {
 
 /** Offered shape of provision `education.tutor_message` (kind `education.tutor_message.offer`). */
 export interface EducationTutorMessageOffer {
+  __kind?: "education.tutor_message.offer";
   learner_memory: string;
   study_material?: string;
   teaching_mode: string;
@@ -491,6 +536,7 @@ export interface EducationTutorMessageOffer {
 
 /** Offered shape of provision `extend.page_capture` (kind `extend.page_capture.offer`). */
 export interface ExtendPageCaptureOffer {
+  __kind?: "extend.page_capture.offer";
   page_url: string;
   page_text?: string;
   page_metadata?: unknown;
@@ -502,6 +548,7 @@ export interface ExtendPageCaptureOffer {
 
 /** Offered shape of provision `flashcards.enrich_card` (kind `flashcards.enrich_card.offer`). */
 export interface FlashcardsEnrichCardOffer {
+  __kind?: "flashcards.enrich_card.offer";
   front: string;
   back: string;
   topic: string;
@@ -512,6 +559,7 @@ export interface FlashcardsEnrichCardOffer {
 
 /** Offered shape of provision `flashcards.expand_card` (kind `flashcards.expand_card.offer`). */
 export interface FlashcardsExpandCardOffer {
+  __kind?: "flashcards.expand_card.offer";
   topic: string;
   front: string;
   back: string;
@@ -520,6 +568,7 @@ export interface FlashcardsExpandCardOffer {
 
 /** Offered shape of provision `flashcards.generate_cards` (kind `flashcards.generate_cards.offer`). */
 export interface FlashcardsGenerateCardsOffer {
+  __kind?: "flashcards.generate_cards.offer";
   topic: string;
   count: number;
   difficulty: string;
@@ -529,6 +578,7 @@ export interface FlashcardsGenerateCardsOffer {
 
 /** Offered shape of provision `flashcards.generate_from_source` (kind `flashcards.generate_from_source.offer`). */
 export interface FlashcardsGenerateFromSourceOffer {
+  __kind?: "flashcards.generate_from_source.offer";
   source_content: string;
   document_id?: string;
   count: number;
@@ -539,6 +589,7 @@ export interface FlashcardsGenerateFromSourceOffer {
 
 /** Offered shape of provision `flashcards.grade_spoken` (kind `flashcards.grade_spoken.offer`). */
 export interface FlashcardsGradeSpokenOffer {
+  __kind?: "flashcards.grade_spoken.offer";
   front: string;
   back: string;
   rubric?: string;
@@ -554,6 +605,7 @@ export interface FlashcardsGradeSpokenOffer {
 
 /** Offered shape of provision `flashcards.grade_typed_answer` (kind `flashcards.grade_typed_answer.offer`). */
 export interface FlashcardsGradeTypedAnswerOffer {
+  __kind?: "flashcards.grade_typed_answer.offer";
   question: string;
   expected_answer: string;
   learner_answer: string;
@@ -561,6 +613,7 @@ export interface FlashcardsGradeTypedAnswerOffer {
 
 /** Offered shape of provision `flashcards.help_live` (kind `flashcards.help_live.offer`). */
 export interface FlashcardsHelpLiveOffer {
+  __kind?: "flashcards.help_live.offer";
   front: string;
   back: string;
   session_score: number;
@@ -574,6 +627,7 @@ export interface FlashcardsHelpLiveOffer {
 
 /** Offered shape of provision `flashcards.make_quiz_items` (kind `flashcards.make_quiz_items.offer`). */
 export interface FlashcardsMakeQuizItemsOffer {
+  __kind?: "flashcards.make_quiz_items.offer";
   front: string;
   back: string;
   topic: string;
@@ -582,6 +636,7 @@ export interface FlashcardsMakeQuizItemsOffer {
 
 /** Offered shape of provision `flashcards.micro_coach` (kind `flashcards.micro_coach.offer`). */
 export interface FlashcardsMicroCoachOffer {
+  __kind?: "flashcards.micro_coach.offer";
   front: string;
   back: string;
   result: string;
@@ -590,6 +645,7 @@ export interface FlashcardsMicroCoachOffer {
 
 /** Offered shape of provision `flashcards.review_batch` (kind `flashcards.review_batch.offer`). */
 export interface FlashcardsReviewBatchOffer {
+  __kind?: "flashcards.review_batch.offer";
   transcript: string;
   attempts: unknown;
   aggregate: unknown;
@@ -598,6 +654,7 @@ export interface FlashcardsReviewBatchOffer {
 
 /** Offered shape of provision `flashcards.tts_render` (kind `flashcards.tts_render.offer`). */
 export interface FlashcardsTtsRenderOffer {
+  __kind?: "flashcards.tts_render.offer";
   content: string;
   sample_context: string;
   speaker_profile: string;
@@ -607,6 +664,7 @@ export interface FlashcardsTtsRenderOffer {
 
 /** Offered shape of provision `flashcards.verify_against_source` (kind `flashcards.verify_against_source.offer`). */
 export interface FlashcardsVerifyAgainstSourceOffer {
+  __kind?: "flashcards.verify_against_source.offer";
   front: string;
   back: string;
   source_excerpt: string;
@@ -614,14 +672,16 @@ export interface FlashcardsVerifyAgainstSourceOffer {
 
 /** Offered shape of provision `foundry.agent_planning` (kind `foundry.agent_planning.offer`). */
 export interface FoundryAgentPlanningOffer {
-  agent_purpose: string;
-  sample_output: string;
-  sample_input: string;
-  input_description?: string;
+  __kind?: "foundry.agent_planning.offer";
+  task: string;
+  input_material: string;
+  desired_result: string;
+  anything_else?: string;
 }
 
 /** Offered shape of provision `growth_loop.stage_dispatch` (kind `growth_loop.stage_dispatch.offer`). */
 export interface GrowthLoopStageDispatchOffer {
+  __kind?: "growth_loop.stage_dispatch.offer";
   stage: string;
   site_id: string;
   loop_run_id: string;
@@ -630,6 +690,7 @@ export interface GrowthLoopStageDispatchOffer {
 
 /** Offered shape of provision `growth_loop.stage_quality` (kind `growth_loop.stage_quality.offer`). */
 export interface GrowthLoopStageQualityOffer {
+  __kind?: "growth_loop.stage_quality.offer";
   stage: string;
   artifact_kind: string;
   artifact: unknown;
@@ -643,11 +704,13 @@ export interface GrowthLoopStageQualityOffer {
 
 /** Offered shape of provision `hindsight.crystallizer` (kind `hindsight.crystallizer.offer`). */
 export interface HindsightCrystallizerOffer {
+  __kind?: "hindsight.crystallizer.offer";
   bundle: string;
 }
 
 /** Offered shape of provision `hindsight.enrollment_review` (kind `hindsight.enrollment_review.offer`). */
 export interface HindsightEnrollmentReviewOffer {
+  __kind?: "hindsight.enrollment_review.offer";
   review_bundle: string;
   subject_kind?: string;
   subject_label?: string;
@@ -656,6 +719,7 @@ export interface HindsightEnrollmentReviewOffer {
 
 /** Offered shape of provision `hindsight.orchestra_crystallization` (kind `hindsight.orchestra_crystallization.offer`). */
 export interface HindsightOrchestraCrystallizationOffer {
+  __kind?: "hindsight.orchestra_crystallization.offer";
   trajectory_bundle: string;
   orchestra_label?: string;
   run_count?: number;
@@ -663,6 +727,7 @@ export interface HindsightOrchestraCrystallizationOffer {
 
 /** Offered shape of provision `hindsight.replay_comparison` (kind `hindsight.replay_comparison.offer`). */
 export interface HindsightReplayComparisonOffer {
+  __kind?: "hindsight.replay_comparison.offer";
   question: string;
   rubric_name?: string;
   rubric?: string;
@@ -678,16 +743,19 @@ export interface HindsightReplayComparisonOffer {
 
 /** Offered shape of provision `hindsight.replay_judge` (kind `hindsight.replay_judge.offer`). */
 export interface HindsightReplayJudgeOffer {
+  __kind?: "hindsight.replay_judge.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `hindsight.reviewer` (kind `hindsight.reviewer.offer`). */
 export interface HindsightReviewerOffer {
+  __kind?: "hindsight.reviewer.offer";
   bundle: string;
 }
 
 /** Offered shape of provision `human_decisions.absent_human_decision` (kind `human_decisions.absent_human_decision.offer`). */
 export interface HumanDecisionsAbsentHumanDecisionOffer {
+  __kind?: "human_decisions.absent_human_decision.offer";
   workflow_name: string;
   waited_for: string;
   prompt: string;
@@ -698,6 +766,7 @@ export interface HumanDecisionsAbsentHumanDecisionOffer {
 
 /** Offered shape of provision `iteration.architect` (kind `iteration.architect.offer`). */
 export interface IterationArchitectOffer {
+  __kind?: "iteration.architect.offer";
   original_user_request: string;
   current_agent_config: string;
   current_agent_response: string;
@@ -709,6 +778,7 @@ export interface IterationArchitectOffer {
 
 /** Offered shape of provision `iteration.diagnostic` (kind `iteration.diagnostic.offer`). */
 export interface IterationDiagnosticOffer {
+  __kind?: "iteration.diagnostic.offer";
   original_user_request: string;
   current_agent_config: string;
   current_agent_response: string;
@@ -718,6 +788,7 @@ export interface IterationDiagnosticOffer {
 
 /** Offered shape of provision `iteration.rebuild_chain` (kind `iteration.rebuild_chain.offer`). */
 export interface IterationRebuildChainOffer {
+  __kind?: "iteration.rebuild_chain.offer";
   original_user_request: string;
   current_agent_config: unknown;
   current_agent_response: string;
@@ -729,6 +800,7 @@ export interface IterationRebuildChainOffer {
 
 /** Offered shape of provision `iteration.root_cause` (kind `iteration.root_cause.offer`). */
 export interface IterationRootCauseOffer {
+  __kind?: "iteration.root_cause.offer";
   original_user_request: string;
   current_agent_config: string;
   current_agent_response: string;
@@ -739,28 +811,33 @@ export interface IterationRootCauseOffer {
 
 /** Offered shape of provision `iteration.thinking_display` (kind `iteration.thinking_display.offer`). */
 export interface IterationThinkingDisplayOffer {
+  __kind?: "iteration.thinking_display.offer";
   user_feedback: string;
   original_user_request: string;
 }
 
 /** Offered shape of provision `iteration.thinking_display_narration` (kind `iteration.thinking_display_narration.offer`). */
 export interface IterationThinkingDisplayNarrationOffer {
+  __kind?: "iteration.thinking_display_narration.offer";
   user_feedback: string;
   original_user_request?: string;
 }
 
 /** Offered shape of provision `kg.chunk_extraction` (kind `kg.chunk_extraction.offer`). */
 export interface KgChunkExtractionOffer {
+  __kind?: "kg.chunk_extraction.offer";
   chunk: string;
 }
 
 /** Offered shape of provision `kg.entity_cluster` (kind `kg.entity_cluster.offer`). */
 export interface KgEntityClusterOffer {
+  __kind?: "kg.entity_cluster.offer";
   members: string;
 }
 
 /** Offered shape of provision `knowledge.document_verification` (kind `knowledge.document_verification.offer`). */
 export interface KnowledgeDocumentVerificationOffer {
+  __kind?: "knowledge.document_verification.offer";
   verification_instructions: string;
   expected_claims?: unknown;
   page_context: unknown;
@@ -768,6 +845,7 @@ export interface KnowledgeDocumentVerificationOffer {
 
 /** Offered shape of provision `knowledge.document_verifier` (kind `knowledge.document_verifier.offer`). */
 export interface KnowledgeDocumentVerifierOffer {
+  __kind?: "knowledge.document_verifier.offer";
   verification_instructions: string;
   expected_claims: string;
   page_context: string;
@@ -775,23 +853,27 @@ export interface KnowledgeDocumentVerifierOffer {
 
 /** Offered shape of provision `knowledge.section_derivation` (kind `knowledge.section_derivation.offer`). */
 export interface KnowledgeSectionDerivationOffer {
+  __kind?: "knowledge.section_derivation.offer";
   section_title: string;
   section_text: string;
 }
 
 /** Offered shape of provision `knowledge.section_qa` (kind `knowledge.section_qa.offer`). */
 export interface KnowledgeSectionQaOffer {
+  __kind?: "knowledge.section_qa.offer";
   content: string;
 }
 
 /** Offered shape of provision `marketing.image_prompt` (kind `marketing.image_prompt.offer`). */
 export interface MarketingImagePromptOffer {
+  __kind?: "marketing.image_prompt.offer";
   intent_or_content: string;
   style: string;
 }
 
 /** Offered shape of provision `marketing.local_endowment` (kind `marketing.local_endowment.offer`). */
 export interface MarketingLocalEndowmentOffer {
+  __kind?: "marketing.local_endowment.offer";
   company_name?: string;
   industry: string;
   location?: string;
@@ -800,11 +882,13 @@ export interface MarketingLocalEndowmentOffer {
 
 /** Offered shape of provision `marketing.page_image` (kind `marketing.page_image.offer`). */
 export interface MarketingPageImageOffer {
+  __kind?: "marketing.page_image.offer";
   image_description: string;
 }
 
 /** Offered shape of provision `marketing.page_image_all_in_one` (kind `marketing.page_image_all_in_one.offer`). */
 export interface MarketingPageImageAllInOneOffer {
+  __kind?: "marketing.page_image_all_in_one.offer";
   intent_or_content: string;
   style: string;
   count: number;
@@ -812,12 +896,14 @@ export interface MarketingPageImageAllInOneOffer {
 
 /** Offered shape of provision `marketing.video_metadata` (kind `marketing.video_metadata.offer`). */
 export interface MarketingVideoMetadataOffer {
+  __kind?: "marketing.video_metadata.offer";
   video_context: unknown;
   site_context: unknown;
 }
 
 /** Offered shape of provision `masterwork.approach_select` (kind `masterwork.approach_select.offer`). */
 export interface MasterworkApproachSelectOffer {
+  __kind?: "masterwork.approach_select.offer";
   rulebook_name: string;
   sections: unknown;
   total_approved: number;
@@ -828,6 +914,7 @@ export interface MasterworkApproachSelectOffer {
 
 /** Offered shape of provision `masterwork.audition_judgment` (kind `masterwork.audition_judgment.offer`). */
 export interface MasterworkAuditionJudgmentOffer {
+  __kind?: "masterwork.audition_judgment.offer";
   question: string;
   rubric_name: string;
   rubric: string;
@@ -843,6 +930,7 @@ export interface MasterworkAuditionJudgmentOffer {
 
 /** Offered shape of provision `masterwork.bad_draft_write` (kind `masterwork.bad_draft_write.offer`). */
 export interface MasterworkBadDraftWriteOffer {
+  __kind?: "masterwork.bad_draft_write.offer";
   rulebook_name: string;
   section_label: string;
   approved_rules: unknown;
@@ -850,6 +938,7 @@ export interface MasterworkBadDraftWriteOffer {
 
 /** Offered shape of provision `masterwork.checkup_scan` (kind `masterwork.checkup_scan.offer`). */
 export interface MasterworkCheckupScanOffer {
+  __kind?: "masterwork.checkup_scan.offer";
   expert_corpus: string;
   current_rules: string;
   rulebook_context: string;
@@ -857,11 +946,13 @@ export interface MasterworkCheckupScanOffer {
 
 /** Offered shape of provision `masterwork.chunk_distill` (kind `masterwork.chunk_distill.offer`). */
 export interface MasterworkChunkDistillOffer {
+  __kind?: "masterwork.chunk_distill.offer";
   chunk: string;
 }
 
 /** Offered shape of provision `masterwork.coherence_scan` (kind `masterwork.coherence_scan.offer`). */
 export interface MasterworkCoherenceScanOffer {
+  __kind?: "masterwork.coherence_scan.offer";
   rulebook_name: string;
   rulebook_description?: string;
   rulebook_sections: unknown;
@@ -874,6 +965,7 @@ export interface MasterworkCoherenceScanOffer {
 
 /** Offered shape of provision `masterwork.conduct` (kind `masterwork.conduct.offer`). */
 export interface MasterworkConductOffer {
+  __kind?: "masterwork.conduct.offer";
   rulebook_id: string;
   attachments: unknown;
   rulebook_document: string;
@@ -881,16 +973,19 @@ export interface MasterworkConductOffer {
 
 /** Offered shape of provision `masterwork.corpus_clean` (kind `masterwork.corpus_clean.offer`). */
 export interface MasterworkCorpusCleanOffer {
+  __kind?: "masterwork.corpus_clean.offer";
   transcribed_text: string;
 }
 
 /** Offered shape of provision `masterwork.corpus_synthesis` (kind `masterwork.corpus_synthesis.offer`). */
 export interface MasterworkCorpusSynthesisOffer {
+  __kind?: "masterwork.corpus_synthesis.offer";
   corpus_digest: string;
 }
 
 /** Offered shape of provision `masterwork.rule_improve` (kind `masterwork.rule_improve.offer`). */
 export interface MasterworkRuleImproveOffer {
+  __kind?: "masterwork.rule_improve.offer";
   rule?: unknown;
   expert_input?: string;
   rulebook_context: string;
@@ -898,6 +993,7 @@ export interface MasterworkRuleImproveOffer {
 
 /** Offered shape of provision `masterwork.rulebook_audit` (kind `masterwork.rulebook_audit.offer`). */
 export interface MasterworkRulebookAuditOffer {
+  __kind?: "masterwork.rulebook_audit.offer";
   rulebook_source: string;
   rules: string;
   content: string;
@@ -907,18 +1003,21 @@ export interface MasterworkRulebookAuditOffer {
 
 /** Offered shape of provision `masterwork.scout_interview` (kind `masterwork.scout_interview.offer`). */
 export interface MasterworkScoutInterviewOffer {
+  __kind?: "masterwork.scout_interview.offer";
   rulebook_id: string;
   rulebook_document: string;
 }
 
 /** Offered shape of provision `masterwork.transcript_shortlist` (kind `masterwork.transcript_shortlist.offer`). */
 export interface MasterworkTranscriptShortlistOffer {
+  __kind?: "masterwork.transcript_shortlist.offer";
   conversations: unknown;
   topic: string;
 }
 
 /** Offered shape of provision `masterwork.understudy_run` (kind `masterwork.understudy_run.offer`). */
 export interface MasterworkUnderstudyRunOffer {
+  __kind?: "masterwork.understudy_run.offer";
   rulebook_source: string;
   rules: string;
   unconfirmed_rules: string;
@@ -928,12 +1027,14 @@ export interface MasterworkUnderstudyRunOffer {
 
 /** Offered shape of provision `media.youtube_transcription` (kind `media.youtube_transcription.offer`). */
 export interface MediaYoutubeTranscriptionOffer {
+  __kind?: "media.youtube_transcription.offer";
   youtube_url: string;
   timestamp_instruction?: string;
 }
 
 /** Offered shape of provision `ner.deep_chunk_extraction` (kind `ner.deep_chunk_extraction.offer`). */
 export interface NerDeepChunkExtractionOffer {
+  __kind?: "ner.deep_chunk_extraction.offer";
   slots_to_extract: unknown;
   relevant_chunks_text: string;
   document_label: string;
@@ -941,6 +1042,7 @@ export interface NerDeepChunkExtractionOffer {
 
 /** Offered shape of provision `ner.document_orientation` (kind `ner.document_orientation.offer`). */
 export interface NerDocumentOrientationOffer {
+  __kind?: "ner.document_orientation.offer";
   document_label: string;
   document_size_hint: string;
   document_text_sample: string;
@@ -951,33 +1053,39 @@ export interface NerDocumentOrientationOffer {
 
 /** Offered shape of provision `ner.entity_canonicalization` (kind `ner.entity_canonicalization.offer`). */
 export interface NerEntityCanonicalizationOffer {
+  __kind?: "ner.entity_canonicalization.offer";
   entity_pairs: unknown;
 }
 
 /** Offered shape of provision `ner.entity_canonicalizer` (kind `ner.entity_canonicalizer.offer`). */
 export interface NerEntityCanonicalizerOffer {
+  __kind?: "ner.entity_canonicalizer.offer";
   entity_pairs_json: string;
 }
 
 /** Offered shape of provision `ner.finisher_batch` (kind `ner.finisher_batch.offer`). */
 export interface NerFinisherBatchOffer {
+  __kind?: "ner.finisher_batch.offer";
   entities: unknown;
 }
 
 /** Offered shape of provision `ner.item_proposal` (kind `ner.item_proposal.offer`). */
 export interface NerItemProposalOffer {
+  __kind?: "ner.item_proposal.offer";
   unmatched_findings: unknown;
   scope_type_context: unknown;
 }
 
 /** Offered shape of provision `ner.item_proposer` (kind `ner.item_proposer.offer`). */
 export interface NerItemProposerOffer {
+  __kind?: "ner.item_proposer.offer";
   unmatched_findings_json: string;
   scope_type_context_json: string;
 }
 
 /** Offered shape of provision `ner.magic_moment_detection` (kind `ner.magic_moment_detection.offer`). */
 export interface NerMagicMomentDetectionOffer {
+  __kind?: "ner.magic_moment_detection.offer";
   scope_slots: unknown;
   document_classification?: string;
   document_sample?: string;
@@ -986,6 +1094,7 @@ export interface NerMagicMomentDetectionOffer {
 
 /** Offered shape of provision `ner.magic_moment_detector` (kind `ner.magic_moment_detector.offer`). */
 export interface NerMagicMomentDetectorOffer {
+  __kind?: "ner.magic_moment_detector.offer";
   scope_slots_json: string;
   document_classification: string;
   document_sample: string;
@@ -994,6 +1103,7 @@ export interface NerMagicMomentDetectorOffer {
 
 /** Offered shape of provision `ner.scope_proposal` (kind `ner.scope_proposal.offer`). */
 export interface NerScopeProposalOffer {
+  __kind?: "ner.scope_proposal.offer";
   entity_tree: unknown;
   document_classification?: string;
   existing_scope_types?: unknown;
@@ -1001,6 +1111,7 @@ export interface NerScopeProposalOffer {
 
 /** Offered shape of provision `ner.scope_proposer` (kind `ner.scope_proposer.offer`). */
 export interface NerScopeProposerOffer {
+  __kind?: "ner.scope_proposer.offer";
   entity_tree_json: string;
   document_classification: string;
   existing_scope_types_json: string;
@@ -1008,6 +1119,7 @@ export interface NerScopeProposerOffer {
 
 /** Offered shape of provision `ner.scope_slot_filling` (kind `ner.scope_slot_filling.offer`). */
 export interface NerScopeSlotFillingOffer {
+  __kind?: "ner.scope_slot_filling.offer";
   scope_name: string;
   scope_type: string;
   slot_definitions: unknown;
@@ -1019,6 +1131,7 @@ export interface NerScopeSlotFillingOffer {
 
 /** Offered shape of provision `ner.suggestion_review` (kind `ner.suggestion_review.offer`). */
 export interface NerSuggestionReviewOffer {
+  __kind?: "ner.suggestion_review.offer";
   suggestions: unknown;
   scope_context: unknown;
   document_content?: string;
@@ -1026,6 +1139,7 @@ export interface NerSuggestionReviewOffer {
 
 /** Offered shape of provision `ner.suggestion_reviewer` (kind `ner.suggestion_reviewer.offer`). */
 export interface NerSuggestionReviewerOffer {
+  __kind?: "ner.suggestion_reviewer.offer";
   suggestions_json: string;
   scope_context_json: string;
   document_content: string;
@@ -1033,11 +1147,13 @@ export interface NerSuggestionReviewerOffer {
 
 /** Offered shape of provision `ner.sweep_scope_discoverer` (kind `ner.sweep_scope_discoverer.offer`). */
 export interface NerSweepScopeDiscovererOffer {
+  __kind?: "ner.sweep_scope_discoverer.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `ner.sweep_scope_discovery` (kind `ner.sweep_scope_discovery.offer`). */
 export interface NerSweepScopeDiscoveryOffer {
+  __kind?: "ner.sweep_scope_discovery.offer";
   scope_type: string;
   existing_scope_names: string[];
   entities: unknown;
@@ -1045,50 +1161,59 @@ export interface NerSweepScopeDiscoveryOffer {
 
 /** Offered shape of provision `ner.sweep_scope_reference_finder` (kind `ner.sweep_scope_reference_finder.offer`). */
 export interface NerSweepScopeReferenceFinderOffer {
+  __kind?: "ner.sweep_scope_reference_finder.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `ner.sweep_scope_references` (kind `ner.sweep_scope_references.offer`). */
 export interface NerSweepScopeReferencesOffer {
+  __kind?: "ner.sweep_scope_references.offer";
   scope: unknown;
   entities: unknown;
 }
 
 /** Offered shape of provision `ner.sweep_value_miner` (kind `ner.sweep_value_miner.offer`). */
 export interface NerSweepValueMinerOffer {
+  __kind?: "ner.sweep_value_miner.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `ner.sweep_value_mining` (kind `ner.sweep_value_mining.offer`). */
 export interface NerSweepValueMiningOffer {
+  __kind?: "ner.sweep_value_mining.offer";
   context_item: unknown;
   scopes: unknown;
 }
 
 /** Offered shape of provision `observability.tool_trace_pattern_window` (kind `observability.tool_trace_pattern_window.offer`). */
 export interface ObservabilityToolTracePatternWindowOffer {
+  __kind?: "observability.tool_trace_pattern_window.offer";
   window_days: number;
   tool_name_filter?: string;
 }
 
 /** Offered shape of provision `observability.tool_trace_triage_window` (kind `observability.tool_trace_triage_window.offer`). */
 export interface ObservabilityToolTraceTriageWindowOffer {
+  __kind?: "observability.tool_trace_triage_window.offer";
   since_iso: string;
   environment_label: string;
 }
 
 /** Offered shape of provision `orchestras.member_roster` (kind `orchestras.member_roster.offer`). */
 export interface OrchestrasMemberRosterOffer {
+  __kind?: "orchestras.member_roster.offer";
   members: unknown;
 }
 
 /** Offered shape of provision `pdf.content_cleaning` (kind `pdf.content_cleaning.offer`). */
 export interface PdfContentCleaningOffer {
+  __kind?: "pdf.content_cleaning.offer";
   content: string;
 }
 
 /** Offered shape of provision `podcast.audience_adaptation` (kind `podcast.audience_adaptation.offer`). */
 export interface PodcastAudienceAdaptationOffer {
+  __kind?: "podcast.audience_adaptation.offer";
   prepared_content: string;
   target_audience: string;
   adaptation_guidance?: string;
@@ -1096,6 +1221,7 @@ export interface PodcastAudienceAdaptationOffer {
 
 /** Offered shape of provision `podcast.audience_adapter` (kind `podcast.audience_adapter.offer`). */
 export interface PodcastAudienceAdapterOffer {
+  __kind?: "podcast.audience_adapter.offer";
   prepared_content: string;
   target_audience: string;
   adaptation_guidance: string;
@@ -1103,12 +1229,14 @@ export interface PodcastAudienceAdapterOffer {
 
 /** Offered shape of provision `podcast.audio_stage` (kind `podcast.audio_stage.offer`). */
 export interface PodcastAudioStageOffer {
+  __kind?: "podcast.audio_stage.offer";
   content: string;
   audio_style?: string;
 }
 
 /** Offered shape of provision `podcast.chapter_marker` (kind `podcast.chapter_marker.offer`). */
 export interface PodcastChapterMarkerOffer {
+  __kind?: "podcast.chapter_marker.offer";
   episode_script: string;
   duration_hint: string;
   granularity_hint?: string;
@@ -1116,6 +1244,7 @@ export interface PodcastChapterMarkerOffer {
 
 /** Offered shape of provision `podcast.chaptering` (kind `podcast.chaptering.offer`). */
 export interface PodcastChapteringOffer {
+  __kind?: "podcast.chaptering.offer";
   episode_script: string;
   duration_hint?: string;
   granularity_hint?: string;
@@ -1123,17 +1252,20 @@ export interface PodcastChapteringOffer {
 
 /** Offered shape of provision `podcast.feature_image_prompt` (kind `podcast.feature_image_prompt.offer`). */
 export interface PodcastFeatureImagePromptOffer {
+  __kind?: "podcast.feature_image_prompt.offer";
   intent_or_content: string;
   style: string;
 }
 
 /** Offered shape of provision `podcast.image_render` (kind `podcast.image_render.offer`). */
 export interface PodcastImageRenderOffer {
+  __kind?: "podcast.image_render.offer";
   image_description: string;
 }
 
 /** Offered shape of provision `podcast.live_rewrite` (kind `podcast.live_rewrite.offer`). */
 export interface PodcastLiveRewriteOffer {
+  __kind?: "podcast.live_rewrite.offer";
   full_script: string;
   playback_position: string;
   speaker_names: string;
@@ -1141,18 +1273,23 @@ export interface PodcastLiveRewriteOffer {
 
 /** Offered shape of provision `podcast.live_session` (kind `podcast.live_session.offer`). */
 export interface PodcastLiveSessionOffer {
+  __kind?: "podcast.live_session.offer";
   full_script: string;
+  playback_position?: string;
+  speaker_names?: string;
   current_topic?: string;
   recent_user_speech?: string;
 }
 
 /** Offered shape of provision `podcast.metadata_stage` (kind `podcast.metadata_stage.offer`). */
 export interface PodcastMetadataStageOffer {
+  __kind?: "podcast.metadata_stage.offer";
   podcast_content: string;
 }
 
 /** Offered shape of provision `podcast.multihost_script` (kind `podcast.multihost_script.offer`). */
 export interface PodcastMultihostScriptOffer {
+  __kind?: "podcast.multihost_script.offer";
   prepared_content: string;
   num_speakers?: string;
   format?: string;
@@ -1163,6 +1300,7 @@ export interface PodcastMultihostScriptOffer {
 
 /** Offered shape of provision `podcast.post_prep` (kind `podcast.post_prep.offer`). */
 export interface PodcastPostPrepOffer {
+  __kind?: "podcast.post_prep.offer";
   content: string;
   target_language?: string;
   target_length?: string;
@@ -1171,17 +1309,27 @@ export interface PodcastPostPrepOffer {
 
 /** Offered shape of provision `podcast.prep_extraction` (kind `podcast.prep_extraction.offer`). */
 export interface PodcastPrepExtractionOffer {
+  __kind?: "podcast.prep_extraction.offer";
   extraction_unit: string;
+  source_files?: (string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+})[];
 }
 
 /** Offered shape of provision `podcast.relevance_gate` (kind `podcast.relevance_gate.offer`). */
 export interface PodcastRelevanceGateOffer {
+  __kind?: "podcast.relevance_gate.offer";
   current_topic: string;
   recent_user_speech: string;
 }
 
 /** Offered shape of provision `podcast.roundtable_script` (kind `podcast.roundtable_script.offer`). */
 export interface PodcastRoundtableScriptOffer {
+  __kind?: "podcast.roundtable_script.offer";
   prepared_content: string;
   num_speakers?: string;
   format?: string;
@@ -1193,6 +1341,7 @@ export interface PodcastRoundtableScriptOffer {
 
 /** Offered shape of provision `podcast.script_stage` (kind `podcast.script_stage.offer`). */
 export interface PodcastScriptStageOffer {
+  __kind?: "podcast.script_stage.offer";
   prepared_content: string;
   format?: string;
   theme?: string;
@@ -1205,6 +1354,7 @@ export interface PodcastScriptStageOffer {
 
 /** Offered shape of provision `podcast.solo_script` (kind `podcast.solo_script.offer`). */
 export interface PodcastSoloScriptOffer {
+  __kind?: "podcast.solo_script.offer";
   prepared_content: string;
   format?: string;
   theme: string;
@@ -1214,12 +1364,16 @@ export interface PodcastSoloScriptOffer {
 
 /** Offered shape of provision `podcast.title_optimization` (kind `podcast.title_optimization.offer`). */
 export interface PodcastTitleOptimizationOffer {
+  __kind?: "podcast.title_optimization.offer";
   working_title: string;
   content_summary: string;
+  show_metadata_json?: string;
+  keywords?: string;
 }
 
 /** Offered shape of provision `podcast.title_optimizer` (kind `podcast.title_optimizer.offer`). */
 export interface PodcastTitleOptimizerOffer {
+  __kind?: "podcast.title_optimizer.offer";
   working_title: string;
   content_summary: string;
   show_metadata_json: string;
@@ -1228,11 +1382,13 @@ export interface PodcastTitleOptimizerOffer {
 
 /** Offered shape of provision `podcast.video_render` (kind `podcast.video_render.offer`). */
 export interface PodcastVideoRenderOffer {
+  __kind?: "podcast.video_render.offer";
   video_description: string;
 }
 
 /** Offered shape of provision `podcast_client.blog_writer` (kind `podcast_client.blog_writer.offer`). */
 export interface PodcastClientBlogWriterOffer {
+  __kind?: "podcast_client.blog_writer.offer";
   episode_transcript: string;
   episode_metadata: string;
   style_guidance: string;
@@ -1240,6 +1396,7 @@ export interface PodcastClientBlogWriterOffer {
 
 /** Offered shape of provision `podcast_client.episode_content` (kind `podcast_client.episode_content.offer`). */
 export interface PodcastClientEpisodeContentOffer {
+  __kind?: "podcast_client.episode_content.offer";
   episode_transcript: string;
   episode_title: string;
   episode_description?: string;
@@ -1248,10 +1405,13 @@ export interface PodcastClientEpisodeContentOffer {
   episode_links?: string[];
   duration_hint?: string;
   style_guidance?: string;
+  episode_metadata?: string;
+  episode_metadata_json?: string;
 }
 
 /** Offered shape of provision `podcast_client.show_notes` (kind `podcast_client.show_notes.offer`). */
 export interface PodcastClientShowNotesOffer {
+  __kind?: "podcast_client.show_notes.offer";
   episode_transcript: string;
   episode_metadata_json: string;
   duration_hint: string;
@@ -1259,6 +1419,7 @@ export interface PodcastClientShowNotesOffer {
 
 /** Offered shape of provision `podcast_client.topic_idea_request` (kind `podcast_client.topic_idea_request.offer`). */
 export interface PodcastClientTopicIdeaRequestOffer {
+  __kind?: "podcast_client.topic_idea_request.offer";
   concept: string;
   content_format: string;
   idea_count: string;
@@ -1266,39 +1427,46 @@ export interface PodcastClientTopicIdeaRequestOffer {
 
 /** Offered shape of provision `podcast_client.web_source` (kind `podcast_client.web_source.offer`). */
 export interface PodcastClientWebSourceOffer {
+  __kind?: "podcast_client.web_source.offer";
   scraped_content: string;
   focus_area?: string;
 }
 
 /** Offered shape of provision `podcast_client.youtube_source` (kind `podcast_client.youtube_source.offer`). */
 export interface PodcastClientYoutubeSourceOffer {
+  __kind?: "podcast_client.youtube_source.offer";
   youtube_url: string;
   timestamp_instruction?: string;
 }
 
 /** Offered shape of provision `purpose.unit_config` (kind `purpose.unit_config.offer`). */
 export interface PurposeUnitConfigOffer {
+  __kind?: "purpose.unit_config.offer";
   unit_config: string;
 }
 
 /** Offered shape of provision `rag.chunk_context` (kind `rag.chunk_context.offer`). */
 export interface RagChunkContextOffer {
+  __kind?: "rag.chunk_context.offer";
   document: string;
   chunk: string;
 }
 
 /** Offered shape of provision `rag.page_cleaning` (kind `rag.page_cleaning.offer`). */
 export interface RagPageCleaningOffer {
+  __kind?: "rag.page_cleaning.offer";
   raw_text: string;
 }
 
 /** Offered shape of provision `rag.retrieval_query` (kind `rag.retrieval_query.offer`). */
 export interface RagRetrievalQueryOffer {
+  __kind?: "rag.retrieval_query.offer";
   query: string;
 }
 
 /** Offered shape of provision `research.capture_coverage` (kind `research.capture_coverage.offer`). */
 export interface ResearchCaptureCoverageOffer {
+  __kind?: "research.capture_coverage.offer";
   intent: string;
   keywords: string;
   capture_report: unknown;
@@ -1306,12 +1474,14 @@ export interface ResearchCaptureCoverageOffer {
 
 /** Offered shape of provision `research.cross_cutting_discovery` (kind `research.cross_cutting_discovery.offer`). */
 export interface ResearchCrossCuttingDiscoveryOffer {
+  __kind?: "research.cross_cutting_discovery.offer";
   keywords: string;
   search_results: string;
 }
 
 /** Offered shape of provision `research.final_assembly` (kind `research.final_assembly.offer`). */
 export interface ResearchFinalAssemblyOffer {
+  __kind?: "research.final_assembly.offer";
   topic: string;
   tag_consolidations: string;
   research_report: string;
@@ -1319,6 +1489,7 @@ export interface ResearchFinalAssemblyOffer {
 
 /** Offered shape of provision `research.keyword_findings` (kind `research.keyword_findings.offer`). */
 export interface ResearchKeywordFindingsOffer {
+  __kind?: "research.keyword_findings.offer";
   topic: string;
   keyword: string;
   search_results: string;
@@ -1327,6 +1498,7 @@ export interface ResearchKeywordFindingsOffer {
 
 /** Offered shape of provision `research.page_capture` (kind `research.page_capture.offer`). */
 export interface ResearchPageCaptureOffer {
+  __kind?: "research.page_capture.offer";
   topic: string;
   page_content: string;
   page_url: string;
@@ -1335,6 +1507,7 @@ export interface ResearchPageCaptureOffer {
 
 /** Offered shape of provision `research.page_tagging` (kind `research.page_tagging.offer`). */
 export interface ResearchPageTaggingOffer {
+  __kind?: "research.page_tagging.offer";
   topic: string;
   page_content: string;
   available_tags: unknown;
@@ -1342,6 +1515,7 @@ export interface ResearchPageTaggingOffer {
 
 /** Offered shape of provision `research.report_synthesis` (kind `research.report_synthesis.offer`). */
 export interface ResearchReportSynthesisOffer {
+  __kind?: "research.report_synthesis.offer";
   topic: string;
   search_results: string;
   page_summaries: string;
@@ -1350,6 +1524,7 @@ export interface ResearchReportSynthesisOffer {
 
 /** Offered shape of provision `research.report_update` (kind `research.report_update.offer`). */
 export interface ResearchReportUpdateOffer {
+  __kind?: "research.report_update.offer";
   previous_report: string;
   new_information: string;
   removed_sources: string;
@@ -1357,6 +1532,7 @@ export interface ResearchReportUpdateOffer {
 
 /** Offered shape of provision `research.scrape_condensation` (kind `research.scrape_condensation.offer`). */
 export interface ResearchScrapeCondensationOffer {
+  __kind?: "research.scrape_condensation.offer";
   instructions: string;
   scraped_content: string;
   queries: string;
@@ -1365,12 +1541,14 @@ export interface ResearchScrapeCondensationOffer {
 
 /** Offered shape of provision `research.source_triage` (kind `research.source_triage.offer`). */
 export interface ResearchSourceTriageOffer {
+  __kind?: "research.source_triage.offer";
   topic: string;
   sources: unknown;
 }
 
 /** Offered shape of provision `research.tagged_pages` (kind `research.tagged_pages.offer`). */
 export interface ResearchTaggedPagesOffer {
+  __kind?: "research.tagged_pages.offer";
   topic: string;
   tag_name: string;
   tagged_page_contents: string;
@@ -1379,11 +1557,13 @@ export interface ResearchTaggedPagesOffer {
 
 /** Offered shape of provision `research.topic_setup` (kind `research.topic_setup.offer`). */
 export interface ResearchTopicSetupOffer {
+  __kind?: "research.topic_setup.offer";
   subject_name_or_description: string;
 }
 
 /** Offered shape of provision `research_client.context_bundle` (kind `research_client.context_bundle.offer`). */
 export interface ResearchClientContextBundleOffer {
+  __kind?: "research_client.context_bundle.offer";
   research_brief?: string;
   research_inventory?: string;
   research_report?: string;
@@ -1400,17 +1580,20 @@ export interface ResearchClientContextBundleOffer {
 
 /** Offered shape of provision `research_client.report_output` (kind `research_client.report_output.offer`). */
 export interface ResearchClientReportOutputOffer {
+  __kind?: "research_client.report_output.offer";
   report_markdown: string;
   voice_lens: string;
 }
 
 /** Offered shape of provision `scraper.page_analysis` (kind `scraper.page_analysis.offer`). */
 export interface ScraperPageAnalysisOffer {
+  __kind?: "scraper.page_analysis.offer";
   page_content: string;
 }
 
 /** Offered shape of provision `seo.ai_visibility_analysis` (kind `seo.ai_visibility_analysis.offer`). */
 export interface SeoAiVisibilityAnalysisOffer {
+  __kind?: "seo.ai_visibility_analysis.offer";
   query: string;
   provider: string;
   model?: string;
@@ -1425,6 +1608,7 @@ export interface SeoAiVisibilityAnalysisOffer {
 
 /** Offered shape of provision `seo.authority_routing` (kind `seo.authority_routing.offer`). */
 export interface SeoAuthorityRoutingOffer {
+  __kind?: "seo.authority_routing.offer";
   site_id: string;
   router_version: string;
   candidates: unknown;
@@ -1434,6 +1618,7 @@ export interface SeoAuthorityRoutingOffer {
 
 /** Offered shape of provision `seo.backlink_context_assessor` (kind `seo.backlink_context_assessor.offer`). */
 export interface SeoBacklinkContextAssessorOffer {
+  __kind?: "seo.backlink_context_assessor.offer";
   brand_context: string;
   site_context: string;
   backlinks_json: string;
@@ -1441,6 +1626,7 @@ export interface SeoBacklinkContextAssessorOffer {
 
 /** Offered shape of provision `seo.competitor_classification` (kind `seo.competitor_classification.offer`). */
 export interface SeoCompetitorClassificationOffer {
+  __kind?: "seo.competitor_classification.offer";
   site_id: string;
   business_name?: string;
   business_domain?: string;
@@ -1456,6 +1642,7 @@ export interface SeoCompetitorClassificationOffer {
 
 /** Offered shape of provision `seo.competitor_opportunity_autopsy` (kind `seo.competitor_opportunity_autopsy.offer`). */
 export interface SeoCompetitorOpportunityAutopsyOffer {
+  __kind?: "seo.competitor_opportunity_autopsy.offer";
   strategist_version: string;
   site: unknown;
   provider_competitors: unknown;
@@ -1470,6 +1657,7 @@ export interface SeoCompetitorOpportunityAutopsyOffer {
 
 /** Offered shape of provision `seo.competitor_page_autopsy` (kind `seo.competitor_page_autopsy.offer`). */
 export interface SeoCompetitorPageAutopsyOffer {
+  __kind?: "seo.competitor_page_autopsy.offer";
   analyst_version: string;
   competitor_page: unknown;
   owned_page?: unknown;
@@ -1480,6 +1668,7 @@ export interface SeoCompetitorPageAutopsyOffer {
 
 /** Offered shape of provision `seo.coverage_analysis` (kind `seo.coverage_analysis.offer`). */
 export interface SeoCoverageAnalysisOffer {
+  __kind?: "seo.coverage_analysis.offer";
   brand_name: string;
   brand_terms: string;
   page_url: string;
@@ -1489,9 +1678,11 @@ export interface SeoCoverageAnalysisOffer {
 
 /** Offered shape of provision `seo.finding_fix` (kind `seo.finding_fix.offer`). */
 export interface SeoFindingFixOffer {
+  __kind?: "seo.finding_fix.offer";
   fix_context: {
   page: unknown;
   site: unknown;
+  __kind: "seo_finding_fix_context";
   limits: unknown;
   finding: unknown;
   finding_id: string;
@@ -1502,6 +1693,7 @@ export interface SeoFindingFixOffer {
 
 /** Offered shape of provision `seo.keyword_classification` (kind `seo.keyword_classification.offer`). */
 export interface SeoKeywordClassificationOffer {
+  __kind?: "seo.keyword_classification.offer";
   keywords: unknown;
   language: string;
   classifier_version: string;
@@ -1511,6 +1703,7 @@ export interface SeoKeywordClassificationOffer {
 
 /** Offered shape of provision `seo.keyword_research` (kind `seo.keyword_research.offer`). */
 export interface SeoKeywordResearchOffer {
+  __kind?: "seo.keyword_research.offer";
   primary_keyword: string;
   language: string;
   industry_context?: string;
@@ -1519,6 +1712,7 @@ export interface SeoKeywordResearchOffer {
 
 /** Offered shape of provision `seo.landscape_brief` (kind `seo.landscape_brief.offer`). */
 export interface SeoLandscapeBriefOffer {
+  __kind?: "seo.landscape_brief.offer";
   site_id: string;
   business_name?: string;
   business_domain?: string;
@@ -1529,6 +1723,7 @@ export interface SeoLandscapeBriefOffer {
 
 /** Offered shape of provision `seo.page_analysis` (kind `seo.page_analysis.offer`). */
 export interface SeoPageAnalysisOffer {
+  __kind?: "seo.page_analysis.offer";
   site_context: unknown;
   page_location: unknown;
   declared_target_keyword?: string;
@@ -1543,6 +1738,7 @@ export interface SeoPageAnalysisOffer {
 
 /** Offered shape of provision `seo.page_keyword_mapping` (kind `seo.page_keyword_mapping.offer`). */
 export interface SeoPageKeywordMappingOffer {
+  __kind?: "seo.page_keyword_mapping.offer";
   topic_slug: string;
   cluster_keywords: unknown;
   existing_pages: unknown;
@@ -1552,6 +1748,7 @@ export interface SeoPageKeywordMappingOffer {
 
 /** Offered shape of provision `seo.press_source_request` (kind `seo.press_source_request.offer`). */
 export interface SeoPressSourceRequestOffer {
+  __kind?: "seo.press_source_request.offer";
   request_id: string;
   source_request: unknown;
   expert_context: unknown;
@@ -1560,6 +1757,7 @@ export interface SeoPressSourceRequestOffer {
 
 /** Offered shape of provision `seo.press_story_analysis` (kind `seo.press_story_analysis.offer`). */
 export interface SeoPressStoryAnalysisOffer {
+  __kind?: "seo.press_story_analysis.offer";
   site_id: string;
   site_domain?: string;
   brand?: unknown;
@@ -1573,6 +1771,7 @@ export interface SeoPressStoryAnalysisOffer {
 
 /** Offered shape of provision `seo.reputation_intelligence` (kind `seo.reputation_intelligence.offer`). */
 export interface SeoReputationIntelligenceOffer {
+  __kind?: "seo.reputation_intelligence.offer";
   site_id: string;
   site_domain?: string;
   site_root_url?: string;
@@ -1594,6 +1793,7 @@ export interface SeoReputationIntelligenceOffer {
 
 /** Offered shape of provision `seo.serp_intent_analysis` (kind `seo.serp_intent_analysis.offer`). */
 export interface SeoSerpIntentAnalysisOffer {
+  __kind?: "seo.serp_intent_analysis.offer";
   keyword_baseline: unknown;
   google_serp: unknown;
   brave_serp: unknown;
@@ -1608,7 +1808,9 @@ export interface SeoSerpIntentAnalysisOffer {
 
 /** Offered shape of provision `seo.site_intake` (kind `seo.site_intake.offer`). */
 export interface SeoSiteIntakeOffer {
+  __kind?: "seo.site_intake.offer";
   intake_bundle: {
+  __kind: "gsc_site_intake_bundle";
   domain: string;
   periods?: unknown[];
   site_id: string;
@@ -1624,6 +1826,7 @@ export interface SeoSiteIntakeOffer {
 
 /** Offered shape of provision `seo.site_strategy_interview` (kind `seo.site_strategy_interview.offer`). */
 export interface SeoSiteStrategyInterviewOffer {
+  __kind?: "seo.site_strategy_interview.offer";
   topic_branches: unknown;
   business_context: string;
   site_ref: string;
@@ -1632,6 +1835,7 @@ export interface SeoSiteStrategyInterviewOffer {
 
 /** Offered shape of provision `seo.starter_pack_proposal` (kind `seo.starter_pack_proposal.offer`). */
 export interface SeoStarterPackProposalOffer {
+  __kind?: "seo.starter_pack_proposal.offer";
   corpus_json: unknown;
   topic_tree_json: unknown;
   industry_hint: string;
@@ -1641,6 +1845,7 @@ export interface SeoStarterPackProposalOffer {
 
 /** Offered shape of provision `seo.topic_assignment` (kind `seo.topic_assignment.offer`). */
 export interface SeoTopicAssignmentOffer {
+  __kind?: "seo.topic_assignment.offer";
   keywords: unknown;
   existing_topic_branches: unknown;
   territory: string;
@@ -1650,6 +1855,7 @@ export interface SeoTopicAssignmentOffer {
 
 /** Offered shape of provision `surfaces_client.binding_context` (kind `surfaces_client.binding_context.offer`). */
 export interface SurfacesClientBindingContextOffer {
+  __kind?: "surfaces_client.binding_context.offer";
   surface_name: string;
   surface_label: string;
   surface_values: unknown;
@@ -1661,6 +1867,7 @@ export interface SurfacesClientBindingContextOffer {
 
 /** Offered shape of provision `tool_viz.component_generation` (kind `tool_viz.component_generation.offer`). */
 export interface ToolVizComponentGenerationOffer {
+  __kind?: "tool_viz.component_generation.offer";
   complete_tool_object: unknown;
   output_schema: unknown;
   sample_stream: unknown;
@@ -1669,12 +1876,14 @@ export interface ToolVizComponentGenerationOffer {
 
 /** Offered shape of provision `tools.content_summarization` (kind `tools.content_summarization.offer`). */
 export interface ToolsContentSummarizationOffer {
+  __kind?: "tools.content_summarization.offer";
   instructions: string;
   content: string;
 }
 
 /** Offered shape of provision `transcript_studio.session_context` (kind `transcript_studio.session_context.offer`). */
 export interface TranscriptStudioSessionContextOffer {
+  __kind?: "transcript_studio.session_context.offer";
   recording_transcripts?: string;
   all_raw?: string;
   session_cleaned?: string;
@@ -1684,12 +1893,14 @@ export interface TranscriptStudioSessionContextOffer {
 
 /** Offered shape of provision `vision_interview.answer_tracking` (kind `vision_interview.answer_tracking.offer`). */
 export interface VisionInterviewAnswerTrackingOffer {
+  __kind?: "vision_interview.answer_tracking.offer";
   open_questions: string;
   human_turn: string;
 }
 
 /** Offered shape of provision `vision_interview.finalize_deliverable` (kind `vision_interview.finalize_deliverable.offer`). */
 export interface VisionInterviewFinalizeDeliverableOffer {
+  __kind?: "vision_interview.finalize_deliverable.offer";
   title: string;
   transcript: string;
   document?: string;
@@ -1698,6 +1909,7 @@ export interface VisionInterviewFinalizeDeliverableOffer {
 
 /** Offered shape of provision `vision_interview.room_activation` (kind `vision_interview.room_activation.offer`). */
 export interface VisionInterviewRoomActivationOffer {
+  __kind?: "vision_interview.room_activation.offer";
   transcript_delta: string;
   round_directive: string;
   stage_goal: string;
@@ -1709,6 +1921,7 @@ export interface VisionInterviewRoomActivationOffer {
 
 /** Offered shape of provision `vision_interview.scribe_pass` (kind `vision_interview.scribe_pass.offer`). */
 export interface VisionInterviewScribePassOffer {
+  __kind?: "vision_interview.scribe_pass.offer";
   transcript_delta: string;
   round_directive: string;
   current_document: string;
@@ -1717,11 +1930,13 @@ export interface VisionInterviewScribePassOffer {
 
 /** Offered shape of provision `war_room.room_context` (kind `war_room.room_context.offer`). */
 export interface WarRoomRoomContextOffer {
+  __kind?: "war_room.room_context.offer";
   war_room: unknown;
 }
 
 /** Offered shape of provision `war_room.thread_context` (kind `war_room.thread_context.offer`). */
 export interface WarRoomThreadContextOffer {
+  __kind?: "war_room.thread_context.offer";
   war_room: unknown;
   session_transcripts?: string;
   thread_message?: string;
@@ -1730,27 +1945,32 @@ export interface WarRoomThreadContextOffer {
 
 /** Offered shape of provision `web.endpoint_family_judge` (kind `web.endpoint_family_judge.offer`). */
 export interface WebEndpointFamilyJudgeOffer {
+  __kind?: "web.endpoint_family_judge.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `web.endpoint_family_judgment` (kind `web.endpoint_family_judgment.offer`). */
 export interface WebEndpointFamilyJudgmentOffer {
+  __kind?: "web.endpoint_family_judgment.offer";
   site_domain: string;
   candidates: unknown;
 }
 
 /** Offered shape of provision `workflow.extract_namer` (kind `workflow.extract_namer.offer`). */
 export interface WorkflowExtractNamerOffer {
+  __kind?: "workflow.extract_namer.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `workflow.extract_sweep` (kind `workflow.extract_sweep.offer`). */
 export interface WorkflowExtractSweepOffer {
+  __kind?: "workflow.extract_sweep.offer";
   candidates: unknown;
 }
 
 /** Offered shape of provision `workflow.node_steward` (kind `workflow.node_steward.offer`). */
 export interface WorkflowNodeStewardOffer {
+  __kind?: "workflow.node_steward.offer";
   workflow_id: string;
   node_id: string;
   node_label: string;
@@ -1760,6 +1980,7 @@ export interface WorkflowNodeStewardOffer {
 
 /** Offered shape of provision `workflow.plan_node_type_recommender` (kind `workflow.plan_node_type_recommender.offer`). */
 export interface WorkflowPlanNodeTypeRecommenderOffer {
+  __kind?: "workflow.plan_node_type_recommender.offer";
   plan_json: string;
   catalog_json: string;
   graph_context: string;
@@ -1767,6 +1988,7 @@ export interface WorkflowPlanNodeTypeRecommenderOffer {
 
 /** Offered shape of provision `workflow.plan_notes_writer` (kind `workflow.plan_notes_writer.offer`). */
 export interface WorkflowPlanNotesWriterOffer {
+  __kind?: "workflow.plan_notes_writer.offer";
   plan_name: string;
   current_notes: string;
   rough_input: string;
@@ -1775,12 +1997,14 @@ export interface WorkflowPlanNotesWriterOffer {
 
 /** Offered shape of provision `workflow.plan_room` (kind `workflow.plan_room.offer`). */
 export interface WorkflowPlanRoomOffer {
+  __kind?: "workflow.plan_room.offer";
   plan_id: string;
   definition_id: string;
 }
 
 /** Offered shape of provision `workflow.plan_shape_designer` (kind `workflow.plan_shape_designer.offer`). */
 export interface WorkflowPlanShapeDesignerOffer {
+  __kind?: "workflow.plan_shape_designer.offer";
   plan_name: string;
   plan_notes: string;
   direction?: string;
@@ -1790,11 +2014,13 @@ export interface WorkflowPlanShapeDesignerOffer {
 
 /** Offered shape of provision `workflow.recovery_advisor` (kind `workflow.recovery_advisor.offer`). */
 export interface WorkflowRecoveryAdvisorOffer {
+  __kind?: "workflow.recovery_advisor.offer";
   payload_json: string;
 }
 
 /** Offered shape of provision `workflow.run_failure` (kind `workflow.run_failure.offer`). */
 export interface WorkflowRunFailureOffer {
+  __kind?: "workflow.run_failure.offer";
   run_id: string;
   workflow_id: string;
   workflow_name: string;
@@ -1816,6 +2042,7 @@ export interface WorkflowRunFailureOffer {
 
 /** Offered shape of provision `workflow.run_recovery` (kind `workflow.run_recovery.offer`). */
 export interface WorkflowRunRecoveryOffer {
+  __kind?: "workflow.run_recovery.offer";
   surface: string;
   envelope_xml: string;
 }
