@@ -1252,6 +1252,27 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     }
   }, [rulebook]);
 
+  // THE JOURNEY (features/masterwork/journey.ts) — where this Rulebook is in
+  // its life, from what this page already holds. No extra read, no endpoint:
+  // the Rulebook row (rules + metadata.coherence + metadata.checkup) and the
+  // Masterworks it was built into. It sees no runs and says so, so the
+  // run-dependent moves stay silent here rather than guessing; the improvement
+  // brain, which DOES read runs, raises those as chips below.
+  //
+  // 🚨 THIS MUST STAY ABOVE THE EARLY RETURNS BELOW. It sat under them until
+  // 2026-08-22, so on the first (loading) render React saw 83 hooks and on the
+  // second it saw 84 — "Rendered more hooks than during the previous render"
+  // (React #310), which took the WHOLE Rulebook page down on every load. Hence
+  // the null-safe body: the guards have not run yet at this point, so
+  // `rulebook` can still be null here.
+  const journey = useMemo(
+    () =>
+      rulebook
+        ? computeJourney(journeyFactsFromRulebook(rulebook, masterworks))
+        : null,
+    [rulebook, masterworks],
+  );
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -1280,16 +1301,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // Only approved rules power a Masterwork — the Build excludes drafts and
   // rejected rules, so the button must not promise what it will refuse.
   const kpis = computeKpis(rulebook);
-  // THE JOURNEY (features/masterwork/journey.ts) — where this Rulebook is in
-  // its life, from what this page already holds. No extra read, no endpoint:
-  // the Rulebook row (rules + metadata.coherence + metadata.checkup) and the
-  // Masterworks it was built into. It sees no runs and says so, so the
-  // run-dependent moves stay silent here rather than guessing; the improvement
-  // brain, which DOES read runs, raises those as chips below.
-  const journey = useMemo(
-    () => computeJourney(journeyFactsFromRulebook(rulebook, masterworks)),
-    [rulebook, masterworks],
-  );
   const draftCount = kpis.drafts;
   const approvedCount = kpis.approved;
   // The Understudy (running-from-minute-one) is rendered as its own card and
@@ -1465,7 +1476,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             <div className="mt-3">
               <RulebookKpiStrip
                 kpis={kpis}
-                journey={journey}
+                journey={journey ?? undefined}
                 live={understudy !== null}
               />
             </div>
