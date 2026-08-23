@@ -23957,6 +23957,7 @@ export type Database = {
       runnable_agent_fields: {
         Args: { p_agent_id: string }
         Returns: {
+          auto_context_disabled: boolean
           context_policies: Json
           name: string
           variable_definitions: Json
@@ -23966,6 +23967,7 @@ export type Database = {
       runnable_version_fields: {
         Args: { p_version_id: string }
         Returns: {
+          auto_context_disabled: boolean
           context_policies: Json
           name: string
           variable_definitions: Json
@@ -28110,9 +28112,11 @@ export type Database = {
           lifecycle_enlisted: boolean
           lifecycle_hot_days: number | null
           notes: string | null
+          projects_token: string | null
           reference_candidate_predicates: Json
           reference_category: string | null
           reference_pickable: boolean
+          relation_kind: string
           retention_owner_column: string | null
           rls_variant: string
           schema_name: string
@@ -28153,9 +28157,11 @@ export type Database = {
           lifecycle_enlisted?: boolean
           lifecycle_hot_days?: number | null
           notes?: string | null
+          projects_token?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
           reference_pickable?: boolean
+          relation_kind?: string
           retention_owner_column?: string | null
           rls_variant?: string
           schema_name: string
@@ -28196,9 +28202,11 @@ export type Database = {
           lifecycle_enlisted?: boolean
           lifecycle_hot_days?: number | null
           notes?: string | null
+          projects_token?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
           reference_pickable?: boolean
+          relation_kind?: string
           retention_owner_column?: string | null
           rls_variant?: string
           schema_name?: string
@@ -28212,6 +28220,34 @@ export type Database = {
           version_store_ref?: unknown
         }
         Relationships: [
+          {
+            foreignKeyName: "entity_types_projects_token_fkey"
+            columns: ["projects_token"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_types_projects_token_fkey"
+            columns: ["projects_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_types_projects_token_fkey"
+            columns: ["projects_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_types_projects_token_fkey"
+            columns: ["projects_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
           {
             foreignKeyName: "entity_types_reference_category_fkey"
             columns: ["reference_category"]

@@ -64704,6 +64704,12 @@
             ],
             "title": "Audit Id",
             "description": "Recovery audit row to mark applied on success."
+          },
+          "plan_anchors_removable": {
+            "type": "boolean",
+            "title": "Plan Anchors Removable",
+            "description": "THE PLAN NODE IS THE USER'S. Default False means this patch may not remove a plan.step node or change what it is — the guarantee that no agent, tool, or service can take a Plan away from the person who made it. ONLY a route acting on an explicit, informed user confirmation may set this True.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -94593,11 +94599,6 @@
             "type": "string",
             "title": "Rationale",
             "default": ""
-          },
-          "remove_node": {
-            "type": "boolean",
-            "title": "Remove Node",
-            "default": true
           }
         },
         "type": "object",

@@ -24699,6 +24699,12 @@ export interface components {
              * @description Recovery audit row to mark applied on success.
              */
             audit_id?: string | null;
+            /**
+             * Plan Anchors Removable
+             * @description THE PLAN NODE IS THE USER'S. Default False means this patch may not remove a plan.step node or change what it is — the guarantee that no agent, tool, or service can take a Plan away from the person who made it. ONLY a route acting on an explicit, informed user confirmation may set this True.
+             * @default false
+             */
+            plan_anchors_removable?: boolean;
         };
         /** ApplyWorkflowPatchResult */
         ApplyWorkflowPatchResult: {
@@ -36344,11 +36350,6 @@ export interface components {
              * @default
              */
             rationale?: string;
-            /**
-             * Remove Node
-             * @default true
-             */
-            remove_node?: boolean;
         };
         /** DistinctValuesResponse */
         DistinctValuesResponse: {

@@ -108,6 +108,7 @@ export interface NodeFailedEvent {
   error_type: string;
   error_message: string;
   error: Record<string, unknown> | null;
+  wrapper: Record<string, unknown> | null;
 }
 
 export interface NodeRetryScheduledEvent {
