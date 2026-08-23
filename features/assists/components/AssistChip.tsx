@@ -71,18 +71,19 @@ export function AssistChip({
         <div
           onMouseEnter={hoverOpen}
           onMouseLeave={hoverClose}
+          onClick={(event) => event.stopPropagation()}
           className={cn(
             "group flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-2 pr-1 text-xs shadow-sm",
             ambient
               ? "border-primary/20 bg-card text-foreground"
               : urgencyMeta.chipClass,
-            open && "max-md:invisible",
+            open && "invisible md:visible",
             className,
           )}
         >
           {/* Click is handled by the PopoverTrigger itself (expand only —
-              THE INTENTIONAL-ACTION LAW). No local onClick: a second toggle
-              here would cancel Radix's in the same batch. */}
+              THE INTENTIONAL-ACTION LAW). The wrapper only stops clickable
+              table rows from opening their detail panel over this card. */}
           <button
             type="button"
             aria-label={

@@ -303,7 +303,7 @@ export function AssistCard({
             size="sm"
             onClick={run}
             disabled={!descriptor || busy !== null}
-            className="h-10 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:px-3 md:text-xs"
+            className="min-h-11 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:min-h-0 md:px-3 md:text-xs"
             title={descriptor?.verb}
           >
             {busy === "run" && (
@@ -318,7 +318,7 @@ export function AssistCard({
             variant="ghost"
             onClick={onClose}
             disabled={busy !== null}
-            className="h-10 min-w-0 px-1 text-[11px] text-muted-foreground md:h-7 md:px-2 md:text-xs"
+            className="min-h-11 min-w-0 px-1 text-[11px] text-muted-foreground md:h-7 md:min-h-0 md:px-2 md:text-xs"
           >
             Not now
           </Button>
@@ -329,7 +329,7 @@ export function AssistCard({
                   size="sm"
                   variant="ghost"
                   disabled={busy !== null}
-                  className="h-10 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground md:h-7 md:px-2 md:text-xs"
+                  className="min-h-11 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground md:h-7 md:min-h-0 md:px-2 md:text-xs"
                 >
                   {busy === "snooze" ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -359,7 +359,7 @@ export function AssistCard({
                   size="sm"
                   variant="ghost"
                   disabled={busy !== null}
-                  className="h-10 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground hover:text-destructive md:ml-auto md:h-7 md:shrink-0 md:px-2 md:text-xs"
+                  className="min-h-11 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground hover:text-destructive md:ml-auto md:h-7 md:min-h-0 md:shrink-0 md:px-2 md:text-xs"
                   aria-label="Stop showing"
                 >
                   {busy === "dismiss" || busy === "silence" ? (
