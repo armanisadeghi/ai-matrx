@@ -26,6 +26,7 @@ import type {
   AiSettingInsert,
   AiSettingUpdate,
   ModelUsageResult,
+  ModelPriceSummary,
   ProviderModelsCache,
 } from "./types";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
@@ -86,21 +87,58 @@ type AgentBuiltinSettingsRow = {
   settings: Record<string, unknown> | null;
 };
 
+function numberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** Normalize only the first (preferred) pricing band returned by the admin
+ * catalog. The JSONB boundary stays validated instead of asserted. */
+function preferredPrice(
+  pricing: unknown,
+  offeringUsageBasis: string | null,
+): ModelPriceSummary | null {
+  const band = Array.isArray(pricing) ? pricing[0] : pricing;
+  if (typeof band !== "object" || band === null || Array.isArray(band)) {
+    return null;
+  }
+  const record: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(band)) record[key] = value;
+  return {
+    input_price: numberOrNull(record.input_price),
+    output_price: numberOrNull(record.output_price),
+    cached_input_price: numberOrNull(record.cached_input_price),
+    usage_basis:
+      typeof record.usage_basis === "string"
+        ? record.usage_basis
+        : offeringUsageBasis,
+  };
+}
+
 export const aiModelService = {
   async fetchAll(): Promise<AiModel[]> {
     // Resolve `maker` from the provider_id FK (ai.provider.name). The old
     // free-text `provider` column is dropping — never read it. Fetch providers
     // alongside models and map by id so every row carries a display brand.
-    const [modelsRes, providers] = await Promise.all([
+    const [modelsRes, providers, adminCatalogRes] = await Promise.all([
       supabase
         .schema("ai")
         .from("model_definition")
         .select("*")
         .order("common_name", { ascending: true, nullsFirst: false }),
       this.fetchProviders(),
+      supabase.rpc("admin_model_catalog"),
     ]);
     if (modelsRes.error) throw modelsRes.error;
+    if (adminCatalogRes.error) throw adminCatalogRes.error;
     const makerById = new Map(providers.map((p) => [p.id, p.name ?? null]));
+    const comparisonById = new Map<string, ModelPriceSummary | null>();
+    for (const row of adminCatalogRes.data ?? []) {
+      if (typeof row.id !== "string") continue;
+      comparisonById.set(
+        row.id,
+        preferredPrice(row.pricing, row.usage_basis),
+      );
+    }
     return (modelsRes.data ?? []).map(
       (row): AiModel =>
         ({
@@ -108,6 +146,7 @@ export const aiModelService = {
           maker: row.provider_id
             ? (makerById.get(row.provider_id) ?? null)
             : null,
+          preferred_pricing: comparisonById.get(row.id) ?? null,
         }) as unknown as AiModel,
     );
   },

@@ -53,6 +53,15 @@ export type PricingTier = {
   note?: string | null;
 };
 
+/** Preferred-offering price normalized for comparison in the admin model table.
+ * Prices are real provider dollars; `usage_basis` supplies the unit. */
+export type ModelPriceSummary = {
+  input_price: number | null;
+  output_price: number | null;
+  cached_input_price: number | null;
+  usage_basis: string | null;
+};
+
 // -- Unconditional constraints: single-field checks that always apply --------
 
 export type UnconditionalRule =
@@ -229,6 +238,9 @@ export type AiModel = Omit<AiModelRow, "capabilities"> & {
    *  fetch layer attaches it. This replaced the dropped free-text `provider`
    *  column for all display, filtering, and grouping. */
   maker: string | null;
+  /** Read-only comparison data from `public.admin_model_catalog()` (the
+   * preferred offering). Writes still go only to `ai.offering`. */
+  preferred_pricing?: ModelPriceSummary | null;
 };
 
 export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {

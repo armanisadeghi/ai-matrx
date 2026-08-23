@@ -52,6 +52,15 @@ import {
 import AiModelFilterBar from "./AiModelFilterBar";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN_SECOND } from "@/components/official/mobile-table/mobileTable";
+import { parseCapabilities } from "../capabilities/parse";
+import {
+  isContentType,
+  type ContentType,
+} from "../capabilities/types";
+import { priceFieldLabel } from "../usageBasis";
+import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { aiProviderHref } from "../doors";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 
@@ -116,44 +125,50 @@ function BoolBadge({
   );
 }
 
-function JsonSummaryBadge({ data, label }: { data: unknown; label?: string }) {
-  if (data === null || data === undefined)
-    return <span className="text-muted-foreground text-xs">—</span>;
-  if (Array.isArray(data)) {
-    return (
-      <Badge variant="outline" className="text-xs font-mono">
-        [{data.length}] {label}
-      </Badge>
-    );
+function ModalityBadges({ values }: { values: ContentType[] }) {
+  return (
+    <div className="flex items-center gap-1 whitespace-nowrap">
+      {values.map((value) => (
+        <Badge key={value} variant="outline" className="h-5 px-1.5 text-[10px] capitalize">
+          {value}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+function formatPrice(value: number): string {
+  if (value === 0) return "$0";
+  if (value < 0.01) return `$${value.toPrecision(2)}`;
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
+}
+
+function PriceCell({
+  item,
+  field,
+}: {
+  item: AiModel;
+  field: "input_price" | "output_price";
+}) {
+  const value = item.preferred_pricing?.[field];
+  if (value === null || value === undefined) {
+    return <span className="text-xs text-muted-foreground">—</span>;
   }
-  if (typeof data === "object") {
-    const keys = Object.keys(data as object);
-    return (
-      <Badge variant="outline" className="text-xs font-mono">
-        {keys.length} {label ?? "keys"}
-      </Badge>
-    );
-  }
-  return <span className="text-xs font-mono">{String(data)}</span>;
+  const unit = priceFieldLabel(item.preferred_pricing?.usage_basis, field);
+  return (
+    <span className="block text-right text-xs tabular-nums" title={`${formatPrice(value)} · ${unit}`}>
+      <span className="font-medium">{formatPrice(value)}</span>
+      <span className="ml-1 text-[10px] text-muted-foreground">
+        {unit.replace("$ / ", "/")}
+      </span>
+    </span>
+  );
 }
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 
-const SORT_FIELDS = [
-  "id",
-  "common_name",
-  "name",
-  "provider",
-  "provider_id",
-  "context_window",
-  "max_tokens",
-  "is_deprecated",
-  "is_primary",
-  "is_premium",
-];
-
 interface ColDef {
-  key: keyof AiModel;
+  key: string;
   header: string;
   width: string;
   sortable: boolean;
@@ -229,13 +244,62 @@ const COLUMNS: ColDef[] = [
     width: "w-[120px] min-w-[100px]",
     sortable: true,
     render: (item, providerMap) => (
-      <span className="text-xs text-muted-foreground font-mono">
-        {item.provider_id
-          ? (providerMap[item.provider_id] ??
-            item.provider_id.slice(0, 8) + "…")
-          : "—"}
-      </span>
+      <MatrxUuidCell
+        value={item.provider_id}
+        label={
+          item.provider_id
+            ? (providerMap[item.provider_id] ?? "AI model provider")
+            : "AI model provider"
+        }
+        href={item.provider_id ? aiProviderHref(item.provider_id) : null}
+      />
     ),
+  },
+  {
+    key: "input_capability",
+    header: "Input",
+    width: "w-[150px] min-w-[130px]",
+    sortable: false,
+    filterType: "input_capability",
+    render: (item) => (
+      <ModalityBadges
+        values={parseCapabilities(item.capabilities, {
+          modelId: item.id,
+          modelName: item.name,
+        }).input}
+      />
+    ),
+  },
+  {
+    key: "output_capability",
+    header: "Output",
+    width: "w-[140px] min-w-[120px]",
+    sortable: false,
+    filterType: "output_capability",
+    render: (item) => (
+      <ModalityBadges
+        values={parseCapabilities(item.capabilities, {
+          modelId: item.id,
+          modelName: item.name,
+        }).output}
+      />
+    ),
+  },
+  {
+    key: "input_price",
+    header: "Input Price",
+    width: "w-[130px] min-w-[120px]",
+    sortable: true,
+    className: "text-right",
+    render: (item) => <PriceCell item={item} field="input_price" />,
+  },
+  {
+    key: "output_price",
+    header: "Output Price",
+    width: "w-[130px] min-w-[120px]",
+    sortable: true,
+    className: "text-right",
+    render: (item) => <PriceCell item={item} field="output_price" />,
   },
   {
     key: "context_window",
@@ -261,15 +325,6 @@ const COLUMNS: ColDef[] = [
       <span className="text-xs tabular-nums">
         {formatNumber(item.max_tokens)}
       </span>
-    ),
-  },
-  {
-    key: "capabilities",
-    header: "Capabilities",
-    width: "w-[100px] min-w-[90px]",
-    sortable: false,
-    render: (item) => (
-      <JsonSummaryBadge data={item.capabilities} label="caps" />
     ),
   },
   // NOTE: no controls/constraints columns — those legacy model_definition
@@ -316,87 +371,8 @@ const COLUMNS: ColDef[] = [
       />
     ),
   },
-  // Pricing is no longer a model_definition column — it lives on ai.offering
-  // (managed in the Offerings page). No model-level pricing column here.
+  // Pricing remains read-only here; editing still lives only on ai.offering.
 ];
-
-// ─── Filtering & Sorting helpers ─────────────────────────────────────────────
-
-function applyFilters(
-  models: AiModel[],
-  q: string,
-  filters: AiModelFilters,
-): AiModel[] {
-  let result = models;
-
-  if (q) {
-    const lq = q.toLowerCase();
-    result = result.filter(
-      (m) =>
-        m.id.toLowerCase().includes(lq) ||
-        (m.name ?? "").toLowerCase().includes(lq) ||
-        (m.common_name ?? "").toLowerCase().includes(lq) ||
-        (m.maker ?? "").toLowerCase().includes(lq),
-    );
-  }
-
-  if (filters.provider) {
-    result = result.filter((m) => m.maker === filters.provider);
-  }
-  if (filters.is_deprecated !== undefined) {
-    result = result.filter(
-      (m) => (m.is_deprecated ?? false) === filters.is_deprecated,
-    );
-  }
-  if (filters.is_primary !== undefined) {
-    result = result.filter(
-      (m) => (m.is_primary ?? false) === filters.is_primary,
-    );
-  }
-  if (filters.is_premium !== undefined) {
-    result = result.filter(
-      (m) => (m.is_premium ?? false) === filters.is_premium,
-    );
-  }
-  if (filters.context_window_min !== undefined) {
-    result = result.filter(
-      (m) => (m.context_window ?? 0) >= filters.context_window_min!,
-    );
-  }
-  if (filters.context_window_max !== undefined) {
-    result = result.filter(
-      (m) => (m.context_window ?? Infinity) <= filters.context_window_max!,
-    );
-  }
-  if (filters.max_tokens_min !== undefined) {
-    result = result.filter(
-      (m) => (m.max_tokens ?? 0) >= filters.max_tokens_min!,
-    );
-  }
-  if (filters.max_tokens_max !== undefined) {
-    result = result.filter(
-      (m) => (m.max_tokens ?? Infinity) <= filters.max_tokens_max!,
-    );
-  }
-
-  return result;
-}
-
-function applySort(
-  models: AiModel[],
-  sort: string,
-  dir: "asc" | "desc",
-): AiModel[] {
-  // The "provider" column now displays the resolved maker (the free-text
-  // provider column is dropped) — sort by maker for that key.
-  const field = (sort === "provider" ? "maker" : sort) as keyof AiModel;
-  return [...models].sort((a, b) => {
-    const aVal = String(a[field] ?? "");
-    const bVal = String(b[field] ?? "");
-    const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
-    return dir === "asc" ? cmp : -cmp;
-  });
-}
 
 // ─── Row Actions ─────────────────────────────────────────────────────────────
 
@@ -542,6 +518,8 @@ function SortIcon({
 
 type FilterType =
   | "provider"
+  | "input_capability"
+  | "output_capability"
   | "is_deprecated"
   | "is_primary"
   | "is_premium"
@@ -550,6 +528,8 @@ type FilterType =
 
 interface FilterOptions {
   providers: string[];
+  inputCapabilities: ContentType[];
+  outputCapabilities: ContentType[];
 }
 
 function isFilterActive(
@@ -559,6 +539,10 @@ function isFilterActive(
   switch (filterType) {
     case "provider":
       return !!filters.provider;
+    case "input_capability":
+      return !!filters.input_capability;
+    case "output_capability":
+      return !!filters.output_capability;
     case "is_deprecated":
       return isDeprecatedFilterNonDefault(filters);
     case "is_primary":
@@ -697,13 +681,6 @@ function RangeFilterContent({
     maxValue !== undefined ? String(maxValue) : "",
   );
 
-  React.useEffect(() => {
-    setMin(minValue !== undefined ? String(minValue) : "");
-  }, [minValue]);
-  React.useEffect(() => {
-    setMax(maxValue !== undefined ? String(maxValue) : "");
-  }, [maxValue]);
-
   const commitMin = (raw: string) => {
     if (raw === "") {
       onUpdateFilters({ [minKey]: undefined });
@@ -798,6 +775,40 @@ function ColumnHeaderFilter({
             onClear={() => onUpdateFilters({ provider: undefined })}
           />
         );
+      case "input_capability":
+        return (
+          <SelectFilterContent
+            label="Input"
+            value={filters.input_capability}
+            options={filterOptions.inputCapabilities.map((value) => ({
+              value,
+              label: value,
+            }))}
+            onChange={(value) => {
+              if (isContentType(value)) {
+                onUpdateFilters({ input_capability: value });
+              }
+            }}
+            onClear={() => onUpdateFilters({ input_capability: undefined })}
+          />
+        );
+      case "output_capability":
+        return (
+          <SelectFilterContent
+            label="Output"
+            value={filters.output_capability}
+            options={filterOptions.outputCapabilities.map((value) => ({
+              value,
+              label: value,
+            }))}
+            onChange={(value) => {
+              if (isContentType(value)) {
+                onUpdateFilters({ output_capability: value });
+              }
+            }}
+            onClear={() => onUpdateFilters({ output_capability: undefined })}
+          />
+        );
       case "is_deprecated":
         return (
           <BoolFilterContent
@@ -834,6 +845,7 @@ function ColumnHeaderFilter({
       case "context_window":
         return (
           <RangeFilterContent
+            key={`context-${filters.context_window_min ?? ""}-${filters.context_window_max ?? ""}`}
             label="Context Window"
             minKey="context_window_min"
             maxKey="context_window_max"
@@ -845,6 +857,7 @@ function ColumnHeaderFilter({
       case "max_tokens":
         return (
           <RangeFilterContent
+            key={`tokens-${filters.max_tokens_min ?? ""}-${filters.max_tokens_max ?? ""}`}
             label="Max Tokens"
             minKey="max_tokens_min"
             maxKey="max_tokens_max"
@@ -925,21 +938,35 @@ export default function AiModelTable({
   );
 
   const filterOptions = useMemo<FilterOptions>(
-    () => ({
-      providers: [
-        ...new Set(models.map((m) => m.maker).filter(Boolean)),
-      ].sort() as string[],
-    }),
+    () => {
+      const capabilities = models.map((model) =>
+        parseCapabilities(model.capabilities, {
+          modelId: model.id,
+          modelName: model.name,
+        }),
+      );
+      return {
+        providers: [
+          ...new Set(
+            models
+              .map((model) => model.maker)
+              .filter((maker): maker is string => Boolean(maker)),
+          ),
+        ].sort(),
+        inputCapabilities: [...new Set(capabilities.flatMap((c) => c.input))].sort(),
+        outputCapabilities: [...new Set(capabilities.flatMap((c) => c.output))].sort(),
+      };
+    },
     [models],
   );
 
   const filteredModels = useMemo(
-    () => applyFilters(models, q, filters),
+    () => applyAiModelFilters(models, q, filters),
     [models, q, filters],
   );
 
   const sortedModels = useMemo(
-    () => applySort(filteredModels, sort, dir),
+    () => sortAiModels(filteredModels, sort, dir),
     [filteredModels, sort, dir],
   );
 

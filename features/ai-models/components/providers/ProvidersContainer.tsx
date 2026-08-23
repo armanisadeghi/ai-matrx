@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { extractErrorMessage } from "@/utils/errors";
@@ -36,6 +37,7 @@ import ProviderForm, {
 } from "./ProviderForm";
 import { aiModelService } from "../../service";
 import type { AiProvider, AiProviderInsert, AiProviderUpdate } from "../../types";
+import { AI_PROVIDER_DEEP_LINK_PARAM } from "../../doors";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
   return {
@@ -84,12 +86,14 @@ function ProviderDetailPanel({
       : provider
         ? rowToFormData(provider)
         : EMPTY_PROVIDER_FORM;
-    setFormData(base);
-    setBaseline(base);
-    setSaveError(null);
-    setSavedFlash(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider?.id, isNew]);
+    const timer = setTimeout(() => {
+      setFormData(base);
+      setBaseline(base);
+      setSaveError(null);
+      setSavedFlash(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [provider, isNew]);
 
   useEffect(
     () => () => {
@@ -332,6 +336,10 @@ function ProviderDetailPanel({
 // ─── Container ──────────────────────────────────────────────────────────────
 
 export default function ProvidersContainer() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLinkedProviderId = searchParams.get(AI_PROVIDER_DEEP_LINK_PARAM);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState<AiProvider | null>(
@@ -353,13 +361,43 @@ export default function ProvidersContainer() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => void loadData(), 0);
+    return () => clearTimeout(timer);
   }, [loadData]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      if (!deepLinkedProviderId) {
+        setSelectedProvider(null);
+        setIsNewProvider(false);
+        setPanelOpen(false);
+        return;
+      }
+      const provider = providers.find(
+        (item) => item.id === deepLinkedProviderId,
+      );
+      if (!provider) return;
+      setSelectedProvider(provider);
+      setIsNewProvider(false);
+      setPanelOpen(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [deepLinkedProviderId, isLoading, providers]);
+
+  const replaceProviderDeepLink = (providerId: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (providerId) params.set(AI_PROVIDER_DEEP_LINK_PARAM, providerId);
+    else params.delete(AI_PROVIDER_DEEP_LINK_PARAM);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   const openProvider = (provider: AiProvider) => {
     setSelectedProvider(provider);
     setIsNewProvider(false);
     setPanelOpen(true);
+    replaceProviderDeepLink(provider.id);
   };
 
   const openNew = () => {
@@ -369,6 +407,7 @@ export default function ProvidersContainer() {
   };
 
   const closePanel = () => {
+    replaceProviderDeepLink(null);
     setPanelOpen(false);
     setSelectedProvider(null);
     setIsNewProvider(false);

@@ -2,9 +2,15 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import {
+  isContentType,
+  type ContentType,
+} from "../capabilities/types";
 
 export type AiModelFilters = {
   provider?: string;
+  input_capability?: ContentType;
+  output_capability?: ContentType;
   is_deprecated?: boolean;
   is_primary?: boolean;
   is_premium?: boolean;
@@ -54,6 +60,16 @@ function parseBoolean(val: string | null): boolean | undefined {
   return undefined;
 }
 
+function parseContentType(val: string | null): ContentType | undefined {
+  return isContentType(val) ? val : undefined;
+}
+
+function parseNumberParam(val: string | null): number | undefined {
+  if (val === null) return undefined;
+  const parsed = Number.parseInt(val, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 function parseDeprecatedFilterParam(raw: string | null): boolean | undefined {
   if (raw === null) return DEFAULT_AI_MODEL_FILTERS.is_deprecated;
   if (raw === "all") return undefined;
@@ -94,6 +110,12 @@ function serializeTabState(params: URLSearchParams, tab: TabState) {
   // Filters
   if (tab.filters.provider) params.set(`${p}.provider`, tab.filters.provider);
   else params.delete(`${p}.provider`);
+  if (tab.filters.input_capability)
+    params.set(`${p}.input`, tab.filters.input_capability);
+  else params.delete(`${p}.input`);
+  if (tab.filters.output_capability)
+    params.set(`${p}.output`, tab.filters.output_capability);
+  else params.delete(`${p}.output`);
   serializeDeprecatedFilterParam(params, p, tab.filters.is_deprecated);
   if (tab.filters.is_primary !== undefined)
     params.set(`${p}.is_primary`, String(tab.filters.is_primary));
@@ -127,23 +149,17 @@ function deserializeTabState(params: URLSearchParams, id: string): TabState {
     perPage: parseInt(params.get(`${p}.perPage`) ?? "25", 10),
     filters: {
       provider: params.get(`${p}.provider`) ?? undefined,
+      input_capability: parseContentType(params.get(`${p}.input`)),
+      output_capability: parseContentType(params.get(`${p}.output`)),
       is_deprecated: parseDeprecatedFilterParam(
         params.get(`${p}.is_deprecated`),
       ),
       is_primary: parseBoolean(params.get(`${p}.is_primary`)),
       is_premium: parseBoolean(params.get(`${p}.is_premium`)),
-      context_window_min: params.get(`${p}.cw_min`)
-        ? parseInt(params.get(`${p}.cw_min`)!, 10)
-        : undefined,
-      context_window_max: params.get(`${p}.cw_max`)
-        ? parseInt(params.get(`${p}.cw_max`)!, 10)
-        : undefined,
-      max_tokens_min: params.get(`${p}.mt_min`)
-        ? parseInt(params.get(`${p}.mt_min`)!, 10)
-        : undefined,
-      max_tokens_max: params.get(`${p}.mt_max`)
-        ? parseInt(params.get(`${p}.mt_max`)!, 10)
-        : undefined,
+      context_window_min: parseNumberParam(params.get(`${p}.cw_min`)),
+      context_window_max: parseNumberParam(params.get(`${p}.cw_max`)),
+      max_tokens_min: parseNumberParam(params.get(`${p}.mt_min`)),
+      max_tokens_max: parseNumberParam(params.get(`${p}.mt_max`)),
     },
   };
 }
@@ -216,6 +232,10 @@ export function useTabUrlState() {
         if (label) params.set(`${newId}.label`, label);
         if (initialFilters?.provider)
           params.set(`${newId}.provider`, initialFilters.provider);
+        if (initialFilters?.input_capability)
+          params.set(`${newId}.input`, initialFilters.input_capability);
+        if (initialFilters?.output_capability)
+          params.set(`${newId}.output`, initialFilters.output_capability);
         if (initialFilters?.is_deprecated !== undefined) {
           serializeDeprecatedFilterParam(
             params,

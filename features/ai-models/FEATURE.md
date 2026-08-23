@@ -4,7 +4,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-08-16`
+**Last updated:** `2026-08-22`
 
 ---
 
@@ -54,7 +54,7 @@ release-audit coverage.
 
 **Services**
 
-- `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `agent.definition`/`agent.template`), and deprecation-migration helpers (`replaceModelIn*`). `public.prompts`/`prompt_builtins` are graveyarded — `fetchUsage`/`replaceModelInPrompts` treat that leg as a no-op (0 rows, intentional). Also: `fetchAllProviders`/`createProvider`/`updateProvider`/`deleteProvider`, `fetchEndpoints`/`createEndpoint`/`updateEndpoint`/`deleteEndpoint`, `fetchApis`/`createApi`/`updateApi`/`deleteApi`, `fetchOfferings`/`createOffering`/`updateOffering`/`deleteOffering`/`fetchModelOfferingView`, `fetchSettings`/`createSetting`/`updateSetting`/`deleteSetting`, `fetchAliases`/`createAlias`/`updateAlias`/`deleteAlias`, and `fetchModelConfig(modelId)` (the resolved `ai.model_config` row) — full CRUD for the catalog's other tables/views.
+- `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `agent.definition`/`agent.template`), and deprecation-migration helpers (`replaceModelIn*`). `fetchAll` merges editable `ai.model_definition` rows with the preferred-offering price from `public.admin_model_catalog()`; the model table NEVER reads or edits a retired model-level pricing column. `public.prompts`/`prompt_builtins` are graveyarded — `fetchUsage`/`replaceModelInPrompts` treat that leg as a no-op (0 rows, intentional). Also: `fetchAllProviders`/`createProvider`/`updateProvider`/`deleteProvider`, `fetchEndpoints`/`createEndpoint`/`updateEndpoint`/`deleteEndpoint`, `fetchApis`/`createApi`/`updateApi`/`deleteApi`, `fetchOfferings`/`createOffering`/`updateOffering`/`deleteOffering`/`fetchModelOfferingView`, `fetchSettings`/`createSetting`/`updateSetting`/`deleteSetting`, `fetchAliases`/`createAlias`/`updateAlias`/`deleteAlias`, and `fetchModelConfig(modelId)` (the resolved `ai.model_config` row) — full CRUD for the catalog's other tables/views.
 - `features/ai-models/catalogReload.ts` — `reloadAiCatalog()` thunk → `POST /admin/ai-catalog/reload` via `callApi`. EVERY rule-editing save (api rules, offering override) dispatches it; the aidream brain caches the catalog and stays stale otherwise.
 - `features/ai-models/server/ai-models-server.ts` — `fetchAIModels()` (React-cached server reader for SSR shells)
 
@@ -93,7 +93,7 @@ release-audit coverage.
 
 **Key types** (`features/ai-models/types.ts`)
 
-- `AiModel` — `AiModelRow` with JSONB `capabilities` narrowed, plus a resolved **`maker: string \| null`** (not a stored column — attached by the fetch/service layer from `ai.provider.name`). Read `maker` for all display/filter/group. No `controls`/`constraints`/`model_class`/`api_class` — those columns are dropped; resolved controls/constraints live only on the registry slice's `'full'` records (from `ai.model_config`).
+- `AiModel` — `AiModelRow` with JSONB `capabilities` narrowed, plus resolved `maker` and optional read-only `preferred_pricing` comparison data from `admin_model_catalog()`. Read `maker` for display/filter/group; read `preferred_pricing` only in admin comparisons and edit price only through `ai.offering`. No `controls`/`constraints`/`model_class`/`api_class` — those columns are dropped; resolved controls/constraints live only on the registry slice's `'full'` records (from `ai.model_config`).
 - `AiEndpoint` / `AiApi` — `ai.endpoint` / `ai.api` rows with Json fields narrowed; `AiApi.rules` and `AiOffering.override` share the **`RulesEnvelope`** shape (`{ params: ControlsSchema; constraints: ModelConstraint[] }`). `AiModelAliasRow` covers `ai.model_alias`.
 - `AiProvider` — provider row with `provider_models_cache: ProviderModelsCache | null`.
 - `PricingTier` — `{ max_tokens, input_price, output_price, cached_input_price, usage_basis?, note? }`. `usage_basis` is the **billing unit** the prices map to (`null`/absent = standard $/1M-token billing; other values: per-image, per-second, per-character, …). The full taxonomy + per-basis price labels + validation live in `features/ai-models/usageBasis.ts`, a **mirror of the matrx-ai server SSOT** (`matrx_ai/config/usage_config.py::USAGE_BASIS_SPECS`).
@@ -111,7 +111,7 @@ release-audit coverage.
 
 ### (a) Adding / editing a model in the registry
 
-1. Admin opens `/administration/ai/ai-models/`. `AiModelsContainer` calls `aiModelService.fetchAll()` + `fetchProviders()`.
+1. Admin opens `/administration/ai/ai-models/`. `AiModelsContainer` calls `aiModelService.fetchAll()` + `fetchProviders()`. The table renders canonical input/output modality chips, filters by either modality, and sorts the preferred offering's real-dollar Input Price / Output Price with the `usage_basis` unit visible in each cell.
 2. Clicks "+ new" → `AiModelDetailPanel` opens in create mode with an empty `AiModelForm`.
 3. On save: `aiModelService.create(insert)` inserts into `ai.model_definition`. The new row is prepended in component state and becomes the selected record.
 4. Edit path uses `aiModelService.update(id, patch)` — returns the updated row (with resolved `maker`); `handleSaved` replaces in list. JSON fields (`controls`, `constraints`, `capabilities`) are edited via dedicated sub-editors in tabs. The **Pricing** tab is read-only (`OfferingPricingReadOnly`, sourced from the model's `ai.offering` rows) — pricing is edited in the Offerings page. There is no `endpoints`/`pricing` editor here.
@@ -200,6 +200,8 @@ Phase D (2026-07-10) is DONE: the resolution layer (`ai.resolve_model_config` + 
 ---
 
 ## Change log
+
+- `2026-08-22` — **Restored model comparison pricing and modality filtering.** The admin registry table now merges each editable model row with its preferred-offering `pricing` from the existing super-admin `admin_model_catalog()` RPC, renders sortable Input Price / Output Price columns with their real `usage_basis` units, and exposes canonical Input/Output modality chips plus URL-persisted filters (`capabilities.input` / `.output`). Search includes modalities and keeps its local draft while focused so debounced URL persistence cannot replace text or move the cursor. The inert Provider FK now opens the exact provider via `/administration/ai/ai-models/providers?provider=<id>`.
 
 - `2026-08-16` — **The frontend capability vocabulary again matches the live catalog.** The 2026-08-15 Google catalog update added 13 valid feature values (`file_search`, `mcp`, `background_execution`, `collaborative_planning`, `visualization`, `citations`, `sandboxed_execution`, `live_api`, `url_context`, `grounding_maps`, `multimodal_embedding`, `music_generation`, `real_time_translation`) and the provider-managed `agent` interaction mode without updating `capabilities/types.ts`. `parseCapabilities` correctly screamed once per model/field/value, producing 31 inspector entries, but then discarded all 28 feature occurrences and downgraded all 3 agent models to `turn`. The shared vocabulary now preserves every value; regression coverage uses the complete new set. `agent` is non-conversational and stays on its dedicated start/poll surface.
 

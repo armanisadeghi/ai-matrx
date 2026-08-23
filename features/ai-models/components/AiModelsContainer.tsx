@@ -155,7 +155,11 @@ export default function AiModelsContainer() {
       const idx = prev.findIndex((m) => m.id === saved.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = saved;
+        next[idx] = {
+          ...saved,
+          preferred_pricing:
+            saved.preferred_pricing ?? prev[idx].preferred_pricing ?? null,
+        };
         return next;
       }
       return [saved, ...prev];
@@ -172,7 +176,15 @@ export default function AiModelsContainer() {
 
   const handleDuplicate = async (model: AiModel) => {
     try {
-      const { id: _id, ...rest } = model;
+      const {
+        id: _id,
+        maker: _maker,
+        preferred_pricing: _preferredPricing,
+        ...rest
+      } = model;
+      void _id;
+      void _maker;
+      void _preferredPricing;
       const duplicate = await aiModelService.create({
         ...rest,
         name: `${model.name}-copy`,

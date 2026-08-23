@@ -29,6 +29,8 @@ import {
 import type { AiModel } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
+import { parseCapabilities } from "../capabilities/parse";
+import { isContentType } from "../capabilities/types";
 
 interface AiModelFilterBarProps {
   tabState: TabState;
@@ -63,13 +65,6 @@ function NumberRangeInput({
   const [maxDraft, setMaxDraft] = useState(
     max !== undefined ? String(max) : "",
   );
-
-  useEffect(() => {
-    setMinDraft(min !== undefined ? String(min) : "");
-  }, [min]);
-  useEffect(() => {
-    setMaxDraft(max !== undefined ? String(max) : "");
-  }, [max]);
 
   const commit = (raw: string, setter: (v: number | undefined) => void) => {
     if (raw === "") {
@@ -136,13 +131,35 @@ export default function AiModelFilterBar({
       ].sort(),
     [models],
   );
+  const modalityOptions = useMemo(() => {
+    const capabilities = models.map((model) =>
+      parseCapabilities(model.capabilities, {
+        modelId: model.id,
+        modelName: model.name,
+      }),
+    );
+    return {
+      input: [...new Set(capabilities.flatMap((caps) => caps.input))].sort(),
+      output: [...new Set(capabilities.flatMap((caps) => caps.output))].sort(),
+    };
+  }, [models]);
 
   // Local debounced search
   const [localQ, setLocalQ] = useState(q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchFocusedRef = useRef(false);
+  const tabIdRef = useRef(tabState.id);
   useEffect(() => {
-    setLocalQ(q);
-  }, [q]);
+    const switchedTabs = tabIdRef.current !== tabState.id;
+    tabIdRef.current = tabState.id;
+    if (switchedTabs || !searchFocusedRef.current) setLocalQ(q);
+  }, [q, tabState.id]);
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
 
   const handleSearchChange = (value: string) => {
     setLocalQ(value);
@@ -154,9 +171,16 @@ export default function AiModelFilterBar({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     onUpdateQ("");
   };
+  const commitSearch = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = null;
+    onUpdateQ(localQ);
+  };
 
   const activeFilterCount = [
     filters.provider,
+    filters.input_capability,
+    filters.output_capability,
     isDeprecatedFilterNonDefault(filters),
     filters.is_primary !== undefined,
     filters.is_premium !== undefined,
@@ -196,18 +220,56 @@ export default function AiModelFilterBar({
           <Input
             value={localQ}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search id, name, provider…"
+            onFocus={() => {
+              searchFocusedRef.current = true;
+            }}
+            onBlur={() => {
+              searchFocusedRef.current = false;
+              commitSearch();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commitSearch();
+            }}
+            aria-label="Search AI models"
+            placeholder="Search model, provider, modality…"
             className="h-7 pl-7 pr-6 text-xs w-52"
           />
           {localQ && (
             <button
+              type="button"
               onClick={handleClearSearch}
+              aria-label="Clear model search"
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </button>
           )}
         </div>
+
+        {/* Output modality is the primary comparison filter. */}
+        <Select
+          value={filters.output_capability ?? "__all__"}
+          onValueChange={(value) =>
+            onUpdateFilters({
+              output_capability:
+                value !== "__all__" && isContentType(value)
+                  ? value
+                  : undefined,
+            })
+          }
+        >
+          <SelectTrigger className="h-7 text-xs w-32 shrink-0">
+            <SelectValue placeholder="Output" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Outputs</SelectItem>
+            {modalityOptions.output.map((value) => (
+              <SelectItem key={value} value={value} className="capitalize">
+                {value} output
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Provider */}
         <Select
@@ -270,10 +332,12 @@ export default function AiModelFilterBar({
           More
           {activeFilterCount >
             (filters.provider ? 1 : 0) +
+              (filters.output_capability ? 1 : 0) +
               (isDeprecatedFilterNonDefault(filters) ? 1 : 0) && (
             <Badge variant="secondary" className="h-4 px-1 text-xs">
               {activeFilterCount -
                 (filters.provider ? 1 : 0) -
+                (filters.output_capability ? 1 : 0) -
                 (isDeprecatedFilterNonDefault(filters) ? 1 : 0)}
             </Badge>
           )}
@@ -338,6 +402,31 @@ export default function AiModelFilterBar({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-2 pb-2 border-t pt-1.5">
           {/* Primary */}
           <Select
+            value={filters.input_capability ?? "__all__"}
+            onValueChange={(value) =>
+              onUpdateFilters({
+                input_capability:
+                  value !== "__all__" && isContentType(value)
+                    ? value
+                    : undefined,
+              })
+            }
+          >
+            <SelectTrigger className="h-7 text-xs w-32 shrink-0">
+              <SelectValue placeholder="Input" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Inputs</SelectItem>
+              {modalityOptions.input.map((value) => (
+                <SelectItem key={value} value={value} className="capitalize">
+                  {value} input
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Primary */}
+          <Select
             value={
               filters.is_primary === true
                 ? "true"
@@ -390,6 +479,7 @@ export default function AiModelFilterBar({
 
           {/* Context window range */}
           <NumberRangeInput
+            key={`context-${filters.context_window_min ?? ""}-${filters.context_window_max ?? ""}`}
             label="Context"
             min={filters.context_window_min}
             max={filters.context_window_max}
@@ -401,6 +491,7 @@ export default function AiModelFilterBar({
 
           {/* Max tokens range */}
           <NumberRangeInput
+            key={`tokens-${filters.max_tokens_min ?? ""}-${filters.max_tokens_max ?? ""}`}
             label="Max tokens"
             min={filters.max_tokens_min}
             max={filters.max_tokens_max}
