@@ -27,8 +27,15 @@ import {
   buildConversationTextItem,
   buildResponseCreate,
 } from "../transport/clientEvents";
-import type { XaiServerEvent } from "../transport/serverEvents";
-import { buildDeliveryCueText, buildNarrationCueText } from "./relayProtocol";
+import {
+  transcriptTextFromEvent,
+  type XaiServerEvent,
+} from "../transport/serverEvents";
+import {
+  buildDeliveryCueText,
+  buildMirrorCueText,
+  buildNarrationCueText,
+} from "./relayProtocol";
 import {
   createVoiceExchangeLog,
   formatVoiceExchange,
@@ -62,6 +69,12 @@ export interface VoiceRelayController {
   speakDelivery(primaryAgentResponse: string, opts?: DeliveryCueOptions): void;
   /** Cue one short truthful progress line while the brain works. */
   speakNarration(narration: string): void;
+  /**
+   * Cue reflective mirroring while the brain works (ruling 4) — the default
+   * wait behaviour. Carries no content: the Communicator mirrors from its own
+   * context. Like narration, it does NOT clear the awaiting-brain state.
+   */
+  speakMirror(): void;
   /** True between a captured user utterance and the next delivery cue. */
   isAwaitingBrain(): boolean;
   /** Mark that the brain started/kept working without a user utterance (e.g. kickoff turn). */
@@ -112,8 +125,26 @@ export function createVoiceRelayController(
     if (disposed) return;
     switch (event.type) {
       case "conversation.item.input_audio_transcription.completed": {
-        const transcript = event.transcript?.trim();
-        if (!transcript) return;
+        // xAI has shipped this transcript under `transcript`, `text`, `delta`,
+        // and nested inside `item.content[]` across realtime builds. Reading
+        // one field silently DROPS the user's whole utterance — the brain
+        // never hears them, and nothing throws. Normalize at the boundary,
+        // exactly like the session layer does (2026-08-18 fix).
+        const transcript = transcriptTextFromEvent(event, [
+          "transcript",
+          "text",
+          "delta",
+        ]).trim();
+        if (!transcript) {
+          log(
+            "warn",
+            "utterance.empty",
+            "a completed transcription carried no readable text in any known " +
+              "wire field — the user spoke and the brain heard nothing. " +
+              "Check the xAI event shape.",
+          );
+          return;
+        }
         awaitingBrain = true;
         log("info", "utterance.captured", transcript.slice(0, 120));
         options.onUserUtterance(transcript);
@@ -207,6 +238,11 @@ export function createVoiceRelayController(
     speakNarration(narration: string): void {
       // Narration does NOT clear awaitingBrain — the brain is still working.
       sendCue(buildNarrationCueText(narration));
+    },
+    speakMirror(): void {
+      // Same rule as narration: the brain is still working, so the watchdog
+      // stays armed.
+      sendCue(buildMirrorCueText());
     },
     isAwaitingBrain(): boolean {
       return awaitingBrain;

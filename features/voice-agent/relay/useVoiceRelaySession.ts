@@ -272,10 +272,15 @@ export function useVoiceRelaySession(
       // so the log resets for the next turn (drain fires onExchangeUpdated("")
       // which clears the context entry).
       controller.drainVoiceExchange();
-      // Rule 2b: one truthful narration cue if the turn takes a while.
+      // Ruling 4: the wait is MIRRORING, not filler. If the turn takes a
+      // while, the Communicator reflects back what it understood from the
+      // user's last message — reflective listening the speaker actually
+      // benefits from — rather than a canned holding line, which is the voice
+      // equivalent of a spinner. Real pipeline stages, when a surface has
+      // them, go through `speakNarration` instead.
       clearNarrationTimer();
       narrationTimerRef.current = setTimeout(() => {
-        controller.speakNarration("Passing that along — one moment.");
+        controller.speakMirror();
       }, NARRATION_DELAY_MS);
       return;
     }

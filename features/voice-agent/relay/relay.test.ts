@@ -7,8 +7,10 @@
 
 import {
   buildDeliveryCueText,
+  buildMirrorCueText,
   buildNarrationCueText,
   DELIVERY_CUE_PREFIX,
+  MIRROR_CUE_PREFIX,
   NARRATION_CUE_PREFIX,
 } from "./relayProtocol";
 import { createQuestionLedger } from "./questionLedger";
@@ -39,6 +41,15 @@ describe("relayProtocol", () => {
     const cue = buildDeliveryCueText("Hello.", { ledgerSummary: "" });
     expect(cue).not.toContain("open questions");
     expect(cue).not.toContain("Speaking role");
+  });
+
+  it("builds a mirror cue that carries no content and forbids answering", () => {
+    const cue = buildMirrorCueText();
+    expect(cue.startsWith(MIRROR_CUE_PREFIX)).toBe(true);
+    // Ruling 4: reflect back understanding, never answer or guess.
+    expect(cue).toMatch(/reflect back/i);
+    expect(cue).toMatch(/do NOT answer/i);
+    expect(cue).toMatch(/do NOT guess/i);
   });
 
   it("builds a narration cue", () => {
@@ -195,6 +206,74 @@ describe("relayController", () => {
     // Empty transcript is ignored.
     emit(transcriptDone("   "));
     expect(utterances).toHaveLength(1);
+  });
+
+  // THE DROPPED-UTTERANCE CLASS: xAI has shipped the completed transcript
+  // under `transcript`, `text`, and nested in `item.content[]`. Reading one
+  // field means the user speaks and the brain never hears them — silently.
+  it("reads the completed transcript from every known wire shape", () => {
+    const cases: Array<[string, XaiServerEvent]> = [
+      [
+        "text field",
+        {
+          type: "conversation.item.input_audio_transcription.completed",
+          text: "budget is small",
+        } as unknown as XaiServerEvent,
+      ],
+      [
+        "nested item.content",
+        {
+          type: "conversation.item.input_audio_transcription.completed",
+          item: { content: [{ transcript: "budget is small" }] },
+        } as unknown as XaiServerEvent,
+      ],
+    ];
+    for (const [, event] of cases) {
+      const utterances: string[] = [];
+      const controller = createVoiceRelayController({
+        onUserUtterance: (t) => utterances.push(t),
+        log: () => {},
+      });
+      const { handle, emit } = makeHandle();
+      controller.binding.attach(handle);
+      emit(event);
+      expect(utterances).toEqual(["budget is small"]);
+    }
+  });
+
+  it("screams instead of silently dropping an unreadable transcript", () => {
+    const warnings: string[] = [];
+    const controller = createVoiceRelayController({
+      onUserUtterance: () => {},
+      log: (kind, code) => {
+        if (kind === "warn") warnings.push(code);
+      },
+    });
+    const { handle, emit } = makeHandle();
+    controller.binding.attach(handle);
+    emit({
+      type: "conversation.item.input_audio_transcription.completed",
+    } as unknown as XaiServerEvent);
+    expect(warnings).toContain("utterance.empty");
+  });
+
+  it("speakMirror cues reflection and keeps awaiting the brain", () => {
+    const controller = createVoiceRelayController({
+      onUserUtterance: () => {},
+      log: () => {},
+    });
+    const { handle, emit, sent, getCancels } = makeHandle();
+    controller.binding.attach(handle);
+
+    emit(transcriptDone("my budget is small"));
+    controller.speakMirror();
+    // The brain is still working — the watchdog stays armed.
+    expect(controller.isAwaitingBrain()).toBe(true);
+    const item = JSON.parse(sent[0]) as { item: { content: [{ text: string }] } };
+    expect(item.item.content[0].text.startsWith(MIRROR_CUE_PREFIX)).toBe(true);
+    // The mirror response is OURS — never cancelled.
+    emit(responseCreated);
+    expect(getCancels()).toBe(0);
   });
 
   it("cancels an unsolicited response ONLY while awaiting the brain, and screams", () => {

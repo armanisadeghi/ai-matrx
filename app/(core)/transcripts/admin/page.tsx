@@ -289,11 +289,11 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/api/audio/log-error/route.ts",
     },
     {
-      url: "/api/voice-agent/token",
+      url: "/api/broker/tokens",
       method: "POST",
       description:
-        "Mint short-lived xAI Realtime API token for the live voice agent (transcribes as it talks).",
-      filePath: "app/api/voice-agent/token/route.ts",
+        "aidream token broker, audience `xai_realtime` — mints the short-lived xAI Realtime credential for the live voice agent. Replaced the retired Next.js route `/api/voice-agent/token` on 2026-08-23.",
+      filePath: "features/voice-agent/transport/tokenManager.ts",
     },
   ],
 
