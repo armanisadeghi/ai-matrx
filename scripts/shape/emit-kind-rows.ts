@@ -6,9 +6,22 @@
  *
  * For each kind it prints, ready to paste into a migration:
  *   data                  — kindSchemaToStorage(schema).data
- *   emitted_block_schema  — kindSchemaToJsonSchema(strict, injectKind)   ← has __kind
- *   emitted_json_schema   — kindSchemaToJsonSchema(strict, no inject)    ← wire shape
+ *   emitted_block_schema  — kindSchemaToJsonSchema(strict, injectKind)
+ *   emitted_json_schema   — THE SAME EXPORT. See below.
  *   emitted_fingerprint   — fingerprintText(JSON.stringify(block schema))
+ *
+ * 🚨 THERE IS NO "WIRE SHAPE" ANY MORE (Arman, 2026-08-23). `emitted_json_schema`
+ * used to be emitted with `injectKind: false` on the doctrine that `__kind` was
+ * envelope framing added at emit time. That doctrine is DEAD: `__kind` is part
+ * of the data (KINDS_EVERYWHERE_PLAN §4.2), and because `emitted_json_schema` is
+ * both what every Python validator reads AND what `response_format_for_kind`
+ * binds an agent to, a marker-free export made 493 of 738 live kinds ship a
+ * schema that FORBADE their own identity — a bound producer was structurally
+ * unable to say what it was emitting. Both columns now carry the marker.
+ *
+ * The two columns remain distinct COLUMNS so nothing downstream has to change
+ * shape, but they are emitted from the same call. Never reintroduce
+ * `injectKind: false` here.
  *
  * The converters ARE the source of truth (the same ones the client registry
  * and `regenerate-kind-block-schemas.ts` use), so what this prints is exactly
@@ -46,9 +59,11 @@ for (const kind of requested) {
     strict: true,
     injectKind: true,
   });
+  // Same options as `block` — see the header. A kind's schema declares its
+  // own identity, in both columns.
   const wire = kindSchemaToJsonSchema(kind, resolve, {
     strict: true,
-    injectKind: false,
+    injectKind: true,
   });
   if (!block || !wire) {
     console.error(`\n### ${kind}\nconverter declined this kind.`);
