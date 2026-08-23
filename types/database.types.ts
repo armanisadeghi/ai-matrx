@@ -28663,6 +28663,63 @@ export type Database = {
           },
         ]
       }
+      lifecycle_archive_row: {
+        Row: {
+          archive_id: string
+          archived_at: string
+          entity_token: string
+          row_id: string
+        }
+        Insert: {
+          archive_id: string
+          archived_at?: string
+          entity_token: string
+          row_id: string
+        }
+        Update: {
+          archive_id?: string
+          archived_at?: string
+          entity_token?: string
+          row_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifecycle_archive_row_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_archive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lifecycle_archive_row_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_archive_row_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lifecycle_archive_row_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_archive_row_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       lifecycle_audit: {
         Row: {
           created_at: string
