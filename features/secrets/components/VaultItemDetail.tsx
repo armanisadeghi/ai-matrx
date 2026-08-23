@@ -1061,24 +1061,21 @@ function FieldRow({
 
       {editMode && caps.can_edit && (
         <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
-          <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-            <label className="flex min-w-0 items-center gap-2 text-xs">
-              <span className="shrink-0 text-muted-foreground">
-                {VAULT_LABELS.runtimeKey}:
-                <span className="hidden sm:inline">
-                  used for identification in workflows
-                </span>
+          <div className="flex min-w-0 flex-wrap items-end gap-2">
+            <label className="flex min-w-[14rem] flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span className="whitespace-normal text-muted-foreground">
+                {VAULT_LABELS.runtimeKey}: used for identification in workflows
               </span>
               <Input
                 ref={envInputRef}
                 value={envDraft}
                 onChange={(event) => setEnvDraft(event.target.value)}
                 placeholder="Optional"
-                className="h-8 min-w-0 flex-1 font-mono text-xs"
+                className="h-8 min-w-[10rem] flex-1 font-mono text-xs"
                 aria-invalid={Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)}
               />
             </label>
-            <label className="flex min-w-0 items-center gap-2 text-xs">
+            <label className="flex min-w-[14rem] flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span className="shrink-0 text-muted-foreground">
                 Description:
               </span>
@@ -1086,7 +1083,7 @@ function FieldRow({
                 value={descDraft}
                 onChange={(event) => setDescDraft(event.target.value)}
                 placeholder="Optional"
-                className="h-8 min-w-0 flex-1 text-xs"
+                className="h-8 min-w-[10rem] flex-1 text-xs"
               />
             </label>
             <Button
