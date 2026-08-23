@@ -56536,6 +56536,7 @@ export type Database = {
       }
       user_email_preferences: {
         Row: {
+          browser_handoff_notifications: boolean
           comment_notifications: boolean | null
           created_at: string | null
           created_by: string | null
@@ -56558,6 +56559,7 @@ export type Database = {
           weekly_digest: boolean | null
         }
         Insert: {
+          browser_handoff_notifications?: boolean
           comment_notifications?: boolean | null
           created_at?: string | null
           created_by?: string | null
@@ -56580,6 +56582,7 @@ export type Database = {
           weekly_digest?: boolean | null
         }
         Update: {
+          browser_handoff_notifications?: boolean
           comment_notifications?: boolean | null
           created_at?: string | null
           created_by?: string | null

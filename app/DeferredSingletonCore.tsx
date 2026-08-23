@@ -24,6 +24,7 @@ import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
 import LazyMessagingIsland from "@/features/shell/islands/LazyMessagingIsland";
 import KgNewSuggestionNotifier from "@/features/kg-suggestions/components/KgNewSuggestionNotifier";
 import AssistsDock from "@/features/assists/components/AssistsDock";
+import CloudBrowserHandoffDeepLink from "@/features/cloud-browser/components/CloudBrowserHandoffDeepLink";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
 import HeaderOrgReminder from "@/features/shell/components/header/header-right-menu/HeaderOrgReminder";
@@ -99,6 +100,12 @@ export default function DeferredSingletonCore() {
       <LazyMessagingIsland />
       <KgNewSuggestionNotifier />
       <AssistsDock />
+      {/* Render-free. Reads `?cloudBrowserHandoff=` — the door a D-14 "your
+          browser needs you" notification lands on — and opens the Cloud
+          Browser canvas on that exact handoff. Global, because the notice can
+          land on any route and the person must never have to go find the
+          browser themselves. */}
+      <CloudBrowserHandoffDeepLink />
       <AuthSessionWatcher />
       <AnnouncementProvider />
       <AdminFeatureProvider />
