@@ -81,11 +81,14 @@ export function DigStampPanel({
   ruleName,
   /** A page rule with no class/level pin finds pages, not keywords. */
   canStamp,
+  /** The rule's own row limit — the ceiling on how much it can ever stamp. */
+  rowLimit,
 }: {
   siteId: string;
   ruleId: string | null;
   ruleName: string;
   canStamp: boolean;
+  rowLimit: number;
 }) {
   const queryClient = useQueryClient();
   const stamps = useDigRuleStamps(siteId, ruleId);
@@ -165,8 +168,12 @@ export function DigStampPanel({
       void queryClient.invalidateQueries({ queryKey: catalogKey });
       // Saving without evaluating would leave a segment that names nothing.
       const result = await mutations.evaluate.mutateAsync({ matcherId });
+      const first = result.results[0];
       toast.success(
-        `Saved — ${result.stamped.toLocaleString()} keyword${result.stamped === 1 ? "" : "s"} stamped.`,
+        `Saved — ${result.stamped.toLocaleString()} keyword${result.stamped === 1 ? "" : "s"} stamped.` +
+          (first?.limited
+            ? ` ${first.matched_total?.toLocaleString()} matched — raise the rule's row limit to cover them all.`
+            : ""),
       );
       reset();
     } catch (error) {
@@ -181,7 +188,10 @@ export function DigStampPanel({
       const result = await mutations.evaluate.mutateAsync({ matcherId });
       const detail = result.results[0];
       toast.success(
-        `${label}: ${detail?.stamped ?? 0} stamped, ${detail?.removed ?? 0} released (${result.window.start} → ${result.window.end}).`,
+        `${label}: ${(detail?.stamped ?? 0).toLocaleString()} stamped, ${(detail?.removed ?? 0).toLocaleString()} released (${result.window.start} → ${result.window.end}).` +
+          (detail?.limited
+            ? ` Only ${detail.matched?.toLocaleString()} of ${detail.matched_total?.toLocaleString()} fit this rule's row limit.`
+            : ""),
       );
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -273,6 +283,20 @@ export function DigStampPanel({
           </Button>
         ) : null}
       </div>
+
+      {/* C5b — NO SILENT CAPS. A rule stamps exactly what its results table
+          shows, so a segment sitting on the rule's row limit is a truncation
+          and says so where the number is, not only in a toast that scrolled
+          away. Raising the limit is one click away in the rule editor. */}
+      {rows.some((row) => row.stamp_count >= rowLimit) ? (
+        <p className="text-[11px] text-warning">
+          This rule stamps at most {rowLimit.toLocaleString()} keywords — its
+          row limit — and it is holding that many. There are almost certainly
+          more that match. Edit the rule and raise its row limit (up to 1,000)
+          to cover them, or tighten the conditions so the segment means
+          something narrower.
+        </p>
+      ) : null}
 
       {!canStamp ? (
         <p className="text-[11px] text-muted-foreground">

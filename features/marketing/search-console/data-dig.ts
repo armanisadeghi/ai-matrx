@@ -295,13 +295,24 @@ export interface ConditionEvaluation {
   matchers: number;
   stamped: number;
   removed: number;
+  /**
+   * C5b — TRUE when a rule matched more keywords than its own row limit let
+   * through, so the segment is a truncation. Never let this pass silently:
+   * a capped segment that reads as complete is worse than no segment.
+   */
+  limited: boolean;
   evaluated_at: string;
   results: Array<{
     matcher_id: string;
     rule?: string;
     dimension?: string;
     value?: string;
+    /** Stamped this run (bounded by the rule's row limit). */
     matched?: number;
+    /** Everything that PASSED the rule's conditions, before its row limit. */
+    matched_total?: number;
+    row_limit?: number;
+    limited?: boolean;
     stamped?: number;
     removed?: number;
     error?: string;

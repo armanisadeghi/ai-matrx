@@ -355,6 +355,7 @@ export function DigTab({
               ruleId={selectedRule.id}
               ruleName={selectedRule.name}
               canStamp={ruleCanStamp(selectedContent)}
+              rowLimit={selectedContent.rowLimit}
             />
           </>
         ) : selectedRule && !selectedContent ? (
