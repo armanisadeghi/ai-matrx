@@ -1,0 +1,1237 @@
+{
+  "__source": "Generated from the REAL Python bridge (matrx_ai.agents.variable_kinds). Regenerate: aidream scripts/generate_variable_kind_fixture.py. Drift gate: aidream packages/matrx-ai/tests/parity/test_variable_kind_fixture.py + matrx-frontend features/content-ir/__tests__/variable-kind-bridge-parity.test.ts. Contract: common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md §10d-C.",
+  "cases": [
+    {
+      "name": "bare_variable",
+      "description": "No customComponent at all — the system default input.",
+      "variables": [
+        {
+          "name": "topic",
+          "defaultValue": "",
+          "required": true
+        }
+      ],
+      "fields": {
+        "topic": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "sidecar": {},
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "topic",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "textarea"
+          },
+          "required": true
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "help_and_default",
+      "description": "helpText -> description, defaultValue -> default, required.",
+      "variables": [
+        {
+          "name": "tone",
+          "defaultValue": "friendly",
+          "required": true,
+          "helpText": "How the copy should sound.",
+          "customComponent": {
+            "type": "textarea"
+          }
+        }
+      ],
+      "fields": {
+        "tone": {
+          "type": "string",
+          "required": true,
+          "description": "How the copy should sound.",
+          "default": "friendly"
+        }
+      },
+      "sidecar": {},
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "tone",
+          "defaultValue": "friendly",
+          "customComponent": {
+            "type": "textarea"
+          },
+          "helpText": "How the copy should sound.",
+          "required": true
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "tone": {
+            "type": "string",
+            "description": "How the copy should sound.",
+            "default": "friendly"
+          }
+        },
+        "required": [
+          "tone"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "zero_defaults_are_omissions",
+      "description": "The FE's zero values are omissions, not authored defaults.",
+      "variables": [
+        {
+          "name": "a",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "textarea"
+          }
+        },
+        {
+          "name": "b",
+          "defaultValue": 0,
+          "customComponent": {
+            "type": "number"
+          }
+        },
+        {
+          "name": "c",
+          "defaultValue": false,
+          "customComponent": {
+            "type": "toggle"
+          }
+        }
+      ],
+      "fields": {
+        "a": {
+          "type": "string"
+        },
+        "b": {
+          "type": "number"
+        },
+        "c": {
+          "type": "boolean"
+        }
+      },
+      "sidecar": {},
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "a",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "textarea"
+          }
+        },
+        {
+          "name": "b",
+          "defaultValue": 0,
+          "customComponent": {
+            "type": "number"
+          }
+        },
+        {
+          "name": "c",
+          "defaultValue": false,
+          "customComponent": {
+            "type": "toggle"
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "number"
+          },
+          "c": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "closed_enum",
+      "description": "select + options, no allowOther.",
+      "variables": [
+        {
+          "name": "audience",
+          "defaultValue": "beginner",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "beginner",
+              "intermediate",
+              "expert"
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "audience": {
+          "type": "enum",
+          "values": [
+            "beginner",
+            "intermediate",
+            "expert"
+          ],
+          "default": "beginner"
+        }
+      },
+      "sidecar": {},
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "audience",
+          "defaultValue": "beginner",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "beginner",
+              "intermediate",
+              "expert"
+            ]
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "audience": {
+            "type": "string",
+            "enum": [
+              "beginner",
+              "intermediate",
+              "expert"
+            ],
+            "default": "beginner"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "open_enum",
+      "description": "allowOther -> enum.open (the A2 construct); the option set SURVIVES.",
+      "variables": [
+        {
+          "name": "format",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "radio",
+            "options": [
+              "blog",
+              "email",
+              "script"
+            ],
+            "allowOther": true
+          }
+        }
+      ],
+      "fields": {
+        "format": {
+          "type": "enum",
+          "values": [
+            "blog",
+            "email",
+            "script"
+          ],
+          "open": true
+        }
+      },
+      "sidecar": {
+        "format": {
+          "component": "radio"
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "format",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "radio",
+            "options": [
+              "blog",
+              "email",
+              "script"
+            ],
+            "allowOther": true
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blog",
+                  "email",
+                  "script"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "select_without_options",
+      "description": "No static option set — a LOSS, and allowOther has no field home.",
+      "variables": [
+        {
+          "name": "category",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "allowOther": true
+          }
+        }
+      ],
+      "fields": {
+        "category": {
+          "type": "string"
+        }
+      },
+      "sidecar": {
+        "category": {
+          "allowOther": true,
+          "component": "select"
+        }
+      },
+      "losses": [
+        {
+          "name": "category",
+          "reason": "select has no static options — string in kind space"
+        }
+      ],
+      "variables_round_trip": [
+        {
+          "name": "category",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "allowOther": true
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "items_enum_checkbox",
+      "description": "checkbox + options -> string[].values (+open on allowOther).",
+      "variables": [
+        {
+          "name": "channels",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "checkbox",
+            "options": [
+              "web",
+              "email",
+              "social"
+            ],
+            "allowOther": true
+          }
+        }
+      ],
+      "fields": {
+        "channels": {
+          "type": "string[]",
+          "values": [
+            "web",
+            "email",
+            "social"
+          ],
+          "open": true
+        }
+      },
+      "sidecar": {},
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "channels",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "checkbox",
+            "options": [
+              "web",
+              "email",
+              "social"
+            ],
+            "allowOther": true
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "web",
+                    "email",
+                    "social"
+                  ]
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "checkbox_without_options",
+      "description": "Optionless multi-select — string[] with the component in the sidecar.",
+      "variables": [
+        {
+          "name": "tags",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "checkbox",
+            "allowOther": true
+          }
+        }
+      ],
+      "fields": {
+        "tags": {
+          "type": "string[]"
+        }
+      },
+      "sidecar": {
+        "tags": {
+          "allowOther": true,
+          "component": "checkbox"
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "tags",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "checkbox",
+            "allowOther": true
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "numeric_bounds",
+      "description": "number/slider/percent -> number + min/max/step (A2 bounds).",
+      "variables": [
+        {
+          "name": "word_count",
+          "defaultValue": 800,
+          "customComponent": {
+            "type": "number",
+            "min": 100,
+            "max": 5000,
+            "step": 50
+          }
+        },
+        {
+          "name": "creativity",
+          "defaultValue": 5,
+          "customComponent": {
+            "type": "slider",
+            "min": 0,
+            "max": 10,
+            "step": 1
+          }
+        }
+      ],
+      "fields": {
+        "word_count": {
+          "type": "number",
+          "min": 100,
+          "max": 5000,
+          "step": 50,
+          "default": 800
+        },
+        "creativity": {
+          "type": "number",
+          "min": 0,
+          "max": 10,
+          "step": 1,
+          "default": 5
+        }
+      },
+      "sidecar": {
+        "creativity": {
+          "component": "slider"
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "word_count",
+          "defaultValue": 800,
+          "customComponent": {
+            "type": "number",
+            "min": 100,
+            "max": 5000,
+            "step": 50
+          }
+        },
+        {
+          "name": "creativity",
+          "defaultValue": 5,
+          "customComponent": {
+            "type": "slider",
+            "min": 0,
+            "max": 10,
+            "step": 1
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "word_count": {
+            "type": "number",
+            "minimum": 100,
+            "maximum": 5000,
+            "multipleOf": 50,
+            "default": 800
+          },
+          "creativity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "multipleOf": 1,
+            "default": 5
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "toggles",
+      "description": "Plain toggle -> boolean; toggleValues -> a 2-value enum (labels ARE the wire values).",
+      "variables": [
+        {
+          "name": "include_faq",
+          "defaultValue": false,
+          "customComponent": {
+            "type": "toggle"
+          }
+        },
+        {
+          "name": "voice",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "light-switch",
+            "toggleValues": [
+              "passive",
+              "active"
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "include_faq": {
+          "type": "boolean"
+        },
+        "voice": {
+          "type": "enum",
+          "values": [
+            "passive",
+            "active"
+          ]
+        }
+      },
+      "sidecar": {
+        "voice": {
+          "component": "light-switch"
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "include_faq",
+          "defaultValue": false,
+          "customComponent": {
+            "type": "toggle"
+          }
+        },
+        {
+          "name": "voice",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "light-switch",
+            "toggleValues": [
+              "passive",
+              "active"
+            ]
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "include_faq": {
+            "type": "boolean"
+          },
+          "voice": {
+            "type": "string",
+            "enum": [
+              "passive",
+              "active"
+            ]
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "string_components",
+      "description": "Typed string scalars and media refs — string values, component in the sidecar.",
+      "variables": [
+        {
+          "name": "due",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "datetime"
+          }
+        },
+        {
+          "name": "contact",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "email"
+          }
+        },
+        {
+          "name": "hero",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "image"
+          }
+        },
+        {
+          "name": "brief",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "document"
+          }
+        }
+      ],
+      "fields": {
+        "due": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "string"
+        },
+        "hero": {
+          "type": "string"
+        },
+        "brief": {
+          "type": "string"
+        }
+      },
+      "sidecar": {
+        "due": {
+          "component": "datetime"
+        },
+        "contact": {
+          "component": "email"
+        },
+        "hero": {
+          "component": "image"
+        },
+        "brief": {
+          "component": "document"
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "due",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "datetime"
+          }
+        },
+        {
+          "name": "contact",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "email"
+          }
+        },
+        {
+          "name": "hero",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "image"
+          }
+        },
+        {
+          "name": "brief",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "document"
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "due": {
+            "type": "string"
+          },
+          "contact": {
+            "type": "string"
+          },
+          "hero": {
+            "type": "string"
+          },
+          "brief": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "currency_is_a_loss",
+      "description": "{amount, currency} has no field home — serialized string + a recorded loss.",
+      "variables": [
+        {
+          "name": "budget",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "currency"
+          }
+        }
+      ],
+      "fields": {
+        "budget": {
+          "type": "string"
+        }
+      },
+      "sidecar": {
+        "budget": {
+          "component": "currency"
+        }
+      },
+      "losses": [
+        {
+          "name": "budget",
+          "reason": "currency {amount, currency} — serialized string in kind space"
+        }
+      ],
+      "variables_round_trip": [
+        {
+          "name": "budget",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "currency"
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "budget": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "picklist_static_single",
+      "description": "Cached static options + single select — a REAL value domain (enum) + the binding out of band.",
+      "variables": [
+        {
+          "name": "persona",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "Owner",
+              "Manager"
+            ],
+            "structured_list": {
+              "listId": "list-abc",
+              "multiple": false
+            }
+          }
+        }
+      ],
+      "fields": {
+        "persona": {
+          "type": "enum",
+          "values": [
+            "Owner",
+            "Manager"
+          ]
+        }
+      },
+      "sidecar": {
+        "persona": {
+          "structuredList": {
+            "listId": "list-abc",
+            "multiple": false
+          }
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "persona",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "Owner",
+              "Manager"
+            ],
+            "structured_list": {
+              "listId": "list-abc",
+              "multiple": false
+            }
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "persona": {
+            "type": "string",
+            "enum": [
+              "Owner",
+              "Manager"
+            ]
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "picklist_runtime_options",
+      "description": "Options resolve at run time — string + a LOSS; the binding NEVER enters the schema.",
+      "variables": [
+        {
+          "name": "product",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "structured_list": {
+              "listId": "list-xyz",
+              "multiple": true
+            },
+            "allowOther": true
+          }
+        }
+      ],
+      "fields": {
+        "product": {
+          "type": "string"
+        }
+      },
+      "sidecar": {
+        "product": {
+          "structuredList": {
+            "listId": "list-xyz",
+            "multiple": true
+          },
+          "allowOther": true,
+          "component": "select"
+        }
+      },
+      "losses": [
+        {
+          "name": "product",
+          "reason": "structured-list-bound (list list-xyz) — multi-select, options resolve at run time; string in kind space (binding carried in the sidecar)"
+        }
+      ],
+      "variables_round_trip": [
+        {
+          "name": "product",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "allowOther": true,
+            "structured_list": {
+              "listId": "list-xyz",
+              "multiple": true
+            }
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "picklist_legacy_key",
+      "description": "The legacy `picklist` key is READ-ONLY — it normalizes to structured_list.",
+      "variables": [
+        {
+          "name": "region",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "NA",
+              "EU"
+            ],
+            "picklist": {
+              "listId": "list-legacy",
+              "multiple": false
+            }
+          }
+        }
+      ],
+      "fields": {
+        "region": {
+          "type": "enum",
+          "values": [
+            "NA",
+            "EU"
+          ]
+        }
+      },
+      "sidecar": {
+        "region": {
+          "structuredList": {
+            "listId": "list-legacy",
+            "multiple": false
+          }
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "region",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "NA",
+              "EU"
+            ],
+            "structured_list": {
+              "listId": "list-legacy",
+              "multiple": false
+            }
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "enum": [
+              "NA",
+              "EU"
+            ]
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "scope_binding",
+      "description": "Scope-context binding — runtime-filled; string in kind space, binding out of band.",
+      "variables": [
+        {
+          "name": "company_name",
+          "defaultValue": "",
+          "helpText": "The active brand.",
+          "binding": {
+            "contextItemId": "ci-1",
+            "scopeTypeId": "brand",
+            "itemKey": "company_name",
+            "onMissing": "empty"
+          },
+          "customComponent": {
+            "type": "textarea"
+          }
+        }
+      ],
+      "fields": {
+        "company_name": {
+          "type": "string",
+          "description": "The active brand."
+        }
+      },
+      "sidecar": {
+        "company_name": {
+          "scopeBinding": {
+            "contextItemId": "ci-1",
+            "scopeTypeId": "brand",
+            "itemKey": "company_name",
+            "onMissing": "empty"
+          }
+        }
+      },
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "company_name",
+          "defaultValue": "",
+          "binding": {
+            "contextItemId": "ci-1",
+            "scopeTypeId": "brand",
+            "itemKey": "company_name",
+            "onMissing": "empty"
+          },
+          "helpText": "The active brand."
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "description": "The active brand."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "stash_is_not_semantics",
+      "description": "customComponent.stash is a UI scratchpad — uniformly not carried.",
+      "variables": [
+        {
+          "name": "notes",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "textarea",
+            "stash": {
+              "options": [
+                "dead",
+                "residue"
+              ]
+            }
+          }
+        }
+      ],
+      "fields": {
+        "notes": {
+          "type": "string"
+        }
+      },
+      "sidecar": {},
+      "losses": [],
+      "variables_round_trip": [
+        {
+          "name": "notes",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "textarea"
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "duplicate_names",
+      "description": "Last wins, and the collision is RECORDED — never silent.",
+      "variables": [
+        {
+          "name": "topic",
+          "defaultValue": "one",
+          "customComponent": {
+            "type": "textarea"
+          }
+        },
+        {
+          "name": "topic",
+          "defaultValue": "two",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      ],
+      "fields": {
+        "topic": {
+          "type": "enum",
+          "values": [
+            "x",
+            "y"
+          ],
+          "default": "two"
+        }
+      },
+      "sidecar": {},
+      "losses": [
+        {
+          "name": "topic",
+          "reason": "duplicate name — this definition overwrote an earlier field of the same name"
+        }
+      ],
+      "variables_round_trip": [
+        {
+          "name": "topic",
+          "defaultValue": "two",
+          "customComponent": {
+            "type": "select",
+            "options": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "enum": [
+              "x",
+              "y"
+            ],
+            "default": "two"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "unknown_component_type",
+      "description": "A component type outside the union (live data has one: 'text'). Neither implementation may throw — string in kind space + a recorded loss.",
+      "variables": [
+        {
+          "name": "legacy",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "text"
+          }
+        }
+      ],
+      "fields": {
+        "legacy": {
+          "type": "string"
+        }
+      },
+      "sidecar": {
+        "legacy": {
+          "component": "text"
+        }
+      },
+      "losses": [
+        {
+          "name": "legacy",
+          "reason": "unknown component type 'text' — string in kind space; extend matrx_ai.agents.variable_kinds to keep schema fidelity"
+        }
+      ],
+      "variables_round_trip": [
+        {
+          "name": "legacy",
+          "defaultValue": "",
+          "customComponent": {
+            "type": "textarea"
+          }
+        }
+      ],
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "legacy": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

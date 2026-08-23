@@ -673,6 +673,10 @@ function convertVariable(v: VariableDefinition): VariableConversion {
     }
     if (
       v.defaultValue !== undefined &&
+      // `null` is the ABSENCE of a default, not an authored one (3 live rows
+      // store it). Carrying it would write `"default": null` into the
+      // registered input contract. Same rule in the Python twin.
+      v.defaultValue !== null &&
       !isZeroDefault(field, v.defaultValue) &&
       !syntheticHelp
     ) {
@@ -804,10 +808,16 @@ function convertVariable(v: VariableDefinition): VariableConversion {
     }
 
     default: {
-      const exhaustive: never = type;
-      throw new Error(
-        `Unhandled variable component type: ${String(exhaustive)}`,
+      // A component type outside the union. Live data HAS one (a `text` row),
+      // and a bridge that throws on it takes the whole conversion down — so
+      // this is a recorded LOSS, never an exception. The Python twin
+      // (matrx_ai.agents.variable_kinds) says the same words.
+      const unknownType: string = type;
+      lossReasons.push(
+        `unknown component type '${unknownType}' \u2014 string in kind space; ` +
+          `extend matrx_ai.agents.variable_kinds to keep schema fidelity`,
       );
+      return finish({ type: "string" });
     }
   }
 }
