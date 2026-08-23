@@ -20,7 +20,7 @@ export default function ExtensionPrivacyPolicyPage() {
           <h1 className="text-4xl font-bold tracking-tight">
             Matrx Extend — Chrome Extension Privacy Policy
           </h1>
-          <p className="text-muted-foreground">Last updated: August 17, 2026</p>
+          <p className="text-muted-foreground">Last updated: August 22, 2026</p>
         </div>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
@@ -114,10 +114,36 @@ export default function ExtensionPrivacyPolicyPage() {
                 reapplied on future visits.
               </li>
               <li>
+                <strong>Website logins you choose to save (Vault).</strong> When
+                you are signed in to Matrx, the side panel has a Vault tab for
+                website usernames and passwords you save to your own Matrx
+                account. A login can enter the Vault in three ways, each
+                requiring your deliberate action: you type it into the Vault
+                tab; after you sign in to a website yourself, the extension
+                shows a small &ldquo;Save this login?&rdquo; prompt (on the page
+                and in the Vault tab) and saves only if you click Save or
+                Update; or, when an AI agent you are directing reaches a login
+                it has no saved credential for, it shows you a box in the side
+                panel to type the login yourself. In every case the username and
+                password travel over HTTPS only to your Matrx account&rsquo;s
+                Vault, are encrypted at rest on our servers, and are never sent
+                to an AI model provider or shown to the assistant. A saved login
+                is filled into a page only for the website it was saved for, and
+                only when you click &ldquo;Use here&rdquo; or approve an agent
+                action that asks for it. The save prompt displays only the site
+                and the username you entered; it holds the password briefly in
+                extension memory (never on disk) and discards it if you dismiss
+                the prompt or do nothing for a few minutes. You can turn the
+                prompt off in Settings &rarr; Privacy, silence it for individual
+                sites, and view, edit, or delete any saved login at any time.
+              </li>
+              <li>
                 <strong>Local preferences.</strong> Settings such as your
-                preferred backend environment, UI state, and pairing tokens for
-                an optional local desktop companion app are stored in{" "}
-                <code>chrome.storage</code> on your machine.
+                preferred backend environment, UI state, pairing tokens for an
+                optional local desktop companion app, and the list of sites you
+                asked the save-login prompt not to ask about again (site
+                addresses only) are stored in <code>chrome.storage</code> on
+                your machine.
               </li>
             </ul>
           </section>
@@ -176,7 +202,9 @@ export default function ExtensionPrivacyPolicyPage() {
               <li>
                 <strong>Matrx backend</strong> at{" "}
                 <code>server.app.matrxserver.com</code> — for agent execution,
-                streaming responses, and server-side processing.
+                streaming responses, server-side processing, and your Vault of
+                saved website logins (stored encrypted at rest under your
+                account; never forwarded to an AI model provider).
               </li>
               <li>
                 <strong>AI model providers.</strong> To generate a response, the
@@ -364,6 +392,12 @@ export default function ExtensionPrivacyPolicyPage() {
                 <strong>Delete saved data</strong> (captures, patterns,
                 conversations, SEO audits) at any time from your Matrx account,
                 or by emailing us.
+              </li>
+              <li>
+                <strong>Saved website logins</strong> can be viewed, changed, or
+                deleted at any time from the Vault tab or your Matrx account.
+                The &ldquo;Save this login?&rdquo; prompt can be turned off in
+                Settings &rarr; Privacy, or silenced for individual sites.
               </li>
               <li>
                 <strong>Account deletion</strong> requests — for a full account
