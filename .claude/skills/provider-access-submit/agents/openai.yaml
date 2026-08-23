@@ -1,0 +1,4 @@
+interface:
+  display_name: "Submit Provider Access"
+  short_description: "Execute approved provider registrations safely"
+  default_prompt: "Use $provider-access-submit to execute approved provider access registrations, preserve evidence, and verify the result."

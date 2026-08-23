@@ -1,7 +1,17 @@
 ---
 name: feature-deep-dive
+type: Skill
+title: "feature-deep-dive — exhaustive audit, target vision, approved plan, complete build"
 description: "Exhaustive feature audit → target vision → approved plan → complete build. Use whenever the user wants to deeply understand, audit, overhaul, take over, unify, or finish an ENTIRE feature — requests like 'deep dive on X', 'audit the X feature', 'figure out everything X does and make it what it should be', 'take over X and finish it', 'bring X up to best practices' — or any time a whole feature should be brought to its ideal state rather than patched. Maps every entry point, flow, endpoint, state store, and side effect (including scattered fragments, prototypes, and unfinished intentions), recovers the original intended vision, sets an enterprise-grade bar, produces a prioritized gap-closing plan for approval, then implements and tests it to 100% completion. NOT for quick bug fixes, single-file edits, diff/PR reviews, or one small addition to an otherwise-untouched feature."
+tags: [execution, features, audit, planning, doctrine]
+timestamp: 2026-08-22T00:00:00Z
 ---
+
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/feature-deep-dive/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
 
 # Feature Deep-Dive: Audit, Plan & Build
 

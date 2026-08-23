@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chase Provider Access"
+  short_description: "Monitor due provider approvals and replies"
+  default_prompt: "Use $provider-access-chase to check due provider access cases, record changes, and schedule the next follow-up."

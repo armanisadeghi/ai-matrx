@@ -1,0 +1,4 @@
+interface:
+  display_name: "Expand Provider Access"
+  short_description: "Add and deduplicate provider access campaigns"
+  default_prompt: "Use $provider-access-expand to add a researched batch of provider access campaigns to the AI Matrx launch queue."

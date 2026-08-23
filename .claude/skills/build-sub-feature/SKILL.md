@@ -1,7 +1,17 @@
 ---
 name: build-sub-feature
+type: Skill
+title: "build-sub-feature — add a capability INTO a live feature, to a world-class bar"
 description: "Implement a sub-feature — a new capability added INTO a live, existing feature — to a world-class bar. Use whenever the user asks to add, extend, or wire a capability into something that already exists: 'add X to Y', 'extend Y to support X', 'build a new option / button / setting / endpoint / tool for Y', or hands over a sub-feature spec to implement. Runs a fast interview first (basics before code; the user can walk away during exploration), then builds to non-negotiable acceptance criteria: reuse canonical code instead of forking variants, bring the whole stack along (a needed backend contract is part of the work, not a follow-up ticket), propagate shared logic to every surface (web, desktop, Chrome extension, mobile, admin), annihilate anything replaced (no shims, fallbacks, or dead code), and emulate the best systems that already solve this. NOT for whole-feature audits or overhauls (use feature-deep-dive), greenfield standalone features, pure bug fixes, or trivial copy/style tweaks."
+tags: [execution, features, implementation, doctrine]
+timestamp: 2026-08-22T00:00:00Z
 ---
+
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/build-sub-feature/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
 
 # Build a Sub-Feature
 

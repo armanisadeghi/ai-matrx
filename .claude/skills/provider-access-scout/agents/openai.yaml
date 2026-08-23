@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scout Provider Access"
+  short_description: "Research one provider access campaign completely"
+  default_prompt: "Use $provider-access-scout to research assigned provider access campaigns and leave decision-ready case records."
