@@ -16,7 +16,7 @@
 
 import type { ValueBandDef, ValueSummaryRow } from "./types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import type { SiteGeoArea } from "./types";
+import type { PackProvenance, SiteGeoArea } from "./types";
 
 // ── Service areas that were never told what they stand for ───────────────────
 
@@ -347,4 +347,37 @@ export function formatWindowLabel(window: ValueWindow): string {
       timeZone: "UTC",
     });
   return `${fmt(window.start)} – ${fmt(window.end)}`;
+}
+
+// ── Provenance (where a site-plane row came from) ───────────────────────────
+//
+// Every row `adopt_starter_pack` writes carries `metadata.adopted_from_pack`;
+// a row the site authored carries nothing. Whether an adopted row has since
+// been CHANGED is a server question (`starter_pack_site_status` compares the
+// site row with the pack's template) — never re-derived here.
+
+export type RowOrigin = "pack" | "yours";
+
+export function rowOrigin(meta: PackProvenance | null | undefined): RowOrigin {
+  return meta?.adopted_from_pack ? "pack" : "yours";
+}
+
+/** The `?source=` filter the Rulebook understands: `pack:<slug>` · `yours` · `changed`. */
+export const RULEBOOK_SOURCE_QUERY = "source";
+
+export function rulebookSourceHref(
+  brandId: string | null | undefined,
+  siteId: string,
+  source: string,
+): string {
+  return `${marketingRoutes.site(brandId, siteId, "/value/rules")}?${RULEBOOK_SOURCE_QUERY}=${encodeURIComponent(source)}`;
+}
+
+/** `?pack=<id>&review=1` — the pack review screen on the Industry packs page. */
+export function packReviewHref(
+  brandId: string | null | undefined,
+  siteId: string,
+  packId: string,
+): string {
+  return `${marketingRoutes.site(brandId, siteId, "/value/packs")}?pack=${packId}&review=1`;
 }

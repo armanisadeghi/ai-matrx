@@ -19,9 +19,12 @@ import type {
   RegistryEntry,
   SiteGeoArea,
   SiteTopicValue,
+  StarterPackAdoption,
   StarterPackAdoptResult,
   StarterPackDetail,
   StarterPackPart,
+  StarterPackPreview,
+  StarterPackSiteStatus,
   StarterPackSummary,
   TopicNode,
   ValueBandDef,
@@ -173,11 +176,13 @@ export async function listSiteVocabulary(siteId: string, kind: "value_band" | "g
 export async function listGeoAreas(siteId: string): Promise<SiteGeoArea[]> {
   const response = await (await seoDb())
     .from("site_geo_area")
-    .select("id, site_id, label, area_kind, match_tokens, place_ids, geo_band, notes")
+    .select("id, site_id, label, area_kind, match_tokens, place_ids, geo_band, notes, metadata")
     .eq("site_id", siteId)
     .is("deleted_at", null)
     .order("label");
-  return assertData(response.data, response.error) as unknown as SiteGeoArea[];
+  return (assertData(response.data, response.error) as unknown as SiteGeoArea[]).map(
+    (row) => ({ ...row, metadata: row.metadata ?? {} }),
+  );
 }
 
 /** Rules with a value effect (the qualifier ledger). Site rules only — value
@@ -186,13 +191,16 @@ export async function listValueRules(siteId: string): Promise<ValueRule[]> {
   const response = await (await seoDb())
     .from("keyword_class_rule")
     .select(
-      "id, name, description, pattern, match_kind, match_facet, match_facet_value, target_class, value_multiplier, site_id, notes",
+      "id, name, description, pattern, match_kind, match_facet, match_facet_value, target_class, value_multiplier, site_id, notes, metadata",
     )
     .eq("site_id", siteId)
     .not("value_multiplier", "is", null)
     .is("deleted_at", null)
     .order("name");
-  return assertData(response.data, response.error) as ValueRule[];
+  return (assertData(response.data, response.error) as unknown as ValueRule[]).map((row) => ({
+    ...row,
+    metadata: row.metadata ?? {},
+  }));
 }
 
 /** Topics that carry a per-site worth row, with their nodes (the tree's valued spine). */
@@ -387,14 +395,97 @@ export const starterPackCatalogQueryKey = ["seo", "starter-packs"] as const;
 export const starterPackDetailQueryKey = (packId: string) =>
   ["seo", "starter-pack", packId] as const;
 
+/**
+ * The catalog, ordered for THIS org: packs for an industry the org has opted
+ * into (`iam.org_industries`) first, then ratified before proposed, then by
+ * name. `org_match` is server truth, never re-derived here.
+ */
 export async function getStarterPackCatalog(
   status?: string | null,
+  organizationId?: string | null,
   signal?: AbortSignal,
 ): Promise<StarterPackSummary[]> {
   const response = await (await seoDb())
-    .rpc("starter_pack_catalog", { p_status: status ?? undefined })
+    .rpc("starter_pack_catalog", {
+      p_status: status ?? undefined,
+      p_organization_id: organizationId ?? undefined,
+    })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as StarterPackSummary[];
+}
+
+export const starterPackAdoptionsQueryKey = (siteId: string) =>
+  ["seo", "starter-pack-adoptions", siteId] as const;
+export const starterPackStatusQueryKey = (siteId: string, packId: string) =>
+  ["seo", "starter-pack-status", siteId, packId] as const;
+export const starterPackPreviewQueryKey = (
+  siteId: string,
+  packId: string,
+  start: string,
+  end: string,
+  ruleIds: string[] | null,
+  itemIds: string[] | null,
+) =>
+  [
+    "seo",
+    "starter-pack-preview",
+    siteId,
+    packId,
+    start,
+    end,
+    ruleIds ? [...ruleIds].sort().join("|") : "*",
+    itemIds ? [...itemIds].sort().join("|") : "*",
+  ] as const;
+
+/** One receipt per pack this site has adopted anything from. */
+export async function getStarterPackAdoptions(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<StarterPackAdoption[]> {
+  const response = await (await seoDb())
+    .rpc("starter_pack_site_adoptions", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as StarterPackAdoption[];
+}
+
+/** Per item: missing / as adopted / changed / archived, pack value beside site value. */
+export async function getStarterPackSiteStatus(
+  siteId: string,
+  packId: string,
+  signal?: AbortSignal,
+): Promise<StarterPackSiteStatus> {
+  const response = await (await seoDb())
+    .rpc("starter_pack_site_status", { p_site_id: siteId, p_pack_id: packId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as unknown as StarterPackSiteStatus;
+}
+
+/**
+ * What adopting the SELECTED parts of a pack would do to this site's keywords
+ * in the review window — server-measured by the one resolver, never estimated
+ * here. `ruleIds` / `itemIds` null = the whole pack.
+ */
+export async function previewStarterPack(
+  siteId: string,
+  packId: string,
+  start: string,
+  end: string,
+  ruleIds: string[] | null,
+  itemIds: string[] | null,
+  signal?: AbortSignal,
+): Promise<StarterPackPreview> {
+  const response = await (await seoDb())
+    .rpc("starter_pack_preview", {
+      p_site_id: siteId,
+      p_pack_id: packId,
+      p_start: start,
+      p_end: end,
+      ...(ruleIds ? { p_rule_ids: ruleIds } : {}),
+      ...(itemIds ? { p_item_ids: itemIds } : {}),
+      p_sample: 3,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as unknown as StarterPackPreview;
 }
 
 export async function getStarterPackDetail(
@@ -423,13 +514,34 @@ export async function getStarterPackDetail(
  * missing"); an area that already carries places is the site's own ruling and
  * is never touched.
  */
+export interface AdoptStarterPackOptions {
+  /** Which parts to touch at all (default: every part). */
+  parts?: StarterPackPart[];
+  /** Pack geo-area item id → typed words. */
+  geoPlaces?: Record<string, string[]>;
+  /** Pack geo-area item id → gazetteer place ids (preferred). */
+  geoPlaceIds?: Record<string, string[]>;
+  /** Starter-pack item ids to adopt (topics, bands, geo bands, areas). undefined = all. */
+  itemIds?: string[];
+  /** Template rule ids to adopt. undefined = all. */
+  ruleIds?: string[];
+  /** Seed the pack's guidelines when the site has none (default true). */
+  seedGuidelines?: boolean;
+  /**
+   * RESET mode (P13's "re-apply is a button"): rows that still carry this
+   * pack's provenance are put back to the pack's values, archived ones revived.
+   * Rows the site authored are never touched; places are never reset. Combine
+   * with `itemIds` / `ruleIds` to reset only what the person ticked.
+   */
+  reset?: boolean;
+}
+
 export async function adoptStarterPack(
   siteId: string,
   packId: string,
-  parts?: StarterPackPart[],
-  geoPlaces?: Record<string, string[]>,
-  geoPlaceIds?: Record<string, string[]>,
+  options: AdoptStarterPackOptions = {},
 ): Promise<StarterPackAdoptResult> {
+  const { parts, geoPlaces, geoPlaceIds, itemIds, ruleIds, seedGuidelines, reset } = options;
   const response = await (await seoDb()).rpc("adopt_starter_pack", {
     p_site_id: siteId,
     p_pack_id: packId,
@@ -440,6 +552,10 @@ export async function adoptStarterPack(
     ...(geoPlaceIds && Object.keys(geoPlaceIds).length
       ? { p_geo_place_ids: geoPlaceIds as unknown as Json }
       : {}),
+    ...(itemIds ? { p_item_ids: itemIds } : {}),
+    ...(ruleIds ? { p_rule_ids: ruleIds } : {}),
+    ...(seedGuidelines === false ? { p_seed_guidelines: false } : {}),
+    ...(reset ? { p_reset: true } : {}),
   });
   return assertData(response.data, response.error) as unknown as StarterPackAdoptResult;
 }

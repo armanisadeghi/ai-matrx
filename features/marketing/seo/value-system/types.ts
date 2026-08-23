@@ -62,11 +62,27 @@ export interface ValueReviewQuery {
   offset?: number;
 }
 
+/**
+ * Where a site-plane row came from. Every row `adopt_starter_pack` writes
+ * carries `adopted_from_pack` (the pack slug) plus the template identity —
+ * `template_rule_id` for rules, `pack_item_id` for everything else. A row the
+ * site authored itself carries neither. This is what the Rulebook's source
+ * chip reads; nothing else is a source of provenance.
+ */
+export interface PackProvenance {
+  adopted_from_pack?: string;
+  template_rule_id?: string;
+  pack_item_id?: string;
+  reset_to_pack_at?: string;
+  places_pending?: boolean;
+}
+
 export interface SiteGeoArea {
   id: string;
   site_id: string;
   label: string;
   area_kind: string;
+  metadata: PackProvenance;
   /** Words a human typed. Kept for names the gazetteer does not have. */
   match_tokens: string[];
   /**
@@ -91,6 +107,7 @@ export interface ValueRule {
   value_multiplier: number | null;
   site_id: string | null;
   notes: string | null;
+  metadata: PackProvenance;
 }
 
 export interface TopicNode {
@@ -214,6 +231,12 @@ export interface StarterPackSummary {
   value_band_count: number;
   geo_band_count: number;
   geo_area_count: number;
+  /** `iam.industries` this pack is FOR — null until the admin side links it. */
+  industry_id: string | null;
+  industry_name: string | null;
+  /** True when the caller's org has opted into this pack's industry
+   *  (`iam.org_industries`) — those packs list first. */
+  org_match: boolean;
 }
 
 export interface StarterPackTopicItem {
@@ -296,4 +319,143 @@ export interface StarterPackAdoptResult {
   geo_areas_filled: number;
   /** Areas on this site that STILL have no place names — they match nothing. */
   geo_areas_pending: number;
+  /** Rows put back to the pack's values by a `reset` call (0 otherwise). */
+  reset_rules: number;
+  reset_topics: number;
+  reset_value_bands: number;
+  reset_geo_bands: number;
+  reset_geo_areas: number;
+}
+
+// ── Provenance: what a pack did to THIS site, item by item ──────────────────
+
+/**
+ * `missing`    — the pack proposes it and the site has no row (never adopted,
+ *                or the item was unticked at adoption).
+ * `as_adopted` — the site row still says what the pack says.
+ * `changed`    — the site edited it after adoption ("Changed from pack").
+ * `archived`   — the site archived its copy; that is a ruling, "fill" never
+ *                revives it, only "reset to pack" does.
+ * `yours`      — (topic worth only) the site set this topic's worth itself,
+ *                before or instead of the pack.
+ */
+export type PackItemState = "missing" | "as_adopted" | "changed" | "archived" | "yours";
+
+export type PackItemKind = "rule" | "value_band" | "geo_band" | "geo_area" | "topic";
+
+export interface StarterPackStatusItem {
+  kind: PackItemKind;
+  /** The template identity: the template rule id, or the starter_pack_item id. */
+  ref: string;
+  topic_id?: string;
+  label: string;
+  site_row_id: string | null;
+  /** The pack's values for this item (shape depends on `kind`). */
+  pack: Record<string, unknown>;
+  /** The site's values, or null when `missing`. */
+  site: Record<string, unknown> | null;
+  state: PackItemState;
+  sort: number;
+}
+
+export interface StarterPackStatusCounts {
+  total: number;
+  missing: number;
+  as_adopted: number;
+  changed: number;
+  archived: number;
+  yours: number;
+  places_pending: number;
+}
+
+export interface StarterPackSiteStatus {
+  pack_id: string;
+  slug: string;
+  adopted: boolean;
+  adopted_at: string | null;
+  adopted_by: string | null;
+  adopted_by_label: string | null;
+  counts: StarterPackStatusCounts;
+  items: StarterPackStatusItem[];
+}
+
+/** One receipt row per pack this site has adopted anything from. */
+export interface StarterPackAdoption {
+  pack_id: string;
+  slug: string;
+  name: string;
+  status: string;
+  adopted_at: string | null;
+  adopted_by: string | null;
+  adopted_by_label: string | null;
+  total: number;
+  as_adopted: number;
+  changed: number;
+  archived: number;
+  missing: number;
+  places_pending: number;
+}
+
+// ── Preview: what adopting would do to THIS site's keywords ─────────────────
+
+export interface PreviewSampleKeyword {
+  keyword_id: string;
+  keyword: string;
+  clicks: number;
+  impressions: number;
+  from_band: string;
+  to_band: string;
+}
+
+export interface PreviewMovement {
+  from_band: string;
+  to_band: string;
+  keywords: number;
+  clicks: number;
+  impressions: number;
+}
+
+export interface StarterPackPreviewRule {
+  rule_id: string;
+  already_adopted: boolean;
+  keywords: number;
+  clicks: number;
+  impressions: number;
+  moved: number;
+  samples: PreviewSampleKeyword[];
+}
+
+export interface StarterPackPreviewTopic {
+  item_id: string;
+  topic_id: string;
+  already_valued: boolean;
+  /** Keywords in the window sitting under this topic today. */
+  keywords: number;
+  clicks: number;
+  impressions: number;
+  /** Keywords whose BASE would come from this pack topic after adoption. */
+  would_base: number;
+  samples: PreviewSampleKeyword[];
+}
+
+export interface StarterPackPreview {
+  window_keywords: number;
+  summary: {
+    window_keywords: number;
+    matched_keywords: number;
+    matched_clicks: number;
+    matched_impressions: number;
+    moved_keywords: number;
+    /** Touched by a rule but with no topic base — stamped, not valued (yet). */
+    stamped_only_keywords: number;
+    protected_keywords: number;
+    movements: PreviewMovement[];
+    samples: Array<PreviewSampleKeyword & { source: string; stamped_only: boolean }>;
+  };
+  unvalued_before: number;
+  unvalued_after: number;
+  band_counts_before: Record<string, number>;
+  band_counts_after: Record<string, number>;
+  rules: StarterPackPreviewRule[];
+  topics: StarterPackPreviewTopic[];
 }
