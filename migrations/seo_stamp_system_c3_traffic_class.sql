@@ -224,7 +224,20 @@ JOIN LATERAL (
 JOIN platform.categories v ON v.dimension='seo_facet' AND v.deleted_at IS NULL AND v.slug = 'traffic_class:' || x.cls
 WHERE skv.deleted_at IS NULL
 ON CONFLICT (keyword_id, category_id, COALESCE(site_id,'00000000-0000-0000-0000-000000000000'::uuid)) WHERE deleted_at IS NULL
-DO NOTHING;
+DO UPDATE SET source = EXCLUDED.source, pinned = EXCLUDED.pinned OR seo.keyword_facet.pinned,
+              notes = COALESCE(EXCLUDED.notes, seo.keyword_facet.notes),
+              metadata = seo.keyword_facet.metadata || EXCLUDED.metadata, updated_at = now()
+  WHERE seo.keyword_facet.source <> 'human';   -- a human ruling outranks any matcher/AI stamp already there
+
+-- ── 5b. Class-rule matchers honor the rule's auto_apply: drafts stay DISABLED ──
+-- (C1 copied every class rule as an enabled matcher; rules the user never
+--  auto-applied must not start stamping on their own — P12: agents/migrations apply, humans decide.)
+UPDATE seo.dimension_value_matcher dm
+   SET enabled = false, updated_at = now(),
+       notes = CASE WHEN dm.notes LIKE '%DISABLED:%' THEN dm.notes ELSE dm.notes || ' — DISABLED: the rule was never auto-applied (draft); enable it to make it stamp' END
+ WHERE dm.deleted_at IS NULL AND dm.enabled AND dm.origin IN ('migration','pack') AND dm.notes LIKE 'from class rule %'
+   AND NOT EXISTS (SELECT 1 FROM seo.keyword_class_rule r
+                    WHERE r.site_id = dm.site_id AND r.deleted_at IS NULL AND r.auto_apply AND r.target_class IS NOT NULL AND lower(r.pattern) = dm.pattern);
 
 -- ── 6. THE CLASS RESOLVER, on stamps (same signature; 11 consumers unchanged) ──
 CREATE OR REPLACE FUNCTION seo.gsc_keyword_class_map(p_site_id uuid)
@@ -235,8 +248,8 @@ AS $function$
   WITH dim AS (SELECT id FROM platform.categories WHERE dimension='seo_facet' AND parent_id IS NULL AND slug='traffic_class' AND deleted_at IS NULL),
   st AS (
     SELECT kf.keyword_id, COALESCE(cv.metadata->>'value', split_part(cv.slug,':',2)) AS cls, kf.source, kf.site_id, kf.pinned, kf.matcher_id,
-           CASE kf.source WHEN 'human' THEN 1 WHEN 'import' THEN 2 WHEN 'rule' THEN 3 WHEN 'matcher' THEN 3 WHEN 'pack' THEN 3 ELSE 5 END
-             + CASE WHEN kf.pinned THEN -1 ELSE 0 END
+           -- pinned = human-grade (a person set or confirmed it) > human/import > site matcher/rule/pack > universal AI
+           CASE WHEN kf.pinned THEN 0 ELSE CASE kf.source WHEN 'human' THEN 1 WHEN 'import' THEN 2 WHEN 'rule' THEN 3 WHEN 'matcher' THEN 3 WHEN 'pack' THEN 3 ELSE 5 END END
              + CASE WHEN kf.site_id IS NULL THEN 1 ELSE 0 END AS prio
     FROM seo.keyword_facet kf
     JOIN platform.categories cv ON cv.id = kf.category_id AND cv.deleted_at IS NULL AND cv.parent_id = (SELECT id FROM dim)
@@ -249,7 +262,7 @@ AS $function$
          CASE WHEN b.cls IS NULL OR b.cls = 'not_clear' THEN 'unclassified' ELSE b.cls END,
          CASE
            WHEN b.cls IS NULL OR b.cls = 'not_clear' THEN 'none'
-           WHEN b.source IN ('human','import') THEN 'site_value'
+           WHEN b.site_id IS NOT NULL AND (b.pinned OR b.source IN ('human','import')) THEN 'site_value'
            WHEN b.source = 'matcher' AND EXISTS (SELECT 1 FROM seo.dimension_value_matcher dm WHERE dm.id = b.matcher_id AND (dm.kind = 'brand_identity' OR dm.notes = 'brand alias')) THEN 'brand_match'
            WHEN b.source IN ('matcher','rule','pack') THEN 'site_value'
            WHEN b.source = 'classifier' THEN 'intent_class'

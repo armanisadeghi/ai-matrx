@@ -88,8 +88,8 @@ stamps AS MATERIALIZED (
          COALESCE(cv.metadata->>'value', split_part(cv.slug, ':', 2)) AS value_key, cv.name AS value_label,
          kf.source, kf.matcher_id, kf.site_id, kf.pinned,
          COALESCE(cd.metadata->>'cardinality','single') = 'single' AS single_card,
-         CASE kf.source WHEN 'human' THEN 1 WHEN 'matcher' THEN 3 WHEN 'pack' THEN 3 WHEN 'rule' THEN 3 WHEN 'import' THEN 3 WHEN 'classifier' THEN 5 ELSE 6 END
-           + CASE WHEN kf.pinned THEN -1 ELSE 0 END
+         -- pinned = human-grade (set or confirmed by a person) > human > site matcher/pack/rule/import > universal AI
+         CASE WHEN kf.pinned THEN 0 ELSE CASE kf.source WHEN 'human' THEN 1 WHEN 'matcher' THEN 3 WHEN 'pack' THEN 3 WHEN 'rule' THEN 3 WHEN 'import' THEN 3 WHEN 'classifier' THEN 5 ELSE 6 END END
            + CASE WHEN kf.site_id IS NULL THEN 1 ELSE 0 END AS prio
   FROM seo.keyword_facet kf
   JOIN site_keywords sk ON sk.kw_id = kf.keyword_id
