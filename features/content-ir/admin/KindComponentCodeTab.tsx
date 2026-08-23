@@ -92,11 +92,11 @@ export default function KindComponentCodeTab({
   if (loadState.status === "loading") {
     return (
       <div
-        className="mx-auto max-w-6xl space-y-3"
+        className="flex h-full w-full flex-col gap-3 p-3 sm:p-4"
         aria-label="Loading component code editor"
       >
         <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-[60dvh] min-h-80 w-full" />
+        <Skeleton className="min-h-0 w-full flex-1" />
       </div>
     );
   }
@@ -191,8 +191,8 @@ export default function KindComponentCodeTab({
   }
 
   return (
-    <div className="mx-auto flex min-h-[32rem] max-w-6xl flex-col overflow-hidden rounded-md border border-border bg-card">
-      <div className="flex flex-wrap items-end gap-3 border-b border-border p-3">
+    <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-card">
+      <div className="flex shrink-0 flex-wrap items-end gap-3 border-b border-border p-3">
         <label className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
           Component
           <select
@@ -229,7 +229,7 @@ export default function KindComponentCodeTab({
       </div>
 
       {editable ? (
-        <div className="h-[calc(100dvh-13rem)] min-h-[32rem] min-w-0">
+        <div className="min-h-0 min-w-0 flex-1">
           <SmartCodeEditor
             key={selectedComponent.id}
             agents={KIND_COMPONENT_EDITOR_AGENTS}
@@ -242,7 +242,7 @@ export default function KindComponentCodeTab({
             initialIsEditing
             showTerminal={false}
             title={`${kind} component`}
-            className="min-h-0"
+            className="h-full min-h-0"
           />
         </div>
       ) : (

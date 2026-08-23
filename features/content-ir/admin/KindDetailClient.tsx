@@ -220,7 +220,13 @@ export default function KindDetailClient({
       </nav>
 
       {/* Content */}
-      <main className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+      <main
+        className={
+          tab === "code"
+            ? "min-h-0 flex-1 overflow-hidden"
+            : "min-h-0 flex-1 overflow-y-auto p-3 sm:p-4"
+        }
+      >
         {tab === "preview" && (
           <KindPreviewTab kind={detail.kind} examples={examples} />
         )}
