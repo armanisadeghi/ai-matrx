@@ -654,6 +654,19 @@ data. Its `severity` (`info` / `warning` / `critical`) decides the banner's
 tone in ONE place: a never-synced site is not an alarm. Staleness also shows
 on the portfolio landing, because that is the first screen anyone sees.
 
+**GOOGLE'S DAY IS PACIFIC.** Search Console buckets days in
+`America/Los_Angeles` (with DST) and offers no UTC option, so every "how fresh
+should this be?" question is asked in that calendar — never UTC's, never the
+viewer's. Three places do the conversion and must agree: `gsc_today()` in
+aidream (`packages/matrx-seo/matrx_seo/providers/gsc.py`, the ingestion side),
+`v_gsc_timezone` in `seo.gsc_ingestion_health` (the verdict), and
+[`lib/gsc-day.ts`](./lib/gsc-day.ts)'s `gscToday()` (every frontend freshness
+read). Deriving the day from UTC overstates staleness by one for the 7-8 hours
+between UTC and Pacific midnight. `GSC_DATA_LAG_DAYS` in
+[`lib/url-state.ts`](./lib/url-state.ts) is deliberately NOT one of the three:
+it sets a date-window edge that `resolvePeriods`' `dataEnd` clamp pins to real
+data, and it never becomes a verdict about a site.
+
 ## Sync goes FORWARD. History goes BACKWARD. (2026-08-04)
 
 Two buttons because they are two directions, and neither can do the other's
@@ -707,6 +720,26 @@ its dismiss-layer race — the input "flashed and disappeared").
   the rule's row limit silently truncated the segment (1,000 of 2,952 reported
   as the whole set), and always passing a compare window changed what a rule
   MEANS (1,563 → 2,952 matches). Nightly re-derivation is PROPOSED, not enabled.
+
+- 2026-08-23 — **Google's day is Pacific, and the freshness check was reading
+  UTC's** (health v5,
+  [`migrations/seo_gsc_ingestion_health_v5.sql`](../../../migrations/seo_gsc_ingestion_health_v5.sql)
+  + [`lib/gsc-day.ts`](./lib/gsc-day.ts)). `v_expected` and the portfolio's
+  `daysBehind()` both derived "the day GSC data should have reached" from the
+  UTC calendar. Search Console has no UTC option — it buckets days in
+  `America/Los_Angeles` — so for the 7-8 hours after UTC midnight both named a
+  day that had not started in California, and every site read one day staler
+  than it was. At a 2-day threshold that one day moves the whole scale: a site
+  one day behind, well inside Google's documented 2-3 day finalization lag,
+  badged `critical` for a third of every day and then healed at 00:00 Pacific.
+  Fixed on both sides with the SAME convention the ingestion side adopted first
+  (aidream `gsc_today()`, commit 871385cf8) rather than a second one; the
+  frontend's single home for it is `gscToday()`. Verified live: at
+  2026-08-23 03:00Z the old expression yields 2026-08-21, the new one
+  2026-08-20, and PST/PDT both come from the tz database, not a constant.
+  **The 2-day tolerance itself is untouched and still open** — Google documents
+  2-3 days, so a legitimately 3-days-behind site can still be flagged; that is
+  a product call for Arman, not part of this timezone fix.
 
 - 2026-08-23 — **A PAUSED schedule is not a FAILING schedule** (health v4,
   [`migrations/seo_gsc_ingestion_health_v4.sql`](../../../migrations/seo_gsc_ingestion_health_v4.sql)).

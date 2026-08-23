@@ -22,6 +22,11 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import {
+  gscDayDiff,
+  gscToday,
+  shiftGscDay,
+} from "@/features/marketing/search-console/lib/gsc-day";
+import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
@@ -39,21 +44,24 @@ function trendPercent(cur: number | null, prev: number | null): number | null {
 }
 
 // GSC finalizes ~2 days back; anything older than that plus two missed
-// nights is stale. Kept in step with `seo.gsc_ingestion_health`'s thresholds.
+// nights is stale. Kept in step with `seo.gsc_ingestion_health`'s thresholds
+// (v_lag_days / v_stale_threshold in migrations/seo_gsc_ingestion_health_v5.sql).
 const GSC_LAG_DAYS = 2;
 const GSC_STALE_AFTER_DAYS = 2;
 
-/** Days the freshest data day is behind where it should be, or null. */
+/**
+ * Days the freshest data day is behind where it should be, or null.
+ *
+ * "Where it should be" is counted in GOOGLE'S day, not UTC's — see
+ * `gsc-day.ts`. Counting from UTC overstated every site by one day for the
+ * 7-8 hours after UTC midnight, because "UTC today" names a day Search
+ * Console has not begun yet — enough, at a 2-day threshold, to badge a site
+ * stale that was merely one day behind.
+ */
 function daysBehind(latest: string | null | undefined): number | null {
   if (!latest) return null;
-  const expected = new Date();
-  expected.setUTCDate(expected.getUTCDate() - GSC_LAG_DAYS);
-  const diff = Math.floor(
-    (Date.parse(`${expected.toISOString().slice(0, 10)}T00:00:00Z`) -
-      Date.parse(`${latest.slice(0, 10)}T00:00:00Z`)) /
-      86_400_000,
-  );
-  return Number.isFinite(diff) ? diff : null;
+  const expected = shiftGscDay(gscToday(), -GSC_LAG_DAYS);
+  return gscDayDiff(latest.slice(0, 10), expected);
 }
 
 export function SearchConsolePortfolio({

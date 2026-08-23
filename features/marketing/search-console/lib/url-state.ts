@@ -29,9 +29,15 @@ import {
 
 /**
  * GSC finalizes data ~2 days behind; the dashboard's "today" is lagged.
- * Applied in UTC deliberately (GSC's own dates are property-timezone days;
- * a stable UTC boundary beats per-viewer local windows) — and in practice
- * `resolvePeriods`' `dataEnd` clamp pins the window to real data anyway.
+ *
+ * Applied against the UTC day here, which is one day ahead of Google's own
+ * day (Pacific — see `./gsc-day.ts`) for the hours after UTC midnight. That
+ * is deliberate and NOT the freshness bug that `gsc-day.ts` exists to fix:
+ * this value only sets the far edge of a date WINDOW, and `resolvePeriods`'
+ * `dataEnd` clamp pins that edge to the newest day actually ingested. An
+ * over-reaching wall date is clamped away; it never becomes a verdict about
+ * whether a site is stale. Anything that judges FRESHNESS must use
+ * `gscToday()` instead.
  */
 export const GSC_DATA_LAG_DAYS = 2;
 
