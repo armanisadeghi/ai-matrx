@@ -462,14 +462,45 @@ async function displayNameFor(userId: string): Promise<string> {
   return data?.[0]?.display_name?.trim() || "Someone";
 }
 
+/**
+ * ONE in-flight start per profile, process-wide.
+ *
+ * The fleet runs a single browser worker (`max_live_browser_fleet_runs = 1`),
+ * so two concurrent starts are not "one wins, one retries" — the loser gets a
+ * 503 `admission_capacity_exceeded` and the panel renders that failure even
+ * though the winner successfully created a browser. The server's own
+ * idempotency cannot save us either: it keys on `(profile_id, activation_key)`
+ * and every call minted a fresh random key, so a duplicate start looked like a
+ * DIFFERENT start competing for the last slot. Observed in production
+ * 2026-08-23: two `POST /browser-manager/runs`, second one 503, dead panel.
+ *
+ * The key stays per-attempt (a stable one would collide with the activation
+ * unique index and make restart-after-stop impossible); concurrency is solved
+ * here instead, by sharing the promise.
+ */
+const startRunInFlight = new Map<string, Promise<string>>();
+
 async function startRun(profileId?: string): Promise<string> {
-  const { data } = await postJson<unknown>("/browser-manager/runs", {
-    profile_id: profileId || null,
-    mode: "handoff_capable",
-    execution_target: "browser_fleet",
-    activation_key: crypto.randomUUID(),
-  });
-  return requiredText(record(record(data).run).run_id, "run id");
+  const key = profileId || "__personal_default__";
+  const existing = startRunInFlight.get(key);
+  if (existing) return existing;
+
+  const attempt = (async () => {
+    const { data } = await postJson<unknown>("/browser-manager/runs", {
+      profile_id: profileId || null,
+      mode: "handoff_capable",
+      execution_target: "browser_fleet",
+      activation_key: crypto.randomUUID(),
+    });
+    return requiredText(record(record(data).run).run_id, "run id");
+  })();
+
+  startRunInFlight.set(key, attempt);
+  try {
+    return await attempt;
+  } finally {
+    startRunInFlight.delete(key);
+  }
 }
 
 export async function listProfiles(): Promise<CloudBrowserProfile[]> {
@@ -560,8 +591,12 @@ export async function loadSnapshot(
     profiles.find((item) => item.id === requestedProfileId) ??
     profiles.find((item) => item.isPersonalDefault) ??
     profiles[0];
+  // First-ever open: this creates the profile AND its first run. Keep that run
+  // id — re-deriving it below would start a SECOND browser and 503 against the
+  // one we just made (the fleet admits exactly one).
+  let openedRunId: string | null = null;
   if (!selected) {
-    await startRun();
+    openedRunId = await startRun();
     profiles = await listProfiles();
     selected = profiles.find((item) => item.isPersonalDefault) ?? profiles[0];
   }
@@ -581,7 +616,7 @@ export async function loadSnapshot(
   if (runQuery.error) throw runQuery.error;
   let activeRow = runQuery.data[0] ?? null;
   if (!runQuery.data.length) {
-    const openedId = await startRun(selected.id);
+    const openedId = openedRunId ?? (await startRun(selected.id));
     const opened = await supabase
       .schema("browser")
       .from("run")

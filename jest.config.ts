@@ -48,6 +48,17 @@ const config: Config = {
         // stub's header. Mapped before the `@/` alias like the asset mocks.
         "^react-syntax-highlighter(/.*)?$":
             "<rootDir>/test-utils/syntax-highlighter-mock.tsx",
+        // Our own published `@ai-matrx/*` packages ship an `exports` subpath
+        // map. Jest's default resolver does NOT honour `exports`, so a shipped
+        // import like `@ai-matrx/agents/stream/ndjson` resolves to nothing and
+        // the suite dies at import — 74 suites repo-wide the day the frontend
+        // started consuming the published stream runtime. Map the subpaths to
+        // dist directly (they are also listed in transformIgnorePatterns below,
+        // because the published files are ESM).
+        "^@ai-matrx/([^/]+)/package\\.json$":
+            "<rootDir>/node_modules/@ai-matrx/$1/package.json",
+        "^@ai-matrx/([^/]+)/(.+)$":
+            "<rootDir>/node_modules/@ai-matrx/$1/dist/$2.js",
         "^@/(.*)$": "<rootDir>/$1",
     },
     // Transform ESM-only `uuid` instead of ignoring it. The lookahead must
@@ -65,7 +76,7 @@ const config: Config = {
     // prefixes makes that nested position fail the ignore, so ESM markdown
     // deps (needed by rehypeSafeRawHtml et al.) get transpiled to CJS.
     transformIgnorePatterns: [
-      "/node_modules/(?!\\.pnpm/|uuid|unist|hast|mdast|micromark|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
+      "/node_modules/(?!\\.pnpm/|@ai-matrx|uuid|unist|hast|mdast|micromark|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
     ],
     testPathIgnorePatterns: ["/node_modules/", "/.next/", "/.claude/"],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
