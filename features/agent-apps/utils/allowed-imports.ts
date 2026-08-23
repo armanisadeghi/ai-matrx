@@ -107,6 +107,47 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     scopeStrategy: "named",
     exports: ["CopyForAiButton"],
   },
+  // ── kind-kit (2026-08-23) — proven layout/interaction primitives for
+  // DB-authored kind components, so the authoring agent imports instead of
+  // hand-rolling drag-and-drop, grids, panels, chips and skeletons. Pure
+  // presentation over react + lucide + shadcn + cn (+ CopyButtons); reaches
+  // no app data. Contracts: components/kind-kit/README.md.
+  {
+    path: "@/components/kind-kit/SortableList",
+    loader: () => require("@/components/kind-kit/SortableList"),
+    scopeStrategy: "named",
+    exports: ["SortableList"],
+  },
+  {
+    path: "@/components/kind-kit/KindPanelGrid",
+    loader: () => require("@/components/kind-kit/KindPanelGrid"),
+    scopeStrategy: "named",
+    exports: ["KindPanelGrid"],
+  },
+  {
+    path: "@/components/kind-kit/KindPanel",
+    loader: () => require("@/components/kind-kit/KindPanel"),
+    scopeStrategy: "named",
+    exports: ["KindPanel"],
+  },
+  {
+    path: "@/components/kind-kit/KindHeaderBar",
+    loader: () => require("@/components/kind-kit/KindHeaderBar"),
+    scopeStrategy: "named",
+    exports: ["KindHeaderBar"],
+  },
+  {
+    path: "@/components/kind-kit/StreamingSkeleton",
+    loader: () => require("@/components/kind-kit/StreamingSkeleton"),
+    scopeStrategy: "named",
+    exports: ["StreamingSkeleton", "useStreamingValue", "streamList", "streamText"],
+  },
+  {
+    path: "@/components/kind-kit/TagList",
+    loader: () => require("@/components/kind-kit/TagList"),
+    scopeStrategy: "named",
+    exports: ["KeywordChip", "TagList"],
+  },
   {
     path: "@/components/Markdown",
     loader: () => require("@/components/MarkdownStream"),
@@ -568,6 +609,22 @@ export function getImportDescription(importPath: string): string {
       "Lucide icons (all icons available) + use DynamicIcon for any name",
     "@/components/official/icons/IconResolver":
       "DynamicIcon — resolve any Lucide/custom icon by string name without importing each icon",
+    "@/components/agent-copy/CopyButtons":
+      "CopyButtons — Copy / Copy-for-AI / JSON / Export bar from caller-supplied builders",
+    "@/components/agent-copy/CopyForAiButton":
+      "CopyForAiButton — single Copy-for-AI action",
+    "@/components/kind-kit/SortableList":
+      "SortableList<T> — drag-to-reorder list (displacing rows + shadowed placeholder, arrow fallback, onRemove)",
+    "@/components/kind-kit/KindPanelGrid":
+      "KindPanelGrid — content-aware auto-fit grid of equal-height panels (minColumnWidth)",
+    "@/components/kind-kit/KindPanel":
+      "KindPanel — compact header + overflow menu, full-width subline, body, bottom-pinned footer",
+    "@/components/kind-kit/KindHeaderBar":
+      "KindHeaderBar — kind title + stats + copy bar (CopyButtons)",
+    "@/components/kind-kit/StreamingSkeleton":
+      "StreamingSkeleton (list/cards/table/text) + useStreamingValue / streamList / streamText tolerant reads",
+    "@/components/kind-kit/TagList":
+      "KeywordChip / TagList — wrapping (never truncating) chips with select, remove, inline edit, add",
     "@/components/Markdown":
       "MarkdownStream component for rendering markdown (legacy path)",
     "@/components/markdown":

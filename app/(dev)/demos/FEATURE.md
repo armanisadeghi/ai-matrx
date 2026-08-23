@@ -38,6 +38,8 @@ competing with the one persistent shell header.
 
 ## Change log
 
+- 2026-08-23 — Added `/demos/kind-kit`: exercises every `components/kind-kit/` primitive (SortableList, KindPanelGrid, KindPanel, KindHeaderBar, StreamingSkeleton, KeywordChip/TagList) with keyword-research sample data.
+
 - 2026-07-20 — Deleted the obsolete Metadata Test duplicate; `/seo/metadata` remains the maintained Meta Width Calculator.
 - 2026-07-20 — Deleted the isolated Audio Recorder Test suite and its four routes.
 - 2026-07-20 — Deleted the isolated Full Screen API toggle demo.
