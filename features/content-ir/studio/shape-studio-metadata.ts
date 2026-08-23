@@ -3,7 +3,11 @@ import {
   createRouteMetadata,
 } from "@/utils/route-metadata";
 import { getShapeDetail } from "./shape-detail-server";
-import { SHAPES_NEW_HREF, SHAPES_ROUTE_BASE } from "./constants";
+import {
+  SHAPES_ALL_HREF,
+  SHAPES_NEW_HREF,
+  SHAPES_ROUTE_BASE,
+} from "./constants";
 
 /** Two-letter badge — matches `/shapes` in favicon-route-data. */
 export const SHAPES_FAVICON_LETTER = "Sh";
@@ -11,9 +15,18 @@ export const SHAPES_FAVICON_LETTER = "Sh";
 export const shapesListMetadata = createRouteMetadata(SHAPES_ROUTE_BASE, {
   title: "Shapes",
   description:
-    "Design custom structured-content shapes with an agent and see them render live.",
+    "Turn AI output into named, validated contracts with real interactive interfaces.",
   letter: SHAPES_FAVICON_LETTER,
   canonicalPath: SHAPES_ROUTE_BASE,
+});
+
+export const shapesLibraryMetadata = createRouteMetadata(SHAPES_ROUTE_BASE, {
+  titlePrefix: "All",
+  title: "Shapes",
+  description:
+    "Browse, search, sort, filter, test, and manage every Shape you can access.",
+  letter: SHAPES_FAVICON_LETTER,
+  canonicalPath: SHAPES_ALL_HREF,
 });
 
 export const newShapeMetadata = createRouteMetadata(SHAPES_ROUTE_BASE, {

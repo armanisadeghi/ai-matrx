@@ -64,6 +64,7 @@ import {
   NotebookText,
   RefreshCw,
   Sheet,
+  Shapes,
   Table,
   Tag,
   Target,
@@ -252,6 +253,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   tool: {
     Icon: Wrench,
     labelPlural: "Tools",
+  },
+  content_ir_kind: {
+    Icon: Shapes,
+    labelPlural: "Shapes",
+    // Shape detail routes use the stable kind slug. Generic EntityRef callers
+    // hold the database id, so this tiny resolver route translates id → slug.
+    hrefFor: (id) => `/shapes/id/${encodeURIComponent(id)}`,
   },
   message_template: {
     Icon: LayoutTemplate,

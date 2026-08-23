@@ -7,6 +7,7 @@
  */
 
 export const SHAPES_ROUTE_BASE = "/shapes";
+export const SHAPES_ALL_HREF = `${SHAPES_ROUTE_BASE}/all`;
 
 export const SHAPES_FEATURE_LABEL = "Shapes";
 
@@ -31,6 +32,8 @@ export const RESERVED_SHAPE_SLUGS: ReadonlySet<string> = new Set([
   "instances",
   "new",
   "admin",
+  "all",
+  "id",
 ]);
 
 export function shapeDetailHref(kind: string): string {

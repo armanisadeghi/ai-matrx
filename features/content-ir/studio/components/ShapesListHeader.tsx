@@ -1,15 +1,10 @@
 "use client";
 
-// Shapes list header — injected into the shell header center (the /agents/all
-// pattern): identity left, the ONE primary action (New Shape) right.
+// Shapes library header — injected into the shell header center. The list's
+// primary action lives beside the canonical scope tabs, so this stays identity-only.
 
-import Link from "next/link";
-import { Plus, Shapes } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  SHAPES_FEATURE_LABEL,
-  SHAPES_NEW_HREF,
-} from "@/features/content-ir/studio/constants";
+import { Shapes } from "lucide-react";
+import { SHAPES_FEATURE_LABEL } from "@/features/content-ir/studio/constants";
 
 export function ShapesListHeader() {
   return (
@@ -18,12 +13,6 @@ export function ShapesListHeader() {
       <span className="text-sm font-semibold text-foreground">
         {SHAPES_FEATURE_LABEL}
       </span>
-      <Button asChild size="sm" className="ml-auto h-7 gap-1.5 px-2 text-xs">
-        <Link href={SHAPES_NEW_HREF}>
-          <Plus className="h-3.5 w-3.5" />
-          New Shape
-        </Link>
-      </Button>
     </div>
   );
 }

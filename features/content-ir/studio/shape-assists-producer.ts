@@ -20,14 +20,14 @@ import type { EmitAssistInput } from "@/features/assists/types";
 import { KIND_CREATOR_MANDATE_KEY } from "./constants";
 import { resolveMandate } from "@/features/agents/mandates/service";
 import { composeKindAgentIntent } from "./kind-agent-intents";
-import type { ShapeListEntry } from "./studio-catalog";
+import type { ShapeBrowseRow } from "@/features/content-ir/browse/types";
 
 const MAX_PER_SWEEP = 5;
 const SOURCE_KEY = "content_ir.missing_component";
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function produceMissingComponentAssists(
-  entries: ShapeListEntry[],
+  entries: ShapeBrowseRow[],
   userId: string,
   dispatch: AppDispatch,
 ): Promise<void> {
@@ -45,9 +45,7 @@ export async function produceMissingComponentAssists(
   }
 
   const candidates = entries
-    .filter(
-      (e) => e.createdBy === userId && e.isActive && !e.hasComponent,
-    )
+    .filter((e) => e.created_by === userId && e.is_active && !e.has_component)
     .slice(0, MAX_PER_SWEEP);
   if (candidates.length === 0) return;
 

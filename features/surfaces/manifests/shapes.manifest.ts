@@ -30,7 +30,7 @@
  *
  * Runtime emitters (each mounts its own `<SurfaceRuntimeProvider
  * surfaceName="matrx-user/shapes">` and builds scope at trigger time):
- *   - ShapesListClient.tsx      → catalog values, studio_tab "list"
+ *   - ShapeBrowsePage.tsx       → canonical list values, studio_tab "list"
  *   - ShapePreviewTab.tsx       → the Preview route in full: kind identity,
  *                                 schema, samples, and (owner only) the
  *                                 activation verdict
@@ -552,7 +552,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *      owner editor is the deep child that owns that draft state — and it
  *      renders ONLY for the kind's owner, so a non-owner is offered nothing)
  *   ShapeTestTab          → test_draft_instance
- *   ShapesListClient      → NOTHING. Its only page state is the catalog search
+ *   ShapeBrowsePage       → NOTHING. Its only page state is the catalog search
  *                           filter: a mechanical view control, not content an
  *                           agent produces. Filtering a list the agent can
  *                           already READ in full (my_shapes / platform_shapes)

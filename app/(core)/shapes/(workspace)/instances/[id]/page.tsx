@@ -98,7 +98,8 @@ export default async function ShapeInstancePermalinkPage({
                 resourceType="content_ir_kind_instance"
                 resourceId={record.id}
                 resourceName={
-                  record.title ?? `Keyword research: ${artifact.primary_keyword}`
+                  record.title ??
+                  `Keyword research: ${artifact.primary_keyword}`
                 }
               />
             </>

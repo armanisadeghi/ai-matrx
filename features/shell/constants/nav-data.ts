@@ -27,7 +27,10 @@ import {
 } from "@/features/education/lib/education-nav";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
-import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
+import {
+  SHAPES_ALL_HREF,
+  SHAPES_ROUTE_BASE,
+} from "@/features/content-ir/studio/constants";
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
 import { USER_LAUNCHPAD_PATH } from "@/features/launchpad/constants";
 
@@ -876,14 +879,14 @@ export const primaryNavItems: ShellNavItem[] = [
   {
     // User-facing Shape System studio (features/content-ir/studio/).
     label: "Shapes",
-    href: SHAPES_ROUTE_BASE,
+    href: SHAPES_ALL_HREF,
+    guestHref: SHAPES_ROUTE_BASE,
     iconName: "Shapes",
     section: "primary",
     profileMenu: true,
     dashboard: true,
     description: "Design custom structured-content shapes with an agent",
     color: "violet",
-    guestHidden: true,
   },
   {
     label: "Reports",

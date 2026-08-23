@@ -17,7 +17,7 @@ import {
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import {
   SHAPES_NEW_HREF,
-  SHAPES_ROUTE_BASE,
+  SHAPES_ALL_HREF,
   shapeDetailHref,
   shapeInstancesHref,
   shapeSchemaHref,
@@ -37,7 +37,7 @@ export default function ShapeDetailHeader({
 }: ShapeDetailHeaderProps) {
   return (
     <EntityModeHeader
-      backHref={SHAPES_ROUTE_BASE}
+      backHref={SHAPES_ALL_HREF}
       entityLabel={label}
       modes={[
         { name: "Preview", href: shapeDetailHref(kind), icon: Eye },

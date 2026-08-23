@@ -17,6 +17,12 @@ import {
   isSourceFeature,
   type SourceFeature,
 } from "@/types/python-generated/source-attribution";
+import {
+  toKeywordMeaningProposal,
+  toKeywordMeaningProvenance,
+  type KeywordMeaningProposal,
+  type KeywordMeaningProvenance,
+} from "@/features/marketing/seo/value-system/suggestions/proposal";
 
 export type AssistRow = Database["platform"]["Tables"]["assists"]["Row"];
 
@@ -156,6 +162,31 @@ export type AssistAction =
       source: string;
       /** One plain sentence: what was done and why it is safe. */
       rationale: string;
+    }
+  | {
+      /**
+       * Approve an agent's proposal about what a keyword MEANS to a site —
+       * a matcher, a worth, a stamp, or an edit to the guidelines document.
+       *
+       * P12 (VISION.md § Determinism): an agent may only SUGGEST. The
+       * proposal lives HERE, on this ledger row, and nowhere else — the
+       * matcher / worth / stamp / guidelines tables are untouched until this
+       * action runs, which is what makes an unapproved suggestion invisible
+       * to the next agent run.
+       *
+       * Its own kind rather than a `server_action` for the same reason
+       * `apply_page_meta` is: approval is a client-side Supabase RPC call
+       * through the ordinary human write paths, and routing it through Python
+       * would be the "Python as a DB gateway" anti-pattern.
+       */
+      kind: "apply_keyword_meaning";
+      siteId: string;
+      /** The site's name, written at emit time so no read is needed to render. */
+      siteLabel?: string;
+      proposal: KeywordMeaningProposal;
+      provenance: KeywordMeaningProvenance;
+      /** md5 of the canonical proposal — the dedupe identity a rejection kills. */
+      payloadHash: string;
     };
 
 /**
@@ -538,6 +569,21 @@ function narrowAction(value: Json): AssistAction | null {
         typeof obj.metaDescription === "string" ? obj.metaDescription : undefined,
       source: typeof obj.source === "string" ? obj.source : "the page itself",
       rationale: typeof obj.rationale === "string" ? obj.rationale : "",
+    };
+  }
+  if (kind === "apply_keyword_meaning" && typeof obj.siteId === "string") {
+    // A proposal that will not narrow never renders — the ledger row is Json,
+    // and a half-formed suggestion must not become a button that writes.
+    const proposal = toKeywordMeaningProposal(obj.proposal);
+    if (!proposal) return null;
+    return {
+      kind,
+      siteId: obj.siteId,
+      siteLabel: typeof obj.siteLabel === "string" ? obj.siteLabel : undefined,
+      proposal,
+      provenance: toKeywordMeaningProvenance(obj.provenance),
+      payloadHash:
+        typeof obj.payloadHash === "string" ? obj.payloadHash : "",
     };
   }
   if (kind === "surface_write" && typeof obj.target === "string") {

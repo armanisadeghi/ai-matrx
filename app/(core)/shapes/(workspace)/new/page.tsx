@@ -3,13 +3,13 @@
 // state until the creator agent id lands.
 
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
+import { SHAPES_ALL_HREF } from "@/features/content-ir/studio/constants";
 import NewShapeClient from "@/features/content-ir/studio/components/NewShapeClient";
 
 export default function NewShapePage() {
   return (
     <>
-      <EntityModeHeader backHref={SHAPES_ROUTE_BASE} entityLabel="New Shape" />
+      <EntityModeHeader backHref={SHAPES_ALL_HREF} entityLabel="New Shape" />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mt-4">
           <NewShapeClient />

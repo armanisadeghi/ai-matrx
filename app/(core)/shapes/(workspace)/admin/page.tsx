@@ -9,6 +9,7 @@
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
 import {
+  SHAPES_ALL_HREF,
   SHAPES_NEW_HREF,
   SHAPES_ROUTE_BASE,
 } from "@/features/content-ir/studio/constants";
@@ -30,10 +31,18 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: SHAPES_ROUTE_BASE,
-      label: "Shapes list",
+      label: "Shapes landing",
       description:
-        "List view (feature-entry doctrine): your shapes + platform library, search, Refresh, New.",
+        "Public Shape System landing page; authenticated visitors continue directly to the canonical library.",
       filePath: "app/(core)/shapes/page.tsx",
+      status: "Live",
+    },
+    {
+      url: SHAPES_ALL_HREF,
+      label: "Shapes library",
+      description:
+        "Canonical EntityListPage: mine, organizations, shared, and public scopes with true counts, ranked search, server sort/filter/pagination, URL state, column controls, copy, row menus, and entity context actions.",
+      filePath: "app/(core)/shapes/(workspace)/all/page.tsx",
       status: "Live",
     },
     {
@@ -41,7 +50,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       label: "New Shape (create with agent)",
       description:
         "Compose intent + sample data, hand off to the creator agent chat. Loud not-configured state until the agent id is set.",
-      filePath: "app/(core)/shapes/new/page.tsx",
+      filePath: "app/(core)/shapes/(workspace)/new/page.tsx",
       status: "Live",
     },
     {
@@ -49,7 +58,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       label: "Shape preview",
       description:
         "Canonical kind_example rows rendered through the production applyIrKindRoute path; owners also get definition settings + sample CRUD.",
-      filePath: "app/(core)/shapes/[kind]/page.tsx",
+      filePath: "app/(core)/shapes/(workspace)/[kind]/page.tsx",
       status: "Live",
     },
     {
@@ -57,7 +66,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       label: "Shape test",
       description:
         "KindInputForm → live render of the emitted instance (the magic-moment screen).",
-      filePath: "app/(core)/shapes/[kind]/test/page.tsx",
+      filePath: "app/(core)/shapes/(workspace)/[kind]/test/page.tsx",
       status: "Live",
     },
     {
@@ -65,7 +74,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       label: "Shape instances",
       description:
         "My saved kind_instance rows for this kind: validation dot, pinned-version chip, render through the real component, edit (prefilled KindInputForm), soft delete, honest repin, flat-kind View-as-table snapshot.",
-      filePath: "app/(core)/shapes/[kind]/instances/page.tsx",
+      filePath: "app/(core)/shapes/(workspace)/[kind]/instances/page.tsx",
       status: "Live",
     },
     {
@@ -73,14 +82,15 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       label: "Instance permalink resolver",
       description:
         "Sharing-registry url_path_template target (/shapes/instances/{id}) — resolves the instance's kind and redirects to /shapes/[kind]/instances?i=<id>.",
-      filePath: "app/(core)/shapes/instances/[id]/page.tsx",
+      filePath: "app/(core)/shapes/(workspace)/instances/[id]/page.tsx",
       status: "Live",
     },
     {
       url: `${SHAPES_ROUTE_BASE}/[kind]/schema`,
       label: "Shape schema",
-      description: "Read-only field table + emitted_json_schema behind a toggle.",
-      filePath: "app/(core)/shapes/[kind]/schema/page.tsx",
+      description:
+        "Read-only field table + emitted_json_schema behind a toggle.",
+      filePath: "app/(core)/shapes/(workspace)/[kind]/schema/page.tsx",
       status: "Live",
     },
     {
@@ -96,16 +106,14 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
   components: [
     {
       name: "KindExamplePreview",
-      filePath:
-        "features/content-ir/studio/components/KindExamplePreview.tsx",
+      filePath: "features/content-ir/studio/components/KindExamplePreview.tsx",
       description:
         "Shared example-preview engine (extracted from the admin KindPreviewTab; both surfaces consume it).",
       tier: "internal",
     },
     {
       name: "ShapeOwnerEditor",
-      filePath:
-        "features/content-ir/studio/components/ShapeOwnerEditor.tsx",
+      filePath: "features/content-ir/studio/components/ShapeOwnerEditor.tsx",
       description:
         "Owner-only definition settings + canonical kind_example CRUD embedded on the Preview page.",
       tier: "internal",
@@ -132,15 +140,15 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "ShapesListClient",
-      filePath: "features/content-ir/studio/components/ShapesListClient.tsx",
-      description: "RLS-scoped list view (mine + platform sections).",
+      name: "ShapeBrowsePage",
+      filePath: "features/content-ir/browse/ShapeBrowsePage.tsx",
+      description:
+        "Thin Shapes consumer of the canonical EntityListPage, including the Shape surface scope and missing-component assist producer.",
       tier: "internal",
     },
     {
       name: "ShapeInstancesTab",
-      filePath:
-        "features/content-ir/studio/components/ShapeInstancesTab.tsx",
+      filePath: "features/content-ir/studio/components/ShapeInstancesTab.tsx",
       description:
         "Instances list + detail (render / edit / delete / repin / View-as-table), loaded ssr:false.",
       tier: "internal",
@@ -154,8 +162,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "shape-authoring-service",
-      filePath:
-        "features/content-ir/studio/shape-authoring-service.ts",
+      filePath: "features/content-ir/studio/shape-authoring-service.ts",
       description:
         "The ONE browser mutation path for an existing owned kind_definition and its kind_example rows; version re-pin + trigger-verdict contracts included.",
       tier: "internal",

@@ -23,6 +23,7 @@ import {
   Megaphone,
   Workflow,
   Search,
+  Shapes,
 } from "lucide-react";
 
 /**
@@ -47,10 +48,7 @@ export interface ModuleLandingDirectoryEntry {
   teaser: string;
   /** Optional grouping label for the grid section. */
   group:
-    | "Conversational"
-    | "Knowledge & Data"
-    | "Build & Run"
-    | "Org & Context";
+    "Conversational" | "Knowledge & Data" | "Build & Run" | "Org & Context";
 }
 
 export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
@@ -135,6 +133,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: FileSpreadsheet,
     teaser:
       "Lossless XLSX in the browser — multi-sheet, formulas, realtime, autosave + snapshots.",
+    group: "Knowledge & Data",
+  },
+  {
+    label: "Shapes",
+    href: "/shapes",
+    icon: Shapes,
+    teaser:
+      "Turn AI output into named, validated contracts with real interactive interfaces everywhere.",
     group: "Knowledge & Data",
   },
   {
