@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 422 active entity tokens. A token here is FK-valid for
+// 423 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -85,6 +85,7 @@ export type EntityTypeToken =
   | "batch_work_item"
   | "browser_account_binding"
   | "browser_action_event"
+  | "browser_authenticator_window"
   | "browser_capture"
   | "browser_control_request"
   | "browser_handoff"
@@ -801,6 +802,7 @@ export type ScopeableEntityToken =
   | "batch_work_item"
   | "browser_account_binding"
   | "browser_action_event"
+  | "browser_authenticator_window"
   | "browser_capture"
   | "browser_control_request"
   | "browser_handoff"
@@ -1263,6 +1265,7 @@ export const ENTITY_TYPE_METADATA = {
   "batch_work_item": { token: "batch_work_item", schema: "batch", table: "work_item", label: "Batch Work Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "browser_account_binding": { token: "browser_account_binding", schema: "browser", table: "account_binding", label: "Browser Account Binding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "browser_action_event": { token: "browser_action_event", schema: "browser", table: "action_event", label: "Browser Action Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_authenticator_window": { token: "browser_authenticator_window", schema: "browser", table: "authenticator_window", label: "Browser Authenticator Window", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "browser_capture": { token: "browser_capture", schema: "browser", table: "capture", label: "Browser Capture", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "browser_control_request": { token: "browser_control_request", schema: "browser", table: "control_request", label: "Browser Control Request", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "browser_handoff": { token: "browser_handoff", schema: "browser", table: "handoff", label: "Browser Handoff", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1689,6 +1692,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "batch_work_item",
   "browser_account_binding",
   "browser_action_event",
+  "browser_authenticator_window",
   "browser_capture",
   "browser_control_request",
   "browser_handoff",

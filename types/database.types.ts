@@ -5435,6 +5435,75 @@ export type Database = {
           },
         ]
       }
+      authenticator_window: {
+        Row: {
+          claimed_at: string
+          created_at: string
+          created_by: string | null
+          credential_item_id: string
+          id: string
+          metadata: Json
+          normalized_origin: string | null
+          organization_id: string
+          profile_id: string | null
+          run_id: string | null
+          time_step: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          claimed_at?: string
+          created_at?: string
+          created_by?: string | null
+          credential_item_id: string
+          id?: string
+          metadata?: Json
+          normalized_origin?: string | null
+          organization_id: string
+          profile_id?: string | null
+          run_id?: string | null
+          time_step: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          claimed_at?: string
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string
+          id?: string
+          metadata?: Json
+          normalized_origin?: string | null
+          organization_id?: string
+          profile_id?: string | null
+          run_id?: string | null
+          time_step?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authenticator_window_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authenticator_window_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capture: {
         Row: {
           action_event_id: string | null

@@ -10722,7 +10722,7 @@
           "Authenticator"
         ],
         "summary": "Enroll",
-        "description": "Route 1/2 (paste): store the setup key or otpauth URI as a sealed seed.\n\nEnrolling a seed mints every future code for the account, so it is the most\nprivileged act in the system — D-15 item 1 gates it on a fresh sign-in.\n``enforce_recent_auth`` refuses a stale session (when the recency cap is\nconfigured); the same fresh-auth fact is passed to the service.",
+        "description": "Route 1/2 (paste): store the setup key or otpauth URI as a sealed seed.\n\nEnrolling a seed mints every future code for the account, so it is the most\nprivileged act in the system — D-15 item 1 gates it on a fresh sign-in.\n``enforce_recent_auth_max_age`` is the NEVER-permissive primitive (the\nlaunch-cap wrapper ``enforce_recent_auth`` returns immediately while its env\nvar is unset, which is how this gate was inert in production). The service\nasserts the same window again from the ambient context — two independent\nlayers, neither of them a caller-supplied flag.",
         "operationId": "enroll_authenticator_enroll_post",
         "requestBody": {
           "content": {
@@ -50458,6 +50458,48 @@
         }
       }
     },
+    "/browser-manager/profiles": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Create Profile",
+        "description": "Start a NEW cloud browser, named by the person creating it.\n\n🚨 D-28 (Arman 2026-08-23): *\"if the user wants multiple, we give them\nmultiple… they can have as many as they want… make it easy to start.\"* Until\nthis route existed there was no create path ANYWHERE in the platform — the\nonly profile-creating code was find-the-default-or-create-one — so the\nproduct allowed exactly one browser per person, forever. There is no cap\nhere on purpose; the single default is DB-enforced, not route-enforced.",
+        "operationId": "create_profile_browser_manager_profiles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser-manager/runs": {
       "post": {
         "tags": [
@@ -82260,6 +82302,83 @@
               }
             ],
             "title": "Claude Title"
+          },
+          "claude_project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Project Name"
+          },
+          "claude_git_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Git Branch"
+          },
+          "claude_worktree_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Worktree Name"
+          },
+          "claude_is_archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Is Archived"
+          },
+          "claude_is_pinned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Is Pinned"
+          },
+          "claude_pinned_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Pinned Rank"
+          },
+          "claude_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claude Category"
           }
         },
         "type": "object",
@@ -87769,6 +87888,23 @@
           "node_id"
         ],
         "title": "CreatePlanRequest"
+      },
+      "CreateProfileRequest": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name"
+        ],
+        "title": "CreateProfileRequest",
+        "description": "Start a NEW cloud browser (D-28, Arman 2026-08-23: *\"they can have as many\nas they want… make it easy to start\"*).\n\nThe user names it. Nothing else is a caller decision: ownership is the acting\nuser, the organization is resolved by the platform resolver (never accepted\nfrom the client), and the new profile is NEVER the default — the single\ndefault is the one the DB's partial unique index guarantees."
       },
       "CreateSendingIdentityRequest": {
         "properties": {
@@ -133273,6 +133409,50 @@
         "type": "object",
         "title": "ProducerYieldTotals"
       },
+      "ProfileView": {
+        "properties": {
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "organization"
+            ],
+            "title": "Owner Type"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile_id",
+          "display_name",
+          "is_default",
+          "owner_type",
+          "organization_id",
+          "status"
+        ],
+        "title": "ProfileView",
+        "description": "The safe profile facts a caller receives after creating one."
+      },
       "ProjectInputPart": {
         "properties": {
           "metadata": {
@@ -168265,6 +168445,14 @@
             },
             "type": "object",
             "title": "Transferred To"
+          },
+          "fields_not_transferred": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fields Not Transferred",
+            "description": "Minting keys retired instead of moved — an authenticator seed never changes hands (D-15); the new owner enrolls again."
           }
         },
         "additionalProperties": true,

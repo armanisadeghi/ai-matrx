@@ -4269,8 +4269,11 @@ export interface paths {
          *
          *     Enrolling a seed mints every future code for the account, so it is the most
          *     privileged act in the system — D-15 item 1 gates it on a fresh sign-in.
-         *     ``enforce_recent_auth`` refuses a stale session (when the recency cap is
-         *     configured); the same fresh-auth fact is passed to the service.
+         *     ``enforce_recent_auth_max_age`` is the NEVER-permissive primitive (the
+         *     launch-cap wrapper ``enforce_recent_auth`` returns immediately while its env
+         *     var is unset, which is how this gate was inert in production). The service
+         *     asserts the same window again from the ambient context — two independent
+         *     layers, neither of them a caller-supplied flag.
          */
         post: operations["enroll_authenticator_enroll_post"];
         delete?: never;
@@ -19346,6 +19349,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/browser-manager/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Profile
+         * @description Start a NEW cloud browser, named by the person creating it.
+         *
+         *     🚨 D-28 (Arman 2026-08-23): *"if the user wants multiple, we give them
+         *     multiple… they can have as many as they want… make it easy to start."* Until
+         *     this route existed there was no create path ANYWHERE in the platform — the
+         *     only profile-creating code was find-the-default-or-create-one — so the
+         *     product allowed exactly one browser per person, forever. There is no cap
+         *     here on purpose; the single default is DB-enforced, not route-enforced.
+         */
+        post: operations["create_profile_browser_manager_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/browser-manager/runs": {
         parameters: {
             query?: never;
@@ -31607,6 +31637,20 @@ export interface components {
             title_source?: string | null;
             /** Claude Title */
             claude_title?: string | null;
+            /** Claude Project Name */
+            claude_project_name?: string | null;
+            /** Claude Git Branch */
+            claude_git_branch?: string | null;
+            /** Claude Worktree Name */
+            claude_worktree_name?: string | null;
+            /** Claude Is Archived */
+            claude_is_archived?: boolean | null;
+            /** Claude Is Pinned */
+            claude_is_pinned?: boolean | null;
+            /** Claude Pinned Rank */
+            claude_pinned_rank?: number | null;
+            /** Claude Category */
+            claude_category?: string | null;
         };
         /** CodingSessionIdentityList */
         CodingSessionIdentityList: {
@@ -33718,6 +33762,20 @@ export interface components {
             intent?: string;
             /** Parent Plan Id */
             parent_plan_id?: string | null;
+        };
+        /**
+         * CreateProfileRequest
+         * @description Start a NEW cloud browser (D-28, Arman 2026-08-23: *"they can have as many
+         *     as they want… make it easy to start"*).
+         *
+         *     The user names it. Nothing else is a caller decision: ownership is the acting
+         *     user, the organization is resolved by the platform resolver (never accepted
+         *     from the client), and the new profile is NEVER the default — the single
+         *     default is the one the DB's partial unique index guarantees.
+         */
+        CreateProfileRequest: {
+            /** Display Name */
+            display_name: string;
         };
         /** CreateSendingIdentityRequest */
         CreateSendingIdentityRequest: {
@@ -51528,6 +51586,27 @@ export interface components {
             /** Cost Per Accepted Usd */
             cost_per_accepted_usd?: number | null;
         };
+        /**
+         * ProfileView
+         * @description The safe profile facts a caller receives after creating one.
+         */
+        ProfileView: {
+            /** Profile Id */
+            profile_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Is Default */
+            is_default: boolean;
+            /**
+             * Owner Type
+             * @enum {string}
+             */
+            owner_type: "user" | "organization";
+            /** Organization Id */
+            organization_id: string;
+            /** Status */
+            status: string;
+        };
         /** ProjectInputPart */
         ProjectInputPart: {
             /** Metadata */
@@ -65300,6 +65379,11 @@ export interface components {
             transferred_to?: {
                 [key: string]: string;
             };
+            /**
+             * Fields Not Transferred
+             * @description Minting keys retired instead of moved — an authenticator seed never changes hands (D-15); the new owner enrolls again.
+             */
+            fields_not_transferred?: string[];
         } & {
             [key: string]: unknown;
         };
@@ -101357,6 +101441,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BridgeIntegrationResponse"];
+                };
+            };
+        };
+    };
+    create_profile_browser_manager_profiles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
