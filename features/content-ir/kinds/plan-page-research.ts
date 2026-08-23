@@ -46,6 +46,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { PlanPageResearch, PlanResearchSource } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -125,20 +127,16 @@ export const PLAN_PAGE_RESEARCH_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING.
 // ---------------------------------------------------------------------------
 
-export interface PlanResearchSourceData {
-  label: string;
-  sourceType: string;
-  url: string;
-  notes: string;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type PlanResearchSourceData = Omit<MaterializedKind<PlanResearchSource>, "__kind">;
 
-export interface PlanPageResearchData {
-  brief: string[];
+export type PlanPageResearchData = Omit<
+  MaterializedKind<PlanPageResearch>,
+  "__kind" | "sources"
+> & {
   sources: PlanResearchSourceData[];
-  primaryKeyword: string | null;
-  researchReport: string | null;
   isComplete: boolean;
-}
+};
 
 function nullableString(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -161,7 +159,7 @@ export function readResearchSources(value: unknown): PlanResearchSourceData[] {
     if (!label) continue;
     out.push({
       label,
-      sourceType: nullableString(entry.source_type),
+      source_type: nullableString(entry.source_type),
       url: nullableString(entry.url),
       notes: nullableString(entry.notes),
     });
@@ -181,8 +179,8 @@ export function planPageResearchServerDataFromEnvelope(
   return {
     brief: strings(value.brief),
     sources: readResearchSources(value.sources),
-    primaryKeyword: keyword === "" ? null : keyword,
-    researchReport: report === "" ? null : report,
+    primary_keyword: keyword === "" ? null : keyword,
+    research_report: report === "" ? null : report,
     isComplete: envelope.root.status === "complete",
   };
 }
@@ -206,7 +204,7 @@ export function planPageResearchMarkdownFromValue(
   const sources = readResearchSources(value.sources).map((source) => {
     const link = source.url ? ` — ${source.url}` : "";
     const notes = source.notes ? `\n  - ${source.notes}` : "";
-    const type = source.sourceType ? ` (${source.sourceType})` : "";
+    const type = source.source_type ? ` (${source.source_type})` : "";
     return `- **${source.label}**${type}${link}${notes}`;
   });
   const keyword = nullableString(value.primary_keyword);

@@ -43,6 +43,12 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type {
+  PlanDeferredTopic,
+  PlanPageOutline,
+  PlanPlannedLink,
+} from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -130,26 +136,21 @@ export const PLAN_PAGE_OUTLINE_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING.
 // ---------------------------------------------------------------------------
 
-export interface PlanDeferredTopicData {
-  topic: string;
-  toRoute: string;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type PlanDeferredTopicData = Omit<MaterializedKind<PlanDeferredTopic>, "__kind">;
 
-export interface PlanPlannedLinkData {
-  toRoute: string;
-  anchorText: string;
-  reason: string;
-}
+export type PlanPlannedLinkData = Omit<MaterializedKind<PlanPlannedLink>, "__kind">;
 
-export interface PlanPageOutlineData {
+export type PlanPageOutlineData = Omit<
+  MaterializedKind<PlanPageOutline>,
+  "__kind" | "differentiator" | "defer_to" | "internal_links"
+> & {
+  /** null until the outline's differentiator has streamed in. */
   differentiator: string | null;
-  covers: string[];
-  mustNotCover: string[];
-  deferTo: PlanDeferredTopicData[];
-  internalLinks: PlanPlannedLinkData[];
-  uncoveredGaps: string[];
+  defer_to: PlanDeferredTopicData[];
+  internal_links: PlanPlannedLinkData[];
   isComplete: boolean;
-}
+};
 
 function stringOr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
@@ -169,7 +170,7 @@ export function readDeferredTopics(value: unknown): PlanDeferredTopicData[] {
     if (!isRecord(entry)) continue;
     const topic = stringOr(entry.topic, "");
     if (!topic) continue;
-    out.push({ topic, toRoute: stringOr(entry.to_route, "") });
+    out.push({ topic, to_route: stringOr(entry.to_route, "") });
   }
   return out;
 }
@@ -179,11 +180,11 @@ export function readPlannedLinks(value: unknown): PlanPlannedLinkData[] {
   const out: PlanPlannedLinkData[] = [];
   for (const entry of value) {
     if (!isRecord(entry)) continue;
-    const toRoute = stringOr(entry.to_route, "");
-    if (!toRoute) continue;
+    const to_route = stringOr(entry.to_route, "");
+    if (!to_route) continue;
     out.push({
-      toRoute,
-      anchorText: stringOr(entry.anchor_text, ""),
+      to_route,
+      anchor_text: stringOr(entry.anchor_text, ""),
       reason: stringOr(entry.reason, ""),
     });
   }
@@ -201,10 +202,10 @@ export function planPageOutlineServerDataFromEnvelope(
   return {
     differentiator: differentiator === "" ? null : differentiator,
     covers: strings(value.covers),
-    mustNotCover: strings(value.must_not_cover),
-    deferTo: readDeferredTopics(value.defer_to),
-    internalLinks: readPlannedLinks(value.internal_links),
-    uncoveredGaps: strings(value.uncovered_gaps),
+    must_not_cover: strings(value.must_not_cover),
+    defer_to: readDeferredTopics(value.defer_to),
+    internal_links: readPlannedLinks(value.internal_links),
+    uncovered_gaps: strings(value.uncovered_gaps),
     isComplete: envelope.root.status === "complete",
   };
 }
@@ -234,14 +235,14 @@ export function planPageOutlineMarkdownFromValue(
   const covers = bulletList(strings(value.covers));
   const mustNot = bulletList(strings(value.must_not_cover));
   const gaps = bulletList(strings(value.uncovered_gaps));
-  const deferTo = readDeferredTopics(value.defer_to).map((entry) =>
-    entry.toRoute
-      ? `- ${entry.topic} → \`${entry.toRoute}\``
+  const defer_to = readDeferredTopics(value.defer_to).map((entry) =>
+    entry.to_route
+      ? `- ${entry.topic} → \`${entry.to_route}\``
       : `- ${entry.topic} → _no page owns this yet_`,
   );
   const links = readPlannedLinks(value.internal_links).map((link) => {
     const reason = link.reason ? ` — ${link.reason}` : "";
-    return `- \`${link.toRoute}\`${link.anchorText ? ` ("${link.anchorText}")` : ""}${reason}`;
+    return `- \`${link.to_route}\`${link.anchor_text ? ` ("${link.anchor_text}")` : ""}${reason}`;
   });
   const differentiator = stringOr(value.differentiator, "");
 
@@ -250,8 +251,8 @@ export function planPageOutlineMarkdownFromValue(
     differentiator ? `**What only this page does:** ${differentiator}` : null,
     covers ? joinBlocks(["## Covers", covers]) : null,
     mustNot ? joinBlocks(["## Must not cover", mustNot]) : null,
-    deferTo.length > 0
-      ? joinBlocks(["## Handed to other pages", deferTo.join("\n")])
+    defer_to.length > 0
+      ? joinBlocks(["## Handed to other pages", defer_to.join("\n")])
       : null,
     links.length > 0
       ? joinBlocks(["## Links to add", links.join("\n")])

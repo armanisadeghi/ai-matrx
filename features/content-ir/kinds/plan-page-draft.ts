@@ -43,6 +43,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { PlanDraftSection, PlanPageDraft } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -124,23 +126,18 @@ export const PLAN_PAGE_DRAFT_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING: a partial envelope maps to partial data.
 // ---------------------------------------------------------------------------
 
-export interface PlanDraftSectionData {
-  heading: string;
-  level: number;
-  intent: string;
-  body: string;
-  bullets: string[];
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type PlanDraftSectionData = Omit<MaterializedKind<PlanDraftSection>, "__kind">;
 
-export interface PlanPageDraftData {
+export type PlanPageDraftData = Omit<
+  MaterializedKind<PlanPageDraft>,
+  "__kind" | "h1" | "sections"
+> & {
+  /** null until the draft's own heading has streamed in. */
   h1: string | null;
-  intro: string;
   sections: PlanDraftSectionData[];
-  callToAction: string;
-  metaTitle: string;
-  metaDescription: string;
   isComplete: boolean;
-}
+};
 
 function stringOr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
@@ -190,9 +187,9 @@ export function readPlanPageDraftValue(value: unknown): PlanPageDraftData {
     h1: h1 === "" ? null : h1,
     intro: stringOr(record.intro, ""),
     sections: readDraftSections(record.sections),
-    callToAction: stringOr(record.call_to_action, ""),
-    metaTitle: stringOr(record.meta_title, ""),
-    metaDescription: stringOr(record.meta_description, ""),
+    call_to_action: stringOr(record.call_to_action, ""),
+    meta_title: stringOr(record.meta_title, ""),
+    meta_description: stringOr(record.meta_description, ""),
     isComplete: false,
   };
 }
@@ -226,7 +223,7 @@ export function planPageDraftBodyMarkdown(value: unknown): string {
   const data = readPlanPageDraftValue(value);
   const sections = data.sections.map((section) =>
     joinBlocks([
-      `${"#".repeat(section.level)} ${section.heading}`,
+      `${"#".repeat(section.level ?? 2)} ${section.heading}`,
       section.body || null,
       section.bullets.length > 0
         ? section.bullets.map((bullet) => `- ${bullet}`).join("\n")
@@ -237,7 +234,7 @@ export function planPageDraftBodyMarkdown(value: unknown): string {
     data.h1 ? `# ${data.h1}` : null,
     data.intro || null,
     ...sections,
-    data.callToAction ? `**${data.callToAction}**` : null,
+    data.call_to_action ? `**${data.call_to_action}**` : null,
   ]);
 }
 
@@ -246,9 +243,9 @@ export function planPageDraftMarkdownFromValue(
 ): string {
   const data = readPlanPageDraftValue(value);
   const meta = [
-    data.metaTitle ? `**Title tag:** ${data.metaTitle}` : null,
-    data.metaDescription
-      ? `**Meta description:** ${data.metaDescription}`
+    data.meta_title ? `**Title tag:** ${data.meta_title}` : null,
+    data.meta_description
+      ? `**Meta description:** ${data.meta_description}`
       : null,
   ].filter((line): line is string => line !== null);
 

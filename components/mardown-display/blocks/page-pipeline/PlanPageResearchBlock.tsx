@@ -57,13 +57,13 @@ export function readPlanPageResearchData(
   return {
     brief: strings(candidate.brief),
     sources: Array.isArray(candidate.sources) ? candidate.sources : [],
-    primaryKeyword:
-      typeof candidate.primaryKeyword === "string"
-        ? candidate.primaryKeyword
+    primary_keyword:
+      typeof candidate.primary_keyword === "string"
+        ? candidate.primary_keyword
         : null,
-    researchReport:
-      typeof candidate.researchReport === "string"
-        ? candidate.researchReport
+    research_report:
+      typeof candidate.research_report === "string"
+        ? candidate.research_report
         : null,
     isComplete: candidate.isComplete === true,
   };
@@ -173,9 +173,9 @@ export function PlanResearchSources({
                   {source.label}
                 </span>
               )}
-              {source.sourceType ? (
+              {source.source_type ? (
                 <span className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
-                  {source.sourceType}
+                  {source.source_type}
                 </span>
               ) : null}
             </div>
@@ -223,12 +223,12 @@ export default function PlanPageResearchBlock({
         )}
       </div>
 
-      {data.primaryKeyword ? (
+      {data.primary_keyword ? (
         <div className="animate-in fade-in flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5">
           <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <p className="text-sm leading-relaxed text-foreground">
             <span className="text-muted-foreground">Written to win: </span>
-            {data.primaryKeyword}
+            {data.primary_keyword}
           </p>
         </div>
       ) : null}
@@ -236,9 +236,9 @@ export default function PlanPageResearchBlock({
       <PlanResearchBriefLines lines={data.brief} />
       <PlanResearchSources sources={data.sources} />
 
-      {data.researchReport ? (
+      {data.research_report ? (
         <p className="text-[11px] text-muted-foreground">
-          Grounded in a separate research document — {data.researchReport}
+          Grounded in a separate research document — {data.research_report}
         </p>
       ) : null}
     </div>

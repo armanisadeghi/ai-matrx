@@ -50,6 +50,8 @@ import {
   type PlanPageDraftData,
 } from "./plan-page-draft";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { PlanPageReview, PlanReviewIssue } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -121,21 +123,22 @@ export const PLAN_PAGE_REVIEW_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING.
 // ---------------------------------------------------------------------------
 
-export interface PlanReviewIssueData {
-  severity: ReviewSeverity;
-  section: string;
-  problem: string;
-  fix: string;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type PlanReviewIssueData = Omit<
+  MaterializedKind<PlanReviewIssue>,
+  "__kind" | "severity"
+> & { severity: ReviewSeverity };
 
-export interface PlanPageReviewData {
-  verdict: "approved" | "revised" | null;
+export type PlanPageReviewData = Omit<
+  MaterializedKind<PlanPageReview>,
+  "__kind" | "issues" | "revised"
+> & {
   issues: PlanReviewIssueData[];
   /** Always projected through the DRAFT's own reader — never a second parse. */
   revised: PlanPageDraftData;
   hasRevised: boolean;
   isComplete: boolean;
-}
+};
 
 function stringOr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;

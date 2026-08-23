@@ -1,0 +1,213 @@
+{
+  "tool_call_record": {
+    "__kind": "tool_call_record",
+    "arguments": {
+      "path": "notes/missing.md"
+    },
+    "call_id": "call_ah82ks",
+    "completed_at": "2026-08-23T18:04:11.512000+00:00",
+    "conversation_id": null,
+    "duration_ms": 42,
+    "error_message": "no such file: notes/missing.md",
+    "error_type": "not_found",
+    "id": "0f0a5c2e-1d3b-4c5a-8e7f-9a0b1c2d3e4f",
+    "is_error": true,
+    "iteration": 1,
+    "output": null,
+    "output_chars": 0,
+    "output_note": null,
+    "started_at": "2026-08-23T18:04:11.470000+00:00",
+    "status": "completed",
+    "success": false,
+    "tool_name": "fs_read",
+    "user_id": null
+  },
+  "tool_trace_call_detail": {
+    "__kind": "tool_trace_call_detail",
+    "call_id": "call_ah82ks",
+    "events": [
+      {
+        "__kind": "tool_trace_event",
+        "args": {
+          "path": "notes/missing.md"
+        },
+        "call_id": "call_ah82ks",
+        "conversation_id": null,
+        "duration_ms": 42,
+        "err_msg": "no such file: notes/missing.md",
+        "err_type": "not_found",
+        "event": "error",
+        "id": "6f1c2d64-0f7e-4a1a-9b8e-9a1f0c4d2e11",
+        "kind": "local",
+        "metadata": null,
+        "process_pid": 4711,
+        "process_started_at": "2026-08-23T17:40:00.000000+00:00",
+        "result_preview": null,
+        "tool_name": "fs_read",
+        "ts": "2026-08-23T18:04:11.512000+00:00",
+        "user_id": null
+      }
+    ],
+    "tool_call": {
+      "__kind": "tool_call_record",
+      "arguments": {
+        "path": "notes/missing.md"
+      },
+      "call_id": "call_ah82ks",
+      "completed_at": null,
+      "conversation_id": null,
+      "duration_ms": 42,
+      "error_message": "no such file: notes/missing.md",
+      "error_type": "not_found",
+      "id": "0f0a5c2e-1d3b-4c5a-8e7f-9a0b1c2d3e4f",
+      "is_error": true,
+      "iteration": null,
+      "output": null,
+      "output_chars": null,
+      "output_note": null,
+      "started_at": null,
+      "status": "completed",
+      "success": false,
+      "tool_name": "fs_read",
+      "user_id": null
+    }
+  },
+  "tool_trace_event": {
+    "__kind": "tool_trace_event",
+    "args": null,
+    "call_id": "call_ah82ks",
+    "conversation_id": null,
+    "duration_ms": 42,
+    "err_msg": "no such file: notes/missing.md",
+    "err_type": "not_found",
+    "event": "error",
+    "id": "6f1c2d64-0f7e-4a1a-9b8e-9a1f0c4d2e11",
+    "kind": "local",
+    "metadata": null,
+    "process_pid": 4711,
+    "process_started_at": null,
+    "result_preview": null,
+    "tool_name": "fs_read",
+    "ts": "2026-08-23T18:04:11.512000+00:00",
+    "user_id": null
+  },
+  "tool_trace_event_page": {
+    "__kind": "tool_trace_event_page",
+    "count": 1,
+    "detail_hint": "compact rows \u2014 call debug_traces_by_call(call_id=\u2026) or pass verbose=true for args / result_preview / metadata.",
+    "events": [
+      {
+        "__kind": "tool_trace_event",
+        "args": null,
+        "call_id": "call_ah82ks",
+        "conversation_id": null,
+        "duration_ms": 42,
+        "err_msg": "no such file: notes/missing.md",
+        "err_type": "not_found",
+        "event": "error",
+        "id": "6f1c2d64-0f7e-4a1a-9b8e-9a1f0c4d2e11",
+        "kind": "local",
+        "metadata": null,
+        "process_pid": 4711,
+        "process_started_at": null,
+        "result_preview": null,
+        "tool_name": "fs_read",
+        "ts": "2026-08-23T18:04:11.512000+00:00",
+        "user_id": null
+      }
+    ],
+    "filter_summary": "tool_name=fs_read, event=error, last 24h",
+    "note": null,
+    "shown": 1,
+    "truncated": null,
+    "verbose": false
+  },
+  "tool_trace_file": {
+    "__kind": "tool_trace_file",
+    "is_header_only": false,
+    "modified_at": "2026-08-23T18:44:02.000000+00:00",
+    "name": "tool-trace-2026-08-23_18-04-11.log",
+    "size_bytes": 40213
+  },
+  "tool_trace_file_listing": {
+    "__kind": "tool_trace_file_listing",
+    "count": 1,
+    "files": [
+      {
+        "__kind": "tool_trace_file",
+        "is_header_only": false,
+        "modified_at": "2026-08-23T18:44:02.000000+00:00",
+        "name": "tool-trace-2026-08-23_18-04-11.log",
+        "size_bytes": 40213
+      }
+    ],
+    "log_dir": "/srv/app/.matrx-debug"
+  },
+  "tool_trace_file_window": {
+    "__kind": "tool_trace_file_window",
+    "content": "## tool-trace 2026-08-23\n[fs_read] ok 42ms\n",
+    "filename": "tool-trace-2026-08-23_18-04-11.log",
+    "next_offset": 12000,
+    "note": "showing chars 0-12000 of 40180; call again with offset=12000 for more.",
+    "offset": 0,
+    "shown_chars": 12000,
+    "size_bytes": 40213,
+    "total_chars": 40180,
+    "truncated": true
+  },
+  "tool_trace_incident": {
+    "__kind": "tool_trace_incident",
+    "admin_decision": "pending",
+    "ai_assessment": "The VFS branch does not honour the paging arguments.",
+    "ai_complexity": "small",
+    "ai_estimated_files": 1,
+    "ai_solution_proposal": "Thread offset/limit through vfs_filesystem.read.",
+    "created_at": "2026-08-23T18:05:00.000000+00:00",
+    "id": "b2b1b0c7-8d3e-4a55-9c0f-2a1e4d6b7c88",
+    "priority": "medium",
+    "route": "tool:fs_read",
+    "status": "new",
+    "updated_at": "2026-08-23T18:05:00.000000+00:00"
+  },
+  "tool_trace_incident_filter": {
+    "__kind": "tool_trace_incident_filter",
+    "limit": 20,
+    "severity": null,
+    "tool_name_substring": "fs_"
+  },
+  "tool_trace_incident_list": {
+    "__kind": "tool_trace_incident_list",
+    "count": 1,
+    "filter": {
+      "__kind": "tool_trace_incident_filter",
+      "limit": 20,
+      "severity": null,
+      "tool_name_substring": "fs_"
+    },
+    "incidents": [
+      {
+        "__kind": "tool_trace_incident",
+        "admin_decision": "pending",
+        "ai_assessment": null,
+        "ai_complexity": null,
+        "ai_estimated_files": null,
+        "ai_solution_proposal": null,
+        "created_at": "2026-08-23T18:05:00.000000+00:00",
+        "id": "b2b1b0c7-8d3e-4a55-9c0f-2a1e4d6b7c88",
+        "priority": "medium",
+        "route": "tool:fs_read",
+        "status": "new",
+        "updated_at": null
+      }
+    ]
+  },
+  "tool_trace_incident_report": {
+    "__kind": "tool_trace_incident_report",
+    "category_slug": "tool-trace-incident",
+    "created": true,
+    "dedupe_key": "fs_read|not_found|no such file",
+    "feedback_id": "b2b1b0c7-8d3e-4a55-9c0f-2a1e4d6b7c88",
+    "merged_into_existing": false,
+    "priority": "medium"
+  }
+}

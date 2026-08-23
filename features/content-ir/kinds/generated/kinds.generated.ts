@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 417 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 428 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "0af369f09d65";
+export const KIND_REGISTRY_FINGERPRINT = "3148bb3494fc";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -12400,6 +12400,243 @@ export interface ToolBundleListing {
 }
 
 /**
+ * The joined ``cx_tool_call`` row for one call_id — the CALL, where the
+ * trace events are the things that happened to it.
+ *
+ * ``output`` is the tool's own payload and is therefore any shape at all; on
+ * this read it may be a STRING trimmed to the soft cap, in which case
+ * ``output_note`` says so. Declaring it as anything narrower would be a lie
+ * about every other tool in the registry.
+ *  *
+ *  * Kind `tool_call_record` (registry v2).
+ */
+export interface ToolCallRecord {
+  id?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_call_record";
+  output?: unknown | null;
+  status?: string | null;
+  call_id?: string | null;
+  success?: boolean | null;
+  user_id?: string | null;
+  is_error?: boolean | null;
+  arguments?: unknown | null;
+  iteration?: number | null;
+  tool_name?: string | null;
+  error_type?: string | null;
+  started_at?: string | null;
+  duration_ms?: number | null;
+  output_note?: string | null;
+  completed_at?: string | null;
+  output_chars?: number | null;
+  error_message?: string | null;
+  conversation_id?: string | null;
+}
+
+/**
+ * Everything known about ONE call_id — the forensic view.
+ *
+ * NOT a ``tool_trace_event_page``: this is a single call, so the events are
+ * always VERBOSE and unpaged, and it carries the joined call record the page
+ * shape has no room for. ``tool_call`` is None when trace events exist but the
+ * cx_tool_call row does not (the call died before the row was written — the
+ * exact case this tool is used to investigate).
+ *  *
+ *  * Kind `tool_trace_call_detail` (registry v2).
+ */
+export interface ToolTraceCallDetail {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_call_detail";
+  events?: ToolTraceEvent[];
+  call_id?: string;
+  tool_call?: ToolCallRecord | null;
+}
+
+/**
+ * One ``cx_tool_trace`` row as the debug tools project it.
+ *  *
+ *  * Kind `tool_trace_event` (registry v2).
+ */
+export interface ToolTraceEvent {
+  id?: string;
+  ts?: string | null;
+  args?: unknown | null;
+  kind?: string | null;
+  event?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_event";
+  call_id?: string | null;
+  err_msg?: string;
+  user_id?: string | null;
+  err_type?: string | null;
+  metadata?: unknown | null;
+  tool_name?: string | null;
+  duration_ms?: number | null;
+  process_pid?: number | null;
+  result_preview?: unknown | null;
+  conversation_id?: string | null;
+  process_started_at?: string | null;
+}
+
+/**
+ * A bounded page of trace events — the shared return of all four query tools.
+ *  *
+ *  * Kind `tool_trace_event_page` (registry v2).
+ */
+export interface ToolTraceEventPage {
+  note?: string | null;
+  count?: number;
+  shown?: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_event_page";
+  events?: ToolTraceEvent[];
+  verbose?: boolean;
+  truncated?: boolean | null;
+  detail_hint?: string | null;
+  filter_summary?: string;
+}
+
+/**
+ * One ``tool-trace-*.log`` file in the local debug sink.
+ *  *
+ *  * Kind `tool_trace_file` (registry v2).
+ */
+export interface ToolTraceFile {
+  name?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_file";
+  size_bytes?: number;
+  modified_at?: string;
+  is_header_only?: boolean;
+}
+
+/**
+ * The local trace-log directory. ``log_dir`` is None when no sink is active.
+ *  *
+ *  * Kind `tool_trace_file_listing` (registry v2).
+ */
+export interface ToolTraceFileListing {
+  count?: number;
+  files?: ToolTraceFile[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_file_listing";
+  log_dir?: string | null;
+}
+
+/**
+ * A paged character window into one trace file.
+ *
+ * A trace file is unbounded (verbose logging grows them to many MB), so the
+ * tool returns a window and the caller pages with ``next_offset``. ``content``
+ * is raw log text — opaque by definition, not a shape being flattened.
+ *  *
+ *  * Kind `tool_trace_file_window` (registry v2).
+ */
+export interface ToolTraceFileWindow {
+  note?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_file_window";
+  offset?: number;
+  content?: string;
+  filename?: string;
+  truncated?: boolean | null;
+  size_bytes?: number;
+  next_offset?: number | null;
+  shown_chars?: number;
+  total_chars?: number;
+}
+
+/**
+ * One open incident row. ``route`` is always ``tool:<tool_name>``.
+ *  *
+ *  * Kind `tool_trace_incident` (registry v2).
+ */
+export interface ToolTraceIncident {
+  id?: string;
+  route?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_incident";
+  status?: string | null;
+  priority?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  ai_assessment?: string | null;
+  ai_complexity?: string | null;
+  admin_decision?: string | null;
+  ai_estimated_files?: number | null;
+  ai_solution_proposal?: string | null;
+}
+
+/**
+ * The filter a listing was produced under — echoed back so a reader knows
+ * what the absence of a row means. None means "not filtered on".
+ *  *
+ *  * Kind `tool_trace_incident_filter` (registry v2).
+ */
+export interface ToolTraceIncidentFilter {
+  limit?: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_incident_filter";
+  severity?: string | null;
+  tool_name_substring?: string | null;
+}
+
+/**
+ * Open Tool Trace incidents, newest first.
+ *  *
+ *  * Kind `tool_trace_incident_list` (registry v2).
+ */
+export interface ToolTraceIncidentList {
+  count?: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_incident_list";
+  filter?: ToolTraceIncidentFilter;
+  incidents?: ToolTraceIncident[];
+}
+
+/**
+ * What filing an incident returns.
+ *
+ * ``created`` and ``merged_into_existing`` are the two halves of one fact and
+ * both are kept: the tool DEDUPES on ``dedupe_key``, so a caller has to be able
+ * to tell "I filed something new" from "I bumped an existing row's count".
+ *  *
+ *  * Kind `tool_trace_incident_report` (registry v2).
+ */
+export interface ToolTraceIncidentReport {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "tool_trace_incident_report";
+  created?: boolean;
+  priority?: string;
+  dedupe_key?: string;
+  feedback_id?: string;
+  category_slug?: string;
+  merged_into_existing?: boolean;
+}
+
+/**
  * Kind `topic_assignment_batch_v1` (registry v4).
  */
 export interface TopicAssignmentBatchV1 {
@@ -16644,6 +16881,17 @@ export type GeneratedKindSlug =
   | "text_result"
   | "timeline"
   | "tool_bundle_listing"
+  | "tool_call_record"
+  | "tool_trace_call_detail"
+  | "tool_trace_event"
+  | "tool_trace_event_page"
+  | "tool_trace_file"
+  | "tool_trace_file_listing"
+  | "tool_trace_file_window"
+  | "tool_trace_incident"
+  | "tool_trace_incident_filter"
+  | "tool_trace_incident_list"
+  | "tool_trace_incident_report"
   | "topic_assignment_batch_v1"
   | "topic_idea"
   | "topic_ideas"
@@ -17064,6 +17312,17 @@ export interface KindPayloadBySlug {
   "text_result": TextResult;
   "timeline": Timeline;
   "tool_bundle_listing": ToolBundleListing;
+  "tool_call_record": ToolCallRecord;
+  "tool_trace_call_detail": ToolTraceCallDetail;
+  "tool_trace_event": ToolTraceEvent;
+  "tool_trace_event_page": ToolTraceEventPage;
+  "tool_trace_file": ToolTraceFile;
+  "tool_trace_file_listing": ToolTraceFileListing;
+  "tool_trace_file_window": ToolTraceFileWindow;
+  "tool_trace_incident": ToolTraceIncident;
+  "tool_trace_incident_filter": ToolTraceIncidentFilter;
+  "tool_trace_incident_list": ToolTraceIncidentList;
+  "tool_trace_incident_report": ToolTraceIncidentReport;
   "topic_assignment_batch_v1": TopicAssignmentBatchV1;
   "topic_idea": TopicIdea;
   "topic_ideas": TopicIdeas;
@@ -17488,6 +17747,17 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "text_result",
   "timeline",
   "tool_bundle_listing",
+  "tool_call_record",
+  "tool_trace_call_detail",
+  "tool_trace_event",
+  "tool_trace_event_page",
+  "tool_trace_file",
+  "tool_trace_file_listing",
+  "tool_trace_file_window",
+  "tool_trace_incident",
+  "tool_trace_incident_filter",
+  "tool_trace_incident_list",
+  "tool_trace_incident_report",
   "topic_assignment_batch_v1",
   "topic_idea",
   "topic_ideas",

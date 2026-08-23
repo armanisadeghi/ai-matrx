@@ -62,12 +62,12 @@ export function readPlanPageDraftData(
     h1: typeof candidate.h1 === "string" ? candidate.h1 : null,
     intro: typeof candidate.intro === "string" ? candidate.intro : "",
     sections: Array.isArray(candidate.sections) ? candidate.sections : [],
-    callToAction:
-      typeof candidate.callToAction === "string" ? candidate.callToAction : "",
-    metaTitle: typeof candidate.metaTitle === "string" ? candidate.metaTitle : "",
-    metaDescription:
-      typeof candidate.metaDescription === "string"
-        ? candidate.metaDescription
+    call_to_action:
+      typeof candidate.call_to_action === "string" ? candidate.call_to_action : "",
+    meta_title: typeof candidate.meta_title === "string" ? candidate.meta_title : "",
+    meta_description:
+      typeof candidate.meta_description === "string"
+        ? candidate.meta_description
         : "",
     isComplete: candidate.isComplete === true,
   };
@@ -210,27 +210,27 @@ export function PlanDraftCallToAction({ text }: { text: string }) {
 
 /** How the page will look in a search result. */
 export function PlanDraftSearchListing({
-  metaTitle,
-  metaDescription,
+  meta_title,
+  meta_description,
 }: {
-  metaTitle: string;
-  metaDescription: string;
+  meta_title: string;
+  meta_description: string;
 }) {
-  if (!metaTitle && !metaDescription) return null;
+  if (!meta_title && !meta_description) return null;
   return (
     <SectionShell
       icon={<Search className="h-3.5 w-3.5 text-muted-foreground" />}
       title="How it looks in search"
     >
       <div className="mt-1.5 rounded-md bg-muted/50 p-2">
-        {metaTitle ? (
+        {meta_title ? (
           <p className="text-sm font-medium leading-snug text-primary">
-            {metaTitle}
+            {meta_title}
           </p>
         ) : null}
-        {metaDescription ? (
+        {meta_description ? (
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            {metaDescription}
+            {meta_description}
           </p>
         ) : null}
       </div>
@@ -252,12 +252,12 @@ export function PlanDraftBody({
 }) {
   return (
     <div className="space-y-2">
-      <PlanDraftHeadline h1={data.h1} intro={data.intro} />
+      <PlanDraftHeadline h1={data.h1} intro={data.intro ?? ""} />
       <PlanDraftSections sections={data.sections} emptyHint={emptyHint} />
-      <PlanDraftCallToAction text={data.callToAction} />
+      <PlanDraftCallToAction text={data.call_to_action ?? ""} />
       <PlanDraftSearchListing
-        metaTitle={data.metaTitle}
-        metaDescription={data.metaDescription}
+        meta_title={data.meta_title ?? ""}
+        meta_description={data.meta_description ?? ""}
       />
     </div>
   );

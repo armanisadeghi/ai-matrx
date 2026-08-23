@@ -70,12 +70,12 @@ export function readPlanPageOutlineData(
         ? candidate.differentiator
         : null,
     covers: strings(candidate.covers),
-    mustNotCover: strings(candidate.mustNotCover),
-    deferTo: Array.isArray(candidate.deferTo) ? candidate.deferTo : [],
-    internalLinks: Array.isArray(candidate.internalLinks)
-      ? candidate.internalLinks
+    must_not_cover: strings(candidate.must_not_cover),
+    defer_to: Array.isArray(candidate.defer_to) ? candidate.defer_to : [],
+    internal_links: Array.isArray(candidate.internal_links)
+      ? candidate.internal_links
       : [],
-    uncoveredGaps: strings(candidate.uncoveredGaps),
+    uncovered_gaps: strings(candidate.uncovered_gaps),
     isComplete: candidate.isComplete === true,
   };
 }
@@ -170,14 +170,14 @@ export function PlanOutlineDifferentiator({
  */
 export function PlanOutlineTerritory({
   covers,
-  mustNotCover,
-  deferTo,
+  must_not_cover,
+  defer_to,
 }: {
   covers: string[];
-  mustNotCover: string[];
-  deferTo: PlanDeferredTopicData[];
+  must_not_cover: string[];
+  defer_to: PlanDeferredTopicData[];
 }) {
-  const hasBoundary = mustNotCover.length > 0 || deferTo.length > 0;
+  const hasBoundary = must_not_cover.length > 0 || defer_to.length > 0;
   if (covers.length === 0 && !hasBoundary) return null;
   return (
     <>
@@ -195,19 +195,19 @@ export function PlanOutlineTerritory({
           title="Leave to other pages"
           hint="Writing about these here competes with your own pages for the same readers."
         >
-          {mustNotCover.length > 0 ? <PlainList lines={mustNotCover} /> : null}
-          {deferTo.length > 0 ? (
+          {must_not_cover.length > 0 ? <PlainList lines={must_not_cover} /> : null}
+          {defer_to.length > 0 ? (
             <ul className="mt-1.5 space-y-1">
-              {deferTo.map((entry, index) => (
+              {defer_to.map((entry, index) => (
                 <li
                   key={`${index}-${entry.topic.slice(0, 24)}`}
                   className="animate-in fade-in flex flex-wrap items-baseline gap-1.5 text-sm leading-relaxed text-foreground"
                 >
                   <ArrowRightLeft className="h-3 w-3 shrink-0 self-center text-muted-foreground" />
                   <span>{entry.topic}</span>
-                  {entry.toRoute ? (
+                  {entry.to_route ? (
                     <span className="font-mono text-xs text-muted-foreground">
-                      {entry.toRoute}
+                      {entry.to_route}
                     </span>
                   ) : (
                     <span className="text-xs text-amber-700 dark:text-amber-400">
@@ -235,14 +235,14 @@ export function PlanOutlineLinks({ links }: { links: PlanPlannedLinkData[] }) {
       <ul className="mt-1.5 space-y-1.5">
         {links.map((link, index) => (
           <li
-            key={`${index}-${link.toRoute}`}
+            key={`${index}-${link.to_route}`}
             className="animate-in fade-in text-sm leading-relaxed"
           >
             <span className="text-foreground">
-              {link.anchorText || link.toRoute}
+              {link.anchor_text || link.to_route}
             </span>{" "}
             <span className="font-mono text-xs text-muted-foreground">
-              {link.toRoute}
+              {link.to_route}
             </span>
             {link.reason ? (
               <span className="block text-xs text-muted-foreground">
@@ -291,9 +291,9 @@ export default function PlanPageOutlineBlock({
         <span className="text-sm font-semibold text-foreground">
           Where this page sits
         </span>
-        {data.uncoveredGaps.length > 0 && (
+        {data.uncovered_gaps.length > 0 && (
           <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-amber-700 dark:text-amber-400">
-            {data.uncoveredGaps.length} uncovered
+            {data.uncovered_gaps.length} uncovered
           </span>
         )}
         {!data.isComplete && (
@@ -307,11 +307,11 @@ export default function PlanPageOutlineBlock({
       <PlanOutlineDifferentiator differentiator={data.differentiator} />
       <PlanOutlineTerritory
         covers={data.covers}
-        mustNotCover={data.mustNotCover}
-        deferTo={data.deferTo}
+        must_not_cover={data.must_not_cover}
+        defer_to={data.defer_to}
       />
-      <PlanOutlineLinks links={data.internalLinks} />
-      <PlanOutlineGaps gaps={data.uncoveredGaps} />
+      <PlanOutlineLinks links={data.internal_links} />
+      <PlanOutlineGaps gaps={data.uncovered_gaps} />
     </div>
   );
 }

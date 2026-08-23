@@ -15,10 +15,10 @@ Canonical spec: `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md`
 
 ## Counts (live, refresh on every edit)
 
-- Active non-contract-artifact kinds: **417** — live recount 2026-08-23 (the 211 figure was 2026-08-20; the registry has grown)
-- Already routed (web/output row exists): **417** — live recount 2026-08-23 by `tools-reconcile-01`
-- **Missing a route: 0** ✅ — the 12 tool-result kinds (`tool_bundle_listing` + the 11-kind `fs_*` cluster) landed 2026-08-23 (`tools-reconcile-01`, `migrations/content_ir_tool_result_kind_routes.sql`) and all 12 ACTIVATED. **This ledger will keep growing:** the aidream tools sweep mints result kinds for 279 tools (50 done / 199 todo), and each one that lands here needs a route. Treat new rows from `aidream/docs/workflow/KIND_TOOL_LEDGER.md` as the expected inflow, not as regressions.
-- Individual rows (60 total): unclaimed **0** · claimed **0** · done **60** · blocked **0** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-23 by `tools-reconcile-01` after flipping the 12 tool-result kinds. **EVERY individual row is `done`.**
+- Active non-contract-artifact kinds: **428** — live recount 2026-08-23 after the tools sweep's batch 3 (the 211 figure was 2026-08-20; the registry has grown)
+- Already routed (web/output row exists): **428** — live recount 2026-08-23 by `tools-reconcile-01`
+- **Missing a route: 0** ✅ — the 12 tool-result kinds (`tool_bundle_listing` + the 11-kind `fs_*` cluster) and the 11-kind trace-debugging family landed 2026-08-23 (`tools-reconcile-01`, `migrations/content_ir_tool_result_kind_routes.sql`) and all 12 ACTIVATED. **This ledger will keep growing:** the aidream tools sweep mints result kinds for 279 tools (58 done / 191 todo), and each one that lands here needs a route. Treat new rows from `aidream/docs/workflow/KIND_TOOL_LEDGER.md` as the expected inflow, not as regressions.
+- Individual rows (71 total): unclaimed **0** · claimed **0** · done **71** · blocked **0** · plus the 83-kind `web_*_v1` family row (copy-C, **done**) — recounted from the rows 2026-08-23 by `tools-reconcile-01` after flipping the 12 tool-result kinds. **EVERY individual row is `done`.**
 
 **Companion gap — `role='input'` (found by copy-C, live recount 2026-08-20):** **66** active
 non-contract-artifact kinds have no `(kind,'web','input')` row. For the `agent_io` (16) and
@@ -204,7 +204,7 @@ finished it. **All 83 kinds now carry an ACTIVE `(kind,'web','output')` row poin
 
 ---
 
-## Individual rows (60)
+## Individual rows (71)
 
 `Ex` = canonical `kind_example` count; **0 means you must author one first.**
 
