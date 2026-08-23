@@ -33,6 +33,14 @@ A surface with both modes (editor + preview) uses **both** — one per mode.
 3. **Pass the identity + value props:** `sourceFeature` (required), `surfaceName` (registry surface → AI actions + bound agents + value mappings), `getApplicationScope` (live, preferred) / `contextData` (static), `extraSections`, and for editables `getTextarea` + `onTextReplace` / `onTextInsertBefore|After`; history props and `scope` / `scopeId` as the surface needs. Use `placementMode` for per-placement visibility. Types: `@/features/context-menu-v3/types` (`EditableContextMenuProps` / `NonEditableContextMenuProps`).
 4. Build scope through **`buildApplicationScopeFromMenuContext`** (`@/features/context-menu-v3/utils/build-application-scope`) — it guarantees the 5 baselines from the live DOM.
 
+## ONE MENU PER PANE — delegate per row, never nest
+
+A list, table, or grid gets **one** wrapper around the whole pane, not one per row. Nesting Radix triggers opens two menus and appears nowhere in this repo. Per-row context comes from **`resolveContextOnOpen(target)`**: the shell calls it with the right-clicked element before opening, and the returned object is merged over `contextData`, so the same single menu can say `Edit "China"` on a row and show list-level rows on empty space. Worked reference: `features/user-lists/components/ListDetailClient.tsx` + its `dom-anchors.ts` (read the clicked row/group off `data-*` attributes).
+
+⚠️ **`className` on the wrapper styles the menu POPUP, not the trigger.** Layout classes there silently break the popup instead of the pane — style the child element you wrap.
+
+⚠️ **An overlay/window surface must mount its own menu.** Without one, a right-click inside the window is answered by the page underneath, handing the user THAT page's surface, values and agents — silently wrong, and it looks like it works.
+
 ## Unlock the new capabilities (do this, don't skip it)
 
 - **`contentSource?: ContentSource`** (rich-document source: `{type:"note",noteId}`, `{type:"chat-message",…}`, `{type:"raw"}` default) → lights up **Copy-as variants, Export, Download as Markdown, Convert** and links Convert→Task to the right parent. A surface with a real entity should pass its source, not raw.
