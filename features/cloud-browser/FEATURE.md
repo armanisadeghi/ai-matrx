@@ -143,7 +143,9 @@ The frontend never receives a password, seed, or generated code from that path.
   `CloudBrowserBody` catches claim, request, and return control rejections and
   renders their messages through `toastErrorAlreadyCaptured`; `postJson` already
   owns the structured API capture, so the UI adds neither a generic unhandled
-  rejection nor a second toast diagnostic.
+  rejection nor a second toast diagnostic. The exact structured retryable
+  worker-replacement 503 is ordinary recovery state and is excluded at
+  `captureApiError`; other control failures remain captured once.
 
 - **2026-08-21 — handoff bounded exit (server D-pair):** the handoff card gains
   "Dismiss — let the agent continue" (`dismissHandoff` → `POST

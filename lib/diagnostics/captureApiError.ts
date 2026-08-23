@@ -60,6 +60,16 @@ export function captureApiError(
         : undefined;
     const requestId = backendRequestId ?? ctx.requestId;
     const structuredDetail = sd.details ?? sd.detail;
+    const retryableWorkerRestart =
+      error.status === 503 &&
+      (backendType ?? backendCode) === "worker_unreachable" &&
+      isJsonObject(structuredDetail) &&
+      structuredDetail.retryable === true;
+
+    // A stateful browser worker replacement is ordinary retry-later control
+    // flow. The caller still receives and renders the structured 503, but an
+    // expected replacement window is not a durable product incident.
+    if (retryableWorkerRestart) return;
 
     captureError({
       source: isNetwork ? "api-network" : "api-http",

@@ -196,4 +196,29 @@ describe("captureApiError", () => {
       message: "Failed to fetch",
     });
   });
+
+  it("keeps a retryable browser-worker restart out of persistence", () => {
+    captureApiError(
+      {
+        type: "http_error",
+        status: 503,
+        message: "The browser worker is restarting. Retry this action shortly.",
+        name: "BackendApiError",
+        raw: {},
+        serverDetail: {
+          error: "worker_unreachable",
+          message: "The browser worker is restarting. Retry this action shortly.",
+          user_message: "The browser worker is restarting. Retry this action shortly.",
+          details: { retryable: true },
+        },
+      },
+      {
+        url: "https://server.app.matrxserver.com/browser-manager/runs/run-id/claim-control",
+        method: "POST",
+        path: "/browser-manager/runs/run-id/claim-control",
+      },
+    );
+
+    expect(getSnapshot()).toHaveLength(0);
+  });
 });

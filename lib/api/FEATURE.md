@@ -156,6 +156,11 @@ for **every unclassified crash** — while the real cause travels in the same
 payload's `message`, often as a stringified upstream service payload
 (`… HTTP 409 {"message":"…has no vault credential…","request_id":"…"}`).
 
+**Retryable Cloud Browser worker replacement is not a durable incident.**
+`captureApiError` skips only structured HTTP 503 `worker_unreachable` responses
+whose `details.retryable` is exactly true; the caller still receives the error
+for retry messaging, and every other backend failure remains captured.
+
 **Rules for any surface that reports a backend failure:**
 
 1. Never headline a raw `user_message`. Run the error through
@@ -244,6 +249,8 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-08-22 — Kept the exact retryable Cloud Browser worker-replacement 503
+  out of Error Inspector persistence while preserving caller-visible recovery.
 - 2026-08-11 — Documented the two request ceilings (our 15s/30s defaults vs
   Cloudflare's ~100s) and the "Failed to fetch" trap: an edge-replaced origin
   502/504 loses its CORS headers, so a real server answer reaches the client as
