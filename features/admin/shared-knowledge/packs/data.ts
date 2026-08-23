@@ -25,7 +25,7 @@ import type {
   StarterPackSummary,
 } from "@/features/marketing/seo/value-system/types";
 
-const assertData = makeAssertData("starter-pack-authoring");
+const assertData = makeAssertData("complete the starter-pack action");
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -103,7 +103,7 @@ export async function savePack(patch: PackCorePatch): Promise<AdminPackRecord> {
   const response = await (await seoDb()).rpc("starter_pack_save", {
     p_pack: patch as unknown as Json,
   });
-  return assertData(response.data, response.error) as unknown as AdminPackRecord;
+  return assertData(response.data, response.error, "save the pack") as unknown as AdminPackRecord;
 }
 
 export async function setPackStatus(
@@ -116,7 +116,7 @@ export async function setPackStatus(
     p_status: status,
     ...(notes ? { p_notes: notes } : {}),
   });
-  return assertData(response.data, response.error) as unknown as AdminPackRecord;
+  return assertData(response.data, response.error, "change the pack's status") as unknown as AdminPackRecord;
 }
 
 export async function newPackVersion(packId: string, slug?: string): Promise<AdminPackRecord> {
@@ -124,7 +124,7 @@ export async function newPackVersion(packId: string, slug?: string): Promise<Adm
     p_pack_id: packId,
     ...(slug ? { p_slug: slug } : {}),
   });
-  return assertData(response.data, response.error) as unknown as AdminPackRecord;
+  return assertData(response.data, response.error, "clone the pack") as unknown as AdminPackRecord;
 }
 
 // ── Items (topic worth · value band · geo band · geo archetype) ──────────────
@@ -153,12 +153,12 @@ export async function savePackItem(item: PackItemPatch): Promise<Record<string, 
   const response = await (await seoDb()).rpc("starter_pack_item_save", {
     p_item: item as unknown as Json,
   });
-  return assertData(response.data, response.error) as Record<string, unknown>;
+  return assertData(response.data, response.error, "save the pack item") as Record<string, unknown>;
 }
 
 export async function deletePackItem(itemId: string): Promise<void> {
   const response = await (await seoDb()).rpc("starter_pack_item_delete", { p_item_id: itemId });
-  if (response.error) assertData(null, response.error);
+  if (response.error) assertData(null, response.error, "remove the pack item");
 }
 
 // ── Template rules (THE ONE rules engine, is_template + pack_id) ─────────────
@@ -180,12 +180,12 @@ export async function savePackRule(rule: PackRulePatch): Promise<Record<string, 
   const response = await (await seoDb()).rpc("starter_pack_rule_save", {
     p_rule: rule as unknown as Json,
   });
-  return assertData(response.data, response.error) as Record<string, unknown>;
+  return assertData(response.data, response.error, "save the rule") as Record<string, unknown>;
 }
 
 export async function deletePackRule(ruleId: string): Promise<void> {
   const response = await (await seoDb()).rpc("starter_pack_rule_delete", { p_rule_id: ruleId });
-  if (response.error) assertData(null, response.error);
+  if (response.error) assertData(null, response.error, "remove the rule");
 }
 
 // ── Proposing from sample sites ──────────────────────────────────────────────
@@ -209,7 +209,7 @@ export async function searchAdminSites(query: string, limit = 25): Promise<Admin
   const needle = query.trim();
   if (needle) q = q.or(`domain.ilike.%${needle}%,name.ilike.%${needle}%`);
   const { data, error } = await q;
-  if (error) assertData(null, error);
+  if (error) assertData(null, error, "search sites");
   return (data ?? []) as AdminSiteOption[];
 }
 
@@ -224,7 +224,7 @@ export async function fetchPackCorpus(
     p_days: days,
     p_top_n: topN,
   });
-  return assertData(response.data, response.error) as Record<string, unknown>;
+  return assertData(response.data, response.error, "read the sample sites' demand") as Record<string, unknown>;
 }
 
 export interface TopicOption {
@@ -249,7 +249,7 @@ export async function searchTopics(query: string, limit = 40): Promise<TopicOpti
   const needle = query.trim();
   if (needle) q = q.or(`name.ilike.%${needle}%,slug.ilike.%${needle}%`);
   const { data, error } = await q;
-  if (error) assertData(null, error);
+  if (error) assertData(null, error, "search topics");
   return (data ?? []) as TopicOption[];
 }
 
@@ -266,7 +266,7 @@ export async function packFromProposal(input: {
     ...(input.sourceCorpus ? { p_source_corpus: input.sourceCorpus as unknown as Json } : {}),
     ...(input.sourceSiteIds?.length ? { p_source_site_ids: input.sourceSiteIds } : {}),
   });
-  return assertData(response.data, response.error) as unknown as AdminPackRecord;
+  return assertData(response.data, response.error, "land the proposal as a draft pack") as unknown as AdminPackRecord;
 }
 
 // ── Labels shared by the sections ────────────────────────────────────────────

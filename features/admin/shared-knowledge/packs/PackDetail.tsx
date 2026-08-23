@@ -76,6 +76,9 @@ export function PackDetail({
   const [ratifyOpen, setRatifyOpen] = useState(false);
   const [ratifyNotes, setRatifyNotes] = useState("");
   const [retireOpen, setRetireOpen] = useState(false);
+  // Publishing writes grants, not the pack row — the Overview's audience list reads
+  // grants through its own hook, so a publish/revoke bumps this to refresh it.
+  const [grantsBump, setGrantsBump] = useState(0);
 
   const invalidate = async () => {
     await Promise.all([
@@ -254,7 +257,7 @@ export function PackDetail({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="min-h-0 flex-1 overflow-y-auto pt-3">
-          <PackOverview detail={detail.data} directory={directory} onChanged={invalidate} onSelectPack={onSelectPack} />
+          <PackOverview detail={detail.data} directory={directory} onChanged={invalidate} onSelectPack={onSelectPack} grantsBump={grantsBump} />
         </TabsContent>
         <TabsContent value="rules" className="min-h-0 flex-1 overflow-y-auto pt-3">
           <PackRulesSection detail={detail.data} onChanged={invalidate} />
@@ -281,7 +284,10 @@ export function PackDetail({
           .filter((o) => !o.is_personal)
           .map((o) => ({ id: o.id, name: o.name }))
           .sort((a, b) => a.name.localeCompare(b.name))}
-        onChanged={() => void invalidate()}
+        onChanged={() => {
+          setGrantsBump((b) => b + 1);
+          void invalidate();
+        }}
       />
 
       <ConfirmDialog

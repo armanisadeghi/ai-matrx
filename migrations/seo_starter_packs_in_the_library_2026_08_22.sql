@@ -909,3 +909,9 @@ begin
   order by ic.created_at;
 end $function$;
 grant execute on function public.industry_curator_list(uuid) to authenticated, service_role;
+
+-- The Library curates ACROSS tenants: a platform admin may point the proposer at sample sites
+-- in other organizations (how the first three packs were built). Everyone else keeps the
+-- per-site assert. Applied live as seo_starter_pack_corpus_admin_curation_lane_2026_08_22 —
+-- the body is the live one with `if not public.is_platform_admin() then … end if` around the
+-- per-site gsc_assert_site_access loop (search_path gains 'public').

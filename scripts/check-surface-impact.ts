@@ -647,6 +647,22 @@ async function main() {
       for (const pv of parent?.values ?? []) {
         if (!ownNames.has(pv.name) || BASELINE.has(pv.name)) continue;
         const childV = child.values.find((v) => v.name === pv.name);
+        // THE AVAILABILITY OVERRIDE (sanctioned): a child may re-declare a
+        // parent value for the SOLE purpose of narrowing availability — the
+        // parent always has it, this child sometimes doesn't. Deleting that
+        // re-declaration would turn an honest "sometimes" into a promise the
+        // child cannot keep, and the value-mapping guard would scream at
+        // runtime. Same name, same type, alwaysAvailable true → false is
+        // therefore CORRECT, not a shadow. Widening (false → true) is not:
+        // the child cannot promise more than it emits.
+        const narrowsAvailability =
+          !!childV &&
+          childV.valueType === pv.valueType &&
+          pv.alwaysAvailable &&
+          !childV.alwaysAvailable;
+        if (narrowsAvailability) continue;
+        const widensAvailability =
+          !!childV && !pv.alwaysAvailable && childV.alwaysAvailable;
         findings.push({
           kind: "SHADOWED_VALUE",
           severity: "warn",
@@ -655,9 +671,11 @@ async function main() {
           detail: `re-declares "${pv.name}", which ${cur} already conveys by inheritance${
             childV && childV.valueType !== pv.valueType
               ? ` — and with a DIFFERENT type (${childV.valueType} vs ${pv.valueType}), so the same name means two things in one family`
-              : ""
+              : widensAvailability
+                ? ` — and PROMISES MORE than the parent (alwaysAvailable true where the parent says false); the child must actually emit it every time or the value-mapping guard screams`
+                : ""
           }`,
-          fix: `Same meaning → delete the child's declaration and let inheritance carry it (the scope builder still takes it as a param). Different meaning → give the child's value its own name.`,
+          fix: `Same meaning → delete the child's declaration and let inheritance carry it (the scope builder still takes it as a param). Different meaning → give the child's value its own name. Only narrowing availability (parent always → child sometimes, same type) is a sanctioned re-declaration.`,
         });
       }
       cur = parent?.inheritsFrom;

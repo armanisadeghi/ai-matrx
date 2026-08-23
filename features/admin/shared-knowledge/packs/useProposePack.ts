@@ -28,12 +28,7 @@ import {
   type StreamPhase,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import {
-  fetchPackCorpus,
-  packFromProposal,
-  searchTopics,
-  type AdminPackRecord,
-} from "./data";
+import { fetchPackCorpus, packFromProposal, type AdminPackRecord } from "./data";
 
 export const STARTER_PACK_PROPOSER_MANDATE_KEY = "seo.starter_pack_proposer";
 export const PROPOSER_VERSION = "packpropose-v1";
@@ -43,8 +38,6 @@ export interface ProposePackInput {
   industryHint: string;
   siteIds: string[];
   expertRulings: string;
-  /** Optional topic slugs to seed the tree slice the proposer sees (defaults to a name search on the hint). */
-  topicQuery?: string;
 }
 
 export type ProposeStage = "idle" | "corpus" | "running" | "landing" | "done" | "error";
@@ -146,16 +139,11 @@ export function useProposePack() {
       setResult(null);
       try {
         setStage("corpus");
-        const [corpus, topics] = await Promise.all([
-          fetchPackCorpus(input.siteIds),
-          searchTopics(input.topicQuery ?? input.industryHint.split(/[\s,/]+/)[0] ?? "", 60),
-        ]);
-        const topicTree = topics.map((t) => ({
-          slug: t.slug,
-          name: t.name,
-          node_type: t.node_type,
-          parent_slug: topics.find((p) => p.id === t.parent_id)?.slug ?? null,
-        }));
+        const corpus = await fetchPackCorpus(input.siteIds);
+        // The corpus already carries the whole platform topic tree (slug · name ·
+        // node_type · parent_slug) — that IS topic_tree_json. A name search would
+        // only hand the proposer a slice and invite it to invent parents.
+        const topicTree = Array.isArray(corpus.existing_topics) ? corpus.existing_topics : [];
 
         setStage("running");
         const textPromise = new Promise<string | null>((resolve) => {

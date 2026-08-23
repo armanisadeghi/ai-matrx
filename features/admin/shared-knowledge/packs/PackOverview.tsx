@@ -46,16 +46,22 @@ export function PackOverview({
   directory,
   onChanged,
   onSelectPack,
+  grantsBump,
 }: {
   detail: AdminPackDetail;
   directory: SharedKnowledgeDirectory;
   onChanged: () => Promise<void>;
   onSelectPack: (id: string) => void;
+  /** Bumped by the detail host after a publish/revoke so the audience list refetches. */
+  grantsBump: number;
 }) {
   const { pack } = detail;
   const canAuthor = pack.can_author;
   const { industries } = useIndustries();
-  const { grants, loading: grantsLoading } = useLibraryGrants("seo_starter_pack", pack.id);
+  const { grants, loading: grantsLoading, refresh: refreshGrants } = useLibraryGrants("seo_starter_pack", pack.id);
+  useEffect(() => {
+    if (grantsBump > 0) refreshGrants();
+  }, [grantsBump, refreshGrants]);
 
   const [form, setForm] = useState({
     name: pack.name,
