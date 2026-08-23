@@ -31,7 +31,10 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { createScope } from "@/features/agent-context/redux/scope/scopesSlice";
 import { removeFromLists } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { markKgSuggestionAccepted } from "@/features/kg-suggestions/service/kgSuggestionsService";
+import {
+  assertKgSuggestionOwned,
+  markKgSuggestionAccepted,
+} from "@/features/kg-suggestions/service/kgSuggestionsService";
 import type { EntityType } from "@/features/scopes/types";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import {
@@ -104,6 +107,8 @@ export function useHeavyHitterAccept() {
       let scopeId: string;
       let createdName: string;
       try {
+        // Ownership is checked before creating a scope or tagging a source.
+        assertKgSuggestionOwned(row);
         const scope = await dispatch(
           createScope({
             org_id: organizationId,

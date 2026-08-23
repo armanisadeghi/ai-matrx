@@ -8,15 +8,24 @@
 // a brand-new suggestion id (never acknowledged) still pops.
 //
 // Reads/writes go React → Supabase directly (RLS scopes every row to
-// auth.uid()); there is no Next.js middle tier. Table: reg.kg_suggestion_ack.
+// auth.uid()); there is no Next.js middle tier. Table: rag.kg_suggestion_ack.
 
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
+import { requireUserId } from "@/utils/auth/getUserId";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+
+function requireCurrentUser(expectedUserId: string): void {
+  if (requireUserId() !== expectedUserId) {
+    throw new Error("Suggestion acknowledgements belong to the signed-in user.");
+  }
+}
 
 /** Every suggestion id this user has permanently dismissed. */
 export async function fetchAckedSuggestionIds(
   userId: string,
 ): Promise<Set<string>> {
+  requireCurrentUser(userId);
   const { data, error } = await supabase
     .schema("rag").from("kg_suggestion_ack")
     .select("suggestion_id")
@@ -31,10 +40,13 @@ export async function ackSuggestions(
   userId: string,
   suggestionIds: string[],
 ): Promise<void> {
+  requireCurrentUser(userId);
   if (suggestionIds.length === 0) return;
+  const organizationId = await resolvePersonalOrgId();
   const rows = suggestionIds.map((suggestion_id) => ({
     user_id: userId,
     suggestion_id,
+    organization_id: organizationId,
   }));
   const { error } = await supabase
     .schema("rag").from("kg_suggestion_ack")

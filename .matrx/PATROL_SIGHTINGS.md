@@ -10,6 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] CANDIDATE | live RLS / aidream `iam.apply_rls` | ambient platform-admin access on personal rows: 94 authenticated-readable `user_id` tables retain `platform_admin_all`; suggestion queue fixed, credential/secret and personal-state remainder tracked as D252; proposed Tier R after every RLS-generator/backfill change, using count-only admin-vs-owner simulation | 2026-08-22
 - [ ] P5 | `features/admin/unwired/UnwiredConsole.tsx:184` | table needs canonical row/view Copy, but its existing per-row “Copy brief” must first move into a row-level Copy-for-AI variant; adding the pair now would create a forbidden third copy control | missing-machinery | 2026-08-19
 - [x] P5 | `features/assists/manager/AssistsManager.tsx` + `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx` | canonical row/view Copy and Copy-for-AI added; two adversarial payload rejections repaired; exact candidate `8196a478e` certified | fixed-certified | 2026-08-19
 - [ ] P1 | `features/masterwork/components/masterworks/AuditionDialog.tsx` (findings list) | backtest cites a specific Rulebook `rule_id` as inert text; build one canonical rule-level route/anchor/opener on the Rulebook detail surface, then consume it here and for every rule citation | missing-machinery | 2026-08-17

@@ -76,6 +76,8 @@ export interface KgSuggestionRow {
   id: string;
   /** Which ledger this came from — drives the accept path. */
   stage: KgSuggestionStage;
+  /** The sole authenticated access owner; organization_id is context only. */
+  user_id: string;
   organization_id: string | null;
   source_kind: string;
   source_id: string;

@@ -15,6 +15,33 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D252 — the global admin-lane backfill exposes personal rows in ordinary app sessions (2026-08-22)
+
+Aidream migrations `0465_admin_lane_apply_rls_and_verify_canonical.sql` and
+`0466_admin_lane_backfill.sql` made `platform_admin_all` part of every RLS
+variant and backfilled it across existing tables. That is valid for deliberate
+admin inventory surfaces, but a platform-admin JWT is also used in the ordinary
+product, so user inbox/state/secret tables become cross-user reads there.
+
+The suggestion incident is fixed by aidream `0471_personal_rls_variant_and_suggestion_isolation.sql`:
+both suggestion ledgers and their ack table now use the new `personal` variant,
+and the frontend repeats the owner predicate. The sweep remainder is broader:
+**94** authenticated-readable tables with `user_id` still have
+`platform_admin_all`; **14** are registered with `default_visibility='personal'`.
+Count-only RLS simulation as `arman@armansadeghi.com` confirmed foreign rows
+in, among others: `users.user_secrets` **86**, `users.credential_items` **33**,
+`users.user_feedback` **223**, `users.user_preferences` **28**,
+`platform.assists` **240**, `public.sandbox_instances` **272**,
+`rag.kg_alerts` **14**, `rag.scope_suggestions` **5**, and
+`tool.mcp_user_conn` **1**. No secret values were read.
+
+**Fix:** classify every admin-lane table as (a) truly admin-inventory-visible or
+(b) personal. Move (b) to `rls_variant='personal'`, audit its frontend list
+queries for explicit `user_id` scope, and require admin inventory to use an
+explicit admin surface/RPC rather than ambient app-session access. Credential
+and secret tables are the first remediation batch. The DB/generator half belongs
+in aidream as an `AD<n> — D252 remainder`; this repo owns consumer hardening.
+
 ### D251 — a `user`-scoped retention policy silently governs EVERY entity, and its label follows (2026-08-22)
 
 `platform.retention_policy`'s `retention_policy_scope_addressing` CHECK constrains

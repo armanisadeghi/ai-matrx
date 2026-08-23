@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-08`
+**Last updated:** `2026-08-22`
 
 ---
 
@@ -159,8 +159,13 @@ from the three cache-keyed inbox views.
   `restoreKgSuggestion(row)` (back to `pending`), `setKgSuggestionStarred(row,
   starred)`, `markKgSuggestionsViewed(rows)` (best-effort `viewed_at` stamp).
 
-**Data source** (no API — React → Supabase directly, RLS-scoped to `auth.uid()`)
-- Read both ledgers with `supabase.from(...).select(...)`.
+**Data source** (no API — React → Supabase directly, owner-scoped to `auth.uid()`)
+- All three tables use the canonical `personal` RLS variant: service-role
+  producer access plus authenticated CRUD only where `user_id = auth.uid()`.
+  Platform-admin status and organization membership do not widen this queue.
+- Every frontend read and mutation also supplies an explicit
+  `.eq("user_id", requireUserId())` defense; accept paths assert the normalized
+  row owner before any scope/value side effect.
 - Reject/defer: a direct `update` (30-day / 7-day suppression window).
 - Accept a Stage-B value: the `set_context_value` SECURITY DEFINER RPC (via the
   scopes chokepoint `scopesService.setContextValue`), then mark `accepted`.
@@ -186,18 +191,19 @@ from the three cache-keyed inbox views.
 
 ## Data model
 
-**Database tables** (Supabase — RLS-scoped to `auth.uid() = user_id`; produced
+**Database tables** (Supabase — `rag` schema, personal RLS scoped to
+`auth.uid() = user_id`; produced
 by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
-- `public.scope_association_suggestions` (**Stage A**) — "this document belongs
+- `rag.scope_association_suggestions` (**Stage A**) — "this document belongs
   to scope X". `match_kind`: `exact` | `fuzzy` | `semantic` | `heavy_hitter` |
   `agent.orienter.association` | `agent.orienter.uncertain`. `target_scope_id`
   null for heavy_hitter (no scope yet — `suggested_value` is the proposed name).
-- `public.scope_item_value_suggestions` (**Stage B**) — "scope X's slot K should
+- `rag.scope_item_value_suggestions` (**Stage B**) — "scope X's slot K should
   hold value V". `target_scope_id` / `target_context_item_id` / `target_slot_key`
   / `suggested_value` NOT NULL; `current_value_snapshot` for improve/conflict.
   `match_kind`: `agent.slot_filler.fill_empty` | `…improve` | `…flag_conflict` |
   `agent.deep_extractor.extracted`.
-- `public.kg_suggestion_ack` — per-user "permanently dismissed" set for the
+- `rag.kg_suggestion_ack` — per-user "permanently dismissed" set for the
   global notifier toast.
 - `public.user_preferences.auto_rag_enabled` — per-user opt-out.
 
@@ -218,7 +224,8 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
 > discriminated by `stage`, so every surface consumes a single shape.
 
 **Key types** (`types.ts`)
-- `KgSuggestionRow` (normalized, `stage: "association" | "value"`),
+- `KgSuggestionRow` (normalized, `stage: "association" | "value"`, carrying
+  the required personal owner `user_id`),
   `KgMatchKind` (`KgAssociationMatchKind | KgValueMatchKind`),
   `KgSuggestionStatus`, predicates `isHeavyHitter` / `isAssociationLink` /
   `isValueSuggestion`.
@@ -240,12 +247,14 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
 - Trigger: `NoteContextPicker` renders `<KgSuggestionsChip filter={{ sourceKind:
   "note", sourceId }} />`.
 - `useKgSuggestions` derives `kgFilterKey`, dispatches a list thunk →
-  `listKgSuggestions` → `GET /kg-suggestions?status=pending&source_kind=note&
-  source_id=…`. Rows land in the slice; the chip shows the count (hidden if 0).
-- Click → `KgSuggestionsPopover` lists rows. Accept → `acceptKgSuggestion(id)` →
-  `POST /{id}/accept`. On success the row is removed from EVERY list that held
-  it (`removeFromLists`), so the chip count and the global drawer both drop in
-  one tick; a `toast.success` shows the filled value.
+  `listKgSuggestions`, which reads both personal suggestion ledgers directly
+  through Supabase with `user_id = auth.uid()`. Rows land in the slice; the
+  chip shows the count (hidden if 0).
+- Click → `KgSuggestionsPopover` lists rows. Accept routes through the shared
+  hook to the stage-specific direct-Supabase service. On success the row is
+  removed from EVERY list that held it (`removeFromLists`), so the chip count
+  and the global drawer both drop in one tick; a `toast.success` shows the
+  filled value.
 - Exit: chip count decremented (or chip hidden at 0).
 
 **2. Global drawer**
@@ -256,24 +265,18 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   splits out `heavy_hitter` rows into a "Suggest a scope" section.
 - Accept/reject/defer behave exactly as in flow 1 (shared row + hook).
 
-**3. Heavy-hitter → create scope (wired 2026-06-02)**
+**3. Heavy-hitter → create scope**
 - `HeavyHitterSuggestionsInbox` filters the global list to
   `match_kind === "heavy_hitter"`.
-- The LIVE accept contract (read 2026-06-02,
-  `aidream/api/routers/kg_suggestions.py`): `POST /kg-suggestions/{id}/accept`
-  on a heavy_hitter row takes NO request body. It flips the suggestion to
-  `accepted` server-side and returns a `KgHeavyHitterAcceptPlan` — the entity,
-  a suggested scope name, and the owner-scoped source mentions to tag. Scope
-  creation is a frontend-owned write path (React → Supabase, per the scopes
-  invariant), so the backend hands back a plan rather than creating the scope.
 - The row's "Create scope" button opens `HeavyHitterAcceptDialog` (Dialog
   desktop / Drawer mobile): the user confirms/edits the scope name and picks a
   scope type from their org's existing types (loaded via the agent-context
   `fetchScopeTypes` / `list_scope_types` RPC, default pre-selected by matching
   the KG entity kind to a type label). Confirm runs `useHeavyHitterAccept`:
-  accept → create scope (`createScope` thunk → `create_scope` RPC) → tag each
-  mappable source via `scopesService.getEntityScopes` + `setEntityScopes`
-  (additive — preserves a source's existing tags).
+  assert suggestion ownership → create scope (`createScope` thunk →
+  `create_scope` RPC) → tag the suggestion's mappable source via
+  `scopesService.getEntityScopes` + `setEntityScopes` (additive — preserves a
+  source's existing tags) → mark the suggestion accepted.
 - **Reused primitives, no forks.** Scope creation uses the SAME `createScope`
   thunk as `NewScopeInline` / `HierarchyCascade`. Tagging uses the canonical
   `ctx_scope_assignments` chokepoint. No parallel scope-create or tagging path
@@ -283,11 +286,10 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   `project`→project, `conversation`→conversation, `cld_file`→file). Untaggable
   kinds (`transcript`, `scraped`, `code_file`, `repository`, `library_doc`) are
   counted and reported in the toast — never silently dropped.
-- **Accept-succeeded-but-create-failed edge.** `accept` flips status
-  server-side BEFORE scope creation. If creation then fails,
-  `useHeavyHitterAccept` returns `failedStage: "create"` and the dialog surfaces
-  a recoverable error ("Suggestion accepted, but scope creation failed — create
-  the scope manually from /scopes") rather than a confusing silent failure.
+- **Create-succeeded-but-tag/decision-failed edge.** Tagging is best-effort and
+  reported in the returned counters. The final suggestion-status write is also
+  best-effort because the scope already exists; if it fails, the row may
+  resurface for later reconciliation rather than rolling back user data.
 
 **4. Auto-RAG opt-out**
 - `PrivacyTab` → "Auto knowledge-graph" switch → `useAutoRagPreference.setEnabled`
@@ -342,6 +344,11 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
 - **No API — decisions write to Supabase directly.** The `/api/kg-suggestions`
   routes are gone. Reads, reject/defer, and accept all go React → Supabase
   (RLS-scoped). Don't reintroduce a Python hop for reading or deciding.
+- **The queue is personal, even when a row references an organization.**
+  `user_id` is the sole authenticated access owner. Every read/mutation must
+  keep its explicit user filter, and every accept flow must assert ownership
+  before creating a scope, tagging a source, or writing a context value. Never
+  rely on platform-admin access or organization membership for this feature.
 - **`set_context_value` is the ONLY ctx-value write path.** Accepting a Stage-B
   value goes through `scopesService.setContextValue` (the SECURITY DEFINER RPC).
   Never insert/update `ctx_context_item_values` directly.
@@ -377,7 +384,7 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
 
 - Depends on: `features/scopes` (target slots, `/scopes` hub, EntityScopeTagger
   drop-in points), `features/overlays` (global drawer), `features/settings`
-  (auto-RAG toggle host), `lib/python-client` (aidream transport).
+  (auto-RAG toggle host), and the shared Supabase clients.
 - Depended on by: none (leaf UI feature).
 - Cross-links: `features/administration/kg-inspector/` (sibling read-only KG
   data viewer, Phase C.5 — same React→Python convention),
@@ -388,11 +395,11 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
 ## Doctrine compliance
 
 **Primitives reused**
-- Types: aidream wire shapes are mirrored (the kg-inspector sibling does the
-  same — there is no generated OpenAPI types file for this surface).
+- Types: generated Supabase types are the database boundary; `types.ts`
+  normalizes the two ledger row shapes for the shared UI.
 - Components: `components/ui/{popover,drawer,sheet,badge,skeleton,scroll-area,
   tooltip,button,card}`, `components/official/settings/*` (PrivacyTab),
-  `lucide-react` icons, `sonner` toasts.
+  `lucide-react` icons, and the canonical `@/lib/toast` facade.
 - Redux slices / selectors: registered in `lib/redux/rootReducer.ts`;
   `selectUserId` (`lib/redux/selectors/userSelectors`),
   `selectActiveOrganizationId` (scopes).
@@ -409,7 +416,7 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   are a distinct resource with their own lifecycle (accept/reject/defer +
   suppression) and must NOT touch global context.
 - `useKgSuggestions` (`hooks/useKgSuggestions.ts`) — Why a new hook: no existing
-  hook reads the `/kg-suggestions` API or the three-view filter union.
+  hook owns the personal suggestion ledgers or the three-view filter union.
   Considered extending: `useEntityScopes`. Rejected because: that hook owns
   scope ASSIGNMENTS (writes `ctx_scope_assignments`), an orthogonal concern.
 - `KgSuggestionRowItem` + surface components — Why new: no existing component
@@ -429,17 +436,37 @@ also names `lib/redux/slices/kgSuggestionsSlice.ts` as the canonical home.
 
 ## Current work / migration state
 
-As of 2026-06-07 the FE talks to Supabase directly — the aidream
+As of 2026-08-22 the FE talks to Supabase directly — the aidream
 `/kg-suggestions` API is deleted (migration `kg_013` split the single ledger
 into `scope_association_suggestions` + `scope_item_value_suggestions`). All
-reads + decisions are direct, RLS-scoped. Built and compile-verified against the
-live table shapes (confirmed via Supabase MCP) and the `set_context_value` RPC;
-end-to-end runtime needs NER to produce live rows in both ledgers.
+reads + decisions are direct and owner-scoped. Aidream migration
+`0471_personal_rls_variant_and_suggestion_isolation.sql` moved both ledgers
+and the ack table to the canonical `personal` RLS variant and removed their
+shareable registrations. Migration `0472_personal_suggestion_base_contract.sql`
+made `organization_id` non-null, restored the missing base FKs/triggers, and
+certified all three tables; `0473`/`0474` pinned and minimized the verifier's
+trusted search path after the advisor caught the replaced function. Live RLS
+simulation proved all five platform-admin accounts see zero
+foreign pending suggestions while the owner still sees the same six rows.
 
 ---
 
 ## Change log
 
+- `2026-08-22` — **Closed the platform-admin cross-user suggestion leak.**
+  The same-day admin-lane backfill had added `platform_admin_all` to these
+  personal inbox tables; the notifier consequently treated six old, foreign,
+  unacknowledged rows as newly discovered. Aidream migration `0471` added the
+  canonical `personal` RLS variant (service producer + `user_id=auth.uid()`
+  authenticated CRUD, no admin/org/share lane), applied it to both suggestion
+  ledgers and `kg_suggestion_ack`, and made the stats view user-filterable.
+  Frontend reads and writes now repeat the user predicate explicitly, normalized
+  rows carry `user_id`, and every accept path checks ownership before causing
+  downstream scope/value changes. Live proof: all five Arman admin accounts
+  see 0 pending rows; the owning user sees the original 5 association + 1 value.
+  Follow-ups `0472`–`0474` completed the non-null organization/FK/trigger base
+  contract and locked the canonical verifier's search path without changing its
+  qualification-sensitive policy checks.
 - `2026-08-10` — **The queue is agent-FILTERABLE, and deliberately not
   agent-DECIDABLE.** `SuggestionsManager` now passes `getWriteHandlers` to its
   `SurfaceRuntimeProvider`, registering exactly one of

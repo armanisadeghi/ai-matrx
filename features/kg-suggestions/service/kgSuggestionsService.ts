@@ -60,6 +60,7 @@ function mapAssociationRow(r: AssociationRow): KgSuggestionRow {
   return {
     id: r.id,
     stage: "association",
+    user_id: r.user_id,
     organization_id: r.organization_id,
     source_kind: r.source_kind,
     source_id: r.source_id,
@@ -88,6 +89,7 @@ function mapValueRow(r: ValueRow): KgSuggestionRow {
   return {
     id: r.id,
     stage: "value",
+    user_id: r.user_id,
     organization_id: r.organization_id,
     source_kind: r.source_kind,
     source_id: r.source_id,
@@ -140,7 +142,7 @@ export async function listKgSuggestions(
   filter: KgSuggestionsFilter,
   opts: { signal?: AbortSignal } = {},
 ): Promise<KgSuggestionsListResult> {
-  requireUserId();
+  const userId = requireUserId();
   const status = statusFilterValue(filter);
 
   // Per-slot panel: value ledger only.
@@ -150,6 +152,7 @@ export async function listKgSuggestions(
       .from("scope_item_value_suggestions")
       .select("*")
       .is("deleted_at", null)
+      .eq("user_id", userId)
       .eq("target_context_item_id", filter.scopeItemId)
       .order("confidence", { ascending: false });
     if (status !== "all") q = q.eq("status", status);
@@ -166,11 +169,13 @@ export async function listKgSuggestions(
   let assocQ = supabase
     .schema("rag").from("scope_association_suggestions")
     .select("*")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("user_id", userId);
   let valueQ = supabase
     .schema("rag").from("scope_item_value_suggestions")
     .select("*")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("user_id", userId);
   if (status !== "all") {
     assocQ = assocQ.eq("status", status);
     valueQ = valueQ.eq("status", status);
@@ -212,12 +217,21 @@ function tableFor(
     : "scope_association_suggestions";
 }
 
+/** Fail closed before a suggestion can trigger any downstream side effect. */
+export function assertKgSuggestionOwned(row: KgSuggestionRow): string {
+  const userId = requireUserId();
+  if (row.user_id !== userId) {
+    throw new Error("This suggestion is not available to the signed-in user.");
+  }
+  return userId;
+}
+
 async function markDecided(
   row: KgSuggestionRow,
   status: KgSuggestionStatus,
   opts: { suppressDays?: number; note?: string | null } = {},
 ): Promise<void> {
-  const userId = requireUserId();
+  const userId = assertKgSuggestionOwned(row);
   const patch: {
     status: string;
     decided_at: string;
@@ -243,7 +257,8 @@ async function markDecided(
     .schema("rag")
     .from(tableFor(row))
     .update(patch)
-    .eq("id", row.id);
+    .eq("id", row.id)
+    .eq("user_id", userId);
   if (error) throw operationFailed("save your decision on this suggestion", error);
 }
 
@@ -280,6 +295,7 @@ export async function markKgSuggestionAccepted(
  * window. Used by the management table.
  */
 export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
+  const userId = assertKgSuggestionOwned(row);
   const { error } = await supabase
     .schema("rag")
     .from(tableFor(row))
@@ -289,7 +305,8 @@ export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
       decided_by: null,
       suppressed_until: null,
     })
-    .eq("id", row.id);
+    .eq("id", row.id)
+    .eq("user_id", userId);
   if (error) throw operationFailed("restore this suggestion", error);
 }
 
@@ -298,11 +315,13 @@ export async function setKgSuggestionStarred(
   row: KgSuggestionRow,
   starred: boolean,
 ): Promise<void> {
+  const userId = assertKgSuggestionOwned(row);
   const { error } = await supabase
     .schema("rag")
     .from(tableFor(row))
     .update({ is_starred: starred })
-    .eq("id", row.id);
+    .eq("id", row.id)
+    .eq("user_id", userId);
   if (error) throw operationFailed("update this suggestion", error);
 }
 
@@ -318,6 +337,7 @@ export async function markKgSuggestionsViewed(
     viewed_at: string | null;
   }>,
 ): Promise<void> {
+  const userId = requireUserId();
   const now = new Date().toISOString();
   const valueIds = rows
     .filter((r) => r.stage === "value" && !r.viewed_at)
@@ -333,6 +353,7 @@ export async function markKgSuggestionsViewed(
         .from("scope_item_value_suggestions")
         .update({ viewed_at: now })
         .in("id", valueIds)
+        .eq("user_id", userId)
         .is("viewed_at", null),
     );
   }
@@ -343,6 +364,7 @@ export async function markKgSuggestionsViewed(
         .from("scope_association_suggestions")
         .update({ viewed_at: now })
         .in("id", assocIds)
+        .eq("user_id", userId)
         .is("viewed_at", null),
     );
   }
@@ -364,6 +386,7 @@ export async function markKgSuggestionsViewed(
 export async function acceptValueSuggestion(
   row: KgSuggestionRow,
 ): Promise<void> {
+  assertKgSuggestionOwned(row);
   if (!row.target.scope_id || !row.target.scope_item_id) {
     throw new Error("Suggestion is missing its target scope or field.");
   }
@@ -389,6 +412,7 @@ export async function acceptValueSuggestion(
 export async function acceptAssociationSuggestion(
   row: KgSuggestionRow,
 ): Promise<void> {
+  assertKgSuggestionOwned(row);
   const scopeId = row.target.scope_id;
   if (!scopeId) {
     throw new Error("Suggestion has no target scope to tag.");
@@ -418,6 +442,7 @@ function mapViewRow(r: SuggestionView): KgEnrichedSuggestionRow {
   return {
     id: r.id as string,
     stage: r.stage as KgSuggestionStage,
+    user_id: r.user_id as string,
     organization_id: r.organization_id,
     source_kind: r.source_kind as string,
     source_id: r.source_id as string,
@@ -482,11 +507,12 @@ export async function queryScopeSuggestions(
   q: KgSuggestionsQuery,
   opts: { signal?: AbortSignal; excludeHeavyHitter?: boolean } = {},
 ): Promise<KgEnrichedListResult> {
-  requireUserId();
+  const userId = requireUserId();
 
   let query = supabase
     .from("v_scope_suggestions")
-    .select("*", { count: "exact" });
+    .select("*", { count: "exact" })
+    .eq("user_id", userId);
 
   if (q.statuses && q.statuses.length > 0) {
     query = query.in("status", q.statuses);
@@ -552,8 +578,11 @@ export async function fetchScopeSuggestionStats(
     signal?: AbortSignal;
   } = {},
 ): Promise<KgSuggestionStat[]> {
-  requireUserId();
-  let query = supabase.from("v_scope_suggestion_stats").select("*");
+  const userId = requireUserId();
+  let query = supabase
+    .from("v_scope_suggestion_stats")
+    .select("*")
+    .eq("user_id", userId);
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;
   if (error) throw operationFailed("load the suggestion counts", error);
