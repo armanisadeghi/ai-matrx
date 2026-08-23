@@ -167,8 +167,8 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 **FE surfaces:**
 
-- `hooks/useDataStoreGrants.ts` — publish / revoke / list grants **direct to Supabase** (`rag.library_grant_publish` / `_revoke`, `rag.fn_list_data_store_grants`). The old `/knowledge/data-stores/{id}/grants` HTTP path is dead for the FE (migration `0162`).
-- `components/data-stores/DataStorePublishPanel.tsx` — audience-tab publish dialog (mirrors `ShareModal`; super-admin only). Opened from `DataStoresPage` for `kind:"library"` stores.
+- `hooks/useLibraryGrants.ts` — publish / revoke / list grants for ANY Library entity type (`data_store`, `seo_starter_pack`) **direct to Supabase** through the generic family `public.library_publish` / `library_revoke` / `library_list_grants` over `platform.entity_grants` (2026-08-22; replaced `useDataStoreGrants`). The old `/knowledge/data-stores/{id}/grants` HTTP path is dead for the FE (migration `0162`).
+- `components/library/LibraryPublishPanel.tsx` — audience-tab publish dialog for ANY Library resource (`entityType` / `entityId`; replaced `DataStorePublishPanel` 2026-08-22). Opened from `DataStoresPage` for `kind:"library"` stores and from the Shared Knowledge console's Starter packs tab.
 - `DataStoresPage` / `RichMemberTable` — a `'granted'` store shows a "Shared library · read-only" badge and hides Edit / Delete / Add-member / remove / drag-drop. `access` / `readOnly` ride on the data-store list/detail responses.
 - Tenant catalog (browse `discoverable` + subscribe) — `LibraryCatalogPane` + `hooks/useLibraryCatalog.ts`, mounted as a **section on `/knowledge`** (`RagHomePage`), reading `rag.fn_list_library_catalog` direct + `rag.library_subscribe`/`_unsubscribe`. **This pane is currently the ONLY way a grant reader can find granted content** — `files_listing_owner_grant_only.sql` (2026-07-20) deliberately bars reachability-conveyed rows from every file tree, search, and picker. A dedicated `/knowledge/library-catalog` route is still unbuilt.
 
@@ -179,6 +179,8 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 ---
 
 ## Change log
+
+- **2026-08-22 — The Library spine is generic and SEO starter packs live inside it.** `rag.data_store_grants` was already a view over `platform.entity_grants`; now the READ lane is generic too (`public.user_can_read_via_library_grant` inside `iam.has_access_for_base` / `is_discoverable_base` — the data_store-only arm is gone) and the WRITE family is generic (`public.library_publish / library_revoke / library_subscribe / library_unsubscribe / library_list_grants / library_entitlement`; `rag.library_*` delegate until the repointed aidream `services/rag/library_grants.py` deploys, then they are deleted). FE: `useLibraryGrants` + `LibraryPublishPanel` replace the data-store-only pair; `useLibraryCatalog` subscribes through the generic RPC. The Shared Knowledge console gained a **Starter packs** tab (`features/admin/shared-knowledge/packs/`) and an industry **Curators** panel; the Access explorer covers packs. Cross-repo SoR: `common-docs/systems/marketing/seo/seo-keywords/value-system.md § Inside the Matrx Library` + `common-docs/systems/crm/SHARED_CATALOG.md`. Also found + fixed: `rag.library_grant_publish` / `_revoke` were calling the dropped `_library_assert_super_admin` (every publish/revoke failed).
 
 - **2026-08-18 — canonical Knowledge compatibility wave.** Added every active
   workspace under `/knowledge/*`, switched frontend navigation and aidream HTTP

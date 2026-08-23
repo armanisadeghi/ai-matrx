@@ -29,6 +29,7 @@ Reads are PostgREST-exposed (anon-readable taxonomy, drives public pages later).
 |---|---|
 | `industry_upsert` | Matrx **super-admin** only (taxonomy) |
 | `industry_assign_org` / `industry_unassign_org` | **Org owner/admin** of that org, or Matrx super-admin |
+| `industry_curator_grant` / `industry_curator_revoke` / `industry_curator_list` | Platform admin — curators are the outside experts who may AUTHOR + PROPOSE Library resources (SEO starter packs) for an industry; they never ratify/publish/create industries (D5, 2026-08-22) |
 
 Auth is always `auth.uid()` — never trust `p_actor` for authorization.
 
@@ -51,6 +52,8 @@ Consumed by the RAG publish panel (`features/rag/components/data-stores/DataStor
 - Reconcile-later: the marketing `IndustryId` enum (`features/pricing/.../industries.ts`) and the `INDUSTRY_CATEGORIES` template keys (`features/agent-context/constants.ts`) are NOT force-merged in v1 — the DB taxonomy is the source of truth they converge onto in the template-seeding phase.
 
 ## Change log
+
+- 2026-08-22 — **Curators have a UI and a meaning.** `service.ts` gained `fetchIndustryCurators` / `grantIndustryCurator` / `revokeIndustryCurator`; the Shared Knowledge console's Industries tab renders `IndustryCuratorsPanel` per industry (email lookup → grant, revoke with confirm). Curators author/propose SEO starter packs for their industry (`public.is_pack_curator` lane in `iam.has_access_for_base`; `seo._pack_assert_author`). Industries `itad` and `consulting-marketing-services` created. SoR: `common-docs/systems/marketing/seo/seo-keywords/value-system.md § Inside the Matrx Library`.
 
 - 2026-07-23 — P2: `upsertIndustry` finally has callers — the Shared Knowledge admin console (`/administration/shared-knowledge`, Industries tab) does full taxonomy CRUD via `industry_upsert` (slug = immutable upsert key), facets + ordering, and per-industry org assign/unassign via `industry_assign_org`/`_unassign_org` with `ConfirmDialog`. Added `fetchAllOrgIndustries` (service) + `useAllOrgIndustries` (hook) — platform-wide assignments readable by super-admins under the existing `org_industries` RLS; powers the console's org lists + access explorer. Verified live; `industry_upsert` refuses a non-super-admin (DB probe).
 - 2026-07-23 — P3 legibility: `OrgIndustriesSection` now shows what each assigned industry UNLOCKS (shared libraries entitled via that industry, linked to `/rag/library-catalog?store_id=…`) plus a "Shared knowledge libraries" block listing every discoverable store with the org's entitlement chip and subscribe/unsubscribe (`rag.library_subscribe`/`_unsubscribe` via `useLibraryCatalog(orgId)` — evaluated against the section's org, not the active org). Self-serve join stays per Decision 1 (never read-only, no approval flow). Only the component changed — `service.ts`/`hooks.ts` untouched (P2 owns them this wave).
