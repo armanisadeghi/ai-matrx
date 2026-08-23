@@ -201,10 +201,11 @@ You can also ACT on the roster: add_entities creates the missing people/sources 
       description:
         "Builds and audits the site's E-E-A-T roster — proposing the people, sources, and organizations the content needs, and flagging credibility gaps for the vertical.",
       kind: "single",
-      // Platform agent "Content Plan Entity Curator" (agx_agent, created via
-      // the AI Dream MCP 2026-07-30) — same agent EntityManager's "Suggest
-      // from research" button runs (setup/ai.ts).
-      defaultAgentId: "c43e4497-3093-4b18-a906-b088127d8b9c",
+      // The entity-curator Mandate — the same job EntityManager's "Suggest
+      // from research" button runs. The DB decides the Holder (re-pointed
+      // from a pinned id 2026-08-23).
+      mandateKey: "content_plan.entity_curator",
+      defaultAgentId: null,
       sortOrder: 100,
     },
   ],

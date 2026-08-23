@@ -57,14 +57,12 @@ export const FAMILY_NAMER_MANDATE = "content_plan.family_namer";
  */
 export const ENTITY_CURATOR_MANDATE = "content_plan.entity_curator";
 
-/**
- * Platform agent "Content Plan Reviewer" — permanent latest-version pointer
- * (created 2026-07-30 via the AI Dream MCP). Variables: research_report,
- * site_domain, current_plan, guidance. Structured output:
- * {summary, findings: [{severity, title, detail, suggested_route,
- * suggested_label}]}.
- */
-export const PLAN_REVIEWER_MANDATE = "content_plan.plan_reviewer";
+// NOTE: the plan-review, keyword-strategy, and entity-attach passes run
+// SERVER-SIDE since 2026-08-11 — the mandates (`content_plan.plan_reviewer`,
+// `content_plan.keyword_strategist`, `content_plan.entity_attacher`) are
+// invoked by aidream `services/content_plan/setup_agents.py`, never from the
+// browser. Only the coerce* functions and result types below remain here,
+// because useSetupPasses.ts types/parses the persisted proposals with them.
 
 const EXTRACTION_TIMEOUT_MS = 180_000;
 const POLL_INTERVAL_MS = 300;
@@ -81,18 +79,11 @@ export interface FamilyNamesResult {
   notes: string;
 }
 
-/**
- * Platform agent "Content Plan Keyword Strategist" — permanent latest-version
- * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
- * research_report, site_domain, current_plan, available_keywords, guidance.
- *
- * WHOLE-PLAN by design: it sees every page at once so money pages get
- * distinct commercial primaries and educational pages are assigned easier
- * terms that support a NAMED money page, with the internal links to carry
- * authority there. A per-page keyword agent cannot do that — which is
- * exactly why this one takes the whole tree.
- */
-export const KEYWORD_STRATEGIST_MANDATE = "content_plan.keyword_strategist";
+// The keyword strategist (`content_plan.keyword_strategist`, server-side —
+// see the note above) is WHOLE-PLAN by design: it sees every page at once so
+// money pages get distinct commercial primaries and educational pages are
+// assigned easier terms that support a NAMED money page, with the internal
+// links to carry authority there.
 
 // ONE list of page roles, owned by the SEO plan model (the store the
 // strategist's assignments land in) and re-exported here for this parser's
@@ -120,13 +111,9 @@ export interface KeywordStrategyResult {
   warnings: string[];
 }
 
-/**
- * Platform agent "Content Plan Entity Attacher" — permanent latest-version
- * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
- * current_plan, entity_roster, research_report, guidance. Chooses ONLY from
- * the roster by label; gaps come back as `missing_entities`, never invented.
- */
-export const ENTITY_ATTACHER_MANDATE = "content_plan.entity_attacher";
+// The entity attacher (`content_plan.entity_attacher`, server-side — see the
+// note above) chooses ONLY from the roster by label; gaps come back as
+// `missing_entities`, never invented.
 
 export interface EntityAttachment {
   route: string;

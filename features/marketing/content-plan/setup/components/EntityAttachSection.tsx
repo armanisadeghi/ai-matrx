@@ -13,8 +13,13 @@ import { useState } from "react";
 import { Loader2, UserCheck, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
 import type { EntityAttachPlan } from "../ai";
+import {
+  PLAN_ENTITY_ATTACHMENT_SET_KIND,
+  entityAttachPlanValue,
+} from "../kind-values";
 import { SetupSection } from "./SetupSection";
 
 export function EntityAttachSection({
@@ -124,27 +129,6 @@ export function EntityAttachSection({
         </p>
       ) : (
         <div className="space-y-2">
-          {plan.notes ? (
-            <p className="text-xs leading-relaxed text-foreground">{plan.notes}</p>
-          ) : null}
-
-          {plan.missingEntities.length > 0 ? (
-            <div className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5">
-              <p className="text-[11px] font-medium text-foreground">
-                Roster gaps — add these in the Entities view, then re-run:
-              </p>
-              <ul className="mt-1 space-y-0.5">
-                {plan.missingEntities.map((gap, index) => (
-                  <li key={index} className="text-[11px] leading-relaxed text-foreground">
-                    <span className="font-medium">{gap.suggestedLabel}</span>{" "}
-                    <span className="text-muted-foreground">({gap.entityType})</span>{" "}
-                    — {gap.whyNeeded}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -169,35 +153,81 @@ export function EntityAttachSection({
             )}
           </div>
 
-          {open && plan.attachments.length > 0 ? (
-            <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
-              {plan.attachments.map((attachment, index) => (
-                <li
-                  key={`${attachment.route}-${attachment.entityLabel}-${index}`}
-                  className="bg-card px-2.5 py-1.5"
-                >
-                  <div className="flex items-baseline gap-2">
-                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-muted-foreground">
-                      {attachment.role.replace(/_/g, " ")}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-                      {attachment.entityLabel}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
-                    {attachment.route}
-                  </p>
-                  {attachment.reason ? (
-                    <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                      {attachment.reason}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+          {/* The RESULT body (notes + roster gaps + attachments) renders
+              through the `plan_entity_attachment_set` kind's registered
+              component (agent-manifest wave 2). The actions around it
+              (run/dismiss, Apply) stay this section's own; the bespoke
+              markup survives only as the registry-floor fallback. */}
+          {open ? (
+            <KindInstanceRender
+              kind={PLAN_ENTITY_ATTACHMENT_SET_KIND}
+              value={entityAttachPlanValue(plan)}
+              variant="bare"
+              showRoutingNote={false}
+              unroutableFallback={<EntityAttachFallbackBody plan={plan} />}
+            />
+          ) : plan.notes ? (
+            <p className="text-xs leading-relaxed text-foreground">{plan.notes}</p>
           ) : null}
         </div>
       )}
     </SetupSection>
+  );
+}
+
+/**
+ * The registry floor: when no component is render-trusted for the kind the
+ * plan still reads as a plan — notes, roster gaps, and the attachment rows.
+ */
+function EntityAttachFallbackBody({ plan }: { plan: EntityAttachPlan }) {
+  return (
+    <div className="space-y-2">
+      {plan.notes ? (
+        <p className="text-xs leading-relaxed text-foreground">{plan.notes}</p>
+      ) : null}
+      {plan.missingEntities.length > 0 ? (
+        <div className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5">
+          <p className="text-[11px] font-medium text-foreground">
+            Roster gaps — add these in the Entities view, then re-run:
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {plan.missingEntities.map((gap, index) => (
+              <li key={index} className="text-[11px] leading-relaxed text-foreground">
+                <span className="font-medium">{gap.suggestedLabel}</span>{" "}
+                <span className="text-muted-foreground">({gap.entityType})</span>{" "}
+                — {gap.whyNeeded}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {plan.attachments.length > 0 ? (
+        <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
+          {plan.attachments.map((attachment, index) => (
+            <li
+              key={`${attachment.route}-${attachment.entityLabel}-${index}`}
+              className="bg-card px-2.5 py-1.5"
+            >
+              <div className="flex items-baseline gap-2">
+                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-muted-foreground">
+                  {attachment.role.replace(/_/g, " ")}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                  {attachment.entityLabel}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                {attachment.route}
+              </p>
+              {attachment.reason ? (
+                <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                  {attachment.reason}
+                </p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }

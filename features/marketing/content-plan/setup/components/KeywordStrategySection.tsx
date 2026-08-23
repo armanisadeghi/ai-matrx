@@ -19,11 +19,17 @@ import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUn
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+
 import type {
   KeywordEffortTier,
   KeywordStrategyEstimate,
 } from "../../hooks/useSetupPasses";
 import type { KeywordAssignment, KeywordStrategyResult, PageRole } from "../ai";
+import {
+  PLAN_KEYWORD_STRATEGY_KIND,
+  keywordStrategyValue,
+} from "../kind-values";
 import { SetupSection } from "./SetupSection";
 
 const ROLE_LABEL: Record<PageRole, string> = {
@@ -206,20 +212,6 @@ export function KeywordStrategySection({
         </p>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs leading-relaxed text-foreground">
-            {strategy.strategySummary}
-          </p>
-
-          {strategy.warnings.length > 0 ? (
-            <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5">
-              {strategy.warnings.map((warning, index) => (
-                <li key={index} className="text-[11px] leading-relaxed text-foreground">
-                  {warning}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -249,34 +241,75 @@ export function KeywordStrategySection({
             )}
           </div>
 
+          {/* The RESULT body renders through the `plan_keyword_strategy`
+              kind's registered component (agent-manifest wave 2) — the same
+              render a `__kind` block gets in chat. The actions around it
+              (tier picker, run/dismiss, Apply) stay this section's own. The
+              bespoke rows survive only as the registry-floor fallback. */}
           {open ? (
-            <div className="space-y-2">
-              {ROLE_ORDER.filter((role) => (byRole.get(role) ?? []).length > 0).map(
-                (role) => (
-                  <div key={role}>
-                    <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {role === "money"
-                        ? "Money pages"
-                        : role === "supporting"
-                          ? "Supporting pages"
-                          : "Navigational"}
-                    </p>
-                    <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
-                      {(byRole.get(role) ?? []).map((assignment) => (
-                        <AssignmentRow
-                          key={assignment.route}
-                          assignment={assignment}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                ),
-              )}
-            </div>
-          ) : null}
+            <KindInstanceRender
+              kind={PLAN_KEYWORD_STRATEGY_KIND}
+              value={keywordStrategyValue(strategy)}
+              variant="bare"
+              showRoutingNote={false}
+              unroutableFallback={<KeywordStrategyFallbackBody strategy={strategy} byRole={byRole} />}
+            />
+          ) : (
+            <p className="text-xs leading-relaxed text-foreground">
+              {strategy.strategySummary}
+            </p>
+          )}
         </div>
       )}
     </SetupSection>
+  );
+}
+
+/**
+ * The registry floor: when no component is render-trusted for the kind (held
+ * inactive / registry cold on a stale client) the strategy still reads as a
+ * strategy — summary, warnings, and the grouped assignment rows.
+ */
+function KeywordStrategyFallbackBody({
+  strategy,
+  byRole,
+}: {
+  strategy: KeywordStrategyResult;
+  byRole: Map<PageRole, KeywordAssignment[]>;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs leading-relaxed text-foreground">
+        {strategy.strategySummary}
+      </p>
+      {strategy.warnings.length > 0 ? (
+        <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5">
+          {strategy.warnings.map((warning, index) => (
+            <li key={index} className="text-[11px] leading-relaxed text-foreground">
+              {warning}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {ROLE_ORDER.filter((role) => (byRole.get(role) ?? []).length > 0).map(
+        (role) => (
+          <div key={role}>
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {role === "money"
+                ? "Money pages"
+                : role === "supporting"
+                  ? "Supporting pages"
+                  : "Navigational"}
+            </p>
+            <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
+              {(byRole.get(role) ?? []).map((assignment) => (
+                <AssignmentRow key={assignment.route} assignment={assignment} />
+              ))}
+            </ul>
+          </div>
+        ),
+      )}
+    </div>
   );
 }
 

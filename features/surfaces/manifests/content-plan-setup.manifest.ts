@@ -224,10 +224,11 @@ A "conflict" route means a page already lives at that route under a different pa
       description:
         "Recommends the site's shape and work order — which archetype, which counts, which real page names — grounded in the brand, vertical, and any existing plan. Results stage via this surface's write targets.",
       kind: "single",
-      // Platform agent "Content Plan Shape Planner" (agx_agent, created via
-      // the AI Dream MCP 2026-07-30) — same agent the Setup view's
-      // "Recommend shape & counts" button runs (setup/ai.ts).
-      defaultAgentId: "b600975c-fc8f-4f1d-ab36-670be436a038",
+      // The shape-planner Mandate — the same job the Setup view's
+      // "Recommend shape & counts" pass runs. The DB decides the Holder
+      // (NO HARDCODED AGENTS; re-pointed from a pinned id 2026-08-23).
+      mandateKey: "content_plan.shape_planner",
+      defaultAgentId: null,
       sortOrder: 100,
     },
   ],

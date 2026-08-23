@@ -18,10 +18,12 @@ import { ClipboardCheck, Loader2, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
 import type { PlanNodeRow } from "../../types";
 import { slugify } from "../archetypes";
 import type { PlanReviewFinding, PlanReviewResult, ReviewSeverity } from "../ai";
+import { PLAN_REVIEW_FINDINGS_KIND, planReviewValue } from "../kind-values";
 import { SetupSection } from "./SetupSection";
 
 const SEVERITY_LABEL: Record<ReviewSeverity, string> = {
@@ -189,11 +191,15 @@ export function PlanReviewSection({
         </p>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs leading-relaxed text-foreground">{review.summary}</p>
           {review.findings.length === 0 ? (
-            <p className="text-xs text-success">
-              No gaps found against the research report.
-            </p>
+            <>
+              <p className="text-xs leading-relaxed text-foreground">
+                {review.summary}
+              </p>
+              <p className="text-xs text-success">
+                No gaps found against the research report.
+              </p>
+            </>
           ) : (
             <>
               <button
@@ -205,36 +211,33 @@ export function PlanReviewSection({
                 {review.findings.length === 1 ? "" : "s"}
               </button>
               {open ? (
-                <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
-                  {review.findings.map((finding, index) => (
-                    <FindingRow
-                      key={`${finding.title}-${index}`}
-                      finding={finding}
-                      parentPlanned={
-                        finding.suggestedRoute
-                          ? canAddRoute(finding.suggestedRoute, routes)
-                          : false
-                      }
-                      alreadyPlanned={
-                        finding.suggestedRoute
-                          ? routes.has(normalizeRoute(finding.suggestedRoute))
-                          : false
-                      }
-                      added={
-                        finding.suggestedRoute
-                          ? addedRoutes.has(normalizeRoute(finding.suggestedRoute))
-                          : false
-                      }
-                      adding={
-                        finding.suggestedRoute !== null &&
-                        addingRoute === normalizeRoute(finding.suggestedRoute)
-                      }
-                      anyAdding={addingRoute !== null}
-                      onAdd={() => onAddPage(finding)}
-                    />
-                  ))}
-                </ul>
-              ) : null}
+                <>
+                  {/* The RESULT body (summary + findings) renders through the
+                      `plan_review_findings` kind's registered component
+                      (agent-manifest wave 2); the bespoke list survives only
+                      as the registry-floor fallback. The per-finding "Add
+                      page" STAGING rail below stays this section's own — a
+                      kind component is a render, never a write path. */}
+                  <KindInstanceRender
+                    kind={PLAN_REVIEW_FINDINGS_KIND}
+                    value={planReviewValue(review)}
+                    variant="bare"
+                    showRoutingNote={false}
+                    unroutableFallback={<PlanReviewFallbackBody review={review} />}
+                  />
+                  <SuggestedPagesRail
+                    review={review}
+                    routes={routes}
+                    onAddPage={onAddPage}
+                    addingRoute={addingRoute}
+                    addedRoutes={addedRoutes}
+                  />
+                </>
+              ) : (
+                <p className="text-xs leading-relaxed text-foreground">
+                  {review.summary}
+                </p>
+              )}
             </>
           )}
         </div>
@@ -243,61 +246,107 @@ export function PlanReviewSection({
   );
 }
 
-function FindingRow({
-  finding,
-  parentPlanned,
-  alreadyPlanned,
-  added,
-  adding,
-  anyAdding,
-  onAdd,
-}: {
-  finding: PlanReviewFinding;
-  parentPlanned: boolean;
-  alreadyPlanned: boolean;
-  added: boolean;
-  adding: boolean;
-  anyAdding: boolean;
-  onAdd: () => void;
-}) {
-  const canAdd =
-    Boolean(finding.suggestedRoute) && parentPlanned && !alreadyPlanned && !added;
+/**
+ * The registry floor: when no component is render-trusted for the kind the
+ * review still reads as a review — summary plus severity-tagged findings.
+ * Read-only by design; the actions live in {@link SuggestedPagesRail}.
+ */
+function PlanReviewFallbackBody({ review }: { review: PlanReviewResult }) {
   return (
-    <li className="bg-card px-2.5 py-2">
-      <div className="flex items-start gap-2">
-        <span
-          className={cn(
-            "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium leading-none",
-            SEVERITY_CLASS[finding.severity],
-          )}
-        >
-          {SEVERITY_LABEL[finding.severity]}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-foreground">{finding.title}</p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-            {finding.detail}
-          </p>
-          {finding.suggestedRoute ? (
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {normalizeRoute(finding.suggestedRoute)}
+    <div className="space-y-2">
+      <p className="text-xs leading-relaxed text-foreground">{review.summary}</p>
+      <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
+        {review.findings.map((finding, index) => (
+          <li key={`${finding.title}-${index}`} className="bg-card px-2.5 py-2">
+            <div className="flex items-start gap-2">
+              <span
+                className={cn(
+                  "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium leading-none",
+                  SEVERITY_CLASS[finding.severity],
+                )}
+              >
+                {SEVERITY_LABEL[finding.severity]}
               </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-foreground">
+                  {finding.title}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                  {finding.detail}
+                </p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * The staging shell for the review's actionable suggestions — one row per
+ * finding that names a route AND a label, carrying the create/receipt state.
+ * Kept bespoke deliberately: the kind component above shows WHAT the reviewer
+ * found; this rail is where pages get written.
+ */
+function SuggestedPagesRail({
+  review,
+  routes,
+  onAddPage,
+  addingRoute,
+  addedRoutes,
+}: {
+  review: PlanReviewResult;
+  routes: Set<string>;
+  onAddPage: (finding: PlanReviewFinding) => void;
+  addingRoute: string | null;
+  addedRoutes: Set<string>;
+}) {
+  const actionable = review.findings.filter(
+    (finding) => finding.suggestedRoute !== null,
+  );
+  if (actionable.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        Suggested pages
+      </p>
+      <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
+        {actionable.map((finding, index) => {
+          const route = normalizeRoute(finding.suggestedRoute as string);
+          const parentPlanned = canAddRoute(route, routes);
+          const alreadyPlanned = routes.has(route);
+          const added = addedRoutes.has(route);
+          const adding = addingRoute === route;
+          const canAdd = parentPlanned && !alreadyPlanned && !added;
+          return (
+            <li
+              key={`${route}-${index}`}
+              className="flex flex-wrap items-center gap-2 bg-card px-2.5 py-1.5"
+            >
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {route}
+              </span>
+              {finding.suggestedLabel ? (
+                <span className="text-[11px] text-foreground">
+                  {finding.suggestedLabel}
+                </span>
+              ) : null}
               {added || alreadyPlanned ? (
                 <span className="text-[11px] font-medium text-success">
                   {added ? "added" : "already planned"}
                 </span>
               ) : !parentPlanned ? (
                 <span className="text-[11px] text-muted-foreground">
-                  {parentRouteOf(finding.suggestedRoute)} is not planned yet —
-                  create that section first
+                  {parentRouteOf(route)} is not planned yet — create that
+                  section first
                 </span>
               ) : (
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={!canAdd || anyAdding}
-                  onClick={onAdd}
+                  disabled={!canAdd || addingRoute !== null}
+                  onClick={() => onAddPage(finding)}
                 >
                   {adding ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -307,10 +356,10 @@ function FindingRow({
                   Add page
                 </button>
               )}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </li>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

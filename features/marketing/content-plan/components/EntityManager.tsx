@@ -94,6 +94,8 @@ import {
 } from "@/components/ui/popover";
 import { ENTITY_TYPES, type CuratedEntityType } from "../setup/ai";
 import { useSetupAgents } from "../setup/ai";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { PLAN_ENTITY_ROSTER_KIND, entityRosterValue } from "../setup/kind-values";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
@@ -701,7 +703,9 @@ export function EntityManager({
                     Suggested from research
                     {proposals.length > 0 ? ` (${proposals.length})` : ""}
                   </p>
-                  {curationNotes ? (
+                  {/* With proposals staged, the notes render inside the
+                      roster kind body below — never twice. */}
+                  {curationNotes && proposals.length === 0 ? (
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {curationNotes}
                     </p>
@@ -755,6 +759,23 @@ export function EntityManager({
                   ) : null}
                 </div>
               </div>
+              {/* The curator's RESULT (roster + notes) renders through the
+                  `plan_entity_roster` kind's registered component
+                  (agent-manifest wave 2) — descriptions and reasons live
+                  here. When no component is render-trusted the platform
+                  floor (StructuredValueView) still reads as a document. The
+                  per-entity accept/skip rail below stays bespoke: a kind
+                  component is a render, never a write path. */}
+              {proposals.length > 0 ? (
+                <div className="border-b border-border px-3 py-2">
+                  <KindInstanceRender
+                    kind={PLAN_ENTITY_ROSTER_KIND}
+                    value={entityRosterValue(proposals, curationNotes)}
+                    variant="bare"
+                    showRoutingNote={false}
+                  />
+                </div>
+              ) : null}
               {proposals.map((item) => (
                 <div
                   key={`${item.entityType}:${item.label}`}
@@ -795,19 +816,8 @@ export function EntityManager({
                         </span>
                       ) : null}
                     </div>
-                    {item.description ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {item.description}
-                      </p>
-                    ) : null}
-                    {item.reason ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">
-                          Why:
-                        </span>{" "}
-                        {item.reason}
-                      </p>
-                    ) : null}
+                    {/* description/reason render once, in the roster kind
+                        body above — this rail is selection + status only. */}
                     {item.error ? (
                       <p className="mt-1 text-xs text-destructive">
                         {item.error}

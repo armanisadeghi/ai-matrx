@@ -640,12 +640,13 @@ Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label ar
       description:
         "Deepens THIS node's brief — concrete bullet points grounded in its keyword, topics, and place in the tree. Result can stage straight into the panel via the node_brief write target.",
       kind: "single",
-      // Platform agent "Content Plan Brief Writer" (agx_agent, created via
-      // the AI Dream MCP 2026-07-30) — the panel's "Draft brief" button.
+      // The brief-writer Mandate — the panel's "Draft brief" button.
       // Distinct from Deepen (which writes brief + sources server-side and
       // SAVES): this one is neighbour-aware and STAGES into the panel draft
-      // for review, which is the behaviour Deepen does not offer.
-      defaultAgentId: "711d29b5-0afc-494c-a665-6011e529efce",
+      // for review, which is the behaviour Deepen does not offer. The DB
+      // decides the Holder (re-pointed from a pinned id 2026-08-23).
+      mandateKey: "content_plan.brief_writer",
+      defaultAgentId: null,
       sortOrder: 100,
     },
   ],
