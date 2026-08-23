@@ -23676,6 +23676,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
       }
+      client_role_can_read: {
+        Args: { p_rel: unknown; p_role?: string }
+        Returns: boolean
+      }
       derive_organization_abbreviation: {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
