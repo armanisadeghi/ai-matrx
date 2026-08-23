@@ -55,7 +55,7 @@ describe("page_brief — streaming bridge", () => {
     expect(serverData?.isComplete).toBe(false);
     expect(serverData?.brief).toEqual([]);
     expect(serverData?.angle).toBeNull();
-    expect(serverData?.suggestedWordCount).toBeNull();
+    expect(serverData?.suggested_word_count).toBeNull();
     session.dispose();
   });
 
@@ -73,9 +73,9 @@ describe("page_brief — streaming bridge", () => {
     expect(serverData?.angle).toBe(BRIEF_VALUE.angle);
     expect(serverData?.brief).toEqual(BRIEF_VALUE.brief);
     // Fields that have not arrived read as empty, never as a thrown parse.
-    expect(serverData?.mustNotCover).toEqual([]);
+    expect(serverData?.must_not_cover).toEqual([]);
     expect(serverData?.concerns).toEqual([]);
-    expect(serverData?.suggestedWordCount).toBeNull();
+    expect(serverData?.suggested_word_count).toBeNull();
     session.dispose();
   });
 
@@ -87,9 +87,9 @@ describe("page_brief — streaming bridge", () => {
     const serverData = pageBriefServerDataFromEnvelope(session.buildEnvelope());
     expect(serverData).toMatchObject({
       angle: BRIEF_VALUE.angle,
-      mustNotCover: BRIEF_VALUE.must_not_cover,
+      must_not_cover: BRIEF_VALUE.must_not_cover,
       concerns: BRIEF_VALUE.concerns,
-      suggestedWordCount: 1400,
+      suggested_word_count: 1400,
       isComplete: true,
     });
     expect(serverData?.brief).toEqual(BRIEF_VALUE.brief);

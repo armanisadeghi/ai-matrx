@@ -36,6 +36,8 @@ import {
   stringOrEmpty,
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { PodcastEpisode, PodcastSpeaker } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of PodcastSpeaker / PodcastEpisodeOutput.
@@ -95,19 +97,29 @@ export const PODCAST_EPISODE_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING.
 // ---------------------------------------------------------------------------
 
-export interface PodcastSpeakerData {
-  name: string;
-  voice: string;
-  gender: string;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`). */
+export type PodcastSpeakerData = Omit<MaterializedKind<PodcastSpeaker>, "__kind">;
 
-export interface PodcastEpisodeData {
-  show_id: string;
-  title: string;
-  description: string;
-  script: string;
+/**
+ * THE SHAPE COMES FROM THE REGISTRY. The bridge replaces the payload's raw
+ * locator TRIPLETS (`*_url` / `*_file_id`) with the ONE resolved handle
+ * `<InlineMediaRef>` takes — a signed URL is a handoff, never an identity
+ * (media-durability law).
+ */
+export type PodcastEpisodeData = Omit<
+  MaterializedKind<PodcastEpisode>,
+  | "__kind"
+  | "speakers"
+  | "audio_url"
+  | "audio_file_id"
+  | "image_urls"
+  | "image_file_ids"
+  | "video_urls"
+  | "video_file_ids"
+  | "official_video_url"
+  | "official_video_file_id"
+> & {
   speakers: PodcastSpeakerData[];
-  host_count: number | null;
   /** What `<InlineMediaRef>` resolves for the episode audio — id first. */
   audioHandle: string | null;
   /** Image handles, id-first, in the payload's order. */
@@ -116,11 +128,8 @@ export interface PodcastEpisodeData {
   videoHandles: string[];
   /** The composed official video's handle — id first. */
   officialVideoHandle: string | null;
-  official_video_error: string;
-  episode_id: string | null;
-  episode_slug: string | null;
   isComplete: boolean;
-}
+};
 
 /**
  * Pair a URL list with its positionally-matched file-id list, preferring the

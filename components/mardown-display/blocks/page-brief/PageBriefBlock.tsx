@@ -88,11 +88,11 @@ export function readPageBriefData(serverData: unknown): PageBriefData | null {
   return {
     brief: strings(candidate.brief),
     angle: typeof candidate.angle === "string" ? candidate.angle : null,
-    mustNotCover: strings(candidate.mustNotCover),
+    must_not_cover: strings(candidate.must_not_cover),
     concerns: strings(candidate.concerns),
-    suggestedWordCount:
-      typeof candidate.suggestedWordCount === "number"
-        ? candidate.suggestedWordCount
+    suggested_word_count:
+      typeof candidate.suggested_word_count === "number"
+        ? candidate.suggested_word_count
         : null,
     isComplete: candidate.isComplete === true,
   };
@@ -356,9 +356,9 @@ export default function PageBriefBlock({
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
-          {data.suggestedWordCount !== null && (
+          {data.suggested_word_count !== null && (
             <span className="text-[10px] tabular-nums text-muted-foreground">
-              ~{data.suggestedWordCount.toLocaleString()} words
+              ~{data.suggested_word_count.toLocaleString()} words
             </span>
           )}
           {acceptTarget && canAccept ? (
@@ -382,7 +382,7 @@ export default function PageBriefBlock({
         onChange={onBriefChange}
         emptyHint={emptyHint}
       />
-      <PageBriefMustNotCover lines={data.mustNotCover} />
+      <PageBriefMustNotCover lines={data.must_not_cover} />
       <PageBriefConcerns lines={data.concerns} />
     </div>
   );

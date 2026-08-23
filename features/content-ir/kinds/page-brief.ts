@@ -45,6 +45,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { PageBrief } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -88,14 +90,11 @@ export const PAGE_BRIEF_KIND_SCHEMAS: KindSchema[] = [pageBriefKindSchema];
 // serverData bridge — STREAMING: a partial envelope maps to partial data.
 // ---------------------------------------------------------------------------
 
-export interface PageBriefData {
-  brief: string[];
-  angle: string | null;
-  mustNotCover: string[];
-  concerns: string[];
-  suggestedWordCount: number | null;
-  isComplete: boolean;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type PageBriefData = Omit<
+  MaterializedKind<PageBrief>,
+  "__kind" | "additionalDetails"
+> & { isComplete: boolean };
 
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
@@ -124,9 +123,9 @@ export function pageBriefServerDataFromEnvelope(
   return {
     brief: streamedLines(value.brief),
     angle: nonEmptyString(value.angle),
-    mustNotCover: streamedLines(value.must_not_cover),
+    must_not_cover: streamedLines(value.must_not_cover),
     concerns: streamedLines(value.concerns),
-    suggestedWordCount:
+    suggested_word_count:
       typeof wordCount === "number" && Number.isFinite(wordCount)
         ? wordCount
         : null,

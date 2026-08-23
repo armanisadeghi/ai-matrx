@@ -95,19 +95,19 @@ export function readSeoPackageData(serverData: unknown): SeoPackageData | null {
   if (!("title" in candidate)) return null;
   return {
     title: typeof candidate.title === "string" ? candidate.title : null,
-    metaDescription:
-      typeof candidate.metaDescription === "string"
-        ? candidate.metaDescription
+    meta_description:
+      typeof candidate.meta_description === "string"
+        ? candidate.meta_description
         : null,
     slug: typeof candidate.slug === "string" ? candidate.slug : null,
-    primaryKeyword:
-      typeof candidate.primaryKeyword === "string"
-        ? candidate.primaryKeyword
+    primary_keyword:
+      typeof candidate.primary_keyword === "string"
+        ? candidate.primary_keyword
         : null,
     keywords: strings(candidate.keywords),
     faq: faqItems(candidate.faq),
-    schemaOrg: candidate.schemaOrg ?? null,
-    openGraph: candidate.openGraph ?? null,
+    schema_org: candidate.schema_org ?? null,
+    open_graph: candidate.open_graph ?? null,
     isComplete: candidate.isComplete === true,
   };
 }
@@ -188,11 +188,11 @@ export function SeoBudget({
 
 export function SeoPackageMeta({
   title,
-  metaDescription,
+  meta_description,
   slug,
 }: {
   title: string | null;
-  metaDescription: string | null;
+  meta_description: string | null;
   slug: string | null;
 }) {
   return (
@@ -205,14 +205,14 @@ export function SeoPackageMeta({
           <span className="font-medium">{title}</span>
         </Field>
       )}
-      {metaDescription !== null && (
+      {meta_description !== null && (
         <Field
           label="Meta description"
           trailing={
-            <SeoBudget text={metaDescription} limits={DESCRIPTION_LIMITS} />
+            <SeoBudget text={meta_description} limits={DESCRIPTION_LIMITS} />
           }
         >
-          {metaDescription}
+          {meta_description}
         </Field>
       )}
       {slug !== null && (
@@ -233,10 +233,10 @@ export function SeoPackageMeta({
 
 export function SeoPackageKeywords({
   keywords,
-  primaryKeyword,
+  primary_keyword,
 }: {
   keywords: string[];
-  primaryKeyword: string | null;
+  primary_keyword: string | null;
 }) {
   if (keywords.length === 0) return null;
   return (
@@ -247,7 +247,7 @@ export function SeoPackageKeywords({
             key={`${index}-${keyword}`}
             className={cn(
               "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
-              keyword === primaryKeyword
+              keyword === primary_keyword
                 ? "bg-primary/10 font-medium text-primary"
                 : "bg-muted/60 text-muted-foreground",
             )}
@@ -293,16 +293,16 @@ export function SeoPackageFaq({ items }: { items: SeoFaqItemData[] }) {
 
 /** schema.org + Open Graph — the copyable JSON-LD payload. */
 export function SeoPackageMarkup({
-  schemaOrg,
-  openGraph,
+  schema_org,
+  open_graph,
 }: {
-  schemaOrg: unknown;
-  openGraph: unknown;
+  schema_org: unknown;
+  open_graph: unknown;
 }) {
   const [showRaw, setShowRaw] = useState(false);
-  if (schemaOrg === null && openGraph === null) return null;
+  if (schema_org === null && open_graph === null) return null;
   const jsonLd = JSON.stringify(
-    { schema_org: schemaOrg ?? {}, open_graph: openGraph ?? {} },
+    { schema_org: schema_org ?? {}, open_graph: open_graph ?? {} },
     null,
     2,
   );
@@ -366,17 +366,17 @@ export default function SeoPackageBlock({
 
       <SeoPackageMeta
         title={data.title}
-        metaDescription={data.metaDescription}
+        meta_description={data.meta_description}
         slug={data.slug}
       />
       <SeoPackageKeywords
         keywords={data.keywords}
-        primaryKeyword={data.primaryKeyword}
+        primary_keyword={data.primary_keyword}
       />
       <SeoPackageFaq items={data.faq} />
       <SeoPackageMarkup
-        schemaOrg={data.schemaOrg}
-        openGraph={data.openGraph}
+        schema_org={data.schema_org}
+        open_graph={data.open_graph}
       />
     </div>
   );

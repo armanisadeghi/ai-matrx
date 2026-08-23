@@ -88,7 +88,7 @@ describe("seo_package — streaming bridge", () => {
     expect(serverData?.title).toBeNull();
     expect(serverData?.keywords).toEqual([]);
     expect(serverData?.faq).toEqual([]);
-    expect(serverData?.schemaOrg).toBeNull();
+    expect(serverData?.schema_org).toBeNull();
     session.dispose();
   });
 
@@ -99,7 +99,7 @@ describe("seo_package — streaming bridge", () => {
 
     const serverData = seoPackageServerDataFromEnvelope(session.buildEnvelope());
     expect(serverData?.title).toBe(SEO_VALUE.title);
-    expect(serverData?.metaDescription).toBeNull();
+    expect(serverData?.meta_description).toBeNull();
     expect(serverData?.isComplete).toBe(false);
     session.dispose();
   });
@@ -140,9 +140,9 @@ describe("seo_package — streaming bridge", () => {
     const serverData = seoPackageServerDataFromEnvelope(session.buildEnvelope());
     expect(serverData).toMatchObject({
       title: SEO_VALUE.title,
-      metaDescription: SEO_VALUE.meta_description,
+      meta_description: SEO_VALUE.meta_description,
       slug: SEO_VALUE.slug,
-      primaryKeyword: SEO_VALUE.primary_keyword,
+      primary_keyword: SEO_VALUE.primary_keyword,
       isComplete: true,
     });
     expect(serverData?.keywords).toEqual(SEO_VALUE.keywords);
@@ -150,8 +150,8 @@ describe("seo_package — streaming bridge", () => {
       { question: SEO_VALUE.faq[0].question, answer: SEO_VALUE.faq[0].answer },
       { question: SEO_VALUE.faq[1].question, answer: SEO_VALUE.faq[1].answer },
     ]);
-    expect(serverData?.schemaOrg).toMatchObject({ "@type": "FAQPage" });
-    expect(serverData?.openGraph).toMatchObject({ "og:type": "article" });
+    expect(serverData?.schema_org).toMatchObject({ "@type": "FAQPage" });
+    expect(serverData?.open_graph).toMatchObject({ "og:type": "article" });
     session.dispose();
   });
 

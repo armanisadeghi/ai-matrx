@@ -37,9 +37,9 @@ function draftAsPageBrief(draft: BriefDraft): PageBriefData {
   return {
     brief: draft.brief,
     angle: draft.angle || null,
-    mustNotCover: draft.must_not_cover,
+    must_not_cover: draft.must_not_cover,
     concerns: draft.concerns,
-    suggestedWordCount: draft.suggested_word_count,
+    suggested_word_count: draft.suggested_word_count,
     isComplete: true,
   };
 }

@@ -50,6 +50,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { FaqItem, SeoPackage } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -142,22 +144,18 @@ export const SEO_PACKAGE_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING: a partial envelope maps to partial data.
 // ---------------------------------------------------------------------------
 
-export interface SeoFaqItemData {
-  question: string;
-  answer: string | null;
-}
+/** THE SHAPE COMES FROM THE REGISTRY; the package only shows Q and A. */
+export type SeoFaqItemData = MaterializedKind<Pick<FaqItem, "question" | "answer">>;
 
-export interface SeoPackageData {
+export type SeoPackageData = Omit<
+  MaterializedKind<SeoPackage>,
+  "__kind" | "additionalDetails" | "title" | "faq"
+> & {
+  /** null until the package's own title has streamed in. */
   title: string | null;
-  metaDescription: string | null;
-  slug: string | null;
-  primaryKeyword: string | null;
-  keywords: string[];
   faq: SeoFaqItemData[];
-  schemaOrg: unknown | null;
-  openGraph: unknown | null;
   isComplete: boolean;
-}
+};
 
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
@@ -221,13 +219,13 @@ export function seoPackageDataFromValue(
 ): SeoPackageData & Record<string, unknown> {
   return {
     title: nonEmptyString(value.title),
-    metaDescription: nonEmptyString(value.meta_description),
+    meta_description: nonEmptyString(value.meta_description),
     slug: nonEmptyString(value.slug),
-    primaryKeyword: nonEmptyString(value.primary_keyword),
+    primary_keyword: nonEmptyString(value.primary_keyword),
     keywords: streamedStrings(value.keywords),
     faq: streamedFaq(value.faq),
-    schemaOrg: streamedJson(value.schema_org),
-    openGraph: streamedJson(value.open_graph),
+    schema_org: streamedJson(value.schema_org),
+    open_graph: streamedJson(value.open_graph),
     isComplete,
   };
 }

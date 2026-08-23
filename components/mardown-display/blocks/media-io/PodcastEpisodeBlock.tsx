@@ -238,7 +238,7 @@ export default function PodcastEpisodeBlock({
         </div>
       )}
 
-      <PodcastEpisodeScript script={data.script} />
+      <PodcastEpisodeScript script={data.script ?? ""} />
     </div>
   );
 }
