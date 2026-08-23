@@ -23,7 +23,7 @@ interface GroupSectionProps {
   isOwner: boolean;
   defaultOpen?: boolean;
   onAddItem?: (groupName: string) => void;
-  onEditItem?: (item: GroupedItem) => void;
+  onEditItem?: (item: GroupedItem, groupName: string) => void;
   onDeleteItem?: (itemId: string) => void;
 }
 
@@ -121,7 +121,11 @@ export function GroupSection({
               listId={listId}
               listName={listName}
               isOwner={isOwner}
-              onEdit={onEditItem}
+              // The group lives in the KEY of items_grouped, not on the item,
+              // so this is where it gets attached for the Edit dialog.
+              onEdit={
+                onEditItem ? (i) => onEditItem(i, groupName) : undefined
+              }
               onDelete={onDeleteItem}
             />
           ))}

@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -80,7 +80,7 @@ function EditListForm({
         <Label htmlFor="edit-list-name" className="text-sm font-medium">
           List name <span className="text-destructive">*</span>
         </Label>
-        <Input
+        <ProInput
           id="edit-list-name"
           value={name}
           onChange={(e) => setName(e.target.value)}

@@ -34,7 +34,7 @@ import {
   PanelRight,
   Plus,
   Save,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import {
   upsertJobInCache,
@@ -1101,7 +1101,7 @@ function TemplateEditor({
                 disabled={!canApplyRecommended}
                 onClick={handleApplyRecommended}
               >
-                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <BrainCircuit className="h-3.5 w-3.5 shrink-0" />
                 Apply Recommended
               </Button>
               {showRecommendedDebug && recommendedDebug && (

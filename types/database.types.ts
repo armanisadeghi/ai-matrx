@@ -36896,6 +36896,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      industry_curator_list: {
+        Args: { p_industry: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          email: string
+          user_id: string
+        }[]
+      }
       industry_curator_revoke: {
         Args: { p_actor?: string; p_industry: string; p_user: string }
         Returns: undefined

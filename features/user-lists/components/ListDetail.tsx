@@ -12,7 +12,7 @@ interface ListDetailProps {
   userId: string | null;
   onEditList?: () => void;
   onDeleteList?: () => void;
-  onEditItem?: (item: GroupedItem) => void;
+  onEditItem?: (item: GroupedItem, groupName: string) => void;
   onDeleteItem?: (itemId: string) => void;
   onAddItem?: (groupName?: string) => void;
   /**

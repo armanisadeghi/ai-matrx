@@ -9,10 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2 } from "lucide-react";
 import { addItemAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -24,6 +24,9 @@ interface AddItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** Surface this dialog is opened from, so ProTextarea's "…" menu offers the
+   *  same bound agents as the page's context menu. */
+  surfaceName?: string;
 }
 
 function AddItemForm({
@@ -32,12 +35,14 @@ function AddItemForm({
   existingGroups,
   onSuccess,
   onCancel,
+  surfaceName,
 }: {
   listId: string;
   defaultGroupName?: string;
   existingGroups?: string[];
   onSuccess: () => void;
   onCancel: () => void;
+  surfaceName?: string;
 }) {
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
@@ -72,7 +77,7 @@ function AddItemForm({
         <Label htmlFor="item-label" className="text-sm font-medium">
           Label <span className="text-destructive">*</span>
         </Label>
-        <Input
+        <ProInput
           id="item-label"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -89,13 +94,17 @@ function AddItemForm({
         <Label htmlFor="item-description" className="text-sm font-medium">
           Description
         </Label>
-        <Textarea
+        {/* THE LENGTH RULE: stats OFF. An item description is a short
+            explainer (typicalCharCount 500 in the manifest), well under the
+            ~1,000-char threshold where length starts to matter. */}
+        <ProTextarea
           id="item-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What does this item represent?"
           rows={2}
           disabled={isPending}
+          surfaceName={surfaceName}
           className="resize-none text-base"
           style={{ fontSize: "16px" }}
         />
@@ -105,7 +114,7 @@ function AddItemForm({
         <Label htmlFor="item-help" className="text-sm font-medium">
           Help text
         </Label>
-        <Input
+        <ProInput
           id="item-help"
           value={helpText}
           onChange={(e) => setHelpText(e.target.value)}
@@ -120,7 +129,7 @@ function AddItemForm({
         <Label htmlFor="item-group" className="text-sm font-medium">
           Group
         </Label>
-        <Input
+        <ProInput
           id="item-group"
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
@@ -172,6 +181,7 @@ export function AddItemDialog({
   open,
   onOpenChange,
   onSuccess,
+  surfaceName,
 }: AddItemDialogProps) {
   const isMobile = useIsMobile();
 
@@ -194,6 +204,7 @@ export function AddItemDialog({
               existingGroups={existingGroups}
               onSuccess={handleSuccess}
               onCancel={() => onOpenChange(false)}
+              surfaceName={surfaceName}
             />
           </div>
         </DrawerContent>
@@ -213,6 +224,7 @@ export function AddItemDialog({
           existingGroups={existingGroups}
           onSuccess={handleSuccess}
           onCancel={() => onOpenChange(false)}
+          surfaceName={surfaceName}
         />
       </DialogContent>
     </Dialog>

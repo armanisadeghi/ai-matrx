@@ -74,6 +74,7 @@ export function ListDetailClient({
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [addItemGroup, setAddItemGroup] = useState("");
   const [editItem, setEditItem] = useState<GroupedItem | null>(null);
+  const [editItemGroup, setEditItemGroup] = useState("");
   const [editItemOpen, setEditItemOpen] = useState(false);
   const [deleteListOpen, setDeleteListOpen] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
@@ -88,8 +89,9 @@ export function ListDetailClient({
     setAddItemOpen(true);
   };
 
-  const handleEditItem = (item: GroupedItem) => {
+  const handleEditItem = (item: GroupedItem, groupName = "") => {
     setEditItem(item);
+    setEditItemGroup(groupName);
     setEditItemOpen(true);
   };
 
@@ -259,7 +261,7 @@ export function ListDetailClient({
         id: "list-item-edit",
         label: `Edit "${focused.label}"`,
         icon: Pencil,
-        onSelect: () => handleEditItem(focused),
+        onSelect: () => handleEditItem(focused, menuTarget.group ?? ""),
       });
       items.push({
         kind: "item",
@@ -388,6 +390,7 @@ export function ListDetailClient({
         list={list}
         open={editListOpen}
         onOpenChange={setEditListOpen}
+        surfaceName={effectiveSurfaceName}
       />
 
       <AddItemDialog
@@ -396,14 +399,17 @@ export function ListDetailClient({
         existingGroups={existingGroups}
         open={addItemOpen}
         onOpenChange={setAddItemOpen}
+        surfaceName={effectiveSurfaceName}
       />
 
       <EditItemDialog
         item={editItem}
         listId={list.list_id}
         existingGroups={existingGroups}
+        currentGroup={editItemGroup}
         open={editItemOpen}
         onOpenChange={setEditItemOpen}
+        surfaceName={effectiveSurfaceName}
       />
 
       <DeleteConfirmDialog

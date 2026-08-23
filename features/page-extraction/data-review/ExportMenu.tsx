@@ -16,7 +16,7 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -130,7 +130,7 @@ export function ExportMenu({
         <DropdownMenuItem
           onClick={() => void copy(toMarkdownTable(columns, rows), "Markdown")}
         >
-          <Sparkles className="mr-2 h-4 w-4" /> Copy for AI
+          <BrainCircuit className="mr-2 h-4 w-4" /> Copy for AI
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
