@@ -1,0 +1,2014 @@
+diff --git a/components/mardown-display/blocks/generic/GenericStructuredBlock.tsx b/components/mardown-display/blocks/generic/GenericStructuredBlock.tsx
+index 85ba988857..fc10220afa 100644
+--- a/components/mardown-display/blocks/generic/GenericStructuredBlock.tsx
++++ b/components/mardown-display/blocks/generic/GenericStructuredBlock.tsx
+@@ -1,53 +1,24 @@
+ "use client";
+ 
+ /**
+- * The OFFICIAL fallback renderer for a resolved `__kind` block that has no
+- * registered component (Shape System ruling R6).
++ * The Matrix binding of the OFFICIAL fallback renderer for a resolved `__kind`
++ * block that has no registered component (Shape System ruling R6).
+  *
+- * Before this block existed, a kind the platform fully understood — schema in
+- * `content_ir.kind_definition`, envelope parsed, fields validated — but which
+- * no component claimed would fall through the unified renderer's switch and
+- * land on a raw code block.
++ * The view lives in `@ai-matrx/content-ir-react` (`GenericStructuredView`):
++ * envelope-first value recovery, the honest "no custom view yet" / "registered
++ * but held inactive" distinction, and the zero-data-loss verbatim backstop when
++ * nothing parsed. Its body renders through THIS app's structured-value floor
++ * (`StructuredValueView`) via the host seam — the reason a Study Pack step is a
++ * readable document instead of a JSON dump.
+  *
+- * R6's disposition, implemented here: render the shape READABLY, and say —
+- * quietly, in human words — that no custom view is registered for it yet.
+- * Never an error. Never hidden content. The user always sees their data.
+- *
+- * 🚨 **What "readably" means changed on 2026-08-18.** This block used to show
+- * a `JsonInspector` tree under a warning-tinted "Unverified shape — no
+- * renderer is registered for this shape" banner. That is a developer artifact,
+- * and our reader is a non-technical Subject Matter Expert: on one real Study
+- * Pack run, 19 of 23 steps rendered exactly like that. The body is now
+- * {@link StructuredValueView} — the platform-wide floor that renders any JSON
+- * value as a human document (prose through the canonical markdown renderer,
+- * uniform object arrays as a real table, media through `InlineMediaRef`,
+- * humanized keys, nested objects as titled sections). The honesty did not go
+- * away; it moved into that component's muted footer, beside the raw-data
+- * escape hatch — which is where WE read it and where the SME does not have to.
+- *
+- * Naming a component is still not the same as having one: the footer appears
+- * whether R6 fired (`marker.by === "generic"`) or a `kind_component` row names
+- * `generic_structured` as the kind's web output component (`marker.by ===
+- * "db"`), because both mean "no custom view".
+- *
+- * ## Bare by construction (THE WRAPPER LAW)
+- *
+- * Every host that routes a block here already draws chrome — a chat message
+- * surface, a workflow readout step box, the studio's preview card. This block
+- * used to add a card of its own on top, which on `/shapes/<kind>` produced the
+- * literal two-border, two-`p-3` box-in-a-box. It contributes flow spacing and
+- * nothing else; the host owns the frame.
++ * Bare by construction (THE WRAPPER LAW): every host that routes a block here
++ * already draws chrome.
+  */
+ 
+ import React from "react";
+ import { Braces } from "lucide-react";
+-
+-import { cn } from "@/lib/utils";
+-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+-import { reconstructRegionValue } from "@ai-matrx/content-ir";
+-import { readObjectKind } from "@ai-matrx/content-ir";
+-import { readIrRouteMarker } from "@/features/content-ir/react/kind-route";
++import { GenericStructuredView } from "@ai-matrx/content-ir-react";
++import { ContentIrHostBoundary } from "@/features/content-ir/host/ContentIrHostBoundary";
+ 
+ export interface GenericStructuredBlockProps {
+   /** The raw region source — the zero-loss floor when no envelope survived. */
+@@ -57,71 +28,19 @@ export interface GenericStructuredBlockProps {
+   className?: string;
+ }
+ 
+-/**
+- * Best-effort value recovery, in descending fidelity. The envelope is the
+- * source of truth (it merges residues back, so unknown keys survive); a bare
+- * `JSON.parse` is the floor; the raw text is the never-lose-content backstop.
+- */
+-function readStructuredValue(
+-  content: string,
+-  metadata: Record<string, unknown> | undefined,
+-): { value: unknown; recovered: boolean } {
+-  const envelope = readEnvelope(metadata);
+-  if (envelope) return { value: reconstructRegionValue(envelope), recovered: true };
+-
+-  try {
+-    return { value: JSON.parse(content) as unknown, recovered: true };
+-  } catch {
+-    return { value: null, recovered: false };
+-  }
+-}
+-
+-const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = ({
+-  content,
+-  metadata,
+-  className,
+-}) => {
+-  const envelope = readEnvelope(metadata);
+-  const status = envelope?.root.status ?? "complete";
+-  const { value, recovered } = readStructuredValue(content, metadata);
+-  // The envelope is the authority; a block that arrived without one still
+-  // names its own kind inside the payload.
+-  const kind =
+-    envelope?.root.kind ??
+-    (typeof value === "object" && value !== null && !Array.isArray(value)
+-      ? readObjectKind(value as Record<string, unknown>)
+-      : null) ??
+-    "";
+-  const marker = readIrRouteMarker(metadata);
+-  const note =
+-    marker?.reason === "inactive"
+-      ? "a custom view is registered but held inactive"
+-      : "no custom view yet";
+-
+-  return (
+-    <div className={cn("my-2 min-w-0", className)}>
+-      {status === "streaming" ? (
+-        <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+-          <Braces className="h-3.5 w-3.5 shrink-0 animate-pulse" />
+-          <span>Still arriving…</span>
+-        </div>
+-      ) : null}
+-
+-      {recovered ? (
+-        <StructuredValueView
+-          value={value}
+-          kind={kind || undefined}
+-          note={note}
+-        />
+-      ) : (
+-        // Zero-data-loss backstop: the region never parsed, so show the
+-        // source verbatim rather than swallowing it.
+-        <pre className="max-h-96 overflow-auto font-mono text-xs leading-relaxed text-muted-foreground">
+-          {content}
+-        </pre>
+-      )}
+-    </div>
+-  );
+-};
++const StillArriving = (
++  <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
++    <Braces className="h-3.5 w-3.5 shrink-0 animate-pulse" />
++    <span>Still arriving…</span>
++  </div>
++);
++
++const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = (
++  props,
++) => (
++  <ContentIrHostBoundary>
++    <GenericStructuredView {...props} streamingIndicator={StillArriving} />
++  </ContentIrHostBoundary>
++);
+ 
+ export default GenericStructuredBlock;
+diff --git a/components/mardown-display/blocks/runtime-wrappers/NodeOutcomeBlock.tsx b/components/mardown-display/blocks/runtime-wrappers/NodeOutcomeBlock.tsx
+index b8e4502600..35dbe2870d 100644
+--- a/components/mardown-display/blocks/runtime-wrappers/NodeOutcomeBlock.tsx
++++ b/components/mardown-display/blocks/runtime-wrappers/NodeOutcomeBlock.tsx
+@@ -1,56 +1,46 @@
+ "use client";
+ 
+ /**
+- * NodeOutcomeBlock — THE renderer for the `node_outcome` runtime wrapper kind.
++ * The Matrix binding of the `node_outcome` runtime-wrapper renderer.
+  *
+  * Contract: `common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md`.
++ * The reader is `@ai-matrx/content-ir` (`wire/runtime-wrapper`); the render
++ * half is `@ai-matrx/content-ir-react` (`NodeOutcomeView` / `DelegatedOutput`).
+  *
+- * The packet, verbatim: "the front end would know which workflow it came
+- * from, which node it came from, and then inside of it, it would see that
+- * it's a Brave search results, and inside of that, ten websites."
++ * The packet, verbatim: "the front end would know which workflow it came from,
++ * which node it came from, and then inside of it, it would see that it's a
++ * Brave search results, and inside of that, ten websites."
+  *
+- * 🚨 **DELEGATE, NEVER REIMPLEMENT.** This component is a TRANSPARENT
+- * ROUTER. It hands `output` straight back to the kind registry
+- * (`KindInstanceRender`), so the nested data kind's own component draws it,
+- * recursing all the way down. Runtime provenance remains in the wrapper data
+- * for diagnostics; it is not reader-facing UI.
+- * The moment this file renders a payload itself, the layer model is dead.
++ * 🚨 **DELEGATE, NEVER REIMPLEMENT.** These are TRANSPARENT ROUTERS: the
++ * payload goes straight back to the kind registry, so the nested data kind's
++ * own component draws it, recursing all the way down. The moment this file
++ * renders a payload itself, the layer model is dead.
+  *
+- * The nested payload is ALREADY rehydrated: the elision (`output_ref`) is
+- * resolved ONCE at the ingest gate (`@ai-matrx/content-ir` `wire/runtime-wrapper`),
+- * before anything reads the wrapper. Nothing here goes looking for a frame.
+- *
+- * Bare by construction: the host (a readout step box, a deliverable card, a
+- * chat message) already draws chrome; this block adds no card of its own.
++ * What this app adds is exactly one thing: the no-kind / unroutable fallback is
++ * `SettledOutputBody` — the SAME body the workflow readout uses, never a second
++ * reader.
+  */
+ 
+-import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+-import { readNodeOutcomeValue, readObjectKind } from "@ai-matrx/content-ir";
+-import type { NodeOutcomeWrapper } from "@ai-matrx/content-ir";
+-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
++import {
++  DelegatedOutput as SharedDelegatedOutput,
++  NodeOutcomeView,
++} from "@ai-matrx/content-ir-react";
++import { ContentIrHostBoundary } from "@/features/content-ir/host/ContentIrHostBoundary";
+ import { SettledOutputBody } from "@/features/workflow-runtime/components/SettledOutputBody";
++
+ export interface NodeOutcomeBlockProps {
+   serverData?: unknown;
+ }
+ 
+-function isRecord(value: unknown): value is Record<string, unknown> {
+-  return typeof value === "object" && value !== null && !Array.isArray(value);
+-}
+-
+-/** The bridge builds `{ wrapper }`; anything else is not ours to render. */
+-function readWrapper(serverData: unknown): NodeOutcomeWrapper | null {
+-  if (!isRecord(serverData)) return null;
+-  return readNodeOutcomeValue(serverData.wrapper);
++/** The shared fallback: what the readout shows for a payload with no component. */
++function settledOutputFallback(output: unknown) {
++  if (typeof output !== "object" || output === null) return null;
++  return <SettledOutputBody output={output as Record<string, unknown>} />;
+ }
+ 
+ /**
+- * The delegation seam — the ONLY thing this component does with a payload.
+- *
+- * In-band `__kind` wins over the node's DECLARATION, the same law the run
+- * reducer follows: the discriminator inside the value describes what we are
+- * actually holding, so it is what routes. With no kind at all there is
+- * nothing to route to, and the shared settled-output body (the same one the
+- * readout uses — never a second reader) shows what the step produced.
++ * The delegation seam. In-band `__kind` wins over the node's DECLARATION, the
++ * same law the run reducer follows.
+  */
+ export function DelegatedOutput({
+   output,
+@@ -60,39 +50,23 @@ export function DelegatedOutput({
+   /** The wrapper's `output_kind` — the node's DECLARATION, the fallback. */
+   declaredKind: string | null;
+ }) {
+-  if (output === null || output === undefined) {
+-    return (
+-      <p className="text-xs text-muted-foreground">
+-        This step ran, and handed its result to the next one.
+-      </p>
+-    );
+-  }
+-  if (!isRecord(output)) return <StructuredValueView value={output} />;
+-
+-  const kind = readObjectKind(output) ?? declaredKind;
+-  if (!kind) return <SettledOutputBody output={output} />;
+-
+   return (
+-    <KindInstanceRender
+-      kind={kind}
+-      value={output}
+-      showRoutingNote={false}
+-      variant="bare"
+-      unroutableFallback={<SettledOutputBody output={output} />}
+-    />
++    <ContentIrHostBoundary>
++      <SharedDelegatedOutput
++        output={output}
++        declaredKind={declaredKind}
++        fallback={settledOutputFallback}
++      />
++    </ContentIrHostBoundary>
+   );
+ }
+ 
+ export default function NodeOutcomeBlock({
+   serverData,
+ }: NodeOutcomeBlockProps) {
+-  const wrapper = readWrapper(serverData);
+-  if (!wrapper) return null;
+-
+   return (
+-    <DelegatedOutput
+-      output={wrapper.output}
+-      declaredKind={wrapper.output_kind}
+-    />
++    <ContentIrHostBoundary>
++      <NodeOutcomeView serverData={serverData} fallback={settledOutputFallback} />
++    </ContentIrHostBoundary>
+   );
+ }
+diff --git a/components/mardown-display/blocks/runtime-wrappers/RunResultBlock.tsx b/components/mardown-display/blocks/runtime-wrappers/RunResultBlock.tsx
+index b1c5a95f98..ae158b072d 100644
+--- a/components/mardown-display/blocks/runtime-wrappers/RunResultBlock.tsx
++++ b/components/mardown-display/blocks/runtime-wrappers/RunResultBlock.tsx
+@@ -1,59 +1,35 @@
+ "use client";
+ 
+ /**
+- * RunResultBlock — THE renderer for the `run_result` runtime wrapper kind.
++ * The Matrix binding of the `run_result` runtime-wrapper renderer.
+  *
+  * Contract: `common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md`.
+- *
+- * One finished run: its identity, status and timing, then one
+- * `node_outcome` per TERMINAL node — each delegated to
+- * {@link NodeOutcomeBlock}, which delegates the payload inside it to the data
+- * kind's own component. Recursion all the way down; no payload is rendered
+- * here, and no `final_text` is read here.
+- *
+- * The run's own `output` is rendered ONLY when the run declared no terminal
+- * outcomes — otherwise it is the same content the outcomes already carry, and
+- * showing both is the duplication the wrapper exists to prevent.
++ * The render half is `@ai-matrx/content-ir-react` (`RunResultView`): one
++ * `node_outcome` per TERMINAL node, each delegated to the data kind's own
++ * component, recursion all the way down. No payload is rendered here, and no
++ * `final_text` is read here. The run's own `output` renders ONLY when the run
++ * declared no terminal outcomes — otherwise it is the same content the outcomes
++ * already carry, and showing both is the duplication the wrapper prevents.
+  */
+ 
+-import { readRunResultValue } from "@ai-matrx/content-ir";
+-import type { RunResultWrapper } from "@ai-matrx/content-ir";
+-import NodeOutcomeBlock, { DelegatedOutput } from "./NodeOutcomeBlock";
++import { RunResultView } from "@ai-matrx/content-ir-react";
++import { ContentIrHostBoundary } from "@/features/content-ir/host/ContentIrHostBoundary";
++import { SettledOutputBody } from "@/features/workflow-runtime/components/SettledOutputBody";
+ 
+-export interface RunResultBlockProps {
+-  serverData?: unknown;
++/** The same no-component body the readout and NodeOutcomeBlock use. */
++function settledOutputFallback(output: unknown) {
++  if (typeof output !== "object" || output === null) return null;
++  return <SettledOutputBody output={output as Record<string, unknown>} />;
+ }
+ 
+-function isRecord(value: unknown): value is Record<string, unknown> {
+-  return typeof value === "object" && value !== null && !Array.isArray(value);
+-}
+-
+-function readWrapper(serverData: unknown): RunResultWrapper | null {
+-  if (!isRecord(serverData)) return null;
+-  return readRunResultValue(serverData.wrapper);
++export interface RunResultBlockProps {
++  serverData?: unknown;
+ }
+ 
+-export default function RunResultBlock({
+-  serverData,
+-}: RunResultBlockProps) {
+-  const wrapper = readWrapper(serverData);
+-  if (!wrapper) return null;
+-
++export default function RunResultBlock({ serverData }: RunResultBlockProps) {
+   return (
+-    <div className="space-y-2">
+-      {wrapper.outputs.length > 0 ? (
+-        wrapper.outputs.map((outcome) => (
+-          <NodeOutcomeBlock
+-            key={`${outcome.node_id}:${outcome.attempt}`}
+-            serverData={{ wrapper: outcome }}
+-          />
+-        ))
+-      ) : (
+-        <DelegatedOutput
+-          output={wrapper.output}
+-          declaredKind={wrapper.output_kind}
+-        />
+-      )}
+-    </div>
++    <ContentIrHostBoundary>
++      <RunResultView serverData={serverData} fallback={settledOutputFallback} />
++    </ContentIrHostBoundary>
+   );
+ }
+diff --git a/features/content-ir/host/ContentIrHostBoundary.tsx b/features/content-ir/host/ContentIrHostBoundary.tsx
+new file mode 100644
+index 0000000000..4dd4299183
+--- /dev/null
++++ b/features/content-ir/host/ContentIrHostBoundary.tsx
+@@ -0,0 +1,92 @@
++"use client";
++
++/**
++ * THE MATRIX HOST for `@ai-matrx/content-ir-react`.
++ *
++ * The package draws kinds; it refuses to know what a block renderer, a
++ * structured-value floor, a shimmer, or a notice look like in THIS app. This
++ * module supplies all four, plus the registries and the Error Inspector, as one
++ * module-singleton host object.
++ *
++ * WHY A BOUNDARY COMPONENT INSTEAD OF ONE ROOT PROVIDER. Kind rendering happens
++ * deep inside chat, workflow, canvas, education, and admin trees that were
++ * built long before this package existed — some of them mounted through
++ * `next/dynamic` islands with no shared ancestor. Threading a provider through
++ * every one of them to deliver a value that is a MODULE SINGLETON would be
++ * churn with no benefit: the context value is referentially stable, so nesting
++ * this boundary at each entry point costs nothing and cannot go stale. Each
++ * adapter component below wraps itself.
++ */
++
++import { useMemo, type ReactNode } from "react";
++import { Info } from "lucide-react";
++import {
++  ContentIrRenderProvider,
++  type ContentIrHost,
++} from "@ai-matrx/content-ir-react";
++import { captureError } from "@/lib/diagnostics/errorCaptureStore";
++import { ShimmerText } from "@/components/loaders/ShimmerText";
++import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
++import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
++import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
++import { kindRegistry } from "../registry/kind-registry";
++import { componentRegistry } from "../registry/component-registry";
++import { MATRX_CONTENT_IR_PLATFORM } from "./route-env";
++
++const noopReplaceBlockContent = (_original: string, _replacement: string) => {};
++const noopOpenEditor = () => {};
++
++/**
++ * The single host instance. A module singleton on purpose — the registries it
++ * points at are singletons, and a per-render object would make every memo in
++ * the package churn.
++ */
++export const matrxContentIrHost: ContentIrHost = {
++  platform: MATRX_CONTENT_IR_PLATFORM,
++  kinds: kindRegistry,
++  components: componentRegistry,
++  reportError: captureError,
++
++  // The production render path: SafeBlockRenderer owns the `ssr:false` dynamic
++  // boundary, and BlockRenderer inside it runs `applyIrKindRoute` exactly as it
++  // does for streamed chat content — so a kind instance and a streamed region
++  // land on the same component, which is the whole point.
++  renderBlock: (block) => (
++    <SafeBlockRenderer
++      block={block as RenderBlock}
++      index={0}
++      replaceBlockContent={noopReplaceBlockContent}
++      handleOpenEditor={noopOpenEditor}
++    />
++  ),
++
++  // THE FLOOR. `StructuredValueView` is the platform-wide door onto the
++  // recursive value renderer (prose through the canonical markdown renderer,
++  // uniform object arrays as a real table, media through `InlineMediaRef`).
++  renderValue: ({ value, kind, note, footer }) => (
++    <StructuredValueView
++      value={value}
++      kind={kind}
++      {...(note === undefined ? {} : { note })}
++      {...(footer === undefined ? {} : { footer })}
++    />
++  ),
++
++  renderShimmer: (text) => <ShimmerText text={text} className="text-[10px]" />,
++
++  renderNotice: (text) => (
++    <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
++      <Info className="h-3.5 w-3.5 shrink-0" />
++      {text}
++    </div>
++  ),
++};
++
++/** Wrap any subtree that renders kinds through the shared package. */
++export function ContentIrHostBoundary({ children }: { children: ReactNode }) {
++  // Stable by construction (module singleton); the memo only documents that.
++  const host = useMemo(() => matrxContentIrHost, []);
++  return (
++    <ContentIrRenderProvider host={host}>{children}</ContentIrRenderProvider>
++  );
++}
+diff --git a/features/content-ir/host/route-env.ts b/features/content-ir/host/route-env.ts
+new file mode 100644
+index 0000000000..a7558c365b
+--- /dev/null
++++ b/features/content-ir/host/route-env.ts
+@@ -0,0 +1,39 @@
++/**
++ * THE MATRIX BINDING of `@ai-matrx/content-ir-react`'s route environment.
++ *
++ * The render DECISIONS live in the package; the registries, the resolution
++ * platform, and the error sink are ours. This module is the one place those
++ * two halves meet, and it is deliberately React-free so reducers, stream
++ * accumulators, and tests can import it.
++ */
++
++import type { KindRouteEnv } from "@ai-matrx/content-ir-react";
++import { captureError } from "@/lib/diagnostics/errorCaptureStore";
++import { kindRegistry } from "../registry/kind-registry";
++import { componentRegistry } from "../registry/component-registry";
++
++/**
++ * `web` is not a placeholder: `content_ir.kind_component.platform` already
++ * models react-native and friends, and a host that lies here renders the wrong
++ * component everywhere. This app is the web one.
++ */
++export const MATRX_CONTENT_IR_PLATFORM = "web" as const;
++
++export const matrxKindRouteEnv: KindRouteEnv = {
++  kinds: kindRegistry,
++  components: componentRegistry,
++  reportError: captureError,
++  platform: MATRX_CONTENT_IR_PLATFORM,
++};
++
++/**
++ * Block types THIS app owns and the route must never re-type.
++ *
++ * An `artifact` block has an identity, a version, and a Canvas to open in, and
++ * since 2026-08-18 it carries `metadata.__ir` so SELECTORS can read the
++ * envelope (`selectKindEnvelope` — the live flashcard preview and every other
++ * wrapped-payload surface). That envelope is DATA there, not a route: routing
++ * it to the bare kind component would strip the artifact chrome and lose the
++ * door to the Canvas.
++ */
++export const MATRX_OWNED_BLOCK_TYPES = ["artifact"] as const;
+diff --git a/features/content-ir/react/ProvisionalKindBoundary.tsx b/features/content-ir/react/ProvisionalKindBoundary.tsx
+index de9dd67bf1..6175941caf 100644
+--- a/features/content-ir/react/ProvisionalKindBoundary.tsx
++++ b/features/content-ir/react/ProvisionalKindBoundary.tsx
+@@ -1,91 +1,39 @@
+ "use client";
+ 
+ /**
+- * The safety net + the "still arriving" affordance for a provisional kind
+- * render (streaming partial kinds — see `partial-kind-route.ts` and
+- * `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md`).
++ * The Matrix binding of the provisional-render safety net and the "still
++ * arriving" affordance (streaming partial kinds).
+  *
+- * TWO JOBS
+- * --------
+- * 1. **Never let a component throw mid-stream.** A provisional value may be
+- *    missing required fields. The routed kind opted in to tolerating that
+- *    (`partialReady`), but an opt-in is a claim, not a proof — so a throw is
+- *    caught here, SCREAMS to the Error Inspector, drops the kind back to
+- *    withhold for the session (`markKindPartialUnsafe`), and falls back to the
+- *    kind's own loading skeleton. The user sees the pre-partial behavior, not
+- *    a broken message.
+- * 2. **Say it is still arriving.** The user must be able to tell a live
+- *    fill-in from a finished render, and it must not read as an error. A quiet
+- *    shimmering "Still arriving" chip rides the block's top edge — absolutely
+- *    positioned and `pointer-events-none`, so it costs the content no layout
+- *    and cannot shift the page when it disappears. It sits ON the border
+- *    rather than inside the block: a routed kind often renders its own chrome
+- *    (the artifact header's icon row), and a chip inside the box lands on top
+- *    of those controls.
+- *
+- * No wrapper chrome: no border, no background, no padding. The kind component
+- * already carries its own (CLAUDE.md § Don't wrap a component in wrappers).
++ * Both live in `@ai-matrx/content-ir-react`: the boundary catches a component
++ * that throws on a provisional value, SCREAMS to the Error Inspector, drops the
++ * kind back to withhold for the session, and falls back to that kind's loading
++ * skeleton; the frame rides a `ShimmerText` chip on the block's top edge with
++ * no layout cost. Read the semantics there.
+  */
+ 
+-import React from "react";
+-import { ShimmerText } from "@/components/loaders/ShimmerText";
+-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+-import { markKindPartialUnsafe } from "./partial-kind-route";
++import type { ReactNode } from "react";
++import {
++  ProvisionalKindBoundary as SharedProvisionalKindBoundary,
++  ProvisionalKindFrame as SharedProvisionalKindFrame,
++} from "@ai-matrx/content-ir-react";
++import { ContentIrHostBoundary } from "../host/ContentIrHostBoundary";
+ 
+-interface ProvisionalKindBoundaryProps {
++export function ProvisionalKindBoundary(props: {
+   kind: string;
+-  /** Rendered instead of the children when the provisional render throws. */
+-  fallback: React.ReactNode;
+-  children: React.ReactNode;
++  fallback: ReactNode;
++  children: ReactNode;
++}) {
++  return (
++    <ContentIrHostBoundary>
++      <SharedProvisionalKindBoundary {...props} />
++    </ContentIrHostBoundary>
++  );
+ }
+ 
+-interface ProvisionalKindBoundaryState {
+-  failed: boolean;
++export function ProvisionalKindFrame({ children }: { children: ReactNode }) {
++  return (
++    <ContentIrHostBoundary>
++      <SharedProvisionalKindFrame>{children}</SharedProvisionalKindFrame>
++    </ContentIrHostBoundary>
++  );
+ }
+-
+-export class ProvisionalKindBoundary extends React.Component<
+-  ProvisionalKindBoundaryProps,
+-  ProvisionalKindBoundaryState
+-> {
+-  override state: ProvisionalKindBoundaryState = { failed: false };
+-
+-  static getDerivedStateFromError(): ProvisionalKindBoundaryState {
+-    return { failed: true };
+-  }
+-
+-  override componentDidCatch(error: Error, info: React.ErrorInfo): void {
+-    const { kind } = this.props;
+-    // Loud recovery: the kind CLAIMED partial-readiness and its component
+-    // threw on a provisional value. Stop handing it one — for every block, for
+-    // the rest of the session — and report it as the defect it is.
+-    markKindPartialUnsafe(kind);
+-    captureError({
+-      source: "content-ir",
+-      message: `kind "${kind}" declares partialReady but its component threw on a provisional value — provisional rendering disabled for this kind (falling back to its loading skeleton). Fix the component or drop partialReady.`,
+-      name: error.name,
+-      stack: error.stack,
+-      relation: "partial-kind",
+-      raw: { kind, componentStack: info.componentStack },
+-    });
+-  }
+-
+-  override render(): React.ReactNode {
+-    if (this.state.failed) return this.props.fallback;
+-    return this.props.children;
+-  }
+-}
+-
+-/**
+- * The "still arriving" frame. `aria-busy` carries the same fact to assistive
+- * tech that the pill carries visually.
+- */
+-export const ProvisionalKindFrame: React.FC<{
+-  children: React.ReactNode;
+-}> = ({ children }) => (
+-  <div className="relative" aria-busy="true">
+-    {children}
+-    <span className="pointer-events-none absolute -top-2 right-4 z-10 select-none rounded-full bg-background px-1.5 leading-4">
+-      <ShimmerText text="Still arriving" className="text-[10px]" />
+-    </span>
+-  </div>
+-);
+diff --git a/features/content-ir/react/kind-route.ts b/features/content-ir/react/kind-route.ts
+index f1c842a8cd..aab9578621 100644
+--- a/features/content-ir/react/kind-route.ts
++++ b/features/content-ir/react/kind-route.ts
+@@ -1,341 +1,52 @@
+ /**
+- * The Phase-4 render flip, as a pure block transform.
++ * The Matrix binding of THE KIND ROUTE.
+  *
+- * A block whose `metadata.__ir` envelope resolved a REGISTERED kind is
+- * routed to that kind's component: today via the legacy-bridge facet
+- * (`legacyBlockType` + `toLegacyServerData`), so the block enters the
+- * existing unified renderer as its real type with envelope-derived
+- * serverData. Blocks with no envelope, an unregistered kind, or no bridge
+- * facet pass through UNTOUCHED — the strangler seam.
++ * The route itself — envelope → registered kind → the right component, with the
++ * db-override flip, the compiled-bridge path, the resolver path, and the R6
++ * generic fallback — lives in `@ai-matrx/content-ir-react`
++ * (`route/kind-route.ts`), because every UI that renders a kind has to make
++ * exactly those decisions in exactly that order. Read the semantics there.
+  *
+- * This is where a bare/fenced JSON flashcard_set — which the legacy
+- * detectors could only ever call "code" — becomes real flashcards, live
+- * while streaming (the accumulator refreshes the envelope every flush).
++ * This module binds our registries, our Error Inspector, our platform, and our
++ * owned block types, and keeps the historical import path stable so ~60 call
++ * sites and every doc pointer still read the same.
+  */
+ 
+-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+-import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+-import { readObjectKind } from "@ai-matrx/content-ir";
+-import { kindRegistry } from "../registry/kind-registry";
+ import {
+-  resolveComponent,
+-  type ComponentResolution,
+-} from "../registry/component-registry";
+-import { readEnvelope } from "../redux/render-block-envelope";
+-
+-export interface IrRoutableBlock {
+-  type: string;
+-  serverData?: Record<string, unknown>;
+-  metadata?: Record<string, unknown>;
+-}
+-
+-/**
+- * Runtime routing marker (the Shape System's verification hook): stamped on
+- * `metadata.__ir_route` whenever a block routes AND the component resolver
+- * produced the decision. `by` says which resolver tier answered ("compiled"
+- * floor vs a warm `content_ir.kind_component` row) — the live proof of
+- * registry-resolution vs hard-coded fallback. Metadata-only, non-breaking.
+- */
+-export const IR_ROUTE_KEY = "__ir_route" as const;
+-
+-/**
+- * The component key the R6 generic fallback routes to — the official renderer
+- * for a KNOWN shape that nothing render-trusted claims. Consumed by the
+- * unified renderer's switch (BlockRenderer) as a block type.
+- */
+-export const GENERIC_STRUCTURED_COMPONENT_KEY = "generic_structured" as const;
+-
+-/**
+- * The block type a DB-sourced (user-authored) kind component renders as —
+- * consumed by the dispatch registry as `DbKindComponent` (the in-page
+- * allowlist-compiled React flavor, or the sandboxed-iframe html flavor when
+- * the row's `config.flavor === 'html'`). FE-synthesized: produced ONLY here,
+- * never emitted upstream.
+- */
+-export const DB_KIND_COMPONENT_KEY = "db_kind_component" as const;
+-
+-/**
+- * A DB row is render-trusted as a USER component when it is active, declares
+- * `source='db'` (R1: db = web sandbox only), and actually carries a component
+- * body. An active db-source row WITHOUT a body is a data defect — reported
+- * loudly by the caller, which then falls through to the bundled behavior
+- * (never un-render).
+- */
+-function isDbSourceResolution(
+-  resolution: ComponentResolution | null,
+-): resolution is ComponentResolution {
+-  return (
+-    resolution !== null &&
+-    resolution.resolvedBy === "db" &&
+-    resolution.source === "db" &&
+-    resolution.isActive
+-  );
+-}
+-
+-const reportedSourcelessDbRows = new Set<string>();
+-
+-/** Loud recovery: an active source='db' row with no component_source. */
+-function reportDbRowWithoutSource(kind: string): void {
+-  const message = `[content-ir] kind_component for "${kind}" declares source='db' + is_active but has NO component_source — data defect; falling through to bundled rendering.`;
+-  if (!reportedSourcelessDbRows.has(kind)) {
+-    reportedSourcelessDbRows.add(kind);
+-    console.error(message);
+-  }
+-  captureError({ source: "content-ir", message, raw: { kind } });
+-}
+-
+-/**
+- * The db-override flip (deliverable of the 2026-07-17 ratified architecture):
+- * an ACTIVE `source='db'` row carrying a component body wins over BOTH the
+- * compiled bridge and any bundled resolution (R6: db overrides bundled). The
+- * block re-types to `db_kind_component`; the renderer re-resolves the row and
+- * compiles/sandboxes it. Returns null when the db flip does not apply.
+- */
+-function routeToDbComponent<T extends IrRoutableBlock>(
+-  block: T,
+-  kind: string,
+-  resolution: ComponentResolution | null,
+-): T | null {
+-  if (!isDbSourceResolution(resolution)) return null;
+-  if (!resolution.componentSource || !resolution.componentSource.trim()) {
+-    reportDbRowWithoutSource(kind);
+-    return null;
+-  }
+-  if (block.type === DB_KIND_COMPONENT_KEY) return block;
+-  return {
+-    ...block,
+-    type: DB_KIND_COMPONENT_KEY,
+-    // The compiled/sandboxed component reads the envelope, never the raw
+-    // region's annotation serverData (same poison rule as bridged kinds).
+-    serverData: undefined,
+-    metadata: withRouteMarker(block.metadata, resolution),
+-  };
+-}
+-
+-/** Why a block landed on the generic viewer instead of a real renderer. */
+-export type GenericFallbackReason =
+-  /** No compiled bridge and no `content_ir.kind_component` row at all. */
+-  | "no-component"
+-  /** A component row exists but is held `is_active = false`. */
+-  | "inactive";
+-
+-export interface IrRouteMarker {
+-  by: ComponentResolution["resolvedBy"] | "generic";
+-  key: string;
+-  /**
+-   * Only on the generic fallback: the shape is NOT render-trusted, so the
+-   * viewer must say so out loud (R6 — never an error, never hidden content).
+-   */
+-  unverified?: true;
+-  reason?: GenericFallbackReason;
+-}
+-
+-function isRouteMarker(value: unknown): value is IrRouteMarker {
+-  return (
+-    isRecord(value) &&
+-    typeof value.by === "string" &&
+-    typeof value.key === "string"
+-  );
+-}
+-
+-/** Read the routing marker a block picked up at the seam (or null). */
+-export function readIrRouteMarker(
+-  metadata: Record<string, unknown> | null | undefined,
+-): IrRouteMarker | null {
+-  const candidate = metadata?.[IR_ROUTE_KEY];
+-  return isRouteMarker(candidate) ? candidate : null;
+-}
+-
+-function withRouteMarker(
+-  metadata: Record<string, unknown> | undefined,
+-  resolution: ComponentResolution,
+-): Record<string, unknown> {
+-  return {
+-    ...metadata,
+-    [IR_ROUTE_KEY]: {
+-      by: resolution.resolvedBy,
+-      key: resolution.componentKey,
+-    } satisfies IrRouteMarker,
+-  };
+-}
+-
+-/**
+- * R6's sanctioned disposition for a shape the platform KNOWS (a kind
+- * definition supplied its schema) but nothing render-trusted claims: the
+- * generic structured viewer, carrying an honest "unverified shape" affordance
+- * — never an error, never a raw code block, never hidden content.
+- *
+- * `serverData` is CLEARED for the same reason the resolver-only path clears
+- * it: a raw region's annotation (`{ language: "json" }`) is not kind data,
+- * and the generic viewer reads the envelope, not serverData.
+- */
+-function routeToGeneric<T extends IrRoutableBlock>(
+-  block: T,
+-  reason: GenericFallbackReason,
+-): T {
+-  if (block.type === GENERIC_STRUCTURED_COMPONENT_KEY) return block;
+-
+-  return {
+-    ...block,
+-    type: GENERIC_STRUCTURED_COMPONENT_KEY,
+-    serverData: undefined,
+-    metadata: {
+-      ...block.metadata,
+-      [IR_ROUTE_KEY]: {
+-        by: "generic",
+-        key: GENERIC_STRUCTURED_COMPONENT_KEY,
+-        unverified: true,
+-        reason,
+-      } satisfies IrRouteMarker,
+-    },
+-  };
+-}
+-
++  applyIrKindRoute as applyIrKindRoutePure,
++  kindServerDataFromStoredValue as kindServerDataFromStoredValuePure,
++  type IrRoutableBlock,
++} from "@ai-matrx/content-ir-react";
++import {
++  MATRX_OWNED_BLOCK_TYPES,
++  matrxKindRouteEnv,
++} from "../host/route-env";
++
++export {
++  DB_KIND_COMPONENT_KEY,
++  GENERIC_STRUCTURED_COMPONENT_KEY,
++  IR_ROUTE_KEY,
++  readIrRouteMarker,
++  type GenericFallbackReason,
++  type IrRoutableBlock,
++  type IrRouteMarker,
++} from "@ai-matrx/content-ir-react";
++
++/** Route one block through the Matrix registries. */
+ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
+-  // An `artifact` block is OWNED by the artifact system — it has an identity,
+-  // a version, and a Canvas to open in, and BlockRenderer routes it through
+-  // its dedicated registration (Stage 3 explicitly skips `type === "artifact"`
+-  // for the same reason). Since 2026-08-18 an artifact wrapping a JSON payload
+-  // carries `metadata.__ir` so SELECTORS can read the envelope
+-  // (`selectKindEnvelope` — the live flashcard preview and every other
+-  // wrapped-payload surface). That envelope must not also re-type the block:
+-  // routing it to the bare kind component would strip the artifact chrome and
+-  // lose the door to the Canvas. The envelope is data here, not a route.
+-  if (block.type === "artifact") return block;
+-
+-  const envelope = readEnvelope(block.metadata);
+-  if (!envelope) return block;
+-
+-  const kind = envelope.root.kind;
+-  if (!kind) return block; // raw / pending — legacy rendering stands
+-
+-  // An identified kind whose SCHEMA is still cold-fetching (pending_schema)
+-  // has no compliant value yet — routing now would hand a component early
+-  // scalars at best. The loading layer (BlockRenderer's pending stage, keyed
+-  // by the kind's loading_component) owns this window; the parser upgrades
+-  // in place the moment the schema lands, and end() converts a lost race to
+-  // a kind-preserving raw — both of which route normally.
+-  if (envelope.root.kindState === "pending_schema") return block;
+-
+-  const def = kindRegistry.getDefinition(kind);
+-  const resolution = resolveComponent(kind, "web", "output");
+-
+-  // ── DB user-component path — db overrides bundled (ruling R6) ───────────
+-  // An active `source='db'` row with a component body wins over the compiled
+-  // bridge AND any bundled resolution. Checked FIRST so a user's registered
+-  // component actually renders; a defective row (no source) screams and
+-  // falls through to today's behavior — never un-renders.
+-  const dbRouted = routeToDbComponent(block, kind, resolution);
+-  if (dbRouted) return dbRouted;
+-
+-  // ── Compiled-bridge path — trusted at bootstrap (ruling R6) ─────────────
+-  // A kind carrying a legacyBlockType facet ALWAYS routes: today's behavior
+-  // for every existing kind, and the production floor a DB row can refine
+-  // (the marker records which tier resolved) but never un-render.
+-  if (def?.legacyBlockType) {
+-    // A block ALREADY emitted as the legacy type carrying its own serverData
+-    // is authoritative — the server typed it AND provided the component's
+-    // data.
+-    if (block.type === def.legacyBlockType && block.serverData) {
+-      return block;
+-    }
+-
+-    // ROUTING a raw region (e.g. "code" → "flashcards"): the envelope is the
+-    // single source of truth. The block's own serverData here is NOT kind
+-    // data — it's the raw region's annotation (the accumulator emits
+-    // `data: { language: "json" }` for untyped code blocks, which the
+-    // live-chat hop maps onto serverData — see
+-    // render-block-to-content-block.ts). Preferring that junk handed the
+-    // legacy component `{ language: "json" }` instead of
+-    // cards/questions/slides — the 2026-07-04 "No flashcards available yet"
+-    // bug — so it is REPLACED (bridge output) or CLEARED (bridgeless kinds
+-    // parse `content` themselves), never forwarded.
+-    const serverData = def.toLegacyServerData?.(envelope);
+-
+-    if (block.type === def.legacyBlockType && serverData === undefined) {
+-      return block; // nothing to change — keep reference stability
+-    }
+-
+-    return {
+-      ...block,
+-      type: def.legacyBlockType,
+-      serverData,
+-      ...(resolution
+-        ? { metadata: withRouteMarker(block.metadata, resolution) }
+-        : null),
+-    };
+-  }
+-
+-  // ── Resolver-only path (no compiled bridge): the registry decides ───────
+-  // R6: only an ACTIVE resolution is render-trusted. An inactive row means
+-  // "held", not "route it anyway".
+-  if (resolution?.isActive) {
+-    if (block.type === resolution.componentKey) {
+-      return block; // already the target type — keep reference stability
+-    }
+-
+-    return {
+-      ...block,
+-      type: resolution.componentKey,
+-      // No compiled bridge exists — the routed component parses `content`
+-      // itself; the raw region's annotation serverData is CLEARED, never
+-      // forwarded (same poison rule as bridgeless compiled kinds).
+-      serverData: undefined,
+-      metadata: withRouteMarker(block.metadata, resolution),
+-    };
+-  }
+-
+-  // ── R6 generic fallback: a KNOWN shape that nothing render-trusted claims ─
+-  // `def` exists ⇒ a kind definition (compiled, or warm from
+-  // `content_ir.kind_definition`) supplied this kind's schema: the platform
+-  // knows the shape. It has no compiled bridge, and either no
+-  // `kind_component` row at all (`no-component`) or one held inactive
+-  // (`inactive`). Ruling R6 sends exactly this case to the generic structured
+-  // viewer with an "unverified shape" affordance — the disposition that
+-  // retires the permanently-red "no-component root" kinds (q_and_a_set,
+-  // schema_showcase — and study_pack_set until study_pack_v2 gave it a
+-  // compiled bridge) without pretending they have renderers.
+-  if (def) {
+-    return routeToGeneric(block, resolution ? "inactive" : "no-component");
+-  }
+-
+-  // A kind slug the platform has NO definition for (typo, foreign emitter,
+-  // TEACHING CONTENT showing an example __kind payload for a hypothetical
+-  // kind) is genuinely unknown — we cannot claim to "know this shape", so
+-  // the strangler seam holds and legacy rendering (a readable raw code
+-  // block) stands, untouched and by reference. Note the boundary: a
+-  // kind-PRESERVED raw (schema-race/db-kind case) whose definition IS
+-  // registered never reaches here — `def` resolves above and it routes
+-  // (bridge / db flip / generic viewer); registration is what separates
+-  // "known but unrenderable" from "not ours to claim". The repaint hook
+-  // upgrades this block the moment the registries learn the kind.
+-  return block;
+-}
+-
+-function isRecord(value: unknown): value is Record<string, unknown> {
+-  return typeof value === "object" && value !== null && !Array.isArray(value);
++  return applyIrKindRoutePure(block, matrxKindRouteEnv, {
++    ownedTypes: MATRX_OWNED_BLOCK_TYPES,
++  });
+ }
+ 
+ /**
+- * Rehydration route for STRUCTURED persisted artifacts (Track 2B).
+- *
+- * A materialized kind artifact stores its zero-loss value object (carrying
+- * `__kind`) as `canvas_items.content.data`. Given that stored value, derive
+- * the registered kind's legacy `serverData` WITHOUT re-parsing any text: the
+- * value wraps into a complete envelope and runs through the same
+- * `toLegacyServerData` bridge the live stream uses. Returns null for
+- * non-objects, unregistered kinds, or kinds without a legacy bridge — callers
+- * fall back to the string-payload path (which legacy rows keep forever).
++ * Rehydration route for STRUCTURED persisted artifacts (Track 2B): given a
++ * stored zero-loss value object, derive the registered kind's legacy
++ * `serverData` with no re-parse. Null for non-objects, unregistered kinds, or
++ * kinds without a legacy bridge.
+  */
+ export function kindServerDataFromStoredValue(
+   value: unknown,
+ ): Record<string, unknown> | null {
+-  if (!isRecord(value)) return null;
+-  const kind = readObjectKind(value);
+-  if (!kind) return null;
+-
+-  const def = kindRegistry.getDefinition(kind);
+-  if (!def?.toLegacyServerData) return null;
+-
+-  return def.toLegacyServerData(envelopeFromCompleteValue(value, kind)) ?? null;
++  return kindServerDataFromStoredValuePure(value, matrxKindRouteEnv);
+ }
+diff --git a/features/content-ir/react/partial-kind-route.ts b/features/content-ir/react/partial-kind-route.ts
+index 01586ead2a..8ef8a94773 100644
+--- a/features/content-ir/react/partial-kind-route.ts
++++ b/features/content-ir/react/partial-kind-route.ts
+@@ -1,261 +1,56 @@
+ /**
+- * Routing the PROVISIONAL half of the streaming partial-kinds contract.
++ * The Matrix binding of the PROVISIONAL (streaming partial kinds) route.
+  *
+- * Cross-repo system-of-record (read it before changing anything here):
+- * `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md` §8.
+- * The reader/validator half lives in `@ai-matrx/content-ir` (`wire/partial-kind`); the wire gate
+- * runs in the execution system's `process-stream.ts`.
++ * Contract: `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md`.
++ * The reader/validator half is `@ai-matrx/content-ir` (`wire/partial-kind`);
++ * the ROUTE half — withhold-by-default, the per-kind opt-in, the
++ * anti-stuck-skeleton backstop, the terminal rules — is
++ * `@ai-matrx/content-ir-react` (`route/partial-kind-route.ts`). Read the
++ * semantics there; this module only binds our registries.
+  *
+- * WHAT THIS DOES
+- * --------------
+- * While a structured region streams, the server announces what it thinks the
+- * region IS and what has arrived so far (`metadata.__ir_partial`). This module
+- * turns that provisional event into a routed block that renders through the
+- * EXACT SAME component the final value renders in — which is the entire point:
+- * a bespoke skeleton renderer would be a second render path and is banned
+- * (features/content-ir/FEATURE.md § No bespoke stream renderers).
+- *
+- * HOW, without touching the verified channel
+- * ------------------------------------------
+- * `root` is deliberately `IrStructuredNode`-shaped, so the event wraps into a
+- * `CanonicalBlockIR` and every existing reader — the compiled bridge, the
+- * component registry, the db-component flip, the generic viewer — works
+- * unchanged. That provisional envelope is placed on a RENDER-LOCAL COPY of the
+- * block's metadata under `__ir`, never on the wire and never in Redux:
+- * `seedEnvelope` (the fingerprint-keyed memo) fires ONLY at the wire boundary
+- * in `sanitizeInboundEnvelopeMetadata`, so a render-local envelope can poison
+- * nothing. The block also carries `__ir_provisional: true` so any downstream
+- * reader can tell a provisional render from a verified one.
+- *
+- * THE POSTURE: WITHHOLD BY DEFAULT, OPT IN PER KIND
+- * -------------------------------------------------
+- * A provisional value MAY be missing required fields — that is what the
+- * `partial_unvalidated` notice declares — and §8 of the contract requires that
+- * a component which throws on an absent field is not routed one. Rather than
+- * audit every component, the default is WITHHOLD: nothing changes and the
+- * block keeps its loading skeleton. A kind opts in with `partialReady: true`
+- * on its registry definition (plus `{ provisional: true }` on its
+- * `makeCompleteEnvelopeBridge`, pinned by a test). If an opted-in component
+- * throws anyway, `ProvisionalKindBoundary` screams and calls
+- * `markKindPartialUnsafe`, which drops that kind back to withhold for the rest
+- * of the session — loud recovery, never a broken surface.
+- *
+- * TERMINALS
+- * ---------
+- * `superseded` and `retracted` produce NO provisional render, so the swap to
+- * the final value happens in the same frame the terminal arrives — never a
+- * flicker through an empty state. Both are explicit EVENTS: the terminal is
+- * never inferred from the arrival of `__ir`, because a completed block often
+- * has no `__ir` at all (unregistered kind, schema drift, cold catalog) and
+- * inferring it would leave the skeleton up forever in exactly those cases.
++ * The wire gate runs in the execution system's `process-stream.ts`.
+  */
+ 
+-import { IR_ENVELOPE_KEY, IR_VERSION } from "@ai-matrx/content-ir";
+-import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+ import {
+-  IR_PARTIAL_KEY,
+-  isProvisionalKind,
+-  readPartialKindEvent,
+-} from "@ai-matrx/content-ir";
+-import type { PartialKindEvent } from "@ai-matrx/content-ir";
+-import { kindRegistry } from "../registry/kind-registry";
+-import { readEnvelope } from "../redux/render-block-envelope";
+-import { applyIrKindRoute } from "./kind-route";
+-import type { IrRoutableBlock } from "./kind-route";
+-
+-/**
+- * Marker stamped on a render-local block whose `__ir` is PROVISIONAL. Never
+- * emitted by a producer, never persisted, never on the wire.
+- */
+-export const IR_PROVISIONAL_KEY = "__ir_provisional" as const;
+-
+-/** True when this block's metadata carries a provisional (not verified) envelope. */
+-export function isProvisionalBlock(
+-  metadata: Record<string, unknown> | null | undefined,
+-): boolean {
+-  return metadata?.[IR_PROVISIONAL_KEY] === true;
+-}
+-
+-/** Wrap a validated `partial` event into the envelope shape every IR reader consumes. */
+-export function envelopeFromPartialKind(
+-  event: PartialKindEvent,
+-): CanonicalBlockIR {
+-  return {
+-    v: IR_VERSION,
+-    // The partial channel is only ever produced by the Python detector; the
+-    // envelope's `engine` union has no third member and inventing one would
+-    // break every existing reader.
+-    engine: "py-block-detector",
+-    fingerprint: event.fingerprint,
+-    root: event.root,
+-  };
+-}
+-
+-/**
+- * Kinds whose component threw while rendering a provisional value. Session-
+- * scoped: the kind falls back to withhold (its loading skeleton) until a
+- * reload, so one bad component cannot keep re-throwing on every block.
+- */
+-const partialUnsafeKinds = new Set<string>();
+-
+-/** Loud recovery hook — called by ProvisionalKindBoundary when a render throws. */
+-export function markKindPartialUnsafe(kind: string): void {
+-  partialUnsafeKinds.add(kind);
+-}
+-
+-/** Test-only reset of the session latch. */
+-export function resetPartialUnsafeKinds(): void {
+-  partialUnsafeKinds.clear();
+-}
+-
+-/**
+- * Has this kind opted in to being handed a provisional value? Withhold is the
+- * default; see the module doc.
+- */
++  resolveProvisionalKindRender as resolveProvisionalKindRenderPure,
++  isPartialReadyKind as isPartialReadyKindPure,
++  type IrRoutableBlock,
++  type PartialRenderOptions,
++  type ProvisionalKindRender,
++} from "@ai-matrx/content-ir-react";
++import {
++  MATRX_OWNED_BLOCK_TYPES,
++  matrxKindRouteEnv,
++} from "../host/route-env";
++
++export {
++  IR_PROVISIONAL_KEY,
++  envelopeFromPartialKind,
++  isProvisionalBlock,
++  markKindPartialUnsafe,
++  resetPartialUnsafeKinds,
++  resolveAnnouncedKindLoading,
++  type ProvisionalKindRender,
++} from "@ai-matrx/content-ir-react";
++
++/** Has this kind opted in to being handed a provisional value? */
+ export function isPartialReadyKind(kind: string): boolean {
+-  if (!kind || partialUnsafeKinds.has(kind)) return false;
+-  return kindRegistry.getDefinition(kind)?.partialReady === true;
+-}
+-
+-/**
+- * The ANNOUNCED-but-not-yet-renderable state: the server has said what this
+- * region is, and the region cannot render its real component yet.
+- *
+- * WHY THIS EXISTS SEPARATELY FROM `pendingStructuredEnvelope`.
+- * -----------------------------------------------------------
+- * That function reads the VERIFIED `__ir` channel, which on a chat stream the
+- * frontend's own accumulator fills in as it parses. A WORKFLOW run's lane does
+- * not: when the server opens the block scope it marks the text channel
+- * `block_shadowed` and the lane stops feeding its accumulator, precisely so
+- * one region is never rendered twice under two sets of block ids
+- * (STREAMING_PARTIAL_KINDS.md §7b rule 4). So on a run page there is NO
+- * streaming `__ir` — the ONLY thing that knows what the region is, is the
+- * partial channel. Without this, a workflow node's structured answer fell
+- * through to the raw-text renderer, which is exactly what Arman watched on the
+- * 2026-08-21 Study Pack run: a generic loader, then raw JSON accumulating,
+- * then a swap at the end.
+- *
+- * Returns the provisional envelope to feed the kind's loading component, or
+- * null when there is nothing announced (no event, a terminal, a dead stream).
+- * Deliberately independent of `partialReady`: withholding a VALUE from a
+- * component that might throw on it is a real decision, but withholding the
+- * kind's own loading state is not — a skeleton cannot throw, and the reader
+- * seeing what is coming is the whole point.
+- */
+-export function resolveAnnouncedKindLoading(
+-  block: { metadata?: Record<string, unknown> },
+-  options?: { streamActive?: boolean },
+-): { kind: string; envelope: CanonicalBlockIR } | null {
+-  // Same anti-stuck-skeleton backstop as resolveProvisionalKindRender: once
+-  // the stream is over no terminal can arrive, so a still-open announcement is
+-  // stuck by definition and must not hold a loader on screen forever.
+-  if (options?.streamActive === false) return null;
+-
+-  const event = readPartialKindEvent(block.metadata);
+-  if (!isProvisionalKind(event)) return null;
+-  const kind = event.root.kind;
+-  if (!kind) return null;
+-
+-  // A region that already VERIFIED is the truth; never cover it with a loader.
+-  const verified = readEnvelope(block.metadata);
+-  if (verified && verified.root.status === "complete") return null;
+-
+-  return { kind, envelope: envelopeFromPartialKind(event) };
+-}
+-
+-export interface ProvisionalKindRender<T> {
+-  /** The routed block — same type/serverData shape the final value produces. */
+-  block: T;
+-  /** The announced (speculative) kind. */
+-  kind: string;
+-  /** Per-block ordering key, for diagnostics. */
+-  seq: number;
+-  /** The provisional envelope — feeds the loading skeleton used as the throw fallback. */
+-  envelope: CanonicalBlockIR;
++  return isPartialReadyKindPure(kind, matrxKindRouteEnv);
+ }
+ 
+ /**
+  * Resolve a block's provisional render, or null when there is nothing to show
+  * provisionally (no event, a terminal event, a withheld kind, a kind nothing
+  * can route, or a verified envelope that already won).
+- *
+- * Pure: no React, no Redux, no side effects beyond the registry read.
+  */
+ export function resolveProvisionalKindRender<
+   T extends IrRoutableBlock & { metadata?: Record<string, unknown> },
+ >(
+   block: T,
+-  options?: {
+-    /**
+-     * Is the STREAM still running? Message-wide, deliberately — not this
+-     * block's own completion.
+-     *
+-     * 🚨 THE ANTI-STUCK-SKELETON BACKSTOP. Law 1 of the contract says every
+-     * partial ends in exactly one terminal, and that law is the ONLY thing
+-     * standing between a user and a "Still arriving" skeleton that never
+-     * resolves. It is a producer guarantee with at least three ways to not
+-     * fire: the drain skips a block missing from the final block list, the
+-     * emitter early-returns once the stream ended or was cancelled (so a
+-     * client abort drops every retraction), and a flush failure is swallowed
+-     * so it never kills a run.
+-     *
+-     * Once the stream is over, no terminal can ever arrive, so a still-open
+-     * provisional is stuck by definition — drop it and let the block's own
+-     * content and `__ir` be the truth. Correct to be message-wide: a terminal
+-     * for THIS block may still be in flight while the block itself looks
+-     * finished.
+-     *
+-     * `undefined` reads as active, so a caller that does not thread stream
+-     * state keeps today's behaviour rather than silently losing live rendering.
+-     */
+-    streamActive?: boolean;
+-  },
++  options?: Pick<PartialRenderOptions, "streamActive">,
+ ): ProvisionalKindRender<T> | null {
+-  if (options?.streamActive === false) return null;
+-
+-  const event = readPartialKindEvent(block.metadata);
+-  // Terminal (superseded / retracted) → no provisional render, in this frame.
+-  if (!isProvisionalKind(event)) return null;
+-
+-  const kind = event.root.kind;
+-  if (!isPartialReadyKind(kind)) return null;
+-
+-  // A verified envelope that has already completed is the truth — a late or
+-  // duplicated partial must never displace it.
+-  const verified = readEnvelope(block.metadata);
+-  if (verified && verified.root.status === "complete") return null;
+-
+-  const { [IR_PARTIAL_KEY]: _partial, ...rest } = block.metadata ?? {};
+-  void _partial;
+-
+-  const envelope = envelopeFromPartialKind(event);
+-
+-  const provisionalBlock = {
+-    ...block,
+-    // The raw region annotation (`{ language: "json" }`) is not kind data —
+-    // same poison rule the verified route follows.
+-    serverData: undefined,
+-    metadata: {
+-      ...rest,
+-      [IR_ENVELOPE_KEY]: envelope,
+-      [IR_PROVISIONAL_KEY]: true,
+-    },
+-  } as T;
+-
+-  const routed = applyIrKindRoute(provisionalBlock);
+-  // Nothing claimed it (unknown kind, no component) — `applyIrKindRoute`
+-  // returns the SAME reference. Withhold rather than render raw partial JSON.
+-  if (routed === provisionalBlock) return null;
+-  // A bridged kind whose bridge DECLINED this value (too thin to render — a
+-  // quiz with no answerable question yet) routed on type alone, which would
+-  // hand the component the partial JSON text to parse. Withhold: the loading
+-  // skeleton stays up for this frame and the next `seq` tries again.
+-  if (
+-    kindRegistry.getDefinition(kind)?.toLegacyServerData &&
+-    !(routed as { serverData?: unknown }).serverData
+-  ) {
+-    return null;
+-  }
+-
+-  return { block: routed, kind, seq: event.seq, envelope };
++  return resolveProvisionalKindRenderPure(block, matrxKindRouteEnv, {
++    ...options,
++    ownedTypes: MATRX_OWNED_BLOCK_TYPES,
++  });
+ }
+diff --git a/features/content-ir/registry/component-registry.ts b/features/content-ir/registry/component-registry.ts
+index 257d16f035..dd226088ab 100644
+--- a/features/content-ir/registry/component-registry.ts
++++ b/features/content-ir/registry/component-registry.ts
+@@ -1,20 +1,20 @@
+ /**
+- * The Shape System component RESOLVER (rulings R1 + R6): (kind, platform,
+- * role) → component. Mirrors the kind registry's loading tiers:
++ * THE MATRIX ADAPTER around the shared component resolver.
+  *
+- * - eager: compiled bootstrap (system-components.ts) — the trusted-at-boot
+- *   floor derived from today's legacy bridges, available at import so the
+- *   render seam can gate synchronously from the first streamed byte.
+- * - warm:  one `content_ir.kind_component` list fetch per app session
+- *   (ensureWarm), fired by the same hosts that warm the kind registry —
+- *   never on the hot path. A DB row for a (kind, platform, role) OVERRIDES
+- *   the compiled entry once warm; the compiled floor keeps answering until
+- *   then (and forever, on DB failure).
++ * The resolver itself — the (kind, platform, role) tiers, the compiled floor,
++ * the DB override, the granular per-kind repaint counters, the cold-fetch
++ * dedupe, the warm/refresh lifecycle with loud recovery — now lives in
++ * `@ai-matrx/content-ir-react` (`ComponentResolver`), because every UI that
++ * renders a kind has to make exactly those decisions and a second copy of them
++ * is a guaranteed divergence.
+  *
+- * Resolution is SYNCHRONOUS (the render seam calls it per block); the only
+- * async work is the warm load, off the render path.
++ * What stays here is what is genuinely OURS: the Supabase-backed loaders, the
++ * Error Inspector sink, the compiled bootstrap derived from `system-kinds`, the
++ * `refreshKindComponents` name our call sites use, and the invalidation
++ * registration at the bottom of this file.
+  *
+- * Module singleton, like kindRegistry — every host shares one instance.
++ * Semantics (rulings R1 + R6) are documented on the package class; read that
++ * before changing behavior here — behavior does not belong here.
+  */
+ 
+ // CYCLE-ENTRY ANCHOR — load-bearing side-effect import. This module reaches
+@@ -26,12 +26,17 @@
+ // kind-registry first guarantees any consumer entering through THIS module
+ // initializes the cycle in the safe order.
+ import "./kind-registry";
++import {
++  ComponentResolver,
++  type ComponentResolution,
++  type ComponentRole,
++  type KindComponentRow,
++} from "@ai-matrx/content-ir-react";
+ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+ import {
+   INVALIDATION_KEYS,
+   registerInvalidationCallback,
+ } from "@/lib/invalidation/invalidation-registry";
+-import type { JsonObject } from "@/types/json";
+ import {
+   getKindComponentBySlug,
+   listKindComponentsFromTables,
+@@ -42,348 +47,48 @@ import {
+   type SystemComponentEntry,
+ } from "./system-components";
+ 
+-export type ComponentRole = "output" | "input";
+-
+-/** The resolver's answer for one (kind, platform, role). */
+-export interface ComponentResolution {
+-  /** The component key the renderer routes on (e.g. "flashcards"). */
+-  componentKey: string;
+-  /** `source` column vocabulary: "bundled" | "db" (db = web sandbox only). */
+-  source: string;
+-  config: JsonObject;
+-  /**
+-   * Render-trust verdict (R6). Compiled entries are always active (trusted
+-   * at bootstrap); DB rows carry their own `is_active`.
+-   */
+-  isActive: boolean;
+-  /** Which tier produced this answer — the verification hook's `by`. */
+-  resolvedBy: "compiled" | "db";
+-  /**
+-   * `source='db'` rows only: the user-authored component body (TSX/JSX for
+-   * the in-page allowlist compile, or an HTML document when
+-   * `config.flavor='html'`). Always null for compiled/bundled entries.
+-   */
+-  componentSource: string | null;
+-  /** `source='db'` rows only: optional `(data) => data` transform source. */
+-  propsTransform: string | null;
+-  /** `source='db'` rows only: pinned kind version (null = current). */
+-  pinnedKindVersion: number | null;
+-  /**
+-   * `source='db'` rows only: the row's `updated_at` — the compile-cache
+-   * staleness key (a refresh with a newer row recompiles automatically).
+-   * Null for compiled entries.
+-   */
+-  updatedAt: string | null;
+-  /**
+-   * `source='db'` rows only: the row's author. Drives the in-render
+-   * ownership affordance (fix badge shows to creator or super admin).
+-   * Null for compiled entries.
+-   */
+-  createdBy: string | null;
+-}
++export type { ComponentResolution, ComponentRole };
+ 
+-function keyOf(kind: string, platform: string, role: string): string {
+-  return `${kind}\u0001${platform}\u0001${role}`;
++/**
++ * The `kind_component` projection is already row-shaped; only `role` is typed
++ * wider here (the column is free text in the generated types) than the
++ * resolver's union.
++ */
++function toRow(projection: KindComponentProjection): KindComponentRow {
++  return { ...projection, role: projection.role as ComponentRole };
+ }
+ 
+-export class ComponentRegistry {
+-  private compiled: Map<string, SystemComponentEntry> | null = null;
+-  private readonly db = new Map<string, KindComponentProjection>();
+-  private warmPromise: Promise<void> | null = null;
+-  private warmFailureLogged = false;
+-  private lastRefreshAt = 0;
+-  private refreshPromise: Promise<void> | null = null;
+-  private readonly listeners = new Set<() => void>();
+-  /**
+-   * Cold single-kind fetch dedupe (streaming eager path). In-flight is keyed
+-   * by (kind, platform) — the fetch unit; misses are keyed by (kind,
+-   * platform, role) so a miss on web/output never suppresses other roles,
+-   * and CLEARED on every wholesale refresh (a component created mid-session
+-   * becomes eagerly fetchable again — misses are cheap to re-verify).
+-   */
+-  private readonly coldInFlight = new Set<string>();
+-  private readonly coldMisses = new Set<string>();
+-  /** Monotonic db-tier version — the repaint hook's snapshot key. */
+-  private version = 0;
+-  /** Per-kind versions + listeners (granular repaint) + wholesale epoch. */
+-  private readonly kindVersions = new Map<string, number>();
+-  private readonly kindListeners = new Map<string, Set<() => void>>();
+-  private epoch = 0;
+-
+-  /**
+-   * Entries arrive as a THUNK, resolved on first use: the compiled bootstrap
+-   * derives from `SYSTEM_KIND_DEFINITIONS`, which is mid-initialization when
+-   * this module evaluates (see the cycle note in system-components.ts).
+-   */
+-  constructor(private readonly entries: () => SystemComponentEntry[]) {}
+-
+-  private compiledMap(): Map<string, SystemComponentEntry> {
+-    if (!this.compiled) {
+-      this.compiled = new Map();
+-      for (const entry of this.entries()) {
+-        this.compiled.set(
+-          keyOf(entry.kind, entry.platform, entry.role),
+-          entry,
+-        );
+-      }
+-    }
+-    return this.compiled;
+-  }
+-
+-  /**
+-   * Synchronous resolve — the render seam's per-block call. DB override
+-   * first (once warm), compiled floor second, null for unknown.
+-   */
+-  resolve(
+-    kind: string,
+-    platform: string,
+-    role: ComponentRole,
+-  ): ComponentResolution | null {
+-    const key = keyOf(kind, platform, role);
+-
+-    const dbRow = this.db.get(key);
+-    if (dbRow) {
+-      return {
+-        componentKey: dbRow.componentKey,
+-        source: dbRow.source,
+-        config: dbRow.config,
+-        isActive: dbRow.isActive,
+-        resolvedBy: "db",
+-        componentSource: dbRow.componentSource,
+-        propsTransform: dbRow.propsTransform,
+-        pinnedKindVersion: dbRow.pinnedKindVersion,
+-        updatedAt: dbRow.updatedAt,
+-        createdBy: dbRow.createdBy,
+-      };
+-    }
+-
+-    const compiledEntry = this.compiledMap().get(key);
+-    if (compiledEntry) {
+-      return {
+-        componentKey: compiledEntry.componentKey,
+-        source: compiledEntry.source,
+-        config: compiledEntry.config,
+-        isActive: true, // trusted at bootstrap (R6)
+-        resolvedBy: "compiled",
+-        componentSource: null,
+-        propsTransform: null,
+-        pinnedKindVersion: null,
+-        updatedAt: null,
+-        createdBy: null,
+-      };
+-    }
+-
+-    return null;
+-  }
+-
+-  /** R6 floor check: compiled-bootstrap membership = always render-trusted. */
+-  hasCompiled(kind: string, platform: string, role: ComponentRole): boolean {
+-    return this.compiledMap().has(keyOf(kind, platform, role));
+-  }
+-
+-  /**
+-   * Pure ingest — ensureWarm's landing point (and the unit-test seam, like
+-   * `reconstructKindRegistry` is for the kind tables). First row per key
+-   * wins: rows arrive is_default-first / sort_order-asc from the source.
+-   */
+-  ingestDbRows(rows: KindComponentProjection[]): void {
+-    const changedKinds = new Set<string>();
+-    for (const row of rows) {
+-      const key = keyOf(row.kind, row.platform, row.role);
+-      if (!this.db.has(key)) {
+-        this.db.set(key, row);
+-        changedKinds.add(row.kind);
+-      }
+-    }
+-    // Warm/cold ingest is a resolver-tier change the render seam must see —
+-    // a db component landing AFTER a region finalized re-runs the route via
+-    // the repaint hook. Per-kind bumps keep the repaint granular: only
+-    // mounted blocks of the changed kinds re-render.
+-    if (changedKinds.size > 0) {
+-      for (const kind of changedKinds) this.bumpKind(kind);
+-      this.notifyChanged();
+-    }
+-  }
+-
+-  /**
+-   * Refresh landing point: REPLACE the db tier wholesale (same
+-   * first-row-per-key contract as ingestDbRows) so edits, deletions, and
+-   * is_active flips all take effect. Notifies subscribers.
+-   */
+-  replaceDbRows(rows: KindComponentProjection[]): void {
+-    this.db.clear();
+-    // Wholesale invalidation: every recorded miss is stale (a component
+-    // created mid-session must become eagerly fetchable again).
+-    this.coldMisses.clear();
+-    for (const row of rows) {
+-      const key = keyOf(row.kind, row.platform, row.role);
+-      if (!this.db.has(key)) this.db.set(key, row);
+-    }
+-    // A wholesale replace ALWAYS notifies (deletions/flips count too), and
+-    // bumps the epoch so EVERY per-kind subscriber re-snapshots.
+-    this.epoch += 1;
+-    for (const set of this.kindListeners.values()) {
+-      for (const listener of set) listener();
+-    }
+-    this.notifyChanged();
+-  }
+-
+-  /** Current db-tier version (repaint snapshot). */
+-  getVersion(): number {
+-    return this.version;
+-  }
+-
+-  /** Per-kind version (+ wholesale epoch). The granular repaint snapshot. */
+-  getKindVersion(kind: string): number {
+-    return this.epoch + (this.kindVersions.get(kind) ?? 0);
+-  }
+-
+-  /** Subscribe to db-tier changes for ONE kind (+ wholesale replaces). */
+-  subscribeKind(kind: string, listener: () => void): () => void {
+-    const set = this.kindListeners.get(kind) ?? new Set();
+-    set.add(listener);
+-    this.kindListeners.set(kind, set);
+-    return () => {
+-      set.delete(listener);
+-      if (set.size === 0) this.kindListeners.delete(kind);
+-    };
+-  }
+-
+-  private bumpKind(kind: string): void {
+-    this.kindVersions.set(kind, (this.kindVersions.get(kind) ?? 0) + 1);
+-    const listeners = this.kindListeners.get(kind);
+-    if (listeners) for (const listener of listeners) listener();
+-  }
+-
+-  private notifyChanged(): void {
+-    this.version += 1;
+-    for (const listener of this.listeners) listener();
+-  }
+-
+-  /**
+-   * The eager lightweight single-kind fetch (streaming path): the moment a
+-   * cloud kind is identified mid-stream, pull ONLY that kind's resolver rows
+-   * (render-essential columns only) and ingest them so `resolveComponent`
+-   * can answer before — or shortly after — the region completes. Deduped
+-   * in-flight and by known-miss; kinds already resolvable are skipped.
+-   * Fire-and-forget; failures are loud (the warm list remains the backstop).
+-   */
+-  requestComponent(kind: string, platform: string, role: ComponentRole): void {
+-    if (this.resolve(kind, platform, role)) return;
+-    const missKey = keyOf(kind, platform, role);
+-    const flightKey = `${kind}${platform}`;
+-    if (this.coldInFlight.has(flightKey) || this.coldMisses.has(missKey)) {
+-      return;
+-    }
+-    this.coldInFlight.add(flightKey);
+-
+-    void (async () => {
+-      try {
+-        const rows = await getKindComponentBySlug(kind, platform);
+-        this.ingestDbRows(rows);
+-        // Record the miss for exactly the requested (kind, platform, role) —
+-        // rows may exist for OTHER roles on this platform; those must not be
+-        // suppressed, and this one must not be re-fetched until a refresh.
+-        if (!this.resolve(kind, platform, role)) {
+-          this.coldMisses.add(missKey);
+-        }
+-      } catch (error) {
+-        const message = `component-registry cold fetch failed for "${kind}": ${
+-          error instanceof Error ? error.message : String(error)
+-        }`;
+-        console.error(`[content-ir] ${message}`);
+-        captureError({
+-          source: "content-ir",
+-          message,
+-          name: error instanceof Error ? error.name : undefined,
+-          stack: error instanceof Error ? error.stack : undefined,
+-          raw: error,
+-        });
+-      } finally {
+-        this.coldInFlight.delete(flightKey);
+-      }
+-    })();
++/**
++ * The Matrix resolver: the shared class with our loaders and our error sink
++ * bound, plus the `refreshKindComponents` alias every call site here uses.
++ */
++export class ComponentRegistry extends ComponentResolver {
++  constructor(entries: () => SystemComponentEntry[]) {
++    super({
++      compiledEntries: entries,
++      loadAll: async () => (await listKindComponentsFromTables()).map(toRow),
++      loadForKind: async (kind, platform) =>
++        (await getKindComponentBySlug(kind, platform)).map(toRow),
++      reportError: captureError,
++    });
+   }
+ 
+   /**
+-   * Subscribe to db-tier replacements (refreshKindComponents). Returns the
+-   * unsubscribe. Consumers use this to re-render when a refresh lands.
++   * Ingest/replace accept the SUPABASE PROJECTION (whose `role` is the
++   * column's free text) and narrow it here — the one place that mapping
++   * belongs. Overridden rather than adapted at ~15 call sites.
+    */
+-  subscribe(listener: () => void): () => void {
+-    this.listeners.add(listener);
+-    return () => this.listeners.delete(listener);
++  override ingestDbRows(rows: readonly KindComponentProjection[]): void {
++    super.ingestDbRows(rows.map(toRow));
+   }
+ 
+-  /**
+-   * Refresh-on-view: re-fetch the warm list and REPLACE the db tier, so an
+-   * edited `source='db'` component (its `updated_at` bump re-keys the
+-   * compile cache) renders fresh on the next view. Deduped in-flight and
+-   * rate-limited by `maxAgeMs` (default 10s) — mounting several previews
+-   * costs one fetch. Server-side edits do NOT push to open clients (no
+-   * realtime yet); the contract is refresh-on-view via this call.
+-   */
+-  refreshKindComponents(maxAgeMs = 10_000): Promise<void> {
+-    if (this.refreshPromise) return this.refreshPromise;
+-    if (Date.now() - this.lastRefreshAt < maxAgeMs) return Promise.resolve();
+-    // Any refresh intent invalidates recorded misses immediately (also
+-    // cleared in replaceDbRows when the fetch lands) — cheap to re-verify.
+-    this.coldMisses.clear();
+-
+-    this.refreshPromise = listKindComponentsFromTables()
+-      .then((rows) => {
+-        this.lastRefreshAt = Date.now();
+-        this.replaceDbRows(rows);
+-      })
+-      .catch((error) => {
+-        // Loud recovery: the current tier keeps answering; a refresh failure
+-        // is a real defect (same posture as the warm loader).
+-        const message = `component-registry refresh failed (current resolver tier still serving): ${
+-          error instanceof Error ? error.message : String(error)
+-        }`;
+-        console.error(`[content-ir] ${message}`);
+-        captureError({
+-          source: "content-ir",
+-          message,
+-          name: error instanceof Error ? error.name : undefined,
+-          stack: error instanceof Error ? error.stack : undefined,
+-          raw: error,
+-        });
+-      })
+-      .finally(() => {
+-        this.refreshPromise = null;
+-      });
+-    return this.refreshPromise;
++  override replaceDbRows(rows: readonly KindComponentProjection[]): void {
++    super.replaceDbRows(rows.map(toRow));
+   }
+ 
+-  /** One list fetch per app session; failed loads retry on the next call. */
+-  ensureWarm(): Promise<void> {
+-    if (!this.warmPromise) {
+-      this.warmPromise = listKindComponentsFromTables()
+-        .then((rows) => {
+-          this.ingestDbRows(rows);
+-        })
+-        .catch((error) => {
+-          // Loud recovery: the compiled floor keeps rendering, but a warm
+-          // failure is a real defect — one console scream (first failure)
+-          // plus a structured capture (deduped) per attempt, then retryable.
+-          const message = `component-registry warm load failed (compiled bootstrap still serving): ${
+-            error instanceof Error ? error.message : String(error)
+-          }`;
+-          if (!this.warmFailureLogged) {
+-            this.warmFailureLogged = true;
+-            console.error(`[content-ir] ${message}`);
+-          }
+-          captureError({
+-            source: "content-ir",
+-            message,
+-            name: error instanceof Error ? error.name : undefined,
+-            stack: error instanceof Error ? error.stack : undefined,
+-            raw: error,
+-          });
+-          this.warmPromise = null;
+-        });
+-    }
+-    return this.warmPromise;
++  /** Historical name for the package's `refresh` — kept so call sites read the same. */
++  refreshKindComponents(maxAgeMs?: number): Promise<void> {
++    return this.refresh(maxAgeMs);
+   }
+ }
+ 
+@@ -407,9 +112,9 @@ export function resolveComponent(
+ /**
+  * Refresh-on-view for `source='db'` components (module-level convenience over
+  * the singleton): re-fetches `kind_component`, replaces the db tier, notifies
+- * `subscribeKindComponents` listeners. Rate-limited + deduped — safe to call
+- * on every preview/authoring-surface mount. Server-side edits never push to
+- * open clients; call this (or wait for a fresh session) to see them.
++ * `subscribeKindComponents` listeners. Rate-limited + deduped — safe to call on
++ * every preview/authoring-surface mount. Server-side edits never push to open
++ * clients; call this (or wait for a fresh session) to see them.
+  */
+ export function refreshKindComponents(maxAgeMs?: number): Promise<void> {
+   return componentRegistry.refreshKindComponents(maxAgeMs);
+diff --git a/features/content-ir/studio/components/KindInstanceRender.tsx b/features/content-ir/studio/components/KindInstanceRender.tsx
+index 0896bd28db..287c9b80c5 100644
+--- a/features/content-ir/studio/components/KindInstanceRender.tsx
++++ b/features/content-ir/studio/components/KindInstanceRender.tsx
+@@ -1,205 +1,43 @@
+ "use client";
+ 
+ /**
+- * KindInstanceRender — render ONE canonical kind instance through the REAL
+- * production path, never a lookalike: the value object is wrapped by the same
+- * complete-envelope assembler the splitter/rehydration use
+- * (`envelopeFromCompleteValue`), placed on a raw render block's
+- * `metadata.__ir`, and handed to the production `SafeBlockRenderer` — whose
+- * `BlockRenderer` runs `applyIrKindRoute` exactly as it does for streamed chat
+- * content (db-sourced `kind_component` renderers resolve through the same
+- * route automatically).
++ * The Matrix binding of `KindInstanceRender` — render ONE canonical kind
++ * instance through the REAL production path, never a lookalike.
+  *
+- * If the kind has no registered component/bridge, the value renders through
+- * {@link StructuredValueView} — the platform floor that turns any JSON value
+- * into a human document. It used to become a ```json code block instead, which
+- * is what put 19 of 23 Study Pack steps in front of a non-technical reader as
+- * a JSON dump (2026-08-18). A curated `kind_component` is now an UPGRADE over
+- * a good default, never the prerequisite for one.
+- *
+- * Extracted from the admin KindPreviewTab so the studio's Preview + Test tabs
+- * and the admin page share ONE render engine (no second preview fork).
+- * SafeBlockRenderer already owns the `ssr:false` dynamic boundary for the
+- * heavy renderer; this shell is light on purpose.
++ * The component itself lives in `@ai-matrx/content-ir-react`: the routing
++ * three-state lifecycle ("checking" is not "missing"), the eager targeted
++ * resolve, the warm-then-refresh order, the unroutable fallback rule, and the
++ * bare/card variants. Read the semantics there. This module supplies our host
++ * (SafeBlockRenderer + StructuredValueView + the Error Inspector) and keeps the
++ * historical import path stable for the ~15 surfaces that render an instance.
+  */
+ 
+-import { useEffect, useState } from "react";
+-import { Info } from "lucide-react";
+-import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
+-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+-import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+-import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+-import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
+-import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
+ import {
+-  componentRegistry,
+-  resolveComponent,
+-} from "@/features/content-ir/registry/component-registry";
++  KindInstanceRender as SharedKindInstanceRender,
++  kindIsRoutable as kindIsRoutableShared,
++  isRecordValue as isRecordValueShared,
++  type KindInstanceRenderProps,
++} from "@ai-matrx/content-ir-react";
++import {
++  ContentIrHostBoundary,
++  matrxContentIrHost,
++} from "@/features/content-ir/host/ContentIrHostBoundary";
+ 
+-const noopReplaceBlockContent = (_original: string, _replacement: string) => {};
+-const noopOpenEditor = () => {};
+-
+-export function isRecordValue(
+-  value: unknown,
+-): value is Record<string, unknown> {
+-  return typeof value === "object" && value !== null && !Array.isArray(value);
+-}
++export const isRecordValue = isRecordValueShared;
+ 
+ /**
+- * True when `applyIrKindRoute` has a registered render path for this kind —
+- * a compiled legacy bridge OR any ACTIVE resolver row (including db-sourced
+- * user components, which route to `db_kind_component`). Mirrors the route's
+- * own decision order; requires the resolver warm tier for db rows (see the
+- * warm tick in KindInstanceRender).
++ * True when `applyIrKindRoute` has a registered render path for this kind — a
++ * compiled legacy bridge OR any ACTIVE resolver row (including db-sourced user
++ * components, which route to `db_kind_component`).
+  */
+ export function kindIsRoutable(kind: string): boolean {
+-  if (kindRegistry.getDefinition(kind)?.legacyBlockType) return true;
+-  return Boolean(resolveComponent(kind, "web", "output")?.isActive);
++  return kindIsRoutableShared(kind, matrxContentIrHost);
+ }
+ 
+-interface KindInstanceRenderProps {
+-  kind: string;
+-  /** The canonical instance value (kind_example.data or a form-emitted instance). */
+-  value: unknown;
+-  /** Show the honest "no component registered" banner when unroutable. */
+-  showRoutingNote?: boolean;
+-  /**
+-   * What to render when the routing decision lands on "no component exists for
+-   * this kind". The universal document view is the right answer almost
+-   * everywhere — it reads well and hides nothing. It is still the wrong answer
+-   * when the raw value is an internal ENVELOPE rather than content: an
+-   * `agent_result` dumped the verbatim prompt, the model id and the token bill
+-   * into the box a learner was waiting on. Passing a fallback lets that caller
+-   * show what the reader actually wants WITHOUT anyone second-guessing the
+-   * routing decision — this component stays the ONE place that decides whether
+-   * a kind has a component (THE CANONICAL COMPONENT LAW is about overriding an
+-   * EXISTING component; there is none to override here).
+-   *
+-   * Omitted → the generic viewer, exactly as before.
+-   */
+-  unroutableFallback?: React.ReactNode;
+-  /**
+-   * Chrome, per THE WRAPPER LAW (root CLAUDE.md): a host frame either IS the
+-   * chrome or has none. "card" (default) keeps the bordered surface the studio
+-   * and admin previews rely on. "bare" renders with NO border/background/pad —
+-   * for a host that already draws a titled card, where the default produced the
+-   * two-tone box-in-a-box with a dead band around it (the workflow run surface,
+-   * reported 2026-08-18). Mirrors `LiveRunDisplay`'s `variant="bare"`.
+-   */
+-  variant?: "card" | "bare";
+-}
+-
+-type RoutingStatus = "checking" | "routable" | "unroutable";
+-
+-export default function KindInstanceRender({
+-  kind,
+-  value,
+-  showRoutingNote = true,
+-  unroutableFallback,
+-  variant = "card",
+-}: KindInstanceRenderProps) {
+-  // Routing must be judged with the WARM tiers in (user kind definitions +
+-  // `kind_component` resolver rows — including source='db' user components).
+-  // Keep the note in an explicit three-state lifecycle: a cold registry is
+-  // "checking", not proof that a component is missing. This prevents the
+-  // false warning from flashing or sticking while BlockRenderer independently
+-  // upgrades to a newly arrived db component.
+-  const [routingStatus, setRoutingStatus] = useState<RoutingStatus>(() =>
+-    kindIsRoutable(kind) ? "routable" : "checking",
+-  );
+-
+-  useEffect(() => {
+-    let cancelled = false;
+-    let warmed = false;
+-    const syncRoutingStatus = () => {
+-      if (cancelled) return;
+-      setRoutingStatus(
+-        kindIsRoutable(kind) ? "routable" : warmed ? "unroutable" : "checking",
+-      );
+-    };
+-
+-    const unsubscribe = componentRegistry.subscribe(syncRoutingStatus);
+-    syncRoutingStatus();
+-
+-    // Eager targeted resolve FIRST — the same seam the streaming path uses
+-    // (stream-block-accumulator.ts): two indexed single-kind reads land this
+-    // kind's own resolver row in ~100ms, so first paint shows the real
+-    // component instead of the JSON fallback. The warm sweep below (megabytes,
+-    // several round trips) is the backstop, never the gate — before this, the
+-    // component only appeared after the full sweep landed, which users
+-    // experienced as "it renders after I switch tabs" (2026-08-22).
+-    void componentRegistry.requestComponent(kind, "web", "output");
+-
+-    // Sampled BEFORE the warm: refresh-on-view only earns its keep when the
+-    // registry was already warm from an earlier mount; on a cold mount it
+-    // would re-download the identical list ensureWarm is about to fetch.
+-    const wasAlreadyWarm = componentRegistry.getVersion() > 0;
+-    void Promise.allSettled([
+-      kindRegistry.ensureWarm(),
+-      componentRegistry.ensureWarm(),
+-    ]).then(async () => {
+-      warmed = true;
+-      syncRoutingStatus();
+-      if (wasAlreadyWarm) {
+-        await componentRegistry.refreshKindComponents();
+-      }
+-      syncRoutingStatus();
+-    });
+-
+-    return () => {
+-      cancelled = true;
+-      unsubscribe();
+-    };
+-  }, [kind]);
+-
+-  const block: RenderBlock | null = isRecordValue(value)
+-    ? {
+-        type: "code",
+-        content: JSON.stringify(value, null, 2),
+-        language: "json",
+-        metadata: {
+-          [IR_ENVELOPE_KEY]: envelopeFromCompleteValue(value, kind),
+-        },
+-      }
+-    : null;
+-
+-  const frameClass =
+-    variant === "bare" ? "" : "rounded-md border border-border bg-card p-3";
+-
+-  // A caller that supplied a fallback gets it the moment routing SETTLES on
+-  // "no component" — never during "checking", so a warm-up tick can't flash
+-  // the fallback over a component that is about to resolve.
+-  if (routingStatus === "unroutable" && unroutableFallback !== undefined) {
+-    return <>{unroutableFallback}</>;
+-  }
+-
+-  // The floor. Two ways to land here, and the answer is the same document
+-  // either way: the kind settled on "no component", or the value is not an
+-  // object at all (a scalar / array workflow I/O shape), for which there has
+-  // never been a block render path.
+-  const onTheFloor = block === null || routingStatus === "unroutable";
+-
++export default function KindInstanceRender(props: KindInstanceRenderProps) {
+   return (
+-    <div className="space-y-3">
+-      {showRoutingNote && routingStatus === "unroutable" && (
+-        <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+-          <Info className="h-3.5 w-3.5 shrink-0" />
+-          This shape has no custom component yet, so it renders through the
+-          universal viewer — exactly what production shows today.
+-        </div>
+-      )}
+-      <div className={frameClass}>
+-        {onTheFloor ? (
+-          <StructuredValueView value={value} kind={kind} />
+-        ) : (
+-          <SafeBlockRenderer
+-            block={block}
+-            index={0}
+-            replaceBlockContent={noopReplaceBlockContent}
+-            handleOpenEditor={noopOpenEditor}
+-          />
+-        )}
+-      </div>
+-    </div>
++    <ContentIrHostBoundary>
++      <SharedKindInstanceRender {...props} />
++    </ContentIrHostBoundary>
+   );
+ }
