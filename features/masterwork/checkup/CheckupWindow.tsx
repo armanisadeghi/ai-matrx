@@ -484,39 +484,47 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
           </span>
         }
         actionsRight={
-          !run.running ? (
-            <span className="flex items-center gap-1">
-              {/* The pass that makes the audit good — the Expert's raw
-                  dictation, cleaned per contribution and SAVED, so the next
-                  checkup reads prose instead of a transcript. */}
+          // ALWAYS rendered. This window opens already RUNNING (clicking
+          // "Final checkup" IS the final checkup), so there is no pre-run state
+          // to put the clean-up pass in — gating it on `!run.running` hid it at
+          // exactly the moment it matters and for most of the window's life.
+          // It is disabled, not absent, while a run is in flight: the Expert
+          // can see the pass exists and read why they cannot press it yet.
+          <span className="flex items-center gap-1">
+            {/* The pass that makes the audit good — the Expert's raw dictation,
+                cleaned per contribution and SAVED, so the NEXT checkup reads
+                prose instead of a transcript. */}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[11px]"
+              disabled={cleanCorpus.running || run.running}
+              title={
+                run.running
+                  ? "Wait for this checkup to finish. Tidying your words changes what the NEXT checkup reads, so it can't help the one already running."
+                  : "Tidy up your dictated words, then run the checkup again — it reads better text and finds better problems. Your originals are never changed."
+              }
+              onClick={() => void runCleanCorpus()}
+            >
+              {cleanCorpus.running ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Eraser className="h-3 w-3" />
+              )}
+              {cleanCorpus.running ? "Tidying…" : "Clean up my words"}
+            </Button>
+            {!run.running && (totalFindings > 0 || run.status === "done") ? (
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-6 text-[11px]"
-                disabled={cleanCorpus.running}
-                title="Tidy up your dictated words first — the checkup reads better text and finds better problems. Your originals are never changed."
-                onClick={() => void runCleanCorpus()}
+                onClick={() => void run.start()}
               >
-                {cleanCorpus.running ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Eraser className="h-3 w-3" />
-                )}
-                {cleanCorpus.running ? "Tidying…" : "Clean up my words"}
+                <RotateCcw className="h-3 w-3" />
+                Run again
               </Button>
-              {totalFindings > 0 || run.status === "done" ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 text-[11px]"
-                  onClick={() => void run.start()}
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Run again
-                </Button>
-              ) : null}
-            </span>
-          ) : undefined
+            ) : null}
+          </span>
         }
         width={760}
         height={720}
