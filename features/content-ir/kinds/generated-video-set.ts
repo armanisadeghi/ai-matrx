@@ -36,6 +36,8 @@ import {
   type MediaUsage,
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { GeneratedVideo, GeneratedVideoSet } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of GeneratedVideo / GenerateVideoOutput.
@@ -80,18 +82,20 @@ export const GENERATED_VIDEO_SET_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING.
 // ---------------------------------------------------------------------------
 
-export interface GeneratedVideoData extends MediaHandleFields {
-  handle: string | null;
-  duration_seconds: number | null;
-}
+/** THE SHAPE COMES FROM THE REGISTRY; the bridge adds the resolved handle. */
+export type GeneratedVideoData = MediaHandleFields &
+  MaterializedKind<Pick<GeneratedVideo, "duration_seconds">> & {
+    handle: string | null;
+  };
 
-export interface GeneratedVideoSetData {
+export type GeneratedVideoSetData = Omit<
+  MaterializedKind<GeneratedVideoSet>,
+  "__kind" | "videos" | "usage"
+> & {
   videos: GeneratedVideoData[];
-  count: number | null;
-  model: string;
   usage: MediaUsage | null;
   isComplete: boolean;
-}
+};
 
 export function readGeneratedVideo(entry: unknown): GeneratedVideoData | null {
   if (!isRecord(entry)) return null;

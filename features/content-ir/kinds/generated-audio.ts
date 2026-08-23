@@ -34,6 +34,8 @@ import {
   type MediaUsage,
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { GeneratedAudio } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schema — mirror of TextToSpeechOutput.
@@ -77,21 +79,25 @@ export const generatedAudioKindSchema: KindSchema = {
 // serverData bridge.
 // ---------------------------------------------------------------------------
 
-export interface GeneratedAudioData {
+/**
+ * THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`). The bridge adds only
+ * what the registry does not carry: the resolved media handle, the
+ * bytes-only verdict, and the stream flag. `audio_b64` / `audio_path` are
+ * deliberately dropped — a renderer never touches raw bytes or an S3 path.
+ */
+export type GeneratedAudioData = Omit<
+  MaterializedKind<
+    Omit<GeneratedAudio, "__kind" | "audio_b64" | "audio_path" | "usage">
+  >,
+  never
+> & {
   /** What `<InlineMediaRef>` resolves — file_id when present, else the URL. */
   handle: string | null;
-  file_id: string | null;
-  audio_url: string | null;
-  audio_cdn_url: string | null;
-  audio_signed_url: string | null;
-  mime_type: string | null;
-  duration_seconds: number | null;
-  model: string;
   usage: MediaUsage | null;
   /** True when the provider returned only base64 bytes — nothing durable to link. */
   bytesOnly: boolean;
   isComplete: boolean;
-}
+};
 
 export function readGeneratedAudio(value: Record<string, unknown>): GeneratedAudioData {
   const fileId = optionalString(value.file_id);

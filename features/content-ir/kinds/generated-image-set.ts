@@ -34,6 +34,8 @@ import {
   type MediaUsage,
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { GeneratedImage, GeneratedImageSet } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of GeneratedImage / GenerateImageOutput.
@@ -96,22 +98,21 @@ export const GENERATED_IMAGE_SET_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING.
 // ---------------------------------------------------------------------------
 
-export interface GeneratedImageData extends MediaHandleFields {
-  /** What `<InlineMediaRef>` resolves — file_id when present, else the most durable URL. */
-  handle: string | null;
-  width: number | null;
-  height: number | null;
-  seed: number | null;
-  size_bytes: number | null;
-}
+/** THE SHAPE COMES FROM THE REGISTRY; the bridge adds the resolved handle. */
+export type GeneratedImageData = MediaHandleFields &
+  MaterializedKind<Pick<GeneratedImage, "width" | "height" | "seed" | "size_bytes">> & {
+    /** What `<InlineMediaRef>` resolves — file_id when present, else the most durable URL. */
+    handle: string | null;
+  };
 
-export interface GeneratedImageSetData {
+export type GeneratedImageSetData = Omit<
+  MaterializedKind<GeneratedImageSet>,
+  "__kind" | "images" | "usage"
+> & {
   images: GeneratedImageData[];
-  count: number | null;
-  model: string;
   usage: MediaUsage | null;
   isComplete: boolean;
-}
+};
 
 export function readGeneratedImage(entry: unknown): GeneratedImageData | null {
   if (!isRecord(entry)) return null;

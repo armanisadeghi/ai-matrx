@@ -32,6 +32,8 @@
  */
 
 import { isRecord } from "./legacy-bridge-utils";
+import type { MaterializedKind } from "./kind-payload";
+import type { AiUsage, GeneratedImage } from "./generated/kinds.generated";
 
 export function stringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -52,14 +54,14 @@ export function stringList(value: unknown): string[] {
   );
 }
 
-/** A media item's identity fields, as every one of these shapes expresses them. */
-export interface MediaHandleFields {
-  file_id: string | null;
-  url: string | null;
-  cdn_url: string | null;
-  signed_url: string | null;
-  mime_type: string | null;
-}
+/**
+ * A media item's identity fields, as every one of these shapes expresses them
+ * — PICKED from the registry's own `generated_image`, so a producer that gains
+ * a locator field cannot leave this reader behind (`check:kind-type-twins`).
+ */
+export type MediaHandleFields = MaterializedKind<
+  Pick<GeneratedImage, "file_id" | "url" | "cdn_url" | "signed_url" | "mime_type">
+>;
 
 export function readMediaHandleFields(
   entry: Record<string, unknown>,
@@ -84,10 +86,7 @@ export function mediaHandleOf(fields: MediaHandleFields): string | null {
 }
 
 /** Aggregate usage as these outputs report it — display only, never math we own. */
-export interface MediaUsage {
-  cost_usd: number | null;
-  total_tokens: number | null;
-}
+export type MediaUsage = MaterializedKind<Pick<AiUsage, "cost_usd" | "total_tokens">>;
 
 export function readUsage(value: unknown): MediaUsage | null {
   if (!isRecord(value)) return null;
