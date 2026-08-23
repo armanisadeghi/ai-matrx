@@ -142,7 +142,7 @@ export default function DenseCanonicalFlashcardsDemo() {
   };
 
   return (
-    <main className="flex h-dvh min-h-0 flex-col overflow-hidden bg-textured text-foreground">
+    <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured text-foreground">
       <header className="flex min-h-12 shrink-0 items-center gap-3 border-b border-border bg-card px-3 pr-14">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Layers3 className="h-4 w-4 shrink-0 text-primary" />

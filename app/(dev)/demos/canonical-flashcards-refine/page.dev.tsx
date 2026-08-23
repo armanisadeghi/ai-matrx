@@ -559,7 +559,7 @@ export default function CanonicalFlashcardsRefineDemoPage() {
   const deck = adaptFixtureToCanonical(source);
 
   return (
-    <main className="flex h-dvh min-h-0 flex-col overflow-hidden bg-textured text-foreground">
+    <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured text-foreground">
       <header className="shrink-0 border-b border-border bg-card px-3 py-2 sm:px-5">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">

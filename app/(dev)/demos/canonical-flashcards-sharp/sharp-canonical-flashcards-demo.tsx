@@ -257,7 +257,7 @@ export function SharpCanonicalFlashcardsDemo() {
   };
 
   return (
-    <main className="flex h-dvh min-h-0 flex-col overflow-hidden bg-textured text-foreground">
+    <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured text-foreground">
       <header className="relative z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-glass px-3 backdrop-blur-glass backdrop-saturate-glass sm:px-5">
         <Button
           variant="ghost"
