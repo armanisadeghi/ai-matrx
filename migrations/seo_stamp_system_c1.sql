@@ -155,6 +155,10 @@ ALTER TABLE seo.keyword_facet
   ADD CONSTRAINT keyword_facet_site_fk FOREIGN KEY (site_id) REFERENCES web.site(id),
   DROP CONSTRAINT IF EXISTS keyword_facet_matcher_fk,
   ADD CONSTRAINT keyword_facet_matcher_fk FOREIGN KEY (matcher_id) REFERENCES seo.dimension_value_matcher(id);
+-- sources: classifier (AI) · rule (legacy auto-applied class rule) · human · pack · matcher (the engine) · import
+ALTER TABLE seo.keyword_facet DROP CONSTRAINT IF EXISTS keyword_facet_source_check;
+ALTER TABLE seo.keyword_facet ADD CONSTRAINT keyword_facet_source_check
+  CHECK (source = ANY (ARRAY['classifier','rule','human','pack','matcher','import']));
 -- a site-scoped stamp and a universal stamp of the same value are different rows
 DROP INDEX IF EXISTS seo.keyword_facet_kw_cat_uniq;
 CREATE UNIQUE INDEX IF NOT EXISTS keyword_facet_kw_cat_site_uniq ON seo.keyword_facet
@@ -448,8 +452,10 @@ BEGIN
 
   -- Upsert desired stamps (site-scoped, matcher-sourced)
   WITH up AS (
-    INSERT INTO seo.keyword_facet (keyword_id, category_id, site_id, source, confidence, matcher_id, as_of, organization_id)
-    SELECT d.kw_id, d.value_id, p_site_id, 'matcher', 100, d.matcher_id, now(), v_org FROM _desired d
+    -- site-scoped stamps are NEVER public: universal facts are public, a site's meaning is its own.
+    -- They are read through the site-guarded SECURITY DEFINER RPCs, not by direct table reads.
+    INSERT INTO seo.keyword_facet (keyword_id, category_id, site_id, source, confidence, matcher_id, as_of, organization_id, visibility)
+    SELECT d.kw_id, d.value_id, p_site_id, 'matcher', 100, d.matcher_id, now(), v_org, 'internal' FROM _desired d
     ON CONFLICT (keyword_id, category_id, COALESCE(site_id,'00000000-0000-0000-0000-000000000000'::uuid)) WHERE deleted_at IS NULL
     DO UPDATE SET matcher_id = EXCLUDED.matcher_id, as_of = now(), updated_at = now()
       WHERE seo.keyword_facet.source = 'matcher' AND NOT seo.keyword_facet.pinned
