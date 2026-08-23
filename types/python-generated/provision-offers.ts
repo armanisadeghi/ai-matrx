@@ -1595,24 +1595,15 @@ export interface ScraperPageAnalysisOffer {
 export interface SeoAiVisibilityAnalysisOffer {
   __kind?: "seo.ai_visibility_analysis.offer";
   query: string;
-  provider: string;
-  model?: string;
-  answer_text: string;
-  answer_citations: unknown;
-  target_mentioned: boolean;
-  target_cited: boolean;
-  provider_metadata?: unknown;
-  cited_sources: unknown;
-  site_context: unknown;
+  provider_response_json: unknown;
+  cited_sources_json: unknown;
+  site_context: string;
 }
 
 /** Offered shape of provision `seo.authority_routing` (kind `seo.authority_routing.offer`). */
 export interface SeoAuthorityRoutingOffer {
   __kind?: "seo.authority_routing.offer";
-  site_id: string;
-  router_version: string;
-  candidates: unknown;
-  scan_flags: unknown;
+  authority_bundle_json: unknown;
   guidance?: string;
 }
 
@@ -1627,15 +1618,8 @@ export interface SeoBacklinkContextAssessorOffer {
 /** Offered shape of provision `seo.competitor_classification` (kind `seo.competitor_classification.offer`). */
 export interface SeoCompetitorClassificationOffer {
   __kind?: "seo.competitor_classification.offer";
-  site_id: string;
-  business_name?: string;
-  business_domain?: string;
-  business_root_url?: string;
-  business_description?: string;
-  candidate_id: string;
-  candidate_name?: string;
-  candidate_domain: string;
-  candidate_provider_evidence?: unknown;
+  owned_business_json: unknown;
+  candidate_json: unknown;
   landscape_brief: string;
   classification_version: string;
 }
@@ -1644,26 +1628,14 @@ export interface SeoCompetitorClassificationOffer {
 export interface SeoCompetitorOpportunityAutopsyOffer {
   __kind?: "seo.competitor_opportunity_autopsy.offer";
   strategist_version: string;
-  site: unknown;
-  provider_competitors: unknown;
-  owned_pages: unknown;
-  owned_backlinks: unknown;
-  provider_backlink_metrics: unknown;
-  page_autopsies: unknown;
-  owned_page_analyses: unknown;
-  page_keyword_maps: unknown;
-  limitations: unknown;
+  evidence_bundle_json: unknown;
 }
 
 /** Offered shape of provision `seo.competitor_page_autopsy` (kind `seo.competitor_page_autopsy.offer`). */
 export interface SeoCompetitorPageAutopsyOffer {
   __kind?: "seo.competitor_page_autopsy.offer";
   analyst_version: string;
-  competitor_page: unknown;
-  owned_page?: unknown;
-  owned_page_analysis?: unknown;
-  page_keyword_map?: unknown;
-  owned_site: unknown;
+  page_evidence_json: unknown;
 }
 
 /** Offered shape of provision `seo.coverage_analysis` (kind `seo.coverage_analysis.offer`). */
@@ -1694,7 +1666,7 @@ export interface SeoFindingFixOffer {
 /** Offered shape of provision `seo.keyword_classification` (kind `seo.keyword_classification.offer`). */
 export interface SeoKeywordClassificationOffer {
   __kind?: "seo.keyword_classification.offer";
-  keywords: unknown;
+  keywords_json: unknown;
   language: string;
   classifier_version: string;
   business_guidelines: string;
@@ -1713,11 +1685,7 @@ export interface SeoKeywordResearchOffer {
 /** Offered shape of provision `seo.landscape_brief` (kind `seo.landscape_brief.offer`). */
 export interface SeoLandscapeBriefOffer {
   __kind?: "seo.landscape_brief.offer";
-  site_id: string;
-  business_name?: string;
-  business_domain?: string;
-  business_root_url?: string;
-  business_description?: string;
+  owned_business_json: unknown;
   existing_guidance?: string;
 }
 
@@ -1749,67 +1717,38 @@ export interface SeoPageKeywordMappingOffer {
 /** Offered shape of provision `seo.press_source_request` (kind `seo.press_source_request.offer`). */
 export interface SeoPressSourceRequestOffer {
   __kind?: "seo.press_source_request.offer";
-  request_id: string;
-  source_request: unknown;
-  expert_context: unknown;
-  deadline_at?: string;
+  request_json: unknown;
+  expert_context_json: unknown;
 }
 
 /** Offered shape of provision `seo.press_story_analysis` (kind `seo.press_story_analysis.offer`). */
 export interface SeoPressStoryAnalysisOffer {
   __kind?: "seo.press_story_analysis.offer";
-  site_id: string;
-  site_domain?: string;
-  brand?: unknown;
-  business_facts: unknown;
-  brand_assets: unknown;
-  observed_coverage: unknown;
-  site_pages: unknown;
-  bundle_stats: unknown;
-  quality_policy: unknown;
+  evidence_bundle_json: unknown;
+  quality_policy_json: unknown;
 }
 
 /** Offered shape of provision `seo.reputation_intelligence` (kind `seo.reputation_intelligence.offer`). */
 export interface SeoReputationIntelligenceOffer {
   __kind?: "seo.reputation_intelligence.offer";
-  site_id: string;
-  site_domain?: string;
-  site_root_url?: string;
-  site_name?: string;
-  brand_fact: unknown;
-  business_facts: unknown;
-  brand_assets: unknown;
-  backlinks: unknown;
-  referring_domains: unknown;
-  competitors: unknown;
-  competitor_opportunities: unknown;
-  ai_citations: unknown;
-  ai_claims: unknown;
-  rag_hits: unknown;
-  coverage: unknown;
-  limitations: string[];
-  quality_policy: unknown;
+  evidence_bundle_json: unknown;
+  quality_policy_json: unknown;
 }
 
 /** Offered shape of provision `seo.serp_intent_analysis` (kind `seo.serp_intent_analysis.offer`). */
 export interface SeoSerpIntentAnalysisOffer {
   __kind?: "seo.serp_intent_analysis.offer";
-  keyword_baseline: unknown;
-  google_serp: unknown;
-  brave_serp: unknown;
-  google_snapshot_id: string;
-  brave_snapshot_id: string;
-  google_observed_at: string;
-  brave_observed_at: string;
-  location: string;
-  device: string;
+  keyword_json: unknown;
+  google_serp_json: unknown;
+  brave_serp_json: unknown;
+  analysis_context_json: unknown;
   analyzer_version: string;
 }
 
 /** Offered shape of provision `seo.site_intake` (kind `seo.site_intake.offer`). */
 export interface SeoSiteIntakeOffer {
   __kind?: "seo.site_intake.offer";
-  intake_bundle: {
+  intake_bundle_json: {
   __kind: "gsc_site_intake_bundle";
   domain: string;
   periods?: unknown[];
@@ -1827,7 +1766,7 @@ export interface SeoSiteIntakeOffer {
 /** Offered shape of provision `seo.site_strategy_interview` (kind `seo.site_strategy_interview.offer`). */
 export interface SeoSiteStrategyInterviewOffer {
   __kind?: "seo.site_strategy_interview.offer";
-  topic_branches: unknown;
+  topic_branches_json: unknown;
   business_context: string;
   site_ref: string;
   valuer_version: string;
@@ -1846,8 +1785,8 @@ export interface SeoStarterPackProposalOffer {
 /** Offered shape of provision `seo.topic_assignment` (kind `seo.topic_assignment.offer`). */
 export interface SeoTopicAssignmentOffer {
   __kind?: "seo.topic_assignment.offer";
-  keywords: unknown;
-  existing_topic_branches: unknown;
+  keywords_json: unknown;
+  existing_branch_json: unknown;
   territory: string;
   business_guidelines: string;
   assigner_version: string;
@@ -2021,22 +1960,6 @@ export interface WorkflowRecoveryAdvisorOffer {
 /** Offered shape of provision `workflow.run_failure` (kind `workflow.run_failure.offer`). */
 export interface WorkflowRunFailureOffer {
   __kind?: "workflow.run_failure.offer";
-  run_id: string;
-  workflow_id: string;
-  workflow_name: string;
-  run_status: string;
-  node_id: string;
-  spec_type: string;
-  node_label: string;
-  step: number;
-  attempt: number;
-  error_type: string;
-  error_message: string;
-  node_inputs: unknown;
-  node_config: unknown;
-  upstream_outputs: unknown;
-  connections: unknown;
-  workflow_steps: unknown;
   failure_report: string;
 }
 
