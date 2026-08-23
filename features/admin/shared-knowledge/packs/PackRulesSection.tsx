@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -323,11 +323,10 @@ export function PackRulesSection({
         variant="destructive"
         confirmLabel="Remove"
         busy={del.isPending}
-        onConfirm={() => deleteTarget && del.mutate(deleteTarget.rule_id)}
+        onConfirm={() => {
+          if (deleteTarget) del.mutate(deleteTarget.rule_id);
+        }}
       />
-      <span className="sr-only">
-        <X className="size-3" aria-hidden />
-      </span>
     </div>
   );
 }

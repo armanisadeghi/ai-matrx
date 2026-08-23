@@ -61,12 +61,10 @@ import { PackGuidelinesSection } from "./PackGuidelinesSection";
 export function PackDetail({
   packId,
   directory,
-  onDeleted,
   onSelectPack,
 }: {
   packId: string;
   directory: SharedKnowledgeDirectory;
-  onDeleted: () => void;
   onSelectPack: (id: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -314,8 +312,6 @@ export function PackDetail({
         busy={status.isPending}
         onConfirm={() => status.mutate({ to: "retired" })}
       />
-      {/* onDeleted is reserved for hard deletes, which the console does not offer — a pack is retired, never erased. */}
-      <span hidden aria-hidden>{onDeleted ? null : null}</span>
     </div>
   );
 }

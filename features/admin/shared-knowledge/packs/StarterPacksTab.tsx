@@ -193,7 +193,6 @@ export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirec
             key={activeId}
             packId={activeId}
             directory={directory}
-            onDeleted={() => setSelectedId(null)}
             onSelectPack={(id) => setSelectedId(id)}
           />
         ) : (

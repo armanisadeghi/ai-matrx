@@ -7,6 +7,9 @@
 //   Industries      — taxonomy CRUD (industry_upsert) + org assign/unassign
 //   Stores & grants — every kind='library' store; publish/revoke all three
 //                     audiences via the grant RPC family
+//   Starter packs   — SEO industry starter packs ARE Library resources: author,
+//                     propose from sample sites, ratify, version, publish
+//                     through the same platform.entity_grants spine
 //   Ingest          — curation ingest through the canonical fileHandler +
 //                     P1's /knowledge/library/stores/{id}/ingest endpoint
 //   Access explorer — "who can read what, and why" over grants + industry
@@ -17,12 +20,13 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, FileUp, Layers, Library, SearchCheck } from "lucide-react";
+import { Building2, FileUp, Layers, Library, Package, SearchCheck } from "lucide-react";
 import type { SharedKnowledgeDirectory } from "../types";
 import { IndustriesTab } from "./IndustriesTab";
 import { StoresGrantsTab } from "./StoresGrantsTab";
 import { IngestTab } from "./IngestTab";
 import { AccessExplorerTab } from "./AccessExplorerTab";
+import { StarterPacksTab } from "../packs/StarterPacksTab";
 
 export function SharedKnowledgeAdminClient({
   directory,
@@ -40,8 +44,8 @@ export function SharedKnowledgeAdminClient({
             Shared Knowledge
           </h1>
           <p className="text-xs text-muted-foreground">
-            Industry taxonomy, library stores, grant issuance, and access
-            provenance
+            Industry taxonomy, library stores, starter packs, grant issuance, and
+            access provenance
           </p>
         </div>
       </div>
@@ -59,6 +63,9 @@ export function SharedKnowledgeAdminClient({
           </TabsTrigger>
           <TabsTrigger value="stores" className="px-3 py-2.5 sm:py-1.5">
             <Building2 className="mr-1.5 h-3.5 w-3.5" /> Stores & grants
+          </TabsTrigger>
+          <TabsTrigger value="packs" className="px-3 py-2.5 sm:py-1.5">
+            <Package className="mr-1.5 h-3.5 w-3.5" /> Starter packs
           </TabsTrigger>
           <TabsTrigger value="ingest" className="px-3 py-2.5 sm:py-1.5">
             <FileUp className="mr-1.5 h-3.5 w-3.5" /> Ingest
@@ -79,6 +86,12 @@ export function SharedKnowledgeAdminClient({
           className="min-h-0 flex-1 overflow-y-auto pb-6 pt-3"
         >
           <StoresGrantsTab directory={directory} />
+        </TabsContent>
+        <TabsContent
+          value="packs"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden pb-2 pt-3"
+        >
+          <StarterPacksTab directory={directory} />
         </TabsContent>
         <TabsContent
           value="ingest"

@@ -351,7 +351,9 @@ export function PackBandsSection({ detail, onChanged }: { detail: AdminPackDetai
         variant="destructive"
         confirmLabel="Remove"
         busy={del.isPending}
-        onConfirm={() => deleteTarget && del.mutate(deleteTarget.id)}
+        onConfirm={() => {
+          if (deleteTarget) del.mutate(deleteTarget.id);
+        }}
       />
     </div>
   );

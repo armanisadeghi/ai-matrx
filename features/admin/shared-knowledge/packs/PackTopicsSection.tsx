@@ -316,7 +316,9 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
         variant="destructive"
         confirmLabel="Remove"
         busy={del.isPending}
-        onConfirm={() => deleteTarget && del.mutate(deleteTarget.item_id)}
+        onConfirm={() => {
+          if (deleteTarget) del.mutate(deleteTarget.item_id);
+        }}
       />
     </div>
   );
