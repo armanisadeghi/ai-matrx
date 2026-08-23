@@ -19819,6 +19819,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/podcast/races": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Race
+         * @description Run one race — every arm, concurrently, on ONE locked spec.
+         *
+         *     Streams the arms' progress; the race row is durable from the first moment,
+         *     so a disconnect never stops the work and the client re-reads the row.
+         */
+        post: operations["start_race_podcast_races_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podcast/races/{race_id}/arms/{arm}/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rerun Race Arm
+         * @description Re-run ONE arm onto the same race row.
+         *
+         *     Refuses an arm under a LIVE lease — a fresh heartbeat means another runner
+         *     is driving it right now, and two writers on one arm interleave their
+         *     results (the failure that silently overwrote a completed challenger).
+         */
+        post: operations["rerun_race_arm_podcast_races__race_id__arms__arm__rerun_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests/examples": {
         parameters: {
             query?: never;
@@ -52511,6 +52558,110 @@ export interface components {
              * @default false
              */
             stream?: boolean;
+        };
+        /**
+         * RaceRequest
+         * @description One race's locked spec — the SAME instruction to every arm.
+         *
+         *     🚨 Inherits ScopedRequest, not BaseModel: the frontend's `callApi` injects
+         *     organization/project/task onto every mutating body, and an `extra="forbid"`
+         *     model without the scope base 422s the moment a real UI calls it.
+         */
+        RaceRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
+            scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("user" | "auto") | null;
+            /**
+             * Store
+             * @description Persist request outputs when true; run ephemerally when false.
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
+            target_instance_id?: string | null;
+            /**
+             * Topic
+             * @description The episode topic — identical for every arm.
+             */
+            topic: string;
+            /**
+             * Host Count
+             * @default 2
+             */
+            host_count?: number;
+            /**
+             * Language
+             * @default english
+             */
+            language?: string;
+            /**
+             * Image Cap
+             * @default 2
+             */
+            image_cap?: number;
+            /**
+             * Video Cap
+             * @default 0
+             */
+            video_cap?: number;
+            /**
+             * Include Feature Image
+             * @default false
+             */
+            include_feature_image?: boolean;
+            /**
+             * Audio Style
+             * @default
+             */
+            audio_style?: string;
+            /**
+             * Episode Spec
+             * @description Constraints every arm must obey — length, structure, tone. Delivered identically to all arms so no arm can win on a dimension nobody asked it to compete on.
+             * @default Target a tight 8-10 minute episode (roughly 1,300-1,600 spoken words). Be concise and information-dense: no filler, no restating, no drawn-out intros or outros. Cover the subject completely within that budget — depth over padding. Two hosts in natural conversation.
+             */
+            episode_spec?: string;
+            /**
+             * Challenger Definition Id
+             * @default 94b375b4-9e4f-4306-9ea7-032a5cd3e8d8
+             */
+            challenger_definition_id?: string;
         };
         /** RankPortfolioItem */
         RankPortfolioItem: {
@@ -101957,6 +102108,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PodcastReconcileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_race_podcast_races_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RaceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rerun_race_arm_podcast_races__race_id__arms__arm__rerun_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                race_id: string;
+                arm: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

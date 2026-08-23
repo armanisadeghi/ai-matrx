@@ -51548,6 +51548,96 @@
         }
       }
     },
+    "/podcast/races": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Start Race",
+        "description": "Run one race — every arm, concurrently, on ONE locked spec.\n\nStreams the arms' progress; the race row is durable from the first moment,\nso a disconnect never stops the work and the client re-reads the row.",
+        "operationId": "start_race_podcast_races_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RaceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/podcast/races/{race_id}/arms/{arm}/rerun": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Rerun Race Arm",
+        "description": "Re-run ONE arm onto the same race row.\n\nRefuses an arm under a LIVE lease — a fresh heartbeat means another runner\nis driving it right now, and two writers on one arm interleave their\nresults (the failure that silently overwrote a completed challenger).",
+        "operationId": "rerun_race_arm_podcast_races__race_id__arms__arm__rerun_post",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "arm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Arm"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tests/examples": {
       "get": {
         "tags": [
@@ -135783,6 +135873,190 @@
           "urls"
         ],
         "title": "QuickScrapeRequest"
+      },
+      "RaceRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
+            "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
+          },
+          "topic": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Topic",
+            "description": "The episode topic — identical for every arm."
+          },
+          "host_count": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 1,
+            "title": "Host Count",
+            "default": 2
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "english"
+          },
+          "image_cap": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Image Cap",
+            "default": 2
+          },
+          "video_cap": {
+            "type": "integer",
+            "maximum": 2,
+            "minimum": 0,
+            "title": "Video Cap",
+            "default": 0
+          },
+          "include_feature_image": {
+            "type": "boolean",
+            "title": "Include Feature Image",
+            "default": false
+          },
+          "audio_style": {
+            "type": "string",
+            "title": "Audio Style",
+            "default": ""
+          },
+          "episode_spec": {
+            "type": "string",
+            "title": "Episode Spec",
+            "description": "Constraints every arm must obey — length, structure, tone. Delivered identically to all arms so no arm can win on a dimension nobody asked it to compete on.",
+            "default": "Target a tight 8-10 minute episode (roughly 1,300-1,600 spoken words). Be concise and information-dense: no filler, no restating, no drawn-out intros or outros. Cover the subject completely within that budget — depth over padding. Two hosts in natural conversation."
+          },
+          "challenger_definition_id": {
+            "type": "string",
+            "title": "Challenger Definition Id",
+            "default": "94b375b4-9e4f-4306-9ea7-032a5cd3e8d8"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "topic"
+        ],
+        "title": "RaceRequest",
+        "description": "One race's locked spec — the SAME instruction to every arm.\n\n🚨 Inherits ScopedRequest, not BaseModel: the frontend's `callApi` injects\norganization/project/task onto every mutating body, and an `extra=\"forbid\"`\nmodel without the scope base 422s the moment a real UI calls it."
       },
       "RankPortfolioItem": {
         "properties": {
