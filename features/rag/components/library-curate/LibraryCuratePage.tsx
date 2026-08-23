@@ -361,7 +361,7 @@ function CurationPrimer({ industries }: { industries: Curatorship[] }) {
             {
               icon: BookOpenText,
               title: "Write the draft",
-              body: "Only you and the Matrx Library see it. Edit it as long as you like — nothing is shared.",
+              body: "Personal keeps this item out of public discovery. Edit it as long as you like and review its access before sharing.",
             },
             {
               icon: BadgeCheck,

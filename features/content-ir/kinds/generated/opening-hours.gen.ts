@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "opening_hours" (schema version 5), emitted by pydantic in
+ * row "opening_hours" (schema version 7), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types opening_hours
@@ -21,6 +21,10 @@ export interface DayHours {
    */
   opens: string;
   /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
    * Closing time, 24h 'HH:MM'.
    */
   closes: string;
@@ -35,5 +39,5 @@ export interface OpeningHours {
    * Today's hours when the source reports them.
    */
   today?: DayHours | null;
-  __kind?: "opening_hours";
+  __kind: "opening_hours";
 }

@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "web_result" (schema version 6), emitted by pydantic in
+ * row "web_result" (schema version 8), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types web_result
@@ -30,12 +30,16 @@ export interface Rating {
 export interface SiteLink {
   url: string;
   title: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 export interface WebResult {
   url: string;
   title: string;
-  __kind?: "web_result";
+  __kind: "web_result";
   author?: string | null;
   rating?: Rating | null;
   /**

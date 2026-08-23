@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "faq_item" (schema version 5), emitted by pydantic in
+ * row "faq_item" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types faq_item
@@ -17,7 +17,7 @@
  * the search adapters always fill both.
  */
 export interface FaqItem {
-  __kind?: "faq_item";
+  __kind: "faq_item";
   /**
    * Inline answer when the provider ships one (Brave does; Google PAA does not).
    */

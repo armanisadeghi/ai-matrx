@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "entity_card" (schema version 5), emitted by pydantic in
+ * row "entity_card" (schema version 7), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types entity_card
@@ -18,6 +18,10 @@ export interface Fact {
   text: string;
   label: string;
   links?: string[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 export interface Rating {
@@ -39,6 +43,10 @@ export interface Rating {
 export interface ProfileLink {
   url: string;
   name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   favicon?: string | null;
 }
 
@@ -52,7 +60,7 @@ export interface EntityCard {
   name: string;
   facts?: Fact[];
   image?: string | null;
-  __kind?: "entity_card";
+  __kind: "entity_card";
   rating?: Rating | null;
   source: string;
   category?: string | null;

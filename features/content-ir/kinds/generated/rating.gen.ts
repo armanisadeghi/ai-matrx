@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "rating" (schema version 5), emitted by pydantic in
+ * row "rating" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types rating
@@ -20,7 +20,7 @@ export interface Rating {
    * The rating value on the scale [0, best_possible].
    */
   value: number;
-  __kind?: "rating";
+  __kind: "rating";
   /**
    * Top of the rating scale.
    */

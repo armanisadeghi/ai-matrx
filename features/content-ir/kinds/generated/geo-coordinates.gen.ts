@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "geo_coordinates" (schema version 5), emitted by pydantic in
+ * row "geo_coordinates" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types geo_coordinates
@@ -12,7 +12,7 @@
  */
 
 export interface GeoCoordinates {
-  __kind?: "geo_coordinates";
+  __kind: "geo_coordinates";
   latitude: number;
   longitude: number;
 }

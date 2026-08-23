@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "postal_address" (schema version 5), emitted by pydantic in
+ * row "postal_address" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types postal_address
@@ -13,7 +13,7 @@
 
 export interface PostalAddress {
   city?: string | null;
-  __kind?: "postal_address";
+  __kind: "postal_address";
   region?: string | null;
   street?: string | null;
   country?: string | null;

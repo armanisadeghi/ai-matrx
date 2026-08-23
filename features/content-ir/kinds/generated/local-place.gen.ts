@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "local_place" (schema version 5), emitted by pydantic in
+ * row "local_place" (schema version 7), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types local_place
@@ -36,6 +36,10 @@ export interface DayHours {
    * Opening time, 24h 'HH:MM'.
    */
   opens: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   /**
    * Closing time, 24h 'HH:MM'.
    */
@@ -77,7 +81,7 @@ export interface LocalPlace {
   name: string;
   hours?: OpeningHours | null;
   phone?: string | null;
-  __kind?: "local_place";
+  __kind: "local_place";
   rating?: Rating | null;
   source: string;
   address?: PostalAddress | null;

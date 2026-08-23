@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "ai_answer" (schema version 5), emitted by pydantic in
+ * row "ai_answer" (schema version 7), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types ai_answer
@@ -15,16 +15,24 @@ export interface AiAnswerBlock {
   text?: string | null;
   type: "paragraph" | "heading" | "list";
   items?: string[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 export interface AiAnswerReference {
   url: string;
   index?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   source_name?: string | null;
 }
 
 export interface AiAnswer {
-  __kind?: "ai_answer";
+  __kind: "ai_answer";
   blocks: AiAnswerBlock[];
   source: string;
   references?: AiAnswerReference[];

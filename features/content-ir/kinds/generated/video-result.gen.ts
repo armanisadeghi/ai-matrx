@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "video_result" (schema version 5), emitted by pydantic in
+ * row "video_result" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types video_result
@@ -15,7 +15,7 @@ export interface VideoResult {
   url: string;
   tags?: string[];
   title: string;
-  __kind?: "video_result";
+  __kind: "video_result";
   source: string;
   channel?: string | null;
   favicon?: string | null;

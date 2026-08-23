@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "news_result" (schema version 5), emitted by pydantic in
+ * row "news_result" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types news_result
@@ -15,7 +15,7 @@ export interface NewsResult {
   url: string;
   tags?: string[];
   title: string;
-  __kind?: "news_result";
+  __kind: "news_result";
   author?: string | null;
   source: string;
   snippet?: string | null;

@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Source of truth: content_ir.kind_definition
- * row "discussion_result" (schema version 5), emitted by pydantic in
+ * row "discussion_result" (schema version 6), emitted by pydantic in
  * aidream and registered in the live Shape registry.
  *
  * Regenerate:  pnpm shape:types discussion_result
@@ -15,7 +15,7 @@ export interface DiscussionResult {
   url: string;
   score?: string | null;
   title: string;
-  __kind?: "discussion_result";
+  __kind: "discussion_result";
   source: string;
   favicon?: string | null;
   snippet?: string | null;
