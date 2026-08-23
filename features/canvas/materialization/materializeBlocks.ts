@@ -114,7 +114,21 @@ export async function materializeBlocks(
     return { materializedCount: 0, rewrittenContent: null, errors: [] };
   }
 
-  const plan = planMaterialization(content);
+  let plan = planMaterialization(content);
+  if (plan.materializedArtifactIds.length > 0) {
+    const checked = await Promise.all(
+      plan.materializedArtifactIds.map(async (id) => ({
+        id,
+        readable: await canvasArtifactService.isReadableById(id),
+      })),
+    );
+    const missing = new Set(
+      checked.filter(({ readable }) => readable === false).map(({ id }) => id),
+    );
+    if (missing.size > 0) {
+      plan = planMaterialization(content, { missingArtifactIds: missing });
+    }
+  }
   if (!plan.hasChanges) {
     return { materializedCount: 0, rewrittenContent: null, errors: [] };
   }

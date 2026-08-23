@@ -97,6 +97,13 @@ export interface MaterializationPlan {
   rewrittenBlocks: (CxContentBlock | ArtifactPendingMarker)[];
   /** True when at least one NEW artifact was found to materialize. */
   hasChanges: boolean;
+  /** UUID refs already present in the source, for the orchestrator to verify. */
+  materializedArtifactIds: string[];
+}
+
+export interface PlanMaterializationOptions {
+  /** UUID refs whose backing row was proven absent and must be rebuilt. */
+  missingArtifactIds?: ReadonlySet<string>;
 }
 
 function isTextBlock(b: CxContentBlock): b is CxTextContent {
@@ -217,9 +224,11 @@ function detectStructuredArtifact(sb: {
 
 export function planMaterialization(
   content: CxContentBlock[],
+  options?: PlanMaterializationOptions,
 ): MaterializationPlan {
   const rewritten: (CxContentBlock | ArtifactPendingMarker)[] = [];
   const artifacts: PlannedArtifact[] = [];
+  const materializedArtifactIds = new Set<string>();
 
   // Left-to-right position over EVERY materializable artifact (already-
   // materialized + new). New artifacts take their position as artifact_index.
@@ -273,28 +282,31 @@ export function planMaterialization(
         canvasType &&
         isMaterializedArtifactId(existingId)
       ) {
-        position += 1;
-        const rawXml =
-          typeof sb.metadata?.rawXml === "string"
-            ? (sb.metadata.rawXml as string)
-            : undefined;
-        appendText(
-          rawXml ??
-            wrapArtifactText({
-              canvasType,
-              id: existingId as string,
-              version:
-                typeof sb.metadata?.version === "number"
-                  ? (sb.metadata.version as number)
-                  : 1,
-              title:
-                typeof sb.metadata?.artifactTitle === "string"
-                  ? (sb.metadata.artifactTitle as string)
-                  : undefined,
-              body: sb.content ?? "",
-            }),
-        );
-        continue;
+        materializedArtifactIds.add(existingId as string);
+        if (!options?.missingArtifactIds?.has(existingId as string)) {
+          position += 1;
+          const rawXml =
+            typeof sb.metadata?.rawXml === "string"
+              ? (sb.metadata.rawXml as string)
+              : undefined;
+          appendText(
+            rawXml ??
+              wrapArtifactText({
+                canvasType,
+                id: existingId as string,
+                version:
+                  typeof sb.metadata?.version === "number"
+                    ? (sb.metadata.version as number)
+                    : 1,
+                title:
+                  typeof sb.metadata?.artifactTitle === "string"
+                    ? (sb.metadata.artifactTitle as string)
+                    : undefined,
+                body: sb.content ?? "",
+              }),
+          );
+          continue;
+        }
       }
 
       // Structured (kind-IR) detection — catches JSON regions the fence/tag
@@ -404,5 +416,6 @@ export function planMaterialization(
     artifacts,
     rewrittenBlocks: rewritten,
     hasChanges: artifacts.length > 0,
+    materializedArtifactIds: [...materializedArtifactIds],
   };
 }

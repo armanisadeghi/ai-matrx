@@ -439,6 +439,31 @@ export const canvasArtifactService = {
   },
 
   /**
+   * Verify a persisted ref without confusing a failed query with absence.
+   * `null` means the check itself failed; callers must not repair on that.
+   */
+  async isReadableById(canvasId: string): Promise<boolean | null> {
+    try {
+      const { data, error } = await supabase
+        .schema("canvas")
+        .from("canvas_items")
+        .select("id")
+        .is("deleted_at", null)
+        .eq("id", canvasId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[canvasArtifactService.isReadableById] error:", error);
+        return null;
+      }
+      return data !== null;
+    } catch (err) {
+      console.error("[canvasArtifactService.isReadableById] Error:", err);
+      return null;
+    }
+  },
+
+  /**
    * Save a USER edit as a new version in the artifact's chain.
    *
    * This is the canonical user-edit path (the model-update path is

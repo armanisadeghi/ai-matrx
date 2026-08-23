@@ -1,12 +1,14 @@
 const upsertForSource = jest.fn();
 const upsertDiscoveryIndex = jest.fn();
 const setExternalLink = jest.fn();
+const isReadableById = jest.fn();
 
 jest.mock("@/features/canvas/services/canvasArtifactService", () => ({
   canvasArtifactService: {
     upsertForSource,
     upsertDiscoveryIndex,
     setExternalLink,
+    isReadableById,
   },
 }));
 
@@ -18,6 +20,7 @@ describe("materializeBlocks conversation identity", () => {
     upsertForSource.mockReset();
     upsertDiscoveryIndex.mockReset();
     setExternalLink.mockReset();
+    isReadableById.mockReset();
   });
 
   it("uses the canvas row's server conversation for chat discovery writes", async () => {
@@ -65,5 +68,47 @@ describe("materializeBlocks conversation identity", () => {
       expect.objectContaining({ conversationId: localConversationId }),
     );
     expect(persistRewrite).toHaveBeenCalledTimes(1);
+  });
+
+  it("rebuilds a dangling UUID ref from its durable wire body", async () => {
+    const missingCanvasId = "00000000-0000-4000-8000-000000000021";
+    const replacementCanvasId = "00000000-0000-4000-8000-000000000022";
+    isReadableById.mockResolvedValue(false);
+    upsertForSource.mockResolvedValue({
+      id: replacementCanvasId,
+      version: 1,
+      conversation_id: "00000000-0000-4000-8000-000000000023",
+    });
+    upsertDiscoveryIndex.mockResolvedValue({ id: "discovery-row" });
+    const persistRewrite = jest.fn().mockResolvedValue({ ok: true });
+
+    const result = await materializeBlocks({
+      source: {
+        system: "cx_message",
+        id: "00000000-0000-4000-8000-000000000020",
+      },
+      content: [
+        {
+          type: "text",
+          text: `<artifact type="mermaid" id="${missingCanvasId}" version="1" title="Recovered flow">\nflowchart TD\n  A --> B\n</artifact>`,
+        } as CxContentBlock,
+      ],
+      persistRewrite,
+    });
+
+    expect(isReadableById).toHaveBeenCalledWith(missingCanvasId);
+    expect(upsertForSource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        artifactIndex: 1,
+        type: "mermaid",
+        content: "flowchart TD\n  A --> B",
+      }),
+    );
+    expect(persistRewrite).toHaveBeenCalledWith([
+      expect.objectContaining({
+        text: expect.stringContaining(`id="${replacementCanvasId}"`),
+      }),
+    ]);
+    expect(result.materializedCount).toBe(1);
   });
 });
