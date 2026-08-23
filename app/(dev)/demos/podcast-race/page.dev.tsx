@@ -15,6 +15,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { RaceLauncher } from '@/features/podcasts/race/RaceLauncher';
+import { costPerMinute, estimatedMinutes } from '@/features/podcasts/race/types';
 
 type ArmKey = 'twin' | 'challenger' | 'frontier';
 
@@ -175,8 +177,31 @@ function ArmCard({
             </div>
 
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                {/* 🚨 Cost per delivered minute leads, raw cost follows. A
+                    system that simply made LESS episode is not cheaper — it
+                    is smaller. The per-minute number is the only one that
+                    survives a length difference, so it is the one the eye
+                    lands on first. */}
                 <span>
-                    Cost <span className="font-mono text-foreground">{money(data.cost_usd)}</span>
+                    Cost/min{' '}
+                    <span className="font-mono text-foreground">
+                        {(() => {
+                            const perMin = costPerMinute(data);
+                            return perMin === null ? '—' : money(perMin);
+                        })()}
+                    </span>
+                </span>
+                <span className="opacity-70">
+                    total <span className="font-mono text-foreground">{money(data.cost_usd)}</span>
+                </span>
+                <span className="opacity-70">
+                    ~
+                    <span className="font-mono text-foreground">
+                        {(() => {
+                            const m = estimatedMinutes(data.script);
+                            return m === null ? '—' : `${m.toFixed(1)} min`;
+                        })()}
+                    </span>
                 </span>
                 <span>
                     Time <span className="font-mono text-foreground">{duration(data.started_at, data.finished_at)}</span>
@@ -323,6 +348,13 @@ export default function PodcastRacePage() {
 
     return (
         <div className="mx-auto flex max-w-7xl flex-col gap-4 p-4">
+            <RaceLauncher
+                onStarted={(raceId) => {
+                    setSelectedId(raceId);
+                    void load();
+                }}
+            />
+
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <h1 className="text-lg font-semibold text-foreground">Podcast Race</h1>
