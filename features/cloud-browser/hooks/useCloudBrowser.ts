@@ -9,7 +9,8 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useUser } from "@/lib/hooks/useUser";
 import * as service from "../service";
-import type { CloudBrowserConsent, NotificationConsent } from "../types";
+import { useWrittenProgress } from "./useWrittenProgress";
+import type { CloudBrowserConsent } from "../types";
 import {
   hydrateSnapshot,
   setActiveProfile,
@@ -17,7 +18,7 @@ import {
   setController,
   setError,
   setLoading,
-  setNotificationConsent,
+  setNotificationAcknowledged,
   setTelemetry,
 } from "../redux/cloudBrowserSlice";
 import {
@@ -30,7 +31,7 @@ import {
   selectConsent,
   selectController,
   selectHandoff,
-  selectNotificationConsent,
+  selectNotificationAcknowledgedAt,
   selectProfiles,
   selectProgress,
   selectRun,
@@ -60,7 +61,9 @@ export function useCloudBrowser(
   const bindings = useAppSelector(selectBindings);
   const telemetry = useAppSelector(selectTelemetry);
   const consent = useAppSelector(selectConsent);
-  const notificationConsent = useAppSelector(selectNotificationConsent);
+  const notificationAcknowledgedAt = useAppSelector(
+    selectNotificationAcknowledgedAt,
+  );
   const loading = useAppSelector(selectCloudBrowserLoading);
   const error = useAppSelector(selectCloudBrowserError);
 
@@ -85,10 +88,33 @@ export function useCloudBrowser(
     void load(initialProfileId ?? "", initialRunId);
   }, [initialProfileId, initialRunId, load]);
 
+  // D-8 tier 1 — the DEFAULT face stays live for as long as this panel is
+  // mounted. `load` above is the one-shot hydrate; this is what keeps it true.
+  // Stops on unmount, on a terminal run, and while the tab is hidden.
+  const { refreshProgress } = useWrittenProgress(run?.id ?? null, run?.state ?? null);
+
   const selectProfile = useCallback(
     (profileId: string) => {
       dispatch(setActiveProfile(profileId));
       void load(profileId);
+    },
+    [dispatch, load],
+  );
+
+  /**
+   * Start ANOTHER cloud browser, named by the person (D-28, Arman 2026-08-23:
+   * *"they can have as many as they want… make it easy to start"*).
+   *
+   * Selects the new browser immediately — creating one and being left staring
+   * at the old one is the same dead end as not being able to create it. The new
+   * profile is never the default; `loadSnapshot` starts its first run.
+   */
+  const createProfile = useCallback(
+    async (displayName: string) => {
+      const profileId = await service.createProfile(displayName);
+      dispatch(setActiveProfile(profileId));
+      await load(profileId);
+      return profileId;
     },
     [dispatch, load],
   );
@@ -126,17 +152,14 @@ export function useCloudBrowser(
     [activeProfileId, dispatch],
   );
 
-  const updateNotificationConsent = useCallback(
-    async (next: NotificationConsent) => {
-      if (!activeProfileId) return;
-      const saved = await service.saveNotificationConsent(
-        activeProfileId,
-        next,
-      );
-      dispatch(setNotificationConsent(saved));
-    },
-    [activeProfileId, dispatch],
-  );
+  /** Records that the front-and-centre card was answered. The channel
+   *  switches themselves are written to the canonical preference tables by
+   *  `useHandoffNotificationPreferences` — never to profile metadata. */
+  const acknowledgeNotificationPrompt = useCallback(async () => {
+    if (!activeProfileId) return;
+    const at = await service.acknowledgeNotificationPrompt(activeProfileId);
+    dispatch(setNotificationAcknowledged(at));
+  }, [activeProfileId, dispatch]);
 
   return {
     me,
@@ -151,10 +174,14 @@ export function useCloudBrowser(
     bindings,
     telemetry,
     consent,
-    notificationConsent,
+    notificationAcknowledgedAt,
     loading,
     error,
+    /** Force an immediate written-progress read (after an action the user took
+     *  in this panel — no reason to make them wait out a tick). */
+    refreshProgress,
     selectProfile,
+    createProfile,
     reload: () =>
       activeProfileId
         ? load(activeProfileId, initialRunId)
@@ -164,6 +191,6 @@ export function useCloudBrowser(
     returnControl,
     refreshTelemetry,
     updateConsent,
-    updateNotificationConsent,
+    acknowledgeNotificationPrompt,
   };
 }

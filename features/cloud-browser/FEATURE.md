@@ -17,6 +17,11 @@
 1. **Written progress (default).** The agent's live play-by-play from the
    `browser.action_event` ledger, rendered through the canonical markdown component
    (`BasicMarkdownContent`) — discrete structured lines, never a hand-rolled stream.
+   **It refreshes while the panel is open**: `hooks/useWrittenProgress.ts` reads the
+   tail on a 2 s cursor (`service.loadProgressSince(runId, afterSequence)` →
+   `sequence > lastSeen`, capped at 200, ONE batched `appendProgress` dispatch),
+   stops on unmount / terminal run / hidden tab, and reads immediately on
+   tab-return. A poll, deliberately, not a subscription — see Invariants.
 2. **Screenshots on request (D-8/D-21, event-driven per D-24).** A bounded,
    user-initiated session: a fresh still the MOMENT the agent acts (the chat stream
    stamps `noteBrowserActivity`; bursts debounce), a 15s idle heartbeat between, an
@@ -93,6 +98,14 @@ live form. When an agent-raised capture card is open, it takes precedence.
   `<CloudBrowserWindowController>` (`features/overlays/openers/cloudBrowserWindow.tsx`),
   wired into `OverlayController.tsx` + `catalogue.ts` + `overlay-ids.ts`.
 - **Panel:** `components/CloudBrowserWindow.tsx` (a `WindowPanel`).
+- **Notification deep link:** `?cloudBrowserHandoff={handoffId}` on any route
+  (the server points it at `/chat[/{conversationId}]`), read by
+  `components/CloudBrowserHandoffDeepLink.tsx` — mounted globally in
+  `app/DeferredSingletonCore.tsx`. It hydrates the run from the handoff id
+  through `adoptCloudBrowserRunFromStream` (which refuses to start a browser),
+  opens the canvas through the ONE opener, then strips the parameter. The
+  parameter name is `CLOUD_BROWSER_HANDOFF_PARAM` in `constants.ts` and its
+  server twin is `handoff_deep_link()` in aidream — **change both together**.
 - **Demo / visibility:** `app/(dev)/demos/cloud-browser/page.dev.tsx`.
 - **Redux:** `redux/cloudBrowserSlice.ts` (registered `cloudBrowser` in `rootReducer`),
   selectors in `redux/selectors.ts`.
@@ -106,14 +119,69 @@ live form. When an agent-raised capture card is open, it takes precedence.
   type `browser_profile` (registered in `utils/permissions/registry.ts`). The only
   addition is the shared-session warning copy. No bespoke share flow.
 - **Notifications (D-14):** the consent surface records consent for SHIPPED channels
-  only (browser / email / SMS / in-app assist) — it NEVER builds a channel. The
-  producer that writes the notification is server-side (WS-5 / S5 §P6).
+  only — it NEVER builds a channel and, since 2026-08-23, never stores a
+  preference of its own. Each switch is read and written where the platform
+  already keeps it (`notificationPreferences.ts` +
+  `hooks/useHandoffNotificationPreferences.ts`):
+
+  | Channel | Canonical home | Default |
+  |---|---|---|
+  | in-app assist | none — **not a preference** (NOTIFICATIONS.md §2); always on | on, not togglable |
+  | browser | `users.user_preferences` → `messaging.showDesktopNotifications` (via `useSetting`) | off |
+  | email | `users.user_email_preferences.browser_handoff_notifications` | off (opt-in) |
+  | text | `communication.sms_notification_preferences.system_alerts`, gated on `sms_enabled` | off (opt-in) |
+
+  Only the one-time "the card was shown" stamp stays on the profile
+  (`metadata.cloud_browser_notification_ack`) — §3.2 puts the acknowledgement on
+  the PCB owner-side row, and it is a stamp, not a preference. The producer that
+  writes the notification is server-side (aidream
+  `services/cloud_browser/notify.py`) and reads the exact same three stores.
 - **Assists:** `<AssistStrip surfaceName="cloud-browser/panel">`.
 - **Confirm dialog / toast:** `confirm()` + `@/lib/toast` (browser dialogs banned).
 
+## 🚨 As many browsers as the user wants — and exactly one default (D-28)
+
+**Arman, 2026-08-23:** *"if the user wants multiple, we give them multiple… they can
+have as many as they want… make it easy to start."* This panel used to only SELECT a
+browser — no create affordance existed here or anywhere in the platform — so a person
+had one browser forever.
+
+- **The door:** the **New browser** button beside the selector →
+  `service.createProfile(name)` → `POST /browser-manager/profiles`. The person names
+  it (`TextInputDialog`, never `window.prompt`), duplicate names are refused in the
+  dialog, and the new browser is selected immediately — creating one and being left
+  on the old one is the same dead end as not being able to create it.
+- 🚨 **There is NO stored-profile cap, and never a fabricated one.** `ProfileQuota`
+  carries `storedProfiles` (a count) and no maximum. It used to carry
+  `maxStoredProfiles: 5` — an inline literal in `service.ts`, enforced by NOTHING,
+  rendered to the user as "n/5 saved browsers". **Do not add it back.** A real cap
+  would be a `platform.feature_knob` (`persistent_cloud_browser.max_stored_profiles_per_user`)
+  read at runtime via `lib/knobs/featureKnobs.ts`.
+- **`maxLiveRuns: 1` stays** because it is real: one live run per profile is enforced
+  by the control plane. That badge is honest; the other one was not.
+- **The single default is the SERVER's invariant**, DB-enforced — the panel never
+  computes or sets it. A newly created browser is not the default.
+
 ## Invariants
 
+- A user may hold any number of browsers; exactly one of them is the default. Never
+  render a stored-profile ceiling — there isn't one (D-28).
 - Default face is written progress; a live-run block never sits at the top of a page.
+- **The default face is LIVE, and it is a poll on purpose.** No `browser.*` table is in
+  the `supabase_realtime` publication, this ledger's RLS SELECT predicate is three
+  `iam.accessible_entity_ids` unnests per row per subscriber, and a step list is not a
+  token stream — 2 s is indistinguishable from instant to a person reading play-by-play.
+  A bounded poll therefore has no echo class, no reconnect/backoff/catch-up machinery,
+  and no channel lifecycle to leak (this app's ~10 freeze incidents are all realtime's).
+  If it ever must be sub-second, the answer is the `supabase-realtime` skill's Rule-1
+  checklist plus adding the table to the publication — never a shorter interval.
+- **`appendProgress` takes a BATCH.** One dispatch per page of steps; a dispatch-per-row
+  loop re-runs every selector once per row and is the documented O(N²) freeze shape.
+  De-dup is by `sequence`, which the table guarantees unique per run.
+- **The face reads as English, not as a log.** `service.ts`'s `ACTION_PHRASE` /
+  `SENTENCE_ACTIONS` turn `type_text` + `#password` into "Filled in `#password`"; the
+  raw action name is the fallback, because a step we cannot phrase is still a step the
+  person is entitled to see.
 - Access is user-keyed, never active-org-keyed (an org session shows because the user
   has a real grant). Say **Full** for the `admin` share level.
 - Retention shown to the user is **30 days** (D-20); the newest verified snapshot is
@@ -138,6 +206,46 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-08-23 — the DEFAULT face was blank, and now it is live.** D-8 ruled three
+  tiers with written progress as the default; the two OPTIONAL tiers worked and the
+  default one rendered nothing. Two independent halves were broken and both are fixed:
+  *(aidream)* nothing wrote `browser.action_event` — 0 rows across 47 live runs — and
+  *(here)* nothing refreshed it: `useCloudBrowser` called `load()` once on mount, and
+  the `appendProgress` reducer was exported and dispatched by nobody. This half adds
+  `service.loadProgressSince()` (incremental cursor read), `hooks/useWrittenProgress.ts`
+  (bounded poll: open panel + live run + visible tab), a batched `appendProgress`, the
+  `WRITTEN_PROGRESS_POLL_MS` CAPS constant, and human phrasing for every ledger action
+  so the face reads as sentences rather than command names. Tests:
+  `writtenProgress.test.ts`. Producer half: `aidream/services/cloud_browser/FEATURE.md`.
+
+- **2026-08-23 — a user may hold as many cloud browsers as they want (D-28).**
+  Added `service.createProfile()`, `useCloudBrowser().createProfile` (creates,
+  selects, and loads the new browser), and the **New browser** affordance in
+  `ProfileSelector` (named by the user via `TextInputDialog`, duplicate names
+  refused). Deleted the fabricated `maxStoredProfiles` from `ProfileQuota`,
+  `service.ts`, and `fixtures.ts`; the badge now reads "n saved browsers" — a count,
+  not a cap. The selector's personal group is now plural ("My browsers").
+
+- **2026-08-23 — the D-14 notification, actually delivered.** Five defects in the
+  handoff chip, fixed across both repos:
+  1. **Wrong urgency band** — the chip wrote a bare `3` (NORMAL). It is now
+     `assist_priority("urgent")`: a browser paused for a human is the urgent bar.
+  2. **Dead-end link** — the chip's href was `/?cloudBrowserHandoff=…`, the
+     marketing home page, and **nothing in this repo read that parameter**. The
+     landing now exists (`CloudBrowserHandoffDeepLink`, mounted globally) and the
+     server points it at the authenticated `/chat` prefix, so a signed-out tap is
+     captured as an auth destination and comes back.
+  3. **No expiry** — the chip now expires with the handoff.
+  4. **No retire path** — every exit (claimed / dismissed / withdrawn / returned /
+     expired) now takes the notice down; chips used to accumulate forever.
+  5. **Consent ignored and stored in a parallel store** — the four switches moved
+     off `browser.profile.metadata` onto the canonical preference tables (see
+     *Consumes canonical primitives*), the server reads them before notifying, and
+     the in-app row is now stated as always-on instead of a switch that defaulted
+     OFF and was never honoured.
+
+  Also: **"Take control" no longer notifies the person who pressed it.**
 
 - **2026-08-22 — control failures stay at one diagnostic boundary:**
   `CloudBrowserBody` catches claim, request, and return control rejections and

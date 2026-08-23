@@ -21,7 +21,6 @@ import type {
   ExecutionTarget,
   HandoffReason,
   HandoffState,
-  NotificationConsent,
   ProfileOrgAccessMode,
   ProfileOwnerType,
   ProfileQuota,
@@ -54,13 +53,6 @@ const DEFAULT_CONSENT: CloudBrowserConsent = {
   totpDelegation: false,
   sensitiveActionsRequireHuman: true,
 };
-const DEFAULT_NOTIFICATIONS: NotificationConsent = {
-  browser: true,
-  email: false,
-  sms: false,
-  in_app: false,
-  acknowledgedAt: null,
-};
 
 export interface CloudBrowserSnapshot {
   activeProfileId: string;
@@ -73,7 +65,13 @@ export interface CloudBrowserSnapshot {
   bindings: AccountBinding[];
   telemetry: TelemetrySnapshot;
   consent: CloudBrowserConsent;
-  notificationConsent: NotificationConsent;
+  /**
+   * ONLY the one-time "we showed you the front-and-centre card" stamp. The
+   * four channel switches are NOT here and never come back: they live on the
+   * canonical preference tables and are read through
+   * `useHandoffNotificationPreferences` (see `../notificationPreferences.ts`).
+   */
+  notificationAcknowledgedAt: string | null;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -252,25 +250,17 @@ function cloudBrowserConsent(value: Json | undefined): CloudBrowserConsent {
         : DEFAULT_CONSENT.sensitiveActionsRequireHuman,
   };
 }
-function notificationConsent(value: Json | undefined): NotificationConsent {
+/**
+ * The one-time acknowledgement stamp for the first-use card (§3.2).
+ *
+ * This is NOT a preference — it records that the card was shown once, which
+ * NOTIFICATIONS.md §3.2 recommends living on the PCB owner-side row. The four
+ * CHANNEL switches that used to sit beside it in this blob were a parallel
+ * preference store and have moved to the canonical tables.
+ */
+function notificationAcknowledgedAt(value: Json | undefined): string | null {
   const item = jsonObject(value ?? {});
-  return {
-    browser:
-      typeof item.browser === "boolean"
-        ? item.browser
-        : DEFAULT_NOTIFICATIONS.browser,
-    email:
-      typeof item.email === "boolean"
-        ? item.email
-        : DEFAULT_NOTIFICATIONS.email,
-    sms: typeof item.sms === "boolean" ? item.sms : DEFAULT_NOTIFICATIONS.sms,
-    in_app:
-      typeof item.in_app === "boolean"
-        ? item.in_app
-        : DEFAULT_NOTIFICATIONS.in_app,
-    acknowledgedAt:
-      typeof item.acknowledgedAt === "string" ? item.acknowledgedAt : null,
-  };
+  return typeof item.acknowledgedAt === "string" ? item.acknowledgedAt : null;
 }
 function mapProfile(
   row: ProfileRow,
@@ -320,6 +310,58 @@ function mapRun(row: RunRow): CloudBrowserRun {
     errorDetailSafe: row.error_detail_safe,
   };
 }
+/**
+ * How one ledger row READS to a person (D-8 tier 1 is the default face, and our
+ * user is a brilliant non-technical expert). The ledger's `action` is the
+ * machine vocabulary — `type_text`, `handoff.requested` — and a list of those
+ * is not "written progress", it is a log. Lifecycle rows already carry a
+ * finished sentence in `target_description`; command rows carry a selector
+ * shape, so the verb comes from here and the selector stays as the detail.
+ *
+ * Unknown action → the raw name. A step we cannot phrase is still a step the
+ * person is entitled to see; silence is the one wrong answer.
+ */
+const ACTION_PHRASE: Record<string, string> = {
+  navigate: "Opened a page",
+  click: "Clicked",
+  type_text: "Filled in",
+  fill: "Filled in",
+  select_option: "Chose an option in",
+  wait_for: "Waited for",
+  get_element: "Read",
+  get_text: "Read the text of",
+  get_html: "Read the contents of",
+  query_selectors: "Looked over the page",
+  scroll: "Scrolled",
+  activate_page: "Switched tabs",
+  close_page: "Closed a tab",
+  handle_dialog: "Answered a page dialog",
+  wait_for_download: "Waited for a download",
+  eval_js: "Ran a page script",
+};
+
+/** A row whose `target_description` is already a whole sentence, not a
+ *  selector — the manager writes these for lifecycle steps. */
+const SENTENCE_ACTIONS = new Set([
+  "run.started",
+  "run.stopped",
+  "capture.screenshot",
+  "handoff.requested",
+  "handoff.claimed",
+  "handoff.returned",
+  "login.attempt",
+]);
+
+function eventSummary(row: EventRow): string {
+  const target = row.target_description;
+  if (SENTENCE_ACTIONS.has(row.action)) return target ?? row.action;
+  const phrase = ACTION_PHRASE[row.action];
+  if (!phrase) return target ? `${row.action}: ${target}` : row.action;
+  if (row.action === "navigate")
+    return row.url_safe ? `${phrase}: ${row.url_safe}` : phrase;
+  return target ? `${phrase} \`${target}\`` : phrase;
+}
+
 function mapEvent(row: EventRow): ProgressEvent {
   return {
     id: row.id,
@@ -329,9 +371,7 @@ function mapEvent(row: EventRow): ProgressEvent {
     actor: actionActor(row.actor),
     action: row.action,
     resultClass: actionResultClass(row.result_class),
-    summary: row.target_description
-      ? `${row.action}: ${row.target_description}`
-      : row.action,
+    summary: eventSummary(row),
     origin: row.origin,
   };
 }
@@ -501,6 +541,27 @@ async function startRun(profileId?: string): Promise<string> {
   } finally {
     startRunInFlight.delete(key);
   }
+}
+
+/**
+ * Start a NEW cloud browser, named by the person creating it.
+ *
+ * 🚨 THE VISION THIS RESTORES (D-28, Arman 2026-08-23): *"if the user wants
+ * multiple, we give them multiple… they can have as many as they want… the best
+ * thing to do is to make sure that we make it easy to start."* There was no
+ * create path ANYWHERE in the platform before this — no service function, no
+ * route, no affordance — so the product allowed exactly one browser per person,
+ * forever, and said so nowhere.
+ *
+ * Server-side (`POST /browser-manager/profiles`) the acting user owns the row,
+ * the organization comes from the platform resolver, and the new browser is
+ * never the default. Returns the new profile id.
+ */
+export async function createProfile(displayName: string): Promise<string> {
+  const { data } = await postJson<unknown>("/browser-manager/profiles", {
+    display_name: displayName.trim(),
+  });
+  return requiredText(record(data).profile_id, "profile id");
 }
 
 export async function listProfiles(): Promise<CloudBrowserProfile[]> {
@@ -705,9 +766,19 @@ export async function loadSnapshot(
       : null;
   const metadata = jsonObject(profileMetadata.data.metadata);
   const consent = cloudBrowserConsent(metadata.cloud_browser_consent);
-  const savedNotificationConsent = notificationConsent(
-    metadata.cloud_browser_notification_consent,
+  const savedNotificationAck = notificationAcknowledgedAt(
+    metadata.cloud_browser_notification_ack,
   );
+  // 🚨 There is NO stored-profile ceiling (D-28, Arman 2026-08-23: *"they can
+  // have as many as they want"*). This used to carry `maxStoredProfiles: 5` — an
+  // inline literal, enforced by NOTHING, rendered to the user as "n/5 saved
+  // browsers". A number the product asserts with nothing behind it is worse than
+  // no number: it teaches the user a limit that does not exist. If a cap is ever
+  // wanted it is a `platform.feature_knob` an admin turns, read here — never a
+  // constant put back in this file.
+  //
+  // `maxLiveRuns: 1` stays because it is REAL: one live run per profile is
+  // enforced by the control plane.
   const quotas = Object.fromEntries(
     profiles.map((item) => [
       item.id,
@@ -715,7 +786,6 @@ export async function loadSnapshot(
         liveRuns: item.id === selected.id && activeRun ? 1 : 0,
         maxLiveRuns: 1,
         storedProfiles: profiles.length,
-        maxStoredProfiles: 5,
       } satisfies ProfileQuota,
     ]),
   );
@@ -757,7 +827,7 @@ export async function loadSnapshot(
       ],
     },
     consent,
-    notificationConsent: savedNotificationConsent,
+    notificationAcknowledgedAt: savedNotificationAck,
   };
 }
 
@@ -1187,13 +1257,21 @@ export async function saveConsent(
   await mergeMetadata(profileId, "cloud_browser_consent", next);
   return next;
 }
-export async function saveNotificationConsent(
+/**
+ * Record that the person answered the front-and-centre notification card.
+ *
+ * A stamp, not a preference: the channel switches themselves are written to
+ * the canonical tables by `../notificationPreferences.ts`. Writing them here
+ * is what made `browser.profile.metadata` a parallel preference store.
+ */
+export async function acknowledgeNotificationPrompt(
   profileId: string,
-  next: NotificationConsent,
-): Promise<NotificationConsent> {
-  const saved = { ...next, acknowledgedAt: new Date().toISOString() };
-  await mergeMetadata(profileId, "cloud_browser_notification_consent", saved);
-  return saved;
+): Promise<string> {
+  const acknowledgedAt = new Date().toISOString();
+  await mergeMetadata(profileId, "cloud_browser_notification_ack", {
+    acknowledgedAt,
+  });
+  return acknowledgedAt;
 }
 export async function startDeletion(profileId: string): Promise<{ ok: true }> {
   const { error } = await supabase
@@ -1203,4 +1281,33 @@ export async function startDeletion(profileId: string): Promise<{ ok: true }> {
     .eq("id", profileId);
   if (error) throw error;
   return { ok: true };
+}
+
+/**
+ * The written-progress tail — every step after `afterSequence`, oldest first.
+ *
+ * INCREMENTAL BY DESIGN. `browser.action_event` is append-only with a unique
+ * `(run_id, sequence)`, so a cursor read is exact: no overlap window, no
+ * duplicate handling beyond the reducer's sequence de-dup, and a quiet browser
+ * costs one indexed query returning zero rows. Never re-reads the whole
+ * timeline — that is what makes a poll cheap enough to be the honest answer
+ * here.
+ *
+ * RLS is the ceiling and the scope: the reader sees a run's steps only if the
+ * canonical resolver grants them the profile or the run.
+ */
+export async function loadProgressSince(
+  runId: string,
+  afterSequence: number,
+): Promise<ProgressEvent[]> {
+  const { data, error } = await supabase
+    .schema("browser")
+    .from("action_event")
+    .select("*")
+    .eq("run_id", runId)
+    .gt("sequence", afterSequence)
+    .order("sequence")
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []).map(mapEvent);
 }

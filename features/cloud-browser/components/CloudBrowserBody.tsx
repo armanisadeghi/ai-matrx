@@ -38,6 +38,7 @@ import { ControllerBanner } from "./ControllerBanner";
 import { ProfileSelector } from "./ProfileSelector";
 import { TelemetrySurface } from "./TelemetrySurface";
 import { NotificationConsent } from "./NotificationConsent";
+import { useHandoffNotificationPreferences } from "../hooks/useHandoffNotificationPreferences";
 import { AuditTimeline } from "./AuditTimeline";
 import { HealthWarnings } from "./HealthWarnings";
 import { AccountSettings } from "./AccountSettings";
@@ -174,8 +175,13 @@ export function CloudBrowserBody({
       ? cb.handoff.captureRequest
       : null;
 
+  // D-14 §3.2 — asked once, the first time it actually matters. The channel
+  // switches come from the CANONICAL preference tables, never from the profile.
+  const notifications = useHandoffNotificationPreferences(
+    cb.notificationAcknowledgedAt,
+  );
   const needsNotificationPrompt =
-    !!cb.notificationConsent && cb.notificationConsent.acknowledgedAt === null;
+    !!cb.activeProfileId && cb.notificationAcknowledgedAt === null;
 
   return (
     <div className={cn("flex h-full flex-col gap-2 p-2", className)}>
@@ -186,6 +192,9 @@ export function CloudBrowserBody({
           activeProfileId={cb.activeProfileId}
           quota={cb.quota}
           onSelect={cb.selectProfile}
+          onCreate={async (displayName) => {
+            await cb.createProfile(displayName);
+          }}
         />
         {cb.run?.currentUrl ? (
           <div className="flex items-center gap-1.5 truncate rounded-md border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
@@ -199,15 +208,17 @@ export function CloudBrowserBody({
       </div>
 
       {/* Front-and-centre notification consent at first use (D-14). */}
-      {needsNotificationPrompt && cb.notificationConsent ? (
+      {needsNotificationPrompt ? (
         <NotificationConsent
           variant="prompt"
-          consent={cb.notificationConsent}
-          onChange={cb.updateNotificationConsent}
+          consent={notifications.consent}
+          smsEnrolled={notifications.smsEnrolled}
+          error={notifications.error}
+          onChange={(channel, enabled) => {
+            void notifications.setChannel(channel, enabled);
+          }}
           onAcknowledge={() => {
-            if (cb.notificationConsent) {
-              void cb.updateNotificationConsent(cb.notificationConsent);
-            }
+            void cb.acknowledgeNotificationPrompt();
           }}
         />
       ) : null}
@@ -406,18 +417,20 @@ export function CloudBrowserBody({
                 />
               </section>
             ) : null}
-            {cb.notificationConsent ? (
-              <section className="flex flex-col gap-1.5">
-                <h3 className="text-sm font-semibold text-foreground">
-                  How we reach you
-                </h3>
-                <NotificationConsent
-                  variant="inline"
-                  consent={cb.notificationConsent}
-                  onChange={cb.updateNotificationConsent}
-                />
-              </section>
-            ) : null}
+            <section className="flex flex-col gap-1.5">
+              <h3 className="text-sm font-semibold text-foreground">
+                How we reach you
+              </h3>
+              <NotificationConsent
+                variant="inline"
+                consent={notifications.consent}
+                smsEnrolled={notifications.smsEnrolled}
+                error={notifications.error}
+                onChange={(channel, enabled) => {
+                  void notifications.setChannel(channel, enabled);
+                }}
+              />
+            </section>
             {cb.activeProfile ? (
               <section className="flex flex-col gap-1.5">
                 <h3 className="text-sm font-semibold text-foreground">

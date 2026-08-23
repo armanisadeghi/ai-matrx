@@ -97,9 +97,9 @@ export const FIXTURE_PROFILES: CloudBrowserProfile[] = [
 ];
 
 export const FIXTURE_QUOTAS: Record<string, ProfileQuota> = {
-  bp_personal_default: { liveRuns: 1, maxLiveRuns: 3, storedProfiles: 2, maxStoredProfiles: 10 },
-  bp_org_infra: { liveRuns: 0, maxLiveRuns: 5, storedProfiles: 4, maxStoredProfiles: 25 },
-  bp_shared_client: { liveRuns: 0, maxLiveRuns: 1, storedProfiles: 1, maxStoredProfiles: 5 },
+  bp_personal_default: { liveRuns: 1, maxLiveRuns: 3, storedProfiles: 2 },
+  bp_org_infra: { liveRuns: 0, maxLiveRuns: 5, storedProfiles: 4 },
+  bp_shared_client: { liveRuns: 0, maxLiveRuns: 1, storedProfiles: 1 },
 };
 
 export const FIXTURE_RUN: CloudBrowserRun = {
@@ -201,10 +201,11 @@ export const FIXTURE_CONSENT: CloudBrowserConsent = {
 };
 
 export const FIXTURE_NOTIFICATION_CONSENT: NotificationConsent = {
+  // `in_app` is `true` by TYPE — the assist is not a preference (§2).
+  in_app: true,
   browser: true,
   email: false,
   sms: false,
-  in_app: true,
   acknowledgedAt: null,
 };
 

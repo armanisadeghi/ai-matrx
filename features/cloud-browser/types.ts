@@ -285,12 +285,27 @@ export interface TelemetrySnapshot {
 
 export type NotificationChannel = "browser" | "email" | "sms" | "in_app";
 
+/**
+ * The four channels, as the consent surface renders them.
+ *
+ * 🚨 Every value here is DERIVED from a canonical store — never persisted as an
+ * object. `useHandoffNotificationPreferences` composes it; the four switches
+ * used to live in `browser.profile.metadata` JSONB, a parallel preference store
+ * no other surface and no sender ever read.
+ */
 export interface NotificationConsent {
-  /** Browser notifications default ON (D-14); the rest are opt-in. */
+  /**
+   * The in-app assist. ALWAYS `true` and not togglable — NOTIFICATIONS.md §2:
+   * the assist is how the app shows its own pending state, so it is never a
+   * preference. It shipped as an off-by-default switch.
+   */
+  in_app: true;
+  /** `users.user_preferences` → `messaging.showDesktopNotifications`. */
   browser: boolean;
+  /** Opt-in. `users.user_email_preferences.browser_handoff_notifications`. */
   email: boolean;
+  /** Opt-in + enrolment-gated. `sms_notification_preferences.system_alerts`. */
   sms: boolean;
-  in_app: boolean;
   /** Set once the user has answered the front-and-centre prompt. */
   acknowledgedAt: string | null;
 }
@@ -309,9 +324,14 @@ export interface CloudBrowserConsent {
 
 export interface ProfileQuota {
   liveRuns: number;
+  /** REAL and enforced by the control plane: one live run per profile. */
   maxLiveRuns: number;
+  /** How many browsers this person has. There is deliberately NO maximum —
+   *  D-28, Arman: *"they can have as many as they want."* The field this
+   *  replaced (`maxStoredProfiles`) was an inline literal enforced by nothing
+   *  and rendered to the user as a cap. Do not add it back; a real cap would be
+   *  a `platform.feature_knob`, read at runtime. */
   storedProfiles: number;
-  maxStoredProfiles: number;
 }
 
 // ── Screenshot session (D-8 / D-21) ──────────────────────────────────────────
