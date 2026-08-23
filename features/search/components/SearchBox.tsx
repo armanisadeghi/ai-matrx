@@ -41,13 +41,27 @@ export function SearchBox({
     setDraft(currentQuery);
   }, [currentQuery]);
 
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault();
+  const runSearch = () => {
     const trimmed = draft.trim();
     if (!trimmed || isNavigating) return;
     startTransition(() => {
       router.push(buildSearchHref(trimmed));
     });
+  };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    runSearch();
+  };
+
+  // Enter searches — explicitly, not by relying on the browser's implicit form
+  // submission. The box is portalled into the shell header, and "the Enter key
+  // does nothing" is the one failure a search engine cannot ship, so intent is
+  // stated here rather than inherited.
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    runSearch();
   };
 
   const hero = variant === "hero";
@@ -72,23 +86,31 @@ export function SearchBox({
         <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={onKeyDown}
           // eslint-disable-next-line jsx-a11y/no-autofocus -- the hero state IS the search box; the caret belongs in it
           autoFocus={hero}
           aria-label="Search the web"
           placeholder="Search the web…"
           className={cn(
             "pl-10",
-            hero ? "h-14 rounded-full text-base md:text-lg" : "h-9 rounded-full",
+            hero
+              ? "h-14 rounded-full text-base md:text-lg"
+              : "h-9 rounded-full",
           )}
         />
       </div>
       <Button
         type="submit"
         disabled={!draft.trim() || isNavigating}
-        className={cn("rounded-full", hero ? "h-14 px-6 text-base" : "h-9 px-4")}
+        className={cn(
+          "rounded-full",
+          hero ? "h-14 px-6 text-base" : "h-9 px-4",
+        )}
       >
         {isNavigating ? (
-          <Loader2 className={cn("animate-spin", hero ? "h-5 w-5" : "h-4 w-4")} />
+          <Loader2
+            className={cn("animate-spin", hero ? "h-5 w-5" : "h-4 w-4")}
+          />
         ) : (
           <Search className={cn(hero ? "h-5 w-5" : "h-4 w-4")} />
         )}
