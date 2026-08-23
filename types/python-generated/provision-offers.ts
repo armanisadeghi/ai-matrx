@@ -612,6 +612,14 @@ export interface FlashcardsVerifyAgainstSourceOffer {
   source_excerpt: string;
 }
 
+/** Offered shape of provision `foundry.agent_planning` (kind `foundry.agent_planning.offer`). */
+export interface FoundryAgentPlanningOffer {
+  agent_purpose: string;
+  sample_output: string;
+  sample_input: string;
+  input_description?: string;
+}
+
 /** Offered shape of provision `growth_loop.stage_dispatch` (kind `growth_loop.stage_dispatch.offer`). */
 export interface GrowthLoopStageDispatchOffer {
   stage: string;
@@ -1872,6 +1880,7 @@ export interface ProvisionOffers {
   "flashcards.review_batch": FlashcardsReviewBatchOffer;
   "flashcards.tts_render": FlashcardsTtsRenderOffer;
   "flashcards.verify_against_source": FlashcardsVerifyAgainstSourceOffer;
+  "foundry.agent_planning": FoundryAgentPlanningOffer;
   "growth_loop.stage_dispatch": GrowthLoopStageDispatchOffer;
   "growth_loop.stage_quality": GrowthLoopStageQualityOffer;
   "hindsight.crystallizer": HindsightCrystallizerOffer;
@@ -2089,6 +2098,7 @@ export const PROVISION_OFFER_KINDS = {
   "flashcards.review_batch": "flashcards.review_batch.offer",
   "flashcards.tts_render": "flashcards.tts_render.offer",
   "flashcards.verify_against_source": "flashcards.verify_against_source.offer",
+  "foundry.agent_planning": "foundry.agent_planning.offer",
   "growth_loop.stage_dispatch": "growth_loop.stage_dispatch.offer",
   "growth_loop.stage_quality": "growth_loop.stage_quality.offer",
   "hindsight.crystallizer": "hindsight.crystallizer.offer",

@@ -3996,6 +3996,19 @@ export type Database = {
       }
     }
     Views: {
+      inherit_org_trigger_drift: {
+        Row: {
+          child_has_fk: boolean | null
+          child_schema: unknown
+          child_table: unknown
+          fk_column: string | null
+          parent_exists: boolean | null
+          parent_has_org: boolean | null
+          parent_named: string | null
+          trigger_name: unknown
+        }
+        Relationships: []
+      }
       registry_location_drift: {
         Row: {
           actual_schema: unknown
@@ -4017,6 +4030,17 @@ export type Database = {
           table_name: string | null
           token: string | null
           warns: number | null
+        }
+        Relationships: []
+      }
+      trigger_token_drift: {
+        Row: {
+          registered_token: string | null
+          schema_name: unknown
+          table_name: unknown
+          trigger_function: unknown
+          trigger_name: unknown
+          trigger_token: string | null
         }
         Relationships: []
       }
@@ -21528,6 +21552,24 @@ export type Database = {
   }
   history: {
     Tables: {
+      _purge_sandbox_noop: {
+        Row: {
+          id: number | null
+          occurred_at: string | null
+          part: string | null
+        }
+        Insert: {
+          id?: number | null
+          occurred_at?: string | null
+          part?: string | null
+        }
+        Update: {
+          id?: number | null
+          occurred_at?: string | null
+          part?: string | null
+        }
+        Relationships: []
+      }
       row_versions: {
         Row: {
           actor_id: string | null
