@@ -104,7 +104,21 @@ export function SurfaceBoundAgentsList({
 
   if (hideWhenEmpty && !loading && !hasAgents && !hasRoleRows) return null;
 
-  const visibleSections = sections.filter((s) => s.agents.length > 0);
+  // A manifest role may intentionally point at the same agent as a direct
+  // association: the role declares that the surface USES the agent, while the
+  // association carries its value_mappings. Render that identity once under
+  // Surface roles instead of showing a duplicate row under Public/Org/Mine.
+  const roleAgentIds = new Set(
+    roleRows.map((view) => view.effectiveAgentId as string),
+  );
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      agents: section.agents.filter(
+        (agent) => !roleAgentIds.has(agent.agentId),
+      ),
+    }))
+    .filter((section) => section.agents.length > 0);
 
   return (
     <div className={cn("space-y-3", className)}>

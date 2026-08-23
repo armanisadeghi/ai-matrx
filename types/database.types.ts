@@ -12552,20 +12552,10 @@ export type Database = {
         }
         Returns: Json
       }
-      stamp_markers_from_schema:
-        | {
-            Args: { p_root?: Json; p_schema: Json; p_value: Json }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_depth?: number
-              p_root?: Json
-              p_schema: Json
-              p_value: Json
-            }
-            Returns: Json
-          }
+      stamp_markers_from_schema: {
+        Args: { p_depth?: number; p_root?: Json; p_schema: Json; p_value: Json }
+        Returns: Json
+      }
       strip_kind_deep: { Args: { p: Json }; Returns: Json }
     }
     Enums: {

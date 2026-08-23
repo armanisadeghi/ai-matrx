@@ -52,12 +52,7 @@ export interface KindAgentSeed {
 
 /** The reviewable/creatable parts a kind can be missing (shape-doctor legs). */
 export type KindAgentPart =
-  | "content_block"
-  | "skill"
-  | "component"
-  | "surface"
-  | "example"
-  | "edit";
+  "content_block" | "skill" | "component" | "surface" | "example" | "edit";
 
 export interface KindAgentIntentInput {
   kind: string;
@@ -68,7 +63,10 @@ export interface KindAgentIntentInput {
   note?: string;
 }
 
-const PART_INTENT: Record<KindAgentPart, (label: string, slug: string) => string> = {
+const PART_INTENT: Record<
+  KindAgentPart,
+  (label: string, slug: string) => string
+> = {
   content_block: (label, slug) =>
     `Create a teaching content block for the existing Shape (kind) \`${slug}\` — "${label}". ` +
     `The block instructs agents how to emit this kind: lead the JSON sample with its \`__kind\` field, ` +
@@ -93,7 +91,9 @@ const PART_INTENT: Record<KindAgentPart, (label: string, slug: string) => string
 /** The kind's JSON schema as its own variable value — header baked in so an
  *  absent schema renders nothing (never a dangling "Its current JSON
  *  schema:" label with no schema under it). */
-function schemaVariable(schema: Json | null | undefined): string {
+export function formatKindSchemaVariable(
+  schema: Json | null | undefined,
+): string {
   if (schema == null) return "";
   return `Its current JSON schema:\n\n\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``;
 }
@@ -104,13 +104,18 @@ function schemaVariable(schema: Json | null | undefined): string {
  *  own — rides its own `kind_schema` variable instead of being inlined into
  *  the instruction text. The composer gets a short, reviewable kick phrase,
  *  never the brief itself. */
-export function composeKindAgentIntent(input: KindAgentIntentInput): KindAgentSeed {
+export function composeKindAgentIntent(
+  input: KindAgentIntentInput,
+): KindAgentSeed {
   const base = PART_INTENT[input.part](input.label, input.kind);
   const note = input.note?.trim() ? `\n\n${input.note.trim()}` : "";
   const brief = `${base}${note}`;
   return {
     draftText: "Let's do it.",
-    variables: { task_brief: brief, kind_schema: schemaVariable(input.emittedJsonSchema) },
+    variables: {
+      task_brief: brief,
+      kind_schema: formatKindSchemaVariable(input.emittedJsonSchema),
+    },
   };
 }
 
@@ -144,7 +149,10 @@ export function composeKindSampleFillIntent(
     `Respond with a single JSON object containing ONLY this Shape's own fields: no \`__kind\` key, no wrapper object, no commentary around it. ` +
     `Fill every required field with plausible, specific content (never "string", "example" or lorem ipsum), and include optional fields when they make the sample more convincing.` +
     `${note}`;
-  return { task_brief: brief, kind_schema: schemaVariable(input.emittedJsonSchema) };
+  return {
+    task_brief: brief,
+    kind_schema: formatKindSchemaVariable(input.emittedJsonSchema),
+  };
 }
 
 /** Cap for inlined live-instance JSON — enough context, never a mega-prompt. */

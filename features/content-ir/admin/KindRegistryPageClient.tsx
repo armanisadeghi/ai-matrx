@@ -23,6 +23,9 @@ import { Boxes, CircleAlert, Hammer, Loader2 } from "lucide-react";
 import type { KindStatusBoardModel } from "@/features/content-ir/admin/kind-detail-types";
 import KindStatusBoard from "@/features/content-ir/admin/KindStatusBoard";
 import KindCatalogTable from "@/features/content-ir/admin/KindCatalogTable";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
+import { buildAdminKindCatalogScope } from "@/features/content-ir/admin/kind-registry-scope";
 
 const KindSchemaExplorer = dynamic(
   () => import("@/features/content-ir/admin/KindRegistryAdminClient"),
@@ -80,75 +83,80 @@ export default function KindRegistryPageClient({
   );
 
   return (
-    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
-      {/* Header + tabs */}
-      <header className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border bg-card px-4 pr-14 pt-2">
-        <h1 className="flex items-center gap-2 pb-2 text-base font-semibold text-foreground">
-          <Boxes className="h-4 w-4 text-sky-500" />
-          Kind Registry
-        </h1>
-        {board && (
-          <span className="pb-2 text-xs text-muted-foreground">
-            {board.totals.kinds} kinds ·{" "}
-            {board.rows.filter((r) => r.isActive).length} active ·{" "}
-            {board.redFindings.length} red · {board.yellowFindingCount} yellow
-            {board.driftedRowCount > 0
-              ? ` · ${board.driftedRowCount} drifted`
-              : ""}
-          </span>
-        )}
-        <nav className="ml-auto flex items-end gap-1">
-          <Link
-            href="/administration/utilities/kind-registry/build"
-            className="mb-0.5 mr-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Hammer className="h-4 w-4" />
-            Build a kind
-          </Link>
-          {TABS.map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => selectTab(id)}
-              className={`border-b-2 px-3 py-1.5 text-sm transition-colors ${
-                tab === id
-                  ? "border-primary font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
+      getScope={() => buildAdminKindCatalogScope({ board, tab })}
+    >
+      <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
+        {/* Header + tabs */}
+        <header className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border bg-card px-4 pr-14 pt-2">
+          <h1 className="flex items-center gap-2 pb-2 text-base font-semibold text-foreground">
+            <Boxes className="h-4 w-4 text-sky-500" />
+            Kind Registry
+          </h1>
+          {board && (
+            <span className="pb-2 text-xs text-muted-foreground">
+              {board.totals.kinds} kinds ·{" "}
+              {board.rows.filter((r) => r.isActive).length} active ·{" "}
+              {board.redFindings.length} red · {board.yellowFindingCount} yellow
+              {board.driftedRowCount > 0
+                ? ` · ${board.driftedRowCount} drifted`
+                : ""}
+            </span>
+          )}
+          <nav className="ml-auto flex items-end gap-1">
+            <Link
+              href="/administration/utilities/kind-registry/build"
+              className="mb-0.5 mr-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              {TAB_LABELS[id]}
-            </button>
-          ))}
-        </nav>
-      </header>
+              <Hammer className="h-4 w-4" />
+              Build a kind
+            </Link>
+            {TABS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => selectTab(id)}
+                className={`border-b-2 px-3 py-1.5 text-sm transition-colors ${
+                  tab === id
+                    ? "border-primary font-medium text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {TAB_LABELS[id]}
+              </button>
+            ))}
+          </nav>
+        </header>
 
-      {/* Content */}
-      <main className="min-h-0 flex-1 overflow-hidden">
-        {tab === "catalog" && (
-          <div className="flex h-full flex-col p-3">
-            {doctorError}
-            {board ? (
-              <KindCatalogTable rows={board.rows} />
-            ) : !boardError ? (
-              <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span className="text-sm">Running shape doctor</span>
-              </div>
-            ) : null}
-          </div>
-        )}
-        {tab === "board" && (
-          <div className="h-full overflow-y-auto">
-            {doctorError}
-            {board && <KindStatusBoard board={board} />}
-          </div>
-        )}
-        {tab === "export" && (
-          <div className="h-full overflow-hidden">
-            <KindSchemaExplorer />
-          </div>
-        )}
-      </main>
-    </div>
+        {/* Content */}
+        <main className="min-h-0 flex-1 overflow-hidden">
+          {tab === "catalog" && (
+            <div className="flex h-full flex-col p-3">
+              {doctorError}
+              {board ? (
+                <KindCatalogTable rows={board.rows} />
+              ) : !boardError ? (
+                <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="text-sm">Running shape doctor</span>
+                </div>
+              ) : null}
+            </div>
+          )}
+          {tab === "board" && (
+            <div className="h-full overflow-y-auto">
+              {doctorError}
+              {board && <KindStatusBoard board={board} />}
+            </div>
+          )}
+          {tab === "export" && (
+            <div className="h-full overflow-hidden">
+              <KindSchemaExplorer />
+            </div>
+          )}
+        </main>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -118,7 +118,7 @@ describe("an agent-input kind renders as a typed form", () => {
   it("assembles what the user types into an instance of the kind", () => {
     const schema = schemaFromStoredFields();
     const variables = kindFieldsToVariableDefinitions(schema);
-    const pairs = pairKindFieldsWithVariables(schema, variables);
+    const pairs = pairKindFieldsWithVariables(schema);
     const { instance, coercionErrors, omittedFields } = assembleKindInstance(KIND, pairs, {
       instructions: "Condense the findings on GLP-1 supply.",
       scraped_content: "…pages…",

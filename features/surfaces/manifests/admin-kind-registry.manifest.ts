@@ -21,11 +21,11 @@
  *     the kind_architect agent, so an agent bound here can draft/refine the
  *     structure and direction text before the human presses "Start").
  *
- * NOT wired (readiness: partial): the catalog table and the per-kind detail
- * page are both real, live-fetched data (`buildKindStatusBoard`,
- * `gatherKindDetail`) but their emitters are left for a follow-up pass —
- * the catalog has its own facet/column-filter state inside `MatrxDataTable`
- * and the detail page has 7 tabs each with their own sub-component.
+ * Runtime emitters:
+ *   - Catalog → `KindRegistryPageClient.tsx`
+ *   - Detail + code editor → `KindDetailClient.tsx` /
+ *     `KindComponentCodeTab.tsx`
+ *   - Builder → `KindBuilderClient.tsx`
  */
 
 import type {
@@ -134,7 +134,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_kind",
     label: "Active kind",
     description:
-      "The kind slug (content_ir.kind_definition.kind, e.g. \"topic_ideas\") shown on the [kind] detail page — this is a slug, not a UUID. Present only on kind_registry_section=detail.",
+      'The kind slug (content_ir.kind_definition.kind, e.g. "topic_ideas") shown on the [kind] detail page — this is a slug, not a UUID. Present only on kind_registry_section=detail.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 24,
@@ -142,14 +142,122 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "kind_detail",
   },
   {
+    name: "kind_detail_content_blocks",
+    label: "Kind content blocks",
+    description:
+      "Content blocks that demonstrate current_kind (id and label). Present only on kind_registry_section=detail; empty when none teach the kind.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 500,
+    autoContext: false,
+    sortOrder: 338,
+    group: "kind_detail",
+  },
+  {
     name: "kind_detail_tab",
     label: "Kind detail tab",
     description:
-      'Which of the 7 detail tabs is active: "preview", "examples", "assets", "try-input", "gate", "schema", or "inputs". Present only on kind_registry_section=detail.',
+      'Which detail tab is active: "preview", "code", "examples", "assets", "try-input", "gate", "schema", or "inputs". Present only on kind_registry_section=detail.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
     sortOrder: 305,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_detail_warnings",
+    label: "Kind detail warnings",
+    description:
+      "Shape-doctor and source-gather warnings for current_kind. Present only on kind_registry_section=detail; empty when the gather is clean.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    autoContext: false,
+    sortOrder: 350,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_creator_task_brief",
+    label: "Kind agent task brief",
+    description:
+      "The exact existing-kind instruction for the Kind Creator. On the Code tab it targets the selected component; elsewhere it targets the kind as a whole.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    autoContext: false,
+    sortOrder: 360,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_creator_schema",
+    label: "Kind agent schema",
+    description:
+      "The current kind's emitted JSON Schema, formatted for the Kind Creator's kind_schema variable. Empty when the kind has no emitted schema.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 3000,
+    autoContext: false,
+    sortOrder: 365,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_creator_data_sample",
+    label: "Kind agent sample",
+    description:
+      "The canonical example (or newest example) formatted as a JSON data sample for Kind Creator. Empty while examples load or when none exist.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 2500,
+    autoContext: false,
+    sortOrder: 370,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_creator_existing_context",
+    label: "Existing kind context",
+    description:
+      "A compact JSON snapshot of the existing kind's identity, doctor status, components, surfaces, skills, and content blocks. It replaces discovery-only kind_get calls.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 3500,
+    autoContext: false,
+    sortOrder: 375,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_component_editor_state",
+    label: "Component editor state",
+    description:
+      "The Code tab's selected component metadata plus editable, dirty, and saving state. Present only after component rows load on kind_detail_tab=code.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    autoContext: false,
+    sortOrder: 380,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_component_saved_source",
+    label: "Saved component source",
+    description:
+      "The selected component's currently saved source code. Present only on the Code tab when a component row is selected.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 12000,
+    autoContext: false,
+    sortOrder: 385,
+    group: "kind_detail",
+  },
+  {
+    name: "kind_component_draft_source",
+    label: "Component draft source",
+    description:
+      "The live Monaco draft for the selected component, including unsaved edits. Present only on the Code tab when a component row is selected.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 12000,
+    autoContext: false,
+    sortOrder: 390,
     group: "kind_detail",
   },
   {
@@ -299,7 +407,7 @@ export const adminKindRegistryManifest: SurfaceManifest = {
   surfaceName: ADMIN_KIND_REGISTRY_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Kind builder emitter is wired and real (structure/notes/architect resolution/can-start). The catalog table and per-kind [kind] detail page are real, live-fetched data with no emitter yet — both have significant internal state (MatrxDataTable facets/column filters; 7 detail tabs each with their own sub-component) left for a follow-up pass.",
+    "Catalog, detail, component-editor, and builder emitters are wired. The catalog's MatrxDataTable column-filter/search internals are not yet exposed by the table primitive, so the surface remains partial.",
   label: "Kind Registry Admin",
   urlPattern: "/administration/utilities/kind-registry",
   intro: `<surface_intro>
@@ -313,6 +421,20 @@ Only the values matching the current kind_registry_section are populated — eve
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("context"), surfaceSpecific),
+  agentRoles: [
+    {
+      name: "kind_editor",
+      label: "Kind Creator",
+      description:
+        "Creates or improves the selected kind and its schema, examples, component, skills, content blocks, and activation state.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "content_ir.kind_creator",
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 100,
+    },
+  ],
 };
 
 /**
@@ -331,6 +453,7 @@ export function createAdminKindRegistryScope(values: {
   current_kind?: string;
   kind_detail_tab?:
     | "preview"
+    | "code"
     | "examples"
     | "assets"
     | "try-input"
@@ -343,8 +466,17 @@ export function createAdminKindRegistryScope(values: {
   kind_detail_components?: unknown[];
   kind_detail_surfaces?: unknown[];
   kind_detail_skills?: unknown[];
+  kind_detail_content_blocks?: unknown[];
   kind_detail_examples?: unknown[];
   kind_detail_canonical_example_data?: Record<string, unknown>;
+  kind_detail_warnings?: unknown[];
+  kind_creator_task_brief?: string;
+  kind_creator_schema?: string;
+  kind_creator_data_sample?: string;
+  kind_creator_existing_context?: string;
+  kind_component_editor_state?: Record<string, unknown>;
+  kind_component_saved_source?: string;
+  kind_component_draft_source?: string;
   kind_builder_structure?: string;
   kind_builder_notes?: string;
   kind_builder_architect_agent_id?: string;

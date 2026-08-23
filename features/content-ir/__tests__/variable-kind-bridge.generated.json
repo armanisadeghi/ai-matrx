@@ -32,6 +32,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "topic": {
             "type": "string"
           }
@@ -80,6 +84,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "tone": {
             "type": "string",
             "description": "How the copy should sound.",
@@ -157,6 +165,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "a": {
             "type": "string"
           },
@@ -218,6 +230,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "audience": {
             "type": "string",
             "enum": [
@@ -285,6 +301,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "format": {
             "anyOf": [
               {
@@ -348,6 +368,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "category": {
             "type": "string"
           }
@@ -405,6 +429,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "channels": {
             "type": "array",
             "items": {
@@ -466,6 +494,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "tags": {
             "type": "array",
             "items": {
@@ -549,6 +581,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "word_count": {
             "type": "number",
             "minimum": 100,
@@ -632,6 +668,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "include_faq": {
             "type": "boolean"
           },
@@ -742,6 +782,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "due": {
             "type": "string"
           },
@@ -799,6 +843,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "budget": {
             "type": "string"
           }
@@ -865,6 +913,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "persona": {
             "type": "string",
             "enum": [
@@ -932,6 +984,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "product": {
             "type": "string"
           }
@@ -998,6 +1054,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "region": {
             "type": "string",
             "enum": [
@@ -1062,6 +1122,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "company_name": {
             "type": "string",
             "description": "The active brand."
@@ -1108,6 +1172,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "notes": {
             "type": "string"
           }
@@ -1172,6 +1240,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "topic": {
             "type": "string",
             "enum": [
@@ -1225,6 +1297,10 @@
       "json_schema": {
         "type": "object",
         "properties": {
+          "__kind": {
+            "type": "string",
+            "description": "The registered kind this payload is an instance of."
+          },
           "legacy": {
             "type": "string"
           }

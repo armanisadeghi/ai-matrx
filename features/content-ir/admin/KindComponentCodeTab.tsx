@@ -26,10 +26,17 @@ import {
   fireInvalidation,
   INVALIDATION_KEYS,
 } from "@/lib/invalidation/invalidation-registry";
+import type {
+  KindDetailData,
+  KindExampleListItem,
+} from "@/features/content-ir/admin/kind-detail-types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
+import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
 
 interface KindComponentCodeTabProps {
-  kindDefinitionId: string;
-  kind: string;
+  detail: KindDetailData;
+  examples?: KindExampleListItem[];
 }
 
 type LoadState =
@@ -52,9 +59,11 @@ function componentSourceText(row: KindComponentCodeRecord | undefined): string {
 }
 
 export default function KindComponentCodeTab({
-  kindDefinitionId,
-  kind,
+  detail,
+  examples,
 }: KindComponentCodeTabProps) {
+  const kindDefinitionId = detail.id;
+  const kind = detail.kind;
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [selectedId, setSelectedId] = useState("");
   const [draft, setDraft] = useState("");
@@ -191,73 +200,90 @@ export default function KindComponentCodeTab({
   }
 
   return (
-    <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-card">
-      <div className="flex shrink-0 flex-wrap items-end gap-3 border-b border-border p-3">
-        <label className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
-          Component
-          <select
-            value={selectedComponent.id}
-            onChange={(event) => selectComponent(event.target.value)}
-            className="mt-1 min-h-10 w-full rounded-md border border-border bg-background px-3 text-base text-foreground sm:text-sm"
-          >
-            {rows.map((row) => (
-              <option key={row.id} value={row.id}>
-                {componentOptionLabel(row)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            v{selectedComponent.version} · {selectedComponent.semver}
-            {dirty ? " · Unsaved" : ""}
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => void save()}
-            disabled={!editable || !dirty || saving}
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {saving ? "Saving" : "Save code"}
-          </Button>
-        </div>
-      </div>
-
-      {editable ? (
-        <div className="min-h-0 min-w-0 flex-1">
-          <SmartCodeEditor
-            key={selectedComponent.id}
-            agents={KIND_COMPONENT_EDITOR_AGENTS}
-            language={
-              isHtmlComponent(selectedComponent) ? "html" : "typescript"
-            }
-            filePath={`kind-component://${selectedComponent.id}${isHtmlComponent(selectedComponent) ? ".html" : ".tsx"}`}
-            initialCode={draft}
-            onCodeChange={(value) => setDraft(value)}
-            initialIsEditing
-            showTerminal={false}
-            title={`${kind} component`}
-            className="h-full min-h-0"
-          />
-        </div>
-      ) : (
-        <div className="flex min-h-80 items-start gap-3 p-5">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div>
-            <p className="font-medium text-foreground">Bundled component</p>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              This row points to component code compiled into the frontend
-              repository, so it has no database source body to edit here.
-              DB-authored component rows are fully editable in this tab.
-            </p>
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
+      getScope={() =>
+        buildAdminKindDetailScope({
+          detail,
+          tab: "code",
+          examples,
+          componentEditor: {
+            rows,
+            selected: selectedComponent,
+            draft,
+            saving,
+          },
+        })
+      }
+    >
+      <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-card">
+        <div className="flex shrink-0 flex-wrap items-end gap-3 border-b border-border p-3">
+          <label className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            Component
+            <select
+              value={selectedComponent.id}
+              onChange={(event) => selectComponent(event.target.value)}
+              className="mt-1 min-h-10 w-full rounded-md border border-border bg-background px-3 text-base text-foreground sm:text-sm"
+            >
+              {rows.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {componentOptionLabel(row)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              v{selectedComponent.version} · {selectedComponent.semver}
+              {dirty ? " · Unsaved" : ""}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void save()}
+              disabled={!editable || !dirty || saving}
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {saving ? "Saving" : "Save code"}
+            </Button>
           </div>
         </div>
-      )}
-    </div>
+
+        {editable ? (
+          <div className="min-h-0 min-w-0 flex-1">
+            <SmartCodeEditor
+              key={selectedComponent.id}
+              agents={KIND_COMPONENT_EDITOR_AGENTS}
+              language={
+                isHtmlComponent(selectedComponent) ? "html" : "typescript"
+              }
+              filePath={`kind-component://${selectedComponent.id}${isHtmlComponent(selectedComponent) ? ".html" : ".tsx"}`}
+              initialCode={draft}
+              onCodeChange={(value) => setDraft(value)}
+              initialIsEditing
+              showTerminal={false}
+              title={`${kind} component`}
+              className="h-full min-h-0"
+            />
+          </div>
+        ) : (
+          <div className="flex min-h-80 items-start gap-3 p-5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <p className="font-medium text-foreground">Bundled component</p>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                This row points to component code compiled into the frontend
+                repository, so it has no database source body to edit here.
+                DB-authored component rows are fully editable in this tab.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

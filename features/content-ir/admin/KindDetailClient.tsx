@@ -29,6 +29,9 @@ import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
 import KindComponentCodeTab from "@/features/content-ir/admin/KindComponentCodeTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
+import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
 
 const KindGateTab = dynamic(
   () => import("@/features/content-ir/admin/KindGateTab"),
@@ -122,6 +125,7 @@ export default function KindDetailClient({
     const canonical = examples.rows.find((row) => row.isCanonical);
     return (canonical ?? examples.rows[0]).data;
   }, [examples]);
+  const readyExamples = examples.status === "ready" ? examples.rows : undefined;
 
   function selectTab(next: TabId) {
     setTab(next);
@@ -130,153 +134,161 @@ export default function KindDetailClient({
   }
 
   return (
-    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
-      {/* Header */}
-      <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2 pr-14">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex w-full min-w-0 flex-wrap items-center gap-1 text-sm sm:w-auto"
-        >
-          <Link
-            href="/administration/utilities/kind-registry"
-            className="inline-flex min-h-10 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:min-h-0"
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
+      getScope={() =>
+        buildAdminKindDetailScope({
+          detail,
+          tab,
+          examples: readyExamples,
+        })
+      }
+    >
+      <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
+        {/* Header */}
+        <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2 pr-14">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex w-full min-w-0 flex-wrap items-center gap-1 text-sm sm:w-auto"
           >
-            Kind Registry
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-          <h1 className="min-w-0 break-words font-semibold text-foreground">
-            {detail.label}
-          </h1>
-        </nav>
-        <code className="max-w-full break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
-          {detail.kind}
-        </code>
-        <span
-          className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
-            detail.isActive
-              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {detail.isActive ? "active" : "inactive"}
-        </span>
-        <span className="text-[11px] text-muted-foreground">
-          v{detail.version} · {detail.visibility} · updated{" "}
-          {detail.updatedAt.slice(0, 19).replace("T", " ")}
-        </span>
-        <div className="ml-auto">
-          <KindAgentButton
-            kind={detail.kind}
-            label={detail.label}
-            part="edit"
-            emittedJsonSchema={detail.emittedJsonSchema}
-            className="min-h-10"
-          >
-            Edit with agent
-          </KindAgentButton>
-        </div>
-      </header>
-
-      {/* Tabs */}
-      <div className="border-b border-border bg-card px-3 py-2 sm:hidden">
-        <label
-          htmlFor="kind-detail-section"
-          className="mb-1 block text-xs font-medium text-muted-foreground"
-        >
-          Kind detail section
-        </label>
-        <select
-          id="kind-detail-section"
-          value={tab}
-          onChange={(event) => selectTab(event.target.value as TabId)}
-          className="min-h-11 w-full rounded-md border border-border bg-background px-3 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {TABS.map((id) => (
-            <option key={id} value={id}>
-              {TAB_LABELS[id]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <nav
-        aria-label="Kind detail sections"
-        className="hidden items-center gap-1 overflow-x-auto border-b border-border bg-card px-4 sm:flex"
-      >
-        {TABS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => selectTab(id)}
-            aria-current={tab === id ? "page" : undefined}
-            className={`min-h-10 shrink-0 border-b-2 px-3 py-1.5 text-sm transition-colors ${
-              tab === id
-                ? "border-primary font-medium text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            <Link
+              href="/administration/utilities/kind-registry"
+              className="inline-flex min-h-10 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:min-h-0"
+            >
+              Kind Registry
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            <h1 className="min-w-0 break-words font-semibold text-foreground">
+              {detail.label}
+            </h1>
+          </nav>
+          <code className="max-w-full break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            {detail.kind}
+          </code>
+          <span
+            className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
+              detail.isActive
+                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "bg-muted text-muted-foreground"
             }`}
           >
-            {TAB_LABELS[id]}
-          </button>
-        ))}
-      </nav>
+            {detail.isActive ? "active" : "inactive"}
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            v{detail.version} · {detail.visibility} · updated{" "}
+            {detail.updatedAt.slice(0, 19).replace("T", " ")}
+          </span>
+          <div className="ml-auto">
+            <KindAgentButton
+              kind={detail.kind}
+              label={detail.label}
+              part="edit"
+              emittedJsonSchema={detail.emittedJsonSchema}
+              className="min-h-10"
+            >
+              Edit with agent
+            </KindAgentButton>
+          </div>
+        </header>
 
-      {/* Content */}
-      <main
-        className={
-          tab === "code"
-            ? "min-h-0 flex-1 overflow-hidden"
-            : "min-h-0 flex-1 overflow-y-auto p-3 sm:p-4"
-        }
-      >
-        {tab === "preview" && (
-          <KindPreviewTab kind={detail.kind} examples={examples} />
-        )}
-        {tab === "code" && (
-          <KindComponentCodeTab
-            kindDefinitionId={detail.id}
-            kind={detail.kind}
-          />
-        )}
-        {tab === "examples" && (
-          <div className="mx-auto max-w-4xl">
-            <KindExampleManager
-              kindDefinitionId={detail.id}
+        {/* Tabs */}
+        <div className="border-b border-border bg-card px-3 py-2 sm:hidden">
+          <label
+            htmlFor="kind-detail-section"
+            className="mb-1 block text-xs font-medium text-muted-foreground"
+          >
+            Kind detail section
+          </label>
+          <select
+            id="kind-detail-section"
+            value={tab}
+            onChange={(event) => selectTab(event.target.value as TabId)}
+            className="min-h-11 w-full rounded-md border border-border bg-background px-3 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {TABS.map((id) => (
+              <option key={id} value={id}>
+                {TAB_LABELS[id]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <nav
+          aria-label="Kind detail sections"
+          className="hidden items-center gap-1 overflow-x-auto border-b border-border bg-card px-4 sm:flex"
+        >
+          {TABS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => selectTab(id)}
+              aria-current={tab === id ? "page" : undefined}
+              className={`min-h-10 shrink-0 border-b-2 px-3 py-1.5 text-sm transition-colors ${
+                tab === id
+                  ? "border-primary font-medium text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {TAB_LABELS[id]}
+            </button>
+          ))}
+        </nav>
+
+        {/* Content */}
+        <main
+          className={
+            tab === "code"
+              ? "min-h-0 flex-1 overflow-hidden"
+              : "min-h-0 flex-1 overflow-y-auto p-3 sm:p-4"
+          }
+        >
+          {tab === "preview" && (
+            <KindPreviewTab kind={detail.kind} examples={examples} />
+          )}
+          {tab === "code" && (
+            <KindComponentCodeTab detail={detail} examples={readyExamples} />
+          )}
+          {tab === "examples" && (
+            <div className="mx-auto max-w-4xl">
+              <KindExampleManager
+                kindDefinitionId={detail.id}
+                emittedJsonSchema={detail.emittedJsonSchema}
+                examples={examples}
+                onExamplesChanged={refreshExamples}
+                authMode="admin"
+              />
+            </div>
+          )}
+          {tab === "try-input" && <KindTryInputTab kind={detail.kind} />}
+          {tab === "gate" && (
+            <KindGateTab
+              kind={detail.kind}
               emittedJsonSchema={detail.emittedJsonSchema}
               examples={examples}
-              onExamplesChanged={refreshExamples}
-              authMode="admin"
+              family={detail.doctorRow.family}
             />
-          </div>
-        )}
-        {tab === "try-input" && <KindTryInputTab kind={detail.kind} />}
-        {tab === "gate" && (
-          <KindGateTab
-            kind={detail.kind}
-            emittedJsonSchema={detail.emittedJsonSchema}
-            examples={examples}
-            family={detail.doctorRow.family}
-          />
-        )}
-        {tab === "schema" && (
-          <KindSchemaTab
-            kind={detail.kind}
-            fieldData={detail.fieldData}
-            emittedJsonSchema={detail.emittedJsonSchema}
-          />
-        )}
-        {tab === "inputs" && (
-          <KindInputsTab
-            kind={detail.kind}
-            emittedJsonSchema={detail.emittedJsonSchema}
-          />
-        )}
-        {tab === "assets" && (
-          <KindAssetsTab
-            detail={detail}
-            canonicalExampleData={canonicalExampleData}
-            onOpenExamples={() => selectTab("examples")}
-          />
-        )}
-      </main>
-    </div>
+          )}
+          {tab === "schema" && (
+            <KindSchemaTab
+              kind={detail.kind}
+              fieldData={detail.fieldData}
+              emittedJsonSchema={detail.emittedJsonSchema}
+            />
+          )}
+          {tab === "inputs" && (
+            <KindInputsTab
+              kind={detail.kind}
+              emittedJsonSchema={detail.emittedJsonSchema}
+            />
+          )}
+          {tab === "assets" && (
+            <KindAssetsTab
+              detail={detail}
+              canonicalExampleData={canonicalExampleData}
+              onOpenExamples={() => selectTab("examples")}
+            />
+          )}
+        </main>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }
