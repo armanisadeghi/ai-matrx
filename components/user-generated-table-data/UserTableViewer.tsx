@@ -2694,11 +2694,53 @@ const UserTableViewer = ({
                         // the padding outside, which looked like a glitch
                         // rather than a selection. `ring-inset` matters — an
                         // outset ring is clipped by the neighbouring cells.
+                        // 🚨 THE WHOLE CELL IS THE TARGET. Click and
+                        // double-click live on the <td>, not on the content
+                        // inside it, because the content is smaller than the
+                        // cell — often much smaller, and for an EMPTY cell
+                        // there is barely anything to hit at all. Handling
+                        // clicks on the inner element meant only the middle of
+                        // a cell responded, and an empty cell could not be
+                        // edited whatsoever.
+                        // THE CELL CARRIES THE STATE, so the editor inside it
+                        // needs no chrome of its own. Selected is a soft ring;
+                        // EDITING is a heavier solid ring plus a stronger tint.
+                        //
+                        // That distinction is load-bearing. Stripping the
+                        // input's border (so it stops looking like a component
+                        // nested inside a component) also removed the only
+                        // signal that an editor was open at all — a cell with
+                        // unsaved text became indistinguishable from a saved
+                        // one, which is how you lose an edit without knowing.
                         className={cn(
                           "py-3 max-w-0 group",
+                          !isReadOnly && "cursor-cell",
                           grid.isSelected(row.id, field.field_name) &&
+                            !grid.isEditing(row.id, field.field_name) &&
                             "bg-primary/5 ring-2 ring-inset ring-primary/70",
+                          grid.isEditing(row.id, field.field_name) &&
+                            "bg-primary/10 ring-[3px] ring-inset ring-primary",
                         )}
+                        onClick={() => {
+                          grid.select({
+                            rowId: row.id,
+                            fieldName: field.field_name,
+                          });
+                          // Hand focus back to the grid, or the very next arrow
+                          // key goes nowhere and the grid reads as broken.
+                          grid.refocusGrid();
+                        }}
+                        onDoubleClick={() => {
+                          // Direct-click editors (checkbox, rating, choice)
+                          // handle their own interaction and stop propagation;
+                          // a double-click that reaches here is on a plain
+                          // cell and means "edit me".
+                          if (isReadOnly) return;
+                          grid.beginEdit({
+                            rowId: row.id,
+                            fieldName: field.field_name,
+                          });
+                        }}
                       >
                         <div className="flex items-center justify-between gap-2 min-w-0">
                           <div className="flex-1 min-w-0">

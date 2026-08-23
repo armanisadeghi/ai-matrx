@@ -258,35 +258,19 @@ export function EditableCell({
     return (
       <div
         data-selected={selected || undefined}
-        // THE RING BELONGS TO THE CELL, NOT TO THE CONTENT. It used to sit on
-        // this inner div, so it drew a small box around the text inside the
-        // padding instead of outlining the cell — which read as a stray
-        // artefact rather than a selection. The <td> owns it now (see
-        // UserTableViewer); this element only reports its state.
-        className={cn(
-          "relative",
-          editable && !directClickable && "cursor-text",
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect?.();
-        }}
-        onDoubleClick={(e) => {
-          // A direct-click widget has already handled the interaction; a second
-          // click must not then drop the user into an editor they did not ask
-          // for.
-          if (directClickable) return;
-          e.stopPropagation();
-          if (editable && !saving) onBeginEdit?.();
-        }}
-        title={
-          editable && !directClickable
-            ? `Double-click or press Enter to edit ${fieldDisplayName}`
-            : undefined
-        }
+        // NO CLICK HANDLERS HERE. The <td> owns click and double-click so the
+        // WHOLE cell is the target — the content is smaller than the cell, and
+        // an empty cell has almost no content to hit. See UserTableViewer.
+        //
+        // `min-h` keeps an empty cell the same height as a filled one, so the
+        // row does not jog when a value is cleared and the empty cell still
+        // presents a full-height target.
+        className="relative flex min-h-[1.25rem] items-center"
       >
         {/* THE CLICK LAW in practice — closed sets and two-state values are
-            operable in one click; everything else renders as plain display. */}
+            operable in one click; everything else renders as plain display.
+            These stop propagation so the cell's own click does not fight the
+            widget's. */}
         {directClickable && readEditorKind === "checkbox" ? (
           <Checkbox
             checked={value === true}
@@ -317,7 +301,7 @@ export function EditableCell({
             {display}
           </button>
         ) : (
-          display
+          <div className="w-full min-w-0">{display}</div>
         )}
         {saving && (
           <div className="absolute inset-y-0 right-0 flex items-center">
@@ -327,6 +311,28 @@ export function EditableCell({
       </div>
     );
   }
+
+  /**
+   * THE EDITOR IS THE CELL, NOT A BOX INSIDE IT.
+   *
+   * The inputs used to arrive with their default border, ring and background,
+   * so entering edit mode drew a second rounded rectangle inside the cell's own
+   * ring — a component visibly sitting inside another component. Stripped to
+   * nothing: transparent background, no border, no focus ring, no radius, and
+   * the same padding the read view uses, so the text does not shift by a pixel
+   * when the editor opens.
+   *
+   * The cell's selection ring is the ONLY chrome; it already says "you are
+   * here", and a second border adds nothing but noise.
+   *
+   * `16px` font-size is deliberate and must not shrink: iOS Safari zooms the
+   * viewport on focus for anything smaller, which yanks the whole grid.
+   */
+  const editorClass =
+    "w-full border-0 bg-transparent p-0 text-sm shadow-none outline-none " +
+    "ring-0 focus:border-0 focus:outline-none focus:ring-0 " +
+    "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0";
+  const editorStyle = { fontSize: "16px" } as const;
 
   // ─── edit mode ────────────────────────────────────────────────────────────
   //
@@ -359,7 +365,8 @@ export function EditableCell({
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
         disabled={saving}
-        className="h-8 text-sm"
+        className={cn(editorClass, "h-auto")}
+        style={editorStyle}
       />
     );
   }
@@ -396,7 +403,8 @@ export function EditableCell({
         onClick={(e) => e.stopPropagation()}
         disabled={saving}
         rows={4}
-        className="min-h-8 text-sm"
+        className={cn(editorClass, "min-h-8 resize-none")}
+        style={editorStyle}
       />
     );
   }
@@ -427,7 +435,8 @@ export function EditableCell({
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
         disabled={saving}
-        className="h-8 text-sm"
+        className={cn(editorClass, "h-auto")}
+        style={editorStyle}
       />
     );
   }
@@ -460,7 +469,8 @@ export function EditableCell({
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
         disabled={saving}
-        className="h-8 text-sm"
+        className={cn(editorClass, "h-auto")}
+        style={editorStyle}
       />
     );
   }
@@ -476,7 +486,8 @@ export function EditableCell({
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
         disabled={saving}
-        className="h-8 text-sm"
+        className={cn(editorClass, "h-auto")}
+        style={editorStyle}
       />
     );
   }
@@ -496,7 +507,8 @@ export function EditableCell({
         onBlur={() => void commitEdit()}
         onClick={(e) => e.stopPropagation()}
         disabled={saving}
-        className="h-8 text-sm"
+        className={cn(editorClass, "h-auto")}
+        style={editorStyle}
       />
     );
   }
@@ -518,7 +530,8 @@ export function EditableCell({
       onClick={(e) => e.stopPropagation()}
       disabled={saving}
       rows={dataType === "json" || dataType === "array" ? 4 : 1}
-      className="min-h-8 text-sm"
+      className={cn(editorClass, "min-h-0 resize-none leading-normal")}
+      style={editorStyle}
     />
   );
 }

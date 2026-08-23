@@ -1,0 +1,32 @@
+-- Clearing ONE cell must not null the WHOLE row body.
+--
+-- `jsonb_set(target, path, new_value)` returns SQL NULL when new_value is SQL
+-- NULL — not "the key set to null", but NULL for the entire document. PostgREST
+-- maps a JSON `null` argument to SQL NULL, so the perfectly ordinary "empty this
+-- cell" write (Delete/Backspace on a selected cell, the bulk Clear action, an
+-- agent sending value:null) arrived as SQL NULL and set `data` — every field in
+-- that row — to NULL.
+--
+-- The NOT NULL constraint on udt_dataset_rows.data is the ONLY reason this
+-- surfaced as a 23502 error instead of silent data loss: without it, clearing
+-- one cell would have destroyed every other value in the row. Observed in
+-- production 2026-08-23 (/data/c1aabdc0-…, Error Inspector, code 23502).
+--
+-- Same class in udt_bulk_write, in three ops:
+--   cell   — `v_op -> 'value'` is SQL NULL when "value" is omitted;
+--   update — `data = v_op -> 'data'` blanks the row body when "data" is omitted;
+--   insert — same, on the way in.
+--
+-- Fixed by coercing SQL NULL to the JSON value `null` (cell) or `{}` (insert /
+-- merge), and by REFUSING an update op with no data object rather than quietly
+-- emptying the row. A guard on one write path is not a guard — agents, the
+-- importer and the bulk bar all reach these.
+--
+-- APPLIED LIVE 2026-08-23 to brsgrqvjdzwihsvnfqkf via Supabase MCP.
+-- Idempotent; the full function bodies are in the applied migrations
+-- `udt_cell_write_null_clears_one_key_not_the_row` and `udt_bulk_write_null_guards`.
+--
+-- Verification (live, on a real row):
+--   before      {"capital":"Brasília","country":"Brazil","continent":"South America",…}
+--   after clear {"capital":null,      "country":"Brazil","continent":"South America",…}
+--   row body survives: true — previously the whole document became NULL.

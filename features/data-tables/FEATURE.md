@@ -648,6 +648,26 @@ round-trip on 2026-08-21: `get_user_tables` was "verified" returning
 When it matters, check what the app actually talks to — intercept `fetch` in the
 browser and read the `/rest/v1/` origin.
 
+### The cell is the target, and the cell carries the state
+
+**🚨 The `<td>` owns click and double-click — never the content inside it.** The
+content is smaller than the cell (and an EMPTY cell has almost none), so
+handling clicks on the inner element meant only the middle of a cell responded
+and **an empty cell could not be edited at all**. Direct-click widgets
+(checkbox, rating, choice) stop propagation so they do not fight the cell.
+
+**The editor has no chrome of its own.** Transparent background, no border, no
+focus ring, same padding as the read view — an input with its default border
+draws a second rounded box inside the cell's own ring, which reads as a
+component nested in a component.
+
+**But the cell MUST still show that an editor is open.** Selected is a soft ring
+(`ring-2 ring-primary/70`, `bg-primary/5`); editing is heavier and solid
+(`ring-[3px] ring-primary`, `bg-primary/10`). Stripping the input's border once
+removed the only signal an editor was open, and a cell holding unsaved text
+became indistinguishable from a saved one — that is how an edit gets lost
+without anyone noticing.
+
 ## Change log
 
 - `2026-08-22` — Added canonical AppShell top clearance to the workbook gallery so the first row of workbook cards and actions no longer collides with the transparent shell header.
