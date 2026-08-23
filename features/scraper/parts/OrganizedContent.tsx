@@ -10,7 +10,7 @@ interface OrganizedContentSection {
   content: Array<
     | { type: "paragraph"; content: string }
     | { type: "list"; items: string[] }
-    | { type: "unknown"; keys: string[] }
+    | { type: "image"; caption: string; src?: string }
   >;
 }
 
@@ -72,10 +72,16 @@ const OrganizedContent = ({ organizedData }: OrganizedContentProps) => {
                     </ul>
                   );
                 } else {
+                  // An image contributes its caption/alt text — the only text
+                  // it carries. It NEVER renders the item's key names (the
+                  // 2026-08-22 defect this branch used to be).
                   return (
-                    <div key={contentIndex} className="text-muted-foreground">
-                      {item.keys.join(", ")}
-                    </div>
+                    <p
+                      key={contentIndex}
+                      className="text-sm italic text-muted-foreground"
+                    >
+                      {item.caption}
+                    </p>
                   );
                 }
               })}

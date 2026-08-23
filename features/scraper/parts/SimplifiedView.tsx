@@ -13,6 +13,8 @@ interface SimplifiedViewContentItem {
   type: string;
   content?: string;
   items?: unknown[];
+  /** An image's caption/alt — the only text an image item carries. */
+  caption?: string;
 }
 
 interface SimplifiedViewSection {
@@ -129,9 +131,9 @@ const SimplifiedView = ({ pageData }: SimplifiedViewProps) => {
                             ))}
                           </ul>
                         )}
-                        {item.type !== "paragraph" && item.type !== "list" && (
+                        {item.type === "image" && item.caption && (
                           <p className="text-muted-foreground italic text-sm">
-                            [Content type: {item.type || "unknown"}]
+                            {item.caption}
                           </p>
                         )}
                       </div>
