@@ -23708,6 +23708,30 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
       }
+      entity_read_equivalence: {
+        Args: {
+          p_limit?: number
+          p_schema: string
+          p_table: string
+          p_token: string
+          p_user: string
+        }
+        Returns: {
+          compared: number
+          gained: number
+          lost: number
+        }[]
+      }
+      entity_read_expr: {
+        Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: string
+      }
+      entity_read_probe_users: {
+        Args: { p_limit?: number }
+        Returns: {
+          user_id: string
+        }[]
+      }
       fn_grant_resource_permission: {
         Args: {
           p_expires_at?: string
