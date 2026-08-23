@@ -190,7 +190,7 @@ export function VoiceAgentSurface({
   //     with the `token-` prefix (see useXaiVoiceSession.ts:121).
   //   • Initial-connect failures from `start()` keep the raw TokenError /
   //     XaiClientError code (see useXaiVoiceSession.ts:512). The raw codes
-  //     are: unauthorized, service-unavailable, fetch-failed, malformed,
+  //     are: unauthorized, refused, service-unavailable, fetch-failed, malformed,
   //     connect-failed, connect-timeout, auth-failed, transport-closed,
   //     server-error, start-failed.
   // We handle both prefixed and raw forms so a real failure on the very
@@ -211,6 +211,14 @@ export function VoiceAgentSurface({
     } else if (code === "token-unauthorized" || code === "unauthorized") {
       toast.error("Sign-in required", {
         description: "Your session expired. Refresh the page and try again.",
+      });
+    } else if (code === "token-refused" || code === "refused") {
+      // 403 — the broker DECIDED, it did not fail: the child-safety gate on
+      // direct model access. Its message is written for the person reading it
+      // and names what to do next, so it is shown verbatim and never wrapped
+      // in a generic "something went wrong".
+      toast.error("Voice isn't available on this account", {
+        description: liveError.message,
       });
     } else if (
       code === "token-service-unavailable" ||

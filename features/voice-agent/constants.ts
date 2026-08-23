@@ -15,6 +15,41 @@ export const SAMPLE_RATE_HZ = 24000;
 /** 20ms at 24kHz mono. Matches the worklet's frame batching. */
 export const FRAME_SAMPLES = 480;
 
+/**
+ * THE TURN IS THE SPEAKER'S TO END.
+ *
+ * How long a person may go quiet before server VAD decides their turn is over.
+ * The provider's own default is tuned for snappy command-and-response and cuts
+ * in at roughly half a second — which is shorter than an ordinary pause for
+ * breath, so someone thinking out loud gets chopped into fragments and the
+ * agent answers a half-sentence. Reported from live testing, 2026-08-23:
+ * "as I was trying to talk, it kept submitting, and then it led to a bunch of
+ * errors as well."
+ *
+ * 1600ms is the starting value, chosen deliberately: long enough to survive a
+ * mid-thought pause, short enough that a finished answer doesn't feel ignored.
+ * Surfaces where the agent asks open questions (interviews) should raise it;
+ * `RELAY_TURN_SILENCE_MS` below is that raise.
+ *
+ * **Review this number against real conversations by 2026-09-30** — it is a
+ * feel threshold, and the only way to set it correctly is to listen.
+ */
+export const TURN_SILENCE_MS = 1600;
+
+/**
+ * Audio kept from BEFORE speech onset, so VAD does not clip the first
+ * syllable. Cheap insurance; a clipped "I" reads as a transcription bug.
+ */
+export const TURN_PREFIX_PADDING_MS = 320;
+
+/**
+ * The Voice Communication Layer's own silence window. Longer than the base:
+ * the relay's whole purpose is surfaces where an AGENT asks the questions and
+ * a person answers in their own words, at their own pace — the case where
+ * being cut off is most costly and most likely.
+ */
+export const RELAY_TURN_SILENCE_MS = 2400;
+
 /** Token TTL we request from xAI. Must be >> refresh-skew below. */
 export const TOKEN_TTL_SECONDS = 300;
 

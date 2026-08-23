@@ -27,12 +27,24 @@ interface ChatRunHeaderProps {
   /** Active conversation (present on `/chat/[conversationId]`). Lets the Canvas
    *  button open this conversation's working document when the Canvas is empty. */
   conversationId?: string;
+  /**
+   * Where picking an agent navigates. Defaults to the text chat route
+   * (`/chat/a/<id>`). A sibling chat route that is still a chat — same picker,
+   * same draft carry-over, different mode — passes its own builder so
+   * switching agents keeps the user in the mode they chose. Without this the
+   * picker silently drops them back into text mid-conversation.
+   */
+  buildAgentHref?: (agentId: string) => string;
 }
+
+const defaultAgentHref = (agentId: string) =>
+  `/chat/a/${encodeURIComponent(agentId)}`;
 
 export function ChatRunHeader({
   activeAgentId,
   initialAgentName,
   conversationId,
+  buildAgentHref = defaultAgentHref,
 }: ChatRunHeaderProps) {
   const router = useRouter();
   const store = useAppStore();
@@ -63,7 +75,7 @@ export function ChatRunHeader({
         stashChatDraftTransfer({ text: draftText, targetAgentId: id });
       }
     }
-    router.push(`/chat/a/${encodeURIComponent(id)}`);
+    router.push(buildAgentHref(id));
   };
 
   // Full-width bar with a hard left/right split at every breakpoint: agent +

@@ -40,7 +40,10 @@ import {
   updateAssistantTranscriptDelta,
   updateUserTranscriptDelta,
 } from "../state/voiceAgentSlice";
-import { TRANSCRIPT_REVEAL_LAG_MS } from "../constants";
+import {
+  RELAY_TURN_SILENCE_MS,
+  TRANSCRIPT_REVEAL_LAG_MS,
+} from "../constants";
 import {
   selectVoiceConversationId,
   selectVoiceError,
@@ -1042,8 +1045,12 @@ export function useXaiVoiceSession(
           instructions: instructionsRef.current,
           tools: [...toolsRef.current],
           // Relay sessions: the voice model never auto-answers a user turn
-          // (THE ROUTING LAW — the relay routes it to the primary agent).
+          // (THE ROUTING LAW — the relay routes it to the primary agent), and
+          // the speaker gets a longer silence window, because the relay's
+          // surfaces are the ones where an agent asks and a person thinks
+          // aloud.
           createResponseOnTurn: relayRef.current ? false : undefined,
+          turnSilenceMs: relayRef.current ? RELAY_TURN_SILENCE_MS : undefined,
         }),
         capture.start(),
       ]);
@@ -1162,6 +1169,7 @@ export function useXaiVoiceSession(
         instructions: instructionsRef.current,
         tools: [...tools],
         createResponseOnTurn: relayRef.current ? false : undefined,
+        turnSilenceMs: relayRef.current ? RELAY_TURN_SILENCE_MS : undefined,
       }),
     );
   }, [instanceId, tools]);

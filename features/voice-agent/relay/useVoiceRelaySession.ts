@@ -119,6 +119,10 @@ export function useVoiceRelaySession(
   const instanceId = useVoiceAgentInstance({
     preset: "intro",
     agentId: communicatorAgentId,
+    // Every relay runs the SAME Communicator agent, so the agent id alone
+    // cannot key the voice instance — scope it to the host surface or two
+    // relays on one page share a session. See the prop's own docs.
+    instanceScope: surfaceKey,
   });
   useRealtimeAgentConfig({
     instanceId,
@@ -127,19 +131,28 @@ export function useVoiceRelaySession(
   });
 
   // ── The brain: an ordinary execution-system conversation ────────────────
+  // 🚨 THE PIN GOES *INTO* THE LAUNCHER, not on top of its answer.
+  //
+  // Reading the pin only afterwards was a real duplicate-conversation bug: the
+  // managed launcher mints `focusedConversationId ?? generateConversationId()`,
+  // so whenever surface focus had not landed yet it created a SECOND
+  // conversation running the same brain — and took surface focus with it. The
+  // host column kept rendering the pinned conversation while everything that
+  // resolves by `surfaceKey` (new-run button, run window, `useSurfaceExecution`)
+  // pointed at the other one, and a spoken turn could stream into a
+  // conversation nobody was watching. Handing the id in makes the launcher
+  // ADOPT the host's conversation instead of competing with it.
   const { conversationId: launcherConversationId } = useAgentLauncher(
     primaryAgentId,
     {
       surfaceKey,
       sourceFeature,
+      conversationId: pinnedConversationId,
       config: { responseDensity: "compact" },
       // A voice session outliving a remount must keep its brain conversation.
       retainOnUnmount: true,
     },
   );
-  // A surface-pinned id ALWAYS wins over the launcher's focus-derived one —
-  // surface focus can briefly point at a retained prior conversation, and
-  // speech must never route to the wrong brain (Bugbot, PR #177).
   const conversationId = pinnedConversationId ?? launcherConversationId;
   const conversationIdRef = useRef<string | null>(null);
   useEffect(() => {
