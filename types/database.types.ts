@@ -38581,6 +38581,74 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      shx_list_facets: {
+        Args: {
+          p_deep?: boolean
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      shx_list_scope_counts: {
+        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      shx_list_scoped: {
+        Args: {
+          p_deep?: boolean
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          access_level: string
+          authoring_owner: string
+          created_at: string
+          created_by: string
+          family: string
+          has_component: boolean
+          id: string
+          is_active: boolean
+          is_owner: boolean
+          kind: string
+          label: string
+          organization_id: string
+          organization_name: string
+          origin: string
+          owner_email: string
+          total_count: number
+          updated_at: string
+          version: number
+          visibility: string
+        }[]
+      }
+      shx_search_score: {
+        Args: {
+          p_family: string
+          p_kind: string
+          p_label: string
+          p_organization_name: string
+          p_owner_email: string
+          p_query: string
+        }
+        Returns: number
+      }
+      shx_since_bucket: { Args: { p_bucket: string }; Returns: string }
       soft_delete_file: { Args: { p_file_id: string }; Returns: boolean }
       soft_delete_folder: { Args: { p_folder_id: string }; Returns: Json }
       split_feedback_item: {
