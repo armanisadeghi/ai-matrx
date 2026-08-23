@@ -11,10 +11,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { createListAction } from "../actions/list-actions";
@@ -65,7 +65,7 @@ function CreateListForm({
         <Label htmlFor="list-name" className="text-sm font-medium">
           List name <span className="text-destructive">*</span>
         </Label>
-        <Input
+        <ProInput
           id="list-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -82,7 +82,9 @@ function CreateListForm({
         <Label htmlFor="list-desc" className="text-sm font-medium">
           Description
         </Label>
-        <Textarea
+        {/* THE LENGTH RULE: stats OFF — a list description is a one-line
+            explainer, not long-form authoring. */}
+        <ProTextarea
           id="list-desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
