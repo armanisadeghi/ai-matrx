@@ -616,11 +616,17 @@ export interface HindsightOrchestraCrystallizationOffer {
 
 /** Offered shape of provision `hindsight.replay_comparison` (kind `hindsight.replay_comparison.offer`). */
 export interface HindsightReplayComparisonOffer {
-  task: string;
-  original_answer: string;
-  replay_answer: string;
-  original_metrics?: unknown;
-  replay_metrics?: unknown;
+  question: string;
+  rubric_name?: string;
+  rubric?: string;
+  verdict_values: string[];
+  subject_label: string;
+  subject_content: string;
+  subject_metrics?: unknown;
+  reference_label: string;
+  reference_content: string;
+  reference_metrics?: unknown;
+  context?: unknown;
 }
 
 /** Offered shape of provision `human_decisions.absent_human_decision` (kind `human_decisions.absent_human_decision.offer`). */
