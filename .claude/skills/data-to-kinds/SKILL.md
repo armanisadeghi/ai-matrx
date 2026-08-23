@@ -75,6 +75,18 @@ is the durable completion signal the orchestrator watches; it is only true once 
 
 ## Stage A — Distill (aidream)
 
+0. **Map the blast radius FIRST — it gates the keep/drop tables.** You cannot ask Arman to
+   approve dropping a field without knowing who reads it. Produce the full consumer set for the
+   family's existing slugs across **all four surfaces** and paste it into the ledger; the
+   enumeration, the live counts, and the reason grep alone returns a clean wrong answer are in
+   [`common-docs/operations/kind-conversion-board.md`](../../operations/kind-conversion-board.md)
+   § four consumer surfaces — **read it, do not improvise this step**. In short: code (all repos)
+   is one surface; the other three are DB rows (`agent.mandate.output_kind`,
+   `content_ir.kind_component`, `workflow.trigger.kind`), persisted history
+   (`workflow.node_outcome`, `node_data_slot`, `hindsight.replay_step`, `kind_instance`/
+   `kind_example`), and generated artifacts (`.gen.ts`, compiled mirrors, matrx-extend). When
+   `scripts/kind_consumers.py` exists, run it and paste its output instead of hand-building the
+   list. Register the family on the conversion board at G1/G2 before you go further.
 1. **Find the source's ONE engine and capture real data.** Locate the live client the nodes use
    (duplicated API clients are a defect — fix on sight, one engine, specialised layers above it).
    Call it with real credentials from platform config across 4–6 query archetypes that exercise
@@ -215,10 +227,24 @@ where deleted_at is null group by 1;`.
    a collection-schema supersede MUST ride the same change as the repoint (the search pilot gates
    it behind `seed_search_kind_family.py --cutover`). Delete the passthrough models
    (`extra="allow"` raw bags) — no shims.
-2. **Converge the legacy displays** onto the kind components (the data-event blocks the survey
+2. **Convert the consumers grep cannot see.** Walk the Stage A step 0 list and tick every one:
+   `agent.mandate` rows declaring the old slug (246 mandates declare an `output_kind` — they live
+   in DATA, not code); stale ACTIVE `source='db'` `kind_component` rows, which silently OVERRIDE
+   the new canonical component (this bit the search pilot — deactivate with a note, never delete);
+   `workflow.trigger` rows that fire on the kind. A cutover that only changed code is not done.
+3. **State the history plan — mandatory, never silent.** Superseding a schema can invalidate rows
+   already persisted under the old shape and can break Hindsight REPLAY of past runs. Choose and
+   record one in the ledger: backfill the old rows, version-pin them to the superseded schema, or
+   accept-and-record the loss with the measured row count. Silence here is how we lose the past.
+4. **Converge the legacy displays** onto the kind components (the data-event blocks the survey
    found) and delete what they replace; regenerate `.gen.ts` for the now-live collection.
-3. **Gate: Arman approves cutover.** One real run through the converted node, rendered on the run
-   page; ledger updated; push.
+5. **Leave a guard behind (this is what makes it permanent).** A passing adversarial sweep proves
+   the past; a committed guard prevents the future. Add `scripts/check_<family>_kinds.py` on the
+   house pattern — `scripts/check_kind_marker_law.py` is the reference (static leg over source +
+   live leg over the DB + a blessed allowlist) — so a new raw-passthrough consumer fails the
+   build. The platform has 67 of these; yours is not special.
+6. **Gate: Arman approves cutover.** One real run through the converted node, rendered on the run
+   page; ledger updated; **conversion board row moved to G5**; push.
 
 ## Stage C — Review and generalize (owns this skill)
 
@@ -334,3 +360,7 @@ render approval, mark DONE, fire V + D."
 |---|---|---|
 | Search results (Brave + SerpAPI Google) — the pilot | `common-docs/operations/search-kinds-pilot.md` | A+B approved; C done 2026-08-23; V + D pending (cutover gated) |
 | Scraper / crawl results (`scraper.*`) — replication run 1 | `common-docs/operations/scraper-kinds-run.md` | Stage A fired 2026-08-23 |
+
+**Tracking spine:** `common-docs/operations/kind-conversion-board.md` — every family in flight, its gate (G1 enlisted → G2 blast radius → G3 shaped → G4 cut over → G5 guarded), and who holds it. A family is DONE only at G5; a demo is not a conversion. Update your row every gate.
+
+**What to run next:** `common-docs/operations/data-to-kinds-queue.md` — the ranked inventory of every remaining candidate, each with a filled-in chip prompt. Fire one at a time; queue rows 1 and 4 mint primitives that later rows nest.
