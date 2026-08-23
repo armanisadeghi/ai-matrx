@@ -235,6 +235,9 @@ export interface NodeEmittedEvent {
   surface: string;
   title: string | null;
   presentation: "panel" | "showcase";
+  kind: string | null;
+  kind_ok: boolean | null;
+  metadata: Record<string, unknown> | null;
 }
 
 export interface NodeCostEvent {

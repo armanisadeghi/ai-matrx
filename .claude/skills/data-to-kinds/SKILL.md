@@ -337,6 +337,57 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
 5. **Demo page + endpoint are copied by hand** from the search pilot — a scaffold
    (`<family>` → router, service, page.dev.tsx) would make Stage A.9/B.7 a command.
 
+### Friction from replication run 1 — scraper family (2026-08-23, ledger `operations/scraper-kinds-run.md`)
+
+6. **Stage A.0 never says the consumer script's code leg is a substring grep.** `kind_consumers.py
+   scraped_page` returned **91 blocking** consumers; hand-classified, **7** were real and ~81 were
+   the unrelated identifier `scraped_pages` (a research-resource variable), plus 8 hits inside a
+   scratch dump at `aidream/tmp/code_context_output/*.txt` that the walker does not exclude.
+   **Rule now: paste the script output, then hand-classify the code hits into true consumers vs
+   substring collisions and record BOTH numbers.** A raw blocking count is not a blast radius.
+   (Script fixes owed: word-boundary matching, and skip `tmp/`.)
+7. **`category` is undocumented and unsettable.** The vocabulary section says data kinds are
+   `category: data`, but `content_ir.kind_definition` has **no `category` column** — it is
+   `metadata->>'category'`, and nothing in `@kind(...)` sets it. Measured live: `data`, `pure`,
+   and `null` all occur. Either the decorator gains the argument or the skill stops implying it
+   is something you choose.
+8. **A.3 "check what already exists" ships no query** — every other step gives a command. Use:
+   ```sql
+   select kind, label, is_active, version, metadata->>'maturity' as maturity,
+          metadata->>'family' as family
+   from content_ir.kind_definition
+   where deleted_at is null and (metadata->>'family' = '<family>' or kind ~ '<regex of your nouns>')
+   order by 6 nulls last, 1;
+   ```
+   Expect `maturity` and `family` to be **null** on most curated kinds — the tier vocabulary
+   covers the SDK-minted rows only, so "check the registry" cannot be done by maturity alone.
+9. **The additive supersede is the most valuable move available and is unwritten.** Superseding a
+   live ACTIVE slug where **every legacy field stays untouched and every new field is
+   optional-with-default** passes the BACKWARD gate, ships with `--evolve`, and needs **no cutover
+   gate** — because live node verification still passes. The skill only describes cutover-gated
+   supersede and `--breaking`. **Standing rule: when distilling a slug a live consumer already
+   holds, try the additive supersede FIRST and only escalate if a legacy field must change
+   meaning.** It turned a 91-consumer blast radius into a no-op for this family.
+10. **Fixtures: no naming rule and no size rule for a FIRST-PARTY engine.** The template
+    `fixtures/<provider>_<archetype>.json` assumes an external provider; our own engine has none
+    (used `scraper_<archetype>.json`). And real captures of a rich engine are **megabytes** — 12
+    fixtures = 3.1 MB committed, one Wikipedia page = 1.5 MB. The skill must say whether that
+    belongs in git and what may be trimmed (it must NOT be the sections under test).
+11. **Engine results are not JSON.** "Save each raw response as a test fixture" assumes a JSON
+    API. A first-party engine returns live objects (`organized_data`), `bytes` (`raw_body`), and
+    ints past `Number.MAX_SAFE_INTEGER` (`hashes.simhash` = 19 digits — it **must** become a
+    string in the kind or every JS consumer corrupts it). **Rule: capture through a declared
+    encoder and record in the ledger what could not be serialized and why.**
+12. **No capture harness.** Stage A.1 was a throwaway script written from scratch (as Stage A.9's
+    demo page was, per wishlist #5). One `scripts/capture_kind_fixtures.py <module:callable>
+    <archetypes.json>` would make A.1 a command instead of an invention.
+13. **Nothing says what to do when the thing you are distilling is BROKEN.** This run found
+    `scraper.crawl_site` failing 100% of the time (it passes three kwargs the engine does not
+    accept). "Parallel path until approval" says do not touch live nodes; defect-ownership says
+    fix what you find. **Rule now: file it with evidence, name it in the ledger's findings, and
+    hand the repair to Stage D so the node is edited exactly once — do not fix a live emitter in
+    Stage A.**
+
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
 **Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY

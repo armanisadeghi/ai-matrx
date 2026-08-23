@@ -145,9 +145,10 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (P20). **P21: the stamp is the SEGMENT, never a status a person closes** — if
   a flow needs "done", that is a task referencing the stamp.
   🚨 **Two things that must stay true, both found by breaking them:**
-  (1) *no silent caps* — the rule's `row_limit` bounds what gets stamped, so the
-  evaluator returns `matched_total` / `limited` and the panel keeps the warning
-  where the number is; (2) *compare parity* — a compare window is passed ONLY
+  (1) *the row limit is not the segment* — a segment holds EVERY keyword that
+  matches (`gsc_perf_dig` takes `p_limit = 0` for this one caller); a rule's
+  `row_limit` is how many rows its TABLE shows and must never be allowed to
+  read as the segment's size again; (2) *compare parity* — a compare window is passed ONLY
   when the rule needs one (any `cmp_*`/`delta_*` condition or sort metric,
   mirroring `withPrevCompare`), because `gsc_perf_dig` FULL OUTER JOINs the
   periods and a stray compare silently widens what the rule MEANS (measured:

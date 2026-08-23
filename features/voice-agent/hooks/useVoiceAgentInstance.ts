@@ -68,6 +68,22 @@ interface UseVoiceAgentInstanceOpts {
    * defaults below) — used by the playground for ad-hoc iteration.
    */
   agentId?: string;
+  /**
+   * Disambiguates mounts that share an `agentId`.
+   *
+   * Keying `intro` on the agent alone assumed one mount per agent, which held
+   * while each voice agent had its own route. The Voice Communication Layer
+   * broke that assumption: EVERY relay runs the same Communicator agent, so
+   * two relays on one page (the Rulebook renders the Conductor and the Scout
+   * side by side) collapsed onto ONE voice slice instance while each kept its
+   * own session, controller and brain conversation — so a single spoken
+   * sentence started two runs, in two conversations, rendered in two columns.
+   *
+   * Pass the HOST SURFACE here (not the conversation): stable across
+   * remounts, so a session survives one, and distinct per surface, so two
+   * relays can never share an instance.
+   */
+  instanceScope?: string;
   /** Override knobs — used only when `agentId` is not set. */
   voiceId?: VoiceId;
   instructions?: string;
@@ -105,14 +121,17 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
-  // One stable instanceId per mount. Intro is keyed on agentId so
-  // multiple intro mounts (one per agent) don't collide; the playground
-  // gets a random suffix so two playground tabs are independent.
+  // One stable instanceId per mount. Intro is keyed on agentId so multiple
+  // intro mounts (one per agent) don't collide, and additionally on
+  // `instanceScope` when the caller shares an agent across mounts (see the
+  // prop doc — this is what keeps two voice relays independent). The
+  // playground gets a random suffix so two playground tabs are independent.
   const instanceId = useMemo(() => {
+    const scope = opts.instanceScope ? `:${opts.instanceScope}` : "";
     if (opts.preset === "intro" && opts.agentId) {
-      return `intro-${opts.agentId}`;
+      return `intro-${opts.agentId}${scope}`;
     }
-    if (opts.preset === "intro") return "intro";
+    if (opts.preset === "intro") return `intro${scope}`;
     return `playground-${Math.random().toString(36).slice(2, 8)}`;
     // Mount-once on (preset, agentId).
     // eslint-disable-next-line react-hooks/exhaustive-deps

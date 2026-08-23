@@ -233,7 +233,11 @@ export interface DigRuleStamp {
   last_evaluated_at: string | null;
   match_count: number | null;
   stamp_count: number;
+  /** When the SEGMENT was last worked out (the matcher's own run time) — not
+   *  when one keyword happened to join it. */
   as_of: string | null;
+  /** > 0 while a large first fill is still in progress. */
+  fill_remaining: number;
 }
 
 /** Every value this site's dig rules fill (optionally just one rule's). */
@@ -290,33 +294,37 @@ export async function removeDigRuleStamp(
   return { stamps_removed: Number(result?.stamps_removed ?? 0) };
 }
 
+export interface ConditionEvaluationResult {
+  matcher_id: string;
+  rule?: string;
+  dimension?: string;
+  value?: string;
+  /** Every keyword the rule matches — the whole segment, not a page of it. */
+  matched?: number;
+  stamped?: number;
+  removed?: number;
+  /** Still to stamp on a later pass. 0 = the segment is fully filled. */
+  remaining?: number;
+  complete?: boolean;
+  /** How many of them the Dig Here TABLE shows. Context, never a cap. */
+  table_row_limit?: number;
+  used_compare?: boolean;
+  error?: string;
+}
+
 export interface ConditionEvaluation {
   window: { start: string; end: string; compare_start: string; compare_end: string };
   matchers: number;
   stamped: number;
   removed: number;
-  /**
-   * C5b — TRUE when a rule matched more keywords than its own row limit let
-   * through, so the segment is a truncation. Never let this pass silently:
-   * a capped segment that reads as complete is worse than no segment.
-   */
-  limited: boolean;
+  /** > 0 means the fill did not finish (see `evaluateConditionMatchers`). */
+  remaining: number;
+  /** The knob the server bounded each pass by (`seo.situational_stamps`). */
+  writes_per_pass?: number;
+  /** How many round-trips this took. 1 for every segment measured so far. */
+  passes?: number;
   evaluated_at: string;
-  results: Array<{
-    matcher_id: string;
-    rule?: string;
-    dimension?: string;
-    value?: string;
-    /** Stamped this run (bounded by the rule's row limit). */
-    matched?: number;
-    /** Everything that PASSED the rule's conditions, before its row limit. */
-    matched_total?: number;
-    row_limit?: number;
-    limited?: boolean;
-    stamped?: number;
-    removed?: number;
-    error?: string;
-  }>;
+  results: ConditionEvaluationResult[];
 }
 
 /**
@@ -324,10 +332,21 @@ export interface ConditionEvaluation {
  * (deliberately) the site's whole situational set; the window defaults to the
  * site's current one server-side. THE SCOPE RULE lives in the RPC — it never
  * walks more than one window.
+ *
+ * ONE PRESS FINISHES THE JOB. The RPC bounds how much it writes per call
+ * (`seo.situational_stamps.writes_per_pass`, a knob) because the `authenticated`
+ * role's statement timeout is 8 seconds and stamp writes cost ~0.32 ms each —
+ * a first fill of the largest window in the fleet would not fit in one
+ * round-trip. It reports what is left instead of truncating, and this loop
+ * finishes it, so "remaining" is a fact about round-trips and never about what
+ * the segment holds. A steady-state re-evaluation writes nothing and returns
+ * in one pass.
  */
-export async function evaluateConditionMatchers(
+const MAX_EVALUATION_PASSES = 25;
+
+async function evaluateOnce(
   siteId: string,
-  scope: { matcherId?: string; dimensionId?: string } = {},
+  scope: { matcherId?: string; dimensionId?: string },
 ): Promise<ConditionEvaluation> {
   const response = await (await seoDb()).rpc("fn_evaluate_condition_matchers", {
     p_site_id: siteId,
@@ -339,4 +358,36 @@ export async function evaluateConditionMatchers(
     response.error,
     "re-evaluate these stamps",
   ) as unknown as ConditionEvaluation;
+}
+
+export async function evaluateConditionMatchers(
+  siteId: string,
+  scope: { matcherId?: string; dimensionId?: string } = {},
+): Promise<ConditionEvaluation> {
+  let total: ConditionEvaluation | null = null;
+  for (let pass = 1; pass <= MAX_EVALUATION_PASSES; pass += 1) {
+    const current = await evaluateOnce(siteId, scope);
+    total = total
+      ? {
+          // The latest pass describes the CURRENT state (matched, remaining,
+          // complete); the counts of work done accumulate across passes.
+          ...current,
+          stamped: total.stamped + current.stamped,
+          removed: total.removed + current.removed,
+          results: current.results.map((row) => {
+            const prior = total?.results.find((r) => r.matcher_id === row.matcher_id);
+            return {
+              ...row,
+              stamped: (prior?.stamped ?? 0) + (row.stamped ?? 0),
+              removed: (prior?.removed ?? 0) + (row.removed ?? 0),
+            };
+          }),
+        }
+      : current;
+    total.passes = pass;
+    if (current.remaining <= 0) return total;
+  }
+  // Past the pass ceiling the segment is genuinely still filling — say so
+  // rather than returning a number that reads as finished.
+  return total as ConditionEvaluation;
 }

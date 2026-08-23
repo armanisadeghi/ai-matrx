@@ -6,11 +6,12 @@
 // (the Communicator — Mandate `voice.communicator`) speaking FOR one primary
 // text agent (the brain — an ordinary execution-system conversation).
 //
-// Flow (THE ROUTING LAW; SoR: common-docs/systems/voice-communication-layer/
-// FEATURE.md):
+// Flow (THE ROUTING LAW; SoR: common-docs/systems/agents/voice/STATE.md):
 //   user speech  → transcript → setUserInputText + smartExecute on the
 //                  primary conversation (the voice model never auto-answers)
-//   brain busy   → one truthful narration cue after a short delay
+//   brain busy   → a MIRROR cue after a short delay: the Communicator reflects
+//                  back what it understood, never a canned holding line
+//                  (ruling 4). Real pipeline stages use narration instead.
 //   brain done   → the answer text is cued into the realtime session and the
 //                  Communicator speaks it, one question at a time, with the
 //                  question ledger injected so nothing is lost.
@@ -118,6 +119,10 @@ export function useVoiceRelaySession(
   const instanceId = useVoiceAgentInstance({
     preset: "intro",
     agentId: communicatorAgentId,
+    // Every relay runs the SAME Communicator agent, so the agent id alone
+    // cannot key the voice instance — scope it to the host surface or two
+    // relays on one page share a session. See the prop's own docs.
+    instanceScope: surfaceKey,
   });
   useRealtimeAgentConfig({
     instanceId,
@@ -126,19 +131,28 @@ export function useVoiceRelaySession(
   });
 
   // ── The brain: an ordinary execution-system conversation ────────────────
+  // 🚨 THE PIN GOES *INTO* THE LAUNCHER, not on top of its answer.
+  //
+  // Reading the pin only afterwards was a real duplicate-conversation bug: the
+  // managed launcher mints `focusedConversationId ?? generateConversationId()`,
+  // so whenever surface focus had not landed yet it created a SECOND
+  // conversation running the same brain — and took surface focus with it. The
+  // host column kept rendering the pinned conversation while everything that
+  // resolves by `surfaceKey` (new-run button, run window, `useSurfaceExecution`)
+  // pointed at the other one, and a spoken turn could stream into a
+  // conversation nobody was watching. Handing the id in makes the launcher
+  // ADOPT the host's conversation instead of competing with it.
   const { conversationId: launcherConversationId } = useAgentLauncher(
     primaryAgentId,
     {
       surfaceKey,
       sourceFeature,
+      conversationId: pinnedConversationId,
       config: { responseDensity: "compact" },
       // A voice session outliving a remount must keep its brain conversation.
       retainOnUnmount: true,
     },
   );
-  // A surface-pinned id ALWAYS wins over the launcher's focus-derived one —
-  // surface focus can briefly point at a retained prior conversation, and
-  // speech must never route to the wrong brain (Bugbot, PR #177).
   const conversationId = pinnedConversationId ?? launcherConversationId;
   const conversationIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -272,10 +286,15 @@ export function useVoiceRelaySession(
       // so the log resets for the next turn (drain fires onExchangeUpdated("")
       // which clears the context entry).
       controller.drainVoiceExchange();
-      // Rule 2b: one truthful narration cue if the turn takes a while.
+      // Ruling 4: the wait is MIRRORING, not filler. If the turn takes a
+      // while, the Communicator reflects back what it understood from the
+      // user's last message — reflective listening the speaker actually
+      // benefits from — rather than a canned holding line, which is the voice
+      // equivalent of a spinner. Real pipeline stages, when a surface has
+      // them, go through `speakNarration` instead.
       clearNarrationTimer();
       narrationTimerRef.current = setTimeout(() => {
-        controller.speakNarration("Passing that along — one moment.");
+        controller.speakMirror();
       }, NARRATION_DELAY_MS);
       return;
     }

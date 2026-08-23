@@ -4,7 +4,11 @@
 // one place makes the wire protocol changes a one-file diff.
 
 import type { RealtimeToolSet, VoiceId } from "../types";
-import { SAMPLE_RATE_HZ } from "../constants";
+import {
+  SAMPLE_RATE_HZ,
+  TURN_PREFIX_PADDING_MS,
+  TURN_SILENCE_MS,
+} from "../constants";
 
 export interface SessionUpdatePayload {
   voiceId: VoiceId;
@@ -19,6 +23,18 @@ export interface SessionUpdatePayload {
    * (omitted on the wire) — every non-relay surface keeps today's behavior.
    */
   createResponseOnTurn?: boolean;
+  /**
+   * How long the speaker may go quiet before server VAD calls the turn over,
+   * in milliseconds. See `TURN_SILENCE_MS` — the default is deliberately
+   * generous, because a person thinking out loud pauses mid-sentence and
+   * being cut off is the worst thing this surface can do.
+   */
+  turnSilenceMs?: number;
+  /**
+   * How much audio before speech onset is kept, in milliseconds. Guards the
+   * first syllable, which VAD otherwise clips.
+   */
+  turnPrefixPaddingMs?: number;
 }
 
 /**
@@ -52,10 +68,18 @@ export function buildSessionUpdate(payload: SessionUpdatePayload): string {
     session: {
       voice: payload.voiceId,
       instructions: payload.instructions,
-      turn_detection:
-        payload.createResponseOnTurn === false
-          ? { type: "server_vad", create_response: false }
-          : { type: "server_vad" },
+      // THE TURN IS THE SPEAKER'S TO END. `silence_duration_ms` is always sent
+      // — the provider default is short enough to cut a person off mid-thought,
+      // which is exactly what a slow, considered answer sounds like to VAD.
+      turn_detection: {
+        type: "server_vad",
+        silence_duration_ms: payload.turnSilenceMs ?? TURN_SILENCE_MS,
+        prefix_padding_ms:
+          payload.turnPrefixPaddingMs ?? TURN_PREFIX_PADDING_MS,
+        ...(payload.createResponseOnTurn === false
+          ? { create_response: false }
+          : {}),
+      },
       tools,
       input_audio_transcription: { model: "grok-2-audio" },
       audio: {

@@ -168,11 +168,10 @@ export function DigStampPanel({
       void queryClient.invalidateQueries({ queryKey: catalogKey });
       // Saving without evaluating would leave a segment that names nothing.
       const result = await mutations.evaluate.mutateAsync({ matcherId });
-      const first = result.results[0];
       toast.success(
         `Saved — ${result.stamped.toLocaleString()} keyword${result.stamped === 1 ? "" : "s"} stamped.` +
-          (first?.limited
-            ? ` ${first.matched_total?.toLocaleString()} matched — raise the rule's row limit to cover them all.`
+          (result.remaining > 0
+            ? ` ${result.remaining.toLocaleString()} still to go — press Re-evaluate to continue.`
             : ""),
       );
       reset();
@@ -187,11 +186,15 @@ export function DigStampPanel({
     try {
       const result = await mutations.evaluate.mutateAsync({ matcherId });
       const detail = result.results[0];
+      const stamped = detail?.stamped ?? 0;
+      const removed = detail?.removed ?? 0;
       toast.success(
-        `${label}: ${(detail?.stamped ?? 0).toLocaleString()} stamped, ${(detail?.removed ?? 0).toLocaleString()} released (${result.window.start} → ${result.window.end}).` +
-          (detail?.limited
-            ? ` Only ${detail.matched?.toLocaleString()} of ${detail.matched_total?.toLocaleString()} fit this rule's row limit.`
-            : ""),
+        stamped === 0 && removed === 0
+          ? `${label}: nothing changed — ${(detail?.matched ?? 0).toLocaleString()} keywords, ${result.window.start} → ${result.window.end}.`
+          : `${label}: ${stamped.toLocaleString()} stamped, ${removed.toLocaleString()} released (${result.window.start} → ${result.window.end}).` +
+              (result.remaining > 0
+                ? ` ${result.remaining.toLocaleString()} still to go.`
+                : ""),
       );
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -284,17 +287,18 @@ export function DigStampPanel({
         ) : null}
       </div>
 
-      {/* C5b — NO SILENT CAPS. A rule stamps exactly what its results table
-          shows, so a segment sitting on the rule's row limit is a truncation
-          and says so where the number is, not only in a toast that scrolled
-          away. Raising the limit is one click away in the rule editor. */}
-      {rows.some((row) => row.stamp_count >= rowLimit) ? (
+      {/* C5d — the segment holds EVERY keyword that matches; the table above
+          is a page of it, bounded by the rule's own row limit. Saying which
+          is which stops the row limit from ever reading as the segment's
+          size, which is exactly how it was misread before. */}
+      {rows.length > 0 ? (
+        <p className="text-[11px] text-muted-foreground">
+          {`A segment holds every keyword the rule matches. The table below shows the first ${rowLimit.toLocaleString()} of them — raise the rule's row limit to see more, which never changes what the segment holds.`}
+        </p>
+      ) : null}
+      {rows.some((row) => row.fill_remaining > 0) ? (
         <p className="text-[11px] text-warning">
-          This rule stamps at most {rowLimit.toLocaleString()} keywords — its
-          row limit — and it is holding that many. There are almost certainly
-          more that match. Edit the rule and raise its row limit (up to 1,000)
-          to cover them, or tighten the conditions so the segment means
-          something narrower.
+          Still filling — press Re-evaluate to continue.
         </p>
       ) : null}
 

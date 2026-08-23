@@ -6,7 +6,7 @@
 // line (narration), plus the open-question ledger. Pure functions —
 // unit-tested in __tests__/relayProtocol.test.ts.
 //
-// SoR: common-docs/systems/voice-communication-layer/FEATURE.md
+// SoR: common-docs/systems/agents/voice/STATE.md
 
 import type { DeliveryCueOptions } from "./types";
 
@@ -18,6 +18,7 @@ import type { DeliveryCueOptions } from "./types";
  */
 export const DELIVERY_CUE_PREFIX = "[cue:deliver]";
 export const NARRATION_CUE_PREFIX = "[cue:narrate]";
+export const MIRROR_CUE_PREFIX = "[cue:mirror]";
 
 export function buildDeliveryCueText(
   primaryAgentResponse: string,
@@ -36,6 +37,28 @@ export function buildDeliveryCueText(
     lines.push("--- open questions ---", opts.ledgerSummary.trim());
   }
   return lines.join("\n");
+}
+
+/**
+ * THE WAIT IS MIRRORING, NOT FILLER (Arman's ruling 4, 2026-08-17).
+ *
+ * While the brain works, the Communicator reflects back what it understood
+ * from what the user just said — reflective listening, which is genuinely
+ * useful to the speaker — instead of a canned holding line ("one moment"),
+ * which is the voice equivalent of a spinner.
+ *
+ * The cue deliberately carries NO content: the user's utterance is already in
+ * the Communicator's own realtime context, so telling it what to mirror would
+ * be a second, lossier copy. This is a directive, never a script.
+ */
+export function buildMirrorCueText(): string {
+  return (
+    `${MIRROR_CUE_PREFIX} The primary agent is still working on what the user ` +
+    `just said. Do NOT answer it, and do NOT guess what the answer will be. In ` +
+    `one or two short sentences, reflect back what you understood from their ` +
+    `last message so they know they were heard — then stop and wait for the ` +
+    `answer.`
+  );
 }
 
 export function buildNarrationCueText(narration: string): string {

@@ -83,7 +83,31 @@ interface ChatRoomClientProps {
   landingContent?:
     | React.ReactNode
     | ((conversationId: string) => React.ReactNode);
+  /**
+   * Optional control pinned directly ABOVE the composer, receiving this
+   * room's own conversation id. The voice route mounts its panel here so the
+   * voice layer binds to the SAME conversation the room already owns — a
+   * second launcher for the same agent would mean two conversations, and the
+   * user would watch one answer render in two places.
+   */
+  aboveInput?:
+    | React.ReactNode
+    | ((conversationId: string) => React.ReactNode);
+  /**
+   * Where this room promotes its URL once the conversation persists, and
+   * where fork/retry/delete navigate. Defaults to `/chat/<id>`.
+   *
+   * A sibling chat MODE (the voice route) passes its own builder so the
+   * promotion keeps the user in the mode they chose. Without it, sending the
+   * first message would replace the URL with the text route, unmount the
+   * mode's surface, and — for voice — silently end the session the user is
+   * mid-sentence in.
+   */
+  buildConversationHref?: (conversationId: string) => string;
 }
+
+const defaultConversationHref = (conversationId: string) =>
+  `/chat/${conversationId}`;
 
 const SOURCE_FEATURE = "chat";
 const CHAT_INITIAL_MESSAGE_LIMIT = 12;
@@ -106,6 +130,8 @@ export function ChatRoomClient({
   agentId,
   conversationId: conversationIdProp,
   landingContent,
+  aboveInput,
+  buildConversationHref = defaultConversationHref,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -241,9 +267,9 @@ export function ChatRoomClient({
   const pendingNavigation = useAppSelector(selectPendingNavigation(surfaceKey));
   useEffect(() => {
     if (!pendingNavigation) return;
-    router.replace(`/chat/${pendingNavigation.conversationId}`);
+    router.replace(buildConversationHref(pendingNavigation.conversationId));
     dispatch(clearPendingNavigation({ surfaceKey }));
-  }, [pendingNavigation, router, dispatch, surfaceKey]);
+  }, [pendingNavigation, router, dispatch, surfaceKey, buildConversationHref]);
 
   // ── Draft transfer from /chat/new chip click ────────────────────────────
   // When a chip on /chat/new is clicked, the source page stashes the user's
@@ -347,14 +373,21 @@ export function ChatRoomClient({
         null;
       if (focusNow !== target) return;
       promotedRef.current = target;
-      router.replace(`/chat/${target}`);
+      router.replace(buildConversationHref(target));
     })();
 
     return () => {
       ctrl.abort();
       if (promotionWaitRef.current === target) promotionWaitRef.current = null;
     };
-  }, [readyToPromote, liveConversationId, router, store, surfaceKey]);
+  }, [
+    readyToPromote,
+    liveConversationId,
+    router,
+    store,
+    surfaceKey,
+    buildConversationHref,
+  ]);
 
   // ── Single source of truth ───────────────────────────────────────────────
   // Prop wins when present (loading existing). Otherwise launcher's id wins.
@@ -603,6 +636,11 @@ export function ChatRoomClient({
               typeof landingContent === "function"
                 ? landingContent(conversationId)
                 : landingContent
+            }
+            aboveInput={
+              typeof aboveInput === "function"
+                ? aboveInput(conversationId)
+                : aboveInput
             }
           />
         </div>

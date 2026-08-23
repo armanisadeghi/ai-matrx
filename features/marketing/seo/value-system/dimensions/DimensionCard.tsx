@@ -387,7 +387,9 @@ export function DimensionCard({
                   {
                     onSuccess: (result) => {
                       toast.success(
-                        `${dimension.label}: ${result.stamped.toLocaleString()} stamped, ${result.removed.toLocaleString()} released (${result.window.start} → ${result.window.end}).`,
+                        result.stamped === 0 && result.removed === 0
+                          ? `${dimension.label}: already up to date (${result.window.start} → ${result.window.end}).`
+                          : `${dimension.label}: ${result.stamped.toLocaleString()} stamped, ${result.removed.toLocaleString()} released (${result.window.start} → ${result.window.end}).`,
                       );
                       onSaved();
                     },
