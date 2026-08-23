@@ -73,39 +73,39 @@ function GalleryWindowInner({ onClose }: { onClose: () => void }) {
         onClick={() => onViewModeChange("masonry")}
         title="Masonry view"
         className={cn(
-          "p-1 rounded-md transition-colors",
+          "p-1 max-sm:min-h-11 max-sm:min-w-11 max-sm:flex max-sm:items-center max-sm:justify-center rounded-md transition-colors",
           viewMode === "masonry"
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
         )}
       >
-        <Columns2 className="w-3 h-3" />
+        <Columns2 className="w-3 h-3 max-sm:w-5 max-sm:h-5" />
       </button>
       <button
         type="button"
         onClick={() => onViewModeChange("grid")}
         title="Grid view"
         className={cn(
-          "p-1 rounded-md transition-colors",
+          "p-1 max-sm:min-h-11 max-sm:min-w-11 max-sm:flex max-sm:items-center max-sm:justify-center rounded-md transition-colors",
           viewMode === "grid"
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
         )}
       >
-        <LayoutGrid className="w-3 h-3" />
+        <LayoutGrid className="w-3 h-3 max-sm:w-5 max-sm:h-5" />
       </button>
       <button
         type="button"
         onClick={() => onViewModeChange("compact")}
         title="Compact view"
         className={cn(
-          "p-1 rounded-md transition-colors",
+          "p-1 max-sm:min-h-11 max-sm:min-w-11 max-sm:flex max-sm:items-center max-sm:justify-center rounded-md transition-colors",
           viewMode === "compact"
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
         )}
       >
-        <Grid3X3 className="w-3 h-3" />
+        <Grid3X3 className="w-3 h-3 max-sm:w-5 max-sm:h-5" />
       </button>
     </div>
   );
