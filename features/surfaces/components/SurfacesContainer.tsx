@@ -62,6 +62,7 @@ import { READINESS_META } from "@/features/surfaces/components/SurfaceReadinessB
 import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registry";
 import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates";
 import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
+import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
 
 export function SurfacesContainer() {
   const router = useRouter();
@@ -163,6 +164,12 @@ export function SurfacesContainer() {
       if (
         filters.readiness !== "all" &&
         readinessBucketOf(s) !== filters.readiness
+      ) {
+        return false;
+      }
+      if (
+        filters.checked !== "all" &&
+        surfaceCheckState(s) !== filters.checked
       ) {
         return false;
       }

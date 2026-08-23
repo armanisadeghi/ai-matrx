@@ -29,6 +29,11 @@ import {
 import { SurfaceReadinessBadge } from "@/features/surfaces/components/SurfaceReadinessBadge";
 import { cn } from "@/lib/utils";
 import {
+  checkAgeLabel,
+  checkSortWeight,
+  surfaceCheckState,
+} from "@/features/surfaces/utils/surface-check-ledger";
+import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 
@@ -42,6 +47,7 @@ type SortKey =
   | "agentCount"
   | "toolCount"
   | "readiness"
+  | "lastChecked"
   | "is_active";
 
 /** Sort weight so readiness orders verified → partial → stub → unregistered. */
@@ -128,6 +134,13 @@ export function SurfacesTable({
   const sorted = useMemo(() => {
     const out = [...rows];
     out.sort((a, b) => {
+      if (sortKey === "lastChecked") {
+        // never-checked first, then oldest — the dispatch order IS the work order.
+        const aw = checkSortWeight(a);
+        const bw = checkSortWeight(b);
+        const sign = sortDir === "asc" ? 1 : -1;
+        return sign * (aw === bw ? a.name.localeCompare(b.name) : aw - bw);
+      }
       if (sortKey === "readiness") {
         const aw = READINESS_SORT_WEIGHT[readinessBucketOf(a)];
         const bw = READINESS_SORT_WEIGHT[readinessBucketOf(b)];
@@ -243,6 +256,15 @@ export function SurfacesTable({
               </th>
               <th className={headerClass}>
                 <SortHeader
+                  label="Checked"
+                  active={sortKey === "lastChecked"}
+                  dir={sortDir}
+                  onClick={() => handleSort("lastChecked")}
+                  align="center"
+                />
+              </th>
+              <th className={headerClass}>
+                <SortHeader
                   label="Active"
                   active={sortKey === "is_active"}
                   dir={sortDir}
@@ -257,7 +279,7 @@ export function SurfacesTable({
             {isLoading && sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={12}
                   className="px-3 py-6 text-center text-muted-foreground"
                 >
                   Loading surfaces…
@@ -267,7 +289,7 @@ export function SurfacesTable({
             {!isLoading && sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={12}
                   className="px-3 py-6 text-center text-muted-foreground"
                 >
                   No surfaces match these filters.
@@ -399,6 +421,32 @@ export function SurfacesTable({
                   </td>
                   <td className={`${cellClass} text-center`}>
                     <SurfaceReadinessBadge row={row} />
+                  </td>
+                  <td className={`${cellClass} text-center`}>
+                    {(() => {
+                      const state = surfaceCheckState(row);
+                      const label = checkAgeLabel(row);
+                      const title = row.last_checked_at
+                        ? `Full UI surface check completed ${new Date(row.last_checked_at).toLocaleString()}${row.last_checked_by ? ` by ${row.last_checked_by}` : ""}`
+                        : "The full UI surface check has never completed on this surface";
+                      return (
+                        <Badge
+                          variant="outline"
+                          title={title}
+                          className={cn(
+                            "text-[10px]",
+                            state === "never" &&
+                              "bg-muted text-muted-foreground border-border",
+                            state === "stale" &&
+                              "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+                            state === "fresh" &&
+                              "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
+                          )}
+                        >
+                          {label}
+                        </Badge>
+                      );
+                    })()}
                   </td>
                   <td className={`${cellClass} text-center`}>
                     {row.is_active ? (

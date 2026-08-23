@@ -31,6 +31,8 @@ import type { SurfaceReadinessBucket } from "@/features/surfaces/services/surfac
 export type StatusFilter = "all" | "active" | "inactive";
 export type ManifestFilter = "all" | "with_manifest" | "without_manifest";
 export type ReadinessFilter = SurfaceReadinessBucket | "all";
+/** THE UI SURFACE CHECKLIST ledger filter — the dispatch queue. */
+export type CheckedFilter = "all" | "never" | "stale" | "fresh";
 
 export interface SurfacesFilterState {
   search: string;
@@ -41,6 +43,8 @@ export interface SurfacesFilterState {
   parent: string;
   /** Readiness bucket, driven by the rollup tiles above the filter bar. */
   readiness: ReadinessFilter;
+  /** Last completed full surface check (see surface-check-ledger). */
+  checked: CheckedFilter;
 }
 
 export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
@@ -50,6 +54,7 @@ export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
   manifest: "all",
   parent: "__all__",
   readiness: "all",
+  checked: "all",
 };
 
 interface Props {
@@ -218,6 +223,24 @@ export function SurfacesFilterBar({
           <SelectItem value="all">All status</SelectItem>
           <SelectItem value="active">Active only</SelectItem>
           <SelectItem value="inactive">Inactive only</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={state.checked}
+        onValueChange={(v) => onChange({ checked: v as CheckedFilter })}
+      >
+        <SelectTrigger
+          className="h-7 w-[150px] text-xs"
+          title="Last completed full UI surface check (.claude/skills/surface-check)"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Any check age</SelectItem>
+          <SelectItem value="never">Never checked</SelectItem>
+          <SelectItem value="stale">Check is stale</SelectItem>
+          <SelectItem value="fresh">Recently checked</SelectItem>
         </SelectContent>
       </Select>
 
