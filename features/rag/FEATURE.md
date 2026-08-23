@@ -174,7 +174,7 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 **Backend (aidream):** the ACL branch + `can_read_data_store` + grants-aware `list_data_stores`/`get_data_store` + the `run_ner` profile + `services/knowledge/library_grants.py`. DB: migrations `0116`–`0119`, then `0162`/`0163` (the `rag.fn_*` direct-read family that replaced the FE's HTTP hops). The `/knowledge/data-stores/{id}/grants` + `/knowledge/library-catalog` HTTP endpoints still exist for non-Supabase clients (extension/external), but **the FE no longer calls them** — do not "restore" them into FE code.
 
-**Guardrail:** library publishing is the ownership-asymmetry model — READ via `rag.data_store_grants`, WRITE via store ownership. `data_store` is in `shareable_resource_registry` only so Relationship Manager / reachability recognize it as a conveying container (`rls_uses_has_permission=false`, `is_link_shareable=false`). Do **NOT** wire `ShareButton` / `useSharing` / `iam.permissions` for data stores — use `DataStorePublishPanel`. See [`features/sharing/FEATURE.md`](../sharing/FEATURE.md).
+**Guardrail:** library publishing is the ownership-asymmetry model — READ via `rag.data_store_grants`, WRITE via store ownership. `data_store` is in `shareable_resource_registry` only so Relationship Manager / reachability recognize it as a conveying container (`rls_uses_has_permission=false`, `is_link_shareable=false`). Do **NOT** wire `ShareButton` / `useSharing` / `iam.permissions` for data stores — use `LibraryPublishPanel`. See [`features/sharing/FEATURE.md`](../sharing/FEATURE.md).
 
 ---
 

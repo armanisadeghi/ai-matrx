@@ -42,7 +42,7 @@ Migrations: `aidream/db/migrations/0116_industries_taxonomy.sql` (+ `0118` RPCs,
 - `hooks.ts` — `useIndustries()`, `useOrgIndustries(orgId)` (+ `assign`/`unassign`).
 - `components/OrgIndustriesSection.tsx` — manage one org's memberships; rendered in `features/organizations/components/OrgManage.tsx`. Org owner/admin (or Matrx super-admin) edits; members see read-only.
 
-Consumed by the RAG publish panel (`features/rag/components/data-stores/DataStorePublishPanel.tsx`) for the industry audience picker.
+Consumed by the Library publish panel (`features/rag/components/library/LibraryPublishPanel.tsx` — generic over every Library entity type since 2026-08-22) for the industry audience picker.
 
 ## Doctrine
 

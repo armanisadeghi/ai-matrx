@@ -415,7 +415,7 @@ export const ragDataStoresManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge-data-stores",
   readiness: "partial",
   readinessNote:
-    "Manifest authored against the live /knowledge/data-stores component and the emitter is wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. The publish panel's per-audience grant rows stay undeclared — they load inside DataStorePublishPanel and nothing lifts them to the route.",
+    "Manifest authored against the live /knowledge/data-stores component and the emitter is wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. The publish panel's per-audience grant rows stay undeclared — they load inside LibraryPublishPanel and nothing lifts them to the route.",
   label: "Knowledge Data Stores",
   urlPattern: "/knowledge/data-stores",
   intro: `<surface_intro>

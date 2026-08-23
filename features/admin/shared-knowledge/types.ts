@@ -4,7 +4,7 @@
 // (/administration/shared-knowledge) — the super-admin issuance cockpit for
 // industry taxonomy, library stores/grants, curation ingest, and the access
 // explorer. Server-loaded directory shapes only; grant/industry wire shapes
-// live with their owning hooks (`useDataStoreGrants`, `features/industries`).
+// live with their owning hooks (`useLibraryGrants`, `features/industries`).
 
 import type {
   AdminOrganizationMembershipRow,

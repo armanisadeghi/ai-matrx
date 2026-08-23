@@ -89,7 +89,7 @@ Today the resolver emits a dataset *descriptor* (name + `data_store_id` + "use k
 ### 8. Class 2 / Class 3 authoring polish
 
 - **Class 2 (curated globals)** — stored values refreshed by the scheduler (covered by #1–#3).
-- **Class 3 (industry datasets)** — the publish-to-industry flow (`rag.data_store_grants`) already exists at `/rag/data-stores` (`DataStorePublishPanel`). Consider surfacing "publish a new dataset to an industry" inline from the System Context dataset picker (reuse `useDataStoreGrants`), so creating + publishing + linking is one flow.
+- **Class 3 (industry datasets)** — the publish-to-industry flow (`rag.data_store_grants`) already exists at `/rag/data-stores` (`LibraryPublishPanel` (generic over platform.entity_grants since 2026-08-22)). Consider surfacing "publish a new dataset to an industry" inline from the System Context dataset picker (reuse `useDataStoreGrants`), so creating + publishing + linking is one flow.
 
 ---
 

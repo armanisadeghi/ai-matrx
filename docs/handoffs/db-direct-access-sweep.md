@@ -76,7 +76,7 @@ per this campaign's own findings, an extra unaudited surface.
   `0161_rag_data_stores_direct_client_access.sql`). Fixed a live critical `p_actor` impersonation
   hole in `rag.library_grant_publish/_revoke/_subscribe/_unsubscribe` in passing (D31).
 - `rag/library` list + summary — `useLibrary.ts` on `public.rag_library_*`.
-- Data-store grants — `useDataStoreGrants.ts` on `rag` RPCs.
+- Library grants (data stores, starter packs) — `useLibraryGrants.ts` on the generic `public.library_*` RPCs (2026-08-22; was `useDataStoreGrants.ts` on `rag` RPCs).
 - Library catalog + subscribe/unsubscribe — `useLibraryCatalog.ts` on `rag` RPCs.
 - Data-store candidates — `dataStoreCandidates.ts` on `rag.fn_list_user_data_stores`.
 - Repositories listing — `RepositoriesPage.tsx` on a `code` RPC (the `/index` POST correctly
