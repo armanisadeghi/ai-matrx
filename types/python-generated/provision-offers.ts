@@ -909,7 +909,6 @@ export interface MasterworkApproachSelectOffer {
   total_approved: number;
   total_live: number;
   moves_ledger: unknown;
-  move_menu: string[];
 }
 
 /** Offered shape of provision `masterwork.audition_judgment` (kind `masterwork.audition_judgment.offer`). */
