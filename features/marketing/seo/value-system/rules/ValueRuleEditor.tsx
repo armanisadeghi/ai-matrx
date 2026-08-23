@@ -64,7 +64,10 @@ import {
   type ValueRuleDraft,
 } from "@/features/marketing/search-console/data-class-rules";
 import type { BandMeta } from "../lib";
-import type { ValueRule } from "../types";
+import { ProvenanceStrip } from "../ProvenanceStrip";
+import type { ValueRule,
+  EditorProvenance,
+} from "../types";
 import { ImpactPanel } from "./ImpactPanel";
 import {
   listFacetDimensions,
@@ -160,6 +163,7 @@ export function ValueRuleEditor({
   windowLabel,
   bandMetas,
   rule,
+  provenance,
   onClose,
 }: {
   siteId: string;
@@ -169,6 +173,8 @@ export function ValueRuleEditor({
   bandMetas: BandMeta[];
   /** null = creating a new rule. */
   rule: ValueRule | null;
+  /** Set when this rule was adopted from an industry pack (see ProvenanceStrip). */
+  provenance?: EditorProvenance;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -320,6 +326,10 @@ export function ValueRuleEditor({
             nothing here is a platform default.
           </DialogDescription>
         </DialogHeader>
+
+        {provenance ? (
+          <ProvenanceStrip provenance={provenance} onReverted={onClose} />
+        ) : null}
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           {/* ── The rule ── */}

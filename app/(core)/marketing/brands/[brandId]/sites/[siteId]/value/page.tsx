@@ -11,7 +11,7 @@ import { ValueWorkbench } from "@/features/marketing/seo/value-system/workbench/
  * were grafted into it, and A/B/D were deleted. `./a` `./b` `./c` `./d` now
  * redirect here so every bookmark still lands somewhere true.
  *
- * The rest of the family — Dimensions, Rules & Geo, Topics, Starter Packs —
+ * The rest of the family — Dimensions, Rulebook, Topics, Industry packs —
  * sits beside this route and is reachable from the site header's sub-nav,
  * declared in `features/marketing/lib/site-subviews.ts`.
  */

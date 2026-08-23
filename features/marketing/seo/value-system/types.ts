@@ -358,6 +358,25 @@ export interface StarterPackStatusItem {
   sort: number;
 }
 
+/**
+ * What an EDITOR shows about the row it is editing when that row came from a
+ * pack: the pack's own values beside the site's, and the one-click revert.
+ * Built by the Rulebook from `starter_pack_site_status`; the editor renders
+ * it and calls `onRevert` — it never re-derives provenance itself.
+ */
+export interface EditorProvenance {
+  packId: string;
+  packName: string;
+  packSlug: string;
+  state: PackItemState;
+  /** One line: what the pack proposes for this row ("×0.1 · the word “crt”"). */
+  packSummary: string;
+  /** One line: what the site has now. */
+  siteSummary: string;
+  /** Puts the row back to the pack's values through the ONE adoption write. */
+  onRevert: () => Promise<void>;
+}
+
 export interface StarterPackStatusCounts {
   total: number;
   missing: number;

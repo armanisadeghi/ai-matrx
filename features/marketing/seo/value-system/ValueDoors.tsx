@@ -6,7 +6,7 @@
  *
  * WHY THEY ARE NOT SUB-VIEWS. The site header's sub-nav (registered in
  * `site-subviews.ts`) lists the five surfaces that ARE this section:
- * Workbench · Dimensions · Rules & Geo · Topics · Starter Packs. These two are
+ * Workbench · Dimensions · Rulebook · Topics · Industry packs. These two are
  * somewhere else entirely and must keep their real homes:
  *
  *  • BUSINESS GUIDELINES — the prose doctrine every AI run for this site reads

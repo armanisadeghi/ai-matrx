@@ -61,8 +61,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { getValueVocabulary } from "../data";
-import type { SiteGeoArea } from "../types";
+import type { SiteGeoArea,
+  EditorProvenance,
+} from "../types";
 import type { BandMeta } from "../lib";
+import { ProvenanceStrip } from "../ProvenanceStrip";
 import { ImpactPanel } from "./ImpactPanel";
 import {
   archiveGeoArea,
@@ -145,6 +148,7 @@ export function GeoAreaEditor({
   windowLabel,
   bandMetas,
   area,
+  provenance,
   onClose,
 }: {
   siteId: string;
@@ -154,6 +158,8 @@ export function GeoAreaEditor({
   bandMetas: BandMeta[];
   /** null = creating a new area. */
   area: SiteGeoArea | null;
+  /** Set when this area was adopted from an industry pack (see ProvenanceStrip). */
+  provenance?: EditorProvenance;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -309,6 +315,10 @@ export function GeoAreaEditor({
             place you never serve beats a place you love, on the same query.
           </DialogDescription>
         </DialogHeader>
+
+        {provenance ? (
+          <ProvenanceStrip provenance={provenance} onReverted={onClose} />
+        ) : null}
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           <div className="min-h-0 space-y-3 overflow-y-auto border-border p-4 scrollbar-thin md:border-r">

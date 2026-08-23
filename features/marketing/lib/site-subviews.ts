@@ -167,9 +167,9 @@ export const MARKETING_SITE_SUBVIEWS = [
     views: [
       { id: "workbench", label: "Workbench" },
       { id: "dimensions", label: "Dimensions" },
-      { id: "rules", label: "Rules & Geo" },
+      { id: "rules", label: "Rulebook" },
       { id: "topics", label: "Topics" },
-      { id: "packs", label: "Starter Packs" },
+      { id: "packs", label: "Industry packs" },
     ],
     hrefStyle: "path",
   },

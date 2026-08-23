@@ -60,7 +60,8 @@ import type {
   ValueRule,
   VocabKind,
 } from "../types";
-import { areaNeedsPlaces, humanizeSlug, type BandMeta } from "../lib";
+import { areaNeedsPlaces, humanizeSlug, rowOrigin, type BandMeta } from "../lib";
+import { SourceChip } from "../SourceChip";
 
 function SectionHeader({
   icon: Icon,
@@ -429,15 +430,23 @@ export function MeaningPanel({
                   <span className="min-w-0 truncate font-medium text-foreground">
                     {rule.name}
                   </span>
-                  <span
-                    className={cn(
-                      "shrink-0 tabular-nums font-semibold",
-                      (rule.value_multiplier ?? 1) < 1
-                        ? "text-warning"
-                        : "text-success",
-                    )}
-                  >
-                    ×{rule.value_multiplier}
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    {rowOrigin(rule.metadata) === "pack" ? (
+                      <SourceChip
+                        state="pack"
+                        packName={humanizeSlug(rule.metadata.adopted_from_pack ?? "")}
+                      />
+                    ) : null}
+                    <span
+                      className={cn(
+                        "shrink-0 tabular-nums font-semibold",
+                        (rule.value_multiplier ?? 1) < 1
+                          ? "text-warning"
+                          : "text-success",
+                      )}
+                    >
+                      ×{rule.value_multiplier}
+                    </span>
                   </span>
                 </p>
                 <p className="text-[10px] text-muted-foreground">
@@ -540,6 +549,13 @@ export function MeaningPanel({
                       ({humanizeSlug(area.area_kind).toLowerCase()}) →{" "}
                       {humanizeSlug(area.geo_band)}
                     </span>
+                    {rowOrigin(area.metadata) === "pack" ? (
+                      <SourceChip
+                        state="pack"
+                        packName={humanizeSlug(area.metadata.adopted_from_pack ?? "")}
+                        className="ml-1.5 align-middle"
+                      />
+                    ) : null}
                     {areaNeedsPlaces(area) ? (
                       <span className="block text-[10px] text-warning">
                         No places yet — this area matches nothing. Add them and

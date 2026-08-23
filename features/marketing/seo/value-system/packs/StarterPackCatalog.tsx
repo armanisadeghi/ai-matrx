@@ -1,71 +1,84 @@
 "use client";
 
 /**
- * Industry starter packs — browse a pack, read exactly what adopting it will
- * write, and adopt it onto this site.
+ * INDUSTRY PACKS — the user side of platform defaults (P13), rebuilt 2026-08-22.
  *
- * A pack is DATA (D36): template rows for topic worth, qualifier/value rules,
- * and the site's band vocabularies, proposed from the real search demand of
- * several sample sites in that industry. Adoption is a copy-insert through ONE
- * RPC — additive, idempotent, and it never overwrites a ruling the site has
- * already made. Everything it writes is a starting position the expert edits.
+ * Arman on the previous screen: "the UI for this is so horrible that it would
+ * be impossible for me to even be able to actually read and understand these."
+ * It printed every row's rationale paragraph and nothing about THIS site; a
+ * pack adopted yesterday still said "Adopt onto this site".
  *
- * Nothing here is a mystery on purpose: every row shows the rationale it was
- * proposed with, because a value the business cannot argue with is worthless
- * to it (value-system.md, law 3).
+ * Now three states on one URL, one job each:
+ *   • NOT ADOPTED — pack cards, the org's own industries first (server-ordered
+ *     by `org_match`), everything else under "Other industries". One primary
+ *     action per pack: PREVIEW ON YOUR DATA.
+ *   • REVIEW (`?pack=<id>&review=1`, ./PackReview) — the pull-request screen:
+ *     server-measured numbers on your own keywords, one sentence per item, a
+ *     checkbox per item, select all / none, ONE write (`adopt_starter_pack`).
+ *   • ADOPTED — the card is a RECEIPT (`starter_pack_site_adoptions`): when,
+ *     by whom, how many items still say what the pack says, how many you
+ *     changed or archived, how many you never took; with the three doors —
+ *     see them in the Rulebook, take what's missing, reset to pack.
+ *
+ * Rulings honoured (Arman, 2026-08-22): per-item pick · two re-apply buttons ·
+ * one-click "review & accept" banner for a new site · industry-first ordering ·
+ * and over all of it, individual AND all controls, nothing forced.
  */
 
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck,
-  BookOpenCheck,
   Boxes,
+  ChevronDown,
+  ChevronRight,
   Download,
+  Eye,
   Layers,
   ListChecks,
   MapPinned,
+  RotateCcw,
+  Settings2,
   TreePine,
   TriangleAlert,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { extractErrorMessage } from "@/utils/errors";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
-  adoptStarterPack,
+  getStarterPackAdoptions,
   getStarterPackCatalog,
   getStarterPackDetail,
+  getStarterPackSiteStatus,
   listGeoAreas,
+  starterPackAdoptionsQueryKey,
   starterPackCatalogQueryKey,
   starterPackDetailQueryKey,
+  starterPackStatusQueryKey,
 } from "../data";
 import { geoAreasQueryKey } from "../rules/data";
-import { areaNeedsPlaces, incompleteAreasHref } from "../lib";
-import { GeoPlacesStep, type GeoPlacesDraft } from "./GeoPlacesStep";
-import type {
-  StarterPackBandItem,
-  StarterPackDetail,
-  StarterPackRuleItem,
-  StarterPackSummary,
-  StarterPackTopicItem,
-} from "../types";
+import { areaNeedsPlaces, incompleteAreasHref, packReviewHref, rulebookSourceHref } from "../lib";
+import type { StarterPackAdoption, StarterPackSummary } from "../types";
+import { PackReview } from "./PackReview";
+import { ReadyDefaultsBanner } from "./ReadyDefaultsBanner";
+import { ResetToPackDialog } from "./ResetToPackDialog";
 
 const STATUS_META: Record<string, { label: string; hint: string; tone: string }> = {
   ratified: {
-    label: "Ratified",
+    label: "Expert-ratified",
     hint: "A domain expert has signed off on these defaults.",
-    tone: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    tone: "border-success/40 bg-success/10 text-success",
   },
   proposed: {
     label: "Proposed",
     hint: "Built from real demand, awaiting expert ratification. Safe to adopt — every row is editable.",
-    tone: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    tone: "border-warning/40 bg-warning/10 text-warning",
   },
   draft: {
     label: "Draft",
@@ -80,36 +93,17 @@ const STATUS_META: Record<string, { label: string; hint: string; tone: string }>
 };
 
 const GEO_MODEL_LABEL: Record<string, string> = {
-  local_radius: "Serves a driving radius",
-  metro: "Serves one metro",
-  regional: "Serves a region",
-  national: "Serves the whole country",
-  global: "Serves anywhere",
+  local_radius: "serves a driving radius",
+  metro: "serves one metro",
+  regional: "serves a region",
+  national: "serves the whole country",
+  global: "serves anywhere",
 };
 
-function multiplierTone(multiplier: number | null) {
-  if (multiplier === null) return "text-muted-foreground";
-  if (multiplier > 1) return "text-emerald-600 dark:text-emerald-400";
-  if (multiplier < 1) return "text-red-600 dark:text-red-400";
-  return "text-muted-foreground";
-}
-
-function ruleMatchText(rule: StarterPackRuleItem) {
-  if (rule.match_facet)
-    return `${rule.match_facet.replace(/_/g, " ")} is ${rule.match_facet_value}`;
-  if (!rule.pattern) return "—";
-  const kind = rule.match_kind ?? "contains";
-  const readable =
-    kind === "word"
-      ? "the word"
-      : kind === "exact"
-        ? "exactly"
-        : kind === "starts_with"
-          ? "starts with"
-          : kind === "ends_with"
-            ? "ends with"
-            : "contains";
-  return `${readable} "${rule.pattern}"`;
+function formatWhen(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
 function Stat({
@@ -122,20 +116,57 @@ function Stat({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <Icon className="size-3.5" aria-hidden />
-      <span className="font-medium text-foreground">{count}</span>
+    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+      <Icon className="size-3" aria-hidden />
+      <span className="font-medium tabular-nums text-foreground">{count}</span>
       {label}
     </span>
   );
 }
 
+/** Receipt counts, as chips. Every number is the server's. */
+function ReceiptCounts({ a }: { a: StarterPackAdoption }) {
+  const taken = a.total - a.missing;
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] text-info">
+        {a.as_adopted} as adopted
+      </span>
+      {a.changed > 0 ? (
+        <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+          {a.changed} changed by you
+        </span>
+      ) : null}
+      {a.archived > 0 ? (
+        <span className="rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          {a.archived} archived by you
+        </span>
+      ) : null}
+      {a.missing > 0 ? (
+        <span className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          {a.missing} not taken
+        </span>
+      ) : null}
+      {a.places_pending > 0 ? (
+        <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
+          {a.places_pending} area{a.places_pending === 1 ? "" : "s"} need places
+        </span>
+      ) : null}
+      <span className="text-[10px] text-muted-foreground">
+        · {taken} of {a.total} items on this site
+      </span>
+    </div>
+  );
+}
+
 function PackCard({
   pack,
+  adoption,
   selected,
   onSelect,
 }: {
   pack: StarterPackSummary;
+  adoption: StarterPackAdoption | undefined;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -147,173 +178,43 @@ function PackCard({
       aria-pressed={selected}
       className={cn(
         "w-full rounded-lg border p-3 text-left transition-colors",
-        selected
-          ? "border-primary/50 bg-primary/5"
-          : "border-border bg-card hover:bg-muted/50",
+        selected ? "border-primary/50 bg-primary/5" : "border-border bg-card hover:bg-muted/50",
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-foreground">{pack.name}</p>
-        <Badge variant="outline" className={cn("shrink-0 text-[10px]", status.tone)}>
-          {status.label}
-        </Badge>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {adoption ? (
+            <Badge
+              variant="outline"
+              className="border-info/40 bg-info/10 text-[10px] text-info"
+              title={`Adopted ${formatWhen(adoption.adopted_at)}${adoption.adopted_by_label ? ` by ${adoption.adopted_by_label}` : ""}`}
+            >
+              <BadgeCheck className="mr-0.5 size-3" aria-hidden />
+              Adopted
+            </Badge>
+          ) : null}
+          <Badge variant="outline" className={cn("text-[10px]", status.tone)} title={status.hint}>
+            {status.label}
+          </Badge>
+        </div>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{pack.industry}</p>
-      {pack.summary ? (
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          {pack.summary}
-        </p>
-      ) : null}
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Stat icon={TreePine} count={pack.topic_count} label="topics" />
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        {pack.industry_name ?? pack.industry}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <Stat icon={ListChecks} count={pack.rule_count} label="rules" />
-        <Stat icon={Layers} count={pack.value_band_count} label="bands" />
-        <Stat icon={MapPinned} count={pack.geo_band_count} label="geo bands" />
+        <Stat icon={TreePine} count={pack.topic_count} label="topics" />
+        <Stat icon={Layers} count={pack.value_band_count + pack.geo_band_count} label="bands" />
+        <Stat icon={MapPinned} count={pack.geo_area_count} label="areas" />
       </div>
     </button>
   );
 }
 
-function TopicRows({ topics }: { topics: StarterPackTopicItem[] }) {
-  if (!topics.length)
-    return <p className="text-xs text-muted-foreground">This pack proposes no topic worth.</p>;
-  return (
-    <ul className="space-y-2">
-      {topics.map((topic) => (
-        <li key={topic.item_id} className="rounded-md border border-border bg-card p-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-foreground">{topic.name}</span>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              weight {topic.weight ?? "—"}
-            </span>
-          </div>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {topic.service_match ? (
-              <Badge variant="outline" className="text-[10px]">
-                {topic.service_match.replace(/_/g, " ")}
-              </Badge>
-            ) : null}
-            {topic.lead_quality ? (
-              <Badge variant="outline" className="text-[10px]">
-                {topic.lead_quality.replace(/_/g, " ")}
-              </Badge>
-            ) : null}
-          </div>
-          {topic.notes ? (
-            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-              {topic.notes}
-            </p>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function RuleRows({ rules }: { rules: StarterPackRuleItem[] }) {
-  if (!rules.length)
-    return <p className="text-xs text-muted-foreground">This pack proposes no rules.</p>;
-  return (
-    <ul className="space-y-2">
-      {rules.map((rule) => (
-        <li key={rule.rule_id} className="rounded-md border border-border bg-card p-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-foreground">{rule.name}</span>
-            <span
-              className={cn(
-                "shrink-0 text-xs font-semibold tabular-nums",
-                multiplierTone(rule.value_multiplier),
-              )}
-            >
-              ×{rule.value_multiplier ?? 1}
-            </span>
-          </div>
-          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-            {ruleMatchText(rule)}
-            {rule.target_class ? ` → ${rule.target_class}` : ""}
-          </p>
-          {rule.notes ? (
-            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-              {rule.notes}
-            </p>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function BandRows({ bands, kind }: { bands: StarterPackBandItem[]; kind: "value" | "geo" }) {
-  if (!bands.length)
-    return <p className="text-xs text-muted-foreground">Uses the platform defaults.</p>;
-  return (
-    <ul className="space-y-1.5">
-      {bands.map((band) => {
-        const min = band.config?.min_score;
-        const mult = band.config?.multiplier;
-        return (
-          <li
-            key={band.item_id}
-            className="flex items-start justify-between gap-3 rounded-md border border-border bg-card p-2.5"
-          >
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-foreground">{band.label}</p>
-              {band.description ? (
-                <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                  {band.description}
-                </p>
-              ) : null}
-              {band.notes ? (
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground italic">
-                  {band.notes}
-                </p>
-              ) : null}
-            </div>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              {kind === "value"
-                ? min === undefined || min === null
-                  ? "guard only"
-                  : `${String(min)}+`
-                : `×${String(mult ?? 1)}`}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function Section({
-  icon: Icon,
-  title,
-  hint,
-  children,
-}: {
-  icon: typeof TreePine;
-  title: string;
-  hint: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      <div>
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-          <Icon className="size-3.5 text-muted-foreground" aria-hidden />
-          {title}
-        </p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
-      </div>
-      {children}
-    </section>
-  );
-}
-
 /**
- * The persistent door. A site can end up with labelled service areas that have
- * no places in them — by skipping the places step, or from any adoption before
- * this step existed. That state is worse than having no areas at all, because
- * the ledger listing them looks configured, so it is never a toast: it stays on
- * the screen until the places are there.
+ * The persistent door for service areas adopted without places — it stays on
+ * the screen until the places are there (a toast would be forgotten).
  */
 function IncompleteAreasBanner({
   count,
@@ -333,332 +234,436 @@ function IncompleteAreasBanner({
       <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" aria-hidden />
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-semibold text-warning">
-          {count} service area{count === 1 ? " has" : "s have"} no places yet — add
-          them
+          {count} service area{count === 1 ? " has" : "s have"} no places yet — add them
         </span>
         <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
-          {count === 1 ? "It has" : "They have"} a name and a band but no town,
-          city or region inside, so no search has ever matched{" "}
-          {count === 1 ? "it" : "them"} and geography counts for nothing in your
-          value tiers. Open the geo bench on{" "}
-          {count === 1 ? "this area" : "exactly these areas"}.
+          {count === 1 ? "It has" : "They have"} a name and a band but no town, city or region
+          inside, so no search has ever matched {count === 1 ? "it" : "them"} and geography
+          counts for nothing in your value tiers.
         </span>
       </span>
+      <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden />
     </Link>
   );
 }
 
-function PackDetail({
-  detail,
-  siteId,
+function PackSummaryPanel({
+  pack,
+  adoption,
   brandId,
-  sitePath,
-  incompleteAreas,
+  siteId,
+  onPreview,
+  onReset,
 }: {
-  detail: StarterPackDetail;
-  siteId: string;
+  pack: StarterPackSummary;
+  adoption: StarterPackAdoption | undefined;
   brandId: string | null | undefined;
-  sitePath: string;
-  incompleteAreas: number;
+  siteId: string;
+  onPreview: () => void;
+  onReset: () => void;
 }) {
-  const queryClient = useQueryClient();
-  const status = STATUS_META[detail.pack.status] ?? STATUS_META.draft;
-  const [askingPlaces, setAskingPlaces] = useState(false);
-
-  const adopt = useMutation({
-    mutationFn: (places: GeoPlacesDraft) =>
-      adoptStarterPack(siteId, detail.pack.id, {
-        geoPlaces: places.tokens,
-        geoPlaceIds: places.placeIds,
-      }),
-    onSuccess: (result) => {
-      const written =
-        result.topics +
-        result.value_bands +
-        result.geo_bands +
-        result.geo_areas +
-        result.rules +
-        result.geo_areas_filled;
-      setAskingPlaces(false);
-      toast.success(
-        written === 0
-          ? "Already adopted — nothing new to write."
-          : `Adopted: ${result.topics} topic values, ${result.rules} rules, ${result.value_bands + result.geo_bands} band definitions, ${result.geo_areas} geo areas${result.geo_areas_filled > 0 ? `, ${result.geo_areas_filled} filled with your places` : ""}${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}.`,
-        result.geo_areas_pending > 0
-          ? {
-              description: `${result.geo_areas_pending} service area${result.geo_areas_pending === 1 ? "" : "s"} still ${result.geo_areas_pending === 1 ? "has" : "have"} no places, so ${result.geo_areas_pending === 1 ? "it matches" : "they match"} nothing yet.`,
-            }
-          : undefined,
-      );
-      void queryClient.invalidateQueries({ queryKey: ["seo"] });
-    },
-    onError: (error) =>
-      toast.error(`Could not adopt this starter pack: ${extractErrorMessage(error)}`),
-  });
-
-  /** A pack that carries archetypes asks for the places BEFORE it writes. */
-  const startAdoption = () => {
-    if (detail.geo_areas.length > 0) setAskingPlaces(true);
-    else adopt.mutate({ tokens: {}, placeIds: {} });
-  };
+  const [showSource, setShowSource] = useState(false);
+  const status = STATUS_META[pack.status] ?? STATUS_META.draft;
+  const geoModel = GEO_MODEL_LABEL[pack.geo_model] ?? null;
+  const canReset = Boolean(adoption && adoption.changed + adoption.archived > 0);
+  const canTakeMore = Boolean(adoption && adoption.missing > 0);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 border-b border-border p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground">
-                {detail.pack.name}
-              </h2>
-              <Badge variant="outline" className={cn("text-[10px]", status.tone)}>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-foreground">{pack.name}</h2>
+              <Badge variant="outline" className={cn("text-[10px]", status.tone)} title={status.hint}>
                 {status.label}
               </Badge>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {detail.pack.industry} · {GEO_MODEL_LABEL[detail.pack.geo_model] ?? detail.pack.geo_model}
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {pack.industry_name ?? pack.industry}
+              {geoModel ? ` · ${geoModel}` : ""}
             </p>
           </div>
-          <Button
-            size="sm"
-            onClick={startAdoption}
-            disabled={adopt.isPending}
-            className="shrink-0"
-          >
-            <Download className="mr-1.5 size-3.5" aria-hidden />
-            {adopt.isPending ? "Adopting…" : "Adopt onto this site"}
-          </Button>
+          {adoption ? null : (
+            <Button type="button" size="sm" className="h-8 gap-1.5 text-xs" onClick={onPreview}>
+              <Eye className="size-3.5" aria-hidden />
+              Preview on your data
+            </Button>
+          )}
         </div>
-        {detail.pack.description ? (
-          <p className="mt-3 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-            {detail.pack.description}
-          </p>
-        ) : null}
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          {status.hint} Adopting copies these rows onto this site — it is additive,
-          it never overwrites a ruling you have already made, and every row stays
-          editable afterwards in{" "}
-          <Link
-            href={`${sitePath}/value`}
-            className="underline underline-offset-2 hover:text-foreground"
-          >
-            the value workbench
-          </Link>
-          .
-        </p>
-        {detail.pack.source_notes ? (
-          <p className="mt-2 max-w-3xl text-[11px] leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Where it came from: </span>
-            {detail.pack.source_notes}
-          </p>
-        ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="mb-4">
-          <IncompleteAreasBanner
-            count={incompleteAreas}
-            brandId={brandId}
-            siteId={siteId}
-          />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-6">
-            <Section
-              icon={TreePine}
-              title="Topic worth"
-              hint="What each branch of the tree is worth to this kind of business. Set as high in the tree as it is true; everything below inherits it."
-            >
-              <TopicRows topics={detail.topics} />
-            </Section>
-            <Section
-              icon={ListChecks}
-              title="Qualifier rules"
-              hint="Multipliers that promote or demote a keyword. Below 1 demotes, above 1 promotes, and they compound."
-            >
-              <RuleRows rules={detail.rules} />
-            </Section>
-          </div>
-          <div className="space-y-6">
-            <Section
-              icon={Layers}
-              title="Value bands"
-              hint="This industry's own names for its tiers, and the score each one starts at."
-            >
-              <BandRows bands={detail.value_bands} kind="value" />
-            </Section>
-            <Section
-              icon={MapPinned}
-              title="Geo bands"
-              hint="What each kind of place is worth. A multiplier of 0 means the business cannot serve that traffic at all."
-            >
-              <BandRows bands={detail.geo_bands} kind="geo" />
-            </Section>
-            <Section
-              icon={MapPinned}
-              title="Geo areas"
-              hint="Archetypes — the shape of a service area, not the places. A pack never carries somebody else's addresses, so adopting asks you for yours before it writes."
-            >
-              {detail.geo_areas.length ? (
-                <ul className="space-y-1.5">
-                  {detail.geo_areas.map((area) => (
-                    <li
-                      key={area.item_id}
-                      className="rounded-md border border-border bg-card p-2.5"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-medium text-foreground">
-                          {area.label}
-                        </span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {area.geo_band}
-                        </Badge>
-                      </div>
-                      {area.notes ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {area.notes}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">No geo areas proposed.</p>
-              )}
-            </Section>
-            {detail.pack.guidelines ? (
-              <Section
-                icon={BookOpenCheck}
-                title="Keyword guidelines"
-                hint="The standing knowledge every classifier and valuation agent is handed for a site in this industry. Seeded onto the site only when it has none of its own."
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin">
+        {adoption ? (
+          <section className="rounded-lg border border-info/40 bg-info/5 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <BadgeCheck className="size-3.5 text-info" aria-hidden />
+              Adopted {formatWhen(adoption.adopted_at)}
+              {adoption.adopted_by_label ? ` by ${adoption.adopted_by_label}` : ""}
+            </p>
+            <div className="mt-1.5">
+              <ReceiptCounts a={adoption} />
+            </div>
+            <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+              Everything you took is yours now: the platform never re-applies this pack over
+              your edits. Re-applying is a button — two, in fact — and each one lists exactly
+              what it will touch.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Link
+                href={rulebookSourceHref(brandId, siteId, `pack:${pack.slug}`)}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent"
               >
-                <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
-                  {detail.pack.guidelines}
-                </pre>
-              </Section>
+                <ListChecks className="size-3" aria-hidden />
+                See them in the Rulebook
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-[11px]"
+                onClick={onPreview}
+                disabled={!canTakeMore}
+                title={
+                  canTakeMore
+                    ? `${adoption.missing} item${adoption.missing === 1 ? "" : "s"} of this pack ${adoption.missing === 1 ? "is" : "are"} not on your site — review and take any of them. Never touches what you already have.`
+                    : "Every item of this pack is already on your site."
+                }
+              >
+                <Download className="size-3" aria-hidden />
+                Take what&apos;s missing{canTakeMore ? ` (${adoption.missing})` : ""}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-[11px]"
+                onClick={onReset}
+                disabled={!canReset}
+                title={
+                  canReset
+                    ? "Put items you changed or archived back to what the pack proposes — you pick which, and it lists each one first."
+                    : "Nothing you adopted from this pack has been changed or archived, so there is nothing to reset."
+                }
+              >
+                <RotateCcw className="size-3" aria-hidden />
+                Reset to pack{canReset ? ` (${adoption.changed + adoption.archived})` : ""}
+              </Button>
+            </div>
+          </section>
+        ) : null}
+
+        {pack.summary ? (
+          <p className="text-xs leading-relaxed text-foreground">{pack.summary}</p>
+        ) : null}
+        {pack.description ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">{pack.description}</p>
+        ) : null}
+
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(
+            [
+              [ListChecks, pack.rule_count, "value rules", "words and facts that raise or lower a keyword's worth"],
+              [TreePine, pack.topic_count, "topic worths", "what each subject is worth — the base every rule multiplies"],
+              [Layers, pack.value_band_count + pack.geo_band_count, "bands", "tier names and thresholds, geo band multipliers"],
+              [MapPinned, pack.geo_area_count, "service areas", "archetypes you fill with your own places"],
+            ] as const
+          ).map(([Icon, n, label, hint]) => (
+            <div key={label} className="rounded-md border border-border bg-card p-2" title={hint}>
+              <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Icon className="size-3" aria-hidden />
+                {label}
+              </p>
+              <p className="text-base font-semibold tabular-nums text-foreground">{n}</p>
+            </div>
+          ))}
+        </dl>
+
+        {!adoption ? (
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            <span className="font-medium text-foreground">Preview on your data</span> shows every
+            item with the numbers it would change on your own keywords — before anything is
+            written. You pick what to take, item by item.
+          </p>
+        ) : null}
+
+        {pack.source_notes || pack.ratification_notes ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowSource((v) => !v)}
+              className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              <ChevronDown
+                className={cn("size-3 transition-transform", showSource ? "rotate-180" : "")}
+                aria-hidden
+              />
+              Where this pack came from
+            </button>
+            {showSource ? (
+              <div className="mt-1 space-y-1 text-[11px] leading-4 text-muted-foreground">
+                {pack.source_notes ? <p>{pack.source_notes}</p> : null}
+                {pack.ratification_notes ? (
+                  <p>
+                    <span className="font-medium text-foreground">Ratification:</span>{" "}
+                    {pack.ratification_notes}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
-        </div>
+        ) : null}
       </div>
-
-      {askingPlaces ? (
-        <GeoPlacesStep
-          packName={detail.pack.name}
-          brandId={brandId}
-          areas={detail.geo_areas}
-          busy={adopt.isPending}
-          onCancel={() => setAskingPlaces(false)}
-          onAdopt={(places) => adopt.mutate(places)}
-        />
-      ) : null}
     </div>
   );
 }
 
 export function StarterPackCatalog() {
-  const { site, brandId, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const siteId = site.id;
+  const organizationId = site.organization_id ?? null;
+  const packParam = searchParams.get("pack");
+  const reviewing = searchParams.get("review") === "1";
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [othersOpen, setOthersOpen] = useState(false);
+  const basePath = marketingRoutes.site(brandId, siteId, "/value/packs");
 
-  /** The site's own areas — how many were adopted and never given places. */
   const areas = useQuery({
-    queryKey: geoAreasQueryKey(site.id),
-    queryFn: () => listGeoAreas(site.id),
+    queryKey: geoAreasQueryKey(siteId),
+    queryFn: () => listGeoAreas(siteId),
     staleTime: 60_000,
   });
   const incompleteAreas = (areas.data ?? []).filter(areaNeedsPlaces).length;
 
   const catalog = useQuery({
-    queryKey: starterPackCatalogQueryKey,
-    queryFn: ({ signal }) =>
-      getStarterPackCatalog(null, site.organization_id ?? null, signal),
+    queryKey: [...starterPackCatalogQueryKey, organizationId ?? "none"],
+    queryFn: ({ signal }) => getStarterPackCatalog(null, organizationId, signal),
+    staleTime: 5 * 60_000,
   });
+  const adoptions = useQuery({
+    queryKey: starterPackAdoptionsQueryKey(siteId),
+    queryFn: ({ signal }) => getStarterPackAdoptions(siteId, signal),
+    staleTime: 60_000,
+  });
+  const adoptionByPack = new Map<string, StarterPackAdoption>(
+    (adoptions.data ?? []).map((a) => [a.pack_id, a]),
+  );
 
   const packs = catalog.data ?? [];
-  const activeId = selectedId ?? packs[0]?.id ?? null;
+  const activeId = packParam ?? selectedId ?? packs[0]?.id ?? null;
+  const activePack = packs.find((p) => p.id === activeId) ?? null;
+  const activeAdoption = activeId ? adoptionByPack.get(activeId) : undefined;
 
   const detail = useQuery({
     queryKey: starterPackDetailQueryKey(activeId ?? "none"),
     queryFn: ({ signal }) => getStarterPackDetail(activeId as string, signal),
     enabled: Boolean(activeId),
   });
+  const status = useQuery({
+    queryKey: starterPackStatusQueryKey(siteId, activeId ?? "none"),
+    queryFn: ({ signal }) => getStarterPackSiteStatus(siteId, activeId as string, signal),
+    enabled: Boolean(activeId) && Boolean(activeAdoption),
+    staleTime: 30_000,
+  });
+
+  const openReview = (packId: string) => router.push(packReviewHref(brandId, siteId, packId));
+  const closeReview = () => router.push(`${basePath}?pack=${activeId ?? ""}`);
+  const selectPack = (packId: string) => {
+    setSelectedId(packId);
+    router.replace(`${basePath}?pack=${packId}`);
+  };
+
+  // ── REVIEW ──────────────────────────────────────────────────────────────
+  if (reviewing && activeId) {
+    const statusReady = !activeAdoption || status.data !== undefined;
+    if (detail.isError) {
+      return (
+        <div className="p-4">
+          <InlineQueryError
+            what="this starter pack"
+            error={detail.error}
+            onRetry={() => void detail.refetch()}
+          />
+        </div>
+      );
+    }
+    if (!detail.data || !statusReady) {
+      return (
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-5 w-64" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      );
+    }
+    return (
+      <PackReview
+        detail={detail.data}
+        status={activeAdoption ? status.data : undefined}
+        siteId={siteId}
+        brandId={brandId}
+        organizationId={organizationId}
+        siteDomain={site.domain}
+        onBack={closeReview}
+        onAdopted={() => {
+          void queryClient.invalidateQueries({ queryKey: starterPackAdoptionsQueryKey(siteId) });
+          closeReview();
+        }}
+      />
+    );
+  }
+
+  // ── CATALOG ─────────────────────────────────────────────────────────────
+  const forYou = packs.filter((p) => p.org_match);
+  const others = packs.filter((p) => !p.org_match);
+  const orgHasIndustries = forYou.length > 0;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-border px-4 py-3">
-        <h1 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Boxes className="size-4 text-muted-foreground" aria-hidden />
-          Industry starter packs
-        </h1>
-        <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-          A pack is a day-one answer to &ldquo;what is this keyword worth to a business
-          like mine?&rdquo; — proposed from the real search demand of several companies in
-          the same industry, and built around the gap between the traffic that industry
-          gets and the traffic it can sell. Adopt one, then prune it until it is yours.
-        </p>
+      <div className="shrink-0 space-y-2 border-b border-border px-4 py-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Boxes className="size-4 text-muted-foreground" aria-hidden />
+            Industry packs
+          </h1>
+          <p className="mt-0.5 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            A pack is a day-one answer to &ldquo;what is this keyword worth to a business like
+            mine?&rdquo; — rules, topic worth, bands and service-area archetypes an expert
+            ratified for an industry. Preview one on your own keywords, take the parts you
+            want, and from then on they are yours.
+          </p>
+        </div>
+        <ReadyDefaultsBanner />
+        <IncompleteAreasBanner count={incompleteAreas} brandId={brandId} siteId={siteId} />
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="min-h-0 space-y-2 overflow-y-auto border-b border-border p-3 lg:border-b-0 lg:border-r">
+        <div className="min-h-0 space-y-2 overflow-y-auto border-b border-border p-3 scrollbar-thin lg:border-b-0 lg:border-r">
           {catalog.isPending ? (
             <>
-              <Skeleton className="h-28 w-full" />
-              <Skeleton className="h-28 w-full" />
-              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
             </>
           ) : catalog.isError ? (
             <InlineQueryError
-              what="starter packs"
+              what="industry packs"
               error={catalog.error}
               onRetry={() => void catalog.refetch()}
             />
           ) : packs.length === 0 ? (
-            <p className="p-3 text-xs text-muted-foreground">
-              No starter packs exist yet.
-            </p>
+            <p className="p-3 text-xs text-muted-foreground">No industry packs exist yet.</p>
           ) : (
-            packs.map((pack) => (
-              <PackCard
-                key={pack.id}
-                pack={pack}
-                selected={pack.id === activeId}
-                onSelect={() => setSelectedId(pack.id)}
-              />
-            ))
+            <>
+              {orgHasIndustries ? (
+                <>
+                  <p className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    For your industry
+                  </p>
+                  {forYou.map((pack) => (
+                    <PackCard
+                      key={pack.id}
+                      pack={pack}
+                      adoption={adoptionByPack.get(pack.id)}
+                      selected={pack.id === activeId}
+                      onSelect={() => selectPack(pack.id)}
+                    />
+                  ))}
+                  {others.length > 0 ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setOthersOpen((v) => !v)}
+                        className="flex w-full items-center gap-1 px-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronDown
+                          className={cn("size-3 transition-transform", othersOpen ? "rotate-180" : "")}
+                          aria-hidden
+                        />
+                        Other industries ({others.length})
+                      </button>
+                      {othersOpen
+                        ? others.map((pack) => (
+                            <PackCard
+                              key={pack.id}
+                              pack={pack}
+                              adoption={adoptionByPack.get(pack.id)}
+                              selected={pack.id === activeId}
+                              onSelect={() => selectPack(pack.id)}
+                            />
+                          ))
+                        : null}
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  {organizationId ? (
+                    <Link
+                      href={`/organizations/${organizationId}`}
+                      className="flex items-start gap-2 rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] leading-4 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      title="Open your organization's settings and pick its industries"
+                    >
+                      <Settings2 className="mt-px size-3 shrink-0" aria-hidden />
+                      <span>
+                        Tell us your industry in your organization settings and the packs
+                        made for it list first here — and are offered to new sites automatically.
+                      </span>
+                    </Link>
+                  ) : null}
+                  {packs.map((pack) => (
+                    <PackCard
+                      key={pack.id}
+                      pack={pack}
+                      adoption={adoptionByPack.get(pack.id)}
+                      selected={pack.id === activeId}
+                      onSelect={() => selectPack(pack.id)}
+                    />
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
 
         <div className="min-h-0 overflow-hidden">
-          {detail.isPending && activeId ? (
+          {activePack ? (
+            <PackSummaryPanel
+              pack={activePack}
+              adoption={activeAdoption}
+              brandId={brandId}
+              siteId={siteId}
+              onPreview={() => openReview(activePack.id)}
+              onReset={() => setResetting(true)}
+            />
+          ) : catalog.isPending ? (
             <div className="space-y-3 p-4">
               <Skeleton className="h-8 w-64" />
               <Skeleton className="h-40 w-full" />
             </div>
-          ) : detail.isError ? (
-            <div className="p-4">
-              <InlineQueryError
-                what="starter pack details"
-                error={detail.error}
-                onRetry={() => void detail.refetch()}
-              />
-            </div>
-          ) : detail.data ? (
-            <PackDetail
-              detail={detail.data}
-              siteId={site.id}
-              brandId={brandId}
-              sitePath={sitePath}
-              incompleteAreas={incompleteAreas}
-            />
           ) : (
             <div className="flex h-full items-center justify-center p-6 text-center">
               <p className="max-w-sm text-xs text-muted-foreground">
                 <BadgeCheck className="mx-auto mb-2 size-5" aria-hidden />
-                Pick a pack to see exactly what adopting it writes.
+                Pick a pack to see what it proposes and preview it on your keywords.
               </p>
             </div>
           )}
         </div>
       </div>
+
+      {resetting && activePack && status.data ? (
+        <ResetToPackDialog
+          siteId={siteId}
+          packName={activePack.name}
+          status={status.data}
+          onClose={() => setResetting(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -98,6 +98,7 @@ import { BandScoreboard } from "./BandScoreboard";
 import { ReasonChainDetail, ReasonChainInline } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
 import { MeaningHealth } from "./MeaningHealth";
+import { ReadyDefaultsBanner } from "../packs/ReadyDefaultsBanner";
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
 import { RulingSession } from "./RulingSession";
 
@@ -585,6 +586,7 @@ export function ValueWorkbench() {
         </p>
       ) : null}
 
+      <ReadyDefaultsBanner />
       <MeaningHealth
         rows={health.data}
         isLoading={health.isPending}

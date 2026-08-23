@@ -38,8 +38,8 @@ import type {
 
 /** Which screen fixes a row of this area. */
 const AREA_ROUTE: Record<MeaningHealthArea, { path: string; label: string }> = {
-  geo: { path: "/value/rules", label: "Fix in Rules & Geo" },
-  rules: { path: "/value/rules", label: "Open Rules & Geo" },
+  geo: { path: "/value/rules", label: "Fix in the Rulebook" },
+  rules: { path: "/value/rules", label: "Open the Rulebook" },
   topics: { path: "/value/topics", label: "Open Topics" },
   dimensions: { path: "/value/dimensions", label: "Open Dimensions" },
   bands: { path: "/value", label: "Open the workbench" },
