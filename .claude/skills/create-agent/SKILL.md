@@ -46,10 +46,26 @@ below is visible in that one agent.
 Work these steps in order. Skipping ahead (especially straight to "call create") is how
 bad agents get made.
 
-### 1. Nail the exact task and deliverable
+### 1. Source the intent, then nail the exact task and deliverable
 
-Write one sentence: what goes in, what comes out, and who/what consumes the output. If
-you cannot state the deliverable exactly, you are not ready to create an agent.
+**Where the task comes from matters as much as what it is.** If the agent is part of a
+designed system (a feature, a Masterwork tier, a mandate), its goals live in that
+system's VISION/FEATURE docs — read them FIRST, and search EXHAUSTIVELY: the vision is
+usually plural (`systems/<domain>/VISION.md` + DECISIONS/STATE, ratified design records,
+archived corpora, repo-local design-of-record docs), and the agent or feature may have
+carried other names. One document is not the vision — the Plan Steward's first fix was
+rebuilt from one corpus and missed the approved design of record naming its second,
+co-equal caller. The call site only tells you delivery mechanics; an existing agent
+definition is NOT evidence of intent (it may itself be the botched thing you're
+replacing — restructuring it faithfully just polishes the drift).
+The Plan Steward incident (2026-08-22) is the canonical case: authored from its call
+site, it became a note-taking scribe with the emission verbs sitting unused in its own
+tool, while the vision said "plans exist to be emptied out." Capability present, mission
+forbidden — because nobody read the vision.
+
+Then write one sentence: what goes in, what comes out, and who/what consumes the output
+— **and one more: what DONE looks like for this agent.** If you cannot state the
+deliverable and DONE exactly, you are not ready to create an agent.
 
 ### 2. Decide the exact inputs — variables vs context
 
@@ -216,9 +232,16 @@ What the Keyword Analysis Master shows, and every agent you create should have:
 2. **A description that informs and sells** — what this agent does and what it is the
    best in the world at. When one agent calls another, the description and variable help
    text are ALL the calling agent can see. Write for that reader.
-3. **A system prompt that teaches**: expert role, strict rules the model must weigh (with
-   precedence), precise definitions of every term of art, the exact output format shown
-   as a literal `__kind` JSON template, and hard-earned examples.
+3. **A system prompt that teaches the HOW — and above all, the goal.** Its composition:
+   role and identity · **the goal and what DONE looks like (the single most important
+   part — clear, unambiguous instructions about the primary task)** · the available
+   information and where truth comes from · the tools AND how each one serves the goal —
+   **tool definitions do not drive behavior; an agent with a specific job must be taught
+   the job, tool by tool** · output specifications (the exact format, a literal `__kind`
+   JSON template when structured) · adaptation — when to act versus when to ask · strict
+   rules with precedence, precise definitions of every term of art, and hard-earned
+   examples. The user message then carries the WHAT: it puts the agent to work on the
+   result, immediately.
 4. **An authored user message with variables embedded in conversational human language.**
    This is one of the most important factors in our whole system. Models are trained on
    trillions of tokens of human input — a natural request outperforms a structured dump
@@ -319,10 +342,31 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Invented category/tags | Reuse the live facet tree |
 | Never actually run | Two real runs minimum before "done" |
 | Raw `agx_agent` insert / SQL | Everything goes through the MCP and the trained builder |
+| Agent authored from its call site or its existing definition | The vision/FEATURE docs are the intent source; the call site is mechanics; the old definition may BE the drift |
+| No goal / no DONE in the system prompt | An agent that hasn't been told its mission optimizes for being agreeable, not for the result |
+| Tool list as the teaching | Tool definitions don't drive behavior — each tool needs a "how this serves the goal" in the prompt |
+
+## The four showable artifacts — how this skill is enforced
+
+The minimum-effort failure is real: coding agents asked to "define an agent" as one step
+of a bigger task reliably do the least that produces a row. So a create or update is
+**rejected work** — by any reviewer, human or agent — unless its author can show, on
+request:
+
+1. **The intent sources** — the vision/FEATURE docs actually read, by path.
+2. **The goal + DONE sentences** — verbatim from the system prompt.
+3. **The tool→goal mapping** — for every assigned tool, the line in the prompt that
+   teaches how it serves the mission.
+4. **The WHAT user message** — the authored conversational user turn that puts the agent
+   to work on the result.
+
+No artifacts, no agent. "It has the right tools" is not a defense — tools without a
+taught mission produced a Steward that refused to build.
 
 ## Done means
 
-Deliverable stated exactly · inputs split correctly into variables/context with
+Intent sourced from the vision/FEATURE docs (paths citable) · goal + DONE stated in the
+system prompt · every tool taught in service of the goal · deliverable stated exactly · inputs split correctly into variables/context with
 mandatory/optional marked · kind(s) registered and component rendering · agent created
 via the builder with a pretty name, teaching description and help text, conversational
 embedded user message · model overridden and settings tuned · tools exact and minimal ·
