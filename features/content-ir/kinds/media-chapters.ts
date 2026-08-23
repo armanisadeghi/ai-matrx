@@ -41,6 +41,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { MediaChapter } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — the single source the storage rows (`data[]` + kind_edge) and the
@@ -98,16 +100,13 @@ export const MEDIA_CHAPTERS_KIND_SCHEMAS: KindSchema[] = [
 // ---------------------------------------------------------------------------
 
 /** One chapter as the component consumes it. Mirrors `PcEpisodeChapter`. */
-export interface MediaChapterData {
-  start_hint: string;
-  title: string;
-  summary: string;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`). */
+export type MediaChapterData = Omit<MaterializedKind<MediaChapter>, "__kind">;
 
-export interface MediaChaptersData {
+export type MediaChaptersData = {
   chapters: MediaChapterData[];
   isComplete: boolean;
-}
+};
 
 function stringOr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;

@@ -45,6 +45,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { EpisodeTitleOption, EpisodeTitleOptions } from "./generated/kinds.generated";
 
 /**
  * The surface write target a rendered card applies through. Declared by
@@ -113,19 +115,26 @@ export const EPISODE_TITLE_OPTIONS_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING: partial envelopes map to partial data.
 // ---------------------------------------------------------------------------
 
-export interface EpisodeTitleOptionData {
-  title: string;
-  subtitle: string | null;
-  rationale: string | null;
+/**
+ * THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`). The bridge only adds
+ * what the registry does not carry: the per-node stream flag. Field NAMES stay
+ * the registry's (`check:kind-type-twins`).
+ */
+export type EpisodeTitleOptionData = Omit<
+  MaterializedKind<EpisodeTitleOption>,
+  "__kind"
+> & {
   /** This option's own node finished parsing (or the whole set did). */
   complete: boolean;
-}
+};
 
-export interface EpisodeTitleOptionsData {
-  workingTitle: string | null;
+export type EpisodeTitleOptionsData = Pick<
+  MaterializedKind<EpisodeTitleOptions>,
+  "working_title"
+> & {
   options: EpisodeTitleOptionData[];
   isComplete: boolean;
-}
+};
 
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
@@ -133,18 +142,17 @@ function nonEmptyString(value: unknown): string | null {
 
 /** One parsed option plus its RAW index in the source array (the key the
  *  envelope's `nodeIndex` uses — filtered-out blanks shift the output index). */
-export interface EpisodeTitleOptionValue {
-  title: string;
-  subtitle: string | null;
-  rationale: string | null;
-  index: number;
-}
+/** One option as the CANVAS holds it — the kind plus its ordinal. */
+export type EpisodeTitleOptionValue = Omit<
+  MaterializedKind<EpisodeTitleOption>,
+  "__kind"
+> & { index: number };
 
 /** The whole `episode_title_options` payload, read off a plain value. */
-export interface EpisodeTitleOptionsValue {
-  workingTitle: string | null;
-  options: EpisodeTitleOptionValue[];
-}
+export type EpisodeTitleOptionsValue = Pick<
+  MaterializedKind<EpisodeTitleOptions>,
+  "working_title"
+> & { options: EpisodeTitleOptionValue[] };
 
 /**
  * THE ONE reader for `episode_title_options` values — the envelope bridge
@@ -175,7 +183,7 @@ export function readEpisodeTitleOptionsValue(
     }
   }
   return {
-    workingTitle: nonEmptyString(root.working_title),
+    working_title: nonEmptyString(root.working_title),
     options,
   };
 }
@@ -189,7 +197,7 @@ export function episodeTitleOptionsServerDataFromEnvelope(
   const parsed = readEpisodeTitleOptionsValue(envelope.root.value);
 
   return {
-    workingTitle: parsed.workingTitle,
+    working_title: parsed.working_title,
     options: parsed.options.map(({ title, subtitle, rationale, index }) => {
       const meta = envelope.nodeIndex?.[`options.${index}`];
       return {
@@ -237,11 +245,11 @@ export function episodeTitleOptionsMarkdownFromValue(
   const options = Array.isArray(value.options)
     ? value.options.filter(isRecordValue)
     : [];
-  const workingTitle = nonEmptyString(value.working_title);
+  const working_title = nonEmptyString(value.working_title);
 
   return joinBlocks([
     `# Title Options`,
-    workingTitle ? `Current title: ${workingTitle}` : null,
+    working_title ? `Current title: ${working_title}` : null,
     ...options.map(optionMarkdown),
     additionalDetailsSection(collectExtras(value, MD_SET_KNOWN_KEYS)),
   ]);

@@ -81,8 +81,8 @@ function readData(serverData: unknown): EpisodeTitleOptionsData | null {
   const options = candidate.options.filter(isOption);
   if (options.length === 0) return null;
   return {
-    workingTitle:
-      typeof candidate.workingTitle === "string" ? candidate.workingTitle : null,
+    working_title:
+      typeof candidate.working_title === "string" ? candidate.working_title : null,
     options,
     isComplete: candidate.isComplete === true,
   };
@@ -217,9 +217,9 @@ export default function EpisodeTitleOptionsBlock({
           )}
         </div>
       )}
-      {data.workingTitle ? (
+      {data.working_title ? (
         <p className="text-xs text-muted-foreground">
-          Current title: {data.workingTitle}
+          Current title: {data.working_title}
         </p>
       ) : null}
       <div className="space-y-2">

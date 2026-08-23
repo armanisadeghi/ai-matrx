@@ -40,7 +40,7 @@ const TITLE_OPTIONS_FIXTURE = {
 describe("readEpisodeTitleOptionsValue (the ONE title reader)", () => {
   it("keeps working_title and preserves null (not \"\") for absent fields", () => {
     const parsed = readEpisodeTitleOptionsValue(TITLE_OPTIONS_FIXTURE);
-    expect(parsed.workingTitle).toBe("Episode 12: The Old Title");
+    expect(parsed.working_title).toBe("Episode 12: The Old Title");
     expect(parsed.options).toHaveLength(2);
     expect(parsed.options[0]).toMatchObject({
       title: "The Quiet Boom Nobody Reported",
@@ -56,7 +56,7 @@ describe("readEpisodeTitleOptionsValue (the ONE title reader)", () => {
 
   it("returns an empty, null-titled result for junk input", () => {
     expect(readEpisodeTitleOptionsValue(null)).toEqual({
-      workingTitle: null,
+      working_title: null,
       options: [],
     });
     expect(readEpisodeTitleOptionsValue({ options: "nope" }).options).toEqual([]);

@@ -139,7 +139,7 @@ export function useEpisodeTitleOptions(
       }
       setGenerated({
         episodeId: episode.id,
-        workingTitle: parsed.workingTitle,
+        workingTitle: parsed.working_title,
         options: parsed.options,
       });
     } catch (err) {

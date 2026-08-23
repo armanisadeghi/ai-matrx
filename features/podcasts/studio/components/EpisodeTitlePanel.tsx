@@ -16,7 +16,7 @@
 // never grows mid-run, so the episode content below it does not shift.
 
 import { useEffect, useState } from "react";
-import { Loader2, RefreshCw, Sparkles, Type } from "lucide-react";
+import { BrainCircuit, Loader2, RefreshCw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EpisodeTitleOptionsBlock from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import { podcastService } from "@/features/podcasts/service";
@@ -69,7 +69,7 @@ export function EpisodeTitlePanel({
           ) : hasOptions ? (
             <RefreshCw className="h-3.5 w-3.5" />
           ) : (
-            <Sparkles className="h-3.5 w-3.5" />
+            <BrainCircuit className="h-3.5 w-3.5" />
           )}
           {busy ? "Suggesting…" : hasOptions ? "More options" : "Suggest titles"}
         </Button>
@@ -97,7 +97,7 @@ export function EpisodeTitlePanel({
           <EpisodeTitleOptionsBlock
             hideHeader
             serverData={{
-              workingTitle,
+              working_title: workingTitle,
               options: options.map(({ title, subtitle, rationale }) => ({
                 title,
                 subtitle,

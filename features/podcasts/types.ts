@@ -1,5 +1,8 @@
 import type { Database, Json } from "@/types/database.types";
-import { readChapterList } from "@/features/content-ir/kinds/media-chapters";
+import {
+  readChapterList,
+  type MediaChapterData,
+} from "@/features/content-ir/kinds/media-chapters";
 
 export type PcDisplayMode = "audio_only" | "with_metadata" | "with_video";
 
@@ -54,12 +57,7 @@ export type PcEpisodeSpeaker = {
 
 /** One auto-generated chapter marker (podcast.chapter_marker agent output),
  *  persisted under `pc_episodes.metadata.chapters` for the player/RSS layer. */
-export type PcEpisodeChapter = {
-  /** Approximate start time, `MM:SS` or `HH:MM:SS`; first is always 00:00. */
-  start_hint: string;
-  title: string;
-  summary: string;
-};
+export type PcEpisodeChapter = MediaChapterData;
 
 export type PcEpisode = {
   id: string;
