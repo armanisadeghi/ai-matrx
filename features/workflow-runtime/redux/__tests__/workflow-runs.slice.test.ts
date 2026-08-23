@@ -647,6 +647,9 @@ describe("workflow-runs slice", () => {
         surface: "matrx-user/workflow",
         title: `Emission ${i}`,
         presentation: "panel",
+        kind: null,
+        kind_ok: null,
+        metadata: null,
         ts: `t${i}`,
       } as WorkflowRunEvent);
     }
@@ -672,6 +675,9 @@ describe("workflow-runs slice", () => {
         surface: "matrx-user/workflow",
         title,
         presentation: "panel",
+        kind: null,
+        kind_ok: null,
+        metadata: null,
         ts: title,
       }) as WorkflowRunEvent;
 
