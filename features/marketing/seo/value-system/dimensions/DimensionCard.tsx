@@ -22,7 +22,9 @@ import {
   Lock,
   Pencil,
   Plus,
+  RefreshCw,
   Tag,
+  Timer,
   Users,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -31,6 +33,8 @@ import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCount } from "@/features/marketing/search-console/types";
+import { formatRelativeTime } from "@/utils/datetime";
+import { useDigStampMutations } from "@/features/marketing/search-console/hooks/useDigRules";
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
 import { ValueForm, type ValueFormValue } from "./ValueForm";
 import {
@@ -67,12 +71,14 @@ function ValueRow({
   editable,
   siteId,
   dimensionSlug,
+  situational,
   onSaved,
 }: {
   value: FacetValue;
   editable: boolean;
   siteId: string;
   dimensionSlug: string;
+  situational: boolean;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -141,6 +147,23 @@ function ValueRow({
           label="keywords"
           title={`${value.keyword_count} keywords currently carry this answer`}
         />
+        {/* P20 — a situational answer never shows a count without the moment
+            it was worked out. A present-tense number with no time behind it
+            reads as permanent when it is a snapshot. */}
+        {situational ? (
+          <span
+            className="whitespace-nowrap text-[11px] text-muted-foreground"
+            title={
+              value.as_of
+                ? new Date(value.as_of).toLocaleString()
+                : "This segment has never been evaluated."
+            }
+          >
+            {value.as_of
+              ? `as of ${formatRelativeTime(value.as_of, { style: "long" })}`
+              : "never evaluated"}
+          </span>
+        ) : null}
         {editable ? (
           <Button
             size="sm"

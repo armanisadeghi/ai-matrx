@@ -47305,6 +47305,7 @@ export type Database = {
           dimension: string
           id: string
           is_template: boolean
+          level: string | null
           metadata: Json
           name: string
           organization_id: string
@@ -47328,6 +47329,7 @@ export type Database = {
           dimension?: string
           id?: string
           is_template?: boolean
+          level?: string | null
           metadata?: Json
           name: string
           organization_id: string
@@ -47351,6 +47353,7 @@ export type Database = {
           dimension?: string
           id?: string
           is_template?: boolean
+          level?: string | null
           metadata?: Json
           name?: string
           organization_id?: string
@@ -50002,6 +50005,66 @@ export type Database = {
           },
         ]
       }
+      site_value_combo: {
+        Row: {
+          amount: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effect: string
+          enabled: boolean
+          id: string
+          label: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          origin: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          value_ids: string[]
+          version: number
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effect: string
+          enabled?: boolean
+          id?: string
+          label?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          origin?: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          value_ids: string[]
+          version?: number
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effect?: string
+          enabled?: boolean
+          id?: string
+          label?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          origin?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_ids?: string[]
+          version?: number
+        }
+        Relationships: []
+      }
       site_value_worth: {
         Row: {
           amount: number | null
@@ -50992,6 +51055,15 @@ export type Database = {
         }
         Returns: Json
       }
+      assert_combo_shape: {
+        Args: {
+          p_amount: number
+          p_effect: string
+          p_site_id: string
+          p_value_ids: string[]
+        }
+        Returns: undefined
+      }
       assert_safe_match_token: {
         Args: { p_token: string; p_what: string }
         Returns: undefined
@@ -51007,6 +51079,38 @@ export type Database = {
           place_kind: string
           place_name: string
           state_code: string
+        }[]
+      }
+      dimension_matcher_delete: {
+        Args: { p_matcher_id: string }
+        Returns: boolean
+      }
+      dimension_matcher_upsert: {
+        Args: {
+          p_condition_rule_id?: string
+          p_enabled?: boolean
+          p_fact_value_id?: string
+          p_kind: string
+          p_notes?: string
+          p_origin?: string
+          p_pattern?: string
+          p_place_id?: string
+          p_site_id: string
+          p_value_id: string
+        }
+        Returns: {
+          condition_rule_id: string
+          created_at: string
+          enabled: boolean
+          fact_value_id: string
+          id: string
+          kind: string
+          notes: string
+          origin: string
+          pattern: string
+          place_id: string
+          site_id: string
+          value_id: string
         }[]
       }
       facet_check_values: { Args: { p_facet: string }; Returns: string[] }
@@ -51026,6 +51130,7 @@ export type Database = {
         Returns: {
           can_abstain: boolean
           cardinality: string
+          condition_matcher_count: number
           description: string
           dimension_id: string
           facet_values: Json
@@ -51033,10 +51138,12 @@ export type Database = {
           is_system: boolean
           keyword_count: number
           label: string
+          nature: string
           readiness_note: string
           rule_count: number
           scope: string
           site_id: string
+          situational_as_of: string
           slug: string
           value_count: number
         }[]
@@ -51063,6 +51170,7 @@ export type Database = {
           p_cardinality?: string
           p_description?: string
           p_label: string
+          p_nature?: string
           p_site_id?: string
           p_slug: string
         }
@@ -51180,6 +51288,32 @@ export type Database = {
           marked_pending: number
           quarantined: number
         }[]
+      }
+      fn_effective_stamps: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          as_of: string
+          dim_id: string
+          dim_label: string
+          dim_slug: string
+          kw_id: string
+          matcher_id: string
+          nature: string
+          source: string
+          value_id: string
+          value_key: string
+          value_label: string
+        }[]
+      }
+      fn_evaluate_condition_matchers: {
+        Args: {
+          p_dimension_id?: string
+          p_end?: string
+          p_matcher_ids?: string[]
+          p_site_id: string
+          p_start?: string
+        }
+        Returns: Json
       }
       fn_evaluate_matchers: {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
@@ -51402,12 +51536,41 @@ export type Database = {
         }
         Returns: number
       }
+      gsc_dig_rule_stamp_remove: {
+        Args: { p_matcher_id: string; p_site_id: string }
+        Returns: Json
+      }
+      gsc_dig_rule_stamp_upsert: {
+        Args: { p_rule_id: string; p_site_id: string; p_value_id: string }
+        Returns: string
+      }
+      gsc_dig_rule_stamps: {
+        Args: { p_rule_id?: string; p_site_id: string }
+        Returns: {
+          as_of: string
+          dimension: string
+          dimension_id: string
+          dimension_label: string
+          enabled: boolean
+          last_evaluated_at: string
+          match_count: number
+          matcher_id: string
+          rule_id: string
+          rule_name: string
+          stamp_count: number
+          value: string
+          value_id: string
+          value_label: string
+        }[]
+      }
       gsc_effective_stamps: {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: {
+          as_of: string
           dimension: string
           dimension_label: string
           keyword_id: string
+          nature: string
           pinned: boolean
           site_scoped: boolean
           source: string
@@ -51437,9 +51600,12 @@ export type Database = {
           data_first_date: string
           data_last_date: string
           days_behind: number
+          dispatcher_enabled: boolean
           dispatcher_last_error: string
           dispatcher_last_run_at: string
           dispatcher_last_status: string
+          dispatcher_paused_at: string
+          dispatcher_paused_reason: string
           expected_last_date: string
           is_healthy: boolean
           last_run_at: string
@@ -51694,6 +51860,7 @@ export type Database = {
           p_dimension: string
           p_end: string
           p_filters?: Json
+          p_level?: string
           p_limit?: number
           p_site_id: string
           p_sort?: string
@@ -52155,6 +52322,48 @@ export type Database = {
           value_band: string
         }[]
       }
+      gsc_value_combo_list: {
+        Args: { p_site_id: string }
+        Returns: {
+          amount: number
+          combo_values: Json
+          effect: string
+          enabled: boolean
+          id: string
+          label: string
+          notes: string
+          origin: string
+          updated_at: string
+          value_ids: string[]
+        }[]
+      }
+      gsc_value_combo_preview: {
+        Args: {
+          p_amount?: number
+          p_combo_id?: string
+          p_effect: string
+          p_end: string
+          p_sample?: number
+          p_site_id: string
+          p_start: string
+          p_value_ids: string[]
+        }
+        Returns: Json
+      }
+      gsc_value_combo_set: {
+        Args: {
+          p_amount?: number
+          p_archive?: boolean
+          p_combo_id?: string
+          p_effect?: string
+          p_enabled?: boolean
+          p_label?: string
+          p_notes?: string
+          p_site_id: string
+          p_value_ids?: string[]
+        }
+        Returns: Json
+      }
       gsc_value_meaning_usage: {
         Args: { p_end: string; p_site_id: string; p_start: string }
         Returns: {
@@ -52244,6 +52453,25 @@ export type Database = {
           dimension: string
           keyword_id: string
           value: string
+        }[]
+      }
+      keyword_meaning_suggest: {
+        Args: {
+          p_body?: string
+          p_confidence?: number
+          p_evidence?: Json
+          p_proposal: Json
+          p_provenance?: Json
+          p_reasoning?: string
+          p_site_id: string
+          p_title: string
+        }
+        Returns: {
+          addressee: string
+          assist_id: string
+          dedupe_key: string
+          payload_hash: string
+          status: string
         }[]
       }
       keyword_place_status: {
@@ -52358,6 +52586,26 @@ export type Database = {
           top_page_url: string
           total_count: number
           workflow_status: string
+        }[]
+      }
+      site_value_worth_upsert: {
+        Args: {
+          p_amount?: number
+          p_effect: string
+          p_notes?: string
+          p_origin?: string
+          p_site_id: string
+          p_value_id: string
+        }
+        Returns: {
+          amount: number
+          effect: string
+          id: string
+          notes: string
+          origin: string
+          site_id: string
+          updated_at: string
+          value_id: string
         }[]
       }
       stamp_keyword_places: {

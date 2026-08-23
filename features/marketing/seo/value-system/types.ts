@@ -40,6 +40,13 @@ export type ValueReason =
       source: string;
       matcher_id: string | null;
       notes: string | null;
+      /**
+       * C5 (P20) — `situational` stamps describe what is happening to this
+       * keyword on this site RIGHT NOW and always arrive with `as_of`. An
+       * `intrinsic` stamp describes the words and carries no time.
+       */
+      nature?: "intrinsic" | "situational";
+      as_of?: string | null;
     }
   /** Pre-C2 shapes, tolerated until every cached receipt is recomputed. */
   | { kind: "rule"; rule_id: string; name: string; multiplier: number }

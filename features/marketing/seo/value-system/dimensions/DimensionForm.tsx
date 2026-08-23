@@ -24,6 +24,7 @@ import {
   IDENTITY_PATTERN,
   toIdentitySlug,
   type DimensionCardinality,
+  type DimensionNature,
 } from "./data";
 
 export interface DimensionFormValue {
@@ -31,7 +32,33 @@ export interface DimensionFormValue {
   label: string;
   description: string;
   cardinality: DimensionCardinality;
+  /** Only sent on create — renaming must never reclassify what it records. */
+  nature?: DimensionNature;
 }
+
+/**
+ * P20 — the nature question, asked in the reader's words. Never "intrinsic /
+ * situational" on the screen: the words on the buttons are what the two
+ * things ARE, and the model word stays behind the glass.
+ */
+const NATURE_CHOICES: Array<{
+  key: DimensionNature;
+  title: string;
+  blurb: string;
+}> = [
+  {
+    key: "intrinsic",
+    title: "Something the keyword IS",
+    blurb:
+      "True whoever is looking, and it does not change week to week — what kind of equipment, who is asking.",
+  },
+  {
+    key: "situational",
+    title: "Where it sits on your site right now",
+    blurb:
+      "Worked out from your own data and re-checked on a cadence — parked, slipping, worth shifting traffic to.",
+  },
+];
 
 const CARDINALITY_CHOICES: Array<{
   key: DimensionCardinality;
@@ -72,6 +99,9 @@ export function DimensionForm({
   const [cardinality, setCardinality] = useState<DimensionCardinality>(
     initial?.cardinality ?? "single",
   );
+  const [nature, setNature] = useState<DimensionNature>(
+    initial?.nature ?? "intrinsic",
+  );
 
   // On edit the identity is FIXED — every classified keyword points at it.
   const identity =
@@ -102,6 +132,7 @@ export function DimensionForm({
           label: label.trim(),
           description: description.trim(),
           cardinality,
+          ...(mode === "create" ? { nature } : {}),
         });
       }}
     >
@@ -173,6 +204,49 @@ export function DimensionForm({
           difference between a guess and your judgement.
         </p>
       </div>
+
+      {mode === "create" ? (
+        <fieldset className="space-y-1.5">
+          <legend className="text-xs font-semibold text-foreground">
+            What kind of thing is this?
+          </legend>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {NATURE_CHOICES.map((choice) => (
+              <button
+                key={choice.key}
+                type="button"
+                aria-pressed={nature === choice.key}
+                onClick={() => {
+                  setNature(choice.key);
+                  // A keyword can be parked AND slipping — a segment group is
+                  // never one-answer-only unless the person says so after.
+                  if (choice.key === "situational") setCardinality("multi");
+                }}
+                className={cn(
+                  "rounded-md border px-2.5 py-2 text-left transition-colors",
+                  nature === choice.key
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:bg-accent",
+                )}
+              >
+                <span className="block text-xs font-semibold text-foreground">
+                  {choice.title}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
+                  {choice.blurb}
+                </span>
+              </button>
+            ))}
+          </div>
+          {nature === "situational" ? (
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              Segments like this are filled by your Dig Here rules and always
+              show when they were last worked out. Nobody types them in one at
+              a time, and nothing here is a to-do somebody closes.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
 
       {mode === "create" ? (
         <fieldset className="space-y-1.5">

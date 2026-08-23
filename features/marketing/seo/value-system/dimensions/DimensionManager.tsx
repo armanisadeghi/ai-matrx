@@ -27,7 +27,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Layers, Lock, Plus } from "lucide-react";
+import { Layers, Lock, Plus, Timer } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,7 @@ export function DimensionManager() {
         label: draft.label,
         description: draft.description || null,
         cardinality: draft.cardinality,
+        nature: draft.nature,
         siteId,
       });
       setCreating(false);
@@ -101,8 +102,20 @@ export function DimensionManager() {
   };
 
   const dimensions = catalog.data ?? [];
-  const mine = dimensions.filter((dimension) => dimension.scope === "site");
-  const shared = dimensions.filter((dimension) => dimension.scope !== "site");
+  // P20/P22 — intrinsic and situational are the same machinery and are NEVER
+  // shown as one undifferentiated list. "What this keyword IS" and "where
+  // this keyword sits right now" answer different questions, are trusted
+  // differently, and are maintained differently: one is written once, the
+  // other is re-derived on a cadence and carries an as-of.
+  const mine = dimensions.filter(
+    (dimension) => dimension.scope === "site" && dimension.nature !== "situational",
+  );
+  const situational = dimensions.filter(
+    (dimension) => dimension.nature === "situational",
+  );
+  const shared = dimensions.filter(
+    (dimension) => dimension.scope !== "site" && dimension.nature !== "situational",
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -229,6 +242,30 @@ export function DimensionManager() {
                   />
                 ))}
               </section>
+
+              {situational.length > 0 ? (
+                <section className="space-y-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                    <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                      <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                      Right now on this site
+                    </h2>
+                    <p className="text-[11px] text-muted-foreground">
+                      Segments worked out from your own data, not from the
+                      words. They move as the data moves.
+                    </p>
+                  </div>
+                  {situational.map((dimension) => (
+                    <DimensionCard
+                      key={dimension.dimension_id}
+                      dimension={dimension}
+                      siteId={siteId}
+                      defaultExpanded={situational.length <= 3}
+                      onSaved={refresh}
+                    />
+                  ))}
+                </section>
+              ) : null}
 
               <section className="space-y-2">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">

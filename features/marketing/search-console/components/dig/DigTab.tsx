@@ -37,6 +37,7 @@ import {
   type DigRuleDraft,
 } from "@/features/marketing/search-console/components/dig/DigRuleEditor";
 import { DigRuleList } from "@/features/marketing/search-console/components/dig/DigRuleList";
+import { DigStampPanel } from "@/features/marketing/search-console/components/dig/DigStampPanel";
 import { GscPeriodStrip } from "@/features/marketing/search-console/components/PeriodStrip";
 import type { RangeCompareValue } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { LoadingSurface, QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -83,7 +84,21 @@ export function ruleRowContent(rule: GscDigRuleRow): GscDigRuleContent | null {
     rowLimit: rule.row_limit,
     baseFilters,
     trafficClass,
+    level: rule.level ?? null,
   };
+}
+
+/**
+ * C5 — a stamp lands on a KEYWORD. A page dig with no class or level pin
+ * returns pages with no keyword behind them, so it has nothing to stamp; the
+ * server refuses it and the panel says why rather than offering a dead button.
+ */
+export function ruleCanStamp(content: GscDigRuleContent): boolean {
+  return (
+    content.dimension === "query" ||
+    content.trafficClass !== null ||
+    content.level !== null
+  );
 }
 
 const NEW_DRAFT: DigRuleDraft = {
@@ -97,6 +112,7 @@ const NEW_DRAFT: DigRuleDraft = {
     rowLimit: 100,
     baseFilters: {},
     trafficClass: null,
+    level: null,
   },
 };
 
@@ -308,6 +324,7 @@ export function DigTab({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
         {draft ? (
           <DigRuleEditor
+            siteId={siteId}
             draft={draft}
             onChange={(next) => {
               // Rule-content edits invalidate a previous Preview — showing a
@@ -322,14 +339,24 @@ export function DigTab({
             isNew={!editingRuleId}
           />
         ) : selectedRule && selectedContent ? (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md border border-border bg-card px-2.5 py-1.5">
-            <p className="text-xs font-medium text-foreground">
-              {selectedRule.name}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              {digRuleSummary(selectedContent.conditions)}
-            </p>
-          </div>
+          <>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md border border-border bg-card px-2.5 py-1.5">
+              <p className="text-xs font-medium text-foreground">
+                {selectedRule.name}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {digRuleSummary(selectedContent.conditions)}
+              </p>
+            </div>
+            {/* C5 — what this rule's matches are SAVED as. A rule that only
+                lists is a rule whose answer disappears when the tab closes. */}
+            <DigStampPanel
+              siteId={siteId}
+              ruleId={selectedRule.id}
+              ruleName={selectedRule.name}
+              canStamp={ruleCanStamp(selectedContent)}
+            />
+          </>
         ) : selectedRule && !selectedContent ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1.5">
             <p className="text-xs text-destructive">

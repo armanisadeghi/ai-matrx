@@ -133,7 +133,7 @@ export function IngestionHealthBanner({
               ["Nightly job last run", row.dispatcher_last_run_at],
               ["Nightly job status", row.dispatcher_last_status],
               ["Nightly job error", row.dispatcher_last_error],
-              ["Nightly job enabled", row.dispatcher_enabled],
+              ["Nightly job enabled", row.dispatcher_enabled ? "Yes" : "No"],
               ["Nightly job paused at", row.dispatcher_paused_at],
               ["Nightly job paused reason", row.dispatcher_paused_reason],
             ])

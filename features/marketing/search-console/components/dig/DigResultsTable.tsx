@@ -11,6 +11,7 @@
  */
 
 import { useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Eye, Filter, PanelTop, Pickaxe } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -26,13 +27,14 @@ import {
   GscDeltaSpan,
   buildGscKeyColumn,
   buildGscMetricColumns,
+  buildGscValueColumns,
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { describeGscWindow } from "@/features/marketing/search-console/lib/format";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import type {
   GscBreakdownRow,
@@ -98,6 +100,23 @@ export function DigResultsTable({
   const rowWatch = useRowWatch(dimension);
   const clickedRowRef = useRef<GscDigResultRow | null>(null);
 
+  // C5 — Score · Level beside the class the dig already returns, for EXACTLY
+  // the rows this rule surfaced (THE SCOPE RULE: the page's ids, never the
+  // site). A rule that finds a slump is worth more when it says whether the
+  // slump is on keywords that matter.
+  const rowKeywordIds = rows
+    .map((r) => r.keyword_id)
+    .filter((id): id is string => !!id)
+    .sort();
+  const keywordValues = useQuery({
+    queryKey: ["marketing", "gsc", "keyword-value-for", siteId, rowKeywordIds],
+    queryFn: ({ signal }) => getGscKeywordValueFor(siteId, rowKeywordIds, signal),
+    enabled: rowKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const valueFor = (row: GscDigResultRow) =>
+    row.keyword_id ? keywordValues.data?.get(row.keyword_id) : undefined;
+
   const resolveRowContext = (target: HTMLElement | null) => {
     const key = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
     const row = key ? (rows.find((r) => r.key === key) ?? null) : null;
@@ -151,19 +170,11 @@ export function DigResultsTable({
         ? marketingRoutes.sitePage(null, siteId, row.page_id)
         : null,
     ),
-    // Class column only when the server attributed classes (query digs and
-    // class-pinned page digs) — an all-null column is noise.
-    ...(rows.some((r) => r.traffic_class !== null)
-      ? [
-          {
-            id: "traffic_class",
-            header: "Class",
-            sortable: false,
-            filter: false,
-            accessorFn: (row) => row.traffic_class,
-            cell: (row) => <ClassChip trafficClass={row.traffic_class} />,
-          } satisfies MatrxColumnDef<GscDigResultRow>,
-        ]
+    // Class · Score · Level only when the rows carry keywords (query digs and
+    // class/level-pinned page digs) — an all-null trio is noise. The class
+    // shown is the resolver's, the same one `gsc_perf_dig` filtered on.
+    ...(rowKeywordIds.length > 0
+      ? buildGscValueColumns<GscDigResultRow>(valueFor)
       : []),
     ...buildGscMetricColumns<GscDigResultRow>(hasCompare, "all"),
     ...(hasCompare

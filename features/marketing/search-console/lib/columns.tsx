@@ -10,6 +10,9 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
+import type { GscKeywordValueRow } from "@/features/marketing/search-console/data-insights";
 import type { GscDimension } from "@/features/marketing/search-console/types";
 import {
   countryLabel,
@@ -297,5 +300,91 @@ export function gscMetricCopyLines(
         ? formatPosition(row.cmp_avg_position)
         : null,
     ],
+  ];
+}
+
+
+/**
+ * C6/C5 — Class · Score · Level for a keyword-bearing row, resolved by
+ * `seo.gsc_keyword_value_for` for EXACTLY the rows on screen (THE SCOPE RULE:
+ * never the whole site from the browser). ONE definition, shared by the
+ * Queries breakdown table and the Dig Here results table — the second copy
+ * of this block was the drift waiting to happen.
+ *
+ * A level names nothing (P18): it is a threshold word over the score, and the
+ * title says where the number came from rather than dressing it up.
+ */
+export function buildGscValueColumns<T>(
+  valueFor: (row: T) => GscKeywordValueRow | undefined,
+): MatrxColumnDef<T>[] {
+  return [
+    {
+      id: "traffic_class",
+      header: "Class",
+      sortable: false,
+      filter: false,
+      width: 110,
+      accessorFn: (row) => valueFor(row)?.traffic_class ?? "",
+      cell: (row) => {
+        const v = valueFor(row);
+        if (!v) {
+          return <span className="text-[11px] text-muted-foreground">—</span>;
+        }
+        return <ClassChip trafficClass={v.traffic_class} />;
+      },
+    },
+    {
+      id: "value_score",
+      header: "Score",
+      sortable: false,
+      filter: false,
+      align: "right",
+      width: 80,
+      accessorFn: (row) => valueFor(row)?.value_score ?? null,
+      cell: (row) => {
+        const v = valueFor(row);
+        return (
+          <span className="text-xs tabular-nums text-foreground">
+            {v?.value_score === null || v?.value_score === undefined
+              ? "—"
+              : Math.round(Number(v.value_score)).toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      id: "value_band",
+      header: "Level",
+      sortable: false,
+      filter: false,
+      width: 110,
+      accessorFn: (row) => valueFor(row)?.value_band ?? "",
+      cell: (row) => {
+        const v = valueFor(row);
+        if (!v?.value_band) {
+          return <span className="text-[11px] text-muted-foreground">—</span>;
+        }
+        const tone =
+          v.value_band === "negative"
+            ? "text-destructive"
+            : v.value_band === "unvalued"
+              ? "text-muted-foreground"
+              : "text-foreground";
+        return (
+          <span
+            className={`rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium ${tone}`}
+            title={
+              v.value_source === "override"
+                ? "Your ruling"
+                : v.value_source === "computed"
+                  ? "Computed from your dimensions and worth"
+                  : "No worth reaches this keyword yet"
+            }
+          >
+            {humanizeSlug(v.value_band)}
+          </span>
+        );
+      },
+    },
   ];
 }

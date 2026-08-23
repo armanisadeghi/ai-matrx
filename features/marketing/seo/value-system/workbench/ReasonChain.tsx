@@ -19,9 +19,11 @@ import {
   Landmark,
   MapPin,
   SlidersHorizontal,
+  Timer,
   TreePine,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
+import { formatRelativeTime } from "@/utils/datetime";
 import type { ValueReason, ValueSource } from "../types";
 import { humanizeSlug } from "../lib";
 
@@ -53,23 +55,37 @@ function reasonView(reason: ValueReason): ReasonView {
             : `Every adding worth summed to ${reason.adds}; then ${reason.n_factors} scaling ${reason.n_factors === 1 ? "factor" : "factors"} multiplied it by ${reason.factor} (capped between 0.01 and 10). Order is always: add, then scale, then never.`,
         tone: reason.never ? "text-destructive" : undefined,
       };
-    case "stamp":
+    case "stamp": {
+      // P20 — a situational stamp is a present-tense claim, so it never shows
+      // without the moment it was worked out. Reading "parked" with no time
+      // behind it invites treating a snapshot as a permanent fact.
+      const asOf =
+        reason.nature === "situational" && reason.as_of
+          ? ` · as of ${formatRelativeTime(reason.as_of, { style: "long" })}`
+          : reason.nature === "situational"
+            ? " · never evaluated"
+            : "";
       return {
-        icon: reason.dimension.startsWith("site_geo") ? MapPin : SlidersHorizontal,
+        icon: reason.nature === "situational"
+          ? Timer
+          : reason.dimension.startsWith("site_geo")
+            ? MapPin
+            : SlidersHorizontal,
         text:
           reason.effect === "never"
             ? `${reason.dimension_label}: ${reason.value_label} — never`
             : reason.effect === "add"
               ? `${reason.dimension_label}: ${reason.value_label} ${reason.amount !== null && reason.amount >= 0 ? "+" : ""}${reason.amount}`
-              : `${reason.dimension_label}: ${reason.value_label} ${multiplierText(reason.amount ?? 1)}`,
+              : `${reason.dimension_label}: ${reason.value_label} ${multiplierText(reason.amount ?? 1)}${asOf}`,
         detail:
           reason.effect === "never"
             ? `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}), which this site marked never — it forces the score to zero.`
             : reason.effect === "add"
               ? `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value adds ${reason.amount} to the score.`
-              : `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value scales the score by ${reason.amount}.${reason.source === "human" ? " Stamped by a person." : reason.source === "matcher" ? " Stamped by one of your matchers." : reason.source === "classifier" ? " Stamped by the AI classifier." : ""}`,
+              : `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value scales the score by ${reason.amount}.${reason.source === "human" ? " Stamped by a person." : reason.source === "matcher" ? " Stamped by one of your matchers." : reason.source === "classifier" ? " Stamped by the AI classifier." : ""}${reason.nature === "situational" ? ` This is a situational stamp — it describes where the keyword sits right now, worked out ${reason.as_of ? formatRelativeTime(reason.as_of, { style: "long" }) : "never"}, and it moves as the data moves.` : ""}`,
         tone: reason.effect === "never" ? "text-destructive" : reason.effect === "scale" && (reason.amount ?? 1) < 1 ? "text-warning" : undefined,
       };
+    }
     case "override":
       return {
         icon: Gavel,

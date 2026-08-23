@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,13 +37,27 @@ import {
   GSC_DIG_OPS,
 } from "@/features/marketing/search-console/types";
 
+import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
+
 export interface DigRuleDraft {
   name: string;
   description: string;
   content: GscDigRuleContent;
 }
 
+/**
+ * The resolver's two own answers. They are not vocabulary rows — a keyword is
+ * `unvalued` when nothing adds worth to it and `negative` when a never-flag
+ * fires — but a person digging by level means to reach them, so they sit in
+ * the picker beside the site's own levels (the server accepts exactly these).
+ */
+const RESOLVER_LEVELS: readonly { value: string; label: string }[] = [
+  { value: "unvalued", label: "Unvalued" },
+  { value: "negative", label: "Negative" },
+];
+
 export function DigRuleEditor({
+  siteId,
   draft,
   onChange,
   onPreview,
@@ -51,6 +66,7 @@ export function DigRuleEditor({
   saving,
   isNew,
 }: {
+  siteId: string;
   draft: DigRuleDraft;
   onChange: (next: DigRuleDraft) => void;
   onPreview: () => void;
@@ -61,6 +77,12 @@ export function DigRuleEditor({
 }) {
   // Value inputs hold free text while typing; commit parses to number.
   const [valueDrafts, setValueDrafts] = useState<Record<number, string>>({});
+  // Levels are THIS site's value scale, read live — never a hardcoded ladder.
+  const levels = useQuery({
+    queryKey: ["marketing", "gsc", "filter-level-vocabulary", siteId],
+    queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
+    staleTime: 5 * 60_000,
+  });
 
   const { content } = draft;
   // Preview needs only runnable content; a name is required only to SAVE.
@@ -144,6 +166,35 @@ export function DigRuleEditor({
           {GSC_TRAFFIC_CLASSES.map((cls) => (
             <SelectItem key={cls.key} value={cls.key} className="text-xs">
               {cls.label} only
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Level pin — dig within ONE level of your value scale, beside the
+          class pin. A level is a keyword fact, so a level-pinned page rule
+          evaluates per query server-side, exactly like a class-pinned one. */}
+      <Select
+        value={content.level ?? "all"}
+        onValueChange={(next) =>
+          setContent({ level: next === "all" ? null : next })
+        }
+      >
+        <SelectTrigger size="sm" className="h-7 w-full text-xs" aria-label="Level">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all" className="text-xs">
+            All levels
+          </SelectItem>
+          {(levels.data ?? []).map((level) => (
+            <SelectItem key={level.value} value={level.value} className="text-xs">
+              {level.label} only
+            </SelectItem>
+          ))}
+          {RESOLVER_LEVELS.map((level) => (
+            <SelectItem key={level.value} value={level.value} className="text-xs">
+              {level.label} only
             </SelectItem>
           ))}
         </SelectContent>
