@@ -133,6 +133,36 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   together. A compare-requiring rule under `compare=none` auto-runs vs
   the previous period (`withPrevCompare`) and says so. `?rule=<id>` is
   URL state (digs tab only).
+  **C5 (2026-08-23) — A DIG RULE CAN SAVE ITS MATCHES AS A STAMP.** A rule is
+  also a *condition matcher* on a SITUATIONAL dimension's value: `components/dig/
+  DigStampPanel.tsx` ("Saves matches as") attaches it via
+  `seo.gsc_dig_rule_stamp_upsert`, and `seo.fn_evaluate_condition_matchers`
+  re-derives the stamps by running the rule through the IDENTICAL `gsc_perf_dig`
+  path — its own base filters, class pin, level pin, sort and row limit — over
+  ONE window (the site's current 28 days by default; THE SCOPE RULE is
+  structural, never the corpus). Stamps land `source='matcher'` with an `as_of`;
+  a re-evaluation releases what stopped matching and never touches a human pin
+  (P20). **P21: the stamp is the SEGMENT, never a status a person closes** — if
+  a flow needs "done", that is a task referencing the stamp.
+  🚨 **Two things that must stay true, both found by breaking them:**
+  (1) *no silent caps* — the rule's `row_limit` bounds what gets stamped, so the
+  evaluator returns `matched_total` / `limited` and the panel keeps the warning
+  where the number is; (2) *compare parity* — a compare window is passed ONLY
+  when the rule needs one (any `cmp_*`/`delta_*` condition or sort metric,
+  mirroring `withPrevCompare`), because `gsc_perf_dig` FULL OUTER JOINs the
+  periods and a stray compare silently widens what the rule MEANS (measured:
+  1,563 → 2,952 matches on DDI). **What the results table shows is what gets
+  stamped** — never let those two diverge.
+  A rule also carries a **LEVEL pin** beside the class pin
+  (`gsc_dig_rule.level` → `gsc_perf_dig.p_level`, validated against the site's
+  own `value_band` vocabulary plus `unvalued` / `negative`), and the results
+  table shows **Class · Score · Level** per row via the shared
+  `lib/columns.tsx::buildGscValueColumns` + `seo.gsc_keyword_value_for` for
+  EXACTLY the rows on screen. That builder is shared with `GscDimensionTable` —
+  a second copy of it is a defect. Re-evaluation is also available per-dimension
+  from the Dimensions screen; the nightly pass
+  (`seo_situational_stamp_refresh`) is PROPOSED, not enabled, in
+  `../../../../common-docs/operations/scheduled-tasks.md`.
 - **Insights** (`components/insights/InsightsTab.tsx` + `ClassInsights.tsx`)
   — the ALGORITHM layer beyond threshold dig rules. **THE TRAFFIC-CLASS
   DOCTRINE (Arman, 2026-08-07): not all traffic is created equal — raw
@@ -661,6 +691,21 @@ deliberately not a Popover (opening one from a closing Radix Select loses
 its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
+
+- 2026-08-23 — **C5: Dig Here saves its matches as a situational stamp**
+  ([`migrations/seo_stamp_system_c5_condition_matchers.sql`](../../../migrations/seo_stamp_system_c5_condition_matchers.sql),
+  `…_c5b_no_silent_cap.sql`, `…_c5c_compare_parity.sql`). A rule becomes ONE
+  `condition` matcher on a situational dimension's value; the engine re-derives
+  the stamps by running the rule through the identical `gsc_perf_dig` path over
+  one window, with an `as_of`, releasing what stops matching and never touching
+  a human pin. Also: the LEVEL pin beside the class pin, Class · Score · Level
+  on dig rows through the now-shared `buildGscValueColumns`, and Re-evaluate on
+  both the rule and the Dimensions screen. Verified live on DDI end to end
+  (parked segment → 1,000 stamped → Queries filtered 4,471 → 1,000 → idempotent
+  re-evaluate → test rows removed). Two defects the live pass caught and fixed:
+  the rule's row limit silently truncated the segment (1,000 of 2,952 reported
+  as the whole set), and always passing a compare window changed what a rule
+  MEANS (1,563 → 2,952 matches). Nightly re-derivation is PROPOSED, not enabled.
 
 - 2026-08-23 — **A PAUSED schedule is not a FAILING schedule** (health v4,
   [`migrations/seo_gsc_ingestion_health_v4.sql`](../../../migrations/seo_gsc_ingestion_health_v4.sql)).
