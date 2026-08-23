@@ -136,6 +136,14 @@ interface AgentConversationColumnProps {
    */
   afterMessages?: React.ReactNode;
   /**
+   * Extra content PINNED directly above the input, below the transcript's
+   * scroll area — the same band the reconnect banner, pending asks and
+   * proposed directives already occupy. Unlike `afterMessages` it does not
+   * scroll away with the conversation, so it suits a live control the user
+   * needs while they talk (the voice layer's panel is the first consumer).
+   */
+  aboveInput?: React.ReactNode;
+  /**
    * Defer cold, DB-hydrated assistant markdown for a beat so the chat route
    * shows a stable text-skeleton instead of exposing MarkdownStream assembly.
    * Live requestId-backed streaming bypasses this.
@@ -154,6 +162,7 @@ export function AgentConversationColumn({
   hideInput = false,
   hideCreatorPanel = false,
   afterMessages,
+  aboveInput,
   deferColdMarkdown = false,
 }: AgentConversationColumnProps) {
   const dispatch = useAppDispatch();
@@ -490,6 +499,7 @@ export function AgentConversationColumn({
           <ServerOperationBanner conversationId={displayId} />
           <PendingAsksZone conversationId={displayId} />
           <ProposedDirectivesZone conversationId={displayId} />
+          {aboveInput}
 
           {!hideInput && (
             <SmartAgentInput

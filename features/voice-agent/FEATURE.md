@@ -31,9 +31,12 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
   tools=web_search+x_search, no settings UI).
 - `app/(core)/chat/voice/playground/page.tsx` — fully configurable: voice picker,
   tool toggles, instructions editor in a right-side `<Sheet>`.
-- `app/(dev)/demos/voice-relay/page.dev.tsx` — Voice Communication Layer test
-  surface (the Communicator speaks for a primary text agent — see the relay
-  section below).
+- `app/(core)/chat/talk` — the Voice Communication Layer, LIVE. The voice twin
+  of the text chat routes: `/chat/talk` (default agent) → `/chat/talk/a/[agentId]`
+  (fresh) → `/chat/talk/[conversationId]` (persisted). Mounts the SAME
+  `ChatRoomClient` as `/chat`, with the voice dock pinned above the composer;
+  the agent picker and the URL promotion both keep you in voice. One
+  conversation, shared with the text route — the two are doors onto one thread.
 - `app/(core)/chat/voice/gemini/page.tsx` — Google Live microphone/audio/text
   surface with catalog model selection, thinking level, turn coverage,
   transcript, and visible lifecycle state.
@@ -284,6 +287,45 @@ Implementation tracked in
 ---
 
 ## Change log
+
+- `2026-08-23` (2) — **Live testing round: four fixes, and the layer moved onto
+  the live product.**
+  **The turn is the speaker's to end.** `session.update` never sent
+  `silence_duration_ms`, so the provider default (short, tuned for
+  command-and-response) ended a turn on any ordinary pause for breath — Arman:
+  *"as I was trying to talk, it kept submitting, and then it led to a bunch of
+  errors."* Now always sent: `TURN_SILENCE_MS` (1600) with the relay raising it
+  to `RELAY_TURN_SILENCE_MS` (2400), plus `TURN_PREFIX_PADDING_MS` so VAD
+  cannot clip the first syllable. These are feel thresholds — review by
+  2026-09-30 against real conversations.
+  **One answer rendered in two places — TWO confirmed causes.** (a) Every relay
+  keyed its voice slice instance on the Communicator agent id, which is the
+  same agent for all of them, so two relays on one page (the Rulebook renders
+  the Conductor and the Scout side by side) shared ONE instance while each kept
+  its own session, controller and brain conversation — a single spoken sentence
+  started two runs in two conversations rendered in two columns. Fixed with
+  `instanceScope`, keyed on the host surface. (b) `useVoiceRelaySession` never
+  passed its pinned `conversationId` INTO `useAgentLauncher`, so the managed
+  launcher minted a second conversation and took surface focus with it. Fixed
+  by handing the pin in.
+  **A third duplicate, in the shared display path:** `buildDisplayEntries`
+  inspected only the LAST assistant record to decide which one is streaming and
+  gave up otherwise — so whenever the next turn's empty `reserved` row sat after
+  the live one, the live turn rendered as a settled bubble AND again as the
+  synthetic `__streaming__` entry. The scan now looks for the record that
+  actually carries the request. Two tests pin it (verified failing without the
+  fix).
+  **The demo is gone; voice is on the live product.** `/demos/voice-relay` —
+  which asked the user to paste an agent UUID — is DELETED. Voice now lives at
+  `/chat/talk`, mounting the canonical `ChatRoomClient` with the canonical agent
+  picker, and presenting as `VoiceRelayDock` / `VoiceRelayPanel` pinned above the
+  composer (`AgentConversationColumn`'s new generic `aboveInput` slot; the panel
+  composes `VoiceOrb` / `VoiceStatusPill` / `VoiceMuteButton` and adds no visual
+  language of its own). `ChatRunHeader` gained `buildAgentHref` and
+  `ChatRoomClient` gained `buildConversationHref` so switching agents or
+  promoting the URL keeps the user in voice instead of dropping them into text
+  mid-session.
+  Also: a broker 403 now toasts (`refused`), which it previously did not.
 
 - `2026-08-23` — **Three relay defects fixed; one minting path.**
   **(1) Dropped utterances.** The relay read `event.transcript` directly on

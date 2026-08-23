@@ -85,6 +85,19 @@ export function buildDisplayEntries({
   latestRequestId,
   isErrorPhase,
 }: BuildDisplayEntriesArgs): DisplayEntry[] {
+  // Which record IS the live stream, if one exists yet.
+  //
+  // This used to inspect only the LAST assistant record and give up if that
+  // one did not carry `latestRequestId` — which renders the same turn TWICE
+  // whenever another assistant record sits after the streaming one. The
+  // ordinary way that happens: the next turn's empty `reserved` record is
+  // created while the current turn is still streaming. The scan stopped on
+  // the reserved record, `streamingAssistantId` stayed null, so the real
+  // streaming record rendered as a settled bubble AND the synthetic
+  // `__streaming__` entry below rendered the same live text again.
+  //
+  // Scan back for the record that actually carries the request instead. The
+  // list is already display-windowed, so this stays cheap.
   let streamingAssistantId: string | null = null;
   if (isActive && latestRequestId) {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -92,8 +105,8 @@ export function buildDisplayEntries({
       if (rec.role !== "assistant") continue;
       if (rec._streamRequestId === latestRequestId) {
         streamingAssistantId = rec.id;
+        break;
       }
-      break;
     }
   }
 
