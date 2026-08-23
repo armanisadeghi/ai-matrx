@@ -315,9 +315,21 @@ export interface EducationCardImageOffer {
   topic: string;
   face: string;
   candidates?: unknown;
-  candidate_images?: unknown;
+  candidate_images?: (string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+})[];
   generation_prompt?: string;
-  generated_image?: unknown;
+  generated_image?: string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+};
   style?: string;
 }
 
