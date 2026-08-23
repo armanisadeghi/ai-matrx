@@ -281,43 +281,126 @@ export const getNestedProperty = (obj, path, defaultValue = null) => {
  * @param {object} organizedData - Organized data section
  * @returns {Array} Array of processed sections with headings and content
  */
-export const processOrganizedData = (organizedData) => {
-  if (!organizedData || Object.keys(organizedData).length === 0) {
-    return [];
-  }
-  
-  return Object.keys(organizedData).map(heading => {
-    if (!organizedData[heading] || organizedData[heading].length === 0) {
-      return null;
-    }
-    
-    // Extract heading level and text
+/**
+ * Normalize whatever `organized_data` shape the scraper returned into ONE flat,
+ * typed item list.
+ *
+ * The live scraper emits `{ sections: [{type, level?, content, ...}] }` —
+ * `header` / `text` / `list` / `image` / anything else, flat, in reading order.
+ * Older saved scrapes stored a `{ "H2: Heading": [ "para", {Lists:[…]} ] }`
+ * map. BOTH are DATA, and both normalize here so every consumer below reads one
+ * shape — and so nothing can fall through to printing an item's KEY NAMES
+ * again. That fall-through was the defect that rendered the Content tab (and
+ * fed BOTH AI analysis tabs) the literal words "type, level, content" instead
+ * of the page: the scraper's output shape changed and this file never learned
+ * it. Found 2026-08-22 wiring the scraper mandates.
+ */
+const normalizeOrganizedSections = (organizedData) => {
+  if (!organizedData || typeof organizedData !== "object") return [];
+
+  if (Array.isArray(organizedData.sections)) return organizedData.sections;
+  if (Array.isArray(organizedData)) return organizedData;
+
+  // Older heading-map shape -> the same flat typed list.
+  const flattened = [];
+  Object.keys(organizedData).forEach((heading) => {
+    const items = organizedData[heading];
+    if (!Array.isArray(items) || items.length === 0) return;
     const headingMatch = heading.match(/H(\d+):/);
-    const level = headingMatch ? parseInt(headingMatch[1]) : 2;
-    const text = heading.includes(': ') ? heading.split(': ')[1] : heading;
-    
-    // Process content items
-    const content = organizedData[heading].map(item => {
-      if (typeof item === 'string') {
-        return { type: 'paragraph', content: item };
-      } else if (typeof item === 'object' && item !== null) {
-        if (item.Lists && Array.isArray(item.Lists)) {
-          return { type: 'list', items: item.Lists };
+    flattened.push({
+      type: "header",
+      level: headingMatch ? parseInt(headingMatch[1], 10) : 2,
+      content: heading.includes(": ") ? heading.split(": ")[1] : heading,
+    });
+    items.forEach((item) => {
+      if (typeof item === "string") {
+        flattened.push({ type: "text", content: item });
+      } else if (item && typeof item === "object") {
+        if (Array.isArray(item.Lists)) {
+          flattened.push({ type: "list", content: item.Lists });
         } else {
-          return { type: 'unknown', keys: Object.keys(item) };
+          flattened.push(item);
         }
       }
-      return null;
-    }).filter(Boolean);
-    
-    return {
-      heading: {
-        level,
-        text
-      },
-      content
-    };
-  }).filter(Boolean);
+    });
+  });
+  return flattened;
+};
+
+/** The readable text an item carries, or "" when it carries none. */
+const itemText = (item) => {
+  if (typeof item === "string") return item.trim();
+  if (!item || typeof item !== "object") return "";
+  const { content } = item;
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((entry) => (typeof entry === "string" ? entry.trim() : itemText(entry)))
+      .filter(Boolean)
+      .join("\n");
+  }
+  // An item with no `content` may still carry text a reader wants (an image's
+  // caption/alt). Never fall back to the object's KEY NAMES.
+  return [item.caption, item.alt, item.title]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean)
+    .join(" - ");
+};
+
+/**
+ * Process organized data into sections for display: every item grouped under
+ * the header that precedes it, in reading order.
+ * @param {object} organizedData - The scraper's organized_data
+ * @returns {Array} Array of processed sections with headings and content
+ */
+export const processOrganizedData = (organizedData) => {
+  const items = normalizeOrganizedSections(organizedData);
+  if (items.length === 0) return [];
+
+  const sections = [];
+  let current = null;
+
+  const openSection = (level, text) => {
+    current = { heading: { level, text }, content: [] };
+    sections.push(current);
+  };
+
+  items.forEach((item) => {
+    const type = typeof item === "object" && item !== null ? item.type : "text";
+
+    if (type === "header") {
+      const level = Number.isFinite(item.level) && item.level > 0 ? item.level : 2;
+      // The scraper's level-0 "unassociated" bucket is its own vocabulary for
+      // "content that sat under no heading" - not a title a reader should see,
+      // so that section opens with no heading text.
+      const text = item.level === 0 ? "" : itemText(item);
+      openSection(level, text);
+      return;
+    }
+
+    if (current === null) openSection(2, "");
+
+    if (type === "list") {
+      const listItems = (Array.isArray(item.content) ? item.content : [])
+        .map((entry) => (typeof entry === "string" ? entry.trim() : itemText(entry)))
+        .filter(Boolean);
+      if (listItems.length > 0) current.content.push({ type: "list", items: listItems });
+      return;
+    }
+
+    if (type === "image") {
+      const caption = itemText(item);
+      if (caption) current.content.push({ type: "image", caption, src: item.src });
+      return;
+    }
+
+    const text = itemText(item);
+    if (text) current.content.push({ type: "paragraph", content: text });
+  });
+
+  return sections.filter(
+    (section) => section.content.length > 0 || section.heading.text,
+  );
 };
 
 /**
@@ -397,10 +480,6 @@ export const isScraperLoading = (streamingResponse) => {
 
 
 export const convertOrganizedDataToString = (organizedData) => {
-  if (!organizedData || Object.keys(organizedData).length === 0) {
-      return "No organized content available";
-  }
-
   const processedData = processOrganizedData(organizedData);
   if (processedData.length === 0) {
       return "No organized content available";
@@ -409,12 +488,11 @@ export const convertOrganizedDataToString = (organizedData) => {
   let result = "";
 
   processedData.forEach((section) => {
-      // Add heading with proper spacing
-      result += `${section.heading.text}\n`;
-      // Add dashes under heading based on level
-      result += "-".repeat(Math.min(section.heading.level * 2, 6)) + "\n\n";
+      if (section.heading.text) {
+          result += `${section.heading.text}\n`;
+          result += "-".repeat(Math.min(section.heading.level * 2, 6)) + "\n\n";
+      }
 
-      // Process content items
       section.content.forEach((item) => {
           if (item.type === "paragraph") {
               result += `${item.content}\n\n`;
@@ -423,15 +501,11 @@ export const convertOrganizedDataToString = (organizedData) => {
                   result += `- ${listItem}\n`;
               });
               result += "\n";
-          } else {
-              result += `${item.keys.join(", ")}\n\n`;
+          } else if (item.type === "image") {
+              result += `[image] ${item.caption}\n\n`;
           }
       });
-
-      // Add extra space between sections
-      result += "\n";
   });
 
-  // Remove trailing whitespace
-  return result.trim();
+  return result.trim() || "No organized content available";
 };
