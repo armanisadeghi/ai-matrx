@@ -13,6 +13,10 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  coerceGradeVerdict,
+  verdictResult,
+} from "@/features/education/trust/types";
 import type { ReviewResult } from "../types";
 import { FC_MANDATES } from "./mandates";
 
@@ -23,53 +27,22 @@ export interface TypedGradeVerdict {
 }
 
 /**
- * Defensive read of the agent's verdict JSON. Null when unusable.
- *
- * The LIVE contract (agent "Trust — Grade Typed Answer on Meaning", verified
- * against `agent.definition.output_schema` 2026-08-18) is boolean-shaped:
- * `{ correct, partial, misconception, explanation }`. A `result`-string shape
- * is also accepted so a rebound agent with the simpler contract keeps working.
+ * The Write-surface view of the `answer_grade` kind: adapts THE ONE verdict
+ * reader (`coerceGradeVerdict`, trust/types.ts — booleans + result-token
+ * contracts, `__kind` ignored) into the inline result + one-line reason.
+ * Null when unusable.
  */
 export function readTypedGradeVerdict(data: unknown): TypedGradeVerdict | null {
-  if (!data || typeof data !== "object") return null;
-  const r = data as Record<string, unknown>;
-
-  const explanation =
-    typeof r.explanation === "string" && r.explanation.trim().length > 0
-      ? r.explanation.trim()
-      : typeof r.reason === "string" && r.reason.trim().length > 0
-        ? r.reason.trim()
-        : null;
-  const misconception =
-    typeof r.misconception === "string" && r.misconception.trim().length > 0
-      ? r.misconception.trim()
-      : null;
+  const verdict = coerceGradeVerdict(data);
+  if (!verdict) return null;
+  const explanation = verdict.explanation.trim() || null;
+  const misconception = verdict.misconception?.trim() || null;
   const reason =
     misconception && explanation
       ? `${explanation} (misconception: ${misconception})`
       : (explanation ?? misconception);
-
-  // Live boolean contract.
-  if (typeof r.correct === "boolean") {
-    const result: ReviewResult = r.correct
-      ? "correct"
-      : r.partial === true
-        ? "partial"
-        : "incorrect";
-    return { result, reason };
-  }
-
-  // String-result contract (rebind tolerance).
-  const raw =
-    typeof r.result === "string"
-      ? r.result.trim().toLowerCase()
-      : typeof r.grade === "string"
-        ? r.grade.trim().toLowerCase()
-        : null;
-  if (raw === "correct" || raw === "partial" || raw === "incorrect") {
-    return { result: raw, reason };
-  }
-  return null;
+  const result: ReviewResult = verdictResult(verdict);
+  return { result, reason };
 }
 
 /** Semantic verdict on a typed answer, or null on failure (fallback on screen). */

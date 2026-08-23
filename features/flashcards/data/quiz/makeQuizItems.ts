@@ -38,8 +38,9 @@ export interface MakeQuizItemsResult {
   explanation: string;
 }
 
-/** Narrow the agent's raw JSON to the lane's contract (shared with the seam). */
-function readItems(data: unknown): MakeQuizItemsResult | null {
+/** Narrow the agent's raw JSON (the `quiz_item` kind — `__kind` ignored) to
+ *  the lane's contract (shared with the persistence seam). */
+export function readItems(data: unknown): MakeQuizItemsResult | null {
   if (!data || typeof data !== "object") return null;
   const r = data as Record<string, unknown>;
   const question = typeof r.question === "string" ? r.question : "";

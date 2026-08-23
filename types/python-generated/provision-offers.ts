@@ -507,6 +507,8 @@ export interface FlashcardsGenerateFromSourceOffer {
   document_id?: string;
   count: number;
   difficulty: string;
+  focus?: string;
+  title?: string;
 }
 
 /** Offered shape of provision `flashcards.grade_spoken` (kind `flashcards.grade_spoken.offer`). */

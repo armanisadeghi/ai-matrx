@@ -206,6 +206,7 @@ export function CreateFromSource() {
         document_id: selectedDoc.id,
         count: safeCount,
         difficulty,
+        title: selectedDoc.name,
         depth,
       });
 

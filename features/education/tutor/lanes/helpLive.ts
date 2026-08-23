@@ -71,11 +71,12 @@ export interface HelpLiveResult {
 }
 
 /**
- * Narrow the agent's raw JSON to the lane's contract. Shared by the awaited
+ * Narrow the agent's raw JSON (the `live_help_answer` kind — `__kind` keys at
+ * every level are ignored) to the lane's contract. Shared by the awaited
  * return AND the persistence seam so the row we store and the object we render
  * can never be two different readings of the same run.
  */
-function readHelp(data: unknown): HelpLiveResult | null {
+export function readHelp(data: unknown): HelpLiveResult | null {
   if (!data || typeof data !== "object") return null;
   const r = data as Record<string, unknown>;
   const answer = typeof r.answer === "string" ? r.answer : "";
@@ -93,6 +94,36 @@ function readHelp(data: unknown): HelpLiveResult | null {
       ? r.followups.filter((x): x is string => typeof x === "string")
       : [],
     trust: coerceTrustEnvelope(r.trust),
+  };
+}
+
+/** The registered kind this lane's answer renders as. */
+export const LIVE_HELP_ANSWER_KIND = "live_help_answer" as const;
+
+/**
+ * Re-assemble the canonical `live_help_answer` kind value from the lane's
+ * normalized result — so a live answer AND one read back from the session
+ * journal render through the SAME kind component (KindInstanceRender).
+ */
+export function liveHelpAnswerValue(
+  result: HelpLiveResult,
+): Record<string, unknown> {
+  return {
+    __kind: LIVE_HELP_ANSWER_KIND,
+    answer: result.answer,
+    hint_level: result.hintLevel,
+    followups: result.followups,
+    trust: result.trust
+      ? {
+          __kind: "trust_envelope",
+          citations: result.trust.citations.map((c) => ({
+            __kind: "citation",
+            ...c,
+          })),
+          confidence: result.trust.confidence,
+          groundedIn: result.trust.groundedIn ?? null,
+        }
+      : null,
   };
 }
 

@@ -54,13 +54,20 @@ export function helpLive(args: HelpLiveArgs) {
     const byId = new Map(cards.map((c) => [c.id, c]));
     const recentCorrect: string[] = [];
     const recentWrong: string[] = [];
+    // Topics of the recently-missed cards (DrillCard carries `topic` when the
+    // set has one) — the same "struggling with" signal StudyDeck derives.
+    const struggledTopics = new Set<string>();
     for (let i = grades.length - 1; i >= 0 && (recentCorrect.length < 5 || recentWrong.length < 5); i--) {
       const g = grades[i];
       if (g.status !== "resolved" || g.result === null) continue;
-      const front = byId.get(g.cardId)?.front;
+      const drillCard = byId.get(g.cardId);
+      const front = drillCard?.front;
       if (!front) continue;
       if (g.result === "correct" && recentCorrect.length < 5) recentCorrect.push(front);
-      else if (g.result !== "correct" && recentWrong.length < 5) recentWrong.push(front);
+      else if (g.result !== "correct" && recentWrong.length < 5) {
+        recentWrong.push(front);
+        if (drillCard?.topic?.trim()) struggledTopics.add(drillCard.topic.trim());
+      }
     }
 
     // This card's real attempt history + the learner's real due count — both
@@ -83,7 +90,7 @@ export function helpLive(args: HelpLiveArgs) {
         sessionScore: board.avgScorePct != null ? board.avgScorePct / 100 : null,
         recentCorrect,
         recentWrong,
-        struggledTopics: [], // Fast Fire's DrillCard carries no topic field
+        struggledTopics: [...struggledTopics],
         dueCount: dueRes.data?.length ?? 0,
         timeOnCardMs: args.timeOnCardMs ?? 0,
         cardHistory: historyRes.data ?? [],

@@ -21,9 +21,9 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
-import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { foldDepthIntoRequest } from "./enhanceCard";
+import { coerceCards, setTitleOf } from "./coerce-card";
 import type { NewCardInput } from "./types";
 
 /**
@@ -68,9 +68,14 @@ export interface GenerateCardsVariables {
  */
 export interface GenerateFromSourceVariables {
   source_content: string;
-  document_id: string;
+  /** The Knowledge document the chunks came from (echoed back in citations). */
+  document_id?: string;
   count: number;
   difficulty: string;
+  /** A name for the material — the agent titles the set from it. */
+  title?: string;
+  /** Freeform emphasis; the depth tier is folded in front of it. */
+  focus?: string;
   /** Gap 8 — reaches this agent through its declared `focus` variable. */
   depth?: Depth;
 }
@@ -112,102 +117,20 @@ const EXTRACTION_TIMEOUT_MS = 240_000;
 const POLL_INTERVAL_MS = 250;
 
 /**
- * Coerce one raw card object (unknown JSON from the model) into a NewCardInput.
- * Drops cards missing both front and back; everything else floors to safe
- * defaults so a slightly-off agent payload still yields usable cards rather
- * than throwing. Returns null for an unusable entry.
- */
-function coerceCard(raw: unknown): NewCardInput | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const r = raw as Record<string, unknown>;
-  const str = (key: string): string =>
-    typeof r[key] === "string" ? (r[key] as string).trim() : "";
-  const front = str("front");
-  const back = str("back");
-  if (!front && !back) return null;
-
-  const optional = (key: string): string | null => {
-    const v = r[key];
-    return typeof v === "string" && v.trim() ? v.trim() : null;
-  };
-
-  // Phase 5 (from-source): the agent echoes which passage a card came from
-  // as `source: { processed_document_id, chunk_id, page }` per
-  // AGENT_SPECS.md §2 — `file_id` is NOT something the agent knows (it's our
-  // cld_file id, not a Knowledge identifier), so it's left blank here for the
-  // from-source caller to backfill from the document the user picked before
-  // persisting (fcService.addCards skips lineage entirely on an empty id).
-  const rawSource = r.source;
-  const source =
-    rawSource && typeof rawSource === "object" && !Array.isArray(rawSource)
-      ? (() => {
-          const s = rawSource as Record<string, unknown>;
-          const processedDocumentId =
-            typeof s.processed_document_id === "string"
-              ? s.processed_document_id
-              : undefined;
-          const chunkId =
-            typeof s.chunk_id === "string" ? s.chunk_id : undefined;
-          const page = typeof s.page === "number" ? s.page : undefined;
-          return {
-            file_id: "",
-            processed_document_id: processedDocumentId,
-            chunk_id: chunkId,
-            page,
-          };
-        })()
-      : undefined;
-
-  return {
-    front,
-    back,
-    card_kind: optional("card_kind") ?? "basic",
-    difficulty: optional("difficulty"),
-    topic: optional("topic"),
-    source,
-    // P0 TrustEnvelope — citations + confidence the agent emitted for this card
-    // (null when the agent produced no envelope; ungrounded topic-gen omits it).
-    trust: coerceTrustEnvelope(r) ?? undefined,
-  };
-}
-
-/**
- * Coerce the extracted object into a GeneratedCardSet. Accepts the canonical
- * `flashcard_set` kind `{ title, cards[] }` and is tolerant of the drift
- * shapes for the cards list (a bare array of cards, or a `flashcards` key) so
- * a prompt tweak doesn't break the flow silently. Throws (caught by the
- * caller) only when no cards can be recovered at all.
+ * Coerce the extracted object into a GeneratedCardSet via THE ONE card reader
+ * (`coerce-card.ts`). Accepts the canonical `flashcard_set` kind
+ * `{ title, cards[] }` and the drift shapes (bare array / `flashcards` key).
+ * Throws (caught by the caller) only when no cards can be recovered at all.
  */
 function coerceGeneratedSet(value: unknown): Omit<GeneratedCardSet, "conversationId"> {
-  // Bare array → treat as the cards list with no title.
-  if (Array.isArray(value)) {
-    const cards = value
-      .map(coerceCard)
-      .filter((c): c is NewCardInput => c !== null);
-    if (cards.length === 0) throw new Error("Agent returned no usable cards");
-    return { title: "", cards };
-  }
-
-  if (!value || typeof value !== "object") {
+  if (!Array.isArray(value) && (!value || typeof value !== "object")) {
     throw new Error("Agent did not return a JSON object");
   }
-  const obj = value as Record<string, unknown>;
-
-  const title = (typeof obj.title === "string" && obj.title.trim()) || "";
-
-  const rawCards = Array.isArray(obj.cards)
-    ? obj.cards
-    : Array.isArray(obj.flashcards)
-      ? obj.flashcards
-      : [];
-  const cards = rawCards
-    .map(coerceCard)
-    .filter((c): c is NewCardInput => c !== null);
-
+  const cards = coerceCards(value);
   if (cards.length === 0) {
     throw new Error("Agent returned no usable cards");
   }
-  return { title, cards };
+  return { title: setTitleOf(value), cards };
 }
 
 export function useGenerateCards(): GenerateCardsResult {
@@ -232,12 +155,15 @@ export function useGenerateCards(): GenerateCardsResult {
       keepInstance: true,
       variables: fromSource
         ? {
+            // The provision's full offer (flashcards.generate_from_source):
+            // every from-source caller sends this same superset.
             source_content: vars.source_content,
-            document_id: vars.document_id,
+            document_id: vars.document_id ?? "",
             count: String(vars.count),
             difficulty: vars.difficulty,
+            title: vars.title ?? "",
             // Gap 8 — the tier rides this agent's declared `focus` channel.
-            focus: foldDepthIntoRequest(vars.depth) ?? "",
+            focus: foldDepthIntoRequest(vars.depth, vars.focus) ?? "",
           }
         : {
             topic: vars.topic,

@@ -29,6 +29,7 @@ import type {
   ReviewAttempt,
 } from "@/features/education/tutor/lanes/learnerContext";
 import type { ReviewSessionResult } from "@/features/education/tutor/lanes/reviewSession";
+import { parseSessionReview } from "@/features/education/study/utils/parseSessionReview";
 import { SPOKEN_PRACTICE_MANDATES } from "../mandates";
 import type { SpokenPracticeMode } from "../types";
 
@@ -85,10 +86,8 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
       });
 
       const raw = result.data;
-      if (!raw || typeof raw !== "object") return null;
-      const r = raw as Record<string, unknown>;
-      const summary = typeof r.summary === "string" ? r.summary : "";
-      if (!summary) return null;
+      const review = parseSessionReview(raw);
+      if (!review) return null;
 
       if (args.sessionId) {
         await studyService.updateSession(args.sessionId, {
@@ -96,15 +95,7 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
         });
       }
 
-      return {
-        summary,
-        strengths: Array.isArray(r.strengths)
-          ? r.strengths.filter((x): x is string => typeof x === "string")
-          : [],
-        weaknesses: Array.isArray(r.weaknesses)
-          ? r.weaknesses.filter((x): x is string => typeof x === "string")
-          : [],
-      };
+      return review;
     } catch (err) {
       console.error("[spoken-practice.reviewPracticeSession] failed:", err);
       return null;

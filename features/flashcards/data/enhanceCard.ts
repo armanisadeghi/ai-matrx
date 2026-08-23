@@ -199,6 +199,7 @@ const EXPAND_SIGNAL_BY_DEPTH: Record<Depth, string> = {
 const asString = (v: unknown): string =>
   typeof v === "string" ? v.trim() : "";
 
+/** The `card_enrichment` kind -> persist-ready detail layers (`__kind` ignored). */
 export function coerceDetails(raw: unknown): EnrichedDetail[] {
   const obj =
     raw && typeof raw === "object" && !Array.isArray(raw)
@@ -220,7 +221,8 @@ export function coerceDetails(raw: unknown): EnrichedDetail[] {
   return out;
 }
 
-function coerceSubCards(raw: unknown): ExpandedSubCard[] {
+/** The `card_expansion` kind -> persist-ready sub-cards (`__kind` ignored). */
+export function coerceSubCards(raw: unknown): ExpandedSubCard[] {
   const obj =
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)

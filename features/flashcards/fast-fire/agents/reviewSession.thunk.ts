@@ -60,6 +60,9 @@ export function reviewSession(args: ReviewSessionArgs) {
         attempts,
         aggregate,
         sessionTranscript,
+        // The drill reviews at finalize, after every card was presented — the
+        // remaining queue is genuinely empty here, not a placeholder.
+        remainingCards: [],
       }),
     );
     if (result) dispatch(setSessionReview({ review: result.summary }));

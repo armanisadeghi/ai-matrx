@@ -12,14 +12,16 @@
 // with its own share of the cards, so slide 62 gets asked about too. See
 // `../coverage.ts` for the law and the knobs.
 //
-// NOTE: the raw-JSON card coercion here intentionally mirrors
-// features/flashcards/data/useGenerateCards.ts#coerceCard (that helper is not
-// exported). If the flashcards feature exports it, collapse to that — do not let
-// the two drift on card shape.
+// Card coercion is THE ONE reader in features/flashcards/data/coerce-card.ts
+// (per-card lineage points at the ingest anchor file so fcService writes the
+// card -> file `source` edge; the agent-echoed chunk/page stays for citations).
 
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";
-import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import {
+  coerceCards,
+  setTitleOf,
+} from "@/features/flashcards/data/coerce-card";
 import { CONVERT_MANDATES } from "../mandates";
 import { recordSourceLineage } from "../recordSourceLineage";
 import { looseKey, segmentedGenerate } from "../segmentedGenerate";
@@ -30,74 +32,6 @@ import type {
   ConvertRequest,
   ConvertResult,
 } from "../types";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === "object" && !Array.isArray(v);
-}
-
-/** Coerce one raw agent card object -> NewCardInput (drops unusable entries). */
-function coerceCard(
-  raw: unknown,
-  docId: string,
-  anchorFileId: string,
-): NewCardInput | null {
-  if (!isRecord(raw)) return null;
-  const str = (k: string) =>
-    typeof raw[k] === "string" ? (raw[k] as string).trim() : "";
-  const front = str("front");
-  const back = str("back");
-  if (!front && !back) return null;
-  const optional = (k: string): string | null => {
-    const v = raw[k];
-    return typeof v === "string" && v.trim() ? v.trim() : null;
-  };
-
-  const rawSource = raw.source;
-  // Per-card lineage points at the ingest anchor file (fcService writes a
-  // card->file `source` edge when file_id is set), keeping the agent-echoed
-  // chunk/page for the citation locator.
-  const source = anchorFileId
-    ? {
-        file_id: anchorFileId,
-        processed_document_id:
-          isRecord(rawSource) &&
-          typeof rawSource.processed_document_id === "string"
-            ? rawSource.processed_document_id
-            : docId || undefined,
-        chunk_id:
-          isRecord(rawSource) && typeof rawSource.chunk_id === "string"
-            ? rawSource.chunk_id
-            : undefined,
-        page:
-          isRecord(rawSource) && typeof rawSource.page === "number"
-            ? rawSource.page
-            : undefined,
-      }
-    : undefined;
-
-  return {
-    front,
-    back,
-    card_kind: optional("card_kind") ?? "basic",
-    difficulty: optional("difficulty"),
-    topic: optional("topic"),
-    source,
-    trust: coerceTrustEnvelope(raw) ?? undefined,
-  };
-}
-
-function rawCardsOf(value: unknown): unknown[] {
-  const obj = isRecord(value) ? value : {};
-  if (Array.isArray(obj.cards)) return obj.cards;
-  if (Array.isArray(obj.flashcards)) return obj.flashcards;
-  return Array.isArray(value) ? (value as unknown[]) : [];
-}
-
-function agentTitle(value: unknown): string {
-  const obj = isRecord(value) ? value : {};
-  if (typeof obj.title === "string" && obj.title.trim()) return obj.title.trim();
-  return "";
-}
 
 async function run(
   request: ConvertRequest,
@@ -117,8 +51,11 @@ async function run(
     mandateKey: CONVERT_MANDATES.deckFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
+    // The provision's full offer (flashcards.generate_from_source) — the same
+    // superset every from-source caller sends.
     variables: (segment, plan) => ({
       source_content: segment.text,
+      document_id: docId,
       // The section name rides in the title the agent already declares, so a
       // multi-section run needs no new agent variable and the model still knows
       // which part of the document it is covering.
@@ -130,10 +67,7 @@ async function run(
       difficulty: options?.difficulty ?? "Mixed",
       focus: options?.focus ?? "",
     }),
-    extract: (value) =>
-      rawCardsOf(value)
-        .map((c) => coerceCard(c, docId, anchorFileId))
-        .filter((c): c is NewCardInput => c !== null),
+    extract: (value) => coerceCards(value, { anchorFileId, docId }),
     // Two sections that both define the same term produce the same card; ship
     // it once.
     identity: (card) => looseKey(card.front),
@@ -147,8 +81,8 @@ async function run(
   // On a multi-section run the agent's per-section title names a section, not
   // the deck, so the source's own title wins.
   const setName = covered.plan.singlePass
-    ? agentTitle(covered.firstValue) || source.title || "Study deck"
-    : source.title || agentTitle(covered.firstValue) || "Study deck";
+    ? setTitleOf(covered.firstValue) || source.title || "Study deck"
+    : source.title || setTitleOf(covered.firstValue) || "Study deck";
 
   // Single-writer contract (D-WP3): a single-pass run's stream also materializes
   // its flashcard render block via the canonical adapter, so it goes through the

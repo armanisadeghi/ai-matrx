@@ -33,6 +33,10 @@ import {
   studyReviewWindowId,
 } from "@/features/education/study/reviewRun";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
+import {
+  parseSessionReview,
+  type ParsedSessionReview,
+} from "@/features/education/study/utils/parseSessionReview";
 import type { ReviewAggregate, ReviewAttempt } from "./learnerContext";
 
 export interface ReviewSessionArgs {
@@ -47,6 +51,12 @@ export interface ReviewSessionArgs {
    * SESSION — cross-card confusion, consistency, in-session improvement.
    */
   sessionTranscript?: string;
+  /**
+   * Front text of the cards the learner has NOT yet reached this session
+   * (the reviewer can tell them what is still ahead). Omit/empty when the
+   * session ran the whole deck or the caller reviews after the fact.
+   */
+  remainingCards?: string[];
   /** Override the review mandate (rare — testing only). */
   mandateKey?: string | null;
   /**
@@ -58,11 +68,11 @@ export interface ReviewSessionArgs {
   onConversationCreated?: (conversationId: string) => void;
 }
 
-export interface ReviewSessionResult {
-  summary: string;
-  strengths: string[];
-  weaknesses: string[];
-}
+/**
+ * The review as the ONE reader (`parseSessionReview`) narrows it — the same
+ * object the session detail page reads back off `session_review`.
+ */
+export type ReviewSessionResult = ParsedSessionReview;
 
 /**
  * Run the holistic review AND persist it to `study_session.session_review`.
@@ -143,7 +153,7 @@ export function reviewSession(args: ReviewSessionArgs) {
               .join("\n"),
           attempts: args.attempts,
           aggregate: args.aggregate,
-          remaining_cards: [],
+          remaining_cards: args.remainingCards ?? [],
         },
         timeoutMs: 120_000,
         pollIntervalMs: 200,
@@ -151,10 +161,8 @@ export function reviewSession(args: ReviewSessionArgs) {
 
       // Partial-tolerant: an errored stream may still carry a usable object.
       const raw = result.data;
-      const r =
-        raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
-      const summary = typeof r?.summary === "string" ? r.summary : "";
-      if (!r || !summary) {
+      const review = parseSessionReview(raw);
+      if (!review) {
         // Terminal with nothing usable. Stamped as such so a page watching this
         // run stops watching and offers to run it again — never a dead spinner.
         await settleRun(result.conversationId, "failed");
@@ -173,15 +181,7 @@ export function reviewSession(args: ReviewSessionArgs) {
       }
       await settleRun(result.conversationId, "complete");
 
-      return {
-        summary,
-        strengths: Array.isArray(r.strengths)
-          ? r.strengths.filter((x): x is string => typeof x === "string")
-          : [],
-        weaknesses: Array.isArray(r.weaknesses)
-          ? r.weaknesses.filter((x): x is string => typeof x === "string")
-          : [],
-      };
+      return review;
     } catch (err) {
       console.error("[flashcards.reviewSession] failed:", err);
       // Close the durable handle too — a page reattaching to this run must be

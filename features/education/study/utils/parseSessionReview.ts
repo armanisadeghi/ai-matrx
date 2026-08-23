@@ -1,14 +1,23 @@
 // features/education/study/utils/parseSessionReview.ts
 //
-// Normalizes study_session.session_review (jsonb from fc_review_batch or similar)
-// into a display + TTS shape. Handles plain strings, JSON strings, and the
-// canonical agent object { summary, strengths[], weaknesses[], ... }.
+// THE ONE reader for the end-of-session review — the `batch_review` kind the
+// `flashcards.review_batch` mandate emits: { summary, strengths[],
+// weaknesses[], revisit_card_ids[], secondary_score, reorder[] }. It reads the
+// LIVE agent payload (tutor reviewSession lane, spoken-practice review) AND the
+// persisted `study_session.session_review` jsonb (plain strings, JSON strings,
+// and the object, `__kind` keys ignored), so the row we store and the object
+// we render can never be two different readings of the same run.
 
 export interface ParsedSessionReview {
   summary: string;
   strengths: string[];
   weaknesses: string[];
+  /** Card ids the reviewer wants the learner to revisit (empty when none). */
+  revisitCardIds: string[];
+  /** 0..100 secondary score the reviewer assigned (null when absent). */
   secondaryScore: number | null;
+  /** The reviewer's suggested next-session card order (empty when none). */
+  reorder: string[];
   /** Full text for read-aloud (summary + bullet sections). */
   speakText: string;
 }
@@ -47,6 +56,10 @@ function fromRecord(
 
   const strengths = asStringArray(record.strengths);
   const weaknesses = asStringArray(record.weaknesses);
+  const revisitCardIds = asStringArray(
+    record.revisit_card_ids ?? record.revisitCardIds,
+  );
+  const reorder = asStringArray(record.reorder);
   const secondaryScore =
     typeof record.secondary_score === "number"
       ? record.secondary_score
@@ -68,7 +81,9 @@ function fromRecord(
     summary: resolvedSummary,
     strengths,
     weaknesses,
+    revisitCardIds,
     secondaryScore,
+    reorder,
     speakText: buildSpeakText(resolvedSummary, strengths, weaknesses),
   };
 }
@@ -88,7 +103,9 @@ export function parseSessionReview(raw: unknown): ParsedSessionReview | null {
         summary: trimmed,
         strengths: [],
         weaknesses: [],
+        revisitCardIds: [],
         secondaryScore: null,
+        reorder: [],
         speakText: trimmed,
       };
     }
@@ -121,7 +138,9 @@ export function parsedSessionReviewFromSummary(
     summary: trimmed,
     strengths: [],
     weaknesses: [],
+    revisitCardIds: [],
     secondaryScore: null,
+    reorder: [],
     speakText: trimmed,
   };
 }

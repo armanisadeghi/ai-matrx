@@ -25,6 +25,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";
+import { coerceCards } from "@/features/flashcards/data/coerce-card";
 import { readArtifactOrigin } from "@/features/education/convert/lineage";
 import { reopenSource } from "@/features/education/convert/reopenSource";
 import { CONVERT_MANDATES } from "@/features/education/convert/mandates";
@@ -33,31 +34,6 @@ import {
   segmentedGenerate,
 } from "@/features/education/convert/segmentedGenerate";
 import type { ConvertProgress } from "@/features/education/convert/types";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === "object" && !Array.isArray(v);
-}
-
-function coerceCard(raw: unknown, anchorFileId: string): NewCardInput | null {
-  if (!isRecord(raw)) return null;
-  const str = (k: string) =>
-    typeof raw[k] === "string" ? (raw[k] as string).trim() : "";
-  const front = str("front");
-  const back = str("back");
-  if (!front && !back) return null;
-  const optional = (k: string) => {
-    const v = raw[k];
-    return typeof v === "string" && v.trim() ? v.trim() : null;
-  };
-  return {
-    front,
-    back,
-    card_kind: optional("card_kind") ?? "basic",
-    difficulty: optional("difficulty"),
-    topic: optional("topic"),
-    source: anchorFileId ? { file_id: anchorFileId } : undefined,
-  };
-}
 
 export function AddMoreCardsButton({
   setId,
@@ -117,8 +93,10 @@ export function AddMoreCardsButton({
         mandateKey: CONVERT_MANDATES.deckFromSource,
         surfaceKey: "education-deck-add-more",
         sourceFeature: "education-ingest",
+        // The provision's full offer (flashcards.generate_from_source).
         variables: (segment, plan) => ({
           source_content: segment.text,
+          document_id: source.ref?.processedDocumentId ?? origin.entityId,
           title:
             plan.segments.length > 1
               ? `${source.title} - section ${segment.index} of ${segment.total}: ${segment.label}`
@@ -127,17 +105,11 @@ export function AddMoreCardsButton({
           difficulty: "Mixed",
           focus: "",
         }),
-        extract: (value) => {
-          const obj = isRecord(value) ? value : {};
-          const raw = Array.isArray(obj.cards)
-            ? obj.cards
-            : Array.isArray(obj.flashcards)
-              ? obj.flashcards
-              : [];
-          return raw
-            .map((c) => coerceCard(c, origin.entityId))
-            .filter((c): c is NewCardInput => c !== null);
-        },
+        extract: (value) =>
+          coerceCards(value, {
+            anchorFileId: origin.entityId,
+            docId: source.ref?.processedDocumentId,
+          }),
         identity: (card) => looseKey(card.front),
       });
 

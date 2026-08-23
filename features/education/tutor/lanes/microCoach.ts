@@ -37,8 +37,9 @@ export interface MicroCoachContext {
   mandateKey?: string | null;
 }
 
-/** The tip text this lane's agent produced, or null when there is no signal. */
-function readTip(data: unknown): string | null {
+/** The tip text this lane's agent produced (the `study_tip` kind — `__kind`
+ *  ignored), or null when there is no signal. */
+export function readTip(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const tip = (data as Record<string, unknown>).tip;
   return typeof tip === "string" && tip.trim().length > 0 ? tip : null;

@@ -456,20 +456,33 @@ export function coerceTrustEnvelope(raw: unknown): TrustEnvelope | null {
   return { citations, confidence, groundedIn };
 }
 
-/** Narrow an unknown agent-emitted value to a GradeVerdict (never throws). */
+/**
+ * Narrow an unknown agent-emitted value to a GradeVerdict (never throws).
+ *
+ * THE ONE typed-grade reader (the `answer_grade` kind's core). The live
+ * contract is boolean-shaped (`correct` / `partial`); a `result` / `grade`
+ * token ("correct" | "partial" | "incorrect") is ALSO accepted, alone or
+ * beside the booleans, so a rebound agent with the simpler contract keeps
+ * working and the spoken adapter can share this reader. Explanation falls
+ * back through `feedback` / `reason`. Parser `__kind` keys are ignored.
+ */
 export function coerceGradeVerdict(raw: unknown): GradeVerdict | null {
   if (!isRecord(raw)) return null;
-  const hasSignal =
-    "correct" in raw || "partial" in raw || "explanation" in raw;
+  const token = asString(raw.result ?? raw.grade).toLowerCase();
+  const hasToken =
+    token === "correct" || token === "partial" || token === "incorrect";
+  const hasBooleans =
+    typeof raw.correct === "boolean" || typeof raw.partial === "boolean";
+  const hasSignal = hasBooleans || hasToken || "explanation" in raw;
   if (!hasSignal) return null;
-  const correct = raw.correct === true;
-  const partial = raw.partial === true;
+  const correct = hasBooleans ? raw.correct === true : token === "correct";
+  const partial = hasBooleans ? raw.partial === true : token === "partial";
   const misconceptionRaw = asString(raw.misconception);
   return {
     correct,
     partial: partial && !correct,
     misconception: misconceptionRaw ? misconceptionRaw : null,
-    explanation: asString(raw.explanation ?? raw.feedback),
+    explanation: asString(raw.explanation ?? raw.feedback ?? raw.reason),
   };
 }
 
