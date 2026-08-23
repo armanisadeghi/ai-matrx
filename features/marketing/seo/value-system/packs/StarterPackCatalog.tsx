@@ -453,7 +453,11 @@ export function StarterPackCatalog() {
     (adoptions.data ?? []).map((a) => [a.pack_id, a]),
   );
 
-  const packs = catalog.data ?? [];
+  // Drafts are the admin side's work in progress and never a customer's
+  // choice; a retired pack is listed only for a site that adopted from it.
+  const packs = (catalog.data ?? []).filter(
+    (p) => p.status !== "draft" && (p.status !== "retired" || adoptionByPack.has(p.id)),
+  );
   const activeId = packParam ?? selectedId ?? packs[0]?.id ?? null;
   const activePack = packs.find((p) => p.id === activeId) ?? null;
   const activeAdoption = activeId ? adoptionByPack.get(activeId) : undefined;
