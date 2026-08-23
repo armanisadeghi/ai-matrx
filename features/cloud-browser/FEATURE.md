@@ -207,6 +207,14 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-23 — takeover survives panel reopen:** derive `HandoffReason`
+  directly from the generated Python API contract and accept its
+  `user_requested` and `session_revoked_by_provider` members at runtime. A
+  refresh during immediate takeover no longer aborts profile hydration with
+  `Unknown browser handoff reason: user_requested`. The exhaustive record is a
+  compile-time drift gate; `service.test.ts` covers both restored members and
+  unknown-value refusal.
+
 - **2026-08-23 — stable profile-selector hydration:** keep the Radix Select
   controlled from its first render by representing the not-yet-hydrated profile
   as an empty value. This removes the production uncontrolled-to-controlled

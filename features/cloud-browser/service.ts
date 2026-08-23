@@ -180,25 +180,32 @@ function actionResultClass(value: string): ActionResultClass {
     return value;
   throw new Error(`Unknown browser action result: ${value}`);
 }
-function handoffReason(value: string): HandoffReason {
-  if (
-    value === "credentials_missing" ||
-    value === "credentials_rejected" ||
-    value === "mfa_required" ||
-    value === "totp_unavailable" ||
-    value === "push_approval_required" ||
-    value === "webauthn_required" ||
-    value === "captcha_required" ||
-    value === "provider_consent_required" ||
-    value === "account_selection_required" ||
-    value === "sensitive_action_approval" ||
-    value === "payment_approval" ||
-    value === "destructive_change_approval" ||
-    value === "unrecognized_page" ||
-    value === "agent_requested" ||
-    value === "operator_requested"
-  )
-    return value;
+const HANDOFF_REASON_SET: Record<HandoffReason, true> = {
+  credentials_missing: true,
+  credentials_rejected: true,
+  mfa_required: true,
+  totp_unavailable: true,
+  push_approval_required: true,
+  webauthn_required: true,
+  captcha_required: true,
+  provider_consent_required: true,
+  account_selection_required: true,
+  sensitive_action_approval: true,
+  payment_approval: true,
+  destructive_change_approval: true,
+  unrecognized_page: true,
+  session_revoked_by_provider: true,
+  agent_requested: true,
+  user_requested: true,
+  operator_requested: true,
+};
+
+function isHandoffReason(value: string): value is HandoffReason {
+  return Object.hasOwn(HANDOFF_REASON_SET, value);
+}
+
+export function parseHandoffReason(value: string): HandoffReason {
+  if (isHandoffReason(value)) return value;
   throw new Error(`Unknown browser handoff reason: ${value}`);
 }
 function handoffState(value: string): HandoffState {
@@ -463,7 +470,7 @@ function mapHandoff(row: HandoffRow): CloudBrowserHandoff {
     id: row.id,
     runId: row.run_id,
     profileId: row.profile_id,
-    reason: handoffReason(row.reason),
+    reason: parseHandoffReason(row.reason),
     state: handoffState(row.state),
     message:
       row.instructions_safe ??

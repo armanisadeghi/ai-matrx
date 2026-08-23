@@ -1,5 +1,5 @@
 import { postJson } from "@/lib/python-client";
-import { mintStreamTicket } from "./service";
+import { mintStreamTicket, parseHandoffReason } from "./service";
 
 jest.mock("@/lib/python-client", () => ({
   getJson: jest.fn(),
@@ -60,6 +60,21 @@ describe("mintStreamTicket", () => {
     expect(postJson).toHaveBeenCalledWith(
       "/browser-manager/runs/run-1/stream-ticket",
       { mode: "control", takeover: true },
+    );
+  });
+});
+
+describe("parseHandoffReason", () => {
+  it("accepts immediate user takeover and provider-revocation reasons", () => {
+    expect(parseHandoffReason("user_requested")).toBe("user_requested");
+    expect(parseHandoffReason("session_revoked_by_provider")).toBe(
+      "session_revoked_by_provider",
+    );
+  });
+
+  it("refuses values outside the generated server contract", () => {
+    expect(() => parseHandoffReason("invented_reason")).toThrow(
+      "Unknown browser handoff reason: invented_reason",
     );
   });
 });

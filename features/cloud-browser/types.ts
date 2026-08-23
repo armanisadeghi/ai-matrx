@@ -10,10 +10,12 @@
  *   - NOTIFICATIONS.md (D-14): the four consent channels.
  *   - D-9: the human-visible telemetry surface (unmeasured is a first-class value).
  *
- * Literal string unions are copied verbatim from the contracts — a value not
- * listed here does not exist. Do not widen them locally.
+ * Literal string unions come directly from generated contracts when the wire
+ * schema exposes them; remaining local unions mirror the frozen program docs.
+ * A value absent from its source contract does not exist. Do not widen locally.
  */
 
+import type { components } from "@/types/python-generated/api-types";
 import type { PermissionLevel } from "@/utils/permissions/types";
 
 // ── S1 §2 enums ──────────────────────────────────────────────────────────────
@@ -43,23 +45,9 @@ export type RunMode = "handoff_capable" | "automation_only";
 export type ExecutionTarget = "browser_fleet" | "sandbox" | "local_surface";
 export type ControllerKind = "none" | "agent" | "human" | "system";
 
-/** S1 §2.8 — the human-required enum. One vocabulary, two surfaces (also S6). */
+/** S1 §2.8 — generated from the Python human-required wire contract. */
 export type HandoffReason =
-  | "credentials_missing"
-  | "credentials_rejected"
-  | "mfa_required"
-  | "totp_unavailable"
-  | "push_approval_required"
-  | "webauthn_required"
-  | "captcha_required"
-  | "provider_consent_required"
-  | "account_selection_required"
-  | "sensitive_action_approval"
-  | "payment_approval"
-  | "destructive_change_approval"
-  | "unrecognized_page"
-  | "agent_requested"
-  | "operator_requested";
+  components["schemas"]["HumanRequiredSignal"]["reason"];
 
 export type HandoffState =
   | "requested"
