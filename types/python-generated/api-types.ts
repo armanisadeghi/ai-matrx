@@ -50410,6 +50410,8 @@ export interface components {
         PlanRecord: {
             /** Id */
             id: string;
+            /** Organization Id */
+            organization_id: string;
             /** Definition Id */
             definition_id: string;
             /** Node Id */
