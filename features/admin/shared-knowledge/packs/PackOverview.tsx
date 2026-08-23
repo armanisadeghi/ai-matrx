@@ -118,7 +118,15 @@ export function PackOverview({
     () => new Map(directory.organizations.map((o) => [o.id, o.name])),
     [directory.organizations],
   );
-  const corpus = (pack.source_corpus ?? []) as Array<Record<string, unknown>>;
+  // source_corpus is either the proposer-era per-site summary ARRAY or, for packs landed
+  // through the console, the whole `seo.starter_pack_corpus` OBJECT (its `sites` array is
+  // the per-site evidence). Read both shapes; never assume one.
+  const rawCorpus = pack.source_corpus as unknown;
+  const corpus: Array<Record<string, unknown>> = Array.isArray(rawCorpus)
+    ? (rawCorpus as Array<Record<string, unknown>>)
+    : rawCorpus && typeof rawCorpus === "object" && Array.isArray((rawCorpus as { sites?: unknown }).sites)
+      ? ((rawCorpus as { sites: Array<Record<string, unknown>> }).sites)
+      : [];
   const sourceSites = Array.isArray((pack.metadata ?? {}).source_site_ids)
     ? ((pack.metadata ?? {}).source_site_ids as string[])
     : [];
