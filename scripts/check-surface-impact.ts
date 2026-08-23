@@ -21,6 +21,11 @@
  *                        surface value name is the KEY) and value_mappings
  *                        (.target). NOTHING else in the repo checks these.
  *   • the DOM          — data-surface-value="<name>" attributes (locate-on-page)
+ *   • feature tables   — FEATURE_VALUE_CONSUMERS below: feature-owned tables that
+ *                        store surface value NAMES (e.g. docproc.page_extraction_jobs
+ *                        .variable_mapping). Found the hard way on 2026-08-22:
+ *                        9 live jobs mapped `filename` while this script printed
+ *                        a confident "safe to change".
  *   • descendants      — every child surface inherits the name (child scope
  *                        builders take inherited alwaysAvailable keys as
  *                        REQUIRED params), so a parent value is load-bearing
@@ -38,6 +43,8 @@
  *   ORPHAN_WRITE_TWIN  write_target.updates_value points at a missing value
  *   SURFACE_ORPHANED   active DB surface with no manifest but with consumers/children
  *   ORPHAN_SHORTCUT    a shortcut maps a value name the surface no longer has
+ *   ORPHAN_FEATURE_ROW a saved feature row (see FEATURE_VALUE_CONSUMERS) stores a
+ *                      value name the family no longer declares
  *   SHADOWED_VALUE     a child re-declares a name its parent already conveys —
  *                      one concept, two declarations, split bindings
  *   RENAME_SUSPECT     a removed value + an added value of the same type on the
@@ -76,6 +83,7 @@ interface Finding {
     | "ORPHAN_WRITE_TWIN"
     | "SURFACE_ORPHANED"
     | "ORPHAN_SHORTCUT"
+    | "ORPHAN_FEATURE_ROW"
     | "SHADOWED_VALUE"
     | "RENAME_SUSPECT";
   severity: Severity;
@@ -197,8 +205,60 @@ interface DbAssoc {
   } | null;
 }
 
+/**
+ * FEATURE-OWNED CONSUMER TABLES.
+ *
+ * The platform tables above are generic. Individual features ALSO persist
+ * surface value names — a run configuration, a saved mapping, a template — and
+ * those are invisible to every generic check. Each entry here makes one such
+ * table visible. Adding a feature table that stores a value name WITHOUT adding
+ * it here is how a rename silently breaks saved user work.
+ *
+ * `direction: "key"` — the surface value name is the JSON KEY (the agent
+ * variable is the value). `direction: "target"` — the name is `.target` inside
+ * each entry, like a binding.
+ */
+const FEATURE_VALUE_CONSUMERS: ReadonlyArray<{
+  schema: string;
+  table: string;
+  column: string;
+  idColumn: string;
+  labelColumn?: string;
+  direction: "key" | "target";
+  /** Surfaces (and their descendants) whose vocabulary this table stores. */
+  surfaces: readonly string[];
+  what: string;
+  filter?: string;
+  /**
+   * True when the same map legitimately holds keys that are NOT surface values
+   * (manual "extra inputs", runtime-only variables). Then an unknown key is a
+   * WARN worth a human glance, never a confident BREAK — verified 2026-08-22
+   * against `VariableMappingEditor`, whose dropdown mixes `surface`, `extras`
+   * and `runtime` option kinds.
+   */
+  allowsNonSurfaceKeys?: boolean;
+}> = [
+  {
+    schema: "docproc",
+    table: "page_extraction_jobs",
+    column: "variable_mapping",
+    idColumn: "id",
+    labelColumn: "name",
+    direction: "key",
+    surfaces: ["matrx-user/pdf-extractor"],
+    what: "saved page-extraction job",
+    allowsNonSurfaceKeys: true,
+  },
+];
+
 interface Consumer {
-  kind: "binding" | "write-twin" | "shortcut" | "dom" | "descendant";
+  kind:
+    | "binding"
+    | "write-twin"
+    | "shortcut"
+    | "dom"
+    | "feature-table"
+    | "descendant";
   detail: string;
 }
 
@@ -453,6 +513,75 @@ async function main() {
     }
   }
 
+  // 2b2) feature-owned consumer tables (FEATURE_VALUE_CONSUMERS).
+  for (const spec of FEATURE_VALUE_CONSUMERS) {
+    // A family's vocabulary = the ancestor's resolved set (children inherit it).
+    const family = [
+      ...spec.surfaces,
+      ...spec.surfaces.flatMap((sn) => descendantsOf(sn)),
+    ];
+    const familyVocab = new Set<string>();
+    for (const sn of family) for (const n of codeValues(sn)) familyVocab.add(n);
+    if (familyVocab.size === 0) continue;
+
+    let rows: Array<Record<string, unknown>> = [];
+    try {
+      rows = await readAll<Record<string, unknown>>(
+        env,
+        spec.schema,
+        spec.table,
+        `${spec.idColumn},${spec.labelColumn ? `${spec.labelColumn},` : ""}${spec.column}`,
+        spec.filter ?? "",
+      );
+    } catch (err) {
+      findings.push({
+        kind: "ORPHAN_FEATURE_ROW",
+        severity: "warn",
+        surface: spec.surfaces[0],
+        detail: `could not read ${spec.schema}.${spec.table} (${String(err).slice(0, 120)}) — its stored value names are UNCHECKED this run`,
+        fix: `Fix the read (schema exposure / column names) in FEATURE_VALUE_CONSUMERS, or this consumer stays invisible.`,
+      });
+      continue;
+    }
+
+    for (const row of rows) {
+      const map = row[spec.column];
+      if (!map || typeof map !== "object") continue;
+      const names =
+        spec.direction === "key"
+          ? Object.keys(map as Record<string, unknown>)
+          : Object.values(map as Record<string, { target?: string }>)
+              .map((v) => (v && typeof v === "object" ? (v.target ?? "") : ""))
+              .filter(Boolean);
+      const rowLabel = spec.labelColumn
+        ? `${spec.what} "${String(row[spec.labelColumn] ?? row[spec.idColumn])}"`
+        : `${spec.what} ${String(row[spec.idColumn])}`;
+      for (const name of names) {
+        // Attribute to the surface that actually declares it.
+        const owner =
+          spec.surfaces
+            .map((sn) => ownerOf(sn, name))
+            .find((o): o is string => Boolean(o)) ?? spec.surfaces[0];
+        addConsumer(owner, name, {
+          kind: "feature-table",
+          detail: `${rowLabel} (${spec.schema}.${spec.table}.${spec.column})`,
+        });
+        if (!familyVocab.has(name)) {
+          findings.push({
+            kind: "ORPHAN_FEATURE_ROW",
+            severity: spec.allowsNonSurfaceKeys ? "warn" : "error",
+            surface: spec.surfaces[0],
+            value: name,
+            detail: spec.allowsNonSurfaceKeys
+              ? `${rowLabel} stores "${name}", which the ${spec.surfaces[0]} family does not declare — either a manual/runtime input (fine) or a rename orphan that now fills with nothing (not fine). Worth one look.`
+              : `${rowLabel} stores "${name}", which nothing in the ${spec.surfaces[0]} family declares — that slot fills with nothing when the job runs`,
+            fix: `Open the saved row and confirm the slot still resolves; if it was a surface value that got renamed, repoint it. Saved user work does NOT follow a rename automatically.`,
+          });
+        }
+      }
+    }
+  }
+
   // 2c) the DOM contract — data-surface-value="<name>" (locate-on-page). These
   //     are string literals TypeScript never sees; a rename orphans them
   //     silently. Static scan of the working tree.
@@ -643,12 +772,14 @@ async function main() {
       const twins = cons.filter((c) => c.kind === "write-twin");
       const shortcutsC = cons.filter((c) => c.kind === "shortcut");
       const domC = cons.filter((c) => c.kind === "dom");
+      const featC = cons.filter((c) => c.kind === "feature-table");
       const kidsC = cons.filter((c) => c.kind === "descendant");
       const locked =
         bindings.length > 0 ||
         twins.length > 0 ||
         shortcutsC.length > 0 ||
-        domC.length > 0;
+        domC.length > 0 ||
+        featC.length > 0;
       const badge = locked
         ? `${C.red}DO NOT RENAME/REMOVE${C.reset}`
         : kidsC.length > 0
@@ -657,7 +788,7 @@ async function main() {
       console.log(
         `  ${C.cyan}${v.name}${C.reset} ${C.dim}(${v.valueType}${v.alwaysAvailable ? ", always" : ""})${C.reset}  ${badge}`,
       );
-      for (const c of [...bindings, ...twins, ...shortcutsC, ...domC])
+      for (const c of [...bindings, ...twins, ...shortcutsC, ...featC, ...domC])
         console.log(`      ${C.dim}↳ ${c.kind}: ${c.detail}${C.reset}`);
       if (kidsC.length)
         console.log(
@@ -665,6 +796,14 @@ async function main() {
         );
     }
     console.log("");
+  }
+
+  if (focusSurface) {
+    console.log(
+      `${C.dim}  Checked: agent bindings · shortcuts · write twins · feature tables (${FEATURE_VALUE_CONSUMERS.map((f) => `${f.schema}.${f.table}`).join(", ")}) · data-surface-value · descendants.\n` +
+        `  NOT checked: any other feature-owned table that stores value names, and hand-written\n` +
+        `  scope-builder call sites. "safe to change" means "no consumer THIS script can see".${C.reset}\n`,
+    );
   }
 
   const errors = scoped.filter((f) => f.severity === "error");
