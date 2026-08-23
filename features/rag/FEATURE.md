@@ -136,6 +136,8 @@ Splitting them into `features/rag/` would split the cloudFiles slice across two 
 
 Curated, system-owned Knowledge content (canonical example: the **AMA Guides 5th Edition**) ingested **once** and published **read-only** to many tenants by audience — without each tenant re-processing it, and without letting them mutate it.
 
+Cross-repo system-of-record for the sharing spine: `/Users/armanisadeghi/code/common-docs/systems/platform/library/STATE.md` — read it before touching grants, industries or curators in ANY repo.
+
 **The read/write asymmetry (why read-only is free):** these stores are owned by a dedicated **"Matrx Library" org** (`system_orgs.key='library'`). WRITE/manage is gated by data-store ownership (`can_access_data_store` = creator/org-member) — no tenant qualifies, so every mutation 403s with no new code. READ is granted by a single OR-branch in the Knowledge visibility clause (`matrx_rag.search._build_visibility_clause`) admitting a chunk when its source's data_store has a grant reaching the caller.
 
 **Three-tier audience = one primitive** (`rag.data_store_grants`): `global` | `industry` (→ orgs in that [industry](../industries/FEATURE.md)) | `organization` (a direct grant or self-service opt-in on a `discoverable` store). Grants attach to the container, so they cover every member source's chunks.

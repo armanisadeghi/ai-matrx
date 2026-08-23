@@ -2,6 +2,8 @@
 
 **Status:** v1 (foundation). Powers Shared Knowledge Resources entitlement; scope-template seeding + public industry pages are later phases.
 
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/library/STATE.md` (the Matrx Library spine — industries are its audience axis).
+
 ## What this is
 
 A platform-curated, **faceted** taxonomy of industries/sub-industries — separate from per-tenant scopes. Industry is two things at once:

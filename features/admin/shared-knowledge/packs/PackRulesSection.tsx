@@ -8,6 +8,14 @@
 // multiplier (<1 demotes, >1 promotes — they compound) and/or a target class,
 // plus the expert's note (the rationale a business can argue with).
 // Inline edit per row; one RPC per save (seo.starter_pack_rule_save).
+//
+// ⚠️ CONTENT SHAPE IS MID-FLIP (convergence C8, ratified 2026-08-23). This editor edits the
+// shape a pack carries TODAY (template `keyword_class_rule` rows / `site_vocabulary` bands),
+// which is what `library_subscribe` still copies onto a site — so it is real and correct now.
+// The convergence re-shapes pack content into dimension values + matchers + worth
+// (/projects/keyword-intelligence-convergence/PLAN.md, phase C8, unblocked since C1 landed).
+// When C8 runs: re-point this section at the C4 Dimensions editor's components — do NOT fork a
+// second editor for the same machinery (P22).
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";

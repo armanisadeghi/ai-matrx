@@ -7,6 +7,14 @@
 // ARCHETYPES (label · kind · band, NEVER a specific city: adopters fill in
 // their own places, the adopt step demands them). Each row is one
 // seo.starter_pack_item; saves go through starter_pack_item_save.
+//
+// ⚠️ CONTENT SHAPE IS MID-FLIP (convergence C8, ratified 2026-08-23). This editor edits the
+// shape a pack carries TODAY (template `keyword_class_rule` rows / `site_vocabulary` bands),
+// which is what `library_subscribe` still copies onto a site — so it is real and correct now.
+// The convergence re-shapes pack content into dimension values + matchers + worth
+// (/projects/keyword-intelligence-convergence/PLAN.md, phase C8, unblocked since C1 landed).
+// When C8 runs: re-point this section at the C4 Dimensions editor's components — do NOT fork a
+// second editor for the same machinery (P22).
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";

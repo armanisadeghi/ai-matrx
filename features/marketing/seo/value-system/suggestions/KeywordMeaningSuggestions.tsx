@@ -22,7 +22,7 @@
  * handler with its own ledger receipt. Individual AND all — never forced.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BrainCircuit,
   Check,
@@ -31,7 +31,8 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { RootState } from "@/lib/redux/store";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -41,7 +42,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import { selectAssistsForSurface } from "@/features/assists/redux/assistsSlice";
+import {
+  fetchMyAssists,
+  selectAssistsForSurface,
+  selectAssistsLoaded,
+} from "@/features/assists/redux/assistsSlice";
 import { useAssistRunner } from "@/features/assists/runtime/useAssistRunner";
 import type { Assist } from "@/features/assists/types";
 import {
@@ -96,10 +101,21 @@ export function KeywordMeaningSuggestions({
   siteId: string;
   className?: string;
 }) {
+  const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
+  const loaded = useAppSelector(selectAssistsLoaded);
   const surfaceAssists = useAppSelector((state: RootState) =>
     selectAssistsForSurface(state, KEYWORD_MEANING_SURFACE),
   );
   const { acceptAssist, dismissAssist } = useAssistRunner();
+
+  // Hydrate the shared slice ourselves. `AssistStrip` does this too, but it is
+  // rendered INSIDE this panel — and the panel renders nothing when it has no
+  // rows, so waiting for the strip would mean the queue never loads on a page
+  // where the deferred global dock has not mounted.
+  useEffect(() => {
+    if (userId && !loaded) void dispatch(fetchMyAssists({ userId }));
+  }, [dispatch, userId, loaded]);
 
   const rows = useMemo(
     () => toRows(surfaceAssists.filter((a) => isForSite(a, siteId))),

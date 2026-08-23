@@ -361,6 +361,8 @@ render approval, mark DONE, fire V + D."
 | Search results (Brave + SerpAPI Google) — the pilot | `common-docs/operations/search-kinds-pilot.md` | A+B approved; C done 2026-08-23; V + D pending (cutover gated) |
 | Scraper / crawl results (`scraper.*`) — replication run 1 | `common-docs/operations/scraper-kinds-run.md` | Stage A fired 2026-08-23 |
 
+**Campaign doctrine (platform law, applies beyond kinds):** `common-docs/policies/conversion-campaigns.md` — the four consumer surfaces, demo-is-not-a-conversion, a campaign ends in a committed guard, consumer lists are computed not hand-written.
+
 **Tracking spine:** `common-docs/operations/kind-conversion-board.md` — every family in flight, its gate (G1 enlisted → G2 blast radius → G3 shaped → G4 cut over → G5 guarded), and who holds it. A family is DONE only at G5; a demo is not a conversion. Update your row every gate.
 
 **What to run next:** `common-docs/operations/data-to-kinds-queue.md` — the ranked inventory of every remaining candidate, each with a filled-in chip prompt. Fire one at a time; queue rows 1 and 4 mint primitives that later rows nest.
