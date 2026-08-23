@@ -134,12 +134,12 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       description: "Data-store management workspace.",
     },
     {
-      name: "DataStorePublishPanel",
+      name: "LibraryPublishPanel",
       filePath:
-        "features/rag/components/data-stores/DataStorePublishPanel.tsx",
+        "features/rag/components/library/LibraryPublishPanel.tsx",
       description:
-        "Publish a library store to an audience — industry / organization / everyone (Shared Knowledge grants).",
-      notes: ["Super-admin only; the ONE grant-mutation UI"],
+        "Publish ANY Library resource (data store, SEO starter pack) to an audience — industry / organization / everyone — over platform.entity_grants.",
+      notes: ["Admin only; the ONE grant-mutation UI for every Library entity type"],
     },
     {
       name: "DataStoreBindPanel",
@@ -160,10 +160,10 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
         "Client shell of the Shared Knowledge console (industries / stores & grants / ingest / access explorer tabs).",
     },
     {
-      name: "useDataStoreGrants",
-      filePath: "features/rag/hooks/useDataStoreGrants.ts",
+      name: "useLibraryGrants",
+      filePath: "features/rag/hooks/useLibraryGrants.ts",
       description:
-        "Grants list + publish/revoke via rag.fn_list_data_store_grants / rag.library_grant_publish / _revoke (gate: super-admin OR store owner). Also exports fetchDataStoreGrants for batch consumers.",
+        "Generic Library grants: list + publish/revoke via public.library_list_grants / library_publish / library_revoke over platform.entity_grants (gate: admin, store creator, or pack curator). Also exports fetchLibraryGrants for batch consumers.",
     },
     {
       name: "useDataStores",

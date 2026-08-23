@@ -6,7 +6,7 @@
 // stores they can read AND through which grant (global / their org / an
 // industry their org is assigned to); or pick a store and see the audiences
 // it is issued to, expanded to concrete organizations. Grant rows come from
-// `rag.fn_list_data_store_grants` per store (the super-admin gate makes the
+// `public.library_list_grants` per store (the admin gate makes the
 // full list visible here); caller-scoped provenance for tenant surfaces uses
 // P3's `library_grant_provenance` family instead — never duplicated here.
 //
@@ -42,9 +42,9 @@ import {
   UserRound,
 } from "lucide-react";
 import {
-  fetchDataStoreGrants,
-  type DataStoreGrant,
-} from "@/features/rag/hooks/useDataStoreGrants";
+  fetchLibraryGrants,
+  type LibraryGrant,
+} from "@/features/rag/hooks/useLibraryGrants";
 import { useAllOrgIndustries } from "@/features/industries/hooks";
 import { searchUserByEmail } from "@/features/organizations/userSearch";
 import type { SharedKnowledgeDirectory } from "../types";
@@ -54,7 +54,7 @@ type ExplorerMode = "organization" | "user" | "store";
 interface EntitlementRow {
   storeId: string;
   storeName: string;
-  grant: DataStoreGrant;
+  grant: LibraryGrant;
   reason: string;
 }
 
@@ -80,7 +80,7 @@ export function AccessExplorerTab({
   // All grants across every library store — one fetch per store via the
   // canonical super-admin-gated RPC.
   const [grantsByStore, setGrantsByStore] = useState<
-    Map<string, DataStoreGrant[]>
+    Map<string, LibraryGrant[]>
   >(new Map());
   const [grantsLoading, setGrantsLoading] = useState(true);
   const [grantsError, setGrantsError] = useState<string | null>(null);
@@ -91,7 +91,7 @@ export function AccessExplorerTab({
     setGrantsError(null);
     Promise.all(
       directory.stores.map(
-        async (s) => [s.id, await fetchDataStoreGrants(s.id)] as const,
+        async (s) => [s.id, await fetchLibraryGrants("data_store", s.id)] as const,
       ),
     )
       .then((entries) => {

@@ -37223,7 +37223,7 @@ export type Database = {
           p_actor?: string
           p_entity_id: string
           p_entity_type: string
-          p_organization_id: string
+          p_organization_id?: string
           p_target?: Json
         }
         Returns: Json

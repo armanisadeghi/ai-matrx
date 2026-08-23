@@ -540,10 +540,12 @@ function buildOptionGroups({
       keys: [
         "chunk_index",
         "chunk_count",
+        "chunk_first_page",
         "page_numbers",
         "current_page",
         "scope_kind",
         "using_clean_text",
+        "job_name",
         "job_id",
         "run_id",
         "context",

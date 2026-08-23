@@ -254,6 +254,19 @@ export interface StarterPackSummary {
   /** True when the caller's org has opted into this pack's industry
    *  (`iam.org_industries`) — those packs list first. */
   org_match: boolean;
+  industry_slug: string | null;
+  /** Bumps on every content edit (D4) — the join key for "changed since you adopted". */
+  pack_version: number;
+  /** How the caller reaches this pack: admin · curator · organization (subscribed/pilot) · industry · global. */
+  entitled_via: "admin" | "curator" | "organization" | "industry" | "global" | null;
+  /** The evaluated org holds an organization-audience grant (its subscription / pilot). */
+  subscribed: boolean;
+  subscriber_count: number;
+  supersedes_pack_id: string | null;
+  proposed_at: string | null;
+  updated_at: string;
+  /** The caller may edit this pack (admin, or its industry's curator while draft/proposed). */
+  can_author: boolean;
 }
 
 export interface StarterPackTopicItem {

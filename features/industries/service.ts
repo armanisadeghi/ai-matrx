@@ -147,3 +147,58 @@ export async function unassignOrgIndustry(
   });
   if (error) throw operationFailed("remove this industry", error);
 }
+
+
+// ── Curators — who may AUTHOR library resources (starter packs, …) for an industry ──
+// `iam.industry_curators`; grant/revoke are admin-gated SECURITY DEFINER RPCs,
+// the roster read is `industry_curator_list` (admin). Curators author and propose;
+// they never ratify, publish, or create industries (D5, 2026-08-22).
+
+export interface IndustryCurator {
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  createdAt: string;
+}
+
+export async function fetchIndustryCurators(
+  industryId: string,
+): Promise<IndustryCurator[]> {
+  const { data, error } = await supabase.rpc("industry_curator_list", {
+    p_industry: industryId,
+  });
+  if (error) throw operationFailed("load this industry's curators", error);
+  return ((data ?? []) as Array<{
+    user_id: string;
+    email: string | null;
+    display_name: string | null;
+    created_at: string;
+  }>).map((r) => ({
+    userId: r.user_id,
+    email: r.email ?? null,
+    displayName: r.display_name ?? null,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function grantIndustryCurator(
+  userId: string,
+  industryId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("industry_curator_grant", {
+    p_user: userId,
+    p_industry: industryId,
+  });
+  if (error) throw operationFailed("grant curator access", error);
+}
+
+export async function revokeIndustryCurator(
+  userId: string,
+  industryId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("industry_curator_revoke", {
+    p_user: userId,
+    p_industry: industryId,
+  });
+  if (error) throw operationFailed("revoke curator access", error);
+}

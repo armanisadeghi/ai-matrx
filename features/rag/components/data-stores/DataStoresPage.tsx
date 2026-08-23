@@ -71,7 +71,7 @@ import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores"
 import { fileHandler } from "@/features/files/handler/handler";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
@@ -953,11 +953,13 @@ function StoreDetailPanel({
 
       {/* Publish to an audience (Shared Knowledge Resources) — super-admin only */}
       {canPublish && (
-        <DataStorePublishPanel
+        <LibraryPublishPanel
           isOpen={publishOpen}
           onClose={() => setPublishOpen(false)}
-          storeId={storeId}
-          storeName={s.name}
+          entityType="data_store"
+          entityId={storeId}
+          entityName={s.name}
+          recipientHint="Recipients can search and read it — they cannot edit, delete, or re-ingest it."
         />
       )}
 

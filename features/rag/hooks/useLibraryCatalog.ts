@@ -5,8 +5,8 @@
  * subscribe — Shared Knowledge Resources, opt-in tier. Direct-to-Supabase:
  * LIST calls `rag.fn_list_library_catalog` (discoverable+active stores, member
  * count, subscribed = an explicit org-audience grant for the caller's
- * effective org). Subscribe/unsubscribe call the existing
- * `rag.library_subscribe`/`library_unsubscribe` SECURITY DEFINER RPCs
+ * effective org). Subscribe/unsubscribe call the generic Library RPCs
+ * `public.library_subscribe`/`library_unsubscribe` (entity_type data_store)
  * directly — they re-validate org membership internally (identity from
  * auth.uid()), so passing `selectEffectiveOrganizationId` is safe even if a
  * caller somehow isn't a member: the RPC just 403s. Lazy by design.
@@ -134,8 +134,9 @@ export function useLibraryCatalog(overrideOrganizationId?: string | null) {
       }
       try {
         const supabase = createClient();
-        const { error: rpcError } = await ragDb(supabase).rpc("library_subscribe", {
-          p_store_id: storeId,
+        const { error: rpcError } = await supabase.rpc("library_subscribe", {
+          p_entity_type: "data_store",
+          p_entity_id: storeId,
           p_organization_id: organizationId,
         });
         if (rpcError) throw rpcError;
@@ -157,8 +158,9 @@ export function useLibraryCatalog(overrideOrganizationId?: string | null) {
       }
       try {
         const supabase = createClient();
-        const { error: rpcError } = await ragDb(supabase).rpc("library_unsubscribe", {
-          p_store_id: storeId,
+        const { error: rpcError } = await supabase.rpc("library_unsubscribe", {
+          p_entity_type: "data_store",
+          p_entity_id: storeId,
           p_organization_id: organizationId,
         });
         if (rpcError) throw rpcError;

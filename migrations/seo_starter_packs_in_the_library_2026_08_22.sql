@@ -325,18 +325,22 @@ $function$;
 --   3. the organization-audience grant row IS the subscription (idempotent);
 --   4. per-type materializer: a pack with p_target.site_id copies onto that site through
 --      seo.adopt_starter_pack (public EXECUTE revoked below — no second door).
-create or replace function public.library_subscribe(p_entity_type text, p_entity_id uuid, p_organization_id uuid,
+create or replace function public.library_subscribe(p_entity_type text, p_entity_id uuid, p_organization_id uuid default null,
                                                     p_target jsonb default null, p_actor uuid default null)
 returns jsonb language plpgsql security definer
-set search_path to 'public', 'platform', 'rag', 'iam', 'seo' as $function$
-declare v_actor uuid; v_row platform.entity_grants; v_status text; v_result jsonb := '{}'::jsonb; v_via text;
+set search_path to 'public', 'platform', 'rag', 'iam', 'seo', 'web' as $function$
+declare v_actor uuid; v_row platform.entity_grants; v_status text; v_result jsonb := '{}'::jsonb; v_via text; v_org uuid := p_organization_id;
 begin
   v_actor := coalesce(auth.uid(), p_actor);
-  if v_actor is null or not exists (
-      select 1 from iam.organization_member om where om.organization_id = p_organization_id and om.user_id = v_actor) then
-    raise exception 'not authorized: caller is not a member of org %', p_organization_id using errcode = '42501';
+  -- A pack target names a site; the org is the site's (callers need not resolve it twice).
+  if v_org is null and p_entity_type = 'seo_starter_pack' and p_target ? 'site_id' then
+    select s.organization_id into v_org from web.site s where s.id = (p_target->>'site_id')::uuid and s.deleted_at is null;
   end if;
-
+  if v_org is null then raise exception 'library: organization required' using errcode = '22023'; end if;
+  if v_actor is null or not exists (
+      select 1 from iam.organization_member om where om.organization_id = v_org and om.user_id = v_actor) then
+    raise exception 'not authorized: caller is not a member of org %', v_org using errcode = '42501';
+  end if;
   if p_entity_type = 'data_store' then
     if not exists (select 1 from rag.data_stores s where s.id = p_entity_id and s.discoverable) then
       raise exception 'store % is not discoverable', p_entity_id;
@@ -344,26 +348,24 @@ begin
   elsif p_entity_type = 'seo_starter_pack' then
     select status into v_status from seo.starter_pack where id = p_entity_id and deleted_at is null;
     if v_status is null then raise exception 'seo_pack_not_found: %', p_entity_id; end if;
-    v_via := public.library_entitlement('seo_starter_pack', p_entity_id, p_organization_id);
+    v_via := public.library_entitlement('seo_starter_pack', p_entity_id, v_org);
     if not (public.is_admin()
             or v_via = 'organization'                                   -- pilot or prior subscription
             or (v_via in ('industry', 'global') and v_status = 'ratified')) then
       raise exception 'library: organization % is not entitled to pack % (status %, via %)',
-        p_organization_id, p_entity_id, v_status, coalesce(v_via, 'none') using errcode = '42501';
+        v_org, p_entity_id, v_status, coalesce(v_via, 'none') using errcode = '42501';
     end if;
   else
     raise exception 'library: % cannot be subscribed to', p_entity_type;
   end if;
-
   select * into v_row from platform.entity_grants
-   where entity_type = p_entity_type and entity_id = p_entity_id and audience = 'organization' and organization_id = p_organization_id
+   where entity_type = p_entity_type and entity_id = p_entity_id and audience = 'organization' and organization_id = v_org
    limit 1;
   if v_row.id is null then
     insert into platform.entity_grants(entity_type, entity_id, audience, organization_id, granted_by)
-    values (p_entity_type, p_entity_id, 'organization', p_organization_id, v_actor)
+    values (p_entity_type, p_entity_id, 'organization', v_org, v_actor)
     returning * into v_row;
   end if;
-
   if p_entity_type = 'seo_starter_pack' and p_target ? 'site_id' then
     v_result := seo.adopt_starter_pack(
       (p_target->>'site_id')::uuid, p_entity_id,
@@ -375,10 +377,9 @@ begin
       case when p_target ? 'rule_ids' then (select array_agg(x::uuid) from jsonb_array_elements_text(p_target->'rule_ids') x) end,
       coalesce((p_target->>'reset')::boolean, false));
   end if;
-
-  perform public._library_audit(v_actor, 'self_subscribe', p_entity_type, p_entity_id, null, p_organization_id,
+  perform public._library_audit(v_actor, 'self_subscribe', p_entity_type, p_entity_id, null, v_org,
                                 jsonb_build_object('target', coalesce(p_target, '{}'::jsonb) - 'geo_places' - 'geo_place_ids'));
-  return v_result || jsonb_build_object('grant_id', v_row.id, 'subscribed', true);
+  return v_result || jsonb_build_object('grant_id', v_row.id, 'subscribed', true, 'organization_id', v_org);
 end $function$;
 
 -- Unsubscribe removes the org's subscription row only. A site's adopted rows are the
@@ -889,3 +890,22 @@ select 'seo.starter_pack_proposer', 'SEO Starter Pack Proposer',
        jsonb_build_object('side', 'client', 'pin_style', 'floating',
                           'code_ref', 'matrx-frontend/features/admin/shared-knowledge/packs/useProposePack.ts')
 where not exists (select 1 from agent.mandate where mandate_key = 'seo.starter_pack_proposer');
+
+-- Curator roster for the console (who may author packs for an industry). Admin-only read.
+create or replace function public.industry_curator_list(p_industry uuid)
+returns table(user_id uuid, email text, display_name text, created_at timestamptz)
+language plpgsql stable security definer set search_path to 'public', 'iam' as $function$
+begin
+  if not (auth.role() = 'service_role' or public.is_admin()) then
+    raise exception 'not authorized: admin required' using errcode = '42501';
+  end if;
+  return query
+  select ic.user_id, u.email::text,
+         coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name')::text,
+         ic.created_at
+  from iam.industry_curators ic
+  left join auth.users u on u.id = ic.user_id
+  where ic.industry_id = p_industry and ic.deleted_at is null
+  order by ic.created_at;
+end $function$;
+grant execute on function public.industry_curator_list(uuid) to authenticated, service_role;

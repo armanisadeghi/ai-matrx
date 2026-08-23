@@ -5,8 +5,9 @@
 // Every `kind='library'` store (server-loaded — including inactive /
 // undiscoverable) with its live grant list. Reads via
 // `rag.fn_list_data_store_grants` (super-admin OR store owner);
-// publish/revoke via the extended DataStorePublishPanel — the ONE grant
-// mutation path (`rag.library_grant_publish` / `_revoke`). Revoke here
+// publish/revoke via the generic LibraryPublishPanel — the ONE grant
+// mutation path (`public.library_publish` / `_revoke` over
+// platform.entity_grants). Revoke here
 // confirms through ConfirmDialog before firing.
 //
 // THE DOOR LAW (common-docs/policies/no-dead-ends.md): the store rows select
@@ -33,13 +34,13 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
-  useDataStoreGrants,
-  type DataStoreGrant,
-} from "@/features/rag/hooks/useDataStoreGrants";
-import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+  useLibraryGrants,
+  type LibraryGrant,
+} from "@/features/rag/hooks/useLibraryGrants";
+import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import type { SharedKnowledgeDirectory } from "../types";
 
-function grantLabel(g: DataStoreGrant): string {
+function grantLabel(g: LibraryGrant): string {
   if (g.audience === "global") return "Everyone";
   if (g.audience === "industry") return g.industryName ?? "Industry";
   return g.organizationName ?? "Organization";
@@ -54,7 +55,7 @@ export function StoresGrantsTab({
     directory.stores[0]?.id ?? null,
   );
   const [publishOpen, setPublishOpen] = useState(false);
-  const [revokeTarget, setRevokeTarget] = useState<DataStoreGrant | null>(
+  const [revokeTarget, setRevokeTarget] = useState<LibraryGrant | null>(
     null,
   );
   const [revokeBusy, setRevokeBusy] = useState(false);
@@ -62,7 +63,7 @@ export function StoresGrantsTab({
   const selectedStore =
     directory.stores.find((s) => s.id === selectedStoreId) ?? null;
   const { grants, loading, error, revoke, refresh } =
-    useDataStoreGrants(selectedStoreId);
+    useLibraryGrants("data_store", selectedStoreId);
 
   const orgOptions = useMemo(
     () =>
@@ -246,11 +247,13 @@ export function StoresGrantsTab({
       </div>
 
       {selectedStore ? (
-        <DataStorePublishPanel
+        <LibraryPublishPanel
           isOpen={publishOpen}
           onClose={() => setPublishOpen(false)}
-          storeId={selectedStore.id}
-          storeName={selectedStore.name}
+          entityType="data_store"
+          entityId={selectedStore.id}
+          entityName={selectedStore.name}
+          recipientHint="Recipients can search and read it — they cannot edit, delete, or re-ingest it."
           organizationOptions={orgOptions}
           onChanged={refresh}
         />

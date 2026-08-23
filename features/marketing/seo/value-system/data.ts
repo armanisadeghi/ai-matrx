@@ -542,20 +542,29 @@ export async function adoptStarterPack(
   options: AdoptStarterPackOptions = {},
 ): Promise<StarterPackAdoptResult> {
   const { parts, geoPlaces, geoPlaceIds, itemIds, ruleIds, seedGuidelines, reset } = options;
-  const response = await (await seoDb()).rpc("adopt_starter_pack", {
-    p_site_id: siteId,
-    p_pack_id: packId,
-    ...(parts && parts.length ? { p_include: parts } : {}),
+  // SUBSCRIBE IS ADOPT (D2, 2026-08-22): the ONE Library write. The RPC records the
+  // org subscription on platform.entity_grants (the site's org is derived from the
+  // site), checks entitlement (industry opt-in / global / pilot grant), then runs the
+  // materializer — the former public `seo.adopt_starter_pack`, now internal.
+  const target: Record<string, Json> = {
+    site_id: siteId,
+    ...(parts && parts.length ? { include: parts } : {}),
     ...(geoPlaces && Object.keys(geoPlaces).length
-      ? { p_geo_places: geoPlaces as unknown as Json }
+      ? { geo_places: geoPlaces as unknown as Json }
       : {}),
     ...(geoPlaceIds && Object.keys(geoPlaceIds).length
-      ? { p_geo_place_ids: geoPlaceIds as unknown as Json }
+      ? { geo_place_ids: geoPlaceIds as unknown as Json }
       : {}),
-    ...(itemIds ? { p_item_ids: itemIds } : {}),
-    ...(ruleIds ? { p_rule_ids: ruleIds } : {}),
-    ...(seedGuidelines === false ? { p_seed_guidelines: false } : {}),
-    ...(reset ? { p_reset: true } : {}),
+    ...(itemIds ? { item_ids: itemIds } : {}),
+    ...(ruleIds ? { rule_ids: ruleIds } : {}),
+    ...(seedGuidelines === false ? { seed_guidelines: false } : {}),
+    ...(reset ? { reset: true } : {}),
+  };
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase.rpc("library_subscribe", {
+    p_entity_type: "seo_starter_pack",
+    p_entity_id: packId,
+    p_target: target,
   });
   return assertData(response.data, response.error) as unknown as StarterPackAdoptResult;
 }

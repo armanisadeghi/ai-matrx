@@ -12,7 +12,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { updateListAction } from "../actions/list-actions";
@@ -24,16 +24,21 @@ interface EditListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** Surface this dialog is opened from, so ProTextarea's "…" menu offers the
+   *  same bound agents as the page's context menu. */
+  surfaceName?: string;
 }
 
 function EditListForm({
   list,
   onSuccess,
   onCancel,
+  surfaceName,
 }: {
   list: UserListWithItems;
   onSuccess: () => void;
   onCancel: () => void;
+  surfaceName?: string;
 }) {
   const [name, setName] = useState(list.list_name);
   const [description, setDescription] = useState(list.description ?? "");
@@ -91,12 +96,16 @@ function EditListForm({
         <Label htmlFor="edit-list-desc" className="text-sm font-medium">
           Description
         </Label>
-        <Textarea
+        {/* THE LENGTH RULE: stats OFF. A list description is a one-line
+            explainer (typicalCharCount 300 in the manifest), not long-form
+            authoring, and the dialog is already tight. */}
+        <ProTextarea
           id="edit-list-desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           disabled={isPending}
+          surfaceName={surfaceName}
           className="resize-none text-base leading-relaxed"
           style={{ fontSize: "16px" }}
         />
@@ -162,6 +171,7 @@ export function EditListDialog({
   open,
   onOpenChange,
   onSuccess,
+  surfaceName,
 }: EditListDialogProps) {
   const isMobile = useIsMobile();
 
@@ -182,6 +192,7 @@ export function EditListDialog({
               list={list}
               onSuccess={handleSuccess}
               onCancel={() => onOpenChange(false)}
+              surfaceName={surfaceName}
             />
           </div>
         </DrawerContent>
@@ -199,6 +210,7 @@ export function EditListDialog({
           list={list}
           onSuccess={handleSuccess}
           onCancel={() => onOpenChange(false)}
+          surfaceName={surfaceName}
         />
       </DialogContent>
     </Dialog>

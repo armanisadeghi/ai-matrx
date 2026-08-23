@@ -56,6 +56,7 @@ import {
   type IndustryFacet,
 } from "@/features/industries/types";
 import type { SharedKnowledgeDirectory } from "../types";
+import { IndustryCuratorsPanel } from "./IndustryCuratorsPanel";
 
 interface IndustryFormState {
   slug: string;
@@ -436,6 +437,7 @@ export function IndustriesTab({
             )}
           </div>
         )}
+        {selected ? <IndustryCuratorsPanel industry={selected} /> : null}
       </div>
 
       {/* Create / edit dialog */}
