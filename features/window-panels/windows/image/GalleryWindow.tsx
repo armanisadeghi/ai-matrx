@@ -66,6 +66,52 @@ function GalleryWindowInner({ onClose }: { onClose: () => void }) {
         workspace.focusedImage?.sourceUrl || undefined,
     });
 
+  /**
+   * Write handlers for the manifest's declared targets. Every one is
+   * ephemeral UI state — the throw messages are what the agent reads back,
+   * so they say what to send instead, never just "invalid".
+   */
+  const getWriteHandlers = () => ({
+    search_query: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          `search_query expects a plain search term as a string, got ${Array.isArray(value) ? "an array" : typeof value}. Send the subject itself — do not wrap it in an object or JSON-encode it.`,
+        );
+      }
+      const term = value.trim();
+      if (!term) {
+        throw new Error(
+          "search_query expects a non-empty term. Clearing the search is the user's own button, not a write.",
+        );
+      }
+      workspace.setSearchTerm(term);
+    },
+    orientation_filter: (value: unknown) => {
+      const allowed = ["all", "landscape", "portrait", "squarish"] as const;
+      if (
+        typeof value !== "string" ||
+        !allowed.includes(value as (typeof allowed)[number])
+      ) {
+        throw new Error(
+          `orientation_filter expects one of ${allowed.join(", ")}, got ${JSON.stringify(value)}.`,
+        );
+      }
+      workspace.setOrientation(value as (typeof allowed)[number]);
+    },
+    view_mode: (value: unknown) => {
+      const allowed = ["masonry", "grid", "compact"] as const;
+      if (
+        typeof value !== "string" ||
+        !allowed.includes(value as (typeof allowed)[number])
+      ) {
+        throw new Error(
+          `view_mode expects one of ${allowed.join(", ")}, got ${JSON.stringify(value)}.`,
+        );
+      }
+      onViewModeChange(value as (typeof allowed)[number]);
+    },
+  });
+
   const footerRight = (
     <div className="flex items-center gap-0.5">
       <button
@@ -136,6 +182,7 @@ function GalleryWindowInner({ onClose }: { onClose: () => void }) {
         surfaceName={GALLERY_SURFACE_NAME}
         getScope={buildScope}
         isEditable={false}
+        getWriteHandlers={getWriteHandlers}
       >
         {/* The window's own right-click menu. Without it the page beneath
             answers the right-click with ITS surface — the user would get the

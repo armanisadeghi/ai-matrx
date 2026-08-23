@@ -436,7 +436,20 @@ export function GalleryFloatingWorkspace() {
     favoriteImageDescriptions,
     quickTopics: QUICK_TOPICS.join(", "),
     focusedImage,
-    // Real handlers the window's context menu binds its extra section to.
+    // Real handlers the window's context menu and write targets bind to.
+    setSearchTerm: (term: string) => {
+      setSearchInput(term);
+      executeSearch(term);
+      setShowTopics(false);
+    },
+    setOrientation: (value: OrientationFilter) => {
+      setOrientationFilter(value);
+      if (activeQuery) {
+        handleSearch(activeQuery, {
+          orientation: (value === "all" ? undefined : value) as any,
+        });
+      }
+    },
     resetSearch: handleReset,
     copyLoadedImageLinks,
     toggleTopics: () => setShowTopics((v) => !v),

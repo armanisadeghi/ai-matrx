@@ -19,6 +19,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 
 export const GALLERY_SURFACE_NAME = "matrx-user/gallery";
@@ -197,6 +198,52 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the gallery's controls, not its data. Everything here is
+ * `ui` mode: nothing is persisted, nothing needs saving, and every one of
+ * them is undone by the user typing something else. `ask` (not `auto`)
+ * because a search the user did not ask for replaces what they were looking
+ * at.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "search_query",
+    label: "Search the gallery",
+    description:
+      "Runs a new image search in this window with the term you pass, exactly as if the user had typed it and pressed enter — the search box shows your term and the results grid reloads. Pass a short plain-language subject (\"snow-covered pine forest\"), never a sentence, a prompt, or JSON; Unsplash matches keywords, not instructions. The active orientation filter is kept. Empty or whitespace-only is refused — clearing the search is the user's own button. This REPLACES what they are currently looking at, so offer it when they asked for different images, not as a side effect of answering a question.",
+    valueType: "string",
+    updatesValue: "active_query",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "gallery_state",
+    sortOrder: 100,
+  },
+  {
+    name: "orientation_filter",
+    label: "Orientation filter",
+    description:
+      'Sets the orientation filter and re-runs the current search with it. One of "all", "landscape", "portrait", or "squarish" — any other value is refused. Use it when the user says what shape they need (a wide banner, a tall poster); it does nothing visible until there is a search to re-run.',
+    valueType: "string",
+    updatesValue: "orientation_filter",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "gallery_state",
+    sortOrder: 110,
+  },
+  {
+    name: "view_mode",
+    label: "Result layout",
+    description:
+      'Switches the results grid between "masonry", "grid", and "compact" — the same three buttons in the window footer. Any other value is refused. Purely how the same photos are laid out; nothing is loaded or lost.',
+    valueType: "string",
+    updatesValue: "view_mode",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "gallery_state",
+    sortOrder: 120,
+  },
+];
+
 export const galleryManifest: SurfaceManifest = {
   surfaceName: GALLERY_SURFACE_NAME,
   readiness: "partial",
@@ -206,9 +253,12 @@ export const galleryManifest: SurfaceManifest = {
   label: "Gallery",
   intro: `<surface_intro>
 You are in the floating Gallery window — an Unsplash-backed stock image search. The user searches by term or topic chip, filters by orientation, browses results in masonry/grid/compact layouts, favorites images into a sidebar, and opens any image in the Image Viewer window. Gallery state tells you what they searched, how the results are filtered and laid out, and how much is loaded; the image values tell you what is actually on screen, what they last opened, and what they saved. There is no text content and no text selection here — when you need "the image the user means", use image_description.
+
+You can also DRIVE this window: search_query runs a new search, orientation_filter reshapes it, view_mode relays it out. All three are the user's own controls — they change what the user is looking at and nothing else, and none of them saves anything. Downloading, favoriting, and opening an image are the user's actions, not writes; do those in your answer.
 </surface_intro>`,
   groups,
   values: surfaceSpecific,
+  writeTargets,
   // Image-search widget — no text/content/selection concept.
   skipBaselineValues: true,
 };
