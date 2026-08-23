@@ -432,8 +432,8 @@ model overrides.
   the Mandate gate sits in the console's facts panel beside Inputs and Output.
   Verified live: toggling persisted through reload, the version snapshot carried
   the flag (v6), and a new policy saved with `max_inline_chars: 0` for "never
-  inline". `iam.runnable_agent_fields` / `runnable_version_fields` still omit the
-  flag — that is the server's runtime read and belongs to the aidream half.
+  inline". `iam.runnable_agent_fields` / `runnable_version_fields` project the flag
+  since aidream migration 0489 (2026-08-23) — the server-side read is closed.
 
 - `2026-08-16` — **Linked Agent Sync comparisons now show when both compared
   versions and every changed section were saved.** The panel reads each agent's
