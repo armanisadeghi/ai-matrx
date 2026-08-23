@@ -186,6 +186,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-user/observational-memory",
   },
   { prefix: "/scraper", surface: "matrx-user/scraper" },
+  { prefix: "/search", surface: "matrx-user/search" },
   { prefix: "/gallery", surface: "matrx-user/gallery" },
   { prefix: "/feedback", surface: "matrx-user/feedback" },
   { prefix: "/voice-pad", surface: "matrx-user/voice-pad" },

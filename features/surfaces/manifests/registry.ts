@@ -53,6 +53,7 @@ import { assistantMessageManifest } from "./assistant-message.manifest";
 import { contextPreviewManifest } from "./context-preview.manifest";
 import { agentRunManifest } from "./agent-run.manifest";
 import { scraperManifest } from "./scraper.manifest";
+import { searchManifest } from "./search.manifest";
 import { documentsManifest } from "./documents.manifest";
 import { researchManifest } from "./research.manifest";
 import { tasksManifest } from "./tasks.manifest";
@@ -250,6 +251,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   contextPreviewManifest,
   agentRunManifest,
   scraperManifest,
+  searchManifest,
   documentsManifest,
   researchManifest,
   tasksManifest,

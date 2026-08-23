@@ -22,6 +22,7 @@ import {
   Network,
   Megaphone,
   Workflow,
+  Search,
 } from "lucide-react";
 
 /**
@@ -158,6 +159,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: AudioLines,
     teaser:
       "Browse, preview, and tune production TTS voices for chat, assistants, and podcasts.",
+    group: "Knowledge & Data",
+  },
+  {
+    label: "Search",
+    href: "/search",
+    icon: Search,
+    teaser:
+      "The web answered as finished pieces — direct answers, places, news, and video, never ten blue links.",
     group: "Knowledge & Data",
   },
   {
