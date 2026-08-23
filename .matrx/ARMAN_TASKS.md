@@ -1,6 +1,6 @@
 # Arman Tasks — Matrx Frontend
 
-_Last updated: 2026-07-22_
+_Last updated: 2026-08-23_
 
 > Secrets, accounts, CDN, OS-only steps. Agents **ask you** when blocked here.
 > Code work → `.matrx/AGENT_TASKS.md`. Discoveries → `FOUND_DEFECTS.md`.
@@ -9,7 +9,36 @@ _Last updated: 2026-07-22_
 
 ## Active (ranked — quickest wins first)
 
-### 0. Decide: does `/transcripts` still need the NESTED view? (seconds — a decision)
+### 0. Make `@ai-matrx/content-ir-react` publishable on npm (one page, one setting)
+
+**Link:** https://www.npmjs.com/settings/ai-matrx/packages
+
+The shared Content IR RENDER layer is built, tested, tagged, and already
+adopted by the aidream dashboard — but it has never been published, because npm
+**trusted publishing can publish a package that exists and cannot create a new
+name.** The aidream release workflow runs green through every gate and then
+fails with `PUT https://registry.npmjs.org/@ai-matrx%2fcontent-ir-react → 404`.
+The npm token on this machine is also expired (`npm whoami` → 401), so a manual
+first publish is not available to an agent either.
+
+**What to do:** on that page, give `@ai-matrx/content-ir-react` the same
+publishing setup `@ai-matrx/content-ir` already has — a GitHub Actions trusted
+publisher pointing at `AI-Matrix-Engine/aidream`, workflow
+`publish-npm-package.yml`. If npm will not let you configure a publisher for a
+name that does not exist yet, the alternative is one manual publish from a
+logged-in shell (the packed, gate-verified tarball is reproducible with
+`pnpm --dir apps/shared/content-ir-react pack`).
+
+**What to report:** "done", or what the page actually offered you. Either
+answer unblocks the next step; a guess does not.
+
+**What it unblocks:** matrx-frontend stops owning the render layer alone — the
+repoint is written and waiting at
+`docs/handoffs/content-ir-react-repoint.md` — and the Chrome extension, the
+desktop app, and customers get one implementation of kind rendering instead of
+re-implementing it, which is banned.
+
+### 0c. Decide: does `/transcripts` still need the NESTED view? (seconds — a decision)
 
 The canonical entity-list rewrite (merged 2026-08-15) replaced the sectioned
 transcripts hub with one server-paged list. It deliberately **dropped the
