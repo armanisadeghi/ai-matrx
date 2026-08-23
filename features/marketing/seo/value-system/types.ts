@@ -22,9 +22,26 @@ export interface ValueBandDef {
 export type ValueSource = "override" | "computed" | "unvalued";
 
 export type ValueReason =
-  | { kind: "override" }
-  | { kind: "topic"; topic: string; weight: number; root: string | null; negative_guard: boolean }
+  | { kind: "override"; level?: string | null }
+  /** C2: the leading summary row — Σ adds → × factor (capped) → never. */
+  | { kind: "summary"; adds: number; factor: number; n_factors: number; never: boolean; score: number | null }
+  | { kind: "topic"; topic: string; weight: number; root: string | null; negative_guard: boolean; effect?: "add"; amount?: number }
   | { kind: "no_base"; pending_base: true }
+  /** C2: a stamped value that carries worth for this site. */
+  | {
+      kind: "stamp";
+      dimension: string;
+      dimension_label: string;
+      value: string;
+      value_label: string;
+      value_id: string;
+      effect: "add" | "scale" | "never";
+      amount: number | null;
+      source: string;
+      matcher_id: string | null;
+      notes: string | null;
+    }
+  /** Pre-C2 shapes, tolerated until every cached receipt is recomputed. */
   | { kind: "rule"; rule_id: string; name: string; multiplier: number }
   | { kind: "geo"; band: string; area: string; multiplier: number };
 

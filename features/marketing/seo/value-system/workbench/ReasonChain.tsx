@@ -38,6 +38,38 @@ interface ReasonView {
 
 function reasonView(reason: ValueReason): ReasonView {
   switch (reason.kind) {
+    case "summary":
+      return {
+        icon: Landmark,
+        text: reason.never
+          ? "Never — an explicit flag"
+          : reason.score === null
+            ? "Nothing adds worth yet"
+            : `Adds ${reason.adds} × ${reason.factor.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")} = ${reason.score}`,
+        detail: reason.never
+          ? "A never-flag is set (a not-offered topic or an out-of-market place). It wins over every other step — the score is zero regardless of what else matched."
+          : reason.score === null
+            ? "No topic worth and no adding value is stamped on this keyword, so there is nothing for factors to scale. Stamps below are recorded; they invent nothing."
+            : `Every adding worth summed to ${reason.adds}; then ${reason.n_factors} scaling ${reason.n_factors === 1 ? "factor" : "factors"} multiplied it by ${reason.factor} (capped between 0.01 and 10). Order is always: add, then scale, then never.`,
+        tone: reason.never ? "text-destructive" : undefined,
+      };
+    case "stamp":
+      return {
+        icon: reason.dimension.startsWith("site_geo") ? MapPin : SlidersHorizontal,
+        text:
+          reason.effect === "never"
+            ? `${reason.dimension_label}: ${reason.value_label} — never`
+            : reason.effect === "add"
+              ? `${reason.dimension_label}: ${reason.value_label} ${reason.amount !== null && reason.amount >= 0 ? "+" : ""}${reason.amount}`
+              : `${reason.dimension_label}: ${reason.value_label} ${multiplierText(reason.amount ?? 1)}`,
+        detail:
+          reason.effect === "never"
+            ? `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}), which this site marked never — it forces the score to zero.`
+            : reason.effect === "add"
+              ? `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value adds ${reason.amount} to the score.`
+              : `This keyword is stamped "${reason.value_label}" (${reason.dimension_label}); for this site that value scales the score by ${reason.amount}.${reason.source === "human" ? " Stamped by a person." : reason.source === "matcher" ? " Stamped by one of your matchers." : reason.source === "classifier" ? " Stamped by the AI classifier." : ""}`,
+        tone: reason.effect === "never" ? "text-destructive" : reason.effect === "scale" && (reason.amount ?? 1) < 1 ? "text-warning" : undefined,
+      };
     case "override":
       return {
         icon: Gavel,
