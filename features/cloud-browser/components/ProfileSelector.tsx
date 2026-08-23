@@ -72,7 +72,7 @@ export function ProfileSelector({
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <div className="flex items-center gap-1.5">
-        <Select value={activeProfileId ?? undefined} onValueChange={onSelect}>
+        <Select value={activeProfileId ?? ""} onValueChange={onSelect}>
           <SelectTrigger className="h-9 min-w-0 flex-1">
             <SelectValue placeholder="Choose a Cloud Browser" />
           </SelectTrigger>

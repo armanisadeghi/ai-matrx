@@ -207,6 +207,12 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-23 — stable profile-selector hydration:** keep the Radix Select
+  controlled from its first render by representing the not-yet-hydrated profile
+  as an empty value. This removes the production uncontrolled-to-controlled
+  warning without changing selection behavior. Guard:
+  `components/ProfileSelector.test.tsx`.
+
 - **2026-08-23 — the DEFAULT face was blank, and now it is live.** D-8 ruled three
   tiers with written progress as the default; the two OPTIONAL tiers worked and the
   default one rendered nothing. Two independent halves were broken and both are fixed:
