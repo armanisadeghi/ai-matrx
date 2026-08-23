@@ -14,7 +14,18 @@ the call by the stated rule and logs it; never asks. **ARMAN** = the only
 class that goes to him (product semantics) — logged as a chip/review row, the
 rest of the check continues.
 
-`CHECKLIST_VERSION = 1` (bump when a section is added/removed; the ledger
+**Verdicts** per section: `pass` · `fixed` · `na` (+ why) · `deferred-visual`
+(code is done and statically checked; the eyes-on step could not run — say
+exactly what to look at) · `arman` (+ chip id) · `blocked` (+ what blocks).
+A headless agent uses `deferred-visual` and keeps going; it never fakes an
+eyes-on verdict and never skips the section silently. The ledger records
+`verificationDepth: "static" | "live"` per run so "green" never overstates.
+
+**Overlay surfaces** (a manifest with `overlayId`, not `urlPattern`) are
+first-class: S8 and S14 take their overlay branch, everything else applies
+unchanged. The route wording is the default, not the assumption.
+
+`CHECKLIST_VERSION = 2` (bump when a section is added/removed; the ledger
 stores which version a surface passed).
 
 ---
@@ -25,7 +36,12 @@ stores which version a surface passed).
 - MUST: `label` is the canonical human name (THE NAMING LAW — unique per client; the context menu's surface submenu and the header Agents panel both render it, so a wrong label is user-visible).
 - MUST: `readiness` is honest (`verified` only after S2–S6 pass); `readinessNote` present when not verified.
 - MUST: route surfaces have `urlPattern` + a mapping in `features/surfaces/utils/route-to-surface.ts` (more-specific prefixes ABOVE their parent); overlay surfaces have `overlayId` from `features/window-panels/registry/overlay-ids.ts`.
-- MUST: the DB mirror is synced (`ui.ui_surface` + value/role/write-target/client-tool rows) — run the sync (admin button on `/administration/ui/surfaces` or `pnpm tsx scripts/emit-surface-sync-sql.ts` → Supabase MCC) and confirm the row live.
+- DECIDE — **documentary `urlPattern`**: a surface may carry a `urlPattern` that resolves to its PARENT's route (it lives inside that page, e.g. a pane or a mode of it). That is legal and the resolver correctly returns the parent; the pattern documents where the surface appears. Verify it matches the real segment names (`[id]` vs `[documentId]` — a wrong segment is still a defect), say "documentary — resolves to `<parent>`" in the evidence, and do NOT add a route mapping that would steal the parent's route.
+- MUST: the DB mirror is synced (`ui.ui_surface` + value/role/write-target/client-tool rows). **Sync YOUR surface only** — a bare run emits ~6,700 lines covering every surface in the repo and would apply other agents' in-flight manifest edits:
+  ```bash
+  npx tsx scripts/emit-surface-sync-sql.ts --surface <client>/<local>
+  ```
+  Apply the emitted SQL via Supabase MCP, then confirm the row live. (The admin button on `/administration/ui/surfaces` is the canonical path when you have a browser; it syncs the fleet, so prefer the flag when agents run in parallel.)
 - MUST: `intro` describes the surface and the user, never the model's role (hardcoded-prompt law).
 - Check: `pnpm check:surface-drift` · `pnpm check:surface-routes` · `pnpm check:surface-overlays`.
 - Evidence: manifest path, `ui_surface.name`, readiness.
@@ -45,15 +61,19 @@ stores which version a surface passed).
 - MUST: every field an agent could sensibly edit on this surface is a declared `writeTarget` with a handler registered (`getWriteHandlers` / `useSurfaceWriteHandlers`); declared-but-unwired fails LOUDLY at apply time — that is a fail here too.
 - MUST: `mode` is `draft` wherever the user saves (preferred), `applyPolicy` `ask` for agent-drivable targets; each target's `description` is the model-facing contract.
 - MUST: the live verification protocol in the skill (ask dialog → Apply lands → "Keep as is" declines → undeclared refused → invalid value throws verbatim → Error Inspector clean).
-- Evidence: target names, live-run proof (screenshot or Error Inspector clean line).
+- **No browser? `deferred-visual`, not skipped.** Ship the declaration + handler (a declared-but-unwired target fails loudly, so shipping half is worse than shipping none), verify the handler's logic by reading it, and hand over the exact run to perform: which target, what to type, what Apply should change on screen. Never record `pass` for a target no agent has actually applied.
+- Evidence: target names, live-run proof (screenshot or Error Inspector clean line) — or the deferred run description.
 
 ## S4 · Family: inheritance & own identity — `surface-authoring` § THE FAMILY DOCTRINE
 
 - MUST: run **`pnpm check:surface-impact <surface>`** first. It prints this surface's parent, every descendant, and every consumer (bindings, shortcuts, write twins, DOM attributes) per value, with a per-value verdict. Nothing else in the repo can see those consumers — TypeScript never sees a value NAME.
 - MUST: `inheritsFrom` only when the parent's vocabulary is TRUE here (a sibling that can't emit the parent's values must NOT inherit).
 - MUST: no `SHADOWED_VALUE` findings for this surface — a child never re-declares what the parent conveys. Same meaning → delete the child's copy; different meaning → give it its own name.
+- **THE AVAILABILITY OVERRIDE (the one sanctioned re-declaration):** the parent always has a value, this child only sometimes does. Re-declare it with the SAME name and type and `alwaysAvailable: false`. That is honest, the screamer does not flag it, and deleting it would turn an under-promise into a promise the child cannot keep (the value-mapping guard then screams at runtime). Widening the other way — child says `true` where the parent says `false` — is forbidden unless the child truly emits it every time.
 - MUST: the child still declares its OWN `label`, `readiness`, `intro`, curated `groups`, and its own scope builder, where inherited `alwaysAvailable` keys are REQUIRED params and `...base` is spread FIRST.
-- DECIDE: two siblings declaring the same concept = the missing-parent smell → push it up (introduce the parent if needed) and delete both copies. If a family would be > 3 deep or you only want to avoid retyping, do NOT inherit.
+- **Carve-out — mount-less / server-emitted surfaces.** The required-param and `...base`-first rules assume a client `SurfaceRuntimeProvider` that can hand the child its parent's scope. When the scope is assembled server-side (or by a job) and there is no parent scope at runtime, forcing ~N required params would make callers fabricate values they do not have. Then: keep the builder's inherited keys OPTIONAL, take an optional `inheritedBase` and spread it FIRST in the body, and write the reason in a comment beside the builder. Honor the rule structurally, not ceremonially.
+- DECIDE (yours): whether THIS surface's `inheritsFrom` is right — does the named parent's vocabulary actually hold here? Keep, or drop it with the reason. That is mechanics, not product semantics.
+- **ARMAN (never yours): creating a new parent, re-homing a surface, or any change that edits a SIBLING's manifest.** Two siblings declaring the same concept is the missing-parent smell — but extracting a parent touches surfaces you were not scoped to and other agents may be inside them. Report it with the exact values and file a chip; do not perform it.
 - MUST: before renaming/removing ANY value, re-run the screamer with `--strict`; zero new breakage, and every consumer it lists is migrated in the SAME change.
 - Check: `pnpm check:surface-impact <surface>` · `pnpm check:surface-impact --strict` · registry throws at init on unknown parent / cycle / depth > 3.
 - Evidence: parent (or "root, deliberately"), descendant count, screamer output before → after.
@@ -68,10 +88,12 @@ stores which version a surface passed).
 
 ## S6 · Context menu — `context-menu-v3` (+ `features/context-menu-v3/FEATURE.md`)
 
-- MUST: every region a user reads or edits is wrapped in `EditableContextMenu` / `NonEditableContextMenu` with `sourceFeature` + `surfaceName` + `getApplicationScope`; no bespoke right-click menu survives (consolidation backlog in FEATURE.md).
+- MUST: **ONE menu per pane, delegated per row — never a menu per row.** Wrap the pane once and pass `resolveContextOnOpen(target)` to work out which row/section was right-clicked (read `data-*` attributes off the element); nesting Radix triggers opens two menus and exists nowhere in this repo. Worked reference: `features/user-lists/components/ListDetailClient.tsx` + its `dom-anchors.ts` — right-clicking a row yields `Edit "China"` / `Add item to "Asia"`, empty space yields list-level rows only.
+- MUST: the wrapper carries `sourceFeature` + `surfaceName` + `getApplicationScope`; no bespoke right-click menu survives (consolidation backlog in FEATURE.md). ⚠️ `className` on the wrapper styles the menu POPUP, not the trigger — never put layout classes there.
+- MUST (overlay/window surfaces): the window mounts its OWN menu. Without one, a right-click inside the window is answered by the page underneath, and the user gets THAT page's surface and agents — silently wrong.
 - MUST: `contentSource` for a real entity (→ Copy-as / Export / Convert), `entity` when attachable/shareable (→ Attach To / Share).
 - MUST: surface-specific actions arrive via `extraSections` bound to REAL handlers, with a `label` + `icon` (they fold under that label in tiered/command); never toast stubs.
-- MUST: the acceptance test — right-click with no selection → Export → Download as Markdown saves the whole content; select text → saves the selection. Copy always works.
+- MUST: the acceptance test — right-click with no selection → Export → Download as Markdown saves the whole content; select text → saves the selection. Copy always works. **Surfaces with no primary text** (a gallery, a chart, a media grid) legitimately have no rich-document content: keep the default `{type:"raw"}`, omit `entity` when nothing is attachable, and record `na — no rich-document content` for this line instead of inventing a document.
 - MUST: the menu's last entry shows THIS surface's label (`<label>` ▸ location / Surface Context / Agents on this page / Bind…); a wrong or "This page" label means S1 is wrong.
 - MUST: THE LOSSLESS LAW — nothing the core menu offers is hidden/renamed by the surface (`placementMode` only for genuinely meaningless placements, e.g. content blocks on read-only output).
 - Evidence: regions wrapped, console clean on open, download proof.
@@ -82,7 +104,8 @@ stores which version a surface passed).
 - MUST: `surfaceName` + `getApplicationScope` passed so the "…" agent menu lists the same agents as the context menu.
 - DECIDE `enableTextStats` by THE LENGTH RULE: ON when the text's length will *matter* — it becomes agent context in volume (long-form authoring, transcripts, pasted content, prompt/instruction bodies, anything a `typicalCharCount` ≥ ~1,000 value is built from). OFF for short fields, chat composers, titles, and any field inside chrome that already renders metrics (never stacked footers — notes incident). Log the decision per field.
 - MUST: inputs ≥16px on mobile (`ios-mobile-first`), `ProInput` for single-line fields that feed agents.
-- Check: no script yet (gap — see "proposed ratchets" in the skill). `rg -n "<textarea|<Textarea" <feature dir>` and justify every hit.
+- DECIDE — **the Pro primitive genuinely does not fit** (e.g. a 24px window-chrome search box vs `ProInput`'s fixed 16px text + mic/menu controls): keep the bare input, write the reason in a comment beside it, and cover what Pro would have given you another way (16px + 44pt on mobile; make the text a declared value and, if an agent should set it, a write target). Record `fixed (documented decision)`. This is a real verdict, not a violation — but a bare input with no comment is.
+- Check: no script yet (gap — see "proposed ratchets" in the skill). `grep -rn "<textarea\|<Textarea" <feature dir>` and justify every hit.
 - Evidence: field list with Pro/raw + stats decision.
 
 ## S8 · Header clearance & body — `core-route-headers` (+ `features/shell/components/header/variants/USAGE.md`)
@@ -92,6 +115,7 @@ stores which version a surface passed).
 - MUST: no faux in-body header (`border-b` + `bg-card` title bars), no double menus, no avatar collision.
 - MUST: desktop actions collapse into bottom sheets/drawers on mobile — never `hidden lg:flex` with no counterpart.
 - Check: `pnpm check:page-headers` · `pnpm check:scroll-chain:strict` · `rg "calc\(100dvh|calc\(100vh|h-screen|h-page" <route + feature dirs>` (the script only scans `app/(core)` — grep the feature half yourself).
+- **Overlay / window surfaces — take this branch instead** (there is no route, no `PageHeader`, no glass header to clear, and `check:page-headers` only scans `app/(core)`): verify the window-panel chrome contract — the registry entry's `mobilePresentation` (`fullscreen` / `drawer`) and `mobileSidebarAs`, header/footer chrome inside the panel, tray/minimize/restore, and `urlSync.key` if it has one. Invoke the `window-panels` skill. Record `na — overlay surface` for the route lines, with this branch's result.
 - Not for `/administration/*`, `(transitional)`, `(legacy)` (they sit below the header by design).
 - Evidence: screenshots at 1280×800 and 375×812, top edge visible.
 
@@ -99,7 +123,8 @@ stores which version a surface passed).
 
 - MUST: `dvh` never `vh`/`h-screen`; `pb-safe` on fixed bottoms; 16px inputs; 44pt tap targets (TapButtons — `efficient-tap-button-migration`); Drawer not Dialog; no tabs-as-mobile-nav; no nested scroll; popups have `max-height` + `overflow-y-auto`.
 - MUST: long-press opens the context-menu bottom sheet on the surface's content; the sheet shows the same items as desktop incl. the surface entry.
-- MUST: `useIsMobile()` gates, not CSS-only hiding of functionality.
+- MUST: **functionality** is gated with `useIsMobile()`, never hidden by CSS alone — a `hidden lg:flex` action with no mobile counterpart is a feature that does not exist on a phone. Pure **presentation** (font size, padding, tap-target sizing, wrapping) is correctly done with CSS breakpoints (`max-sm:`) and needs no JS gate.
+- MUST: actions revealed only on hover (`group-hover`) are UNREACHABLE on touch — they must be visible (or long-press reachable) at mobile widths.
 - Check: the skill's Component Audit Checklist; verify at 375×812 (Android emulation — iOS-only behaviors need a device).
 - Evidence: mobile screenshots, long-press proof.
 
@@ -118,6 +143,7 @@ stores which version a surface passed).
 ## S12 · No dead ends — `no-dead-ends`
 
 - MUST: every identity the UI names opens (open / new tab / peek / window) via `EntityRef` / the opener registry; every count/id is a door; every detected problem ships its one-click fix.
+- `na` is legitimate for a count with genuinely nowhere to go (a count of remote third-party items, a derived metric with no list behind it) — say which, in one line. A count over OUR records always opens.
 - Check: `pnpm check:dead-ends` · `pnpm check:unwired` (scoreboards `/administration/reporting/dead-ends`, `/unwired`).
 - Evidence: dead ends found → fixed (registry, not callsite).
 
@@ -132,6 +158,7 @@ stores which version a surface passed).
 ## S14 · Route metadata & favicon — `route-metadata-favicons`
 
 - MUST: specific-word-first tab title, favicon registered in `constants/favicon-route-data.ts`, OG where public.
+- `na — overlay surface` when there is no route: nothing to title, favicon, or OG.
 - Check: `pnpm check:route-metadata:strict`.
 
 ## S15 · Data flow & correctness — CLAUDE.md "Data flow" + `supabase-realtime` + `type-safety`

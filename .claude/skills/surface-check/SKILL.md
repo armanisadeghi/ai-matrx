@@ -42,12 +42,14 @@ A claim < 6h old by someone else → take the next row. Never two agents on one 
 1. Manifest (`features/surfaces/manifests/<x>.manifest.ts`) → label, readiness, inheritsFrom, values, writeTargets, urlPattern/overlayId.
 2. The route (`route-to-surface.ts`) and the feature dir (`app/... → features/<name>/`); its `FEATURE.md` + Change Log; `docs/handoffs/*` mentioning it.
 3. Last ledger entry: `select last_check from ui.ui_surface where name = …` — prior failures first.
-4. Open the page in the in-app browser (`pnpm preview:start`, dev-login), desktop 1280×800. Right-click once with the console open.
+4. **If you have the browser** (see below): open the page (`pnpm preview:start`, dev-login), desktop 1280×800, right-click once with the console open. Most of the checklist is statically decidable, so a headless run still delivers most of the value — do not stall on this step.
+
+**Browser availability.** ONE dev server + one browser pane exist machine-wide. If you were dispatched alongside other agents, assume you do NOT hold them: never `preview:start`/`stop`, do the static checks for S8/S9/S10, and record `deferred-visual` with the exact thing to look at. If you are the only agent, hold the lease and verify live.
 
 ## Step 2 — Run S1 → S18 in order, fixing as you go
 
 For each section in CHECKLIST.md: invoke the owning skill when you touch that area (they hold the rule bodies and the verification protocol), run the named check commands scoped to this surface's files, fix, re-run. Record one of:
-`pass` · `fixed` (what, commit) · `na` (one-line why) · `arman` (decision needed → chip id / review row) · `blocked` (what blocks, never "unclear").
+`pass` · `fixed` (what, commit) · `na` (one-line why) · `deferred-visual` (code done + statically checked; name the exact eyes-on step) · `arman` (decision needed → chip id / review row) · `blocked` (what blocks, never "unclear").
 
 Rules while fixing:
 - Reuse → Extend → Compose → Create. Invoke `no-dead-ends` before building any surface; `context-docs` before editing any FEATURE.md; `code-splitting` before any dynamic import; `supabase-realtime` before any `.channel(`; `type-safety` for any type error.
@@ -69,6 +71,7 @@ update ui.ui_surface set
     "checklistVersion": 1,
     "commit": "<sha>",
     "result": "pass" | "pass-with-arman-items" | "fail",
+    "verificationDepth": "static" | "live",
     "sections": { "S1": {"status":"pass"}, "S2": {"status":"fixed","note":"added 3 values, 1 always"}, …, "S18": {"status":"pass"} },
     "armanItems": ["<chip/review id>: <one line>"],
     "notes": "<≤ 3 lines>"
@@ -77,13 +80,15 @@ update ui.ui_surface set
   check_claimed_by  = null
 where name = '<surface>';
 ```
-`result = pass` requires every section `pass`/`fixed`/`na`. Then: `agent-review-queue` row for anything Arman must go see; `spawn_task` chips for tangential work; FEATURE.md Change Log line `surface-check <date>: <result> (<n> fixes)`.
+`result = pass` requires every section `pass`/`fixed`/`na`; any `deferred-visual` keeps the result but sets `verificationDepth: "static"` — so a green row never overstates what was actually seen. `last_checked_by` is `agent:surface-check/<surface-local-slug>` (one format, so the ledger is queryable). Then: `agent-review-queue` row for anything Arman must go see; `spawn_task` chips for tangential work; FEATURE.md Change Log line `surface-check <date>: <result> (<n> fixes)`.
 
 Admin view of the ledger: `/administration/ui/surfaces` (Last checked column, never-checked filter — see the skill's open items if not yet built).
 
 ## What is ARMAN-class (log, don't ask)
 
-Product semantics only: hierarchy/naming of a surface, whether a feature exists, a grouping of menu rows not yet approved, whether a text field's length *matters* when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it), whether an agent-purpose surface should ALSO expose itself to other agents (default: provider mounted, own launch `surfaceName: null`). Everything else has a rule — apply it.
+Product semantics only: **creating a new parent surface or re-homing one in the hierarchy** (and anything that edits a SIBLING's manifest — you were scoped to one surface and other agents may be inside the others), whether a feature exists, a grouping of menu rows not yet approved, whether a text field's length *matters* when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it), whether an agent-purpose surface should ALSO expose itself to other agents (default: provider mounted, own launch `surfaceName: null`).
+
+NOT Arman-class — decide these yourself: whether THIS surface's existing `inheritsFrom` is correct, its own label/readiness/groups, every value and write target it should declare, and every fix the sections name. Everything else has a rule — apply it.
 
 ## The blast-radius screamer — run it BEFORE you touch vocabulary
 
