@@ -38,7 +38,7 @@ describe("coerceStudyNotes", () => {
   it("reads the wire shape", () => {
     const notes = coerceStudyNotes(WIRE);
     expect(notes.title).toBe("Plate Tectonics");
-    expect(notes.sections[0].keyPoints).toEqual([
+    expect(notes.sections[0].key_points).toEqual([
       "Divergent builds crust.",
       "Convergent destroys it.",
     ]);
@@ -54,7 +54,7 @@ describe("coerceStudyNotes", () => {
 
   it("keeps key points through a double coercion (the shipped defect)", () => {
     const twice = coerceStudyNotes(coerceStudyNotes(WIRE));
-    expect(twice.sections[0].keyPoints).toHaveLength(2);
+    expect(twice.sections[0].key_points).toHaveLength(2);
   });
 
   it("tolerates a partial mid-stream section", () => {
@@ -63,7 +63,7 @@ describe("coerceStudyNotes", () => {
       sections: [{ heading: "Stage one" }],
     });
     expect(notes.sections[0].heading).toBe("Stage one");
-    expect(notes.sections[0].keyPoints).toEqual([]);
+    expect(notes.sections[0].key_points).toEqual([]);
     expect(notes.overview).toBe("");
   });
 
