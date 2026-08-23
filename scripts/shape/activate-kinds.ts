@@ -37,6 +37,7 @@
  * passers' `is_active` (never a failer, never any other column).
  */
 
+import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
@@ -314,6 +315,37 @@ async function main(): Promise<number> {
     return 1;
   }
   console.log(`\n${C.green}${C.bold}✓ activated ${toActivate.length} kind(s).${C.reset}`);
+  return regenerateKindTypes();
+}
+
+/**
+ * Activation BUMPS `content_ir.kind_definition.version`, which stales every
+ * committed `.gen.ts` for the touched kinds — a stale generated file compiles
+ * fine and lies (conversion-campaigns.md Law 2, surface 4). So the flow that
+ * causes the drift also repairs it: regenerate every committed file straight
+ * after a successful --apply, instead of leaving it to whoever remembers.
+ *
+ * `--all-generated` (not the activated slugs) on purpose: it is the same set the
+ * release gate diffs, so a green run here means a green `pnpm check:kind-types`.
+ * A failure is reported and returned — never swallowed — but the activations
+ * above already landed, so the caller sees which half succeeded.
+ */
+function regenerateKindTypes(): number {
+  console.log(`\n${C.cyan}Regenerating committed kind types (activation bumped version)…${C.reset}`);
+  try {
+    execFileSync("pnpm", ["exec", "tsx", "scripts/shape/generate-kind-types.ts", "--all-generated"], {
+      cwd: ROOT,
+      stdio: "inherit",
+    });
+  } catch (err) {
+    console.error(
+      `${C.red}${C.bold}Kind-type regeneration FAILED:${C.reset} ${err instanceof Error ? err.message : String(err)}\n` +
+        `${C.yellow}The activations above LANDED. Run \`pnpm shape:types --all-generated\` and commit the result, ` +
+        `or the release gate \`pnpm check:kind-types\` will block.${C.reset}`,
+    );
+    return 1;
+  }
+  console.log(`${C.green}✓ generated kind types are back in sync — commit any changed .gen.ts.${C.reset}`);
   return 0;
 }
 

@@ -142,6 +142,18 @@ if $STRICT; then
         # jobs; this is where the frontend half is enforced, because this repo
         # deliberately has no commit-time hook and no CI (CLAUDE.md).
         "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        # GENERATED KIND TYPES are the fourth consumer surface (conversion-
+        # campaigns.md Law 2 §4): a stale `.gen.ts` COMPILES FINE AND LIES. The
+        # generator reads content_ir.kind_definition.emitted_json_schema live and
+        # diffs it against every committed file in
+        # features/content-ir/kinds/generated/, so a re-seed or an activation
+        # (which bumps `version`) can no longer stale the types in silence. It was
+        # run BY HAND until 2026-08-23 — nothing invoked it, which is exactly the
+        # discipline-instead-of-guard failure the policy names. BLOCKING in strict:
+        # the drift count is 0 over 12 files with no backlog to grandfather, and
+        # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
+        # .gen.ts. Needs the live registry, like its two neighbours here.
+        "Generated kind types vs live registry|pnpm check:kind-types"
         # THE `__kind` MARKER LAW is BLOCKING, in both modes. `__kind` is part of
         # the data (KINDS_EVERYWHERE_PLAN §4.2); the 2026-08-23 annihilation left
         # ZERO violations and a small, reason-carrying blessed list, so there is
@@ -276,6 +288,18 @@ else
         # jobs; this is where the frontend half is enforced, because this repo
         # deliberately has no commit-time hook and no CI (CLAUDE.md).
         "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        # GENERATED KIND TYPES are the fourth consumer surface (conversion-
+        # campaigns.md Law 2 §4): a stale `.gen.ts` COMPILES FINE AND LIES. The
+        # generator reads content_ir.kind_definition.emitted_json_schema live and
+        # diffs it against every committed file in
+        # features/content-ir/kinds/generated/, so a re-seed or an activation
+        # (which bumps `version`) can no longer stale the types in silence. It was
+        # run BY HAND until 2026-08-23 — nothing invoked it, which is exactly the
+        # discipline-instead-of-guard failure the policy names. BLOCKING in strict:
+        # the drift count is 0 over 12 files with no backlog to grandfather, and
+        # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
+        # .gen.ts. Needs the live registry, like its two neighbours here.
+        "Generated kind types vs live registry|pnpm check:kind-types"
         # THE `__kind` MARKER LAW is BLOCKING, in both modes. `__kind` is part of
         # the data (KINDS_EVERYWHERE_PLAN §4.2); the 2026-08-23 annihilation left
         # ZERO violations and a small, reason-carrying blessed list, so there is
