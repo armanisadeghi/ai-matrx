@@ -1,7 +1,7 @@
 // features/voice-agent/relay/sideChannel.ts
 //
 // THE SIDE CHANNEL (Arman's ruling 6, 2026-08-17 — SoR:
-// common-docs/systems/voice-communication-layer/FEATURE.md): the Communicator
+// common-docs/systems/agents/voice/STATE.md): the Communicator
 // may speak on the brain's behalf (deliveries, mirrored summaries, small
 // clarifications), and the brain must ALWAYS see everything that was said
 // aloud — structured, by its next turn. This module is that structure: a log

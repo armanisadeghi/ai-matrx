@@ -6,11 +6,12 @@
 // (the Communicator — Mandate `voice.communicator`) speaking FOR one primary
 // text agent (the brain — an ordinary execution-system conversation).
 //
-// Flow (THE ROUTING LAW; SoR: common-docs/systems/voice-communication-layer/
-// FEATURE.md):
+// Flow (THE ROUTING LAW; SoR: common-docs/systems/agents/voice/STATE.md):
 //   user speech  → transcript → setUserInputText + smartExecute on the
 //                  primary conversation (the voice model never auto-answers)
-//   brain busy   → one truthful narration cue after a short delay
+//   brain busy   → a MIRROR cue after a short delay: the Communicator reflects
+//                  back what it understood, never a canned holding line
+//                  (ruling 4). Real pipeline stages use narration instead.
 //   brain done   → the answer text is cued into the realtime session and the
 //                  Communicator speaks it, one question at a time, with the
 //                  question ledger injected so nothing is lost.
