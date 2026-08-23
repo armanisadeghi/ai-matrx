@@ -93,6 +93,7 @@ import {
   reviewWindow,
   type BandMeta,
 } from "../lib";
+import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
 import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
 import { ReasonChainDetail, ReasonChainInline } from "./ReasonChain";
@@ -585,6 +586,12 @@ export function ValueWorkbench() {
           ) : null}
         </p>
       ) : null}
+
+      {/* What the agents proposed and you have not answered yet. Nothing here
+          has touched a matcher, a worth row, a stamp or the guidelines — that
+          is P12, and it is why this sits above the numbers rather than inside
+          a settings screen. */}
+      <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
 
       <ReadyDefaultsBanner />
       <MeaningHealth

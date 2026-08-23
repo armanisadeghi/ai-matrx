@@ -36,8 +36,9 @@ import type {
   PlaceDetectionPass,
   PlaceDetectionStatus,
   RuleImpact,
+  ComboEffect,
 } from "./types";
-import type { SiteGeoArea } from "../types";
+import type { SiteGeoArea, ValueCombo } from "../types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -58,7 +59,7 @@ const assertData = makeAssertData("reach your value rules");
  * still gets the calm generic sentence.
  */
 const GOVERNANCE_CODE =
-  /^(seo_rule_[a-z_]+|seo_geo_[a-z_]+|gsc_site_[a-z_]+|seo_registry_[a-z_]+):\s*/;
+  /^(seo_rule_[a-z_]+|seo_geo_[a-z_]+|seo_combo_[a-z_]+|gsc_site_[a-z_]+|seo_registry_[a-z_]+):\s*/;
 
 function assertGoverned<T>(data: T | null, error: unknown, action: string): T {
   if (error) {
@@ -83,6 +84,8 @@ export const meaningUsageQueryKey = (siteId: string, start: string, end: string)
   ["seo", "value-rules", "usage", siteId, start, end] as const;
 export const placeDetectionQueryKey = (siteId: string) =>
   ["seo", "value-rules", "place-detection", siteId] as const;
+export const valueCombosQueryKey = (siteId: string) =>
+  ["seo", "value-rules", "combos", siteId] as const;
 export const geoPlaceSearchQueryKey = (query: string, kinds: string[]) =>
   ["seo", "value-rules", "geo-places", query, kinds.join("|")] as const;
 
@@ -94,6 +97,7 @@ export function valueSurfaceQueryKeys(siteId: string) {
     facetDimensionsQueryKey(siteId),
     valueRulesQueryKey(siteId),
     geoAreasQueryKey(siteId),
+    valueCombosQueryKey(siteId),
     ["marketing", "value-c", "rules", siteId],
     ["marketing", "value-c", "geo-areas", siteId],
     ["marketing", "value-c", "summary", siteId],
@@ -398,4 +402,111 @@ export async function runPlaceDetectionPass(
   const row = Array.isArray(rows) ? rows[0] : (rows as unknown as PlaceDetectionPass);
   if (!row) throw new Error("The pass reported nothing at all.");
   return row;
+}
+
+// ── seo.site_value_combo (C7) — ONE write RPC, one list read ────────────────
+
+/**
+ * COMBINATIONS. Worth hung on a SET of values instead of one, because two
+ * mediocre signals together are not the sum of two mediocre signals. Arman:
+ * "if a keyword is not an enterprise keyword, and it also happens to then
+ * carry, let's say, New York with it, well, then that's dead in the water
+ * because it's two strikes against you … it's not a point system."
+ *
+ * The DB owns everything: `seo.gsc_value_combo_set` is the ONE write path
+ * (site-editor guarded, insert + update + archive), `gsc_value_combo_list` the
+ * one read, and `gsc_value_combo_preview` the what-if — the same server-side
+ * banding every other preview uses, over the same effective stamps the
+ * resolver reads (`seo.fn_effective_stamps`). Nothing is re-derived here.
+ */
+export async function listValueCombos(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<ValueCombo[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_value_combo_list", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(
+    response.data,
+    response.error,
+    "list your combinations",
+  ) as unknown as ValueCombo[];
+}
+
+export interface ValueComboDraft {
+  /** 2–4 dimension VALUE ids, all-of. Order is irrelevant — the DB canonicalises. */
+  valueIds: string[];
+  effect: ComboEffect;
+  /** null for `never` — never is a flag, not a number. */
+  amount: number | null;
+  label: string;
+  notes: string;
+  enabled: boolean;
+}
+
+export async function saveValueCombo(
+  siteId: string,
+  draft: ValueComboDraft,
+  comboId: string | null,
+): Promise<{ id: string; label: string | null }> {
+  const response = await (await seoDb()).rpc("gsc_value_combo_set", {
+    p_site_id: siteId,
+    p_value_ids: draft.valueIds,
+    p_effect: draft.effect,
+    p_amount: draft.amount ?? undefined,
+    p_label: draft.label.trim() || undefined,
+    p_notes: draft.notes.trim() || undefined,
+    p_enabled: draft.enabled,
+    p_combo_id: comboId ?? undefined,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "save that combination",
+  ) as unknown as { id: string; label: string | null };
+}
+
+/** Archive = soft delete. Every keyword it was scoring re-resolves without it. */
+export async function archiveValueCombo(siteId: string, comboId: string): Promise<void> {
+  const response = await (await seoDb()).rpc("gsc_value_combo_set", {
+    p_site_id: siteId,
+    p_combo_id: comboId,
+    p_archive: true,
+  });
+  assertGoverned(response.data, response.error, "archive that combination");
+}
+
+export interface ValueComboPreviewInput {
+  siteId: string;
+  start: string;
+  end: string;
+  valueIds: string[];
+  effect: ComboEffect;
+  amount: number | null;
+  /** Set when EDITING: the combination's own current effect is swapped out first. */
+  comboId?: string | null;
+  sample?: number;
+}
+
+export async function previewValueCombo(
+  input: ValueComboPreviewInput,
+  signal?: AbortSignal,
+): Promise<RuleImpact> {
+  const response = await (await seoDb())
+    .rpc("gsc_value_combo_preview", {
+      p_site_id: input.siteId,
+      p_start: input.start,
+      p_end: input.end,
+      p_value_ids: input.valueIds,
+      p_effect: input.effect,
+      p_amount: input.amount ?? undefined,
+      p_combo_id: input.comboId ?? undefined,
+      p_sample: input.sample ?? 10,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(
+    response.data,
+    response.error,
+    "work out what that combination does",
+  ) as unknown as RuleImpact;
 }

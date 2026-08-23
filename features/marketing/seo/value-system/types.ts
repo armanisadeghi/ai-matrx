@@ -21,6 +21,35 @@ export interface ValueBandDef {
 
 export type ValueSource = "override" | "computed" | "unvalued";
 
+/** One dimension value inside a combination, as the resolver reports it. */
+export interface ValueComboMember {
+  value_id: string;
+  dimension: string;
+  dimension_label: string;
+  value: string;
+  value_label: string;
+}
+
+/**
+ * C7 — worth hung on a SET of values instead of one (`seo.site_value_combo`).
+ * It fires only when EVERY value is stamped on the keyword. Two values that
+ * are each merely mediocre can be fatal together, and that is the whole point:
+ * "if it's Los Angeles, it's still not great if it's a consumer keyword, but
+ * it's worth something" — Arman.
+ */
+export interface ValueCombo {
+  id: string;
+  value_ids: string[];
+  combo_values: ValueComboMember[];
+  effect: "add" | "scale" | "never";
+  amount: number | null;
+  label: string | null;
+  notes: string | null;
+  origin: string;
+  enabled: boolean;
+  updated_at: string;
+}
+
 export type ValueReason =
   | { kind: "override"; level?: string | null }
   /** C2: the leading summary row — Σ adds → × factor (capped) → never. */
@@ -47,6 +76,21 @@ export type ValueReason =
        */
       nature?: "intrinsic" | "situational";
       as_of?: string | null;
+    }
+  /**
+   * C7 — a COMBINATION fired: every value in the set is stamped on this
+   * keyword at once. Arman: "two strikes against you… it's not a point
+   * system." It contributes in the same fixed order as any single-value
+   * worth (adds, then factors, then never), so it reads as one more step.
+   */
+  | {
+      kind: "combo";
+      combo_id: string;
+      label: string | null;
+      values: ValueComboMember[];
+      effect: "add" | "scale" | "never";
+      amount: number | null;
+      notes: string | null;
     }
   /** Pre-C2 shapes, tolerated until every cached receipt is recomputed. */
   | { kind: "rule"; rule_id: string; name: string; multiplier: number }

@@ -646,6 +646,7 @@ describe("workflow-runs slice", () => {
         component_ref: null,
         surface: "matrx-user/workflow",
         title: `Emission ${i}`,
+        presentation: "panel",
         ts: `t${i}`,
       } as WorkflowRunEvent);
     }
@@ -670,6 +671,7 @@ describe("workflow-runs slice", () => {
         component_ref: "status_card",
         surface: "matrx-user/workflow",
         title,
+        presentation: "panel",
         ts: title,
       }) as WorkflowRunEvent;
 

@@ -85,6 +85,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
 import { ClassCell } from "@/features/marketing/search-console/components/classification/ClassCell";
 import { ClassStatsBand } from "@/features/marketing/search-console/components/classification/ClassStatsBand";
 import { FacetBackfillStrip } from "@/features/marketing/search-console/components/classification/FacetBackfillStrip";
@@ -839,6 +840,11 @@ export function KeywordClassificationWorkspace({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
+      {/* Agent proposals about what these keywords MEAN — matchers, worth,
+          stamps, guidelines — waiting on a human. None of them has changed a
+          single classification yet (P12). */}
+      <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+
       <ClassStatsBand
         siteId={siteId}
         range={range}

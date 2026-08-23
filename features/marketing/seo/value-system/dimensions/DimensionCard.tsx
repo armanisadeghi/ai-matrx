@@ -195,6 +195,10 @@ export function DimensionCard({
   const [addingValue, setAddingValue] = useState(false);
 
   const owned = dimension.scope === "site";
+  const situational = dimension.nature === "situational";
+  // Re-derivation is the DB's job — this button only asks for it, scoped to
+  // this dimension, over the site's current window (THE SCOPE RULE).
+  const stampMutations = useDigStampMutations(siteId);
 
   const saveDimension = useMutation({
     mutationFn: (draft: DimensionFormValue) =>
@@ -278,6 +282,15 @@ export function DimensionCard({
                 Several answers allowed
               </Badge>
             ) : null}
+            {situational ? (
+              <Badge
+                variant="outline"
+                className="h-4 gap-1 px-1.5 text-[10px]"
+                title="Worked out from this site's own data on a cadence, not from the words. Every answer carries when it was last worked out."
+              >
+                <Timer className="h-2.5 w-2.5" /> Right now
+              </Badge>
+            ) : null}
             {/* A dimension that is not being applied must SAY so here. The
                 whole reason this screen exists is that a setting which
                 silently does nothing looked exactly like one that works. */}
@@ -331,19 +344,80 @@ export function DimensionCard({
               label={dimension.rule_count === 1 ? "value rule" : "value rules"}
               title="Value rules that decide worth using this dimension. Changing what an answer means changes what those rules pay out."
             />
+            {situational ? (
+              <CountChip
+                icon={Timer}
+                value={dimension.condition_matcher_count}
+                label={
+                  dimension.condition_matcher_count === 1
+                    ? "Dig Here rule"
+                    : "Dig Here rules"
+                }
+                title="Dig Here rules that fill this dimension's segments. Re-evaluate to bring them up to date."
+              />
+            ) : null}
+            {situational ? (
+              <span
+                className="whitespace-nowrap text-[11px] text-muted-foreground"
+                title={
+                  dimension.situational_as_of
+                    ? new Date(dimension.situational_as_of).toLocaleString()
+                    : "Nothing here has been evaluated yet."
+                }
+              >
+                {dimension.situational_as_of
+                  ? `as of ${formatRelativeTime(dimension.situational_as_of, { style: "long" })}`
+                  : "never evaluated"}
+              </span>
+            ) : null}
           </div>
         </div>
 
-        {owned && !editingDimension ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 shrink-0 px-1.5 text-[11px]"
-            onClick={() => setEditingDimension(true)}
-          >
-            <Pencil className="mr-1 h-3 w-3" /> Edit
-          </Button>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-1">
+          {situational && dimension.condition_matcher_count > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-[11px]"
+              disabled={stampMutations.evaluate.isPending}
+              title="Run this dimension's Dig Here rules again over the current window and update what every keyword carries."
+              onClick={() => {
+                stampMutations.evaluate.mutate(
+                  { dimensionId: dimension.dimension_id },
+                  {
+                    onSuccess: (result) => {
+                      toast.success(
+                        `${dimension.label}: ${result.stamped.toLocaleString()} stamped, ${result.removed.toLocaleString()} released (${result.window.start} → ${result.window.end}).`,
+                      );
+                      onSaved();
+                    },
+                    onError: (error) => toast.error(extractErrorMessage(error)),
+                  },
+                );
+              }}
+            >
+              <RefreshCw
+                className={cn(
+                  "mr-1 h-3 w-3",
+                  stampMutations.evaluate.isPending && "animate-spin",
+                )}
+              />
+              {stampMutations.evaluate.isPending
+                ? "Re-evaluating…"
+                : "Re-evaluate"}
+            </Button>
+          ) : null}
+          {owned && !editingDimension ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-1.5 text-[11px]"
+              onClick={() => setEditingDimension(true)}
+            >
+              <Pencil className="mr-1 h-3 w-3" /> Edit
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {editingDimension ? (
@@ -379,6 +453,7 @@ export function DimensionCard({
                   editable={owned}
                   siteId={siteId}
                   dimensionSlug={dimension.slug}
+                  situational={situational}
                   onSaved={onSaved}
                 />
               ))}

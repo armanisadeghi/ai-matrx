@@ -221,3 +221,23 @@ export const MATCH_KINDS = [
   { key: "starts_with", label: "starts with", hint: "" },
   { key: "ends_with", label: "ends with", hint: "" },
 ] as const;
+
+// ── Combinations (C7) ───────────────────────────────────────────────────────
+
+/** What a combination does when every value in its set is stamped at once. */
+export type ComboEffect = "add" | "scale" | "never";
+
+export interface ValueComboFormState {
+  /** 2–4 dimension VALUE ids (`platform.categories.id`), all-of. */
+  valueIds: string[];
+  effect: ComboEffect;
+  /** Text so the field can be empty while typing; `never` ignores it. */
+  amount: string;
+  label: string;
+  notes: string;
+  enabled: boolean;
+}
+
+/** How many values a combination may hold — the DB CHECK says the same. */
+export const COMBO_MIN_VALUES = 2;
+export const COMBO_MAX_VALUES = 4;

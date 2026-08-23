@@ -662,6 +662,39 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-23 — **A PAUSED schedule is not a FAILING schedule** (health v4,
+  [`migrations/seo_gsc_ingestion_health_v4.sql`](../../../migrations/seo_gsc_ingestion_health_v4.sql)).
+  The banner read *"The nightly Search Console job is failing (last run
+  2026-08-20 09:15: no error recorded). No collection has been attempted for
+  this site — data is 3 days behind."* Every clause misled. The dispatcher
+  (`scheduler.sch_task` `a7c1e2d3-…300`) had been set `enabled=false` on
+  2026-08-20 by a governance pass, so it was switched OFF, not failing — and a
+  reader would go debug a Google integration when the repair is an approval and
+  a row flip. v3 only ever read the last RUN, so a task that stopped being
+  dispatched at all showed the corpse of its final run forever. **THE TRUE
+  CURRENT STATUS LAW: "is this schedule even switched on?" is live state, and a
+  status derived without it is a guess.** v4 reads the task row
+  (`dispatcher_enabled` / `dispatcher_paused_at` / `dispatcher_paused_reason`,
+  new columns) and leads with the switch when it is off — `warning` while the
+  data is still current, `critical` once it goes stale, because a nightly job
+  that is off IS the coming outage. The raw governance reason is machine-shaped
+  and travels in `dispatcher_paused_reason` for the copy payload; the sentence a
+  human reads says what is true and what happens next. `IngestionHealthBanner`
+  titles it *"Nightly Search Console sync is switched off"* — the title must
+  name the CAUSE or the reader chases the wrong fix.
+  Also: "no collection has been attempted" was **false** (the pass collected this
+  site at 09:15:47 before dying on the next one), so v4 reports this site's own
+  run ledger, scoped to `trigger='scheduled'` — a manual "Sync now" is never
+  credited to the schedule. And the bare phrase "no error recorded" is gone: an
+  unexplained terminal status is named as the defect it is.
+  Root cause of the reasonless failure was in aidream — the `scheduler.sch_run`
+  lifecycle watchdog force-failed a healthy run on AGE ALONE (610s from
+  `claimed_at`, against a 3-hour lease) and wrote `status` with no
+  `finished_at`, no `error_message`, no audit stamp. Fixed in
+  `aidream/db/watchdog_configs.py`; 111 of 171 erased rows repaired by
+  [`migrations/repair_watchdog_erased_sch_run_failures.sql`](../../../migrations/repair_watchdog_erased_sch_run_failures.sql).
+  See aidream `services/seo/FEATURE.md` change log for the full account.
+
 - 2026-08-22 — **The geo gazetteer (I3).** Geo areas name real places instead of only
   typed words: `seo.geo_place` (51 states + 1,000 cities + 8 grammar phrases, each row
   carrying its own aliases and an ambiguity flag), `seo.keyword_place` for detections,
