@@ -52471,6 +52471,7 @@ export type Database = {
           assist_id: string
           dedupe_key: string
           payload_hash: string
+          proposal: Json
           status: string
         }[]
       }

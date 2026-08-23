@@ -98,6 +98,11 @@ export function valueSurfaceQueryKeys(siteId: string) {
     valueRulesQueryKey(siteId),
     geoAreasQueryKey(siteId),
     valueCombosQueryKey(siteId),
+    // The LIVE workbench ("marketing/value/...") — its review table, summary,
+    // band vocabulary and meaning health all hang off this one prefix. It was
+    // missing here, so saving a rule refreshed the meaning panel and left the
+    // keyword table showing the arithmetic from before the save.
+    ["marketing", "value"],
     ["marketing", "value-c", "rules", siteId],
     ["marketing", "value-c", "geo-areas", siteId],
     ["marketing", "value-c", "summary", siteId],
