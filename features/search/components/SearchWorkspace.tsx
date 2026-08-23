@@ -16,6 +16,7 @@
  * it belongs: honest, and never louder than the results.
  */
 
+import { useEffect, useRef } from "react";
 import { AlertTriangle, RotateCcw, Search } from "lucide-react";
 import Link from "next/link";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
@@ -75,12 +76,44 @@ function str(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
+/**
+ * A new search starts at the top of its own results.
+ *
+ * The scroll container is `.shell-main`, not the window, so Next's own
+ * scroll-to-top on navigation never touches it — without this, submitting a
+ * second query while deep in the first one's results drops the reader into the
+ * middle of an answer they have not seen the top of.
+ */
+function useScrollToTopOnNewQuery(
+  query: string,
+  anchor: React.RefObject<HTMLDivElement | null>,
+) {
+  useEffect(() => {
+    if (!query) return;
+    let node: HTMLElement | null = anchor.current;
+    while (node) {
+      const style = getComputedStyle(node);
+      if (
+        /(auto|scroll)/.test(style.overflowY) &&
+        node.scrollHeight > node.clientHeight
+      ) {
+        node.scrollTo({ top: 0 });
+        return;
+      }
+      node = node.parentElement;
+    }
+    window.scrollTo({ top: 0 });
+  }, [query, anchor]);
+}
+
 export function SearchWorkspace({ query }: { query: string }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const { phase, outcome, error, retry } = useKindSearch(
     query,
     "brave",
     SEARCH_RESULT_COUNT,
   );
+  useScrollToTopOnNewQuery(query, rootRef);
 
   // The surface's live scope — assembled at trigger time from whatever is on
   // screen right now, so an agent launched from here reasons about THIS search
@@ -157,7 +190,10 @@ export function SearchWorkspace({ query }: { query: string }) {
       surfaceName={SEARCH_SURFACE_NAME}
       getScope={getSurfaceScope}
     >
-      <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[var(--shell-header-h)]">
+      <div
+        ref={rootRef}
+        className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[var(--shell-header-h)]"
+      >
         {/* The box also lives here on mobile, where the header carries no room for it. */}
         <div className="py-3 lg:hidden">
           <SearchBox

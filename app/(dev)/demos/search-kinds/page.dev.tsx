@@ -10,8 +10,11 @@
  * the production route path → `WebSearchResultsBlock` → nested kind
  * delegation).
  *
- * Brave is the default provider; Google runs on SerpAPI credits (250/month
- * free plan) — use sparingly.
+ * Brave is the default provider. Google runs on SerpAPI credits (250/month
+ * free plan) that rank tracking also spends, so since 2026-08-23 the server's
+ * `search.public_providers` knob allows Brave ONLY and a Google request here
+ * returns a 400 — testing the Google translation means an admin widening that
+ * knob to `brave,google` for the duration.
  */
 
 import { useState } from "react";
@@ -172,8 +175,10 @@ export default function SearchKindsDemoPage() {
 
       {provider === "google" && (
         <p className="text-xs text-warning">
-          Google searches spend real SerpAPI credits (250/month free plan) —
-          demo with Brave unless the Google translation itself is under review.
+          Google is refused by the server unless an admin widens the{" "}
+          <code className="text-[11px]">search.public_providers</code> knob to{" "}
+          <code className="text-[11px]">brave,google</code> — it spends the same
+          SerpAPI credits (250/month) rank tracking runs on.
         </p>
       )}
 
