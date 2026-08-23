@@ -11,7 +11,11 @@
 // the hardening (no-audio guard, durable upload, robust extraction) for free.
 //
 // The agent round-trip runs through the canonical headless primitive
-// (`runHeadlessAgentJson`, D126) with the audio clip as a message part.
+// (`runHeadlessAgentJson`, D126). The clip is delivered as the mandate's NAMED
+// offered value `answer_audio` (Provision `flashcards.grade_spoken`, kind
+// "file") — never smuggled onto the turn as a message part. That is what lets
+// the server REFUSE a no-audio run: on 2026-08-22 a bench run with no clip
+// attached invented a transcript and graded the learner `correct`.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
@@ -169,6 +173,13 @@ export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
   };
 }
 
+/**
+ * 🚨 THE ONE "we heard nothing" line. A learner who said nothing must be TOLD
+ * so, in these exact words, on every spoken surface — never a silent skip, and
+ * never a grade. Import it; do not retype it per surface.
+ */
+export const NO_ANSWER_HEARD = "We didn't hear an answer — try again." as const;
+
 /** Upload a response clip → durable file_id (or null on missing/failed). Never throws. */
 export async function uploadResponseClip(
   clip: Blob | null,
@@ -220,8 +231,9 @@ export interface RunSpokenGraderArgs {
 
 /**
  * Drive the grader agent for ONE spoken answer and return the structured grade
- * via the canonical headless primitive (`runHeadlessAgentJson`, D126) with the
- * audio attached as a message part. Returns null on any failure. Never records
+ * via the canonical headless primitive (`runHeadlessAgentJson`, D126), the clip
+ * riding as the named offered value `answer_audio`. Returns null on any failure
+ * — including no clip at all, which never reaches the model. Never records
  * anything or touches a slice — the caller owns persistence + UI.
  */
 export function runSpokenGrader(args: RunSpokenGraderArgs) {
@@ -229,11 +241,13 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<SpokenGrade | null> => {
+    if (!args.responseAudioFileId) {
+      // Belt and braces for JS callers: the type says required, and a grader
+      // that runs on no clip fabricates a transcript (see the header note).
+      console.error("[grading-core] runSpokenGrader called with no clip — refusing.");
+      return null;
+    }
     try {
-      const part = await fileHandler.toContentPart({
-        kind: "file_id",
-        fileId: args.responseAudioFileId,
-      });
       const result = await runHeadlessAgentJson(dispatch, getState, {
         mandateKey: args.mandateKey,
         surfaceKey: args.surfaceKey,
@@ -241,14 +255,19 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
         // the user's normal chats via the system-marked source_feature.
         sourceFeature: args.sourceFeature,
         ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
+        // THE OFFERED VALUES — every one of them, by its declared name. The
+        // clip is `answer_audio`, a GUARANTEED media value on the Provision
+        // (`kind="file"`), so it travels as the durable file id like every
+        // other named value. The server's materializer resolves it into the
+        // turn's media block; if it were ever missing the run REFUSES there
+        // instead of grading a silence.
         variables: {
           front: args.front,
           back: args.back,
           seconds_allowed: args.secondsAllowed,
+          answer_audio: args.responseAudioFileId,
           ...(args.rubric ? { rubric: args.rubric } : {}),
         },
-        // Two-step attach path: the answer clip rides as a message part.
-        messageParts: [part],
         timeoutMs: 120_000,
         pollIntervalMs: 200,
         // Live posture only when a caller asked to watch it — the request then

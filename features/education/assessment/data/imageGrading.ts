@@ -10,8 +10,9 @@
 // This is the image twin of the spoken crown jewel
 // (features/flashcards/fast-fire/agents/grading-core.ts): upload the media →
 // durable file_id, then run the canonical headless primitive
-// (`runHeadlessAgentJson`, D126) with the photo attached as a message part. Never grade an image without an
-// uploaded file_id. The grader is authored + tuned in-system and resolved
+// (`runHeadlessAgentJson`, D126) with the photo delivered as the mandate's
+// NAMED offered value `work_photo` — never smuggled onto the turn as a message
+// part. Never grade an image without an uploaded file_id. The grader is authored + tuned in-system and resolved
 // through a MANDATE (keys in data/mandates.ts — the DB decides which agent
 // fulfils it); the tolerant coercer absorbs prompt-driven key drift.
 
@@ -84,8 +85,8 @@ export interface RunVisionGraderArgs {
 
 /**
  * Drive the vision grader agent for ONE photographed answer and return the
- * structured step-level grade via the headless primitive (photo attached as a
- * message part). Returns null on any failure. Never records anything or touches a slice — the caller owns
+ * structured step-level grade via the headless primitive (the photo riding as
+ * the named offered value `work_photo`). Returns null on any failure. Never records anything or touches a slice — the caller owns
  * persistence + UI.
  */
 export function runVisionGrader(args: RunVisionGraderArgs) {
@@ -93,11 +94,11 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<StepGradeVerdict | null> => {
+    if (!args.responseImageFileId) {
+      console.error("[imageGrading] runVisionGrader called with no photo — refusing.");
+      return null;
+    }
     try {
-      const part = await fileHandler.toContentPart({
-        kind: "file_id",
-        fileId: args.responseImageFileId,
-      });
       const result = await runHeadlessAgentJson(dispatch, getState, {
         mandateKey: args.mandateKey,
         surfaceKey: args.surfaceKey,
@@ -106,12 +107,16 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
         sourceFeature: args.sourceFeature,
         ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
         ...livePosture(args.onConversationCreated),
+        // THE OFFERED VALUES by their declared names — the photo is
+        // `work_photo`, a GUARANTEED media value on the Provision
+        // (`education.grade_handwritten`, kind "file"), so it travels as the
+        // durable file id and the server resolves it into the turn's media
+        // block. A run without it REFUSES rather than grade an unseen page.
         variables: {
           question: args.question,
           expected_answer: args.expected,
+          work_photo: args.responseImageFileId,
         },
-        // Two-step attach path: the photo rides as a message part.
-        messageParts: [part],
         timeoutMs: 120_000,
         pollIntervalMs: 200,
       });

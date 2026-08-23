@@ -39,6 +39,7 @@ import {
 import { toast } from "@/lib/toast";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import {
+  NO_ANSWER_HEARD,
   runSpokenGrader,
   uploadResponseClip,
   type SpokenGrade,
@@ -138,17 +139,18 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
               }
             : null,
         );
+        // TWO very different failures, and the learner must be able to tell
+        // them apart: a clip we could not upload (retryable, their answer is
+        // still held) versus NO CLIP AT ALL. The second used to return no
+        // message, so the surface showed a blank "skipped" and the learner had
+        // no idea their silence was the problem.
         return {
           status: "skipped",
           responseAudioFileId,
-          ...(responseAudioFileId
-            ? {}
-            : {
-                error:
-                  args.clip && args.clip.size > 0
-                    ? "Could not upload your recording — check your connection and try again."
-                    : undefined,
-              }),
+          error:
+            args.clip && args.clip.size > 0
+              ? "Could not upload your recording — check your connection and try again."
+              : NO_ANSWER_HEARD,
         };
       }
 

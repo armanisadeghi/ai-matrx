@@ -92,6 +92,7 @@ import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
 import { LESSON_SCRIPTS_KIND_DEFINITIONS } from "../kinds/lesson-scripts";
 import { STUDY_PACK_KIND_DEFINITIONS } from "../kinds/study-pack";
 import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
+import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -154,6 +155,12 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // provider-agnostic web-search collection + item kinds + primitives.
   // Python-owned models: aidream/aidream/services/search_kinds/models.py.
   ...SEARCH_RESULTS_KIND_DEFINITIONS,
+  // Compiled MIRROR of the already-registered python-owned `trust_envelope` +
+  // `citation` kinds (their DB rows carry a NULL `data[]`, so nothing else can
+  // resolve them). Registered here so every kind that carries grounding
+  // REFERENCES the one shape instead of inlining a copy — see
+  // kinds/trust-envelope.ts.
+  ...TRUST_ENVELOPE_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",
@@ -199,20 +206,15 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
         difficulty: { type: "string" },
         topic: { type: "string" },
         tags: { type: "string[]" },
-        // P0 TrustEnvelope (features/education/trust). `confidence` + `groundedIn`
-        // are declared first-class here; the `citations[]` array rides the same
-        // zero-loss residue channel every other undeclared card field uses (the
-        // bridge already round-trips residue.extra), so it streams natively.
-        trust: {
-          type: "inline_object",
-          fields: {
-            confidence: {
-              type: "enum",
-              values: ["grounded", "inferred", "not_in_material"],
-            },
-            groundedIn: { type: "string" },
-          },
-        },
+        // P0 TrustEnvelope (features/education/trust) — a REFERENCE to the
+        // registered `trust_envelope` kind, so `citations[]` is declared
+        // structure instead of residue. The live source-deck producer
+        // (agent 4b4a7d28, "Flashcard Source Deck Composer") REQUIRES this on
+        // every card and emits it with `__kind:"trust_envelope"`; the consumer
+        // has always read it (coerce-card → fc_card.metadata.trust →
+        // <SourceCitations/>). OPTIONAL because the topic-deck producer
+        // (flashcards.generate_cards) grounds nothing and emits no envelope.
+        trust: { type: "object", kind: "trust_envelope" },
         additionalDetails: { type: "inline_object", open: true, fields: {} },
       },
     },
@@ -232,17 +234,8 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
         tags: { type: "string[]" },
         audio_explanation: { type: "string" },
         detailed_explanation: { type: "string" },
-        // P0 TrustEnvelope — see the `flashcard` kind above (citations via residue).
-        trust: {
-          type: "inline_object",
-          fields: {
-            confidence: {
-              type: "enum",
-              values: ["grounded", "inferred", "not_in_material"],
-            },
-            groundedIn: { type: "string" },
-          },
-        },
+        // P0 TrustEnvelope — see the `flashcard` kind above.
+        trust: { type: "object", kind: "trust_envelope" },
       },
     },
   },
@@ -260,6 +253,8 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
         topic: { type: "string" },
         tags: { type: "string[]" },
         subcards: { type: "array", itemKinds: ["basic_card"], required: true },
+        // P0 TrustEnvelope — see the `flashcard` kind above.
+        trust: { type: "object", kind: "trust_envelope" },
       },
     },
   },

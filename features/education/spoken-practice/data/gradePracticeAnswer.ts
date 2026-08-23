@@ -20,6 +20,7 @@ import { verdictResult } from "@/features/education/trust/types";
 import { studyService } from "@/features/education/study/service/studyService";
 import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import {
+  NO_ANSWER_HEARD,
   runSpokenGrader,
   uploadResponseClip,
   type SpokenGrade,
@@ -97,13 +98,16 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
 
       if (!responseAudioFileId) {
         await recordAttempt(args, null, null, null);
+        // A failed upload and a SILENT answer are different problems and get
+        // different words — an empty message left the learner staring at a
+        // blank "skipped" with no idea we heard nothing.
         return {
           status: "skipped",
           responseAudioFileId: null,
           error:
             args.clip && args.clip.size > 0
               ? "Could not upload your recording — check your connection and try again."
-              : undefined,
+              : NO_ANSWER_HEARD,
         };
       }
 
