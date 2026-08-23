@@ -41,6 +41,7 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { CmsPageBuild } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -91,18 +92,24 @@ export const CMS_PAGE_BUILD_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge
 // ---------------------------------------------------------------------------
 
-export type CmsPageWriteTarget = "live" | "draft" | null;
+/** The registry's own enum, widened by the bridge's "not stated yet" case. */
+export type CmsPageWriteTarget = NonNullable<CmsPageBuild["write_target"]> | null;
 
-export interface CmsPageBuildData {
+/**
+ * THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`). The bridge only says
+ * how a READ build differs from a raw one: every optional string materialized,
+ * `route`/`page_id` narrowed to "value or explicitly absent", plus the stream
+ * flag. Field NAMES are the registry's — a bridge that renames its kind's
+ * fields is a second vocabulary (`check:kind-type-twins`).
+ */
+export type CmsPageBuildData = Required<
+  Omit<CmsPageBuild, "__kind" | "route" | "page_id" | "write_target">
+> & {
   route: string | null;
-  pageId: string | null;
-  writeTarget: CmsPageWriteTarget;
-  html: string;
-  css: string;
-  metaTitle: string;
-  metaDescription: string;
+  page_id: string | null;
+  write_target: CmsPageWriteTarget;
   isComplete: boolean;
-}
+};
 
 function stringOr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
@@ -122,12 +129,12 @@ export function cmsPageBuildServerDataFromEnvelope(
 
   return {
     route: emptyToNull(stringOr(value.route, "")),
-    pageId: emptyToNull(stringOr(value.page_id, "")),
-    writeTarget: target === "live" || target === "draft" ? target : null,
+    page_id: emptyToNull(stringOr(value.page_id, "")),
+    write_target: target === "live" || target === "draft" ? target : null,
     html: stringOr(value.html, ""),
     css: stringOr(value.css, ""),
-    metaTitle: stringOr(value.meta_title, ""),
-    metaDescription: stringOr(value.meta_description, ""),
+    meta_title: stringOr(value.meta_title, ""),
+    meta_description: stringOr(value.meta_description, ""),
     isComplete: envelope.root.status === "complete",
   };
 }

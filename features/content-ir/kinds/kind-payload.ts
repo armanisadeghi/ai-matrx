@@ -44,6 +44,16 @@ export type PartialKind<T> = T extends Leaf
       ? { [K in keyof T]?: PartialKind<T[K]> }
       : T;
 
+/**
+ * A COERCED kind instance, the shape every bridge hands its component: no
+ * field is ever absent, and one the producer omitted is explicitly `null`.
+ * Bridges derive from this instead of re-typing the kind's fields — the field
+ * NAMES stay the registry's, always (`check:kind-type-twins`).
+ */
+export type MaterializedKind<T> = {
+  [K in keyof Required<T>]: Exclude<T[K], undefined> | null;
+};
+
 /** The streaming view of a registered kind, by slug. */
 export type PartialKindPayload<S extends GeneratedKindSlug> = PartialKind<
   KindPayload<S>

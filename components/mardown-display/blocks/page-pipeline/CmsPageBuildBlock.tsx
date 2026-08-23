@@ -67,17 +67,17 @@ export function readCmsPageBuildData(
   if (typeof candidate.html !== "string" && candidate.route === undefined) {
     return null;
   }
-  const target = candidate.writeTarget;
+  const target = candidate.write_target;
   return {
     route: typeof candidate.route === "string" ? candidate.route : null,
-    pageId: typeof candidate.pageId === "string" ? candidate.pageId : null,
-    writeTarget: target === "live" || target === "draft" ? target : null,
+    page_id: typeof candidate.page_id === "string" ? candidate.page_id : null,
+    write_target: target === "live" || target === "draft" ? target : null,
     html: typeof candidate.html === "string" ? candidate.html : "",
     css: typeof candidate.css === "string" ? candidate.css : "",
-    metaTitle: typeof candidate.metaTitle === "string" ? candidate.metaTitle : "",
-    metaDescription:
-      typeof candidate.metaDescription === "string"
-        ? candidate.metaDescription
+    meta_title: typeof candidate.meta_title === "string" ? candidate.meta_title : "",
+    meta_description:
+      typeof candidate.meta_description === "string"
+        ? candidate.meta_description
         : "",
     isComplete: candidate.isComplete === true,
   };
@@ -251,13 +251,13 @@ export default function CmsPageBuildBlock({
 
       <CmsBuildStatus
         route={data.route}
-        writeTarget={data.writeTarget}
+        writeTarget={data.write_target}
         href={liveHref(siteUrl, data.route)}
       />
       <CmsBuildPreview data={data} />
       <CmsBuildSearchListing
-        metaTitle={data.metaTitle}
-        metaDescription={data.metaDescription}
+        metaTitle={data.meta_title}
+        metaDescription={data.meta_description}
       />
     </div>
   );
