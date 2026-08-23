@@ -13,6 +13,18 @@ export const CLOUD_BROWSER_RESOURCE_TYPE = "browser_profile" as const;
 /** Assists surface name — `<client>/<surface>` (features/assists). */
 export const CLOUD_BROWSER_ASSIST_SURFACE = "cloud-browser/panel" as const;
 
+/**
+ * The query parameter a D-14 handoff notification lands with.
+ *
+ * The server builds the door as
+ * `/chat[/{conversationId}]?cloudBrowserHandoff={handoffId}`
+ * (aidream `services/cloud_browser/notify.py::handoff_deep_link`) and
+ * `components/CloudBrowserHandoffDeepLink.tsx` is the ONE reader. Both halves
+ * must change together — a chip whose parameter nobody reads is a dead end,
+ * which is exactly what shipped first.
+ */
+export const CLOUD_BROWSER_HANDOFF_PARAM = "cloudBrowserHandoff" as const;
+
 // ── Screenshots-on-request (D-8 tier 2, D-21 defaults) ───────────────────────
 // Captures are EVENT-DRIVEN first (Arman 2026-08-21): every cloud-browser tool
 // action (navigate / click / fill / login) triggers a capture, so the viewer
@@ -27,6 +39,19 @@ export const SCREENSHOT_RAPID_CADENCE_MS = 2_000;
 export const SCREENSHOT_ACTIVITY_DEBOUNCE_MS = 600;
 /** Auto-off after 5 minutes without interaction; always re-armable. */
 export const SCREENSHOT_AUTO_OFF_MS = 5 * 60_000;
+
+// ── Written progress (D-8 tier 1 — the DEFAULT face) ────────────────────────
+/**
+ * How often the open panel reads the written-progress tail.
+ *
+ * NOT a tuning dial for "how live does this feel" — the read is an incremental
+ * cursor over an append-only ledger, so this is only the worst-case latency
+ * between a browser action and its line appearing. 2s is below the threshold at
+ * which a person reading play-by-play notices a gap; going lower buys nothing
+ * and going higher makes the agent look stalled. A CAPS constant, never an env
+ * toggle (CLAUDE.md § An env var is a VALUE, never a TOGGLE).
+ */
+export const WRITTEN_PROGRESS_POLL_MS = 2_000;
 
 // ── Control lease cadence (S4 §5.3) ──────────────────────────────────────────
 export const CONTROL_LEASE_RENEW_INTERVAL_MS = 20_000;

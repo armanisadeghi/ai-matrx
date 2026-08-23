@@ -15,7 +15,6 @@ import type {
   CloudBrowserProfile,
   CloudBrowserRun,
   ControllerState,
-  NotificationConsent,
   ProfileQuota,
   ProgressEvent,
   ScreenshotFrame,
@@ -37,7 +36,13 @@ export interface CloudBrowserState {
   bindings: AccountBinding[];
   telemetry: TelemetrySnapshot | null;
   consent: CloudBrowserConsent | null;
-  notificationConsent: NotificationConsent | null;
+  /**
+   * ONLY the one-time "the front-and-centre card was shown" stamp. The four
+   * channel switches are NOT slice state: they live on the canonical
+   * preference tables and are read by `useHandoffNotificationPreferences`.
+   * Keeping them here was half of the parallel preference store.
+   */
+  notificationAcknowledgedAt: string | null;
   /** Which face is showing (D-8 tiers). Default = written progress. */
   face: MediaFace;
   /** Bounded screenshot session (D-8/D-21). */
@@ -68,7 +73,7 @@ const initialState: CloudBrowserState = {
   bindings: [],
   telemetry: null,
   consent: null,
-  notificationConsent: null,
+  notificationAcknowledgedAt: null,
   face: "written",
   screenshot: { active: false, autoOffAt: null, frames: [] },
   loading: false,
@@ -103,15 +108,30 @@ const slice = createSlice({
       state.bindings = s.bindings;
       state.telemetry = s.telemetry;
       state.consent = s.consent;
-      state.notificationConsent = s.notificationConsent;
+      state.notificationAcknowledgedAt = s.notificationAcknowledgedAt;
       state.loading = false;
       state.error = null;
     },
-    appendProgress(state, action: PayloadAction<ProgressEvent>) {
-      // De-dup by sequence — echo-safe (never dispatch-per-row in a loop).
-      if (!state.progress.some((e) => e.sequence === action.payload.sequence)) {
-        state.progress.push(action.payload);
-      }
+    /**
+     * Append the written-progress tail — ONE dispatch for a whole page of
+     * steps, never one per row.
+     *
+     * A dispatch-per-row loop notifies every subscriber and re-runs every
+     * selector once PER ROW; that O(N^2) shape is the documented cause of this
+     * app's realtime freezes (CLAUDE.md § Realtime, features/notes
+     * FEATURE.md § Freeze-loop doctrine). So the payload is the BATCH, and the
+     * batch is what the poll hands over.
+     *
+     * De-dup is by `sequence`, which `browser.action_event` guarantees unique
+     * per run — so a re-read, an overlapping cursor, or a hydrate racing the
+     * poll can never double a step.
+     */
+    appendProgress(state, action: PayloadAction<ProgressEvent[]>) {
+      const seen = new Set(state.progress.map((e) => e.sequence));
+      const fresh = action.payload.filter((e) => !seen.has(e.sequence));
+      if (fresh.length === 0) return;
+      state.progress.push(...fresh);
+      state.progress.sort((a, b) => a.sequence - b.sequence);
     },
     setController(state, action: PayloadAction<ControllerState>) {
       state.controller = action.payload;
@@ -153,8 +173,8 @@ const slice = createSlice({
     setConsent(state, action: PayloadAction<CloudBrowserConsent>) {
       state.consent = action.payload;
     },
-    setNotificationConsent(state, action: PayloadAction<NotificationConsent>) {
-      state.notificationConsent = action.payload;
+    setNotificationAcknowledged(state, action: PayloadAction<string>) {
+      state.notificationAcknowledgedAt = action.payload;
       state.notificationPromptSeen = true;
     },
     markNotificationPromptSeen(state) {
@@ -178,7 +198,7 @@ export const {
   pushFrame,
   setTelemetry,
   setConsent,
-  setNotificationConsent,
+  setNotificationAcknowledged,
   markNotificationPromptSeen,
 } = slice.actions;
 

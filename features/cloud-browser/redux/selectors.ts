@@ -21,7 +21,8 @@ export const selectController = (s: RootState) => root(s).controller;
 export const selectBindings = (s: RootState) => root(s).bindings;
 export const selectTelemetry = (s: RootState) => root(s).telemetry;
 export const selectConsent = (s: RootState) => root(s).consent;
-export const selectNotificationConsent = (s: RootState) => root(s).notificationConsent;
+export const selectNotificationAcknowledgedAt = (s: RootState) =>
+  root(s).notificationAcknowledgedAt;
 export const selectFace = (s: RootState) => root(s).face;
 export const selectScreenshot = (s: RootState) => root(s).screenshot;
 /** Last streamed cloud-browser tool action — the event-driven capture trigger. */
