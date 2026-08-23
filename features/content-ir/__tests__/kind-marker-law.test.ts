@@ -15,7 +15,7 @@ import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 import { withRootKindMarker } from "../studio/instance-service";
 import { makeCompleteEnvelopeBridge } from "../kinds/legacy-bridge-utils";
 import { schemaProposalServerDataFromEnvelope } from "../kinds/schema-proposal";
-import { withRootKind } from "../core/emit-payload";
+import { withRootKind } from "@ai-matrx/content-ir";
 
 describe("the instance write path stamps the marker (storage)", () => {
   it("adds `__kind` as the FIRST key when the value has none", () => {
