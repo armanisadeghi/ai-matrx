@@ -49,7 +49,12 @@ export function PackOverview({
   grantsBump,
 }: {
   detail: AdminPackDetail;
-  directory: SharedKnowledgeDirectory;
+  /**
+   * Admin-loaded org names, for labelling organization-audience grants. Absent on the
+   * curator front door (`/knowledge/library-curate`), which has no admin directory — the
+   * grant rows carry their own `organizationName`, so this is only a fallback.
+   */
+  directory?: SharedKnowledgeDirectory;
   onChanged: () => Promise<void>;
   onSelectPack: (id: string) => void;
   /** Bumped by the detail host after a publish/revoke so the audience list refetches. */
@@ -115,8 +120,8 @@ export function PackOverview({
   });
 
   const orgName = useMemo(
-    () => new Map(directory.organizations.map((o) => [o.id, o.name])),
-    [directory.organizations],
+    () => new Map((directory?.organizations ?? []).map((o) => [o.id, o.name])),
+    [directory],
   );
   // source_corpus is either the proposer-era per-site summary ARRAY or, for packs landed
   // through the console, the whole `seo.starter_pack_corpus` OBJECT (its `sites` array is

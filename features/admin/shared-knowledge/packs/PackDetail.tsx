@@ -64,7 +64,12 @@ export function PackDetail({
   onSelectPack,
 }: {
   packId: string;
-  directory: SharedKnowledgeDirectory;
+  /**
+   * The admin console's directory. Optional so this ONE editor also serves the curator
+   * front door (`/knowledge/library-curate`), which has no admin reads: without it the
+   * publish panel — an admin-only action anyway — is simply not mounted.
+   */
+  directory?: SharedKnowledgeDirectory;
   onSelectPack: (id: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -193,7 +198,7 @@ export function PackDetail({
               <BadgeCheck className="mr-1 size-3.5" /> Ratify
             </Button>
           ) : null}
-          {isAdmin && pack.status !== "draft" ? (
+          {isAdmin && directory && pack.status !== "draft" ? (
             <Button size="sm" variant={pack.status === "ratified" ? "default" : "outline"} onClick={() => setPublishOpen(true)}>
               <Send className="mr-1 size-3.5" /> Publish
             </Button>
@@ -273,6 +278,7 @@ export function PackDetail({
         </TabsContent>
       </Tabs>
 
+      {directory ? (
       <LibraryPublishPanel
         isOpen={publishOpen}
         onClose={() => setPublishOpen(false)}
@@ -289,6 +295,7 @@ export function PackDetail({
           void invalidate();
         }}
       />
+      ) : null}
 
       <ConfirmDialog
         open={ratifyOpen}

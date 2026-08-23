@@ -1,19 +1,26 @@
 "use client";
 
 /**
- * /knowledge/library-catalog — the shared-knowledge library catalog, as a real
- * list-view destination (list → open → act), per feature-entry doctrine.
+ * /knowledge/library-catalog — THE MATRX LIBRARY, whole.
  *
- * Left: every DISCOVERABLE shared library (rag.fn_list_library_catalog),
- * searchable + filterable, each row carrying the caller's true entitlement
- * chip (Subscribed / via <industry> / Available to everyone / Not entitled).
- * Right: the selected store — description, provenance ("why you have
- * access"), subscribe/unsubscribe, and a read-only member table with
- * preview links (visible only when the caller is entitled; RLS + the
- * fn_get_user_data_store gate enforce that server-side).
+ * Until 2026-08-23 this page read `rag.fn_list_library_catalog` and therefore
+ * listed data stores only, while industry starter packs — published through the
+ * SAME `platform.entity_grants` spine — surfaced only inside a site's value
+ * screens. An org that had been GIVEN a pack had nowhere to see it, so the
+ * catalog quietly lied about what the Library holds (Library STATE.md § Known
+ * gaps, item 3). It now reads the generic `public.library_catalog`, which
+ * delegates to each type's own entitlement-filtered reader.
  *
- * Selection lives in ?store_id so deep links and refreshes work — same
- * pattern as /knowledge/data-stores.
+ * Left: every Library resource the caller's org can see, searchable, filterable
+ * by type, each row carrying its entitlement chip (Subscribed / via <industry>
+ * / Available to everyone / Not entitled).
+ * Right: the selected resource — and THE SUBSCRIBE LAW decides its verb:
+ *   • data store  → SUBSCRIBE (reference): read it in place, here.
+ *   • starter pack → USE ON A SITE (copy): pick a site, land on that site's
+ *     pack review screen. The catalog never fakes a subscribe for a copy type.
+ *
+ * Selection lives in ?type=&id= so deep links and refreshes work. `?store_id=`
+ * is still honoured — it is a published URL shape people have bookmarked.
  */
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +29,7 @@ import {
   AlertCircle,
   ArrowLeft,
   BookOpenText,
+  Boxes,
   Check,
   ExternalLink,
   FileText,
@@ -36,17 +44,24 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import {
-  useLibraryCatalog,
-  type LibraryCatalogItem,
-} from "@/features/rag/hooks/useLibraryCatalog";
+  itemNoun,
+  LIBRARY_TYPE_LABEL,
+  LIBRARY_TYPE_LABEL_PLURAL,
+  useLibraryResources,
+  type LibraryEntityType,
+  type LibraryResource,
+} from "@/features/rag/hooks/useLibraryResources";
 import { useDataStoreDetail } from "@/features/rag/hooks/useDataStores";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   EntitlementChip,
   entitlementLabel,
 } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { PackDetailPanel } from "@/features/rag/components/library-catalog/PackDetailPanel";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import {
@@ -58,20 +73,54 @@ import {
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
 
+/** Filter chips, in display order. `all` first. */
+const TYPE_FILTERS = [
+  "all",
+  "data_store",
+  "seo_starter_pack",
+] as const;
+type TypeFilter = (typeof TYPE_FILTERS)[number];
+
+function isTypeFilter(v: string | null): v is TypeFilter {
+  return v != null && (TYPE_FILTERS as readonly string[]).includes(v);
+}
+
+function TypeIcon({
+  entityType,
+  className,
+}: {
+  entityType: LibraryEntityType;
+  className?: string;
+}) {
+  const Icon = entityType === "seo_starter_pack" ? Boxes : Library;
+  return <Icon className={className} aria-hidden />;
+}
+
 export function LibraryCatalogPage() {
   const router = useRouter();
   const search = useSearchParams();
-  const storeId = search?.get("store_id") ?? null;
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // `store_id` is the pre-2026-08-23 shape: a data-store id, no type.
+  const selectedId = search?.get("id") ?? search?.get("store_id") ?? null;
+  const selectedType: LibraryEntityType =
+    search?.get("type") === "seo_starter_pack" ? "seo_starter_pack" : "data_store";
 
-  const catalog = useLibraryCatalog();
+  const catalog = useLibraryResources();
   const [query, setQuery] = useState("");
   const [entitledOnly, setEntitledOnly] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
   const select = useCallback(
-    (id: string | null) => {
+    (resource: LibraryResource | null) => {
       const params = new URLSearchParams(search?.toString() ?? "");
-      if (id) params.set("store_id", id);
-      else params.delete("store_id");
+      params.delete("store_id");
+      if (resource) {
+        params.set("id", resource.id);
+        params.set("type", resource.entityType);
+      } else {
+        params.delete("id");
+        params.delete("type");
+      }
       const qs = params.toString();
       router.replace(`/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
     },
@@ -81,18 +130,25 @@ export function LibraryCatalogPage() {
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
     return catalog.items.filter((it) => {
+      if (typeFilter !== "all" && it.entityType !== typeFilter) return false;
       if (entitledOnly && it.entitledVia == null) return false;
       if (!q) return true;
       return (
         it.name.toLowerCase().includes(q) ||
         (it.description ?? "").toLowerCase().includes(q) ||
-        (it.shortCode ?? "").toLowerCase().includes(q) ||
-        (it.entitledIndustryName ?? "").toLowerCase().includes(q)
+        (it.slug ?? "").toLowerCase().includes(q) ||
+        (it.entitledIndustryName ?? "").toLowerCase().includes(q) ||
+        LIBRARY_TYPE_LABEL[it.entityType].toLowerCase().includes(q)
       );
     });
-  }, [catalog.items, query, entitledOnly]);
+  }, [catalog.items, query, entitledOnly, typeFilter]);
 
-  const selected = catalog.items.find((it) => it.id === storeId) ?? null;
+  const selected =
+    catalog.items.find(
+      (it) => it.id === selectedId && it.entityType === selectedType,
+    ) ??
+    catalog.items.find((it) => it.id === selectedId) ??
+    null;
 
   // Live surface scope for the header Agents chrome — the catalog half of
   // `matrx-user/knowledge-library`. Built at Run time, never on mount.
@@ -104,27 +160,26 @@ export function LibraryCatalogPage() {
         catalogVisible: items,
         catalogQuery: query,
         catalogEntitledOnly: entitledOnly,
-        catalogSelectedId: storeId,
+        catalogTypeFilter: typeFilter,
+        catalogSelectedId: selected?.id ?? null,
         selectionText:
           typeof window !== "undefined"
             ? (window.getSelection()?.toString() ?? "")
             : "",
       }),
-    [catalog.items, items, query, entitledOnly, storeId],
+    [catalog.items, items, query, entitledOnly, typeFilter, selected],
   );
 
   // ── Surface write handlers ──────────────────────────────────────────────
   //
   // ONE target on this half of the surface: `catalog_filters`, carrying the
-  // search box and the entitled-only checkbox as a single object, landing
-  // through the same `setQuery` / `setEntitledOnly` setters those two controls
-  // use. Both are React state setters — stable for the component's life — so
-  // there is no stale-closure hazard across the confirm dialog, and no live
-  // vocabulary to re-read at call time.
+  // search box, the entitled-only checkbox and the type chips as a single
+  // object, landing through the same setters those controls use. All three are
+  // React state setters — stable for the component's life — so there is no
+  // stale-closure hazard across the confirm dialog.
   //
-  // Subscribe / unsubscribe is deliberately NOT writable: it changes what the
-  // user is ENTITLED to read, which is an access decision rather than a view
-  // decision, and the button stays theirs to press.
+  // Subscribing / using a resource is deliberately NOT writable: it changes
+  // what the organization HAS, which is theirs to decide, not a view decision.
   const buildWriteHandlers = () => ({
     catalog_filters: (value: unknown) => {
       let raw = value;
@@ -145,13 +200,13 @@ export function LibraryCatalogPage() {
       }
       const input = raw as Record<string, unknown>;
 
-      const validKeys = ["search_query", "entitled_only"];
+      const validKeys = ["search_query", "entitled_only", "type_filter"];
       const badKeys = Object.keys(input).filter((k) => !validKeys.includes(k));
       if (badKeys.length > 0) {
         throw new Error(
           `catalog_filters received unknown key(s): ${badKeys.join(", ")}. Nothing was changed. ` +
             `Valid keys are: ${validKeys.join(", ")}. This target only shapes the VIEW — it cannot ` +
-            `subscribe the user to a library, unsubscribe them, or change what they are entitled to read.`,
+            `give the organization a resource, take one away, or change what it is entitled to.`,
         );
       }
       if (Object.keys(input).length === 0) {
@@ -160,9 +215,10 @@ export function LibraryCatalogPage() {
         );
       }
 
-      // Validate the whole object before touching either control.
+      // Validate the whole object before touching any control.
       let nextQuery: string | null = null;
       let nextEntitledOnly: boolean | null = null;
+      let nextTypeFilter: TypeFilter | null = null;
 
       if ("search_query" in input) {
         if (typeof input.search_query !== "string") {
@@ -185,11 +241,23 @@ export function LibraryCatalogPage() {
             `catalog_filters.entitled_only expects a boolean (true or false) — received ${JSON.stringify(candidate)}.`,
           );
       }
+      if ("type_filter" in input) {
+        const candidate = input.type_filter;
+        if (typeof candidate !== "string" || !isTypeFilter(candidate)) {
+          throw new Error(
+            `catalog_filters.type_filter expects one of: ${TYPE_FILTERS.join(", ")} — received ${JSON.stringify(candidate)}.`,
+          );
+        }
+        nextTypeFilter = candidate;
+      }
 
       if (nextQuery !== null) setQuery(nextQuery);
       if (nextEntitledOnly !== null) setEntitledOnly(nextEntitledOnly);
+      if (nextTypeFilter !== null) setTypeFilter(nextTypeFilter);
     },
   });
+
+  const total = catalog.items.length;
 
   return (
     <SurfaceRuntimeProvider
@@ -201,8 +269,7 @@ export function LibraryCatalogPage() {
       <RagHubHeader
         right={
           <span className="px-2 text-xs tabular-nums text-muted-foreground">
-            {catalog.items.length}{" "}
-            {catalog.items.length === 1 ? "library" : "libraries"}
+            {total} {total === 1 ? "resource" : "resources"}
           </span>
         }
       />
@@ -212,7 +279,7 @@ export function LibraryCatalogPage() {
         <aside
           className={cn(
             "w-full shrink-0 flex-col overflow-hidden border-r pt-[var(--shell-header-h)] md:flex md:w-96",
-            storeId ? "hidden" : "flex",
+            selected ? "hidden" : "flex",
           )}
         >
           <div className="space-y-2 border-b p-3">
@@ -221,9 +288,33 @@ export function LibraryCatalogPage() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search libraries…"
+                placeholder="Search the Library…"
                 className="h-8 pl-7 text-xs"
               />
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {TYPE_FILTERS.map((t) => {
+                const count =
+                  t === "all" ? catalog.items.length : catalog.countsByType[t];
+                const label =
+                  t === "all" ? "Everything" : LIBRARY_TYPE_LABEL_PLURAL[t];
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTypeFilter(t)}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
+                      typeFilter === t
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {label}
+                    <span className="tabular-nums opacity-70">{count}</span>
+                  </button>
+                );
+              })}
             </div>
             <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
               <input
@@ -232,7 +323,7 @@ export function LibraryCatalogPage() {
                 onChange={(e) => setEntitledOnly(e.target.checked)}
                 className="h-3 w-3 accent-[var(--primary)]"
               />
-              Only libraries I can read
+              Only what my organization has
             </label>
           </div>
           <div className="flex-1 overflow-auto">
@@ -249,16 +340,16 @@ export function LibraryCatalogPage() {
             {!catalog.loading && items.length === 0 && !catalog.error && (
               <div className="px-3 py-3 text-xs text-muted-foreground">
                 {catalog.items.length === 0
-                  ? "No shared libraries are discoverable yet."
-                  : "No libraries match your filters."}
+                  ? "Nothing in the Matrx Library reaches your organization yet."
+                  : "Nothing matches your filters."}
               </div>
             )}
             {items.map((it) => (
               <CatalogListRow
-                key={it.id}
+                key={`${it.entityType}:${it.id}`}
                 item={it}
-                selected={it.id === storeId}
-                onSelect={() => select(it.id)}
+                selected={it.id === selected?.id}
+                onSelect={() => select(it)}
               />
             ))}
           </div>
@@ -267,33 +358,28 @@ export function LibraryCatalogPage() {
         <section
           className={cn(
             "flex-1 overflow-hidden pt-[var(--shell-header-h)]",
-            storeId ? "block" : "hidden md:block",
+            selected ? "block" : "hidden md:block",
           )}
         >
           {!selected ? (
-            <div className="m-6 max-w-2xl rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
-              <p className="mb-2 flex items-center gap-2 font-medium text-foreground">
-                <Library className="h-4 w-4" /> Shared knowledge libraries
-              </p>
-              <p className="mb-2">
-                Curated, read-only knowledge resources published by Matrx —
-                for a whole industry, a specific organization, or everyone.
-                The chip on each row tells you whether (and why) you can
-                already read it.
-              </p>
-              <p>Pick a library on the left to see what&apos;s inside.</p>
-            </div>
+            <EmptyPane counts={catalog.countsByType} />
+          ) : selected.entityType === "seo_starter_pack" ? (
+            <PackDetailPanel
+              item={selected}
+              onBack={() => select(null)}
+              organizationId={organizationId ?? null}
+            />
           ) : (
-            <CatalogDetailPanel
+            <StoreDetailPanel
               item={selected}
               onBack={() => select(null)}
               onSubscribe={async () => {
-                const ok = await catalog.subscribe(selected.id);
+                const ok = await catalog.subscribe(selected);
                 if (ok) toast.success(`Subscribed to ${selected.name}`);
                 else toast.error(catalog.error ?? "Could not subscribe");
               }}
               onUnsubscribe={async () => {
-                const ok = await catalog.unsubscribe(selected.id);
+                const ok = await catalog.unsubscribe(selected);
                 if (ok) toast.success(`Left ${selected.name}`);
                 else toast.error(catalog.error ?? "Could not unsubscribe");
               }}
@@ -305,12 +391,56 @@ export function LibraryCatalogPage() {
   );
 }
 
+/** The nothing-selected pane: what the Library is, and what each verb means. */
+function EmptyPane({
+  counts,
+}: {
+  counts: Record<LibraryEntityType, number>;
+}) {
+  return (
+    <div className="m-6 max-w-2xl space-y-3 rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
+      <p className="flex items-center gap-2 font-medium text-foreground">
+        <Library className="h-4 w-4" /> The Matrx Library
+      </p>
+      <p>
+        Expertise curated for a whole industry, a specific organization, or
+        everyone. The chip on each row tells you whether — and why — your
+        organization already has it.
+      </p>
+      <ul className="space-y-1.5">
+        <li className="flex items-start gap-2">
+          <Library className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            <span className="font-medium text-foreground">
+              {LIBRARY_TYPE_LABEL_PLURAL.data_store}
+            </span>{" "}
+            ({counts.data_store}) — you SUBSCRIBE. The documents stay in the
+            Library and become searchable alongside your own content.
+          </span>
+        </li>
+        <li className="flex items-start gap-2">
+          <Boxes className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            <span className="font-medium text-foreground">
+              {LIBRARY_TYPE_LABEL_PLURAL.seo_starter_pack}
+            </span>{" "}
+            ({counts.seo_starter_pack}) — you USE ONE ON A SITE. Its defaults are
+            copied onto the website you choose, and every row stays yours to
+            edit.
+          </span>
+        </li>
+      </ul>
+      <p>Pick anything on the left to see what&apos;s inside.</p>
+    </div>
+  );
+}
+
 function CatalogListRow({
   item,
   selected,
   onSelect,
 }: {
-  item: LibraryCatalogItem;
+  item: LibraryResource;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -323,11 +453,13 @@ function CatalogListRow({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <span className="flex-1 truncate text-xs font-medium">
-          {item.name}
-        </span>
+        <TypeIcon
+          entityType={item.entityType}
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+        />
+        <span className="flex-1 truncate text-xs font-medium">{item.name}</span>
         <span className="text-[10px] tabular-nums text-muted-foreground">
-          {item.memberCount} doc{item.memberCount === 1 ? "" : "s"}
+          {item.itemCount} {itemNoun(item.entityType, item.itemCount)}
         </span>
       </div>
       <div className="mt-1 flex items-center gap-1.5">
@@ -335,9 +467,12 @@ function CatalogListRow({
           entitledVia={item.entitledVia}
           industryName={item.entitledIndustryName}
         />
-        {item.shortCode ? (
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {item.shortCode}
+        <span className="truncate text-[10px] text-muted-foreground">
+          {LIBRARY_TYPE_LABEL[item.entityType]}
+        </span>
+        {item.slug ? (
+          <span className="truncate font-mono text-[10px] text-muted-foreground">
+            {item.slug}
           </span>
         ) : null}
       </div>
@@ -350,13 +485,14 @@ function CatalogListRow({
   );
 }
 
-function CatalogDetailPanel({
+/** A data store: subscribe conveys a REFERENCE, and the documents read here. */
+function StoreDetailPanel({
   item,
   onBack,
   onSubscribe,
   onUnsubscribe,
 }: {
-  item: LibraryCatalogItem;
+  item: LibraryResource;
   /** Mobile: return to the list pane. */
   onBack: () => void;
   onSubscribe: () => Promise<void>;
@@ -377,7 +513,7 @@ function CatalogDetailPanel({
           <button
             type="button"
             onClick={onBack}
-            aria-label="Back to the catalog list"
+            aria-label="Back to the Library list"
             className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -438,11 +574,9 @@ function CatalogDetailPanel({
         )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
           <span className="tabular-nums">
-            {item.memberCount} document{item.memberCount === 1 ? "" : "s"}
+            {item.itemCount} document{item.itemCount === 1 ? "" : "s"}
           </span>
-          {item.shortCode ? (
-            <span className="font-mono">{item.shortCode}</span>
-          ) : null}
+          {item.slug ? <span className="font-mono">{item.slug}</span> : null}
           <span className="select-all font-mono text-[10px]">{item.id}</span>
         </div>
         {/* Why you have access — every grant reaching the caller. */}
@@ -478,8 +612,8 @@ function CatalogDetailPanel({
             <p>
               Your organization has no grant for this library yet. Subscribe
               above, or join the publishing industry in your organization
-              settings, to read its {item.memberCount} document
-              {item.memberCount === 1 ? "" : "s"}.
+              settings, to read its {item.itemCount} document
+              {item.itemCount === 1 ? "" : "s"}.
             </p>
           </div>
         ) : (

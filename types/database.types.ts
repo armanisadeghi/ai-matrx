@@ -12501,6 +12501,14 @@ export type Database = {
         Args: { p_data: Json; p_schema: Json }
         Returns: string
       }
+      declare_kind_marker: {
+        Args: { p_schema: Json; p_slug: string }
+        Returns: Json
+      }
+      declare_kind_markers_deep: {
+        Args: { p_schema: Json; p_slug: string }
+        Returns: Json
+      }
       evaluate_kind_activation: {
         Args: { p_kind_definition_id: string }
         Returns: Json
@@ -37356,6 +37364,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      library_catalog: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          description: string
+          entitled_industry_name: string
+          entitled_industry_slug: string
+          entitled_via: string
+          entity_id: string
+          entity_type: string
+          item_count: number
+          kind: string
+          name: string
+          slug: string
+          status: string
+          subscribed: boolean
+          subscriber_count: number
+          updated_at: string
+        }[]
+      }
       library_entitlement: {
         Args: {
           p_entity_id: string
@@ -37771,6 +37798,21 @@ export type Database = {
           p_tags: string[]
         }
         Returns: number
+      }
+      my_industry_curatorships: {
+        Args: never
+        Returns: {
+          description: string
+          draft_count: number
+          facet: string
+          granted_at: string
+          industry_id: string
+          is_active: boolean
+          name: string
+          proposed_count: number
+          ratified_count: number
+          slug: string
+        }[]
       }
       orchestra_list: {
         Args: never
