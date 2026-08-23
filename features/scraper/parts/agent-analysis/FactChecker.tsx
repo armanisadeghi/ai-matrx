@@ -1,6 +1,27 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+/**
+ * Fact Checker tab of a full-scrape result.
+ *
+ * 🚨 THE ONE PIPELINE. The run goes through the canonical execution system
+ * (`useLiveAgentRun` → `launchAgentExecution({ mandateKey })`) and every live
+ * byte is rendered by `<LiveRunDisplay>` → `MarkdownStream` → the kind
+ * registry. This tab hand-renders NOTHING of the stream: it previously
+ * accumulated chunks into a string and fed them to `MarkdownRenderer`, which
+ * bypassed the kind registry (structured answers arrived as raw JSON code
+ * blocks) and let the model's chain-of-thought leak into the panel as literal
+ * `<reasoning>` tags. See CLAUDE.md § "Streaming/AI surfaces".
+ *
+ * The section tabs (Summary, Observations, …) are a POST-PROCESSING product
+ * feature over the SETTLED answer text — never over the live stream. While the
+ * run is in flight every tab shows the live output instead of a spinner
+ * (THE FLOATING LAW: a spinner is never the answer while AI works).
+ *
+ * The mandate wiring is unchanged: the tab gates on `useMandate` and never
+ * names an agent id.
+ */
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Search,
@@ -15,12 +36,12 @@ import { parseMarkdownTable } from "@/components/mardown-display/markdown-classi
 import { PageTemplate, Card } from "@/components/official/PageTemplate";
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import MarkdownTable from "@/components/mardown-display/tables/MarkdownTable";
-import MarkdownStream from "@/components/MarkdownStream";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import {
   SCRAPER_ANALYSIS_CONTENT_VARIABLE,
   SCRAPER_ANALYSIS_MANDATES,
 } from "@/features/scraper/constants/analysis-agents";
-import { useScraperAgentAnalysis } from "@/features/scraper/hooks/useScraperAgentAnalysis";
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
 
@@ -35,13 +56,16 @@ interface FactCheckerPageProps {
 }
 
 const MANDATE_KEY = SCRAPER_ANALYSIS_MANDATES.factChecker;
+const SURFACE_KEY = "scraper:fact-check";
 
 const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   value,
   overview = {},
 }) => {
-  const { runAnalysis, cancel, isLoading, error, streamingResponse } =
-    useScraperAgentAnalysis();
+  const { run, isRunning, error, conversationId, hasLiveRun } =
+    useLiveAgentRun();
+  /** The settled answer text — the ONLY thing this tab parses. */
+  const [answerText, setAnswerText] = useState<string>("");
   // Gate: the tab runs only once its mandate resolves; unresolved renders the
   // unbound state (picker + door), never a hardcoded agent.
   const {
@@ -50,7 +74,6 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     error: mandateError,
   } = useMandate(MANDATE_KEY);
   const mandateReady = Boolean(mandate);
-  const [pageText, setPageText] = useState<string>(value);
 
   const pageTitle = overview?.page_title || "Content";
   const characterCount = overview?.char_count
@@ -58,52 +81,70 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     : "N/A";
   const pageUrl = overview?.url;
 
+  // `run` is a fresh closure every render, so it can never be an effect dep —
+  // the auto-run would re-fire forever. The launch effect keys on the mandate
+  // + the content only, and reaches the current launcher through this ref.
+  const runRef = useRef(run);
   useEffect(() => {
-    if (value && value.trim().length > 0) {
-      setPageText(value);
-    }
-  }, [value]);
+    runRef.current = run;
+  });
 
   useEffect(() => {
-    if (!mandateReady || !pageText || pageText.trim().length === 0) {
+    if (!mandateReady || !value || value.trim().length === 0) {
       return undefined;
     }
 
-    void runAnalysis({
+    // Cancel-on-unmount: aborting HARVESTS whatever the run produced and stops
+    // the wait; `useLiveAgentRun` destroys the instance on unmount.
+    const controller = new AbortController();
+    void runRef.current<string>({
       mandateKey: MANDATE_KEY,
-      variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: pageText },
-    }).catch((err) => {
-      console.error("[FactChecker] Agent run failed:", err);
-    });
+      surfaceKey: SURFACE_KEY,
+      sourceFeature: "scraper",
+      initiation: "auto",
+      expect: "text",
+      variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value },
+      signal: controller.signal,
+      // Stale text from the previous run must never survive into this one.
+      // Cleared here (a callback fired by the run, before the stream) rather
+      // than in the effect body, which would cascade a render.
+      onConversationCreated: () => setAnswerText(""),
+    })
+      .then((text) => {
+        if (!controller.signal.aborted) setAnswerText(text ?? "");
+      })
+      .catch((err) => {
+        console.error("[FactChecker] Agent run failed:", err);
+      });
 
     return () => {
-      cancel();
+      controller.abort();
     };
-  }, [mandateReady, pageText, runAnalysis, cancel]);
+  }, [mandateReady, value]);
 
-  const parsedContent = useMemo(() => {
-    if (!streamingResponse) return null;
-    return parseFactCheck(streamingResponse);
-  }, [streamingResponse]);
+  const parsedContent = useMemo(
+    () => (answerText ? parseFactCheck(answerText) : null),
+    [answerText],
+  );
 
   const rating = parsedContent?.ratingValue || 0;
 
-  const LoadingState = ({ title }: { title: string }) => (
-    <Card title={title}>
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
-      </div>
-    </Card>
+  /** The live output — what every tab shows while the agent is still writing. */
+  const liveOutput = (label: string) => (
+    <LiveRunDisplay
+      conversationId={conversationId}
+      label={label}
+      pending={isRunning}
+      bodyClassName="max-h-[70vh] overflow-y-auto px-3 py-3 text-sm"
+    />
   );
 
-  const ErrorState = () => (
-    <Card title="Error">
-      <div className="text-destructive p-4">Error: {error}</div>
-    </Card>
-  );
-
-  /** Mandate posture shared by every tab: unbound → gate; resolving → loading. */
-  const mandateGate = (title: string) => {
+  /**
+   * Shared posture for every tab: unbound mandate → gate; resolving → a plain
+   * line; run failed with nothing to show → error; still writing → the live
+   * stream. Returns null once there is settled text to section up.
+   */
+  const preSection = (label: string) => {
     if (mandateError) {
       return (
         <AnalysisMandateGate
@@ -113,36 +154,57 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
         />
       );
     }
-    if (mandateLoading) return <LoadingState title={title} />;
+    if (mandateLoading) {
+      return (
+        <Card title={label}>
+          <p className="text-sm text-muted-foreground">
+            Resolving the agent assigned to this tab…
+          </p>
+        </Card>
+      );
+    }
+    if (error && !hasLiveRun) {
+      return (
+        <Card title="Error">
+          <div className="text-destructive p-4">Error: {error}</div>
+        </Card>
+      );
+    }
+    if (!answerText) return liveOutput(label);
     return null;
   };
 
-  const EmptyState = ({ message }: { message: string }) => (
-    <p className="text-muted-foreground text-center py-8">{message}</p>
-  );
-
-  const FullAnalysisContent = () => {
-    const gate = mandateGate("Checking Facts");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Checking Facts" />;
+  const section = (
+    label: string,
+    title: string,
+    body: string | undefined,
+    emptyMessage: string,
+  ) => {
+    const pre = preSection(label);
+    if (pre) return pre;
 
     return (
-      <Card title="Complete Fact Check Analysis">
-        <MarkdownStream
-          content={streamingResponse || "Analysis will appear here..."}
-        />
+      <Card title={title}>
+        {body ? (
+          <MarkdownRenderer
+            content={body}
+            type="message"
+            fontSize={18}
+            role="assistant"
+            className="bg-muted rounded-lg p-4 border border-border"
+          />
+        ) : (
+          <p className="text-muted-foreground text-center py-8 text-sm">
+            {emptyMessage}
+          </p>
+        )}
       </Card>
     );
   };
 
-  const SummaryContent = () => {
-    const gate = mandateGate("Generating Summary");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Generating Summary" />;
+  const renderSummary = () => {
+    const pre = preSection("Generating Summary");
+    if (pre) return pre;
 
     return (
       <Card title="Fact Check Summary">
@@ -156,13 +218,9 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
               className="bg-muted rounded-lg p-4 mb-6 border border-border"
             />
           ) : (
-            <EmptyState
-              message={
-                streamingResponse
-                  ? "No summary found"
-                  : "Summary will appear here..."
-              }
-            />
+            <p className="text-muted-foreground text-center py-8 text-sm">
+              No summary found in this analysis.
+            </p>
           )}
 
           {parsedContent?.overallRating && (
@@ -179,132 +237,9 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     );
   };
 
-  const GeneralObservationsContent = () => {
-    const gate = mandateGate("Analyzing Content");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Analyzing Content" />;
-
-    return (
-      <Card title="General Observations">
-        {parsedContent?.generalObservations ? (
-          <MarkdownRenderer
-            content={parsedContent.generalObservations}
-            type="message"
-            fontSize={18}
-            role="assistant"
-            className="bg-muted rounded-lg p-4 border border-border"
-          />
-        ) : (
-          <EmptyState
-            message={
-              streamingResponse
-                ? "No general observations found"
-                : "Observations will appear here..."
-            }
-          />
-        )}
-      </Card>
-    );
-  };
-
-  const SpecificClaimsContent = () => {
-    const gate = mandateGate("Analyzing Claims");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Analyzing Claims" />;
-
-    return (
-      <Card title="Specific Claims Analysis">
-        {parsedContent?.specificClaimsAnalysis ? (
-          <MarkdownRenderer
-            content={parsedContent.specificClaimsAnalysis}
-            type="message"
-            fontSize={18}
-            role="assistant"
-            className="bg-muted rounded-lg p-4 border border-border"
-          />
-        ) : (
-          <EmptyState
-            message={
-              streamingResponse
-                ? "No claims analysis found"
-                : "Claims analysis will appear here..."
-            }
-          />
-        )}
-      </Card>
-    );
-  };
-
-  const ConcernsContent = () => {
-    const gate = mandateGate("Identifying Concerns");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Identifying Concerns" />;
-
-    return (
-      <Card title="Potential Concerns">
-        {parsedContent?.potentialConcerns ? (
-          <MarkdownRenderer
-            content={parsedContent.potentialConcerns}
-            type="message"
-            fontSize={18}
-            role="assistant"
-            className="bg-muted rounded-lg p-4 border border-border"
-          />
-        ) : (
-          <EmptyState
-            message={
-              streamingResponse
-                ? "No concerns identified"
-                : "Concerns will appear here..."
-            }
-          />
-        )}
-      </Card>
-    );
-  };
-
-  const RecommendationsContent = () => {
-    const gate = mandateGate("Generating Recommendations");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Generating Recommendations" />;
-
-    return (
-      <Card title="Recommendations">
-        {parsedContent?.recommendations ? (
-          <MarkdownRenderer
-            content={parsedContent.recommendations}
-            type="message"
-            fontSize={18}
-            role="assistant"
-            className="bg-muted rounded-lg p-4 border border-border"
-          />
-        ) : (
-          <EmptyState
-            message={
-              streamingResponse
-                ? "No recommendations found"
-                : "Recommendations will appear here..."
-            }
-          />
-        )}
-      </Card>
-    );
-  };
-
-  const ClaimsTableContent = () => {
-    const gate = mandateGate("Generating Claims Table");
-    if (gate) return gate;
-    if (error) return <ErrorState />;
-    if (isLoading && !streamingResponse)
-      return <LoadingState title="Generating Claims Table" />;
+  const renderClaimsTable = () => {
+    const pre = preSection("Generating Claims Table");
+    if (pre) return pre;
 
     const tableData = parsedContent?.factCheckTable
       ? parseMarkdownTable(parsedContent.factCheckTable)
@@ -315,16 +250,36 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
         {tableData?.markdown ? (
           <MarkdownTable data={tableData.markdown} />
         ) : (
-          <EmptyState
-            message={
-              streamingResponse
-                ? "No table data found in the analysis"
-                : "Claims table will appear here..."
-            }
-          />
+          <p className="text-muted-foreground text-center py-8 text-sm">
+            No table data found in the analysis.
+          </p>
         )}
       </Card>
     );
+  };
+
+  /**
+   * Full Report is the run itself — always the canonical display, before and
+   * after settling (the pipeline keeps rendering the finished message).
+   */
+  const renderFullReport = () => {
+    if (mandateError) {
+      return (
+        <AnalysisMandateGate
+          mandateKey={MANDATE_KEY}
+          title="Fact Checker"
+          error={mandateError}
+        />
+      );
+    }
+    if (error && !hasLiveRun) {
+      return (
+        <Card title="Error">
+          <div className="text-destructive p-4">Error: {error}</div>
+        </Card>
+      );
+    }
+    return liveOutput("Fact check");
   };
 
   const getRatingText = (ratingValue: number): string => {
@@ -348,43 +303,63 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
       id: "summary",
       label: "Summary",
       icon: AlertTriangle,
-      content: <SummaryContent />,
+      content: renderSummary(),
     },
     {
       id: "observations",
       label: "Observations",
       icon: Search,
-      content: <GeneralObservationsContent />,
+      content: section(
+        "Analyzing Content",
+        "General Observations",
+        parsedContent?.generalObservations,
+        "No general observations found.",
+      ),
     },
     {
       id: "claims",
       label: "Claims Analysis",
       icon: ClipboardList,
-      content: <SpecificClaimsContent />,
+      content: section(
+        "Analyzing Claims",
+        "Specific Claims Analysis",
+        parsedContent?.specificClaimsAnalysis,
+        "No claims analysis found.",
+      ),
     },
     {
       id: "concerns",
       label: "Concerns",
       icon: AlertCircle,
-      content: <ConcernsContent />,
+      content: section(
+        "Identifying Concerns",
+        "Potential Concerns",
+        parsedContent?.potentialConcerns,
+        "No concerns identified.",
+      ),
     },
     {
       id: "recommendations",
       label: "Recommendations",
       icon: ListChecks,
-      content: <RecommendationsContent />,
+      content: section(
+        "Generating Recommendations",
+        "Recommendations",
+        parsedContent?.recommendations,
+        "No recommendations found.",
+      ),
     },
     {
       id: "table",
       label: "Claims Table",
       icon: Table,
-      content: <ClaimsTableContent />,
+      content: renderClaimsTable(),
     },
     {
       id: "full-report",
       label: "Full Report",
       icon: FileText,
-      content: <FullAnalysisContent />,
+      content: renderFullReport(),
     },
   ];
 
@@ -401,4 +376,4 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   );
 };
 
-export default React.memo(FactCheckerPage);
+export default FactCheckerPage;

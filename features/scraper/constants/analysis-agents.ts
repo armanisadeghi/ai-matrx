@@ -2,7 +2,7 @@
  * One-shot analysis MANDATES mounted on full-scrape result tabs.
  *
  * Each tab resolves its mandate at render time (`useMandate`) and runs the
- * resolved Holder at call time (`useScraperAgentAnalysis` → `resolveMandate`).
+ * resolved Holder at call time (`useLiveAgentRun` → `launchAgentExecution({ mandateKey })`).
  * Both mandates are declared against provision `scraper.page_analysis`, which
  * offers `content` — the scraped page text — so the tabs send exactly that
  * variable. No agent id lives here: binding an agent to a tab is a rebind on
