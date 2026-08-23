@@ -23,6 +23,7 @@
  * is still honoured — it is a published URL shape people have bookmarked.
  */
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -33,6 +34,7 @@ import {
   Check,
   ExternalLink,
   FileText,
+  Layers,
   Library,
   Loader2,
   Lock,
@@ -57,6 +59,7 @@ import {
 } from "@/features/rag/hooks/useLibraryResources";
 import { useDataStoreDetail } from "@/features/rag/hooks/useDataStores";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
+import { useMyCuratorships } from "@/features/rag/hooks/useMyCuratorships";
 import {
   EntitlementChip,
   entitlementLabel,
@@ -106,6 +109,9 @@ export function LibraryCatalogPage() {
     search?.get("type") === "seo_starter_pack" ? "seo_starter_pack" : "data_store";
 
   const catalog = useLibraryResources();
+  // Curators author what this page hands out — give them the door, nobody else.
+  const curatorships = useMyCuratorships();
+  const isCurator = (curatorships.data?.length ?? 0) > 0;
   const [query, setQuery] = useState("");
   const [entitledOnly, setEntitledOnly] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -268,9 +274,21 @@ export function LibraryCatalogPage() {
     >
       <RagHubHeader
         right={
-          <span className="px-2 text-xs tabular-nums text-muted-foreground">
-            {total} {total === 1 ? "resource" : "resources"}
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="px-2 text-xs tabular-nums text-muted-foreground">
+              {total} {total === 1 ? "resource" : "resources"}
+            </span>
+            {/* The curator's door, shown only to people who hold the role — a nav item
+                everyone sees would lead almost everyone to an empty state. Same cached
+                read the door itself uses. */}
+            {isCurator ? (
+              <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                <Link href="/knowledge/library-curate">
+                  <Layers className="mr-1 size-3.5" /> Curate
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         }
       />
       <div className="flex h-full overflow-hidden bg-background">

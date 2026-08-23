@@ -148,7 +148,7 @@ export function LibraryCuratePage() {
     return (
       <>
         <RagHubHeader />
-        <div className="h-full space-y-3 overflow-y-auto p-6">
+        <div className="h-full space-y-3 overflow-y-auto p-6 pt-[calc(var(--shell-header-h)+1.5rem)]">
           <Skeleton className="h-9 w-72" />
           <Skeleton className="h-40 w-full max-w-3xl" />
         </div>
@@ -159,7 +159,7 @@ export function LibraryCuratePage() {
     return (
       <>
         <RagHubHeader />
-        <div className="h-full overflow-y-auto p-6">
+        <div className="h-full overflow-y-auto p-6 pt-[calc(var(--shell-header-h)+1.5rem)]">
           <div className="max-w-2xl rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {extractErrorMessage(curatorships.error)}
           </div>
@@ -175,13 +175,15 @@ export function LibraryCuratePage() {
     <>
       <RagHubHeader
         right={
-          <span className="px-2 text-xs tabular-nums text-muted-foreground">
+          /* Desktop only — on mobile the header is the nav pill plus the avatar,
+             and a counter squeezed between them collides with both. */
+          <span className="hidden px-2 text-xs tabular-nums text-muted-foreground lg:inline">
             {industries.length} {industries.length === 1 ? "industry" : "industries"} ·{" "}
             {totalPacks} {totalPacks === 1 ? "pack" : "packs"}
           </span>
         }
       />
-      <div className="flex h-full overflow-hidden bg-textured">
+      <div className="flex h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         {/* Rail — industries and their packs */}
         <aside
           className={cn(
@@ -397,7 +399,7 @@ function NotACurator() {
   return (
     <>
       <RagHubHeader />
-      <div className="h-full overflow-y-auto bg-textured p-8">
+      <div className="h-full overflow-y-auto bg-textured p-8 pt-[calc(var(--shell-header-h)+2rem)]">
         <div className="mx-auto max-w-xl space-y-4 rounded-lg border border-border bg-card px-6 py-6">
           <div className="flex items-center gap-2.5">
             <Layers className="size-5 text-primary" aria-hidden />
