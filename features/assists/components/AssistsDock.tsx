@@ -251,14 +251,11 @@ export default function AssistsDock() {
                 <DrawerTitle className="text-base">
                   {visible.length} assist{visible.length === 1 ? "" : "s"}
                 </DrawerTitle>
-                <p className="text-xs text-muted-foreground">
-                  A few things we can do for you
-                </p>
               </div>
               <Button
                 type="button"
                 variant="ghost"
-                className="h-11 shrink-0 px-3 text-xs text-muted-foreground"
+                className="h-11 shrink-0 gap-1 px-2 text-xs text-muted-foreground"
                 onClick={() =>
                   quietFor(
                     DEFAULT_QUIET_KEY,
@@ -268,8 +265,8 @@ export default function AssistsDock() {
                   )
                 }
               >
-                <BellOff className="mr-1.5 h-4 w-4" />
-                Quiet for 24 hours
+                <BellOff className="h-4 w-4" />
+                Quiet 24h
               </Button>
             </DrawerHeader>
 

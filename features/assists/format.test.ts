@@ -49,6 +49,8 @@ describe("Assist copy format", () => {
     expect(human).toContain("Warning: low confidence");
     expect(human).toContain("Your note: Check with the editor first.");
     expect(human).toContain("Action: Open page");
+    expect(human).not.toContain("Expires");
+    expect(projected).not.toHaveProperty("expires");
     expect(projected).toMatchObject({
       flagged: true,
       seen_state: "Not yet seen",

@@ -1,4 +1,3 @@
-import { formatRemaining } from "./components/expiry";
 import { isLowConfidence } from "./constants";
 import {
   ASSIST_URGENCY_META,
@@ -42,19 +41,6 @@ export function formatAssistStatus(assist: Assist, now = Date.now()): string {
   return "pending";
 }
 
-export function formatAssistExpiry(
-  assist: Pick<Assist, "status" | "expiresAt">,
-  now = Date.now(),
-): string {
-  if (assist.status === "pending" && assist.expiresAt) {
-    const remaining = Date.parse(assist.expiresAt) - now;
-    if (Number.isFinite(remaining) && remaining > 0) {
-      return `in ${formatRemaining(remaining)}`;
-    }
-  }
-  return formatAssistDate(assist.expiresAt);
-}
-
 export function humanAssistRow(assist: Assist): string {
   const urgency = ASSIST_URGENCY_META[urgencyFromPriority(assist.priority)];
   const action = assistActionView(assist);
@@ -71,7 +57,7 @@ export function humanAssistRow(assist: Assist): string {
     `- Producer: ${assist.sourceKey} (${formatAssistSourceLabel(assist.sourceKey)})`,
     `- Origin: ${sourceKind} · Surface: ${assist.surfaceName ?? "Global"}`,
     `- Confidence: ${typeof assist.confidence === "number" ? `${Math.round(assist.confidence * 100)}%` : "—"} · Status: ${formatAssistStatus(assist)}`,
-    `- First noticed: ${formatAssistDate(assist.firstSeenAt ?? assist.createdAt)} · Expires: ${formatAssistExpiry(assist)}`,
+    `- First noticed: ${formatAssistDate(assist.firstSeenAt ?? assist.createdAt)}`,
     `- Seen: ${assist.occurrences > 1 ? `${assist.occurrences}×` : "once"} · Decided: ${formatAssistDate(assist.decidedAt)}`,
     assist.decisionNote ? `- Your note: ${assist.decisionNote}` : null,
     `- Action: ${action.button_label} — ${action.explainer}`,
@@ -124,7 +110,6 @@ export function projectAssistRow(assist: Assist) {
         : null,
     status: formatAssistStatus(assist),
     first_noticed: assist.firstSeenAt ?? assist.createdAt,
-    expires: assist.expiresAt,
     occurrences: assist.occurrences,
     decided_at: assist.decidedAt,
     decision_note: assist.decisionNote,

@@ -17,14 +17,7 @@
  */
 
 import { useMemo, useState } from "react";
-import {
-  RefreshCw,
-  RotateCcw,
-  Star,
-  Timer,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { RefreshCw, RotateCcw, Star, Volume2, VolumeX } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +32,6 @@ import {
 import { toast } from "@/lib/toast";
 import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
 import { AssistChip } from "../components/AssistChip";
-import { useAssistExpiry } from "../components/expiry";
 import { SNOOZE_WINDOWS, isLowConfidence } from "../constants";
 import { useAssistsQuery } from "./useAssistsQuery";
 import {
@@ -95,25 +87,6 @@ const STATUS_TONE: Record<AssistStatus, string> = {
   superseded: "bg-muted text-muted-foreground border-border",
   resolved: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20",
 };
-
-/**
- * Live countdown for a pending row with a future deadline; the plain date for
- * everything else (what a decided/expired row's deadline WAS is still
- * history). A component, not an inline cell, so only rows that actually tick
- * mount the shared 30s interval.
- */
-function ExpiresCell({ assist }: { assist: Assist }) {
-  const expiry = useAssistExpiry(assist);
-  if (expiry) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] tabular-nums text-muted-foreground">
-        <Timer className="h-3 w-3" aria-hidden="true" />
-        in {expiry.label}
-      </span>
-    );
-  }
-  return <>{formatAssistDate(assist.expiresAt)}</>;
-}
 
 export function AssistsManager() {
   const [tab, setTab] = useState<string>("pending");
@@ -305,13 +278,6 @@ export function AssistsManager() {
         accessorFn: (row) => row.firstSeenAt ?? row.createdAt,
         filter: false,
         cell: (row) => formatAssistDate(row.firstSeenAt ?? row.createdAt),
-      },
-      {
-        id: "expires_at",
-        header: "Expires",
-        accessorFn: (row) => row.expiresAt ?? "",
-        filter: false,
-        cell: (row) => <ExpiresCell assist={row} />,
       },
       {
         id: "occurrences",

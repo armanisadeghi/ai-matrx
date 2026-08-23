@@ -9,14 +9,7 @@
  */
 
 import { lazy, Suspense, useState } from "react";
-import {
-  Clock,
-  ExternalLink,
-  Loader2,
-  Quote,
-  Timer,
-  VolumeX,
-} from "lucide-react";
+import { Clock, ExternalLink, Loader2, Quote, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -34,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { describeAssistAction } from "../runtime/action-descriptors";
 import { formatAssistSourceLabel } from "../source-suppression";
-import { useAssistExpiry } from "./expiry";
 import { ASSIST_URGENCY_ICON } from "./urgency-icon";
 import {
   ASSIST_URGENCY_META,
@@ -48,25 +40,21 @@ const BasicMarkdownContent = lazy(
     import("@/components/mardown-display/chat-markdown/BasicMarkdownContent"),
 );
 
-const SOURCE_LABEL: Record<Assist["sourceKind"], string> = {
-  deterministic: "Noticed by the system",
-  agent: "Suggested by AI",
-  sweep: "Found by a background review",
-  stream: "From a live run",
-};
-
-function firstSeenLine(assist: Assist): string | null {
-  const seen = assist.firstSeenAt ?? assist.createdAt;
-  if (!seen) return null;
-  const when = new Date(seen).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  if (assist.occurrences > 1) {
-    return `First noticed ${when} · seen ${assist.occurrences} times since`;
+function compactMetaLine(assist: Assist): string | null {
+  const parts: string[] = [];
+  if (typeof assist.confidence === "number") {
+    parts.push(`${Math.round(assist.confidence * 100)}%`);
   }
-  return `First noticed ${when}`;
+  const seen = assist.firstSeenAt ?? assist.createdAt;
+  if (seen) {
+    parts.push(
+      new Date(seen).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      }),
+    );
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 /**
@@ -142,8 +130,7 @@ export function AssistCard({
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
   const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
-  const expiry = useAssistExpiry(assist);
-  const history = firstSeenLine(assist);
+  const compactMeta = compactMetaLine(assist);
   const sourceLabel = formatAssistSourceLabel(assist.sourceKey);
 
   const run = async () => {
@@ -250,40 +237,15 @@ export function AssistCard({
               </span>
             </div>
           )}
-          {expiry && (
-            // A countdown is an offer's shelf life, never an action timer:
-            // when it runs out the chip just stops being offered — nothing
-            // runs, nothing is approved (THE INTENTIONAL-ACTION LAW). On the
-            // elevated/urgent bands it reads as a hold-warning, because the
-            // underlying condition still needs this user and its producer
-            // will bring it back.
+          {compactMeta && (
             <div
               className={cn(
-                "mt-1 flex items-center gap-1 text-[11px] tabular-nums",
-                urgency === "normal"
-                  ? "text-muted-foreground"
-                  : "text-amber-700 dark:text-amber-400",
+                "mt-1 text-[11px] tabular-nums text-muted-foreground",
+                isLowConfidence(assist.confidence) &&
+                  "text-amber-600 dark:text-amber-500",
               )}
             >
-              <Timer className="h-3 w-3 shrink-0" aria-hidden="true" />
-              {urgency === "normal"
-                ? `Expires in ${expiry.label} — then this offer quietly goes away`
-                : `Expires in ${expiry.label} — will return to your queue; nothing runs without you`}
-            </div>
-          )}
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            {SOURCE_LABEL[assist.sourceKind]}
-            {typeof assist.confidence === "number" &&
-              ` · ${Math.round(assist.confidence * 100)}% confident`}
-            {isLowConfidence(assist.confidence) && (
-              <span className="ml-1 text-amber-600 dark:text-amber-500">
-                · low confidence, worth a second look
-              </span>
-            )}
-          </div>
-          {history && (
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              {history}
+              {compactMeta}
             </div>
           )}
         </div>
@@ -336,27 +298,27 @@ export function AssistCard({
             app.
           </p>
         )}
-        {/* WRAPS — four controls at 26rem used to overflow horizontally, so
-            the popover scrolled sideways AND down at once. Nothing here has a
-            fixed width; the row reflows instead. */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="grid grid-cols-4 items-center gap-1 md:flex md:flex-wrap md:gap-x-2 md:gap-y-1">
           <Button
             size="sm"
             onClick={run}
             disabled={!descriptor || busy !== null}
-            className="h-7 px-3 text-xs"
+            className="h-10 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:px-3 md:text-xs"
+            title={descriptor?.verb}
           >
             {busy === "run" && (
               <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             )}
-            {descriptor?.verb ?? "Unavailable"}
+            <span className="truncate">
+              {descriptor?.verb ?? "Unavailable"}
+            </span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={onClose}
             disabled={busy !== null}
-            className="h-7 px-2 text-xs text-muted-foreground"
+            className="h-10 min-w-0 px-1 text-[11px] text-muted-foreground md:h-7 md:px-2 md:text-xs"
           >
             Not now
           </Button>
@@ -367,7 +329,7 @@ export function AssistCard({
                   size="sm"
                   variant="ghost"
                   disabled={busy !== null}
-                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  className="h-10 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground md:h-7 md:px-2 md:text-xs"
                 >
                   {busy === "snooze" ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -397,14 +359,16 @@ export function AssistCard({
                   size="sm"
                   variant="ghost"
                   disabled={busy !== null}
-                  className="ml-auto h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  className="h-10 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground hover:text-destructive md:ml-auto md:h-7 md:shrink-0 md:px-2 md:text-xs"
+                  aria-label="Stop showing"
                 >
                   {busy === "dismiss" || busy === "silence" ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin md:mr-1" />
                   ) : (
-                    <VolumeX className="mr-1 h-3 w-3" />
+                    <VolumeX className="h-3 w-3 md:mr-1" />
                   )}
-                  Stop showing
+                  <span className="md:hidden">Hide</span>
+                  <span className="hidden md:inline">Stop showing</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60">
