@@ -1,6 +1,6 @@
 ---
 name: data-to-kinds
-description: The end-to-end pipeline that turns any structured data source (an API response, a provider payload, a computed result) into registered platform kinds with pydantic models, generated TypeScript types, kind components, and a live end-to-end demo — through staged human approval with Arman. Use when asked to "create kinds for X", "distill X into kinds", "put X through the data-to-kinds process", or when you are Stage A/B/C of a running data-to-kinds pilot. NOT for consuming kinds that already exist (that's workflow-io-kinds in aidream / shape-system docs in matrx-frontend).
+description: The end-to-end pipeline that turns ANY structured data source — an API, a provider payload, a scraper/crawl result, a computed result, any aspect of our system — into registered platform kinds with @kind pydantic models, generated TypeScript types, canonical kind components, a live demo against the real server, a verification pass, and cutover of the nodes/tools that emit it — through staged human approval with Arman. Use when asked to "create kinds for X", "distill X into kinds", "put X through the data-to-kinds process", "point yourself at API X", or when you are Stage A/B/V/D/C of a running data-to-kinds run. NOT for consuming kinds that already exist (aidream workflow-io-kinds / matrx-frontend Shape System docs).
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -9,311 +9,328 @@ description: The end-to-end pipeline that turns any structured data source (an A
      common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
      sync, and commit each repo. Edits made here are overwritten and lost. -->
 
-# data-to-kinds — from raw data to a fully-rendered platform kind
+# data-to-kinds — point an agent at a data source; get a fully-rendered platform kind family
 
-> **This skill is SELF-IMPROVING and that is a standing instruction, not a nicety.**
-> Every agent running a stage works interactively with Arman. When he gives you an
-> instruction that generalizes beyond your current data family ("always do X",
-> "never include Y", a rule about required fields, a naming preference), you edit
-> THIS skill in the same session — canonical copy at
-> `common-docs/skills/data-to-kinds/SKILL.md`, then run
-> `python3 common-docs/meta/scripts/sync_skills.py` to redistribute (this skill is
-> mirrored into aidream and matrx-frontend; NEVER edit a repo copy — it is erased
-> by the next sync). Task-specific decisions go in the pilot's state doc, not here.
+**Entry point.** Someone names a source — an API, a provider, a graph action family, a system
+aspect — and this skill carries it the whole way: distill shapes with Arman via tables → `@kind`
+pydantic models → publish to the registry → generate TS types → canonical components by
+converging the displays we already built → a live demo calling the real server → verification →
+cutover of the nodes/tools that emit it. **No step needs an explanation from anyone.** If you hit
+one that does, that is a defect in THIS skill: fix it here in the same session (canonical copy
+`common-docs/skills/data-to-kinds/SKILL.md`, then `python3 common-docs/meta/scripts/sync_skills.py`;
+never edit a repo mirror — the sync erases it). Run-specific decisions go in the run's ledger,
+not here. Arman's instructions that generalize beyond your family ("always X", "never Y") become
+standing law here the day he says them.
 
-## Why this exists (Arman, 2026-08-20, condensed from his words)
+## Why (Arman, 2026-08-20/21, condensed)
 
-Content IR is the uniform language every part of the system speaks. When data is
-derived programmatically, emitting a kind is the easiest thing in the world — the
-function just spits out the object in exactly the shape we want — and then every
-surface (web, mobile, desktop), every workflow node, and every agent can count on
-that shape: no type errors, universal rendering, no custom code. The mistake that
-poisoned workflows was confusing the INTERNAL wrapper (runtime recognition of a
-step) with the DATA it holds. Both are kinds; they are different kinds; they nest
-and never merge.
+Content IR is the one language every part of the system speaks. When our own code derives data,
+emitting a kind is the easiest thing in the world — the function spits out the object in exactly
+the shape we want — and then every surface (web, mobile, desktop, extension), every workflow node,
+and every agent can count on that shape: no type errors, universal rendering, no custom code. The
+search pilot was *"the most incredible proof we could ever have"*: two providers with different
+raw shapes became ONE kind family with nested kinds and primitives, rendered by ONE set of
+components from a real server call. The bar now: *"skills that teach agents how to do this end
+to end — point them at an API or some aspect of our system and ensure all of this gets done."*
 
-## The layer model (shared vocabulary for every stage)
+## Vocabulary you must hold
 
-1. **Data kinds** — pure, portable shapes (`website`, `web_search_results`). No
-   runtime info, no provider mess. These travel anywhere and render anywhere.
-   Registry metadata `category: data`.
-2. **Runtime wrapper kinds** — the canonical envelopes carrying instance context
-   (which workflow, which node, which run, timing, verdicts) with the data kind
-   NESTED inside as a typed payload field. One canonical set, reused everywhere,
-   never re-invented per feature. Registry metadata `category: runtime`.
-3. Rules: a wrapper never absorbs payload fields; a payload never carries runtime
-   fields. If data inside a wrapper is anything more than plain text, it is an
-   object that should itself be a kind.
+- **Data kinds** (`category: data`) — pure portable shapes, no runtime/provider mess. **Runtime
+  wrapper kinds** (`category: runtime`: `node_outcome`, `run_result`, `agent_result`,
+  `tool_result`) carry instance context with the data kind NESTED as a typed payload. A wrapper
+  never absorbs payload fields; a payload never carries runtime fields. You build DATA kinds.
+- **Family** — one source's kind set: a collection kind + item kinds + the system-wide
+  primitives they hold (search: `web_search_results` → `web_result`, `news_result`, … →
+  `rating`, `postal_address`, …). **Sectioned, never flattened**: heterogeneous sections stay
+  typed arrays of typed item kinds; a collection is never a bag of loose keys.
+- **Maturity** (`kind_definition.metadata.maturity`, machine-readable, never a vibe):
+  `placeholder` (outer structure honest, data NOT studied — the fast-fire tier and the `@kind`
+  default) → `distilled` (real data studied, shape designed — what Stage A produces) →
+  `verified` (distilled AND proven end-to-end: registered → typed → rendered → exercised —
+  awarded ONLY by the verification pass; `@kind` refuses to declare it). Registering a basic
+  FE route promotes nothing. Over-engineering guard: a boring flat result whose placeholder
+  shape already tells the truth is promoted `simple-is-correct` as-is — richness in the DATA
+  (arrays of structures, recurring sub-objects, heterogeneous sections) earns the full treatment.
+- **The three projections of one result**: (1) the KIND — canonical, what travels/persists/
+  renders; (2) the RAW payload — on demand (`include_raw=`), off by default; (3) the AI VIEW —
+  a context-trimmed projection made at the TOOL boundary, never in the engine, never in the kind.
+  One core engine per source; the engine's result gets its kind at that boundary.
 
-## The three stages and the human gates
+## The pipeline at a glance
 
-Every stage works WITH Arman in-session. Every decision about what data is kept,
-merged, required, or dropped is HIS. Bring him proposals he can read in one look
-(markdown tables), never walls of JSON, never questions without the material to
-answer them (the page/action/question rule).
+| Stage | Repo | Produces | Gate (Arman) | Then |
+|---|---|---|---|---|
+| **A Distill** | aidream | tables agreed → `@kind` models + adapters + tests → published (inactive) → demo endpoint → ledger | approves every table, then the registered set | fire B |
+| **B Render** | matrx-frontend | `pnpm shape:types` → compiled mirrors → one canonical component per kind → `kind_component` rows → activation → live demo | approves the rendering on the demo | fire V+D (or C if this is a pilot) |
+| **V Verify** | either | four legs per kind; stamps `verified` | — (report) | — |
+| **D Cutover** | aidream (+FE consumers) | emitters repointed to the family, collection schema superseded, legacy displays converged | approves cutover | — |
+| **C Review** | common-docs (owns this skill) | skill rewrite + replication run | — | — |
 
-### Stage A — Distill (Python repo: aidream)
+Every run has ONE ledger: `common-docs/operations/<family>-kinds-run.md` (type `Register`; the
+search pilot's is `operations/search-kinds-pilot.md` — copy its section layout: material · chain
+table · decisions (append-only, Arman's) · per-stage build records · artifacts). The ledger row
+is the durable completion signal the orchestrator watches; it is only true once pushed.
 
-1. **Study the real data.** Call the live source(s) (real API calls, real
-   credentials from the platform's existing config — never fabricate samples).
-   Capture representative raw responses into the pilot's scratch area.
-2. **Complete the source (standard step — Arman, 2026-08-20).** Every source we
-   distill is almost always PARTIALLY consumed — past unstructured handling made
-   full use impossible, which is the disease this pipeline cures. Survey the
-   provider's full API surface vs what we call today (endpoints, verticals,
-   parameters, response sections) and dispatch a reconnaissance chip so a
-   parallel session maps what else the provider offers; its findings feed the
-   pilot ledger and become follow-up capability work. Distillation does not
-   block on the recon — but firing it is mandatory.
-3. **Propose the shapes as simple markdown tables** — one table per proposed
-   kind: field · type · required/optional · source path in the raw payload ·
-   kept-or-dropped-and-why. Plus one table listing DROPPED top-level sections
-   and why. Multiple related sources stay SEPARATE at first — do not bastardize
-   one to fit the other's mold. After separate agreement, present a merge
-   analysis: what can share a kind without losing provenance identity, what
-   stays provider-specific.
-4. **Iterate with Arman until he agrees on every table.** Only then write code.
-5. **Build the pydantic models in a parallel path** (new module; do not modify
-   the live node/service path yet). Kind models declare the discriminator as a
-   real field (Stripe-style: part of the data, never injected/stripped). Nested
-   kinds are nested models. Check whether the kind SDK (`@kind` decorator /
-   `KindModel` base in matrx-graph's content_ir package) exists yet — use it if
-   so; if not, follow the registration recipe in aidream's `workflow-io-kinds`
-   skill (seed SQL + ledger + cache invalidation + live verify) and record the
-   friction points in this skill's "SDK wishlist" section below.
-6. **Register the kinds** (system org, `visibility='public'`, canonical examples
-   validated BEFORE seeding, `kind_edge` rows for nesting) and **verify TS type
-   generation picks them up** (the generated-types artifact both apps consume).
-7. **Gate: Arman approves the registered set.** Then update the pilot state doc
-   (mark Stage A DONE with the registered slugs) and **fire the Stage B chip**
-   with a fully standalone prompt (name the kinds, the demo endpoint, the pilot
-   doc). If you cannot create a background task/chip from your session, write
-   the exact Stage B prompt into the pilot state doc and tell Arman it is ready
-   to launch.
+---
 
-### Stage B — Render (frontend repo: matrx-frontend)
+## Stage A — Distill (aidream)
 
-1. **Survey what already exists** for this data family — the platform has
-   usually built renderers for it several times under different names. Inventory
-   them (the Inventory Law), take the best of the best, and design ONE canonical
-   component per kind. The goal is convergence: many bespoke displays collapse
-   into the kind's component.
-2. **Build the kind components** (web platform first), register them in
-   `content_ir.kind_component`, and wire the shapes per the Shape System doc
-   (`features/content-ir/docs/SHAPE_SYSTEM.md`). Nested kinds render by
-   recursion — the parent's component delegates each nested kind instance to the
-   registry, never reimplements it.
-3. **Build the end-to-end demo** Arman can open: a demo page that triggers a
-   REAL action on the aidream server via API, receives the kind-carrying
-   response, and renders it entirely through kind components. No mocks, no
-   pasted fixtures — the demo proves the whole pipe: server model → registry →
-   generated types → component.
-4. **Gate: Arman approves the rendering and the demo.** Iterate with him on the
-   shapes' look using the demo. Then update the pilot state doc (Stage B DONE,
-   demo URL recorded) and **fire the Stage C chip**.
+1. **Find the source's ONE engine and capture real data.** Locate the live client the nodes use
+   (duplicated API clients are a defect — fix on sight, one engine, specialised layers above it).
+   Call it with real credentials from platform config across 4–6 query archetypes that exercise
+   every section the provider can return; save each raw response as a test fixture in the family
+   module (`aidream/services/<family>_kinds/tests/fixtures/<provider>_<archetype>.json`). Never
+   fabricate samples. Note measured findings (sections that never appeared, formats) in the ledger.
+2. **Complete the source (mandatory, non-blocking).** Survey the provider's full surface vs what
+   we call today and fire a recon chip (pattern: `systems/content-ir-system/SEARCH_PROVIDER_RECON.md`
+   — endpoints, verticals, params, response sections, plan sizing). Its findings land in the ledger
+   as follow-up capability work. Distillation proceeds without waiting.
+3. **Check what already exists BEFORE proposing.** Registry (`content_ir.kind_definition`, slugs +
+   `metadata.maturity`/`family`), the well-known primitives (`rating`, `opening_hours`,
+   `postal_address`, `geo_coordinates`, …), `aidream/kinds/<domain>.py` (the army's `@kind`
+   placeholders — your family may already have placeholder rows you will UPGRADE, not re-mint),
+   `NOMENCLATURE.md` + the lexicon for names. A near-duplicate slug is a defect; reuse-or-supersede
+   is a proposal to Arman, never a silent choice.
+4. **Propose shapes as markdown tables — one per proposed kind:** field · type · required/
+   optional · source path in the raw payload · kept/dropped + why; plus one table of DROPPED
+   top-level sections + why; plus the layer diagram (collection → items → primitives). Multiple
+   sources stay SEPARATE at first; after separate agreement, present the merge analysis (what
+   shares a kind without losing provenance, what stays source-specific). Follow the distillation
+   laws below. Bring him material he can rule on in one look; never JSON walls, never a question
+   without its table (page/action/question).
+5. **Iterate until Arman agrees on every table.** Every keep/drop/merge/require decision is his.
+   Only then write code. Record each ruling in the ledger's decisions section; generalize any
+   standing rule into this skill.
+6. **Build the models with the SDK** in a parallel path (`aidream/services/<family>_kinds/` or
+   the family's `aidream/kinds/<domain>.py` for upgrades; live nodes untouched):
+   ```python
+   from matrx_graph.content_ir.model import KindModel
+   from matrx_graph.content_ir.sdk import kind
 
-### Stage C — Review and generalize (any repo; owns this skill)
+   @kind("web_result", label="Web Result", family="search", maturity="distilled",
+         example={...translated real capture...})
+   class WebResult(KindModel):
+       url: str
+       title: str
+       source: str            # provenance survives merging — a field, never a slug
+       rating: Rating | None = None   # nested kinds are nested KindModels → kind_edge rows
+   ```
+   `KindModel` owns `__kind` entirely (declared `Literal` field, alias on both halves of the
+   config); nested kinds are nested `KindModel`s; plain sub-structure that is not a kind is a
+   `BaseModel` with `extra="forbid"`. `example=` is validated at import. Every field a distillation
+   ADDS to an existing registered kind must be optional-with-default (the compatibility gate).
+7. **Build one translation adapter per provider** (`<provider>_adapter.py`:
+   `to_kind(raw) -> (Collection, TranslationReport)`) with per-section MAPPED/DROPPED key
+   registers at the top of the file, a `KeyAudit` that makes UNKNOWN keys scream (log + ops
+   record, never raise), and shared unification code (`translate.py`: date parsing incl.
+   relative dates → approximate ISO, HTML → text+links, durations, rank-from-order, site-name
+   derivation). Reference implementation: `aidream/aidream/services/search_kinds/`. Tests over
+   the real fixtures; the core assertion is every fixture translates **fully accounted** (zero
+   unknown keys). `uv run pytest aidream/services/<family>_kinds/tests` green.
+8. **Publish — dry-run first, then apply:**
+   ```bash
+   uv run python scripts/publish_kind_catalog.py aidream.<module.path>            # plan, read-only
+   AGENT_USER_ID=<your user id> uv run python scripts/publish_kind_catalog.py aidream.<module.path> --apply
+   ```
+   Creates definition + canonical example + `kind_edge` rows, system org, `visibility='public'`,
+   syncs `metadata.maturity` from the decorator. **Drift never auto-applies:** an existing slug
+   whose live schema differs exits 2 — add `--evolve` for additive-optional drift (passes the
+   BACKWARD gate, bumps version), `--breaking <slug>` per slug only for a deliberate narrowing
+   after you checked what old payloads contain. Kinds land **INACTIVE by design** — the
+   activation dual gate (`content_ir.set_kind_activation`) needs an active role=`output`
+   `kind_component`, which Stage B supplies; do not promise activation in Stage A. A slug a live
+   consumer already holds (`faq_item` was nested under `seo_package`) is merged by the laws
+   (fields go optional so both fit), never blind-updated.
+9. **Ship the demo endpoint** — a thin router + service that runs the REAL engine and streams the
+   kind JSON back (`aidream/api/routers/search_kinds.py` + `services/search_kinds/service.py`:
+   `POST /api/<family>-kinds/<verb>` → `create_streaming_response` → `{result, translation}`).
+   Deploy (repo release flow) and verify it live with a real call.
+10. **Gate: Arman approves the registered set.** Update the ledger (Stage A DONE, slugs, endpoint,
+    fixtures, what is cutover-gated), push, and **fire the Stage B chip** with the standalone
+    prompt below. If you cannot create a chip, write the exact prompt into the ledger and say so.
 
-1. Review the entire run start-to-finish: what the skill said vs what actually
-   happened, every place an agent needed information the skill didn't carry,
-   every Arman instruction that should have been standing law.
-2. **Rewrite this skill** so the next run needs no explanation from anyone.
-3. **Trigger the replication run**: pick the next data family from the pilot
-   state doc's queue and fire a Stage A chip that references ONLY this skill.
-   The replication run is the test — its friction is your failure list.
+## Stage B — Render (matrx-frontend)
 
-## Maturity tiers (shared vocabulary — every agent states the tier it leaves a kind at)
+1. **Sweep `content_ir.kind_component` for every family slug first.** A stale ACTIVE
+   `source='db'` override authored against an old shape silently wins over your bundled
+   component — deactivate (never delete) with a note. Then **survey existing renderers** for this
+   data family (the Inventory Law — the platform has usually built them several times; search had
+   six). Name the best-of-breed, CONSUME its utilities (search: `features/tool-call-visualization/
+   renderers/search/parseSearch.ts`), and design ONE canonical component per kind. Legacy D-grade
+   displays are converged at cutover (Stage D), not forked now.
+2. **Generate the types from the registry:** `pnpm shape:types <slug> [<slug>…]` →
+   `features/content-ir/kinds/generated/<slug>.gen.ts` (self-contained, drift-checked by
+   `pnpm check:kind-types`; header carries the registry version). Never hand-edit a `.gen.ts`;
+   a collection whose registry row is cutover-gated has NO `.gen.ts` until cutover.
+3. **Write the compiled parser mirrors** — `features/content-ir/kinds/<family>.ts`: one
+   `KindSchema` + `KindDefinition` per kind (`legacyBlockType` = slug, `object/kind` +
+   `array/itemKinds` for nested kinds, `json[]` for plain sub-structure), uniform
+   `{value, isComplete}` streaming bridge; export `<FAMILY>_KIND_DEFINITIONS` and spread it into
+   `features/content-ir/registry/system-kinds.ts`. (Rows whose schema can't be flattened have
+   `kind_definition.data` NULL, so the streaming parser has no warm schema without this mirror —
+   still hand-written; SDK gap.)
+4. **Build the components** in `components/mardown-display/blocks/<family>/` — one per kind,
+   defensive readers (a half-arrived value is a NORMAL state), the collection delegating every
+   nested instance via a static sibling map with a db-override seam (pattern:
+   `search-kinds/SearchKindNested.tsx`), never a per-item `next/dynamic` re-entry, never
+   reimplementing a nested kind. Register each in `BlockComponentRegistry.tsx`, the dispatch
+   shape table (`block-dispatch.tsx`), the `FeSynthesizedBlockType`/`ShapeBlockType` unions, and
+   the pin test `__tests__/component-registry.test.ts`.
+5. **Land the `kind_component` rows** as one idempotent migration
+   (`migrations/content_ir_<family>_components.sql`, role=`output`, source=`bundled`,
+   platform web), apply, ledger it.
+6. **Activate:** re-run the family's publish (`publish_kind_catalog.py … --apply`; the search
+   pilot's legacy path is `scripts/seed_search_kind_family.py`) — the dual gate now passes — and
+   VERIFY by SQL: `select kind, is_active, metadata->>'maturity' from content_ir.kind_definition
+   where kind in (…)`. Every family slug `is_active=true` except cutover-gated collections.
+7. **Ship the live demo — the standing proof format.** `app/(dev)/demos/<family>/page.dev.tsx`:
+   an input, a real call to the Stage A endpoint via `useBackendApi` + `consumeStream`, the
+   result rendered through `KindInstanceRender` (the production route path), the translation
+   report shown (unknown keys = red banner). ZERO mocks, zero pasted fixtures. Verify in the
+   in-app browser against localhost (`MATRX_PREVIEW_PROFILE=user pnpm preview:start`; `/demos/*`
+   is parked under the default profile) and on `https://demos.aimatrx.com/demos/<family>` after
+   deploy; also render each item kind on the admin preview
+   `/administration/utilities/kind-registry/<slug>`. Untested-in-browser = untested.
+8. **Gate: Arman approves the rendering on the demo.** Iterate on look there. Update the ledger
+   (Stage B DONE, demo URL), push, and **fire V + D** (first run of a pilot: fire C instead, which
+   fires them).
 
-`content_ir.kind_definition.metadata.maturity`: **placeholder** (outer structure honest, data
-not studied — the fast-fire tier and the SDK default) → **distilled** (real data studied, shape
-designed — what THIS skill's Stage A produces) → **verified** (distilled + proven end-to-end
-through component and real render — awarded only by the verification pass, never declared).
-Registering a basic FE route does not promote a tier. Over-engineering guard: a boring flat
-result whose placeholder shape already tells the truth is promoted "simple-is-correct" as-is.
+## Stage V — Verify (the four legs; stamps `verified`)
+
+Per kind, prove: **registered** (row active, example `validation_status='passed'`, edges
+present) · **typed** (`.gen.ts` exists, `pnpm check:kind-types` clean) · **rendered** (component
+resolves via the production route path; admin preview renders the canonical example) ·
+**exercised** (a REAL payload from the live endpoint rendered end-to-end — the demo, in the
+browser). Only when all four hold, set `metadata.maturity='verified'` (SQL; the decorator cannot)
+and record the evidence (URL, SQL, date) in the ledger. Board:
+`select coalesce(metadata->>'maturity','(untiered)'), count(*) from content_ir.kind_definition
+where deleted_at is null group by 1;`.
+
+## Stage D — Cutover (convert what emits and consumes the family)
+
+1. **Repoint the emitters**: the graph actions / tools / services that produced the raw
+   passthrough now call the ONE engine → adapter → kind (`output_kind=<slug>`), with
+   `include_raw=` for projection 2 and the AI view made at the tool boundary (projection 3).
+   Live nodes verify `output_kind` against the registry schema every run (`output_kind_ok`), so
+   a collection-schema supersede MUST ride the same change as the repoint (the search pilot gates
+   it behind `seed_search_kind_family.py --cutover`). Delete the passthrough models
+   (`extra="allow"` raw bags) — no shims.
+2. **Converge the legacy displays** onto the kind components (the data-event blocks the survey
+   found) and delete what they replace; regenerate `.gen.ts` for the now-live collection.
+3. **Gate: Arman approves cutover.** One real run through the converted node, rendered on the run
+   page; ledger updated; push.
+
+## Stage C — Review and generalize (owns this skill)
+
+Review the whole run — skill-said vs happened, every missing instruction, every ruling — rewrite
+THIS skill (tight: instructions, not a memoir), fix the ledger, then **fire the replication run**
+from the queue as a Stage A chip that references ONLY this skill. The replication's friction is
+the failure list: the replication agent appends it to "Open gaps" below and its ledger links it.
+
+---
 
 ## Standing rules (all stages)
 
-- **Every keep/drop/merge/require decision is Arman's.** Propose; never decide.
-- **Content IR alignment binds you.** `common-docs/systems/content-ir-system/UNIFICATION.md`:
-  this is ONE system — XML/markdown/fence arrival surfaces stay first-class, frozen block-type
-  values never change, and kinds-as-JSON is the internal form, never a forced wire format.
-  Check `NOMENCLATURE.md` and the lexicon before any name; check the registry before any mint.
-- **Provenance survives merging.** A shared kind keeps source identity (e.g. a
-  `source` field or provider-specific companion kinds) — merge shapes, never
-  origins.
-- **Specific kinds, without going overboard.** A repeated, reusable structure
-  gets a kind; a one-off blob does not. When unsure, ask with a table.
-- **Reuse before minting.** Check the registry and the well-known kinds first;
-  a near-duplicate slug is a defect. Naming per
-  `common-docs/systems/content-ir-system/NOMENCLATURE.md` (short snake_case
-  noun, no provider prefixes on shared kinds, no hashes, no node names).
-- **Parallel path until approval.** Live nodes/services/routes are repointed
-  only after Arman approves the registered set (Stage A) or the components
-  (Stage B).
-- **Completion signaling.** Each stage ends by updating the pilot state doc
-  (status line + artifacts produced) AND firing the next stage's chip. The
-  state doc is the durable signal the orchestrating session watches.
-- **Commit and push as you go.** Docs, models, seeds, components — small
-  commits to origin/main; the state doc row is only true once pushed.
+- **Every keep/drop/merge/require decision is Arman's.** Propose with tables; never decide.
+- **Content IR alignment binds you** (`systems/content-ir-system/UNIFICATION.md`): one system;
+  XML/markdown/fence arrival surfaces stay first-class; frozen block-type values never change;
+  kinds-as-JSON is the internal form, never a forced wire format. Names per `NOMENCLATURE.md` +
+  lexicon (short snake_case noun, no provider prefix, no hashes, no node names).
+- **Provenance survives merging.** A shared kind keeps source identity as a `source` field (or
+  source-specific companion kinds); merge shapes, never origins.
+- **Specific kinds without going overboard.** A repeated reusable structure gets a kind; a one-off
+  blob does not. Layer where identification helps (collection, item, primitive); never a wrapper
+  whose only content is its payload — self-identifying items are already portable.
+- **Reuse before minting; parallel path until approval**; live nodes/services/routes repointed
+  only in Stage D after approval.
+- **Completion signaling**: each stage ends by updating the ledger row + artifacts AND firing the
+  next stage's chip with a standalone prompt. **Commit and push as you go** — a ledger row is only
+  true once on origin/main.
+- **Ask Arman with the page, the action, the question** — and never hand him the design problem.
 
 ## Distillation laws (Arman, 2026-08-20, ratified during the first run)
 
-- **A drop is a loss of data we paid for.** Never inherit a drop from the existing
-  code — past code dropping a field may have been the mistake this pipeline exists
-  to fix. Every drop is justified on its own merits. Drop freely ONLY provider
-  plumbing: request echoes, tracking/redirect links, pagination endpoints, the
-  provider's own UI chrome. Real-world data defaults to KEPT, as structure.
-- **Provider asymmetry is never a drop reason.** One provider carrying a field the
-  other lacks → optional field on the shared kind; map both providers' variants
-  onto the same field wherever the underlying data is the same thing.
-- **Known string formats become structured data.** Parse hours, dates, ratings,
-  addresses into typed structure. Retain the original string alongside only when
-  the parse is lossy or relative ("2 weeks ago"); never synthesize precision the
-  source didn't give. Datetimes/URLs stay scalar JSON-Schema formats, not kinds.
-- **Recurring small structures are core-primitive candidates.** When the same
-  small shape shows up across sections or providers (rating, opening hours,
-  postal address, geo coordinates), propose it as a system-wide primitive kind —
-  small kinds held by bigger kinds. Check the registry first; never mint a
-  primitive that exists.
-- **Layer where identification helps; never a wrapper that carries nothing.**
-  Every level whose identification helps downstream handling gets a kind (the
-  collection, the item, the primitive). But a wrapper whose only content is its
-  payload is over-layering — self-identifying item kinds (discriminator as a
-  real field) already make any single item portable to any surface.
-- **Embedded HTML is judged by what's inside.** Pre-rendered UI with no unique
-  data → discard. Unique data wearing HTML formatting → convert to structure
-  (text + extracted links); never store raw provider HTML in a kind.
-- **One copy of everything.** Kinds reference canonical entities rather than
-  duplicating them; merged kinds keep provenance (a `source`/provider field),
-  never duplicate records per provider.
+- **A drop is a loss of data we paid for.** Never inherit a drop from existing code — past code
+  dropping a field may be the mistake this pipeline fixes. Every drop is justified on its own
+  merits. Drop freely ONLY provider plumbing: request echoes, tracking/redirect links, pagination
+  endpoints, the provider's own UI chrome. Real-world data defaults to KEPT, as structure.
+- **Provider asymmetry is never a drop reason.** One provider carrying a field the other lacks →
+  optional field on the shared kind; map both providers' variants onto the same field wherever the
+  data is the same thing.
+- **Known string formats become structured data.** Parse hours, dates, ratings, addresses into
+  typed structure. Keep the original string alongside only when the parse is lossy or relative
+  ("2 weeks ago"); never synthesize precision the source didn't give. Datetimes/URLs stay scalar
+  JSON-Schema formats, not kinds.
+- **Recurring small structures are core-primitive candidates** (rating, opening hours, postal
+  address, geo coordinates): propose system-wide primitive kinds held by bigger kinds; check the
+  registry first; never mint a primitive that exists.
+- **Embedded HTML is judged by what's inside.** Pre-rendered UI with no unique data → discard.
+  Unique data wearing HTML → convert to structure (text + extracted links); never store raw HTML.
+- **One copy of everything.** Kinds reference canonical entities rather than duplicating them.
 
 ## THE MERGE + TRANSLATION LAW (Arman, 2026-08-20 — platform-level, unbreakable)
 
-- **Provider-named kinds are BANNED.** `brave_search_results` next to
-  `google_search_results` next to `bing_search_results` is the death of the kind
-  system — 100 kinds is the same as no kinds. Things of the same kind, type, or
-  purpose get ONE merged kind; the provider is a `source` field, never a slug.
-  Adding a provider means writing one adapter, never minting a kind.
-- **Every provider gets a TRANSLATION ADAPTER, modeled on the AI request
-  system.** Exactly as any provider's model config translates into any other
-  provider's call (configuration equivalence), each raw payload translates INTO
-  the shared kind: value vocabularies map ("US" ↔ "United States"), equivalent
-  concepts land in one field however each provider spells them, and a field one
-  provider lacks is DERIVED when an honest derivation exists (rank from array
-  order, `published_at` parsed from a date string, an approximation when the
-  source is relative). Use code to unify — the fewer optional fields, the more
-  every downstream can count on, the more valuable the data.
-- **The pipeline is never lossy by accident.** An adapter declares every raw key
-  in exactly one of two sets: MAPPED (raw path → kind field) or DROPPED (named
-  key + reason, approved by Arman, visible in code). Any key in neither set is
-  UNKNOWN and must scream loudly (log + ops record) — that is how a provider
-  adding a field gets noticed instead of silently discarded. This is the
-  configuration-equivalence lesson (`on_unmapped='drop'` silently discarded
-  1,139 combinations) applied at every data boundary.
+- **Provider-named kinds are BANNED.** `brave_search_results` next to `google_search_results` is
+  the death of the kind system — 100 kinds is the same as no kinds. Same kind/type/purpose → ONE
+  merged kind; the provider is a `source` field. Adding a provider = one adapter, never a kind.
+- **Every provider gets a TRANSLATION ADAPTER, modeled on the AI request system's configuration
+  equivalence**: value vocabularies map ("US" ↔ "United States"); equivalent concepts land in one
+  field however each provider spells them; a field one provider lacks is DERIVED when an honest
+  derivation exists (rank from array order, `published_at` parsed, an approximation when the
+  source is relative). The fewer optional fields, the more every downstream can count on.
+- **Never lossy by accident.** An adapter declares every raw key in exactly one set: MAPPED (raw
+  path → field) or DROPPED (named key + reason, Arman-approved, visible in code). Anything else is
+  UNKNOWN and screams (log + ops record) — that is how a provider adding a field gets noticed.
 
-## The three projections of one result (Arman, 2026-08-20)
+## Earned traps (still true — each cost a run-day)
 
-One core engine per source in the entire codebase (duplicated API clients are a
-defect — fix on sight). The engine's result gets its KIND immediately at that
-boundary. From there, three projections:
+- `KindModel` needs BOTH `populate_by_name` (in) and `serialize_by_alias` (out): a kind nested in
+  a plain model otherwise serializes as `kind_` and its own `additionalProperties:false` schema
+  rejects it (pinned by `packages/matrx-graph/tests/test_content_ir_model.py`).
+- `_touch_row` bumps `kind_definition.version` on every update — re-read before pinning
+  `kind_example.kind_version`. `kind_example.source` is CHECK-constrained to
+  `authored|captured|migrated|synthetic`; real-payload examples are `captured`.
+- Changing an ACTIVE kind's schema changes live node verification on the next run — hence the
+  cutover gate (Stage D.1). Use `--evolve` for additive drift; never a publisher overwrite.
+- pydantic leaves defaulted fields (incl. `__kind`) out of `required`, so they generate as
+  optional in TS — the type tells the truth about validation, the serializer always emits them.
+- Brave returns empty-string location fields; Google News dates are relative; a token-only
+  `ai_overview` means "no answer" — read the family FEATURE.md's earned traps before touching it.
 
-1. **The kind** — the ONE canonical form. UI surfaces render it directly; it is
-   what travels, persists, and registers. Never lossy by accident (the adapter
-   law above).
-2. **Raw provider payload** — available ON DEMAND, argument-driven
-   (`include_raw=`), off by default so caches don't fill with duplicates. Exists
-   because sometimes the raw dump is the right thing to hand an agent, and
-   because heavy manipulation can be lossy in ways we only discover later.
-3. **The AI view** — a context-controlled projection of the kind (trimmed,
-   summarized, token-budgeted) produced at the TOOL boundary, not in the engine
-   and not in the kind. The tool receives the kind and decides what the model
-   sees; the UI receives the kind untrimmed. Tools may also WRAP a kind (their
-   runtime wrapper) — they never mutate the data kind's fields.
+## Open gaps (SDK wishlist — replication agents append friction here; the SDK build consumes it)
 
-## SDK wishlist (Stage A agents append friction here; the SDK build consumes it)
+1. **Codegen is by hand after publish.** `pnpm shape:types` is run manually; publish does not
+   trigger it, and matrx-extend gets no generated types yet.
+2. **Compiled `KindSchema` mirrors are hand-written** (Stage B.3) — the SDK should emit them from
+   `emitted_json_schema` like the `.gen.ts` files.
+3. **No `kind_component` pre-flight in the publisher** — the stale-override sweep (Stage B.1) is a
+   manual SQL step. Publisher should diff-and-report slug collisions and active db overrides.
+4. **The search family still rides its legacy seed script** (`seed_search_kind_family.py`,
+   `SearchKindModel` predates `KindModel`) — fold into `@kind` + `publish_kind_catalog.py` at
+   cutover.
+5. **Demo page + endpoint are copied by hand** from the search pilot — a scaffold
+   (`<family>` → router, service, page.dev.tsx) would make Stage A.9/B.7 a command.
 
-From the search pilot (2026-08-20):
+## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
-1. **`@kind` / `KindModel`: BUILT** (`matrx_graph.content_ir.model` +
-   `.sdk`). The base owns the discriminator entirely — `Field(alias="__kind")`
-   (leading-underscore field names are private in pydantic, so the alias is the
-   only way) plus BOTH halves of that alias in the config: `populate_by_name`
-   to accept `__kind` on the way in and `serialize_by_alias` to emit it on the
-   way out. The second half was missed at first and it is not cosmetic: a
-   `model_dump` override covers only a direct dump, so a kind NESTED in a plain
-   model serialized as `kind_` and its own `additionalProperties:false` schema
-   rejected it (fixed 2026-08-20; pinned by
-   `packages/matrx-graph/tests/test_content_ir_model.py`). The pilot's local
-   `SearchKindModel` (`aidream/services/search_kinds/models.py`) still predates
-   the base and should fold into it.
-2. **Registry→TypeScript codegen: BUILT (Stage B, 2026-08-20).** matrx-frontend
-   `pnpm shape:types <kind…>` / `--all-generated` / `pnpm check:kind-types`
-   (`scripts/shape/generate-kind-types.ts`) reads `emitted_json_schema` from
-   the LIVE registry and emits self-contained
-   `features/content-ir/kinds/generated/<kind>.gen.ts`, drift-checked.
-   Regenerate after any seed re-run (activation bumps
-   `kind_definition.version`, stamped in the file header). Still open for the
-   SDK: matrx-extend distribution, and auto-running generation from the
-   seed/sync flow instead of by hand.
-3. **Registration is a per-family hand-rolled script.** The worked pattern is
-   `aidream/scripts/seed_site_intake_kinds.py` (ORM upserts + `check_schema`
-   example validation + `schema_fingerprint` + `set_kind_activation` +
-   `invalidate_kind_catalog_cache`); the pilot copied it into
-   `seed_search_kind_family.py` and added `kind_edge` upserts. The SDK's
-   idempotent sync should own all of it.
-4. **The activation dual gate orders the stages.** `set_kind_activation`
-   REFUSES a kind with no active role='output' `kind_component` — so Stage A
-   necessarily ends with kinds seeded INACTIVE, and Stage B's component work
-   completes activation (re-run the family seed script after components ship).
-   This is correct behavior; the skill's Stage A step 6 must not promise
-   activation.
-5. **`_touch_row` bumps `kind_definition.version` on every update** — re-read
-   the version after writing the definition before pinning `kind_example.
-   kind_version`, or examples validate against a stale versioned ref.
-6. **`kind_example.source` is CHECK-constrained** to
-   `authored|captured|migrated|synthetic` — use `captured` for examples
-   translated from real provider payloads.
-7. **A live consumer can already hold your slug.** `faq_item` existed
-   (inactive, nested under `seo_package.faq`) — the merge law resolved it
-   (source/position went optional so both consumers fit one kind), but the SDK
-   sync must diff-and-report on slug collision, never blind-update.
-8. **Changing an ACTIVE kind's schema changes live node verification.** Any
-   node declaring `output_kind=<slug>` is verified against the registry schema
-   on every run (`output_kind_ok`), and engram confirmation counts it — a
-   collection-schema supersede MUST ride the same change that repoints the
-   emitters (the pilot gates it behind `seed_search_kind_family.py --cutover`).
+**Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY
+`common-docs/skills/data-to-kinds/SKILL.md` (mirrored at `.claude/skills/data-to-kinds/SKILL.md`)
+and follow it verbatim. Source: ⟨engine/client path, nodes, provider(s)⟩. Existing placeholders:
+⟨`aidream/kinds/<domain>.py` slugs or none⟩. Create the ledger `common-docs/operations/⟨family⟩-
+kinds-run.md` from the search pilot's layout. Work with Arman via tables; publish inactive; ship
+the demo endpoint; on his approval mark Stage A DONE and fire Stage B. Every instruction the skill
+failed to give you goes into its 'Open gaps' section in the same session."
 
-From Stage B (2026-08-20):
+**Stage B:** "You are STAGE B of the data-to-kinds run for ⟨family⟩. Read ONLY the skill above
+and the ledger `common-docs/operations/⟨family⟩-kinds-run.md`. Kinds: ⟨slugs⟩. Endpoint:
+⟨POST /api/…⟩. Build per Stage B, demo at `/demos/⟨family⟩`, verify in-browser, get Arman's
+render approval, mark DONE, fire V + D."
 
-9. **No registry→KindSchema codegen — the FE compiled parser floor is
-   hand-mirrored.** Registered rows whose object contract can't be flattened
-   leave `kind_definition.data` NULL (all-or-nothing
-   `fields_from_json_schema`), so the streaming parser has NO warm schema for
-   them; live parsing of these kinds works only through the compiled
-   `KindSchema` mirrors each Stage B hand-writes into
-   `features/content-ir/kinds/<family>.ts` (`json[]` for plain sub-structure
-   arrays, `object/kind` + `array/itemKinds` for nested kinds). The SDK
-   should generate this floor from `emitted_json_schema` too.
-10. **Sweep `kind_component` for your slugs before registering — a stale db
-    override silently wins.** The search collection had a pre-existing ACTIVE
-    `source='db'` component authored 2 days earlier against the OLD shape; db
-    overrides bundled, so it would have replaced the new canonical component
-    with an old-shape renderer. Stage B queries `kind_component` for every
-    family slug first, and deactivates (never deletes) stale overrides with a
-    note. Same class as #7, one table over.
-11. **Stage B's worked registration path (reference implementation:
-    the search family).** Compiled `KindDefinition`s + `legacyBlockType` =
-    kind slug + a uniform `{value, isComplete}` streaming bridge; one
-    canonical component per kind (registered in `BlockComponentRegistry` +
-    the dispatch shape table + `FeSynthesizedBlockType`/`ShapeBlockType`
-    unions + the component-registry pin test); the collection delegates
-    nested instances via a static sibling map with a db-override seam
-    (`SearchKindNested`) — never a per-item `next/dynamic` re-entry; bundled
-    `kind_component` rows land as one idempotent migration; then re-run the
-    family seed script and VERIFY `is_active` by SQL.
+**Stage V / D / C:** same shape — name the family, the ledger, the slugs, and the stage.
 
-## Active pilots
+## Runs
 
-| Pilot | State doc |
-|---|---|
-| Search results (Brave + SerpAPI Google) | `common-docs/operations/search-kinds-pilot.md` |
+| Run | Ledger | State |
+|---|---|---|
+| Search results (Brave + SerpAPI Google) — the pilot | `common-docs/operations/search-kinds-pilot.md` | A+B approved; C done 2026-08-23; V + D pending (cutover gated) |
+| Scraper / crawl results (`scraper.*`) — replication run 1 | `common-docs/operations/scraper-kinds-run.md` | Stage A fired 2026-08-23 |
