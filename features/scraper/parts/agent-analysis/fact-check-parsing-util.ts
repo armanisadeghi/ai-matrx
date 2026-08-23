@@ -121,31 +121,45 @@ const KNOWN_HEADERS = [
   }
   
   /**
-   * Extract rating as a number (for display in stats)
+   * The trustworthiness rating the fact-check answer actually carries, on its
+   * OWN scale.
+   *
+   * 🚨 Why this looks for the rating anywhere and on any scale: the bound agent
+   * ("Fact Checker V2") writes `**Trustworthiness Rating: 8/10**` — it is not
+   * under an `## OVERALL RATING` heading, and it is out of TEN. This function
+   * used to search only inside `extractOverallRating(...)` and only match
+   * `/5`, so it returned 0 on every real answer and the tab's Trustworthiness
+   * stat read "Unknown" for as long as the tab has existed (found 2026-08-22).
+   * Scale is REPORTED, never assumed: a 4 out of 5 and a 4 out of 10 are not
+   * the same claim, and silently rescaling one into the other would be the
+   * tab inventing a verdict the agent never gave.
+   */
+  export function extractRating(content: string): { value: number; outOf: number } | null {
+    const searched = [extractOverallRating(content), content];
+    for (const haystack of searched) {
+      if (!haystack) continue;
+      // `Rating: 8/10`, `**Trustworthiness Rating: 8/10**`, `rating — 4 / 5`.
+      const labelled = haystack.match(/rating[^0-9\n]{0,20}(\d{1,2})\s*\/\s*(\d{1,2})/i);
+      if (labelled) {
+        return { value: parseInt(labelled[1], 10), outOf: parseInt(labelled[2], 10) };
+      }
+      // A bare `8/10` (or `4/5`) with no "rating" word nearby.
+      const bare = haystack.match(/\b(\d{1,2})\s*\/\s*(5|10)\b/);
+      if (bare) {
+        return { value: parseInt(bare[1], 10), outOf: parseInt(bare[2], 10) };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Back-compat numeric accessor — the rating normalized to the 0-5 band the
+   * old callers assumed. Prefer `extractRating`, which keeps the scale.
    */
   export function extractRatingValue(content: string): number {
-    const ratingSection = extractOverallRating(content);
-    
-    // Try to find various forms of the rating
-    // First try the standard format
-    let ratingMatch = ratingSection.match(/\*\*rating\*\*:\s*(\d+)\/5/i);
-    
-    if (!ratingMatch) {
-      // Try without the bold markdown
-      ratingMatch = ratingSection.match(/rating:\s*(\d+)\/5/i);
-    }
-    
-    if (!ratingMatch) {
-      // Try finding just a number followed by /5
-      ratingMatch = ratingSection.match(/(\d+)\/5/i);
-    }
-    
-    if (!ratingMatch) {
-      // Try finding a number after "rating" in any form
-      ratingMatch = ratingSection.match(/rating.*?(\d+)/i);
-    }
-    
-    return ratingMatch ? parseInt(ratingMatch[1], 10) : 0;
+    const rating = extractRating(content);
+    if (!rating || rating.outOf <= 0) return 0;
+    return Math.round((rating.value / rating.outOf) * 5);
   }
   
   /**
@@ -166,7 +180,10 @@ const KNOWN_HEADERS = [
     recommendations: string;
     factCheckTable: string;
     overallRating: string;
+    /** The rating rescaled to 0-5 (0 when the answer carried none). */
     ratingValue: number;
+    /** The rating AS GIVEN, with its own scale — null when absent. */
+    rating: { value: number; outOf: number } | null;
     fullContent: string;
   } {
     return {
@@ -178,6 +195,7 @@ const KNOWN_HEADERS = [
       factCheckTable: extractFactCheckTable(content),
       overallRating: extractOverallRating(content),
       ratingValue: extractRatingValue(content),
+      rating: extractRating(content),
       fullContent: getFullFactCheck(content)
     };
   }

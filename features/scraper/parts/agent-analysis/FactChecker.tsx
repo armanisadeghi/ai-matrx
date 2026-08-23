@@ -282,20 +282,26 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     return liveOutput("Fact check");
   };
 
+  // The band words describe the rescaled 0-5 value; the agent's OWN number and
+  // scale ride alongside so the stat never restates its verdict on a scale it
+  // did not use (the bound agent answers out of 10).
   const getRatingText = (ratingValue: number): string => {
-    if (ratingValue === 0) return "Pending";
+    if (ratingValue <= 0) return "Pending";
     if (ratingValue === 1) return "Very Low";
     if (ratingValue === 2) return "Low";
     if (ratingValue === 3) return "Moderate";
     if (ratingValue === 4) return "High";
-    if (ratingValue === 5) return "Very High";
-    return "Unknown";
+    return "Very High";
   };
+
+  const trustworthiness = parsedContent?.rating
+    ? `${getRatingText(rating)} (${parsedContent.rating.value}/${parsedContent.rating.outOf})`
+    : getRatingText(rating);
 
   const statsItems = [
     { label: "Content Source", value: overview?.website || "Unknown" },
     { label: "Character Count", value: characterCount || "N/A" },
-    { label: "Trustworthiness", value: getRatingText(rating) },
+    { label: "Trustworthiness", value: trustworthiness },
   ];
 
   const tabs = [
