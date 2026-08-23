@@ -278,8 +278,10 @@ describe("ComponentRegistry — warm tier", () => {
       expect(mockList).toHaveBeenCalledTimes(2);
       // ...but the console scream fired exactly once.
       expect(consoleError).toHaveBeenCalledTimes(1);
+      // The scream is worded by the shared resolver
+      // (`@ai-matrx/content-ir-react`), which now owns the warm lifecycle.
       expect(String(consoleError.mock.calls[0]?.[0])).toContain(
-        "component-registry warm load failed",
+        "component-resolver warm load failed",
       );
 
       // Recovery: a later successful fetch upgrades in place.

@@ -1,205 +1,43 @@
 "use client";
 
 /**
- * KindInstanceRender — render ONE canonical kind instance through the REAL
- * production path, never a lookalike: the value object is wrapped by the same
- * complete-envelope assembler the splitter/rehydration use
- * (`envelopeFromCompleteValue`), placed on a raw render block's
- * `metadata.__ir`, and handed to the production `SafeBlockRenderer` — whose
- * `BlockRenderer` runs `applyIrKindRoute` exactly as it does for streamed chat
- * content (db-sourced `kind_component` renderers resolve through the same
- * route automatically).
+ * The Matrix binding of `KindInstanceRender` — render ONE canonical kind
+ * instance through the REAL production path, never a lookalike.
  *
- * If the kind has no registered component/bridge, the value renders through
- * {@link StructuredValueView} — the platform floor that turns any JSON value
- * into a human document. It used to become a ```json code block instead, which
- * is what put 19 of 23 Study Pack steps in front of a non-technical reader as
- * a JSON dump (2026-08-18). A curated `kind_component` is now an UPGRADE over
- * a good default, never the prerequisite for one.
- *
- * Extracted from the admin KindPreviewTab so the studio's Preview + Test tabs
- * and the admin page share ONE render engine (no second preview fork).
- * SafeBlockRenderer already owns the `ssr:false` dynamic boundary for the
- * heavy renderer; this shell is light on purpose.
+ * The component itself lives in `@ai-matrx/content-ir-react`: the routing
+ * three-state lifecycle ("checking" is not "missing"), the eager targeted
+ * resolve, the warm-then-refresh order, the unroutable fallback rule, and the
+ * bare/card variants. Read the semantics there. This module supplies our host
+ * (SafeBlockRenderer + StructuredValueView + the Error Inspector) and keeps the
+ * historical import path stable for the ~15 surfaces that render an instance.
  */
 
-import { useEffect, useState } from "react";
-import { Info } from "lucide-react";
-import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
-import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
-import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
-import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import {
-  componentRegistry,
-  resolveComponent,
-} from "@/features/content-ir/registry/component-registry";
+  KindInstanceRender as SharedKindInstanceRender,
+  kindIsRoutable as kindIsRoutableShared,
+  isRecordValue as isRecordValueShared,
+  type KindInstanceRenderProps,
+} from "@ai-matrx/content-ir-react";
+import {
+  ContentIrHostBoundary,
+  matrxContentIrHost,
+} from "@/features/content-ir/host/ContentIrHostBoundary";
 
-const noopReplaceBlockContent = (_original: string, _replacement: string) => {};
-const noopOpenEditor = () => {};
-
-export function isRecordValue(
-  value: unknown,
-): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+export const isRecordValue = isRecordValueShared;
 
 /**
- * True when `applyIrKindRoute` has a registered render path for this kind —
- * a compiled legacy bridge OR any ACTIVE resolver row (including db-sourced
- * user components, which route to `db_kind_component`). Mirrors the route's
- * own decision order; requires the resolver warm tier for db rows (see the
- * warm tick in KindInstanceRender).
+ * True when `applyIrKindRoute` has a registered render path for this kind — a
+ * compiled legacy bridge OR any ACTIVE resolver row (including db-sourced user
+ * components, which route to `db_kind_component`).
  */
 export function kindIsRoutable(kind: string): boolean {
-  if (kindRegistry.getDefinition(kind)?.legacyBlockType) return true;
-  return Boolean(resolveComponent(kind, "web", "output")?.isActive);
+  return kindIsRoutableShared(kind, matrxContentIrHost);
 }
 
-interface KindInstanceRenderProps {
-  kind: string;
-  /** The canonical instance value (kind_example.data or a form-emitted instance). */
-  value: unknown;
-  /** Show the honest "no component registered" banner when unroutable. */
-  showRoutingNote?: boolean;
-  /**
-   * What to render when the routing decision lands on "no component exists for
-   * this kind". The universal document view is the right answer almost
-   * everywhere — it reads well and hides nothing. It is still the wrong answer
-   * when the raw value is an internal ENVELOPE rather than content: an
-   * `agent_result` dumped the verbatim prompt, the model id and the token bill
-   * into the box a learner was waiting on. Passing a fallback lets that caller
-   * show what the reader actually wants WITHOUT anyone second-guessing the
-   * routing decision — this component stays the ONE place that decides whether
-   * a kind has a component (THE CANONICAL COMPONENT LAW is about overriding an
-   * EXISTING component; there is none to override here).
-   *
-   * Omitted → the generic viewer, exactly as before.
-   */
-  unroutableFallback?: React.ReactNode;
-  /**
-   * Chrome, per THE WRAPPER LAW (root CLAUDE.md): a host frame either IS the
-   * chrome or has none. "card" (default) keeps the bordered surface the studio
-   * and admin previews rely on. "bare" renders with NO border/background/pad —
-   * for a host that already draws a titled card, where the default produced the
-   * two-tone box-in-a-box with a dead band around it (the workflow run surface,
-   * reported 2026-08-18). Mirrors `LiveRunDisplay`'s `variant="bare"`.
-   */
-  variant?: "card" | "bare";
-}
-
-type RoutingStatus = "checking" | "routable" | "unroutable";
-
-export default function KindInstanceRender({
-  kind,
-  value,
-  showRoutingNote = true,
-  unroutableFallback,
-  variant = "card",
-}: KindInstanceRenderProps) {
-  // Routing must be judged with the WARM tiers in (user kind definitions +
-  // `kind_component` resolver rows — including source='db' user components).
-  // Keep the note in an explicit three-state lifecycle: a cold registry is
-  // "checking", not proof that a component is missing. This prevents the
-  // false warning from flashing or sticking while BlockRenderer independently
-  // upgrades to a newly arrived db component.
-  const [routingStatus, setRoutingStatus] = useState<RoutingStatus>(() =>
-    kindIsRoutable(kind) ? "routable" : "checking",
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    let warmed = false;
-    const syncRoutingStatus = () => {
-      if (cancelled) return;
-      setRoutingStatus(
-        kindIsRoutable(kind) ? "routable" : warmed ? "unroutable" : "checking",
-      );
-    };
-
-    const unsubscribe = componentRegistry.subscribe(syncRoutingStatus);
-    syncRoutingStatus();
-
-    // Eager targeted resolve FIRST — the same seam the streaming path uses
-    // (stream-block-accumulator.ts): two indexed single-kind reads land this
-    // kind's own resolver row in ~100ms, so first paint shows the real
-    // component instead of the JSON fallback. The warm sweep below (megabytes,
-    // several round trips) is the backstop, never the gate — before this, the
-    // component only appeared after the full sweep landed, which users
-    // experienced as "it renders after I switch tabs" (2026-08-22).
-    void componentRegistry.requestComponent(kind, "web", "output");
-
-    // Sampled BEFORE the warm: refresh-on-view only earns its keep when the
-    // registry was already warm from an earlier mount; on a cold mount it
-    // would re-download the identical list ensureWarm is about to fetch.
-    const wasAlreadyWarm = componentRegistry.getVersion() > 0;
-    void Promise.allSettled([
-      kindRegistry.ensureWarm(),
-      componentRegistry.ensureWarm(),
-    ]).then(async () => {
-      warmed = true;
-      syncRoutingStatus();
-      if (wasAlreadyWarm) {
-        await componentRegistry.refreshKindComponents();
-      }
-      syncRoutingStatus();
-    });
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [kind]);
-
-  const block: RenderBlock | null = isRecordValue(value)
-    ? {
-        type: "code",
-        content: JSON.stringify(value, null, 2),
-        language: "json",
-        metadata: {
-          [IR_ENVELOPE_KEY]: envelopeFromCompleteValue(value, kind),
-        },
-      }
-    : null;
-
-  const frameClass =
-    variant === "bare" ? "" : "rounded-md border border-border bg-card p-3";
-
-  // A caller that supplied a fallback gets it the moment routing SETTLES on
-  // "no component" — never during "checking", so a warm-up tick can't flash
-  // the fallback over a component that is about to resolve.
-  if (routingStatus === "unroutable" && unroutableFallback !== undefined) {
-    return <>{unroutableFallback}</>;
-  }
-
-  // The floor. Two ways to land here, and the answer is the same document
-  // either way: the kind settled on "no component", or the value is not an
-  // object at all (a scalar / array workflow I/O shape), for which there has
-  // never been a block render path.
-  const onTheFloor = block === null || routingStatus === "unroutable";
-
+export default function KindInstanceRender(props: KindInstanceRenderProps) {
   return (
-    <div className="space-y-3">
-      {showRoutingNote && routingStatus === "unroutable" && (
-        <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-          <Info className="h-3.5 w-3.5 shrink-0" />
-          This shape has no custom component yet, so it renders through the
-          universal viewer — exactly what production shows today.
-        </div>
-      )}
-      <div className={frameClass}>
-        {onTheFloor ? (
-          <StructuredValueView value={value} kind={kind} />
-        ) : (
-          <SafeBlockRenderer
-            block={block}
-            index={0}
-            replaceBlockContent={noopReplaceBlockContent}
-            handleOpenEditor={noopOpenEditor}
-          />
-        )}
-      </div>
-    </div>
+    <ContentIrHostBoundary>
+      <SharedKindInstanceRender {...props} />
+    </ContentIrHostBoundary>
   );
 }

@@ -30,7 +30,7 @@ import type React from "react";
 import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { JsonObject } from "@/types/json";
+import { isJsonObject, type JsonObject } from "@/types/json";
 import type { ComponentResolution } from "../../registry/component-registry";
 import type { RunKindAction } from "../actions/useKindActionRunner";
 
@@ -114,6 +114,25 @@ function screamCompileFailure(key: string, kind: string, error: string): void {
   captureError({ source: "content-ir", message, raw: { kind, error } });
 }
 
+/**
+ * THE CONFIG BOUNDARY. `ComponentResolution.config` is typed
+ * `Record<string, unknown>` by `@ai-matrx/content-ir-react` — the shared
+ * resolver is deliberately agnostic about what a host's JSONB interior looks
+ * like. This repo's `JsonObject` is the honest JSON type, so the crossing is a
+ * runtime NARROWING (`isJsonObject`), never an assertion.
+ *
+ * A row whose `config` is not an object is a malformed `kind_component` row:
+ * we scream and render with the empty config rather than crash the component.
+ */
+export function kindComponentConfig(config: unknown, kind: string): JsonObject {
+  if (isJsonObject(config)) return config;
+  if (config === null || config === undefined) return {};
+  const message = `[content-ir] kind_component.config for "${kind}" is not a JSON object (${typeof config}) — rendering with an empty config.`;
+  console.error(message);
+  captureError({ source: "content-ir", message, raw: { kind } });
+  return {};
+}
+
 function resolveAllowedImports(config: JsonObject): string[] {
   const declared = config.allowed_imports;
   if (
@@ -151,7 +170,9 @@ export function getOrCompileDbKindComponent(
     return result;
   }
 
-  const allowedImports = resolveAllowedImports(resolution.config);
+  const allowedImports = resolveAllowedImports(
+    kindComponentConfig(resolution.config, kind),
+  );
 
   const { Component, error } = compileSlotComponent({
     code: source,

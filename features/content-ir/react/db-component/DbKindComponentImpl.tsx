@@ -32,6 +32,7 @@ import { resolveComponent } from "../../registry/component-registry";
 import {
   applyPropsTransform,
   getOrCompileDbKindComponent,
+  kindComponentConfig,
 } from "./dbKindComponentCache";
 import { DbKindComponentErrorBoundary } from "./DbKindComponentErrorBoundary";
 import { KindHtmlFrame } from "./KindHtmlFrame";
@@ -172,7 +173,7 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
       <Component
         data={data}
         kind={kind}
-        config={resolution.config}
+        config={kindComponentConfig(resolution.config, kind)}
         runAction={runAction}
         onResolve={onResolve}
         uiOptions={uiOptions}
