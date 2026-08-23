@@ -118,13 +118,13 @@ exercise both. A kind without a registered shape/component is useless — and so
 component-less `__kind` wrapper.
 
 - Via MCP: run the kind-builder agents with `agent_run` — **`kind_architect`**
-  (`9d484ce1-1e2b-4db7-8469-d3ba8550cdd8`, admin one-shot) or **`kind_creator`**
-  (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`, conversational guided loop, v15+). Both are
-  conversational — drive them with `user_message`. Since 2026-08-22 the tools behind them
-  build a COMPOSED shape in one `kind_create` call (mark nested items with their own
-  `__kind` in the sample; child kinds + `kind_edge` rows are minted for you), store the
-  example in marked block shape (the stored example IS the render block), and gate every
-  component write with an import allowlist + an esbuild TSX syntax check.
+  (`9d484ce1-1e2b-4db7-8469-d3ba8550cdd8`, admin one-shot: `kind_create` composes the
+  nested child kinds from ONE `__kind`-marked sample, then component + skill + content
+  blocks + `kind_activate`). It is **variable-driven**: pass
+  `variables={"user_data_sample": <the __kind JSON sample, nested>, "task_brief": <slug,
+  label, what the component must do, which lists stream>}`. **`kind_creator`**
+  (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`) is the conversational guided loop — drive it
+  with `user_message`. Check `get_agent` before driving either; the shape can change.
 - Component bar: dense (minimal padding, no wasted space), mobile-friendly, interactive
   where the data invites it (drag-and-drop, sort, edit, add/remove for lists), one-click
   copy per section plus compact whole-result copy affordances (JSON / MD / CSV / TXT /
