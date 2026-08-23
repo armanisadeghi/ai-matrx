@@ -22,7 +22,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
 - `app/(authenticated)/settings-hooks-demo/page.tsx` — `useSetting` across 3 slices.
 - `/user-settings/communication/messaging` — production SMS enrollment, notification-family preferences, opt-out, and personal text-assistant binding.
-- `app/(core)/settings/data/page.tsx` → `/settings/data` — **"Your data"**, the user-facing half of the platform data lifecycle. What of theirs is scheduled for permanent deletion, when, and one **Keep** button per group. The weekly digest email links here. Not a settings *tab*: it is a route surface with its own `RouteHeader`, reached from **General → Privacy → Your data** and from `/education/data`.
+- `app/(core)/settings/data/page.tsx` → **redirect to `/trash`**. "Your data" is NOT a settings surface: `/trash` already lists everything a person soft-deleted, and the lifecycle clock is a column on that list, not a second page. The route survives only because the weekly digest email takes its link as a value and old mail keeps its URL forever. **General → Privacy** and `/education/data` now link straight to `/trash`.
 
 **Overlay ids** (dispatched via `openOverlay(...)`)
 
@@ -195,17 +195,16 @@ Path:
 
 Exit: The saved family choice is visible on the same Messaging surface, and a blocked Task editor action opens this exact control.
 
-### 9. "Is anything of mine about to be deleted?" — `/settings/data`
+### 9. "Is anything of mine about to be deleted?" — **`/trash`**, not settings
 
-Trigger: the weekly data-lifecycle digest email, **General → Privacy → Your data**, or the door on `/education/data`.
+Trigger: the weekly data-lifecycle digest email, **General → Privacy → Trash**, or the door on `/education/data`.
 
-Path:
+Path: all three land on **`/trash`** (`app/(core)/trash/page.tsx`, engine in `features/trash/`).
+`/settings/data` is a bare redirect kept for old email links. This section stays here
+only to stop the next agent rebuilding the page inside settings.
 
-- `DataLifecyclePage` (`features/settings/pages/`) mounts `useDataLifecycle` (`features/settings/data-lifecycle/`), which reads `platform.lifecycle_user_notice()` once.
-- Pending groups inside their warning window render distinctly — they are the ones the digest emailed about.
-- **Keep** calls `lifecycle_user_keep(token)`, drops the group optimistically, then refetches; a failure restores the previous notice verbatim.
-
-Exit: nothing pending → a short reassuring empty state, which is the NORMAL state (the platform retention floor is `never`).
+Exit: nothing pending → `/trash` looks exactly as it always has, which is the NORMAL
+state (the platform retention floor is `never`).
 
 ---
 
@@ -215,7 +214,7 @@ Exit: nothing pending → a short reassuring empty state, which is the NORMAL st
 - **Tabs never import Redux.** They can call `useSelector` only for _read-only derived state that isn't a preference_ (e.g. in `WindowsTab` where open-window counts come directly from `windowManager.windows`). For anything writable, `useSetting` is the only path.
 - **Tabs never import shadcn.** All form controls come from `@/components/official/settings`. The one documented exception is `AiModelsTab`, which lazy-wraps the legacy `AiModelsPreferences` until a `SettingsModelList` primitive exists.
 - **Admin/dev overrides stay in `adminPreferences`.** The localhost-server override and desktop `target_instance_id` selector live in the same admin-gated tab and must remain local-only/dev affordances, not synced user preferences.
-- **`/settings/data` never shows an `entity_token`.** Label precedence is registry → policy → humanized token (`features/settings/data-lifecycle/labels.ts`). The registry (`platform.entity_types.label` via `entityRegistry`) comes FIRST because a retention policy is written at a SCOPE, so a user/org/node-scoped label describes the scope, not the entity — verified live 2026-08-22 mislabelling rulebooks as flashcard decks.
+- **The lifecycle surface never shows an `entity_token`.** It lives at `/trash`; label precedence is registry → policy → humanized token (`features/trash/labels.ts`). The registry (`platform.entity_types.label` via `entityRegistry`) comes FIRST because a retention policy is written at a SCOPE, so a user/org/node-scoped label describes the scope, not the entity — verified live 2026-08-22 mislabelling rulebooks as flashcard decks.
 - **`useSetting` throws at init when the slice isn't bound.** Treat that as a "fix your slice binding" signal, not a caller bug. Add to `slice-bindings.ts`.
 - **Any in-shell component that pushes a route MUST go through `useSettingsNavigate()` (or `useSettingsTabNavigate()` for tab switches).** Calling `router.push("/somewhere")` directly inside a tab silently dismisses the settings window and yanks the user out of the surface — the shell isn't aware the route changed, the overlay just blinks out and the new page renders bare. Cmd/Ctrl/middle-click "open in new tab" must keep working; the hook handles it. `SettingsLink`, `OrganizationCard`, and `UserContentTemplateManager` are the reference consumers. The Boy-scout rule applies: if you encounter a stray `router.push` inside a settings-mounted component while working in a file, route it through the hook in the same change.
 - **Writing through `useSetting` for `windowManager` requires an action-only key.** `toggleHidden`, `restoreAll` — no `read` roundtrip. For the full `minimizeAll(payload)` write you need viewport dims, so call `useAppDispatch()` directly with `minimizeAll(...)` (see `WindowsTab`).
@@ -264,6 +263,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-08-23` — **Folded `/settings/data` into `/trash` and deleted the second surface.** `/trash` already listed everything a person soft-deleted from the same registry, so a separate "Your data" page was the exact duplication the data-lifecycle project exists to prevent. The lifecycle engine moved to `features/trash/` (`lifecycleService.ts`, `labels.ts`); `DataLifecyclePage.tsx` and `useDataLifecycle.ts` are gone; `app/(core)/settings/data/page.tsx` is now a bare redirect kept only for old digest emails; the Privacy and `/education/data` doors point at `/trash`. Verified live as `test@test.com`: identical to before with no policy (the production state), and with a seeded user-scoped policy the pending groups, warning-window treatment, per-row "Goes in N days", archived section, bulk **Keep them all**, and single-item **Restore** all behave. Cross-repo authority: `../common-docs/projects/data-lifecycle-platform/TRASH.md`.
 - `2026-08-22` — **`/settings/data` — the user-facing data lifecycle page (Phase 5 client half).** New route `app/(core)/settings/data/page.tsx` → `features/settings/pages/DataLifecyclePage.tsx`, backed by `features/settings/data-lifecycle/` (`lifecycleService.ts`, `useDataLifecycle.ts`, `labels.ts`). Direct-to-Supabase RPCs, no server hop, no new slice, no new dependency. Doors added from **General → Privacy** (`SettingsLink`) and from `/education/data`. Verified live as a non-admin against seeded policy rows: pending groups, the warning-window treatment, the archived section, and **Keep** actually clearing `deleted_at`. Cross-repo authority: `../common-docs/projects/data-lifecycle-platform/`.
 - `2026-08-22` — Integrations renders the canonical first-party Google connector directory alongside MCP and GitHub connections instead of hiding those live grants behind Chat alone.
 - `2026-08-16` — `SettingsSegmented`: option labels are `whitespace-nowrap` and a `fullWidth` control scrolls horizontally when its options genuinely don't fit (6-option controls at mobile widths were shattering labels mid-word — found by the change-policy surface, fixed at the primitive).

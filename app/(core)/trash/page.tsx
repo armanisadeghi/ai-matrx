@@ -190,7 +190,8 @@ export default function TrashPage() {
   const loadNotice = useCallback(async () => {
     try {
       setNotice(await fetchLifecycleNotice());
-    } catch {
+    } catch (e) {
+      console.error("[trash] lifecycle notice unavailable", e);
       setNotice(null);
     }
   }, []);
