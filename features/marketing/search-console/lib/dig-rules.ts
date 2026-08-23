@@ -40,6 +40,12 @@ export interface GscDigRuleContent {
    *  digs across all classes. A class-pinned page rule evaluates over the
    *  query_page profile server-side (class travels with the query). */
   trafficClass: GscTrafficClass | null;
+  /** C5 — pin the rule to ONE value LEVEL (this site's `value_band`
+   *  vocabulary, plus the resolver's own `unvalued` / `negative`). Null digs
+   *  across every level. Like the class pin, a level-pinned page rule
+   *  evaluates over query_page: a level is a keyword fact, and it travels
+   *  with the query. */
+  level: string | null;
 }
 
 export function isDigMetric(value: unknown): value is GscDigMetric {
@@ -157,6 +163,7 @@ export function digRuleContentKey(rule: GscDigRuleContent): string {
   return JSON.stringify([
     rule.dimension,
     rule.trafficClass,
+    rule.level,
     rule.conditions.map((c) => [c.metric, c.op, c.value]),
     rule.sortMetric,
     rule.sortDir,

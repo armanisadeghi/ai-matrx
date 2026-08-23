@@ -27,7 +27,11 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
+import type {
+  MatcherKind,
+  WorthEffect,
+} from "@/features/marketing/seo/value-system/suggestions/proposal";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -42,7 +46,7 @@ const assertData = makeAssertData("reach your keyword dimensions");
  * shown as-is, never replaced with "something went wrong".
  */
 const GOVERNANCE_CODE =
-  /^(seo_registry_[a-z_]+|seo_rule_[a-z_]+|gsc_no_keywords|gsc_site_[a-z_]+):\s*/;
+  /^(seo_registry_[a-z_]+|seo_rule_[a-z_]+|seo_matcher_[a-z_]+|seo_worth_[a-z_]+|seo_suggest_[a-z_]+|gsc_no_keywords|gsc_site_[a-z_]+):\s*/;
 
 function assertGoverned<T>(data: T | null, error: unknown, action: string): T {
   if (error) {
@@ -57,6 +61,16 @@ function assertGoverned<T>(data: T | null, error: unknown, action: string): T {
 
 export type DimensionScope = "platform" | "site";
 export type DimensionCardinality = "single" | "multi";
+/**
+ * P20 — a dimension declares what KIND of thing it records.
+ *  - `intrinsic`   describes the keyword itself. Stable; no as-of.
+ *  - `situational` describes the keyword's situation ON THIS SITE RIGHT NOW.
+ *    Volatile, carries an as-of, and is re-derived by the engine on demand or
+ *    on cadence. Dig Here rules are what fill it.
+ * Same machinery either way — deliberately distinguished (never merged into
+ * one undifferentiated list, and never split into two systems).
+ */
+export type DimensionNature = "intrinsic" | "situational";
 
 /** One choice inside a dimension — `equipment_class` → `crt`. */
 export interface FacetValue {
@@ -73,6 +87,14 @@ export interface FacetValue {
    * DB refuses to retire the last one on a dimension.
    */
   abstain: boolean;
+  /**
+   * When this site's newest stamp on the value was written. Situational values
+   * always render it — a present-tense claim with no time behind it is not a
+   * fact, it is a guess (THE TRUE CURRENT STATUS law).
+   */
+  as_of: string | null;
+  /** How many Dig Here rules fill this value (situational values only). */
+  condition_matcher_count: number;
 }
 
 export interface FacetDimension {
@@ -82,6 +104,7 @@ export interface FacetDimension {
   description: string | null;
   scope: DimensionScope;
   cardinality: DimensionCardinality;
+  nature: DimensionNature;
   site_id: string | null;
   is_system: boolean;
   value_count: number;
@@ -102,6 +125,10 @@ export interface FacetDimension {
   can_abstain: boolean;
   /** Plain-language sentence from the DB. Render as-is; do not paraphrase. */
   readiness_note: string;
+  /** Dig Here rules feeding this dimension's values (situational only). */
+  condition_matcher_count: number;
+  /** Newest stamp across the dimension's values on this site. */
+  situational_as_of: string | null;
   values: FacetValue[];
 }
 
@@ -112,6 +139,7 @@ interface CatalogRow {
   description: string | null;
   scope: string;
   cardinality: string;
+  nature: string;
   site_id: string | null;
   is_system: boolean;
   value_count: number;
@@ -120,6 +148,8 @@ interface CatalogRow {
   is_ready: boolean;
   can_abstain: boolean;
   readiness_note: string | null;
+  condition_matcher_count: number;
+  situational_as_of: string | null;
   facet_values: Json;
 }
 
@@ -141,6 +171,11 @@ function toFacetValues(raw: Json): FacetValue[] {
         keyword_count:
           typeof row.keyword_count === "number" ? row.keyword_count : 0,
         abstain: row.abstain === true,
+        as_of: typeof row.as_of === "string" ? row.as_of : null,
+        condition_matcher_count:
+          typeof row.condition_matcher_count === "number"
+            ? row.condition_matcher_count
+            : 0,
       },
     ];
   });
@@ -169,6 +204,7 @@ export async function getFacetDimensionCatalog(
     description: row.description,
     scope: row.scope === "site" ? "site" : "platform",
     cardinality: row.cardinality === "multi" ? "multi" : "single",
+    nature: row.nature === "situational" ? "situational" : "intrinsic",
     site_id: row.site_id,
     is_system: row.is_system,
     value_count: Number(row.value_count ?? 0),
@@ -177,6 +213,8 @@ export async function getFacetDimensionCatalog(
     is_ready: row.is_ready !== false,
     can_abstain: row.can_abstain === true,
     readiness_note: row.readiness_note ?? "",
+    condition_matcher_count: Number(row.condition_matcher_count ?? 0),
+    situational_as_of: row.situational_as_of ?? null,
     values: toFacetValues(row.facet_values),
   }));
 }
@@ -186,6 +224,12 @@ export interface DimensionDraft {
   label: string;
   description: string | null;
   cardinality: DimensionCardinality;
+  /**
+   * Omit to leave an existing dimension's nature exactly as it is — an editor
+   * that is only renaming must never silently reclassify what a dimension
+   * records. New dimensions default to `intrinsic` server-side.
+   */
+  nature?: DimensionNature;
   /** The site that owns it. NULL is a PLATFORM dimension — super admins only. */
   siteId: string | null;
 }
@@ -204,6 +248,7 @@ export async function upsertFacetDimension(
     p_description: draft.description ?? undefined,
     p_site_id: draft.siteId ?? undefined,
     p_cardinality: draft.cardinality,
+    p_nature: draft.nature ?? undefined,
   });
   return assertGoverned(
     response.data,
@@ -257,3 +302,104 @@ export function toIdentitySlug(text: string): string {
 
 /** The DB's rule, mirrored ONLY to disable a button before a doomed round-trip. */
 export const IDENTITY_PATTERN = /^[a-z][a-z0-9_]*$/;
+
+// ── Matchers and worth — THE write paths (C9) ───────────────────────────────
+//
+// A matcher only FINDS keywords; the stamp is the truth (P19). A worth row is
+// what a value is worth to THIS site; most values have none (P17). Both tables
+// landed in C1 with the migration as their only writer — these two functions
+// are the canonical client path, shared by the Dimensions editor and by
+// keyword-meaning suggestion approval so approval never opens a second writer.
+
+export interface MatcherDraft {
+  siteId: string;
+  /** `platform.categories.id` of the VALUE the matcher hangs on. */
+  valueId: string;
+  kind: MatcherKind;
+  /** Text matchers. */
+  pattern?: string | null;
+  /** `place` / `fact` / `condition` targets — exactly one is set per kind. */
+  placeId?: string | null;
+  factValueId?: string | null;
+  conditionRuleId?: string | null;
+  origin?: MatcherOrigin;
+  notes?: string | null;
+  enabled?: boolean;
+}
+
+export type MatcherOrigin = "human" | "pack" | "agent" | "migration";
+
+export type DimensionMatcherRow =
+  Database["seo"]["Functions"]["dimension_matcher_upsert"]["Returns"][number];
+
+/**
+ * Create or update ONE matcher. Idempotent on (site, value, kind, target) in
+ * the DB — re-adding the same rule updates the row instead of stamping every
+ * matching keyword twice from two identical rules.
+ */
+export async function upsertDimensionMatcher(
+  draft: MatcherDraft,
+): Promise<DimensionMatcherRow> {
+  const response = await (await seoDb()).rpc("dimension_matcher_upsert", {
+    p_site_id: draft.siteId,
+    p_value_id: draft.valueId,
+    p_kind: draft.kind,
+    p_pattern: draft.pattern ?? undefined,
+    p_place_id: draft.placeId ?? undefined,
+    p_fact_value_id: draft.factValueId ?? undefined,
+    p_condition_rule_id: draft.conditionRuleId ?? undefined,
+    p_origin: draft.origin ?? "human",
+    p_notes: draft.notes ?? undefined,
+    p_enabled: draft.enabled ?? true,
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "save this matcher",
+  );
+  const row = rows[0];
+  if (!row) throw new Error("The matcher was not saved.");
+  return row;
+}
+
+/** Retire a matcher. Existing stamps stay until the engine is re-run. */
+export async function deleteDimensionMatcher(
+  matcherId: string,
+): Promise<boolean> {
+  const response = await (await seoDb()).rpc("dimension_matcher_delete", {
+    p_matcher_id: matcherId,
+  });
+  return Boolean(
+    assertGoverned(response.data, response.error, "remove this matcher"),
+  );
+}
+
+export type WorthDraft = {
+  siteId: string;
+  valueId: string;
+  /** `clear` REMOVES the row — "no worth at all" is the default state (P17). */
+  effect: WorthEffect;
+  /** Required for `add` and `scale`; the DB refuses a `scale` outside 0.05–5. */
+  amount?: number | null;
+  origin?: MatcherOrigin;
+  notes?: string | null;
+};
+
+export type SiteValueWorthRow =
+  Database["seo"]["Functions"]["site_value_worth_upsert"]["Returns"][number];
+
+/** Set (or clear) what one value is worth to one site. */
+export async function upsertSiteValueWorth(
+  draft: WorthDraft,
+): Promise<SiteValueWorthRow | null> {
+  const response = await (await seoDb()).rpc("site_value_worth_upsert", {
+    p_site_id: draft.siteId,
+    p_value_id: draft.valueId,
+    p_effect: draft.effect,
+    p_amount: draft.amount ?? undefined,
+    p_origin: draft.origin ?? "human",
+    p_notes: draft.notes ?? undefined,
+  });
+  const rows = assertGoverned(response.data, response.error, "save this worth");
+  return rows[0] ?? null;
+}

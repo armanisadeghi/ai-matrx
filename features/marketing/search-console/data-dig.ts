@@ -84,6 +84,7 @@ function ruleWriteColumns(
     row_limit: input.content.rowLimit,
     base_filters: cleanFilters(input.content.baseFilters),
     traffic_class: input.content.trafficClass,
+    level: input.content.level,
     site_id: input.siteId,
     organization_id: input.organizationId,
   };
@@ -156,6 +157,7 @@ export async function adoptDigTemplate(
       row_limit: template.row_limit,
       base_filters: template.base_filters,
       traffic_class: template.traffic_class,
+      level: template.level,
       site_id: siteId,
       organization_id: resolvedOrganizationId,
       created_by: session.user.id,
@@ -198,8 +200,132 @@ export async function runGscDig(
       ...(content.trafficClass
         ? { p_traffic_class: content.trafficClass }
         : {}),
+      ...(content.level ? { p_level: content.level } : {}),
     })
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error, "run that dig");
   return { rows, total: rows[0]?.total_count ?? 0 };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * C5 — SAVE MATCHES AS A STAMP
+ *
+ * A dig rule is a condition MATCHER on a situational dimension's value: the
+ * rule keeps finding what it always found, and the engine writes what it
+ * finds onto the keywords as a stamp with an as-of. All three calls go
+ * through SECURITY DEFINER RPCs — the matcher table is never written from
+ * the browser, and re-evaluation is the DB's job, not a loop up here.
+ * SoR: common-docs/systems/marketing/seo/seo-keywords/value-system.md.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/** One saved stamp: which value a rule fills, how full it is, how fresh. */
+export interface DigRuleStamp {
+  matcher_id: string;
+  rule_id: string | null;
+  rule_name: string | null;
+  dimension_id: string;
+  dimension: string;
+  dimension_label: string;
+  value_id: string;
+  value: string;
+  value_label: string;
+  enabled: boolean;
+  last_evaluated_at: string | null;
+  match_count: number | null;
+  stamp_count: number;
+  as_of: string | null;
+}
+
+/** Every value this site's dig rules fill (optionally just one rule's). */
+export async function listDigRuleStamps(
+  siteId: string,
+  ruleId?: string | null,
+  signal?: AbortSignal,
+): Promise<DigRuleStamp[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_dig_rule_stamps", {
+      p_site_id: siteId,
+      ...(ruleId ? { p_rule_id: ruleId } : {}),
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(
+    response.data,
+    response.error,
+    "read what your dig rules save",
+  ) as DigRuleStamp[];
+}
+
+/** Attach a rule to a situational value. Returns the matcher id. */
+export async function saveDigRuleStamp(
+  siteId: string,
+  ruleId: string,
+  valueId: string,
+): Promise<string> {
+  const response = await (await seoDb()).rpc("gsc_dig_rule_stamp_upsert", {
+    p_site_id: siteId,
+    p_rule_id: ruleId,
+    p_value_id: valueId,
+  });
+  return assertData(
+    response.data,
+    response.error,
+    "save this rule's matches as a stamp",
+  ) as string;
+}
+
+/** Detach: the matcher goes and so do the stamps it put there (never pins). */
+export async function removeDigRuleStamp(
+  siteId: string,
+  matcherId: string,
+): Promise<{ stamps_removed: number }> {
+  const response = await (await seoDb()).rpc("gsc_dig_rule_stamp_remove", {
+    p_site_id: siteId,
+    p_matcher_id: matcherId,
+  });
+  const result = assertData(
+    response.data,
+    response.error,
+    "remove this saved stamp",
+  ) as { stamps_removed?: number };
+  return { stamps_removed: Number(result?.stamps_removed ?? 0) };
+}
+
+export interface ConditionEvaluation {
+  window: { start: string; end: string; compare_start: string; compare_end: string };
+  matchers: number;
+  stamped: number;
+  removed: number;
+  evaluated_at: string;
+  results: Array<{
+    matcher_id: string;
+    rule?: string;
+    dimension?: string;
+    value?: string;
+    matched?: number;
+    stamped?: number;
+    removed?: number;
+    error?: string;
+  }>;
+}
+
+/**
+ * Re-derive situational stamps. Scope it to ONE matcher, ONE dimension, or
+ * (deliberately) the site's whole situational set; the window defaults to the
+ * site's current one server-side. THE SCOPE RULE lives in the RPC — it never
+ * walks more than one window.
+ */
+export async function evaluateConditionMatchers(
+  siteId: string,
+  scope: { matcherId?: string; dimensionId?: string } = {},
+): Promise<ConditionEvaluation> {
+  const response = await (await seoDb()).rpc("fn_evaluate_condition_matchers", {
+    p_site_id: siteId,
+    ...(scope.matcherId ? { p_matcher_ids: [scope.matcherId] } : {}),
+    ...(scope.dimensionId ? { p_dimension_id: scope.dimensionId } : {}),
+  });
+  return assertData(
+    response.data,
+    response.error,
+    "re-evaluate these stamps",
+  ) as unknown as ConditionEvaluation;
 }

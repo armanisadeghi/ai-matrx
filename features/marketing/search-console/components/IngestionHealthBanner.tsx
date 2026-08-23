@@ -64,6 +64,13 @@ export function IngestionHealthBanner({
   // Severity is decided ONCE, server-side, in `seo.gsc_ingestion_health` —
   // a brand-new site that has simply never synced is not the same event as
   // five days of dead ingestion, and must not wear the same red.
+  // A schedule that is switched OFF is not a schedule that is failing, and it
+  // is not "gaps in the data" either — it is a cause with a different repair
+  // (an administrator turns it back on; no retry helps). The server decides
+  // severity; the title has to name the CAUSE or the reader chases the wrong
+  // fix, which is exactly what "The nightly job is failing" did on 2026-08-23
+  // while the job was in fact paused.
+  const dispatcherOff = row.dispatcher_enabled === false;
   const tone =
     row.severity === "info"
       ? {
@@ -71,17 +78,27 @@ export function IngestionHealthBanner({
           icon: "text-muted-foreground",
           title: "This site has no Search Console data yet",
         }
-      : row.severity === "warning"
+      : dispatcherOff
         ? {
-            box: "border-warning/40 bg-warning/10",
-            icon: "text-warning",
-            title: "Search Console data has gaps",
+            box:
+              row.severity === "warning"
+                ? "border-warning/40 bg-warning/10"
+                : "border-destructive/40 bg-destructive/10",
+            icon:
+              row.severity === "warning" ? "text-warning" : "text-destructive",
+            title: "Nightly Search Console sync is switched off",
           }
-        : {
-            box: "border-destructive/40 bg-destructive/10",
-            icon: "text-destructive",
-            title: "Search Console data is not up to date",
-          };
+        : row.severity === "warning"
+          ? {
+              box: "border-warning/40 bg-warning/10",
+              icon: "text-warning",
+              title: "Search Console data has gaps",
+            }
+          : {
+              box: "border-destructive/40 bg-destructive/10",
+              icon: "text-destructive",
+              title: "Search Console data is not up to date",
+            };
 
   return (
     <div
@@ -116,6 +133,9 @@ export function IngestionHealthBanner({
               ["Nightly job last run", row.dispatcher_last_run_at],
               ["Nightly job status", row.dispatcher_last_status],
               ["Nightly job error", row.dispatcher_last_error],
+              ["Nightly job enabled", row.dispatcher_enabled],
+              ["Nightly job paused at", row.dispatcher_paused_at],
+              ["Nightly job paused reason", row.dispatcher_paused_reason],
             ])
           }
           agent={() => ({
