@@ -142,6 +142,14 @@ if $STRICT; then
         # jobs; this is where the frontend half is enforced, because this repo
         # deliberately has no commit-time hook and no CI (CLAUDE.md).
         "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        # THE `__kind` MARKER LAW is BLOCKING, in both modes. `__kind` is part of
+        # the data (KINDS_EVERYWHERE_PLAN §4.2); the 2026-08-23 annihilation left
+        # ZERO violations and a small, reason-carrying blessed list, so there is
+        # no backlog to grandfather. A new stripper is how stored examples and
+        # instances lost their identity in the first place — it never earns an
+        # advisory carve-out. `pnpm check:kind-marker-law --list` explains every
+        # lawful door.
+        "The __kind marker law (no stripping)|pnpm check:kind-marker-law"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # Docs guards went STRICT 2026-08-15 (guards-advisory-to-strict): both
         # repos reached zero violations, so a finding here is new drift, not
@@ -268,6 +276,14 @@ else
         # jobs; this is where the frontend half is enforced, because this repo
         # deliberately has no commit-time hook and no CI (CLAUDE.md).
         "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        # THE `__kind` MARKER LAW is BLOCKING, in both modes. `__kind` is part of
+        # the data (KINDS_EVERYWHERE_PLAN §4.2); the 2026-08-23 annihilation left
+        # ZERO violations and a small, reason-carrying blessed list, so there is
+        # no backlog to grandfather. A new stripper is how stored examples and
+        # instances lost their identity in the first place — it never earns an
+        # advisory carve-out. `pnpm check:kind-marker-law --list` explains every
+        # lawful door.
+        "The __kind marker law (no stripping)|pnpm check:kind-marker-law"
         "Content IR / kinds test suite|pnpm test:content-ir"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         # STRICT since 2026-08-15 (also in the strict list above): the Wave-5
