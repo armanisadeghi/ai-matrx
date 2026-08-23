@@ -125,13 +125,19 @@ export async function listKindComponentsFromTables(): Promise<
 > {
   const supabase = await getSupabase();
 
+  // Slug resolution rides the SAME query as an embedded join. The previous
+  // two-query pattern built an `.in("id", …)` URL from every distinct
+  // definition id — ~15.4 kB of query string at current row counts, at the
+  // edge of the gateway's 16 kB URI cap; one more growth spurt and the warm
+  // load 414s, which takes down EVERY db kind component (2026-08-22).
   const { data: rows, error } = await supabase
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by",
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
     )
     .is("deleted_at", null)
+    .is("kind_definition.deleted_at", null)
     .order("is_default", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true })
@@ -143,23 +149,12 @@ export async function listKindComponentsFromTables(): Promise<
   }
   if (!rows || rows.length === 0) return [];
 
-  // Resolve kind_definition_id → kind slug (a small `in` read, mirroring the
-  // edge-resolution pattern in schema-source-kind-tables.ts).
-  const ids = [...new Set(rows.map((r) => r.kind_definition_id))];
-  const { data: defs, error: defErr } = await supabase
-    .schema("content_ir")
-    .from("kind_definition")
-    .select("id, kind")
-    .in("id", ids)
-    .is("deleted_at", null);
-  if (defErr) {
-    throw new KindComponentTablesError(
-      `Failed to resolve kind slugs for kind_component: ${defErr.message}`,
-    );
-  }
   const slugById = new Map<string, string>();
-  for (const d of defs ?? []) slugById.set(d.id, d.kind);
-
+  for (const r of rows) {
+    const embedded = (r as { kind_definition?: { kind?: string } | null })
+      .kind_definition;
+    if (embedded?.kind) slugById.set(r.kind_definition_id, embedded.kind);
+  }
   return projectRows(rows, slugById);
 }
 

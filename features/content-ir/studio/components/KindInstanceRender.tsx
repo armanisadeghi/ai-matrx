@@ -121,13 +121,28 @@ export default function KindInstanceRender({
     const unsubscribe = componentRegistry.subscribe(syncRoutingStatus);
     syncRoutingStatus();
 
+    // Eager targeted resolve FIRST — the same seam the streaming path uses
+    // (stream-block-accumulator.ts): two indexed single-kind reads land this
+    // kind's own resolver row in ~100ms, so first paint shows the real
+    // component instead of the JSON fallback. The warm sweep below (megabytes,
+    // several round trips) is the backstop, never the gate — before this, the
+    // component only appeared after the full sweep landed, which users
+    // experienced as "it renders after I switch tabs" (2026-08-22).
+    void componentRegistry.requestComponent(kind, "web", "output");
+
+    // Sampled BEFORE the warm: refresh-on-view only earns its keep when the
+    // registry was already warm from an earlier mount; on a cold mount it
+    // would re-download the identical list ensureWarm is about to fetch.
+    const wasAlreadyWarm = componentRegistry.getVersion() > 0;
     void Promise.allSettled([
       kindRegistry.ensureWarm(),
       componentRegistry.ensureWarm(),
     ]).then(async () => {
       warmed = true;
       syncRoutingStatus();
-      await componentRegistry.refreshKindComponents();
+      if (wasAlreadyWarm) {
+        await componentRegistry.refreshKindComponents();
+      }
       syncRoutingStatus();
     });
 
