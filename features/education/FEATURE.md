@@ -60,6 +60,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 - **Taxonomy is evidence-backed** (Khan/IXL/Quizlet/Course Hero, June 2026): subject-first; Levels is a three-band model (per-grade K–5 → bands → professional); Exam Prep is its own flat cross-cutting axis. Don't restructure without re-checking the research + the user.
 - **Relocation wired:** old `(public)/education/*` deleted; `nav-data.ts` + `features/math` back-links repoint to `quick-math`; `Target` added to `shellIconMap.ts`.
 - **A learner declining microphone permission is expected input, not a crash.** Voice-test surfaces show the browser-settings repair path inline and must not send `NotAllowedError` / `PermissionDeniedError` through `console.error`; unexpected mic failures stay loud.
+- **Study-spine product reads declare `mine`; RLS only authorizes.** `studyService` filters sessions, attempts, mastery, goals, and mutations by `created_by = requireUserId()` and streaks by `user_id`. Admin-wide RLS access must never turn a learner surface into an all-users view or make a one-row query fail cardinality.
 
 ## Related features
 
@@ -78,6 +79,7 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-08-23** — **Study-spine “mine” scope is explicit across the shared service.** Platform admins could read every `study_streak` row by design, while `getStreak()` issued a bare `.maybeSingle()` and failed `PGRST116` as soon as three users had rows; the same RLS-as-view defect could mix other users' sessions, attempts, mastery, analytics, and goals into admin learner surfaces. Every current-user read and mutation in `studyService` now filters its owner key explicitly, with a source-contract regression suite covering all 21 operations and the multi-query session/journal paths. The database, primary key, trigger, and admin RLS policy were correct and unchanged.
 - **2026-08-22** — Agent Manifest Campaign wave 1 (flashcards consumers): tutor lanes read the new
   kinds (`live_help_answer`, `study_tip`, `batch_review` via the ONE `parseSessionReview` reader,
   incl. spoken-practice review), `LiveHelpAnswerBlock` renders help through the kind component on

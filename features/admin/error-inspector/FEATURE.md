@@ -22,7 +22,10 @@ newest-first, identical signatures deduped with an occurrence count.
 **Doctrine: structured errors are the rule, generic browser errors the fallback.**
 The high-value adapters consume our OWN typed error channels (the agent stream,
 the Python API, Supabase). `console.error` / `window 'error'` / rejections are
-the safety net, not the main event.
+the safety net, not the main event. A caller receiving an error already captured
+by a structured adapter must return or present it without mirroring it through
+`console.error`; source is part of capture identity, so the mirror persists a
+second symptom instead of deduping the incident.
 
 **Capture adapters (all → `captureError`):**
 
@@ -308,6 +311,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-23 — **Study PostgREST failures persist once, with their structured cause.** `study/serviceError.fail()` still returns the complete message/details/hint/code string to callers, but recognizes the canonical PostgREST result shape and no longer mirrors that already-captured error through `console.error`. The captured `study_streak` `PGRST116` had produced two in-memory red entries and two `ops.system_error` rows—one actionable `supabase-postgrest` record and one generic console symptom. Non-PostgREST failures still scream through the console fallback; focused tests pin both branches.
 - 2026-08-22 — **Expected Rulebook concurrency feedback stays local.** The exact `/masterwork/` stale-version toast is yellow because compare-and-swap prevented an overwrite and kept the draft on screen; unrelated save failures and concurrency messages remain red.
 - 2026-08-19 — **Guests and first-seven-day accounts retain every diagnostic tier.** Existing Supabase Auth `created_at` and `is_anonymous` fields now flow into Redux, making eligibility a zero-query local check; established accounts remain red-only.
 - 2026-08-19 — **Guest red errors survive the browser session.** Known guest fingerprints now persist through the internal diagnostics endpoint into `public.system_error`, retaining the same red-only, production, dedupe, and throttle boundaries as authenticated capture.

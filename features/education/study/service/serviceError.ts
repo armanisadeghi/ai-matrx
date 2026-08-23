@@ -42,10 +42,29 @@ export function describeError(error: unknown): string {
   return "Unknown error";
 }
 
-/** Log the described error loudly and return the `StudyResult` failure shape. */
+/** PostgREST result errors are already captured with full structure by the client proxy. */
+export function isPostgrestResultError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as {
+    code?: unknown;
+    details?: unknown;
+    hint?: unknown;
+    message?: unknown;
+  };
+  return (
+    typeof candidate.code === "string" &&
+    typeof candidate.message === "string" &&
+    Object.prototype.hasOwnProperty.call(candidate, "details") &&
+    Object.prototype.hasOwnProperty.call(candidate, "hint")
+  );
+}
+
+/** Return the failure; log only errors the structured Supabase adapter did not capture. */
 export function fail<T>(context: string, error: unknown): StudyResult<T> {
   const message = describeError(error);
-  console.error(`[study] ${context}: ${message}`, error);
+  if (!isPostgrestResultError(error)) {
+    console.error(`[study] ${context}: ${message}`, error);
+  }
   return { data: null, error: `${context}: ${message}` };
 }
 

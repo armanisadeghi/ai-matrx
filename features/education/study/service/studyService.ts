@@ -4,7 +4,8 @@
 // in the `education` schema. Mode-agnostic — every study mode (flashcards,
 // quizzes, practice tests, spoken drills) opens a session here and records
 // attempts through the SAME `study_record_attempt` RPC, which is the only path
-// that atomically advances mastery. Reads go direct via supabase-js (RLS-gated).
+// that atomically advances mastery. Reads go direct via supabase-js and declare
+// their current-user scope explicitly; RLS remains the authorization ceiling.
 // Never throws — every method returns `StudyResult<T>`.
 //
 // Why a service (not ad-hoc `.from()` at callsites): the attempt-writer must be
@@ -14,6 +15,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { getUserId, requireUserId } from "@/utils/auth/getUserId";
 import type { Json } from "@/types/database.types";
 import { asJsonObject, mergeJsonColumn } from "@/lib/supabase/mergeJsonColumn";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -215,7 +217,7 @@ export const studyService = {
   },
 
   /**
-   * The current user's study sessions (RLS-scoped), newest-first. Optional
+   * The current user's explicitly scoped study sessions, newest-first. Optional
    * filters narrow by source set, mode, and status. This is the read path the
    * sessions-history / results UI consumes — the mode-agnostic spine means the
    * same browser serves flashcards, quizzes, and every future mode.
@@ -224,7 +226,12 @@ export const studyService = {
     filter: ListSessionsFilter = {},
   ): Promise<StudyResult<StudySessionRow[]>> {
     try {
-      let q = EDU().from("study_session").select("*").is("deleted_at", null);
+      const userId = requireUserId();
+      let q = EDU()
+        .from("study_session")
+        .select("*")
+        .eq("created_by", userId)
+        .is("deleted_at", null);
       if (filter.setId) q = q.eq("source_set_id", filter.setId);
       if (filter.mode) q = q.eq("mode", filter.mode);
       if (filter.status) q = q.eq("status", filter.status);
@@ -248,9 +255,11 @@ export const studyService = {
   ): Promise<StudyResult<Record<string, SessionAttemptSummary>>> {
     if (sessionIds.length === 0) return { data: {}, error: null };
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_attempt")
         .select("session_id, result, score_value, is_manually_edited")
+        .eq("created_by", userId)
         .in("session_id", sessionIds)
         .is("deleted_at", null);
       if (error) return fail("getAttemptSummariesForSessions", error);
@@ -296,10 +305,12 @@ export const studyService = {
     sessionId: string,
   ): Promise<StudyResult<SessionWithAttempts | null>> {
     try {
+      const userId = requireUserId();
       const { data: session, error: sErr } = await EDU()
         .from("study_session")
         .select("*")
         .eq("id", sessionId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .maybeSingle();
       if (sErr) return fail("getSession", sErr);
@@ -308,6 +319,7 @@ export const studyService = {
         .from("study_attempt")
         .select("*")
         .eq("session_id", sessionId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
       if (aErr) return fail("getSession", aErr);
@@ -326,10 +338,12 @@ export const studyService = {
   /** Soft-delete a session (sets deleted_at; attempts/mastery are untouched). */
   async deleteSession(sessionId: string): Promise<StudyResult<{ id: string }>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_session")
         .update({ deleted_at: new Date().toISOString() } as never)
         .eq("id", sessionId)
+        .eq("created_by", userId)
         .select("id")
         .single();
       if (error) return fail("deleteSession", error);
@@ -345,10 +359,12 @@ export const studyService = {
     patch: SessionPatch,
   ): Promise<StudyResult<StudySessionRow>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_session")
         .update(patch as never)
         .eq("id", id)
+        .eq("created_by", userId)
         .select("*")
         .single();
       if (error) return fail("updateSession", error);
@@ -378,6 +394,8 @@ export const studyService = {
     sessionId: string,
     artifact: SessionArtifact,
   ): Promise<StudyResult<null>> {
+    const userId = getUserId();
+    if (!userId) return fail("appendSessionArtifact", "Not authenticated");
     const SELECT = "id, version, metadata";
     const result = await mergeJsonColumn<SessionMetadataRow>({
       fetchCurrent: () =>
@@ -385,6 +403,7 @@ export const studyService = {
           .from("study_session")
           .select(SELECT)
           .eq("id", sessionId)
+          .eq("created_by", userId)
           .is("deleted_at", null)
           .maybeSingle<SessionMetadataRow>(),
       readColumn: (row) => row.metadata,
@@ -423,6 +442,7 @@ export const studyService = {
           .from("study_session")
           .update({ metadata: value as never, version: nextVersion } as never)
           .eq("id", sessionId)
+          .eq("created_by", userId)
           .eq("version", expectedVersion)
           .select(SELECT)
           .maybeSingle<SessionMetadataRow>(),
@@ -637,11 +657,13 @@ export const studyService = {
     item: ItemRef,
   ): Promise<StudyResult<StudyAttemptRow[]>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_attempt")
         .select("*")
         .eq("item_type", item.itemType)
         .eq("item_id", item.itemId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
       if (error) return fail("attemptsForItem", error);
@@ -673,10 +695,12 @@ export const studyService = {
     StudyResult<{ attempt: StudyAttemptRow; mastery: ItemMasteryRow }>
   > {
     try {
+      const userId = requireUserId();
       const { data: targetRow, error: targetErr } = await EDU()
         .from("study_attempt")
         .select("id, item_type, item_id, created_at")
         .eq("id", input.attemptId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .maybeSingle();
       if (targetErr) return fail("overrideAttempt", targetErr);
@@ -781,11 +805,13 @@ export const studyService = {
   /** The current user's mastery row for one item, or null if never studied. */
   async getMastery(item: ItemRef): Promise<StudyResult<ItemMasteryRow | null>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("item_mastery")
         .select("*")
         .eq("item_type", item.itemType)
         .eq("item_id", item.itemId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getMastery", error);
@@ -804,12 +830,14 @@ export const studyService = {
   ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
       if (items.length === 0) return { data: [], error: null };
+      const userId = requireUserId();
       const itemType = items[0].itemType;
       const itemIds = items.map((i) => i.itemId);
       const { data, error } = await EDU()
         .from("item_mastery")
         .select("*")
         .eq("item_type", itemType)
+        .eq("created_by", userId)
         .in("item_id", itemIds)
         .is("deleted_at", null);
       if (error) return fail("getMasteryBulk", error);
@@ -830,11 +858,13 @@ export const studyService = {
     state: "auto" | "collapsed" | "expanded",
   ): Promise<StudyResult<null>> {
     try {
+      const userId = requireUserId();
       const { error } = await EDU()
         .from("item_mastery")
         .update({ collapse_state: state })
         .eq("item_type", item.itemType)
         .eq("item_id", item.itemId)
+        .eq("created_by", userId)
         .is("deleted_at", null);
       if (error) return fail("setCollapseState", error);
       return { data: null, error: null };
@@ -844,7 +874,7 @@ export const studyService = {
   },
 
   /**
-   * All of the current user's mastery rows for one item_type (RLS-scoped), for
+   * All explicitly current-user-scoped mastery rows for one item_type, for
    * progress aggregation (mastery distribution, due count, struggling count).
    * Capped by `limit` — a learner with more than this many studied items is well
    * past where a client-side summary should move to an RPC.
@@ -854,10 +884,12 @@ export const studyService = {
     limit = 2000,
   ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("item_mastery")
         .select("*")
         .eq("item_type", itemType)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .order("last_attempt_at", { ascending: false })
         .limit(limit);
@@ -878,10 +910,12 @@ export const studyService = {
     limit = 50,
   ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("item_mastery")
         .select("*")
         .eq("item_type", itemType)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .lte("due_at", new Date().toISOString())
         .order("due_at", { ascending: true })
@@ -908,10 +942,12 @@ export const studyService = {
     candidateLimit = 200,
   ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("item_mastery")
         .select("*")
         .eq("item_type", itemType)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .gt("attempt_count", 0)
         .or("struggle_flag.eq.true,retrievability.lt.0.7")
@@ -937,11 +973,13 @@ export const studyService = {
     limit = 10,
   ): Promise<StudyResult<StudyAttemptRow[]>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_attempt")
         .select("*")
         .eq("item_type", itemType)
         .eq("item_id", itemId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -961,9 +999,11 @@ export const studyService = {
    */
   async getStreak(): Promise<StudyResult<StudyStreakRow | null>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_streak")
         .select("*")
+        .eq("user_id", userId)
         .maybeSingle();
       if (error) return fail("getStreak", error);
       return { data: (data ?? null) as StudyStreakRow | null, error: null };
@@ -987,10 +1027,12 @@ export const studyService = {
     filter: ListAttemptsFilter = {},
   ): Promise<StudyResult<StudyAttemptRow[]>> {
     try {
+      const userId = requireUserId();
       let q = EDU()
         .from("study_attempt")
         .select("*")
         .eq("item_type", itemType)
+        .eq("created_by", userId)
         .is("deleted_at", null);
       if (filter.since) q = q.gte("created_at", filter.since);
       q = q
@@ -1006,15 +1048,17 @@ export const studyService = {
 
   /**
    * P5 (cross-mode analytics) — ALL of the current user's mastery rows across
-   * EVERY item_type (RLS-scoped), for the unified analytics dashboard. Each row
+   * EVERY item_type, explicitly user-scoped for the unified analytics dashboard. Each row
    * carries its own `item_type`, so callers group client-side. Capped like
    * `listMastery`; moves to an RPC/materialized view once this outgrows a page.
    */
   async listAllMastery(limit = 3000): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("item_mastery")
         .select("*")
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .order("last_attempt_at", { ascending: false })
         .limit(limit);
@@ -1034,7 +1078,12 @@ export const studyService = {
     filter: ListAttemptsFilter = {},
   ): Promise<StudyResult<StudyAttemptRow[]>> {
     try {
-      let q = EDU().from("study_attempt").select("*").is("deleted_at", null);
+      const userId = requireUserId();
+      let q = EDU()
+        .from("study_attempt")
+        .select("*")
+        .eq("created_by", userId)
+        .is("deleted_at", null);
       if (filter.since) q = q.gte("created_at", filter.since);
       q = q
         .order("created_at", { ascending: true })
@@ -1074,12 +1123,17 @@ export const studyService = {
     }
   },
 
-  /** The current user's goals (RLS-scoped), soonest target date first (nulls last). */
+  /** The current user's explicitly scoped goals, soonest target date first (nulls last). */
   async listGoals(
     filter: ListGoalsFilter = {},
   ): Promise<StudyResult<StudyGoalRow[]>> {
     try {
-      let q = EDU().from("study_goal").select("*").is("deleted_at", null);
+      const userId = requireUserId();
+      let q = EDU()
+        .from("study_goal")
+        .select("*")
+        .eq("created_by", userId)
+        .is("deleted_at", null);
       if (filter.status) q = q.eq("status", filter.status);
       q = q.order("target_date", { ascending: true, nullsFirst: false });
       const { data, error } = await q;
@@ -1095,10 +1149,12 @@ export const studyService = {
     patch: GoalPatch,
   ): Promise<StudyResult<StudyGoalRow>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_goal")
         .update(patch as never)
         .eq("id", id)
+        .eq("created_by", userId)
         .select("*")
         .single();
       if (error) return fail("updateGoal", error);
@@ -1111,10 +1167,12 @@ export const studyService = {
   /** Soft-delete a goal (sets deleted_at). */
   async deleteGoal(id: string): Promise<StudyResult<{ id: string }>> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_goal")
         .update({ deleted_at: new Date().toISOString() } as never)
         .eq("id", id)
+        .eq("created_by", userId)
         .select("id")
         .single();
       if (error) return fail("deleteGoal", error);
