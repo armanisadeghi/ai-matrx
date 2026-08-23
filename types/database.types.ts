@@ -32288,6 +32288,7 @@ export type Database = {
           n: number | null
           organization_id: string | null
           status: string | null
+          user_id: string | null
         }
         Relationships: []
       }
@@ -40689,7 +40690,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           suggestion_id: string
           updated_at: string
           updated_by: string | null
@@ -40703,7 +40704,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           suggestion_id: string
           updated_at?: string
           updated_by?: string | null
@@ -40717,7 +40718,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           suggestion_id?: string
           updated_at?: string
           updated_by?: string | null
@@ -41285,7 +41286,7 @@ export type Database = {
           kg_entity_id: string | null
           match_kind: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           source_id: string
           source_kind: string
           status: string
@@ -41317,7 +41318,7 @@ export type Database = {
           kg_entity_id?: string | null
           match_kind: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           source_id: string
           source_kind: string
           status?: string
@@ -41349,7 +41350,7 @@ export type Database = {
           kg_entity_id?: string | null
           match_kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           source_id?: string
           source_kind?: string
           status?: string
@@ -41400,7 +41401,7 @@ export type Database = {
           kg_entity_id: string | null
           match_kind: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           source_id: string
           source_kind: string
           status: string
@@ -41433,7 +41434,7 @@ export type Database = {
           kg_entity_id?: string | null
           match_kind: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           source_id: string
           source_kind: string
           status?: string
@@ -41466,7 +41467,7 @@ export type Database = {
           kg_entity_id?: string | null
           match_kind?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           source_id?: string
           source_kind?: string
           status?: string
@@ -49835,6 +49836,7 @@ export type Database = {
           guidelines: string | null
           id: string
           industry: string
+          industry_id: string | null
           metadata: Json
           name: string
           organization_id: string
@@ -49861,6 +49863,7 @@ export type Database = {
           guidelines?: string | null
           id?: string
           industry: string
+          industry_id?: string | null
           metadata?: Json
           name: string
           organization_id: string
@@ -49887,6 +49890,7 @@ export type Database = {
           guidelines?: string | null
           id?: string
           industry?: string
+          industry_id?: string | null
           metadata?: Json
           name?: string
           organization_id?: string
@@ -50529,7 +50533,10 @@ export type Database = {
           p_geo_place_ids?: Json
           p_geo_places?: Json
           p_include?: string[]
+          p_item_ids?: string[]
           p_pack_id: string
+          p_reset?: boolean
+          p_rule_ids?: string[]
           p_seed_guidelines?: boolean
           p_site_id: string
           p_topic_ids?: string[]
@@ -51880,7 +51887,7 @@ export type Database = {
         }[]
       }
       starter_pack_catalog: {
-        Args: { p_status?: string }
+        Args: { p_organization_id?: string; p_status?: string }
         Returns: {
           description: string
           geo_area_count: number
@@ -51889,7 +51896,10 @@ export type Database = {
           guidelines: string
           id: string
           industry: string
+          industry_id: string
+          industry_name: string
           name: string
+          org_match: boolean
           ratification_notes: string
           ratified_at: string
           rule_count: number
@@ -51907,6 +51917,39 @@ export type Database = {
         Returns: Json
       }
       starter_pack_detail: { Args: { p_pack_id: string }; Returns: Json }
+      starter_pack_preview: {
+        Args: {
+          p_end: string
+          p_pack_id: string
+          p_rule_ids?: string[]
+          p_sample?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      starter_pack_site_adoptions: {
+        Args: { p_site_id: string }
+        Returns: {
+          adopted_at: string
+          adopted_by: string
+          adopted_by_label: string
+          archived: number
+          as_adopted: number
+          changed: number
+          missing: number
+          name: string
+          pack_id: string
+          places_pending: number
+          slug: string
+          status: string
+          total: number
+        }[]
+      }
+      starter_pack_site_status: {
+        Args: { p_pack_id: string; p_site_id: string }
+        Returns: Json
+      }
       topic_placement_status: {
         Args: { p_min_impressions?: number; p_site_id: string }
         Returns: {
