@@ -61,7 +61,10 @@ import {
   GOOGLE_WORKSPACE_SEND_SCOPES,
 } from "@/lib/googleScopes";
 import { pickGoogleWorkspaceFile } from "@/lib/googlePicker";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import {
+  isGoogleAuthorizationCancelled,
+  useGoogleAPI,
+} from "@/providers/google-provider/GoogleApiProvider";
 
 type BusyAction =
   | "connect-files"
@@ -189,6 +192,10 @@ export function GoogleWorkspaceReviewWorkspace({
     try {
       await operation();
     } catch (operationError: unknown) {
+      if (isGoogleAuthorizationCancelled(operationError)) {
+        toast.info("Google authorization cancelled");
+        return;
+      }
       const message = errorMessage(operationError);
       setError(message);
       if (!isGoogleWorkspaceInputError(operationError)) {

@@ -56,7 +56,10 @@ import {
   uniqueGoogleResourcesByProviderIdentity,
 } from "@/features/marketing/google/presentation";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import {
+  isGoogleAuthorizationCancelled,
+  useGoogleAPI,
+} from "@/providers/google-provider/GoogleApiProvider";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_YOUTUBE_SCOPES } from "@/lib/googleScopes";
@@ -236,6 +239,10 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
         description: `${discovered.length} owned channel${discovered.length === 1 ? "" : "s"} found. Choose one and load its read-only preview.`,
       });
     } catch (error) {
+      if (isGoogleAuthorizationCancelled(error)) {
+        toast.info("YouTube authorization cancelled");
+        return;
+      }
       // access-errors: ok — verified OAuth outcome from the provider flow, not an RLS guess
       toast.error("YouTube was not authorized", {
         description:

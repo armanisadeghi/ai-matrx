@@ -14,6 +14,17 @@ import type {
   GooglePlatformApi,
 } from "@/lib/googlePicker";
 
+export class GoogleAuthorizationCancelledError extends Error {
+  constructor() {
+    super("Google authorization was closed before it finished.");
+    this.name = "GoogleAuthorizationCancelledError";
+  }
+}
+
+export function isGoogleAuthorizationCancelled(error: unknown): boolean {
+  return error instanceof GoogleAuthorizationCancelledError;
+}
+
 // ===== PERFORMANCE TIMING LOGS =====
 const GOOGLE_PROVIDER_MODULE_LOAD =
   typeof window !== "undefined" ? performance.now() : 0;
@@ -340,12 +351,16 @@ export default function GoogleAPIProvider({
         },
         error_callback: (response: ErrorResponse) => {
           setAuthInProgress(false);
+          if (
+            response.type === "popup_closed" ||
+            response.type === "popup_closed_by_user"
+          ) {
+            reject(new GoogleAuthorizationCancelledError());
+            return;
+          }
           const message =
-            response.type === "popup_closed"
-              ? "Google authorization was closed before it finished."
-              : response.message ||
-                `Google authorization failed: ${response.type}`;
-          if (response.type !== "popup_closed") setError(message);
+            response.message || `Google authorization failed: ${response.type}`;
+          setError(message);
           reject(new Error(message));
         },
       });
