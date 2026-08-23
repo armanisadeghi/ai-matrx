@@ -79,7 +79,7 @@ export default function MemoryAidBlock({
   const empty =
     aid.mnemonics.length === 0 &&
     aid.analogies.length === 0 &&
-    !aid.memoryPalace.applicable;
+    !aid.memory_palace.applicable;
 
   if (empty && isComplete) {
     return (
@@ -96,15 +96,15 @@ export default function MemoryAidBlock({
 
   return (
     <div className={cn("space-y-5", className)}>
-      {aid.strategyNote && (
+      {aid.strategy_note && (
         <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          {aid.strategyNote}
+          {aid.strategy_note}
         </p>
       )}
 
       <MnemonicsSection mnemonics={aid.mnemonics} />
       <AnalogiesSection analogies={aid.analogies} />
-      <MemoryPalaceSection palace={aid.memoryPalace} />
+      <MemoryPalaceSection palace={aid.memory_palace} />
 
       {!isComplete && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

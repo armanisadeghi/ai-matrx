@@ -57,10 +57,10 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
         : {}),
       ...(aid
         ? {
-            ...(aid.strategyNote ? { aid_strategy_note: aid.strategyNote } : {}),
+            ...(aid.strategy_note ? { aid_strategy_note: aid.strategy_note } : {}),
             mnemonics: aid.mnemonics,
             analogies: aid.analogies,
-            memory_palace: aid.memoryPalace as unknown as Record<
+            memory_palace: aid.memory_palace as unknown as Record<
               string,
               unknown
             >,

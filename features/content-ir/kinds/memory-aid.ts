@@ -50,12 +50,20 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type {
+  Analogy,
+  Locus,
+  MemoryAid,
+  MemoryHint,
+  MemoryPalace,
+  Mnemonic,
+} from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Shared vocabulary — the technique enums both shapes draw from.
 // ---------------------------------------------------------------------------
 
-export const MNEMONIC_TECHNIQUES = [
+export const MNEMONIC_TECHNIQUES: readonly MnemonicTechnique[] = [
   "acronym",
   "acrostic",
   "rhyme",
@@ -64,15 +72,16 @@ export const MNEMONIC_TECHNIQUES = [
   "chunking",
 ] as const;
 
-export type MnemonicTechnique = (typeof MNEMONIC_TECHNIQUES)[number];
+/** The registry's own enum — widening it there widens it here, not the reverse. */
+export type MnemonicTechnique = Mnemonic["technique"];
 
-export const HINT_TECHNIQUES = [
+export const HINT_TECHNIQUES: readonly HintTechnique[] = [
   ...MNEMONIC_TECHNIQUES,
   "analogy",
   "association",
 ] as const;
 
-export type HintTechnique = (typeof HINT_TECHNIQUES)[number];
+export type HintTechnique = MemoryHint["technique"];
 
 // ---------------------------------------------------------------------------
 // Schemas — the single source the storage rows (`data[]` + kind_edge) and the
@@ -254,52 +263,26 @@ export const MEMORY_AID_KIND_SCHEMAS: KindSchema[] = [
 // target/for, strategy_note/strategyNote, memory_palace/memoryPalace).
 // ---------------------------------------------------------------------------
 
-export interface Mnemonic {
-  __kind: "mnemonic";
-  technique: MnemonicTechnique;
-  target: string;
-  device: string;
-  explanation: string;
-}
-
-export interface Analogy {
-  __kind: "analogy";
-  concept: string;
-  analogy: string;
-  mapping: string;
-}
-
-export interface PalaceLocus {
-  __kind: "locus";
-  place: string;
-  item: string;
-  image: string;
-}
-
-export interface MemoryPalace {
-  __kind: "memory_palace";
-  applicable: boolean;
-  theme: string;
-  loci: PalaceLocus[];
-}
+/**
+ * THE SHAPES COME FROM THE REGISTRY. `Mnemonic`, `Analogy`, `Locus`,
+ * `MemoryPalace`, `MemoryAid` and `MemoryHint` are generated from
+ * `content_ir.kind_definition` by `pnpm shape:types`. This bridge re-exports
+ * them under the names its callers already use and declares NOTHING about
+ * their fields (`check:kind-type-twins`).
+ *
+ * Field names are the REGISTRY's, verbatim — `strategy_note`, `memory_palace`.
+ * The camelCase twins this file used to publish were a second vocabulary for
+ * the same data, and the coercers had to accept both spellings to survive it.
+ */
+export type { Analogy, MemoryPalace, Mnemonic };
+/** The registry calls a palace stop a `locus`; this name is the older alias. */
+export type PalaceLocus = Locus;
 
 /** THE structured memory-aid artifact (persisted in study_media.ir_envelope). */
-export interface MemoryAidPayload {
-  __kind: "memory_aid";
-  title: string;
-  strategyNote: string | null;
-  mnemonics: Mnemonic[];
-  analogies: Analogy[];
-  memoryPalace: MemoryPalace;
-}
+export type MemoryAidPayload = MemoryAid;
 
 /** One glanceable memory aid for a single flashcard (the proactive lane). */
-export interface MemoryHintPayload {
-  __kind: "memory_hint";
-  technique: HintTechnique;
-  aid: string;
-  explanation: string;
-}
+export type MemoryHintPayload = MemoryHint;
 
 const asStr = (v: unknown): string => (typeof v === "string" ? v : "");
 
@@ -376,10 +359,10 @@ export function coerceMemoryAidPartial(raw: unknown): MemoryAidPayload {
   return {
     __kind: "memory_aid",
     title: asStr(rec.title) || "Memory aids",
-    strategyNote: asStr(rec.strategy_note ?? rec.strategyNote) || null,
+    strategy_note: asStr(rec.strategy_note) || undefined,
     mnemonics,
     analogies,
-    memoryPalace: coercePalace(rec.memory_palace ?? rec.memoryPalace),
+    memory_palace: coercePalace(rec.memory_palace),
   };
 }
 
@@ -394,7 +377,7 @@ export function coerceMemoryAid(raw: unknown): MemoryAidPayload | null {
   if (
     payload.mnemonics.length === 0 &&
     payload.analogies.length === 0 &&
-    !payload.memoryPalace.applicable
+    !payload.memory_palace.applicable
   ) {
     return null;
   }
@@ -491,8 +474,8 @@ export function memoryAidMarkdownFromValue(
           )
           .join("\n")
       : null;
-  const palace = aid.memoryPalace.applicable
-    ? aid.memoryPalace.loci
+  const palace = aid.memory_palace.applicable
+    ? aid.memory_palace.loci
         .map(
           (l, i) =>
             `${i + 1}. **${l.place}** — ${l.item}${l.image ? ` (${l.image})` : ""}`,
@@ -502,12 +485,12 @@ export function memoryAidMarkdownFromValue(
 
   return joinBlocks([
     `# ${aid.title}`,
-    aid.strategyNote,
+    aid.strategy_note ?? null,
     mnemonics ? joinBlocks(["## Mnemonics", mnemonics]) : null,
     analogies ? joinBlocks(["## Analogies & memory bridges", analogies]) : null,
     palace
       ? joinBlocks([
-          `## Memory palace${aid.memoryPalace.theme ? ` — ${aid.memoryPalace.theme}` : ""}`,
+          `## Memory palace${aid.memory_palace.theme ? ` — ${aid.memory_palace.theme}` : ""}`,
           palace,
         ])
       : null,

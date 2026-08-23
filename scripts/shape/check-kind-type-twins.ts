@@ -155,6 +155,15 @@ function readArtifact(): Artifact {
     exportedNames.add(normalizeTypeName(alias[1]));
   }
 
+  // Nested structures count too: a bridge that re-declares `Mnemonic` beside
+  // the generated `Mnemonic` is the same defect as one that re-declares a root.
+  for (const [name, fields] of fieldsByType) {
+    const key = normalizeTypeName(name);
+    if (slugByTypeName.has(key)) continue;
+    slugByTypeName.set(key, name);
+    fieldsBySlug.set(name, fields);
+  }
+
   const rawExportedNames = new Set<string>(fieldsByType.keys());
   for (const alias of source.matchAll(/^export type ([A-Za-z0-9_]+) =/gmu)) {
     rawExportedNames.add(alias[1]);

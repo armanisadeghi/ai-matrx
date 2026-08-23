@@ -27,6 +27,6 @@ export function memoryAidCounts(payload: MemoryAidPayload): MemoryGenConfig {
   return {
     mnemonicCount: payload.mnemonics.length,
     analogyCount: payload.analogies.length,
-    hasPalace: payload.memoryPalace.applicable,
+    hasPalace: payload.memory_palace.applicable,
   };
 }

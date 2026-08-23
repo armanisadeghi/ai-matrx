@@ -39,7 +39,7 @@ import type {
 type AidItem =
   | { row: "mnemonic"; value: MemoryAidPayload["mnemonics"][number] }
   | { row: "analogy"; value: MemoryAidPayload["analogies"][number] }
-  | { row: "locus"; value: MemoryAidPayload["memoryPalace"]["loci"][number] };
+  | { row: "locus"; value: MemoryAidPayload["memory_palace"]["loci"][number] };
 
 async function run(
   request: ConvertRequest,
@@ -49,7 +49,7 @@ async function run(
   const baseTitle = source.title ?? "Study material";
 
   let agentTitle = "";
-  let strategyNote: string | null = null;
+  let strategyNote: string | undefined;
   let palaceTheme = "";
   let palaceApplicable = false;
 
@@ -73,19 +73,19 @@ async function run(
       const payload = coerceMemoryAid(value);
       if (!payload) return [];
       if (!agentTitle && payload.title) agentTitle = payload.title;
-      if (strategyNote === null && payload.strategyNote) {
-        strategyNote = payload.strategyNote;
+      if (strategyNote === undefined && payload.strategy_note) {
+        strategyNote = payload.strategy_note;
       }
-      if (!palaceApplicable && payload.memoryPalace.applicable) {
+      if (!palaceApplicable && payload.memory_palace.applicable) {
         palaceApplicable = true;
-        palaceTheme = payload.memoryPalace.theme;
+        palaceTheme = payload.memory_palace.theme ?? "";
       }
       return [
         ...payload.mnemonics.map(
           (m): AidItem => ({ row: "mnemonic", value: m }),
         ),
         ...payload.analogies.map((a): AidItem => ({ row: "analogy", value: a })),
-        ...payload.memoryPalace.loci.map(
+        ...payload.memory_palace.loci.map(
           (l): AidItem => ({ row: "locus", value: l }),
         ),
       ];
@@ -107,7 +107,7 @@ async function run(
     .map((i) => i.value as MemoryAidPayload["analogies"][number]);
   const loci = covered.items
     .filter((i) => i.row === "locus")
-    .map((i) => i.value as MemoryAidPayload["memoryPalace"]["loci"][number]);
+    .map((i) => i.value as MemoryAidPayload["memory_palace"]["loci"][number]);
 
   if (mnemonics.length === 0 && analogies.length === 0 && loci.length === 0) {
     throw new Error("The memory-aid generator returned no usable aids");
@@ -120,10 +120,10 @@ async function run(
   const payload: MemoryAidPayload = {
     __kind: "memory_aid",
     title,
-    strategyNote,
+    strategy_note: strategyNote ?? undefined,
     mnemonics,
     analogies,
-    memoryPalace: {
+    memory_palace: {
       __kind: "memory_palace",
       applicable: palaceApplicable && loci.length > 0,
       theme: palaceTheme,
@@ -156,7 +156,7 @@ async function run(
   if (analogies.length) {
     parts.push(`${analogies.length} anal${analogies.length === 1 ? "ogy" : "ogies"}`);
   }
-  if (payload.memoryPalace.applicable) parts.push("memory palace");
+  if (payload.memory_palace.applicable) parts.push("memory palace");
   const detail = parts.join(" · ") || undefined;
 
   const result: ConvertResult = {
