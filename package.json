@@ -47,6 +47,8 @@
     "ship:history": "tsx scripts/matrx/ship.ts history",
     "find-circular": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1",
     "find-circular:count": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1 | grep 'Found'",
+    "check:surface-impact": "tsx scripts/check-surface-impact.ts",
+    "check:surface-impact:strict": "tsx scripts/check-surface-impact.ts --strict",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",
     "check:surface-overlays": "tsx scripts/check-surface-overlays.ts",
