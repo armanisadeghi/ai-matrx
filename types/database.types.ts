@@ -30681,6 +30681,15 @@ export type Database = {
         }
         Returns: Json
       }
+      lifecycle_hot_reference_scan: {
+        Args: never
+        Returns: {
+          entity_token: string
+          hot_object: string
+          object_kind: string
+          object_name: string
+        }[]
+      }
       lifecycle_map_is_fresh: { Args: never; Returns: boolean }
       lifecycle_open_run: { Args: { p_dry_run?: boolean }; Returns: string }
       lifecycle_schema_fingerprint: { Args: never; Returns: string }
