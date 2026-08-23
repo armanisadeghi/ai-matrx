@@ -283,10 +283,11 @@ const nextConfig = {
     // data collection spawned 29 workers. Bounding that fan-out at 12 still
     // produced consecutive post-compile OOMs in v0.4.1032/1035. Eight workers
     // then failed twice more in v0.4.1064/1065, both 6-7 seconds into page-data
-    // collection after successful compilation. Four is the evidence-backed
-    // ceiling for this phase; compile-phase OOMs still require hunting the import
-    // edge first (code-splitting skill, "Build-time bloat" section).
-    cpus: 4,
+    // collection after successful compilation. Four workers let v0.4.1066/1068
+    // complete, but v0.4.1069 still OOMed in the same phase on the 60 GB machine.
+    // Two is now the evidence-backed ceiling; compile-phase OOMs still require
+    // hunting the import edge first (code-splitting skill, "Build-time bloat").
+    cpus: 2,
     serverActions: {
       bodySizeLimit: "10mb",
     },
