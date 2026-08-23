@@ -39,6 +39,7 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { fcService } from "../../data/fcService";
 import type { CardWithDetails } from "../../data/types";
@@ -385,32 +386,40 @@ export function EnhanceSetDialog({
                             ? "New detail layers"
                             : "New sub-cards"}
                         </div>
-                        <div className="space-y-1.5">
-                          {preview.mode === "enrich"
-                            ? preview.details.map((d, di) => (
-                                <div key={di} className="text-xs">
-                                  <span className="rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium uppercase text-primary">
-                                    {d.kind}
-                                  </span>{" "}
-                                  <span className="text-foreground">
-                                    {d.text}
-                                  </span>
-                                </div>
-                              ))
-                            : preview.subCards.map((s, si) => (
-                                <div
-                                  key={si}
-                                  className="rounded border border-border bg-card px-2 py-1 text-xs"
-                                >
-                                  <p className="font-medium text-foreground">
-                                    {s.front}
-                                  </p>
-                                  <p className="text-muted-foreground">
-                                    {s.back}
-                                  </p>
-                                </div>
-                              ))}
-                        </div>
+                        {/* The proposal renders through its registered kind
+                            component (`card_enrichment` / `card_expansion`),
+                            rebuilt from the persist-ready preview so a stored
+                            proposal and a live one render identically. */}
+                        {preview.mode === "enrich" ? (
+                          <KindInstanceRender
+                            kind="card_enrichment"
+                            value={{
+                              __kind: "card_enrichment",
+                              details: preview.details.map((d) => ({
+                                __kind: "card_detail",
+                                kind: d.kind,
+                                text: d.text,
+                              })),
+                            }}
+                            variant="bare"
+                            showRoutingNote={false}
+                          />
+                        ) : (
+                          <KindInstanceRender
+                            kind="card_expansion"
+                            value={{
+                              __kind: "card_expansion",
+                              sub_cards: preview.subCards.map((s) => ({
+                                __kind: "sub_card",
+                                front: s.front,
+                                back: s.back,
+                                relation: "expands_into",
+                              })),
+                            }}
+                            variant="bare"
+                            showRoutingNote={false}
+                          />
+                        )}
                         <div className="mt-2 flex items-center justify-end gap-1.5">
                           <Button
                             size="sm"

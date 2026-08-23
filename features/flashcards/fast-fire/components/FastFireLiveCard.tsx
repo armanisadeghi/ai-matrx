@@ -42,10 +42,8 @@ import {
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { FastFireTimerBar } from "./FastFireTimerBar";
 import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
-import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SeeSourceButton } from "@/features/education/trust/components/SeeSourceButton";
-import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
-import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
+import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 
 interface FastFireLiveCardProps {
@@ -305,26 +303,9 @@ export function FastFireLiveCard({
           </div>
         )}
 
-        {/* Help result */}
-        {shownHelp && shownHelp.trust?.confidence === "not_in_material" ? (
-          <RefusalNotice message={shownHelp.answer} />
-        ) : (
-          shownHelp && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-              {shownHelp.trust && (
-                <div className="mb-1.5 flex items-center gap-2">
-                  <ConfidenceBadge confidence={shownHelp.trust.confidence} />
-                </div>
-              )}
-              {shownHelp.answer}
-              {shownHelp.trust && shownHelp.trust.citations.length > 0 && (
-                <div className="mt-1.5">
-                  <SourceCitations trust={shownHelp.trust} label="Sources" />
-                </div>
-              )}
-            </div>
-          )
-        )}
+        {/* Help result — the `live_help_answer` kind component (answer,
+            hint level, followups, citations; refusal-gated inside). */}
+        {shownHelp && <LiveHelpAnswerBlock result={shownHelp} />}
 
         {/* Live background-grading status (only when liveScore is on) */}
         {config.liveScore && (

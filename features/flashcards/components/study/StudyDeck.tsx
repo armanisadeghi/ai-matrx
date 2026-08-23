@@ -72,9 +72,7 @@ import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { CardTrustFooter } from "@/features/education/trust/components/CardTrustFooter";
-import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
-import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
-import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
+import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
 import { FlashcardStudySidebar } from "./study-deck-parts";
@@ -506,6 +504,11 @@ export function StudyDeck(props: StudyDeckProps) {
         sessionId,
         attempts,
         aggregate,
+        // What the learner never reached (a stopped-early session) — the
+        // reviewer can say what is still ahead.
+        remainingCards: cards
+          .filter((c) => resultsByCard[c.id] === undefined)
+          .map((c) => c.front),
         onConversationCreated: live.bind,
       }),
     )
@@ -1443,32 +1446,9 @@ function AskAiPanel({
         </div>
       )}
 
-      {result && result.trust?.confidence === "not_in_material" ? (
-        <RefusalNotice message={result.answer} />
-      ) : (
-        result && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-            {result.trust && (
-              <div className="mb-1.5 flex items-center gap-2">
-                <ConfidenceBadge confidence={result.trust.confidence} />
-              </div>
-            )}
-            <p>{result.answer}</p>
-            {result.followups.length > 0 && (
-              <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs opacity-80">
-                {result.followups.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-            )}
-            {result.trust && result.trust.citations.length > 0 && (
-              <div className="mt-1.5">
-                <SourceCitations trust={result.trust} label="Sources" />
-              </div>
-            )}
-          </div>
-        )
-      )}
+      {/* The `live_help_answer` kind component — answer, hint level,
+          followups, citations; refusal-gated inside. */}
+      {result && <LiveHelpAnswerBlock result={result} />}
       {/* D151 — the per-card coaching tip this session paid for. It used to be
           an 8-second toast and nothing else; now it stays with its card. */}
       {tip && (

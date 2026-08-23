@@ -103,7 +103,7 @@ drop what the deck already has → `fcService.addCards` onto the SAME set.
 
 | Kind            | Agent / service                                                                             | Persists to                                                | Capability (P8)                    |
 | --------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
-| `deck`          | Kit Flashcard agent (`0de9ff99…`) → `fcService.createSetWithCards`                          | `fc_set` + `fc_card`                                       | `education.generate_cards`         |
+| `deck`          | `flashcards.generate_from_source` mandate (`CONVERT_MANDATES.deckFromSource`) → `fcService` | `fc_set` + `fc_card`                                       | `education.generate_cards`         |
 | `summary`       | Study Summary agent (`92b607a4…`) → `studyMediaService`                                     | `study_media` (`media_kind='summary'`)                     | `education.ingest_document`        |
 | `mind_map`      | Study Mind Map agent → `studyMediaService`                                                  | `study_media` (`media_kind='mind_map'`)                    | `education.mindmap_generate`       |
 | `notes`         | Study Notes agent (`f23562ce…`) → `NotesAPI.create`                                         | `workbench.notes` (a real platform note)                   | `education.notes_generate`         |
@@ -203,6 +203,10 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
   something the system invented.
 
 ## Change log
+
+- **2026-08-22** — `deck.ts` coerces cards through the shared `features/flashcards/data/coerce-card.ts`
+  reader (no local copy) and sends the full `generate_from_source` offer (`document_id` + `title` +
+  `focus`); the "Kit Flashcard agent" id prose is gone — the mandate is the contract.
 
 - **2026-08-21** — **THE COVERAGE LAW.** Artifacts are sized by the material, not by a constant:
   new `coverage.ts` + `segmentedGenerate.ts`, and every generator rewired onto them (deck, summary,

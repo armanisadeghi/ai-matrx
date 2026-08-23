@@ -230,14 +230,16 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Gotchas learned
 
-- The production `FC_AGENTS.generateFromSource` agent does NOT receive `source_content` through the
-  programmatic `launchAgentExecution` path — it falls back to a generic sample. The kit deck uses a
-  dedicated public agent (`0de9ff99…`, "Kit Flashcard Generator") authored for reliable in-app
-  variable delivery. If the production agent's delivery is fixed, consolidate.
+- The kit deck runs the `flashcards.generate_from_source` mandate (`CONVERT_MANDATES.deckFromSource`)
+  through `runHeadlessAgentJson` — variables are delivered reliably; the one-off "Kit Flashcard
+  Generator" agent is retired (agent ids never live in code).
 - The from-source card agents return NO cards for an un-chunked blob — `deck.ts` synthesizes
   `### Chunk cN` markers before sending so cards ground + cite.
 
 ## Change log
+
+- **2026-08-22** — Gotcha about the production from-source agent not receiving variables retired: the
+  kit deck runs the `flashcards.generate_from_source` mandate through `runHeadlessAgentJson`.
 
 - **2026-08-22** — **A kit gets ONE name, and the kit became a place.** Naming: `kitTitle.ts`
   resolves the kit's name once between ingest and fan-out (`education.kit_title` over a

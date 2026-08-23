@@ -34,6 +34,12 @@ export type AiAssistModalTab =
 export type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
+  /**
+   * The tutor's structured `live_help_answer` (flashcards.help_live) when the
+   * message came from the help lane — the chat renders it through the kind
+   * component; `content` keeps the plain answer for history/search.
+   */
+  help?: import("@/features/education/tutor/lanes/helpLive").HelpLiveResult;
 };
 
 export interface SmartButtonProps {

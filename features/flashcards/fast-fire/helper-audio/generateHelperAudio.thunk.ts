@@ -33,9 +33,13 @@ import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { coerceDetails } from "@/features/flashcards/data/enhanceCard";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { readAudioFileId } from "../spoken-front/generateSpokenFront.thunk";
+import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
 
 /** Mandate key for the helper-audio TTS lane — resolves live to the DB-bound
- *  TTS agent; swap the voice at /agents/mandates, no deploy. */
+ *  TTS agent; swap the voice at /agents/mandates, no deploy. The variables it
+ *  sends are the `flashcards.tts_render` offer (the generated offers file has
+ *  no per-voice entry for helper_tts / spoken_front_tts — both mandates share
+ *  that one shape). */
 export const HELPER_TTS_MANDATE = "flashcards.helper_tts";
 
 // The helper is EXPLANATION, not gameplay: calm, warm, unhurried — the exact
@@ -139,6 +143,10 @@ function renderHelperAudio(cardId: string, text: string) {
     getState: () => RootState,
   ): Promise<string | null> => {
     let conversationId: string | null = null;
+    const variables: FlashcardsTtsRenderOffer = {
+      content: `[calm/reassuring] ${text}`,
+      ...HELPER_SPEECH_STYLE,
+    };
     try {
       const launch = await dispatch(
         launchAgentExecution({
@@ -148,10 +156,7 @@ function renderHelperAudio(cardId: string, text: string) {
           isEphemeral: false,
           runtime: {
             surfaceName: "matrx-user/education-fastfire",
-            variables: {
-              content: `[calm/reassuring] ${text}`,
-              ...HELPER_SPEECH_STYLE,
-            },
+            variables: { ...variables },
           },
           config: { autoRun: true, displayMode: "background" },
         }),

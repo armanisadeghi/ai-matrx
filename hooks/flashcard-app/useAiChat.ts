@@ -75,10 +75,13 @@ export const useAiChat = (): UseAiChat => {
           toast.error("Your tutor couldn't answer right now. Try again.");
           return;
         }
+        // The WHOLE answer (hint level, followups, trust) rides with the
+        // message; the modal renders it through the `live_help_answer` kind
+        // component. `content` keeps the plain text for history.
         dispatch(
           addMessage({
             flashcardId,
-            message: { role: "assistant", content: result.answer },
+            message: { role: "assistant", content: result.answer, help: result },
           }),
         );
       } finally {

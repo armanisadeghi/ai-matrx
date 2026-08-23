@@ -23,9 +23,11 @@ import { selectRenderBlocksByType } from "@/features/agents/redux/execution-syst
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { pickSpokenFrontVariables } from "./variations";
+import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
 
 /** Mandate key for the spoken-front TTS lane — resolves live to the DB-bound
- *  "Generate custom speech" agent (Google Gemini TTS). */
+ *  TTS agent. Its variables are the `flashcards.tts_render` offer shape (the
+ *  generated offers file carries no per-voice entry; see helper-audio). */
 export const SPOKEN_FRONT_TTS_MANDATE = "flashcards.spoken_front_tts";
 
 /**
@@ -115,7 +117,14 @@ export function generateSpokenFront(
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const vars = pickSpokenFrontVariables(card.id, card.front, index, total);
+    const picked = pickSpokenFrontVariables(card.id, card.front, index, total);
+    const vars: FlashcardsTtsRenderOffer = {
+      content: picked.content,
+      sample_context: picked.sample_context,
+      speaker_profile: picked.speaker_profile,
+      directors_notes: picked.directors_notes,
+      scene: picked.scene,
+    };
     // The TTS agent is a mandate — resolution is loud, never a hardcoded id. The
     // launch thunk resolves it and applies the binding's config_overrides too
     // (a settings-only binding swaps the model without swapping the agent).
@@ -131,13 +140,7 @@ export function generateSpokenFront(
           isEphemeral: false,
           runtime: {
             surfaceName: "matrx-user/education-fastfire",
-            variables: {
-              content: vars.content,
-              sample_context: vars.sample_context,
-              speaker_profile: vars.speaker_profile,
-              directors_notes: vars.directors_notes,
-              scene: vars.scene,
-            },
+            variables: { ...vars },
           },
           // autoRun:true → the launch thunk executes AND polls to completion
           // before returning, so the audio render block is present afterward.

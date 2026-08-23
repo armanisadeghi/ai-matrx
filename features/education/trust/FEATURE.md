@@ -35,14 +35,14 @@ not_in_material`; grounded answering refuses ("that isn't in your material") ins
 
 ## Agents (authored + live-verified via agent_author, 2026-07-07)
 
-| Agent                     | id           | What changed                                                                                                            |
-| ------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `generateFromSource` (v6) | `f728ac6b-…` | Emits per-card `trust` (real citations w/ verbatim excerpts, `grounded` confidence); drops cards it can't ground.       |
-| `helpLive` (v6)           | `9035ed6e-…` | Emits `trust`; refuses honestly on out-of-corpus questions (`not_in_material` + escape-hatch phrasing).                 |
-| `verifyAgainstSource`     | `90b49ead-…` | front+back+source_excerpt → `{status: verified\|drifted\|unverifiable, explanation, suggested_fix}`.                    |
-| `gradeTypedAnswer`        | `b39183d1-…` | question+expected+learner → `GradeVerdict` (paraphrase-tolerant, names misconceptions). P1's typed-answer grading path. |
+| Mandate                              | Output kind         | What it does                                                                                                   |
+| ------------------------------------ | ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `flashcards.generate_from_source`    | `flashcard_set`     | Emits per-card `trust` (real citations w/ verbatim excerpts, `grounded` confidence); drops cards it can't ground. |
+| `flashcards.help_live`               | `live_help_answer`  | Emits `trust`; refuses honestly on out-of-corpus questions (`not_in_material` + escape-hatch phrasing).         |
+| `flashcards.verify_against_source`   | `card_verification` | front+back+source_excerpt → `{status: verified\|drifted\|unverifiable, explanation, suggested_fix}`.            |
+| `flashcards.grade_typed_answer`      | `answer_grade`      | question+expected+learner → `GradeVerdict` core (paraphrase-tolerant, names misconceptions).                   |
 
-IDs are wired in [`features/flashcards/data/agents.ts`](../../flashcards/data/agents.ts) (`FC_AGENTS`).
+Mandate keys live in [`features/flashcards/data/mandates.ts`](../../flashcards/data/mandates.ts) (`FC_MANDATES`); the agents behind them are DB-bound (swap at `/agents/mandates`).
 
 ## Data flow (flashcards reference retrofit)
 
@@ -115,6 +115,11 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 - Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
 
 ## Change log
+
+- **2026-08-22** — `coerceGradeVerdict` is THE ONE verdict reader (`answer_grade` core): accepts the
+  boolean contract AND a `result`/`grade` token, `explanation` falls back through `feedback`/`reason`;
+  `readTypedGradeVerdict` and the spoken `coerceSpokenGrade` adapt from it. Agent-id table replaced
+  by the mandate/kind table (ids never live in code).
 
 - **2026-08-21** — Card-level "See source" (FastFire spec 26e). New `sourceRef.ts` owns the ONE
   citation→inspector mapping (`inspectorArgsForSourceRef`, hoisted out of `SourceCitations` so

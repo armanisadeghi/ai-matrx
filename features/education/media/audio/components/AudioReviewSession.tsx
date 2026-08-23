@@ -56,6 +56,7 @@ import {
 import { gradeSpokenAnswer } from "@/features/flashcards/fast-fire/agents/gradeSpokenAnswer.thunk";
 import type { SpokenGrade } from "@/features/flashcards/fast-fire/agents/grading-core";
 import { verdictResult, type GradeResult } from "@/features/education/trust/types";
+import { AnswerGradeBlock } from "@/features/flashcards/fast-fire/components/AnswerGradeBlock";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type {
@@ -74,30 +75,6 @@ interface CardResult {
   result: GradeResult | "skipped";
   score: number;
 }
-
-const RESULT_STYLE: Record<
-  GradeResult,
-  { label: string; icon: typeof CheckCircle2; text: string; bg: string }
-> = {
-  correct: {
-    label: "Correct",
-    icon: CheckCircle2,
-    text: "text-green-600 dark:text-green-400",
-    bg: "bg-green-500/10",
-  },
-  partial: {
-    label: "Almost",
-    icon: AlertCircle,
-    text: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/10",
-  },
-  incorrect: {
-    label: "Not quite",
-    icon: XCircle,
-    text: "text-red-600 dark:text-red-400",
-    bg: "bg-red-500/10",
-  },
-};
 
 export function AudioReviewSession({
   initialDeckId,
@@ -454,7 +431,6 @@ export function AudioReviewSession({
   }
 
   // Running (asking / answering / grading / result)
-  const style = grade ? RESULT_STYLE[verdictResult(grade.verdict)] : null;
   return (
     <div className="mx-auto flex min-h-[60dvh] w-full max-w-md flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -506,23 +482,10 @@ export function AudioReviewSession({
 
         {phase === "result" && card && (
           <div className="flex w-full flex-col items-center gap-3">
-            {grade && style ? (
-              <>
-                <div
-                  className={cn(
-                    "flex h-14 w-14 items-center justify-center rounded-full",
-                    style.bg,
-                  )}
-                >
-                  <style.icon className={cn("h-7 w-7", style.text)} />
-                </div>
-                <div className={cn("text-lg font-semibold", style.text)}>
-                  {style.label}
-                </div>
-                {grade.verdict.explanation && (
-                  <p className="text-sm text-foreground">{grade.verdict.explanation}</p>
-                )}
-              </>
+            {grade ? (
+              // The `answer_grade` kind component — the same verdict render
+              // the single-card voice test mounts.
+              <AnswerGradeBlock grade={grade} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 {error ?? "Didn't catch that — moving on."}

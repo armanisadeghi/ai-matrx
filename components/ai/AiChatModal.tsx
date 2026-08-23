@@ -16,6 +16,8 @@ import {
     selectActiveFlashcardChat
 } from '@/lib/redux/selectors/flashcardSelectors';
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
+import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
+import type { ChatMessage } from "@/types/flashcards.types";
 import { QuickActionButtons } from './prompts-buttons';
 
 interface AiChatModalProps {
@@ -86,7 +88,8 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
         }
     };
 
-    const renderMessage = (content: string, role: 'user' | 'assistant') => {
+    const renderMessage = (msg: ChatMessage) => {
+        const role = msg.role as 'user' | 'assistant';
         const adjustedFontSize = role === 'assistant' ? fontSize + 4 : fontSize;
 
         return (
@@ -95,12 +98,18 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                 ? 'w-full'
                 : 'ml-auto w-[85%] sm:w-[70%] md:w-[60%]'
             }`}>
-                <MarkdownRenderer
-                    content={content}
-                    type="message"
-                    role={role}
-                    fontSize={adjustedFontSize}
-                />
+                {msg.help ? (
+                    // The tutor's structured answer — the `live_help_answer`
+                    // kind component (followups + citations, not just text).
+                    <LiveHelpAnswerBlock result={msg.help} />
+                ) : (
+                    <MarkdownRenderer
+                        content={msg.content}
+                        type="message"
+                        role={role}
+                        fontSize={adjustedFontSize}
+                    />
+                )}
             </div>
         );
     };
@@ -138,7 +147,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                     <div className="py-4 space-y-4">
                         {(activeTab === 'current' ? currentChat : allChatHistory).map((msg, idx) => (
                             <React.Fragment key={idx}>
-                                {renderMessage(msg.content, msg.role as 'user' | 'assistant')}
+                                {renderMessage(msg)}
                             </React.Fragment>
                         ))}
                         {isLoading && (

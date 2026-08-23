@@ -1,9 +1,10 @@
 // features/flashcards/fast-fire/spoken-front/variations.ts
 //
 // Spoken-front variation bank + picker (owner design, 2026-07-01). Fast Fire can
-// OPTIONALLY speak each card's question aloud, generated once via the "Generate
-// custom speech" agent (Google Gemini TTS, id 04f69dff-…) and CACHED as a durable
-// fc_detail (kind='spoken_front') so playback is instant — no per-turn delay.
+// OPTIONALLY speak each card's question aloud, generated once via the
+// `flashcards.spoken_front_tts` mandate (DB-bound TTS agent) and CACHED as a
+// durable fc_detail (kind='spoken_front') so playback is instant — no per-turn
+// delay.
 //
 // The point of this bank: every question should feel a little different, like a
 // live, high-energy host — never a robotic template. The spoken content is three

@@ -156,6 +156,25 @@ own fresh conversation):
   print) carry the URL and alt text but not the credit caption.
 
 ## Change log
+
+- 2026-08-22 — **Agent Manifest Campaign wave 1 (consumer step).** The 11 `flashcards.*` mandates
+  now point at builtin agents that emit registered kinds; this wave cleaned the consumers: ONE
+  card reader (`data/coerce-card.ts` — topic gen, from-source, kit deck, top-up, envelope save),
+  ONE typed-grade reader (`coerceGradeVerdict`, now also the spoken adapter's core), ONE review
+  reader (`parseSessionReview` reads all six `batch_review` keys for the live lane AND the
+  persisted row); kind components mounted through `KindInstanceRender` — `live_help_answer`
+  (`tutor/components/LiveHelpAnswerBlock`: StudyDeck, FastFireLiveCard, flashcard-app Ask AI),
+  `card_enrichment` / `card_expansion` (EnhanceSetDialog previews; accept rail unchanged),
+  `answer_grade` (`fast-fire/components/AnswerGradeBlock`: voice test + audio review; the
+  FastFire scoreboard stays custom). Dead inputs: `remaining_cards` is real (StudyDeck passes
+  the unreached fronts; FastFire/detail page honestly empty), FastFire `struggled_topics` derives
+  from missed cards' topics; both `generate_from_source` callers send the full offer
+  (`source_content, document_id, count, difficulty, title, focus`). Parser tests added for every
+  reader against the new agents' real `__kind` payloads. TTS: `flashcards.helper_tts` /
+  `flashcards.spoken_front_tts` have NO generated offer entry — both thunks type their variables
+  against `FlashcardsTtsRenderOffer` (`flashcards.tts_render`); `types/python-generated/
+  provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edited. Plan:
+  `common-docs/projects/agent-manifest-campaign/PLAN.md`.
 - 2026-08-22 — Generated-set title reads the `flashcard_set` kind's `title` only: the mandate
   `flashcards.generate_from_source` (v6) dropped `set_title` from its output_schema and declares
   `output_kind="flashcard_set"`, so the `title | set_title` coercion is gone from

@@ -53,7 +53,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       notes: [
         "Feature: features/education/onboard/** (useIngest → useKitGeneration → StartHero)",
         "Converter contract: features/education/convert/** (convertContent / useContentConverter)",
-        "Agents: kit-deck 0de9ff99 · summary 92b607a4 · mindmap d13184d4",
+        "Mandates: deck via flashcards.generate_from_source (CONVERT_MANDATES.deckFromSource) · summary + mind map via their convert mandates — agents are DB-bound, swap at /agents/mandates",
       ],
     },
     {
@@ -355,7 +355,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Feature: features/education/spoken-practice/** (SpokenPracticeSurface · useSpokenPractice · generateSession · grounding)",
-        "New agent: Spoken Practice Session Designer e1d9c1f7-c523-4e7a-8090-a74495cdc58f (gemini-3.5-flash); grader reuses FC_AGENTS.gradeSpoken; review reuses the tutor reviewSession lane",
+        "Session designer via the spoken-practice mandate; grader reuses the flashcards.grade_spoken mandate (grading-core); review reuses the tutor reviewSession lane (flashcards.review_batch)",
         "Metered via education.spoken_practice (enforced:false); grounded via TrustEnvelope (per-prompt confidence)",
       ],
     },

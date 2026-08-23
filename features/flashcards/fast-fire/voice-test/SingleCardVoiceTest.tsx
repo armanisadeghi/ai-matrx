@@ -37,7 +37,7 @@ import {
 import { SpokenFrontPlayer } from "../components/SpokenFrontPlayer";
 import { gradeSpokenAnswer } from "../agents/gradeSpokenAnswer.thunk";
 import type { SpokenGrade } from "../agents/grading-core";
-import { verdictResult, type GradeResult } from "@/features/education/trust/types";
+import { AnswerGradeBlock } from "../components/AnswerGradeBlock";
 import { VoiceTestAudioSetup } from "./VoiceTestAudioSetup";
 import { VoiceAnswerMicMeter } from "./VoiceAnswerMicMeter";
 import {
@@ -61,39 +61,6 @@ export interface SingleCardVoiceTestProps {
 
 const PREPARE_MIN_MS = 900;
 const SPOKEN_FRONT_MAX_WAIT_MS = 25_000;
-
-const RESULT_STYLE: Record<
-  GradeResult,
-  {
-    label: string;
-    icon: typeof CheckCircle2;
-    ring: string;
-    text: string;
-    bg: string;
-  }
-> = {
-  correct: {
-    label: "Correct",
-    icon: CheckCircle2,
-    ring: "text-green-500",
-    text: "text-green-600 dark:text-green-400",
-    bg: "bg-green-500/10",
-  },
-  partial: {
-    label: "Almost",
-    icon: AlertCircle,
-    ring: "text-amber-500",
-    text: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/10",
-  },
-  incorrect: {
-    label: "Not quite",
-    icon: XCircle,
-    ring: "text-red-500",
-    text: "text-red-600 dark:text-red-400",
-    bg: "bg-red-500/10",
-  },
-};
 
 export function SingleCardVoiceTest({
   card,
@@ -122,7 +89,6 @@ export function SingleCardVoiceTest({
   const [grade, setGrade] = useState<SpokenGrade | null>(null);
   const [skipped, setSkipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showTranscript, setShowTranscript] = useState(false);
   // The grade streams here instead of a spinner: set before the stream starts,
   // cleared (and the instance destroyed) on go-again / close.
   const [gradeConversationId, setGradeConversationId] = useState<string | null>(
@@ -347,7 +313,6 @@ export function SingleCardVoiceTest({
       setGrade(null);
       setSkipped(false);
       setError(null);
-      setShowTranscript(false);
       releaseGradeRun();
       answerStartedRef.current = false;
       finishStartedRef.current = false;
@@ -494,8 +459,6 @@ export function SingleCardVoiceTest({
               skipped={skipped}
               error={error}
               back={card.back}
-              showTranscript={showTranscript}
-              onToggleTranscript={() => setShowTranscript((v) => !v)}
               onAgain={goAgain}
               onDone={done}
             />
@@ -511,8 +474,6 @@ function ResultView({
   skipped,
   error,
   back,
-  showTranscript,
-  onToggleTranscript,
   onAgain,
   onDone,
 }: {
@@ -520,55 +481,15 @@ function ResultView({
   skipped: boolean;
   error: string | null;
   back: string;
-  showTranscript: boolean;
-  onToggleTranscript: () => void;
   onAgain: () => void;
   onDone: () => void;
 }) {
-  const style = grade ? RESULT_STYLE[verdictResult(grade.verdict)] : null;
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-4">
-      {grade && style ? (
-        <>
-          <div
-            className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full",
-              style.bg,
-            )}
-          >
-            <style.icon className={cn("h-8 w-8", style.text)} />
-          </div>
-          <div>
-            <div className={cn("text-xl font-semibold", style.text)}>
-              {style.label}
-            </div>
-            <div className="mt-0.5 text-sm text-muted-foreground">
-              Score {Math.round(grade.score * 100)}%
-            </div>
-          </div>
-          {grade.verdict.explanation && (
-            <p className="text-sm text-foreground">{grade.verdict.explanation}</p>
-          )}
-          {grade.missing.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Missed: {grade.missing.join(", ")}
-            </p>
-          )}
-          {grade.transcript && (
-            <button
-              type="button"
-              onClick={onToggleTranscript}
-              className="text-xs text-muted-foreground underline-offset-2 "
-            >
-              {showTranscript ? "Hide" : "Show"} what I heard
-            </button>
-          )}
-          {showTranscript && grade.transcript && (
-            <p className="w-full rounded-lg bg-muted/50 px-3 py-2 text-left text-xs italic text-muted-foreground">
-              “{grade.transcript}”
-            </p>
-          )}
-        </>
+      {grade ? (
+        // The `answer_grade` kind component — verdict, score, rubric, what was
+        // missed, and the transcript ("what I heard") in ONE shared render.
+        <AnswerGradeBlock grade={grade} />
       ) : (
         <>
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">

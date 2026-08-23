@@ -22,6 +22,7 @@ import {
 } from "@/features/audio/utils/audio-mime";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
+  coerceGradeVerdict,
   verdictResult,
   verdictFromResult,
   resultFromScore,
@@ -98,8 +99,9 @@ export function answerGradeValue(grade: SpokenGrade): Record<string, unknown> {
     misconception: grade.verdict.misconception,
     explanation: grade.verdict.explanation,
     score: grade.score,
-    rubric: grade.rubric,
+    rubric: { __kind: "grade_rubric", ...grade.rubric },
     transcript: grade.transcript,
+    audio_feedback: grade.verdict.explanation,
     missing: grade.missing,
     pronunciation: grade.pronunciation,
   };
@@ -127,22 +129,30 @@ function coercePronunciation(raw: unknown): PronunciationAssessment | null {
   };
 }
 
-/** Narrow the grader's unknown extracted object to a SpokenGrade (never throws). */
+/**
+ * Narrow the grader's unknown extracted object (the `answer_grade` kind —
+ * `__kind` keys at every level are ignored) to a SpokenGrade (never throws).
+ * The verdict core reads through THE ONE verdict reader (`coerceGradeVerdict`);
+ * a payload with neither booleans nor a result token falls back to the score.
+ */
 export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
   const num = (v: unknown, fallback: number): number =>
     typeof v === "number" && Number.isFinite(v) ? v : fallback;
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
-  const resultRaw = str(r.result);
   const score = Math.min(1, Math.max(0, num(r.score, 0)));
-  const result: GradeResult =
-    resultRaw === "correct" || resultRaw === "partial" || resultRaw === "incorrect"
-      ? resultRaw
-      : resultFromScore(score);
-  const rubricRaw = (r.rubric as Record<string, unknown>) ?? {};
-  const explanation = str(r.audio_feedback) || str(r.feedback);
-  const misconception = str(r.misconception) || null;
+  const core = coerceGradeVerdict(r);
+  const result: GradeResult = core ? verdictResult(core) : resultFromScore(score);
+  const rubricRaw =
+    r.rubric && typeof r.rubric === "object" && !Array.isArray(r.rubric)
+      ? (r.rubric as Record<string, unknown>)
+      : {};
+  // The spoken feedback line is the verdict's explanation; the core reader's
+  // `explanation` is the fallback (the rebuilt kind value carries both).
+  const explanation =
+    str(r.audio_feedback) || str(r.feedback) || (core?.explanation ?? "");
+  const misconception = core?.misconception ?? (str(r.misconception) || null);
   return {
     verdict: verdictFromResult(result, explanation, misconception),
     score,

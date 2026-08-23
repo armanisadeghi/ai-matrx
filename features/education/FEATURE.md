@@ -78,6 +78,13 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-08-22** — Agent Manifest Campaign wave 1 (flashcards consumers): tutor lanes read the new
+  kinds (`live_help_answer`, `study_tip`, `batch_review` via the ONE `parseSessionReview` reader,
+  incl. spoken-practice review), `LiveHelpAnswerBlock` renders help through the kind component on
+  every surface, `coerceGradeVerdict` is the one typed/spoken verdict core, kit deck `deck.ts`
+  uses the shared flashcard reader; stale agent-id prose replaced by mandate keys. See
+  `features/flashcards/FEATURE.md` 2026-08-22.
+
 - **2026-08-21** — Separated marketing from product navigation: `/education` remains the public landing, while `/education/overview` is a compact signed-in hub driven by the canonical tool registry. Rebuilt `/education/library` on `EntityListPage` so created decks, assessments, study media, and notes remain findable under Mine / Shared / Public; preserved certified public-deck browsing at `/education/library/community`.
 - **2026-08-21** — **Every Education route has one scroll-revealed text/voice assistant with section-level Agent control.** `app/(core)/education/layout.tsx` mounts `ScrollAssistantLauncher inputVariant="text-voice"` once for the entire route family. It stays absent until real content scroll or deliberate bottom-edge dwell, starts as the compact Smart Agent input, and the first Voice click both morphs and starts listening. Typed and spoken turns share one primary-agent conversation and current page context. The primary Agent resolves `education.<section>_guidance` → `education.page_guidance` → `ambient.page_guidance`; all 30 current Education sections have editable, variable-free mandates. Leaving voice mode or dismissing stops microphone capture; guests get the shared auth gate without initializing realtime voice; mobile mounts nothing.
 - **2026-08-20** — **The offline FastFire clip is no longer lost: held answers are uploaded and graded at reconnect (STATE.md §4.1 B-8).** The split shipped a week earlier kept the OBSERVATION and threw away the ANSWER — `fileHandler.upload` needs the network, so an offline spoken card landed as an ungraded, **audio-less** attempt and the learner's actual spoken answer died with the drill. It now survives.
@@ -218,10 +225,9 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
   associations — no new table). **Back door** `/education/data` (`DataOwnershipPage`): export any
   deck (JSON round-trips / Markdown / Anki-TSV / CSV) or the whole library as a zip; one-click
   import from Quizlet/CSV/TSV/Matrx-JSON/paste and **Anki `.apkg`** (jszip + sql.js, dynamically
-  imported); the anti-lock-in pledge (every line backed by a button). Authored two public agents
-  (`agent_author`, live-verified): **Study Summary** (`92b607a4`) + **Kit Flashcard Generator**
-  (`0de9ff99` — the production `generateFromSource` doesn't receive variables via `launchAgentExecution`,
-  so the kit uses its own). `study_media` gained a `summary` kind (migration
+  imported); the anti-lock-in pledge (every line backed by a button). Summary + kit deck
+  generation run through mandates (the kit deck now uses `flashcards.generate_from_source`
+  via `CONVERT_MANDATES.deckFromSource`; agent ids never live in code). `study_media` gained a `summary` kind (migration
   `study_media_summary_kind.sql`, ledger-recorded) + viewer `/education/summaries/[id]`. Hub landing
   now leads with "Create a study kit". Verified live end-to-end (deck 7 grounded cited cards +
   summary + mind map, all linked to one anchor file; export round-trip; Anki decode). Remaining:
