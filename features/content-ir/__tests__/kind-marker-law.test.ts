@@ -10,8 +10,15 @@
  * legacy render bridge — plus the one lawful egress that still drops it.
  */
 
-import { KIND_KEY } from "@ai-matrx/content-ir";
-import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
+import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import {
+  IR_ENVELOPE_KEY,
+  KIND_KEY,
+  envelopeFromCompleteValue,
+  isCanonicalBlockIR,
+  type CanonicalBlockIR,
+} from "@ai-matrx/content-ir";
 import { withRootKindMarker } from "../studio/instance-service";
 import { makeCompleteEnvelopeBridge } from "../kinds/legacy-bridge-utils";
 import { schemaProposalServerDataFromEnvelope } from "../kinds/schema-proposal";
@@ -100,5 +107,53 @@ describe("the emit composer is now an identity for well-formed rows", () => {
       __kind: "demo_kind",
       title: "T",
     });
+  });
+});
+
+describe("THE RENDER SYMPTOM — a stored row must route on its OWN bytes", () => {
+  /**
+   * Arman saw /shapes examples that would not render until he switched tabs.
+   * Two paths render the same row: one is handed the kind explicitly (the
+   * `kind` prop on `KindInstanceRender`), the other falls back to PARSING the
+   * raw content. With the marker stripped out of storage, only the first could
+   * ever work — the fallback got an anonymous payload with nothing to route on.
+   *
+   * The backfill closes that asymmetry AT THE DATA: a stored row now says what
+   * it is, so both paths reach the same component. (The other half of the
+   * symptom — the component registry being cold on first paint — was fixed
+   * separately on 2026-08-22 by the eager `requestComponent` in
+   * `KindInstanceRender`.)
+   */
+  const DATA = {
+    title: "Cell Biology",
+    questions: [{ type: "multiple_choice", question: "Which organelle?" }],
+  };
+
+  function kindFromRawContent(json: string): string | null {
+    const seen: RenderBlockPayload[] = [];
+    const accumulator = new StreamBlockAccumulator("req-shapes", (payload) => {
+      seen.push((payload as { block: RenderBlockPayload }).block);
+      return { type: "test/upsert", payload };
+    });
+    const dispatch = (action: unknown) => action;
+    accumulator.ingest(json, dispatch);
+    accumulator.finalize(dispatch);
+
+    for (const block of seen.reverse()) {
+      const candidate = block.metadata?.[IR_ENVELOPE_KEY];
+      if (isCanonicalBlockIR(candidate)) {
+        return (candidate as CanonicalBlockIR).root.kind || null;
+      }
+    }
+    return null;
+  }
+
+  it("PRE-BACKFILL shape (marker stripped): the row cannot name itself", () => {
+    expect(kindFromRawContent(JSON.stringify(DATA, null, 2))).not.toBe("quiz_set");
+  });
+
+  it("POST-BACKFILL shape (marker stored): the row names itself unaided", () => {
+    const stored = { [KIND_KEY]: "quiz_set", ...DATA };
+    expect(kindFromRawContent(JSON.stringify(stored, null, 2))).toBe("quiz_set");
   });
 });

@@ -144,9 +144,11 @@ export default function KindExamplePreview({
       {/* The real render path */}
       <KindInstanceRender kind={kind} value={current.data} />
 
-      {/* The render template — the emit shape WITH __kind, one-click copyable.
-          This is the thing to paste into an agent prompt or a chat to see the
-          component render; the stored example is source-shape (no __kind). */}
+      {/* The render template — one-click copyable. Stored examples now CARRY
+          their `__kind` (KINDS_EVERYWHERE_PLAN §4.2), so for a well-formed row
+          this is the row itself, guaranteed marker-first; it still repairs a
+          legacy value that lacks one. Paste it into an agent prompt or a chat
+          to see the component render. */}
       <div className="rounded-md border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
           <span className="text-xs font-medium text-foreground">
