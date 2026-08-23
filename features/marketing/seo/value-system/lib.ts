@@ -381,3 +381,62 @@ export function packReviewHref(
 ): string {
   return `${marketingRoutes.site(brandId, siteId, "/value/packs")}?pack=${packId}&review=1`;
 }
+
+// ── Plain English for a rule's match condition ──────────────────────────────
+// ONE sentence builder for every screen that names a value rule (Rulebook,
+// pack review, workbench panel) — three screens used to carry three copies.
+
+export function describeRuleMatch(rule: {
+  pattern: string | null;
+  match_kind: string | null;
+  match_facet: string | null;
+  match_facet_value: string | null;
+}): string {
+  if (rule.match_facet) {
+    return `${humanizeSlug(rule.match_facet).toLowerCase()} is “${humanizeSlug(
+      rule.match_facet_value ?? "",
+    ).toLowerCase()}”`;
+  }
+  if (!rule.pattern) return "no match condition recorded";
+  const kind = rule.match_kind ?? "contains";
+  const readable =
+    kind === "word"
+      ? "the whole word"
+      : kind === "exact"
+        ? "exactly"
+        : kind === "starts_with"
+          ? "starts with"
+          : kind === "ends_with"
+            ? "ends with"
+            : "contains";
+  return `${readable} “${rule.pattern}”`;
+}
+
+/** "×0.2 — worth one fifth" / "×2.5 — worth two and a half times". */
+export function describeMultiplier(multiplier: number | null | undefined): string {
+  if (multiplier === null || multiplier === undefined) return "no change";
+  if (multiplier === 1) return "×1 — no change";
+  if (multiplier < 1) {
+    const frac = Math.round(1 / multiplier);
+    return frac >= 2 && Math.abs(1 / frac - multiplier) < 0.02
+      ? `×${multiplier} — worth one ${ordinalFraction(frac)}`
+      : `×${multiplier} — worth less`;
+  }
+  return `×${multiplier} — worth ${multiplier} times more`;
+}
+
+function ordinalFraction(n: number): string {
+  const words: Record<number, string> = {
+    2: "half",
+    3: "third",
+    4: "quarter",
+    5: "fifth",
+    6: "sixth",
+    7: "seventh",
+    8: "eighth",
+    9: "ninth",
+    10: "tenth",
+    20: "twentieth",
+  };
+  return words[n] ?? `${n}th`;
+}

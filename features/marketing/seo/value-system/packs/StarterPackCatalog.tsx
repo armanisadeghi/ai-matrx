@@ -367,13 +367,10 @@ function PackDetail({
 
   const adopt = useMutation({
     mutationFn: (places: GeoPlacesDraft) =>
-      adoptStarterPack(
-        siteId,
-        detail.pack.id,
-        undefined,
-        places.tokens,
-        places.placeIds,
-      ),
+      adoptStarterPack(siteId, detail.pack.id, {
+        geoPlaces: places.tokens,
+        geoPlaceIds: places.placeIds,
+      }),
     onSuccess: (result) => {
       const written =
         result.topics +
@@ -572,7 +569,8 @@ export function StarterPackCatalog() {
 
   const catalog = useQuery({
     queryKey: starterPackCatalogQueryKey,
-    queryFn: ({ signal }) => getStarterPackCatalog(null, signal),
+    queryFn: ({ signal }) =>
+      getStarterPackCatalog(null, site.organization_id ?? null, signal),
   });
 
   const packs = catalog.data ?? [];
