@@ -19,10 +19,13 @@ import {
   GalleryHorizontalEnd,
   GitBranch,
   Image as ImageIcon,
+  CircleHelp,
   Kanban,
+  Layers,
   LayoutGrid,
   ListChecks,
   Loader2,
+  NotebookPen,
   Map as MapIcon,
   MessagesSquare,
   Network,
@@ -265,6 +268,83 @@ export const DocumentLoading: React.FC<KindLoadingProps> = (p) => (
       <Sk className="mt-3 h-3.5 w-1/4" />
       <Sk className="h-2.5 w-full" />
       <Sk className="h-2.5 w-3/4" />
+    </div>
+  </Shell>
+);
+
+// ── Study-shaped loaders ────────────────────────────────────────────────────
+//
+// A loader earns its place by having the SILHOUETTE of the component that
+// replaces it, so the swap reads as the same object finishing rather than one
+// thing becoming another. Arman, watching a live Study Pack run (2026-08-21):
+// "I saw a generic loading component that was not for the specific individual
+// kinds" — a study pack announces four distinct shapes, and a shared skeleton
+// for all four tells the reader nothing about what is coming.
+
+/** flashcard_set — one big card face, with the deck's pager beneath it. */
+export const FlashcardsLoading: React.FC<KindLoadingProps> = (p) => (
+  <Shell {...p} defaultIcon={Layers}>
+    <div className="space-y-2.5">
+      <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 rounded-lg border border-border/60 bg-muted/20 p-4">
+        <Sk className="h-3 w-2/5" />
+        <Sk className="h-3 w-3/5" />
+      </div>
+      <div className="flex items-center justify-center gap-1.5">
+        {Array.from({ length: clampCount(p.count, 5, 8) }).map((_, i) => (
+          <Sk key={i} className="h-1.5 w-1.5 rounded-full" />
+        ))}
+      </div>
+    </div>
+  </Shell>
+);
+
+/** quiz_set — a question, then its answer choices, then the next question. */
+export const QuizLoading: React.FC<KindLoadingProps> = (p) => (
+  <Shell {...p} defaultIcon={CircleHelp}>
+    <div className="space-y-4">
+      {Array.from({ length: clampCount(p.count, 2, 4) }).map((_, q) => (
+        <div key={q} className="space-y-2">
+          <div className="flex items-start gap-2">
+            <Sk className="mt-0.5 h-4 w-4 shrink-0 rounded-full" />
+            <Sk className="h-3 w-3/4" />
+          </div>
+          <div className="space-y-1.5 pl-6">
+            {[0, 1, 2, 3].map((o) => (
+              <div key={o} className="flex items-center gap-2">
+                <Sk className="h-3 w-3 shrink-0 rounded-full" />
+                <Sk className={`h-2.5 ${["w-2/3", "w-1/2", "w-3/5", "w-5/12"][o]}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </Shell>
+);
+
+/** study_notes — an overview paragraph, then headed sections with key points. */
+export const NotesLoading: React.FC<KindLoadingProps> = (p) => (
+  <Shell {...p} defaultIcon={NotebookPen}>
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Sk className="h-2.5 w-full" />
+        <Sk className="h-2.5 w-11/12" />
+        <Sk className="h-2.5 w-3/4" />
+      </div>
+      {Array.from({ length: clampCount(p.count, 2, 4) }).map((_, section) => (
+        <div key={section} className="space-y-1.5">
+          <Sk className="h-3.5 w-1/3" />
+          <Sk className="h-2.5 w-full" />
+          <div className="space-y-1 pl-4">
+            {[0, 1, 2].map((point) => (
+              <div key={point} className="flex items-center gap-2">
+                <Sk className="h-1.5 w-1.5 shrink-0 rounded-full" />
+                <Sk className={`h-2.5 ${["w-3/4", "w-2/3", "w-4/5"][point]}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   </Shell>
 );

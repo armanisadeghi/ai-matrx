@@ -43,6 +43,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — the ONE source `data[]` and the emitted JSON Schemas come from.
@@ -218,7 +219,7 @@ export function studyNotesServerDataFromEnvelope(
 // toMarkdown facet — the notes as the document they are.
 // ---------------------------------------------------------------------------
 
-const MD_KNOWN_KEYS = ["title", "overview", "sections", "glossary"];
+const MD_KNOWN_KEYS = ["title", "overview", "sections", "glossary", KIND_KEY];
 
 function sectionMarkdown(section: StudyNotesSection): string {
   return joinBlocks([
@@ -272,7 +273,9 @@ export const STUDY_NOTES_KIND_DEFINITIONS: KindDefinition[] = [
     toLegacyServerData: studyNotesServerDataFromEnvelope,
     toMarkdown: studyNotesMarkdownFromValue,
     persistence: { persistStructured: true },
-    loadingComponent: "list",
+    // A list skeleton described the wrong thing: notes are an overview
+    // paragraph plus HEADED sections, which is what `notes` draws.
+    loadingComponent: "notes",
     // Streaming partial kinds: a provisional study_notes document routes to
     // the real StudyNotesBlock and builds section by section — the component
     // is streaming-first (`coerceStudyNotes` tolerates every partial state).

@@ -17,7 +17,10 @@ import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
-import { resolveProvisionalKindRender } from "@/features/content-ir/react/partial-kind-route";
+import {
+  resolveAnnouncedKindLoading,
+  resolveProvisionalKindRender,
+} from "@/features/content-ir/react/partial-kind-route";
 import {
   ProvisionalKindBoundary,
   ProvisionalKindFrame,
@@ -286,6 +289,22 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         </ProvisionalKindFrame>
       </ProvisionalKindBoundary>
     );
+  }
+
+  // Stage 1.6 — ANNOUNCED, not yet renderable. The server named this region's
+  // kind but there is nothing renderable in it yet (the value is still too
+  // thin, the kind withholds provisional values, or nothing can route it).
+  // Show THAT KIND's loading state rather than the region's raw text.
+  //
+  // This is the only kind signal a WORKFLOW run page has: its lane is
+  // `block_shadowed`, so no streaming `__ir` is ever built for the region and
+  // Stage 2 below cannot fire. Without it a node's structured answer rendered
+  // as raw JSON until it finished — Arman, 2026-08-21.
+  const announced = suppressLoadingGate
+    ? null
+    : resolveAnnouncedKindLoading(rawBlock, { streamActive: isStreamActive });
+  if (announced) {
+    return <PendingStructuredBlock key={index} envelope={announced.envelope} />;
   }
 
   // Stage 2 — a JSON region still streaming whose kind is unresolved OR whose

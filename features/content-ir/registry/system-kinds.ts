@@ -170,7 +170,9 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: flashcardsMarkdownFromValue,
     artifact: { canvasType: "flashcards" },
     persistence: { persistStructured: true },
-    loadingComponent: "deck",
+    // A slide-deck skeleton described the wrong thing: a flashcard set is
+    // ONE card face plus the deck pager, which is what `flashcards` draws.
+    loadingComponent: "flashcards",
     // Streaming partial kinds: a provisional flashcard_set routes to the real
     // FlashcardsBlock and grows card by card (the component was streaming-
     // first from day one — a card whose back hasn't arrived renders its
@@ -286,6 +288,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: quizMarkdownFromValue,
     artifact: { canvasType: "quiz" },
     persistence: { persistStructured: true },
+    // Was UNDECLARED, so a quiz announced but not yet answerable fell back to
+    // the generic skeleton — the "generic loading component that was not for
+    // the specific individual kinds" Arman reported on the 2026-08-21 run.
+    loadingComponent: "quiz",
     // Streaming partial kinds: a provisional quiz_set routes to the real
     // MultipleChoiceQuiz and fills in question by question instead of sitting
     // behind QuizLoading for the whole stream. Paired with `{ provisional:

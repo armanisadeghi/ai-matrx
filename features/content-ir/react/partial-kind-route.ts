@@ -117,6 +117,52 @@ export function isPartialReadyKind(kind: string): boolean {
   return kindRegistry.getDefinition(kind)?.partialReady === true;
 }
 
+/**
+ * The ANNOUNCED-but-not-yet-renderable state: the server has said what this
+ * region is, and the region cannot render its real component yet.
+ *
+ * WHY THIS EXISTS SEPARATELY FROM `pendingStructuredEnvelope`.
+ * -----------------------------------------------------------
+ * That function reads the VERIFIED `__ir` channel, which on a chat stream the
+ * frontend's own accumulator fills in as it parses. A WORKFLOW run's lane does
+ * not: when the server opens the block scope it marks the text channel
+ * `block_shadowed` and the lane stops feeding its accumulator, precisely so
+ * one region is never rendered twice under two sets of block ids
+ * (STREAMING_PARTIAL_KINDS.md §7b rule 4). So on a run page there is NO
+ * streaming `__ir` — the ONLY thing that knows what the region is, is the
+ * partial channel. Without this, a workflow node's structured answer fell
+ * through to the raw-text renderer, which is exactly what Arman watched on the
+ * 2026-08-21 Study Pack run: a generic loader, then raw JSON accumulating,
+ * then a swap at the end.
+ *
+ * Returns the provisional envelope to feed the kind's loading component, or
+ * null when there is nothing announced (no event, a terminal, a dead stream).
+ * Deliberately independent of `partialReady`: withholding a VALUE from a
+ * component that might throw on it is a real decision, but withholding the
+ * kind's own loading state is not — a skeleton cannot throw, and the reader
+ * seeing what is coming is the whole point.
+ */
+export function resolveAnnouncedKindLoading(
+  block: { metadata?: Record<string, unknown> },
+  options?: { streamActive?: boolean },
+): { kind: string; envelope: CanonicalBlockIR } | null {
+  // Same anti-stuck-skeleton backstop as resolveProvisionalKindRender: once
+  // the stream is over no terminal can arrive, so a still-open announcement is
+  // stuck by definition and must not hold a loader on screen forever.
+  if (options?.streamActive === false) return null;
+
+  const event = readPartialKindEvent(block.metadata);
+  if (!isProvisionalKind(event)) return null;
+  const kind = event.root.kind;
+  if (!kind) return null;
+
+  // A region that already VERIFIED is the truth; never cover it with a loader.
+  const verified = readEnvelope(block.metadata);
+  if (verified && verified.root.status === "complete") return null;
+
+  return { kind, envelope: envelopeFromPartialKind(event) };
+}
+
 export interface ProvisionalKindRender<T> {
   /** The routed block — same type/serverData shape the final value produces. */
   block: T;

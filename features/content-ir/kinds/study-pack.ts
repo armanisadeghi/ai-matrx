@@ -204,6 +204,7 @@ const MD_KNOWN_KEYS = [
   "quiz",
   "lessons",
   "sources_summary",
+  KIND_KEY,
 ];
 
 const CHILD_MARKDOWN: Record<
@@ -261,6 +262,12 @@ export const STUDY_PACK_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: studyPackMarkdownFromValue,
     persistence: { persistStructured: true },
     loadingComponent: "document",
+    // Streaming partial kinds: a provisional study_pack_set routes to the real
+    // StudyPackBlock and gains its members one at a time. The bridge already
+    // reads every field defensively and marks a member incomplete unless the
+    // node index says otherwise, so a half-arrived pack renders as a pack with
+    // members still filling — never as a throw and never as an empty shell.
+    partialReady: true,
     schema: studyPackSetKindSchema,
   },
 ];

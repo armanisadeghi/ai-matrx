@@ -229,3 +229,82 @@ describe("the facet and its bridge cannot drift apart", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// resolveAnnouncedKindLoading — the workflow run page's ONLY kind signal
+// ---------------------------------------------------------------------------
+//
+// A run page's lane is `block_shadowed` (STREAMING_PARTIAL_KINDS.md §7b rule
+// 4), so no streaming `__ir` is ever built for the region and the pending
+// window that reads `__ir` cannot fire. The partial channel is the only thing
+// that knows what the region is. Without this, a node's structured answer
+// rendered as raw JSON until it finished — Arman, 2026-08-21.
+
+describe("resolveAnnouncedKindLoading — announced but not yet renderable", () => {
+  const rows = FIXTURES.clean_finish ?? [];
+
+  it("names the kind from the FIRST partial, before anything is renderable", async () => {
+    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const first = rows.find((r) => r.event.state === "partial");
+    expect(first).toBeDefined();
+    const announced = resolveAnnouncedKindLoading(blockFor(first!.event), {
+      streamActive: true,
+    });
+    expect(announced?.kind).toBe("quiz_set");
+    expect(announced?.envelope.root.status).toBe("streaming");
+  });
+
+  it("keeps announcing through a WITHHELD kind — a skeleton cannot throw", async () => {
+    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    // Withhold the kind the way a thrown component does. The VALUE is now
+    // withheld (that decision stands) but the reader must still be told what
+    // is coming instead of being shown raw text.
+    markKindPartialUnsafe("quiz_set");
+    const row = rows.find((r) => r.event.state === "partial")!;
+    expect(isPartialReadyKind("quiz_set")).toBe(false);
+    expect(resolveProvisionalKindRender(blockFor(row.event), { streamActive: true })).toBeNull();
+    expect(
+      resolveAnnouncedKindLoading(blockFor(row.event), { streamActive: true })?.kind,
+    ).toBe("quiz_set");
+  });
+
+  it("stops at the terminal and at a dead stream — never a stuck loader", async () => {
+    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const terminal = rows.find((r) => r.event.state !== "partial");
+    expect(terminal).toBeDefined();
+    expect(resolveAnnouncedKindLoading(blockFor(terminal!.event), { streamActive: true })).toBeNull();
+
+    const partial = rows.find((r) => r.event.state === "partial")!;
+    expect(resolveAnnouncedKindLoading(blockFor(partial.event), { streamActive: false })).toBeNull();
+  });
+
+  it("never covers a region that already VERIFIED", async () => {
+    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const partial = rows.find((r) => r.event.state === "partial")!;
+    const block = blockFor(partial.event);
+    block.metadata[IR_ENVELOPE_KEY] = {
+      ...envelopeFromPartialKind(partial.event as never),
+      root: { ...envelopeFromPartialKind(partial.event as never).root, status: "complete" },
+    };
+    expect(resolveAnnouncedKindLoading(block, { streamActive: true })).toBeNull();
+  });
+
+  it("every Study Pack kind resolves a loader that is NOT the generic one", async () => {
+    const { resolveKindLoadingComponent, KIND_LOADING_COMPONENTS } = await import(
+      "../react/loading/kind-loading-registry"
+    );
+    const generic = resolveKindLoadingComponent(null);
+    for (const kind of [
+      "flashcard_set",
+      "quiz_set",
+      "study_notes",
+      "study_pack_set",
+      "lesson_script_set",
+    ]) {
+      const slug = SYSTEM_KIND_DEFINITIONS.find((d) => d.kind === kind)?.loadingComponent;
+      expect(slug).toBeTruthy();
+      expect(KIND_LOADING_COMPONENTS[slug!]).toBeDefined();
+      expect(resolveKindLoadingComponent(slug)).not.toBe(generic);
+    }
+  });
+});
