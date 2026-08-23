@@ -325,8 +325,25 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
 
 ## Open gaps (SDK wishlist — replication agents append friction here; the SDK build consumes it)
 
-1. **Codegen is by hand after publish.** `pnpm shape:types` is run manually; publish does not
-   trigger it, and matrx-extend gets no generated types yet.
+1. **Codegen after publish — GUARDED 2026-08-23; one gap left.**
+   *Closed:* a stale `.gen.ts` can no longer merge unnoticed. `pnpm check:kind-types` is a
+   matrx-frontend release gate in both lanes of `scripts/run-release-gates.sh` (blocking under
+   `--strict`; 12/12 files clean, so there is no backlog to grandfather), it diffs every
+   committed file against live `content_ir.kind_definition`, and the fix it prints is
+   `pnpm shape:types <kind>` — never an edit to a generated file.
+   `scripts/shape/activate-kinds.ts --apply` regenerates immediately after it bumps `version`,
+   and `publish_kind_catalog.py --apply` prints the regeneration command plus the gate it will
+   trip whenever it writes.
+   *Also closed:* matrx-extend needs nothing — it has ZERO kind references in `src`, and it
+   already pulls aidream-generated types automatically at release (`release.sh` step 3 →
+   `pnpm update-api-types`). Kind shapes ride that bundle already wherever a `@kind` model is
+   referenced by an endpoint or stream event. Extend that bundle when a real consumer appears;
+   do not mint a shared package for one that does not.
+   *Still open:* the gate runs at RELEASE, not pre-merge. matrx-frontend has no CI at all, and
+   the generator authenticates over Supabase REST (`NEXT_PUBLIC_SUPABASE_URL` +
+   `SUPABASE_SECRET_KEY`), which aidream's CI does not hold — its `kinds-parity` job already
+   checks out matrx-frontend and could run this too if those two secrets were added. That is
+   Arman's call, not an agent's.
 2. **Compiled `KindSchema` mirrors are hand-written** (Stage B.3) — the SDK should emit them from
    `emitted_json_schema` like the `.gen.ts` files.
 3. **No `kind_component` pre-flight in the publisher** — the stale-override sweep (Stage B.1) is a
