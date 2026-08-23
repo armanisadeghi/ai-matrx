@@ -74,8 +74,12 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 
 **API endpoints**
 
-- `POST /api/voice-agent/token` — `resolveUser` gate → mint xAI `client_secret`
-  (5-minute TTL). Returns `{value, expires_at}`. Mirrors `/api/cartesia/route.ts`.
+- `POST /api/broker/tokens` (aidream, audience `xai_realtime`) — THE realtime
+  credential path. Returns the ephemeral secret plus its `endpoint` and
+  `protocol` as data. The broker owns the provider key, the signed grant, and
+  the child-safety gate on direct model access. **There is no Next.js token
+  route** — `/api/voice-agent/token` was deleted 2026-08-23; a second minting
+  path is a second policy surface that drifts.
 - aidream WebSockets `/api/ai/google/live` and `/api/ai/google/music` — the
   browser sends its Supabase access token only in the first setup frame; the
   server validates it before opening the provider session.
@@ -155,7 +159,7 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 
 - Token TTL is 300s; refresh skew is 30s.
 - `tokenManager` schedules a refetch at `expires_at - 30`.
-- On refresh: re-mint via `POST /api/voice-agent/token`; xAI accepts the new secret on the existing connection via the next reconnect, or via a transparent re-authentication payload (the exact path will be verified during step-2 of the verification matrix).
+- On refresh: re-mint through the broker (`mintCredential("xai_realtime", "none")`); xAI accepts the new secret on the existing connection via the next reconnect, or via a transparent re-authentication payload (the exact path will be verified during step-2 of the verification matrix).
 - On failure: exponential backoff up to 5 attempts (`min(1000 * 2 ** attempt, 10000)` ms).
 
 ---
@@ -178,7 +182,7 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 - **`metadata.voice.turn_id` is the idempotency key.** Do NOT change its semantics; persistence relies on it for retry safety.
 - **Raw audio NEVER goes to deprecated file backend.** The contract is text-transcript only.
 - **The intro route has ZERO settings UI.** New configurability goes to the playground. The intro is the proof-of-craft surface.
-- **`/api/voice-agent/token` is `POST` only.** Never a `GET` — keeps it out of any prefetch / cache path.
+- **The realtime credential is minted ONLY by the aidream token broker.** Never a repo-local route holding `XAI_API_KEY`, and never a second candidate: the broker is where the child-safety gate and the signed grant live, and a credential the browser uses to reach a model directly has no gate after the mint.
 - **AudioWorklet processor file lives at `public/pcm-processor-worklet.js`.** Must be plain JS (no TS), served from the static origin so `audioWorklet.addModule('/pcm-processor-worklet.js')` resolves.
 - **Provider contracts stay separate.** Gemini Live uses aidream as the
   authenticated provider boundary and supports resumable sessions; xAI keeps
@@ -190,7 +194,7 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 
 ## Voice Communication Layer — `relay/` (the voice model as MOUTH, not brain)
 
-Cross-repo SoR: `common-docs/systems/agents/voice/FEATURE.md` — read it first.
+Cross-repo SoR: `common-docs/systems/agents/voice/STATE.md` — read it first.
 The relay inverts this feature's default architecture: the realtime model (the
 **Communicator**, Mandate `voice.communicator`, realtime waiver) never answers the
 user — the user's transcript routes to a **primary text agent** (an ordinary
@@ -234,7 +238,7 @@ carrying that agent's answer.
 - Tests: `relay/relay.test.ts` (protocol, pacing, ledger, side channel,
   controller invariants).
 - **The durable rollout checklist lives in
-  `docs/handoffs/voice-communication-layer.md` — every surface that needs
+  `common-docs/systems/agents/voice/HANDOFF.md` — every surface that needs
   voice is listed there; never trim it without shipping the row.**
 
 ## Related features
@@ -281,6 +285,33 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-08-23` — **Three relay defects fixed; one minting path.**
+  **(1) Dropped utterances.** The relay read `event.transcript` directly on
+  `input_audio_transcription.completed`. xAI ships that text under
+  `transcript`, `text`, or nested in `item.content[]` depending on build — the
+  same variance the session layer normalized on 2026-08-18 — so on an affected
+  build the user spoke, the empty-string early return fired, and the brain
+  heard nothing, silently. Now routed through `transcriptTextFromEvent`, and an
+  unreadable transcript SCREAMS instead of returning quietly.
+  **(2) The wait was filler, not mirroring.** Ruling 4 and the Communicator's DB
+  persona both say *mirror, don't fill*; the persona adds "if a cue gives you a
+  real status, say that instead", so the canned `"Passing that along — one
+  moment."` overrode mirroring on every turn. Added a first-class `[cue:mirror]`
+  cue that carries NO content (the user's words are already in the
+  Communicator's own context) and forbids both answering and guessing.
+  `speakNarration` stays for genuine pipeline stages and the truthful
+  paused/error/cancelled lines.
+  **(3) Broker cutover.** `tokenManager` mints through `lib/api/broker`
+  (`xai_realtime`); `app/api/voice-agent/token` is DELETED. That route carried a
+  child-safety gate nothing else had — an unconsented under-13 getting a
+  credential the browser uses to reach a model directly, where no later gate can
+  fire — so the gate moved server-side into aidream's realtime minters FIRST
+  (`enforce_direct_model_access`, not education-scoped, fails closed); this half
+  only landed on top of it. A 403 is now a `refused` TokenError whose server
+  text is shown verbatim and never retried.
+  Cross-repo SoR migrated to the node kit:
+  `common-docs/systems/agents/voice/{STATE,DECISIONS,HANDOFF,PACKAGING}.md`.
+
 - `2026-08-21` — **The Voice Communication Layer now powers the ambient Education assistant.** `ScrollVoiceAssistantLauncherImpl` puts `useVoiceRelaySession` behind a scroll-gated dynamic boundary and switches one compact launcher between the canonical Smart Agent input and a 48px live `VoiceOrb` rail. Both modes share the primary conversation; switching back or dismissing stops capture. Anonymous visitors see the Voice affordance through `useAuthGuardedAction` but never mount the token-prefetching realtime hook.
 - `2026-08-18` — **Completed user transcripts are authoritative.** A real inline
   tutor voice run exposed an xAI delta variant that rendered
@@ -296,13 +327,13 @@ Implementation tracked in
   interview (shared conversation via the panel's surfaceKey). DB persona
   updated to v2 (pacing modes, coming-up preview, reflective mirroring,
   side-path interrupt handling). Rulings SoR:
-  `common-docs/systems/agents/voice/FEATURE.md`.
+  `common-docs/systems/agents/voice/STATE.md`.
 - `2026-08-17` — **Voice Communication Layer v1 (`relay/`).** The Communicator
   (Mandate `voice.communicator`) speaks FOR a primary text agent: relay
   controller + question ledger client tool + `useVoiceRelaySession` +
   `/demos/voice-relay`; `SessionUpdatePayload.createResponseOnTurn` and the
   `relay` binding on `useXaiVoiceSession`. SoR:
-  `common-docs/systems/agents/voice/FEATURE.md`. Also corrected the
+  `common-docs/systems/agents/voice/STATE.md`. Also corrected the
   stale `app/(a)/...` route paths in Entry points to `(core)`.
 - `2026-08-15` — Clarified the browser-voice boundary and linked the cross-repo communications system record; PSTN/telephony is a separate transport over shared agent, conversation, tool, and transcript primitives, not an implemented part of this feature.
 - `2026-08-15` — **Gemini Live became a first-class realtime surface.** Added

@@ -6,7 +6,7 @@
 // speaks FOR a primary text agent: your speech routes to the primary agent,
 // and the Communicator delivers its answers — one question at a time, with
 // the question ledger. SoR:
-// common-docs/systems/voice-communication-layer/FEATURE.md
+// common-docs/systems/agents/voice/STATE.md
 //
 // Pick any agent as the brain, tap the mic, and talk. The right pane is the
 // primary agent's ordinary conversation (you can also type into it) — proof

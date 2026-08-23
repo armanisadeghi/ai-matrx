@@ -130,7 +130,7 @@ export interface VoiceAgentState {
   instances: Record<string, VoiceAgentInstance>;
 }
 
-/** Token payload returned by `/api/voice-agent/token`. */
+/** Normalized realtime credential, minted via the token broker (`xai_realtime`). */
 export interface VoiceAgentTokenResponse {
   /** Ephemeral `client_secret` value. Passed as WebSocket subprotocol `xai-client-secret.<value>`. */
   value: string;

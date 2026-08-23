@@ -2,7 +2,7 @@
 //
 // The Voice Communication Layer's relay types (working label: "the
 // Communicator"). Cross-repo system-of-record:
-// common-docs/systems/voice-communication-layer/FEATURE.md
+// common-docs/systems/agents/voice/STATE.md
 //
 // THE ROUTING LAW in one sentence: the realtime voice model is the MOUTH,
 // never the brain — the user's utterances route to a primary text agent, and

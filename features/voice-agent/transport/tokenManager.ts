@@ -12,16 +12,38 @@
 //     surface an error via `onError` and stop scheduling new refreshes — the
 //     orchestrator hook is responsible for showing the user a banner.
 
+import { mintCredential } from "@/lib/api/broker/client";
+import { BackendApiError } from "@/lib/api/errors";
 import { TOKEN_REFRESH_SKEW_SECONDS, TOKEN_TTL_SECONDS } from "../constants";
 import type { VoiceAgentTokenResponse } from "../types";
 
-const TOKEN_ENDPOINT = "/api/voice-agent/token";
+/**
+ * The realtime credential comes from the aidream TOKEN BROKER, audience
+ * `xai_realtime` — never from a Next.js route holding its own `XAI_API_KEY`.
+ * The broker is the one place that owns provider keys, the child-safety gate
+ * on direct model access, and the signed grant record; a second minting path
+ * would be a second policy surface that silently drifts.
+ *
+ * `tier_policy: "none"` because xAI does not bake a model into the credential
+ * — the session model is chosen client-side at `session.update`, so there is
+ * nothing for mint-time tier resolution to swap.
+ */
+const BROKER_AUDIENCE = "xai_realtime" as const;
+const BROKER_TIER_POLICY = "none" as const;
 const MAX_REFRESH_ATTEMPTS = 5;
 const REFRESH_BACKOFF_MAX_MS = 10_000;
 
 export interface TokenError {
-  // access-errors: ok — error-code union mirroring the token route's HTTP statuses, never rendered as copy
-  code: "fetch-failed" | "unauthorized" | "service-unavailable" | "malformed";
+  // access-errors: ok — error-code union mirroring the broker's own HTTP statuses, never rendered as copy
+  code:
+    | "fetch-failed"
+    | "unauthorized"
+    /** The broker REFUSED this account (403) — e.g. the child-safety gate on
+     *  direct model access. `message` is the server's user-safe text and is
+     *  shown verbatim; this is a real answer, not a transport failure. */
+    | "refused"
+    | "service-unavailable"
+    | "malformed";
   message: string;
   status?: number;
 }
@@ -92,8 +114,13 @@ export function createTokenManager(
       scheduleRefresh();
     } catch (err) {
       const code = (err as TokenError)?.code ?? "fetch-failed";
-      if (code === "unauthorized" || code === "service-unavailable") {
-        // Non-retryable.
+      if (
+        code === "unauthorized" ||
+        code === "refused" ||
+        code === "service-unavailable"
+      ) {
+        // Non-retryable: a refusal is a decision, not a transient failure —
+        // retrying it five times just repeats the same answer.
         emitError(err as TokenError);
         return;
       }
@@ -112,83 +139,72 @@ export function createTokenManager(
     }
   }
 
+  /** Map a broker failure onto the manager's error vocabulary. */
+  function toTokenError(caught: unknown): TokenError {
+    if (caught instanceof BackendApiError) {
+      const status = caught.status;
+      const code: TokenError["code"] =
+        status === 401
+          ? "unauthorized"
+          : status === 403
+            ? "refused"
+            : status === 503
+              ? "service-unavailable"
+              : "fetch-failed";
+      return {
+        code,
+        // `userMessage` is the server's user-safe text (a 403 refusal carries
+        // the reason a person can act on); `detail` is the diagnostic.
+        message:
+          caught.userMessage || caught.detail || `Broker returned ${status}`,
+        status: status ?? undefined,
+      };
+    }
+    return {
+      code: "fetch-failed",
+      message:
+        caught instanceof Error ? caught.message : "Credential mint failed.",
+    };
+  }
+
   async function fetchToken(): Promise<VoiceAgentTokenResponse> {
     if (inFlight) return inFlight;
-    const body: Record<string, unknown> = {};
-    if (
+    // Dev-only shorter TTL for exercising the refresh path. The broker clamps
+    // to the audience's own bounds regardless of what we ask for.
+    const ttlSeconds =
       opts.devTtlSeconds &&
       opts.devTtlSeconds > 0 &&
       opts.devTtlSeconds <= TOKEN_TTL_SECONDS
-    ) {
-      body.ttl_seconds = opts.devTtlSeconds;
-    }
+        ? opts.devTtlSeconds
+        : TOKEN_TTL_SECONDS;
 
     inFlight = (async () => {
-      const resp = await fetch(TOKEN_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        credentials: "include",
-      });
-
-      if (!resp.ok) {
-        const code: TokenError["code"] =
-          resp.status === 401
-            // access-errors: ok — machine code mapped from the token route's own HTTP 401, not a guess about a read
-            ? "unauthorized"
-            : resp.status === 503
-              ? "service-unavailable"
-              : "fetch-failed";
-        const text = await resp.text().catch(() => "");
-        // The token route returns JSON like `{ error, xai_status, xai_body }`.
-        // Parse it so the surfaced message is human-readable (the actual
-        // xAI error if xAI rejected) instead of raw JSON in the banner.
-        let message = `Token endpoint returned ${resp.status}`;
-        if (text) {
-          try {
-            const parsed = JSON.parse(text) as {
-              error?: string;
-              xai_status?: number;
-              xai_body?: string;
-            };
-            const primary =
-              typeof parsed.error === "string" ? parsed.error : "";
-            const xaiDetail =
-              typeof parsed.xai_body === "string" && parsed.xai_body.length > 0
-                ? ` — xAI said: ${parsed.xai_body.slice(0, 400)}`
-                : "";
-            if (primary) {
-              message = `${primary}${xaiDetail}`;
-            } else {
-              message = text.slice(0, 500);
-            }
-          } catch {
-            message = text.slice(0, 500);
-          }
-        }
-        const err: TokenError = {
-          code,
-          message,
-          status: resp.status,
-        };
-        // Log once on the browser console so the operator inspecting the
-        // network tab sees the full diagnostic alongside the request.
+      let credential;
+      try {
+        credential = await mintCredential(BROKER_AUDIENCE, BROKER_TIER_POLICY, {
+          ttlSeconds,
+        });
+      } catch (caught) {
+        const err = toTokenError(caught);
+        // Log once so the operator inspecting the network tab sees the full
+        // diagnostic beside the request.
         if (typeof console !== "undefined") {
-          console.error("[voice-agent/tokenManager] token mint failed:", {
-            status: resp.status,
-            message,
+          console.error("[voice-agent/tokenManager] credential mint failed:", {
+            status: err.status,
+            code: err.code,
+            message: err.message,
           });
         }
         throw err;
       }
-      const data = (await resp.json()) as Partial<VoiceAgentTokenResponse>;
-      if (!data?.value || typeof data.expires_at !== "number") {
+
+      if (!credential?.token || typeof credential.expires_at !== "number") {
         throw {
           code: "malformed",
-          message: "Token endpoint returned an unexpected payload.",
+          message: "The token broker returned an unexpected credential shape.",
         } satisfies TokenError;
       }
-      current = { value: data.value, expires_at: data.expires_at };
+      current = { value: credential.token, expires_at: credential.expires_at };
       return current;
     })();
 

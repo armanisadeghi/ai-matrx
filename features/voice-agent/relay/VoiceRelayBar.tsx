@@ -11,7 +11,7 @@
 // Mount it with the SAME surfaceKey as the surface's conversation column so
 // spoken and typed turns share one conversation. First consumer: the
 // Masterwork Scout interview panel. SoR:
-// common-docs/systems/voice-communication-layer/FEATURE.md
+// common-docs/systems/agents/voice/STATE.md
 
 import { useState } from "react";
 import { Mic, Square, AudioLines } from "lucide-react";
