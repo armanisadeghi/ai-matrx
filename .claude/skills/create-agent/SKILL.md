@@ -125,6 +125,15 @@ component-less `__kind` wrapper.
   label, what the component must do, which lists stream>}`. **`kind_creator`**
   (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`) is the conversational guided loop — drive it
   with `user_message`. Check `get_agent` before driving either; the shape can change.
+- **Two mechanics observed 2026-08-23 (flashcards wave):** (a) `agent_run` on Kind Architect
+  ALWAYS exceeds the MCP call timeout — the run keeps going server-side, so treat it as
+  fire-and-track: check `content_ir.kind_definition` (or `conversations search <slug>`) a
+  couple of minutes later instead of re-firing (a re-fire mints duplicates). (b) Kind
+  Architect writes kinds under the CALLER's org as `visibility=internal`; a **platform** kind
+  (anything a mandate declares as `output_kind`) must then be promoted to the system org
+  `39c38960-d30c-4840-b0c1-c9960de95582` + `visibility=public` — definition, components,
+  examples, edges — or learners outside your org get the generic renderer. Feedback
+  `91bd0093` asks for a `scope`/`kind_promote` fix; until then, promote by hand.
 - Component bar: dense (minimal padding, no wasted space), mobile-friendly, interactive
   where the data invites it (drag-and-drop, sort, edit, add/remove for lists), one-click
   copy per section plus compact whole-result copy affordances (JSON / MD / CSV / TXT /
@@ -237,7 +246,11 @@ What the Keyword Analysis Master shows, and every agent you create should have:
 - Every `update` auto-creates a version. **Pin a version** (`list_versions` → newest →
   `is_version=true`) for any code or long-lived caller; run the live row only ad-hoc.
 - `update` refuses unknown keys — loudly. That is a feature; fix your key, don't retry
-  blind.
+  blind. Known-editable: `model_id`, `settings`, `category`, `tags`, `tools`, `tool_config`,
+  `skill_config`, `output_schema`, `card_visibility`, `messages` (replaces the whole array —
+  resend the system message verbatim), `variable_definitions` (replaces the whole list —
+  the way to drop a variable the builder invented, e.g. a learner's question that belongs on
+  `user_input`).
 - `updates.tools` REPLACES the whole tool set; omitted = unchanged; `[]` = remove all.
 - Never claim success without the returned `agent_id` + `version_id`, a read-back
   (`get_agent`), and at least one real run.
