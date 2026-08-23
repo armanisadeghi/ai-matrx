@@ -32574,6 +32574,26 @@ export type Database = {
         Returns: Json
       }
       _library_assert_admin: { Args: { p_actor: string }; Returns: undefined }
+      _library_audit: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_detail: Json
+          p_entity_id: string
+          p_entity_type: string
+          p_industry_id: string
+          p_org: string
+        }
+        Returns: undefined
+      }
+      _library_entity_owner: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: string
+      }
+      _library_publish_gate: {
+        Args: { p_audience: string; p_entity_id: string; p_entity_type: string }
+        Returns: undefined
+      }
       _scope_system_resolve_type_id: {
         Args: { p_kind: string; p_op: Json; p_org_id: string }
         Returns: string
@@ -37030,6 +37050,10 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { p_org_id: string }; Returns: boolean }
+      is_pack_curator: {
+        Args: { p_pack_id: string; p_user: string }
+        Returns: boolean
+      }
       is_platform_admin: { Args: never; Returns: boolean }
       is_resource_owner: {
         Args: { p_resource_id: string; p_resource_type: string }
@@ -37130,6 +37154,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      library_entitlement: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
       library_grant_provenance: {
         Args: { p_store: string }
         Returns: {
@@ -37150,6 +37182,60 @@ export type Database = {
           organization_id: string
           store_id: string
         }[]
+      }
+      library_list_grants: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: {
+          audience: string
+          created_at: string
+          granted_by: string
+          id: string
+          industry_id: string
+          industry_name: string
+          industry_slug: string
+          organization_id: string
+          organization_name: string
+        }[]
+      }
+      library_publish: {
+        Args: {
+          p_actor?: string
+          p_audience: string
+          p_entity_id: string
+          p_entity_type: string
+          p_industry_id?: string
+          p_organization_id?: string
+        }
+        Returns: Database["platform"]["Tables"]["entity_grants"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "entity_grants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      library_revoke: {
+        Args: { p_actor?: string; p_grant_id: string }
+        Returns: undefined
+      }
+      library_subscribe: {
+        Args: {
+          p_actor?: string
+          p_entity_id: string
+          p_entity_type: string
+          p_organization_id: string
+          p_target?: Json
+        }
+        Returns: Json
+      }
+      library_unsubscribe: {
+        Args: {
+          p_actor?: string
+          p_entity_id: string
+          p_entity_type: string
+          p_organization_id: string
+        }
+        Returns: undefined
       }
       list_context_value_refs: {
         Args: { p_ref_key: string; p_ref_type: string }
@@ -38895,6 +38981,10 @@ export type Database = {
       }
       user_can_read_data_store_via_grant: {
         Args: { p_store: string; p_user: string }
+        Returns: boolean
+      }
+      user_can_read_via_library_grant: {
+        Args: { p_id: string; p_type: string; p_user: string }
         Returns: boolean
       }
       user_container_ids: {
@@ -41037,6 +41127,8 @@ export type Database = {
           created_at: string
           data_store_id: string | null
           detail: Json
+          entity_id: string | null
+          entity_type: string | null
           id: string
           industry_id: string | null
           target_organization_id: string | null
@@ -41047,6 +41139,8 @@ export type Database = {
           created_at?: string
           data_store_id?: string | null
           detail?: Json
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           industry_id?: string | null
           target_organization_id?: string | null
@@ -41057,6 +41151,8 @@ export type Database = {
           created_at?: string
           data_store_id?: string | null
           detail?: Json
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           industry_id?: string | null
           target_organization_id?: string | null
@@ -50006,7 +50102,11 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          pack_version: number
           proposal: Json | null
+          proposed_at: string | null
+          proposed_by: string | null
+          proposed_industry: string | null
           ratification_notes: string | null
           ratified_at: string | null
           ratified_by: string | null
@@ -50015,6 +50115,7 @@ export type Database = {
           source_notes: string | null
           status: string
           summary: string | null
+          supersedes_pack_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -50033,7 +50134,11 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          pack_version?: number
           proposal?: Json | null
+          proposed_at?: string | null
+          proposed_by?: string | null
+          proposed_industry?: string | null
           ratification_notes?: string | null
           ratified_at?: string | null
           ratified_by?: string | null
@@ -50042,6 +50147,7 @@ export type Database = {
           source_notes?: string | null
           status?: string
           summary?: string | null
+          supersedes_pack_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -50060,7 +50166,11 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          pack_version?: number
           proposal?: Json | null
+          proposed_at?: string | null
+          proposed_by?: string | null
+          proposed_industry?: string | null
           ratification_notes?: string | null
           ratified_at?: string | null
           ratified_by?: string | null
@@ -50069,12 +50179,21 @@ export type Database = {
           source_notes?: string | null
           status?: string
           summary?: string | null
+          supersedes_pack_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "starter_pack_supersedes_pack_id_fkey"
+            columns: ["supersedes_pack_id"]
+            isOneToOne: false
+            referencedRelation: "starter_pack"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       starter_pack_item: {
         Row: {
@@ -50673,6 +50792,11 @@ export type Database = {
         }
         Returns: string
       }
+      _pack_assert_author: { Args: { p_pack_id: string }; Returns: undefined }
+      _pack_assert_creator: {
+        Args: { p_industry_id: string }
+        Returns: undefined
+      }
       _pack_geo_archetypes: {
         Args: { p_geo_place_ids?: Json; p_geo_places: Json; p_pack_id: string }
         Returns: {
@@ -50685,6 +50809,7 @@ export type Database = {
           tokens: Json
         }[]
       }
+      _pack_touch: { Args: { p_pack_id: string }; Returns: undefined }
       _site_keyword_query_totals: {
         Args: { p_site_id: string }
         Returns: {
@@ -52079,7 +52204,9 @@ export type Database = {
       starter_pack_catalog: {
         Args: { p_organization_id?: string; p_status?: string }
         Returns: {
+          can_author: boolean
           description: string
+          entitled_via: string
           geo_area_count: number
           geo_band_count: number
           geo_model: string
@@ -52088,8 +52215,11 @@ export type Database = {
           industry: string
           industry_id: string
           industry_name: string
+          industry_slug: string
           name: string
           org_match: boolean
+          pack_version: number
+          proposed_at: string
           ratification_notes: string
           ratified_at: string
           rule_count: number
@@ -52097,8 +52227,12 @@ export type Database = {
           source_corpus: Json
           source_notes: string
           status: string
+          subscribed: boolean
+          subscriber_count: number
           summary: string
+          supersedes_pack_id: string
           topic_count: number
+          updated_at: string
           value_band_count: number
         }[]
       }
@@ -52107,6 +52241,24 @@ export type Database = {
         Returns: Json
       }
       starter_pack_detail: { Args: { p_pack_id: string }; Returns: Json }
+      starter_pack_from_proposal: {
+        Args: {
+          p_industry_id?: string
+          p_proposal: Json
+          p_source_corpus?: Json
+          p_source_site_ids?: string[]
+        }
+        Returns: Json
+      }
+      starter_pack_item_delete: {
+        Args: { p_item_id: string }
+        Returns: undefined
+      }
+      starter_pack_item_save: { Args: { p_item: Json }; Returns: Json }
+      starter_pack_new_version: {
+        Args: { p_pack_id: string; p_slug?: string }
+        Returns: Json
+      }
       starter_pack_preview: {
         Args: {
           p_end: string
@@ -52117,6 +52269,16 @@ export type Database = {
           p_site_id: string
           p_start: string
         }
+        Returns: Json
+      }
+      starter_pack_rule_delete: {
+        Args: { p_rule_id: string }
+        Returns: undefined
+      }
+      starter_pack_rule_save: { Args: { p_rule: Json }; Returns: Json }
+      starter_pack_save: { Args: { p_pack: Json }; Returns: Json }
+      starter_pack_set_status: {
+        Args: { p_notes?: string; p_pack_id: string; p_status: string }
         Returns: Json
       }
       starter_pack_site_adoptions: {
