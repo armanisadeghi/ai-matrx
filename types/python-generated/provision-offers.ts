@@ -1405,6 +1405,15 @@ export interface SeoSiteStrategyInterviewOffer {
   valuer_version: string;
 }
 
+/** Offered shape of provision `seo.starter_pack_proposal` (kind `seo.starter_pack_proposal.offer`). */
+export interface SeoStarterPackProposalOffer {
+  corpus_json: unknown;
+  topic_tree_json: unknown;
+  industry_hint: string;
+  expert_rulings: unknown;
+  proposer_version: string;
+}
+
 /** Offered shape of provision `seo.topic_assignment` (kind `seo.topic_assignment.offer`). */
 export interface SeoTopicAssignmentOffer {
   keywords: unknown;
@@ -1738,6 +1747,7 @@ export interface ProvisionOffers {
   "seo.serp_intent_analysis": SeoSerpIntentAnalysisOffer;
   "seo.site_intake": SeoSiteIntakeOffer;
   "seo.site_strategy_interview": SeoSiteStrategyInterviewOffer;
+  "seo.starter_pack_proposal": SeoStarterPackProposalOffer;
   "seo.topic_assignment": SeoTopicAssignmentOffer;
   "surfaces_client.binding_context": SurfacesClientBindingContextOffer;
   "tool_viz.component_generation": ToolVizComponentGenerationOffer;
@@ -1923,6 +1933,7 @@ export const PROVISION_OFFER_KINDS = {
   "seo.serp_intent_analysis": "seo.serp_intent_analysis.offer",
   "seo.site_intake": "seo.site_intake.offer",
   "seo.site_strategy_interview": "seo.site_strategy_interview.offer",
+  "seo.starter_pack_proposal": "seo.starter_pack_proposal.offer",
   "seo.topic_assignment": "seo.topic_assignment.offer",
   "surfaces_client.binding_context": "surfaces_client.binding_context.offer",
   "tool_viz.component_generation": "tool_viz.component_generation.offer",
