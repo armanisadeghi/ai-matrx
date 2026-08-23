@@ -143,11 +143,11 @@ export function ImpactPanel({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Figure
               value={formatCount(impact.matched_keywords)}
-              label="keywords matched"
+              label="keywords get this stamp"
             />
             <Figure
               value={formatCount(impact.moved_keywords)}
-              label="change band on save"
+              label="change value band"
               tone={impact.moved_keywords > 0 ? "text-primary" : "text-muted-foreground"}
             />
             <Figure value={formatCount(impact.matched_clicks)} label="clicks affected" />
@@ -157,11 +157,22 @@ export function ImpactPanel({
             />
           </div>
 
+          {(impact.stamped_only_keywords ?? 0) > 0 ? (
+            <p className="rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] leading-4 text-muted-foreground">
+              <strong className="text-foreground">
+                {formatCount(impact.stamped_only_keywords)}
+              </strong>{" "}
+              of the matched keywords have no topic worth yet, so they receive
+              the stamp (you can filter and group by it) but their value band
+              does not move — a stamp never invents value. Place them on the
+              topic tree and the stamp starts counting.
+            </p>
+          ) : null}
           {impact.moved_keywords === 0 ? (
             <p className="rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] text-muted-foreground">
-              It matches keywords, but none of them change band — they are
-              already where this rule would put them (often already at the top
-              or bottom of the scale).
+              {(impact.stamped_only_keywords ?? 0) > 0
+                ? "No value band changes on save — only stamps."
+                : "It matches keywords, but none of them change band — they are already where this rule would put them (often already at the top or bottom of the scale)."}
             </p>
           ) : (
             <ul className="space-y-1">
@@ -203,9 +214,12 @@ export function ImpactPanel({
               {impact.samples.map((sample) => (
                 <li
                   key={sample.keyword_id}
-                  className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5"
+                  className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-card px-2.5 py-1.5"
                 >
-                  <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+                  <span
+                    className="min-w-0 flex-1 basis-full break-words text-[11px] text-foreground sm:basis-auto"
+                    title={sample.keyword}
+                  >
                     {sample.keyword}
                   </span>
                   <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">

@@ -69,6 +69,8 @@ export interface RuleImpact {
   matched_impressions: number;
   /** Of the matched keywords, how many actually change band. */
   moved_keywords: number;
+  /** Matched keywords with no topic worth: they receive the stamp, their band does not move. */
+  stamped_only_keywords: number;
   /** Matched keywords an expert already ruled — arithmetic never moves them. */
   protected_keywords: number;
   movements: RuleImpactMovement[];

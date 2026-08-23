@@ -24,7 +24,7 @@ export type ValueSource = "override" | "computed" | "unvalued";
 export type ValueReason =
   | { kind: "override" }
   | { kind: "topic"; topic: string; weight: number; root: string | null; negative_guard: boolean }
-  | { kind: "default_base"; weight: number }
+  | { kind: "no_base"; pending_base: true }
   | { kind: "rule"; rule_id: string; name: string; multiplier: number }
   | { kind: "geo"; band: string; area: string; multiplier: number };
 

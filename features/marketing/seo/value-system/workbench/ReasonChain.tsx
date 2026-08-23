@@ -55,11 +55,13 @@ function reasonView(reason: ValueReason): ReasonView {
           : `Starts from the topic "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} root)` : ""}, which you weighted ${reason.weight} out of 100.`,
         tone: reason.negative_guard ? "text-destructive" : undefined,
       };
-    case "default_base":
+    case "no_base":
       return {
         icon: Landmark,
-        text: `Base ${reason.weight}`,
-        detail: `No topic worth reaches this keyword, so it starts from the default base of ${reason.weight}.`,
+        text: "Stamped — no topic worth yet",
+        detail:
+          "Rules or geo areas matched this keyword (the stamps below), but no topic worth reaches it, so there is nothing for them to multiply. It stays Unvalued until the keyword sits under a topic you have weighted. Stamps never invent value.",
+        tone: "text-muted-foreground",
       };
     case "rule":
       return {
