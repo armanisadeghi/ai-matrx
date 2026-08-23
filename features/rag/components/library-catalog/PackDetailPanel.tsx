@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
+  BookOpenCheck,
   Boxes,
   Building2,
   Globe2,
@@ -176,6 +177,11 @@ export function PackDetailPanel({
   });
   const status = STATUS_META[item.status ?? ""] ?? null;
   const pack = detail.data?.pack ?? null;
+  // Counts come from the ROWS the detail RPC returned, not from the pack row:
+  // `starter_pack_detail` hands back the raw `seo.starter_pack` record, which
+  // carries no *_count columns (those are computed by the catalog function).
+  // Reading them off `pack` printed a confident 0 next to a list of 40.
+  const parts = detail.data;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -262,28 +268,46 @@ export function PackDetailPanel({
           ) : (
             <>
               <div className="flex flex-wrap gap-1.5">
-                <Stat icon={TreePine} count={pack?.topic_count ?? 0} label="topics" />
-                <Stat icon={ListChecks} count={pack?.rule_count ?? 0} label="rules" />
+                <Stat
+                  icon={TreePine}
+                  count={parts?.topics.length ?? 0}
+                  label="topics"
+                />
+                <Stat
+                  icon={ListChecks}
+                  count={parts?.rules.length ?? 0}
+                  label="rules"
+                />
                 <Stat
                   icon={Layers}
-                  count={pack?.value_band_count ?? 0}
+                  count={parts?.value_bands.length ?? 0}
                   label="value bands"
                 />
                 <Stat
                   icon={Layers}
-                  count={pack?.geo_band_count ?? 0}
+                  count={parts?.geo_bands.length ?? 0}
                   label="geo bands"
                 />
                 <Stat
                   icon={MapPinned}
-                  count={pack?.geo_area_count ?? 0}
+                  count={parts?.geo_areas.length ?? 0}
                   label="geo areas"
                 />
               </div>
               {pack?.guidelines ? (
-                <p className="rounded-md border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-                  {pack.guidelines}
-                </p>
+                <div>
+                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+                    <BookOpenCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                    Business guidelines
+                  </p>
+                  {/* Bounded and pre-wrapped, exactly as the site's own pack
+                      review screen shows it — a guidelines document is pages of
+                      prose, and printing it as one paragraph made the previous
+                      pack UI unreadable. */}
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-2 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin">
+                    {pack.guidelines}
+                  </pre>
+                </div>
               ) : null}
               <PackPreviewLists detail={detail.data ?? null} />
             </>
