@@ -18,6 +18,7 @@ import {
 const VARIANTS = [
   {
     id: "refine",
+    href: "/demos/canonical-flashcards-refine",
     name: "Refine",
     posture: "Recommended canonical candidate",
     description:
@@ -26,6 +27,7 @@ const VARIANTS = [
   },
   {
     id: "reimagine",
+    href: "/demos/canonical-flashcards-reimagine",
     name: "Reimagine",
     posture: "Policy-first exploration",
     description:
@@ -34,6 +36,7 @@ const VARIANTS = [
   },
   {
     id: "dense",
+    href: "/demos/canonical-flashcards-dense",
     name: "Dense",
     posture: "Power-study workspace",
     description:
@@ -42,6 +45,7 @@ const VARIANTS = [
   },
   {
     id: "sharp",
+    href: "/demos/canonical-flashcards-sharp",
     name: "Sharp",
     posture: "Clean focused evolution",
     description:
@@ -161,7 +165,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
                   capabilities explicit inputs.
                 </p>
                 <Link
-                  href="/demos/canonical-flashcards/refine"
+                  href="/demos/canonical-flashcards-refine"
                   className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Open recommended proof
@@ -219,7 +223,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
             {VARIANTS.map((variant) => (
               <Link
                 key={variant.id}
-                href={`/demos/canonical-flashcards/${variant.id}`}
+                href={variant.href}
                 className="group flex min-h-44 flex-col rounded-2xl border border-border bg-card p-5 shadow-[var(--elevation-1)] transition-colors hover:border-primary/50 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-start justify-between gap-3">
