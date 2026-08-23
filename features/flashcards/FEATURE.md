@@ -157,6 +157,21 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-22 — 🚨 **The spoken grader can no longer grade a silence.** A live bench run proved
+  `flashcards.grade_spoken` with NO audio attached invented a transcript and returned
+  `correct` — a learner who said nothing was marked right. Both halves are fixed. **Wire:**
+  `runSpokenGrader` (`fast-fire/agents/grading-core.ts`) now delivers the clip as the mandate's
+  NAMED offered value — `variables.answer_audio = <durable file_id>` — instead of smuggling it
+  onto the turn as a message part (`fileHandler.toContentPart` + `messageParts`, both gone;
+  the two-step attach path with them). aidream declares `answer_audio` as `kind="file"`,
+  **guaranteed**, so the server REFUSES a no-audio run before the agent is resolved and before
+  a token is spent (`assert_offer_complete`; `aidream/services/mandates/FEATURE.md` § THE
+  GUARANTEE IS A PROMISE). Same conversion for `education.spoken_practice_grade` and, on the
+  vision side, `education.grade_handwritten` / `runVisionGrader`. **Product:** the learner is
+  now TOLD — `NO_ANSWER_HEARD` ("We didn't hear an answer — try again.") is one exported
+  constant returned by `gradeSpokenAnswer` and `gradePracticeAnswer` whenever there is no clip,
+  so SingleCardVoiceTest, AudioReviewSession and Spoken Practice all show it instead of a blank
+  "skipped". A failed UPLOAD keeps its own distinct, retryable message.
 - 2026-08-22 — **Agent Manifest Campaign wave 1 (consumer step).** The 11 `flashcards.*` mandates
   now point at builtin agents that emit registered kinds; this wave cleaned the consumers: ONE
   card reader (`data/coerce-card.ts` — topic gen, from-source, kit deck, top-up, envelope save),
