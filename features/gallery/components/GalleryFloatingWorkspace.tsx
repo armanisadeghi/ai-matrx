@@ -395,10 +395,10 @@ export function GalleryFloatingWorkspace() {
                     setFavorites((prev) => prev.filter((f) => f.id !== fav.id));
                     toast("Removed from favorites");
                   }}
-                  className="absolute top-0 right-0 p-0.5 bg-black/50 text-white rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Remove"
+                  className="absolute top-0 right-0 p-0.5 max-sm:p-3 bg-black/50 text-white rounded-bl opacity-0 group-hover:opacity-100 max-sm:opacity-100 transition-opacity"
+                  aria-label="Remove from favorites"
                 >
-                  <X className="w-2.5 h-2.5" />
+                  <X className="w-2.5 h-2.5 max-sm:w-5 max-sm:h-5" />
                 </button>
               </button>
             ))
@@ -449,20 +449,22 @@ export function GalleryFloatingWorkspace() {
             className="flex items-center gap-1.5"
           >
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50" />
+              <Search className="absolute left-2 max-sm:left-3 top-1/2 -translate-y-1/2 w-3 h-3 max-sm:w-4 max-sm:h-4 text-muted-foreground/50" />
               <input
                 ref={searchRef}
                 type="text"
                 placeholder="Search photos..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full h-6 pl-6 pr-2 text-[11px] rounded-md border border-border bg-background focus:ring-1 focus:ring-primary outline-none placeholder:text-muted-foreground/40 transition-all"
+                /* 16px on mobile so iOS never zooms on focus. */
+                className="w-full h-6 max-sm:h-11 pl-6 max-sm:pl-9 pr-2 text-[11px] max-sm:text-base rounded-md border border-border bg-background focus:ring-1 focus:ring-primary outline-none placeholder:text-muted-foreground/40 transition-all"
               />
               {searchInput && (
                 <button
                   type="button"
                   onClick={() => setSearchInput("")}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground/40 hover:text-foreground"
+                  aria-label="Clear search text"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 max-sm:p-3 text-muted-foreground/40 hover:text-foreground"
                 >
                   <X className="w-2.5 h-2.5" />
                 </button>
@@ -474,7 +476,7 @@ export function GalleryFloatingWorkspace() {
               onClick={() => setShowTopics((v) => !v)}
               title="Quick topics"
               className={cn(
-                "h-6 px-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+                "h-6 px-1.5 max-sm:h-11 max-sm:px-4 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
                 showTopics && "bg-accent text-foreground",
               )}
             >
@@ -486,7 +488,7 @@ export function GalleryFloatingWorkspace() {
                 type="button"
                 onClick={handleReset}
                 title="Clear search"
-                className="h-6 px-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="h-6 px-1.5 max-sm:h-11 max-sm:px-4 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
               </button>
@@ -502,7 +504,7 @@ export function GalleryFloatingWorkspace() {
                   type="button"
                   onClick={() => handleTopicClick(topic)}
                   className={cn(
-                    "px-2 py-0.5 text-[10px] rounded-full border transition-colors",
+                    "px-2 py-0.5 max-sm:px-3 max-sm:py-2 text-[10px] max-sm:text-sm rounded-full border transition-colors",
                     activeQuery?.toLowerCase() === topic.toLowerCase()
                       ? "border-primary/40 bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -533,7 +535,7 @@ export function GalleryFloatingWorkspace() {
                   }
                 }}
                 className={cn(
-                  "px-1.5 py-0.5 text-[9px] rounded transition-colors",
+                  "px-1.5 py-0.5 max-sm:px-3 max-sm:py-2 text-[9px] max-sm:text-sm rounded transition-colors",
                   orientationFilter === value
                     ? "bg-primary/15 text-primary font-medium"
                     : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
@@ -655,7 +657,9 @@ function PhotoCard({
       <div
         className={cn(
           "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent",
-          "opacity-0 group-hover:opacity-100 transition-opacity",
+          // Touch has no hover: the actions would be unreachable on mobile,
+          // so the overlay stays visible there.
+          "opacity-0 group-hover:opacity-100 max-sm:opacity-100 transition-opacity",
           "flex flex-col justify-end",
           isCompact ? "p-0.5" : "p-1.5",
         )}
@@ -681,7 +685,7 @@ function PhotoCard({
         {/* Action buttons */}
         <div
           className={cn(
-            "flex items-center gap-0.5 mt-0.5",
+            "flex flex-wrap items-center gap-0.5 mt-0.5",
             isCompact && "justify-center",
           )}
         >
@@ -691,16 +695,19 @@ function PhotoCard({
             active={isFavorited}
           >
             <Heart
-              className={cn("w-2.5 h-2.5", isFavorited && "fill-current")}
+              className={cn(
+                "w-2.5 h-2.5 max-sm:w-5 max-sm:h-5",
+                isFavorited && "fill-current",
+              )}
             />
           </ActionBtn>
           {!isCompact && (
             <>
               <ActionBtn onClick={onDownload} title="Download">
-                <Download className="w-2.5 h-2.5" />
+                <Download className="w-2.5 h-2.5 max-sm:w-5 max-sm:h-5" />
               </ActionBtn>
               <ActionBtn onClick={onCopyLink} title="Copy link">
-                <Link2 className="w-2.5 h-2.5" />
+                <Link2 className="w-2.5 h-2.5 max-sm:w-5 max-sm:h-5" />
               </ActionBtn>
               <ActionBtn
                 onClick={(e) => {
@@ -710,7 +717,7 @@ function PhotoCard({
                 }}
                 title="Open on Unsplash"
               >
-                <ExternalLink className="w-2.5 h-2.5" />
+                <ExternalLink className="w-2.5 h-2.5 max-sm:w-5 max-sm:h-5" />
               </ActionBtn>
             </>
           )}
@@ -747,6 +754,9 @@ function ActionBtn({
       title={title}
       className={cn(
         "p-1 rounded-sm transition-colors",
+        // 44pt minimum on touch (ios-mobile-first); the row wraps rather than
+        // overflowing a narrow card.
+        "max-sm:min-h-11 max-sm:min-w-11 max-sm:flex max-sm:items-center max-sm:justify-center",
         active
           ? "bg-rose-500/30 text-rose-300 hover:bg-rose-500/50"
           : "bg-black/30 text-white/70 hover:bg-black/50 hover:text-white",
