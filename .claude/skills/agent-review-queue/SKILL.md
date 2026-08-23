@@ -153,24 +153,37 @@ Then say in your final message that you registered it, with the title.
 
 ## Statuses — the contract
 
-| status              | meaning                                                                | who moves it                                            |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| `pending`           | Needs Arman's review                                                   | you, on insert (and after fixing, to re-request review) |
-| `changes_requested` | Feedback in `feedback`; repair work is routed/claimed through metadata | Arman                                                   |
-| `approved`          | Approved; do any follow-through, then archive                          | Arman                                                   |
-| `archived`          | Done. Hidden from the queue                                            | **you**, after handling feedback                        |
+🚨 **These seven are the ONLY legal values** — `agent.review_queue_status_check` rejects anything
+else, and the frontend's `REVIEW_STATUSES` (`features/admin/agent-review/types.ts`) is the same
+list in the same order. This doc taught `pending` / `changes_requested` until 2026-08-22; both
+were rejected by the database, so every agent that followed those words got a constraint
+violation. Never invent a status; read `REVIEW_STAGE_ORDER` if you need the order.
+
+| status                    | meaning                                                             | who moves it |
+| ------------------------- | ------------------------------------------------------------------- | ------------ |
+| `submitted`               | You filed it. The default on insert — agents triage from here.       | you, on insert |
+| `agent_review`            | An agent is reviewing it.                                            | the reviewing agent |
+| `agent_changes_requested` | An agent found problems; repair is routed/claimed through metadata.  | the reviewing agent |
+| `ready_for_human`         | **The only status that reaches Arman.** Agent-reviewed, repaired, verified. | the reviewing agent |
+| `human_changes_requested` | Arman's feedback is in `feedback` (the service REQUIRES feedback text with this status). | Arman |
+| `approved`                | Approved; do any follow-through, then archive.                       | Arman |
+| `archived`                | Done. Hidden from the queue.                                         | **you**, after handling feedback |
+
+**Agents review first — that is the whole point.** A row you insert sits at `submitted` and must
+be agent-reviewed and repaired before anything sets `ready_for_human`; only then does Arman see
+it. Filing straight to `ready_for_human` puts unverified work in front of him.
 
 ## Reading your own feedback (start of task)
 
 ```sql
 select id, title, url, status, feedback, feedback_at, metadata from agent.review_queue
-where status in ('changes_requested','approved') and source = 'ai-matrx'
+where status in ('agent_changes_requested','human_changes_requested','approved') and source = 'ai-matrx'
 order by feedback_at desc;
 ```
 
-- `changes_requested` → claim it before work, make the changes, verify them, then set `status='pending'`, `assignment.state='awaiting_review'`, and replace `instructions` with what changed and what to re-check.
+- `agent_changes_requested` / `human_changes_requested` → claim it before work, make the changes, verify them, then set `status='ready_for_human'`, `assignment.state='awaiting_review'`, and replace `instructions` with what changed and what to re-check.
 - `approved` → finish any follow-through (wire it in, remove the demo, etc.), then `set status='archived'`.
-- **The queue must never rot.** Handling a row's feedback ends with YOU updating that row — re-request review or archive. Never leave a handled item sitting in `changes_requested`/`approved`. If a demo is superseded or deleted, archive its row.
+- **The queue must never rot.** Handling a row's feedback ends with YOU updating that row — re-request review or archive. Never leave a handled item sitting in `*_changes_requested`/`approved`. If a demo is superseded or deleted, archive its row.
 - Arman may also paste a row at you via "Copy for AI" (`kind: agent-review-item`) — treat the embedded `feedback` as the instruction, then update the row per the rules above.
 
 ## Repair coordination — claim by lane and tool
@@ -182,14 +195,14 @@ The current legacy backlog should be coordinator-owned because old rows did not 
 1. Implementation specialist claims and fixes one row.
 2. Specialist records evidence and moves assignment state to `verifying`.
 3. A browser/DB/deployment verifier performs the required checks and records `verification.verified_by`, `verified_at`, and notes.
-4. Only then does the coordinator return the row to `pending` for human re-review.
+4. Only then does the coordinator return the row to `ready_for_human` for human re-review.
 
 Find work requiring a specific tool (JSONB containment is indexed later if volume ever warrants it; at this queue size a direct query is sufficient):
 
 ```sql
 select id, title, url, source, feedback, metadata->'triage' as triage
 from agent.review_queue
-where status = 'changes_requested'
+where status in ('agent_changes_requested','human_changes_requested')
   and metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
   and metadata->'triage'->'assignment'->>'state' = 'ready'
 order by
@@ -205,7 +218,7 @@ Claim exactly one matching row without racing another agent:
 with candidate as (
   select id
   from agent.review_queue
-  where status = 'changes_requested'
+  where status in ('agent_changes_requested','human_changes_requested')
     and metadata->'triage'->>'lane' = 'browser_ui'
     and metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
     and metadata->'triage'->'assignment'->>'state' = 'ready'
@@ -243,7 +256,7 @@ The verifier records their stable label in `verification.verified_by`. Prefer a 
 
 - **This queue, not prose.** A "please test /demos/foo" buried in a chat message is the anti-pattern — register it.
 - **No deployment status, ever** — see "Everything is LIVE" above.
-- Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `pending` instead.
+- Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `submitted` instead.
 - Never infer ownership from `source`; it is only the repository identifier.
 - 🚨 **`url` is the DESTINATION — write the real deep route** the reviewer should
   open, never a bare `/`, never a placeholder, never the repo root. It is no
