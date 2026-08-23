@@ -40,6 +40,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — the single source the storage rows (`data[]` + kind_edge) and the
@@ -150,7 +151,7 @@ export function mediaChaptersServerDataFromEnvelope(
 // toMarkdown facet — the chapter index as a readable list.
 // ---------------------------------------------------------------------------
 
-const MD_KNOWN_KEYS = ["chapters"];
+const MD_KNOWN_KEYS = ["chapters", KIND_KEY];
 
 export function mediaChaptersMarkdownFromValue(
   value: Record<string, unknown>,

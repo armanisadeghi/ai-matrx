@@ -125,9 +125,10 @@ const CARD_KNOWN_KEYS = [
   "audio_explanation",
   "detailed_explanation",
   "subcards",
+  KIND_KEY,
 ];
 
-const SET_KNOWN_KEYS = ["title", "set_title", "cards"];
+const SET_KNOWN_KEYS = ["title", "set_title", "cards", KIND_KEY];
 
 function subcardLine(subcard: Record<string, unknown>): string {
   const front = typeof subcard.front === "string" ? subcard.front : "";

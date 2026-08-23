@@ -41,6 +41,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const COOKING_RECIPE_KIND = "cooking_recipe";
 export const RECIPE_INGREDIENT_KIND = "recipe_ingredient";
@@ -120,6 +121,7 @@ const ROOT_KNOWN_KEYS = [
   "ingredients",
   "instructions",
   "notes",
+  KIND_KEY,
 ];
 
 function asNonEmptyString(value: unknown): string | null {
@@ -208,8 +210,8 @@ export const cookingRecipeServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 // asymmetry — extras are for human reading, not the round-trip).
 // ---------------------------------------------------------------------------
 
-const INGREDIENT_KNOWN_KEYS = ["amount", "item"];
-const STEP_KNOWN_KEYS = ["action", "description", "time"];
+const INGREDIENT_KNOWN_KEYS = ["amount", "item", KIND_KEY];
+const STEP_KNOWN_KEYS = ["action", "description", "time", KIND_KEY];
 
 /** "15 minutes prep" / "60 minutes baking" → "15 minutes" / "60 minutes". */
 function stripTimeRole(time: string): string {

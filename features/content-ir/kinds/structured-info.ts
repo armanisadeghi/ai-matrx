@@ -41,6 +41,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** The BlockComponentRegistry type string the legacy renderer routes on. */
 export const STRUCTURED_INFO_LEGACY_BLOCK_TYPE = "structured_info";
@@ -99,9 +100,9 @@ export const STRUCTURED_INFO_SCHEMA: KindSchema = {
 // bold "Additional details" section; section/item extras ride inline lists.
 // ---------------------------------------------------------------------------
 
-const ITEM_KNOWN_KEYS = ["label", "text"];
-const SECTION_KNOWN_KEYS = ["heading", "body", "items"];
-const ROOT_KNOWN_KEYS = ["title", "description", "sections"];
+const ITEM_KNOWN_KEYS = ["label", "text", KIND_KEY];
+const SECTION_KNOWN_KEYS = ["heading", "body", "items", KIND_KEY];
+const ROOT_KNOWN_KEYS = ["title", "description", "sections", KIND_KEY];
 
 function itemLine(item: Record<string, unknown>): string {
   const label = typeof item.label === "string" ? item.label.trim() : "";

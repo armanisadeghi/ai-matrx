@@ -12,11 +12,17 @@
  *      parser's own validator), with the legacy parser's deterministic ids.
  *   4. THE KEYSTONE: a real `<troubleshooting>` wire sample converges through
  *      the `troubleshooting_legacy_text` strategy into a schema-passing
- *      canonical value, and bridging that value reproduces BYTE-EQUAL
- *      serverData to the legacy direct-parse path.
- *   5. toMarkdown: the export is the component parser's own dialect — it
- *      round-trips through parseTroubleshootingMarkdown back to the same
- *      serverData.
+ *      canonical value, and bridging that value reproduces the legacy
+ *      direct-parse serverData EXACTLY — apart from the `__kind` markers the
+ *      kind path carries and the marker-free legacy parser cannot know about.
+ *      `withoutMarkers` below is the ONE place that difference is allowed:
+ *      it exists to compare against a FOREIGN parser's output, never to
+ *      normalize platform data (KINDS_EVERYWHERE_PLAN §4.2 — the marker is
+ *      part of the data everywhere else).
+ *   5. toMarkdown: the export is the component parser's own dialect — a human
+ *      grammar with no slot for the discriminator — so it round-trips through
+ *      parseTroubleshootingMarkdown back to the same serverData modulo those
+ *      same markers.
  */
 
 import {
@@ -41,6 +47,23 @@ import {
 import type { KindSchema } from "@ai-matrx/content-ir";
 
 type TroubleshootingData = ReturnType<typeof parseTroubleshootingMarkdown>;
+
+/**
+ * Deep copy with every `__kind` removed — TEST-ONLY, and only for comparing
+ * against the legacy component parser, which predates kinds and emits no
+ * markers. Never a production transform.
+ */
+function withoutMarkers(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutMarkers);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => key !== "__kind")
+        .map(([key, child]) => [key, withoutMarkers(child)]),
+    );
+  }
+  return value;
+}
 
 const schemasByKind = new Map<string, KindSchema>();
 for (const def of TROUBLESHOOTING_KIND_DEFINITIONS) {
@@ -204,7 +227,11 @@ describe("troubleshooting_guide — render leg (legacy bridge)", () => {
       tags: ["network", "connectivity"],
     });
     expect(guide.issues[0].solutions[1].steps[0].links).toEqual([
-      { title: "API Key Management", url: "https://example.com/api-keys" },
+      {
+        __kind: "troubleshooting_link",
+        title: "API Key Management",
+        url: "https://example.com/api-keys",
+      },
     ]);
   });
 
@@ -254,8 +281,11 @@ describe("<troubleshooting> XML surface — the keystone convergence", () => {
       envelopeFromCompleteValue(value, "troubleshooting_guide"),
     );
     // The exact object TroubleshootingArtifact would have produced from the
-    // raw region text — one grammar, two arrival surfaces.
-    expect(serverData).toEqual(parseTroubleshootingMarkdown(WIRE_INNER));
+    // raw region text — one grammar, two arrival surfaces. The kind path
+    // additionally carries identity, which the legacy parser has no notion of.
+    expect(withoutMarkers(serverData)).toEqual(
+      parseTroubleshootingMarkdown(WIRE_INNER),
+    );
   });
 
   it("a region with no **Symptom:** marker is a loud parse failure (null)", () => {
@@ -285,7 +315,10 @@ describe("troubleshooting_guide — toMarkdown facet", () => {
         "troubleshooting_guide",
       ),
     );
-    expect(reparsed).toEqual(bridged);
+    // The markdown dialect is a HUMAN grammar with no slot for `__kind`, so
+    // the identity is the one thing a round trip through it cannot carry.
+    // Everything else must match the bridge exactly.
+    expect(reparsed).toEqual(withoutMarkers(bridged));
   });
 
   it("dialect-inexpressible fields still render (nothing silently vanishes)", () => {

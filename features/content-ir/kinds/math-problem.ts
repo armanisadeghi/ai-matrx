@@ -26,6 +26,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const mathProblemServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "math_problem",
@@ -47,12 +48,13 @@ export const mathProblemServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 // details").
 // ---------------------------------------------------------------------------
 
-const MD_STEP_KNOWN_KEYS = ["title", "equation", "explanation", "simplified"];
+const MD_STEP_KNOWN_KEYS = ["title", "equation", "explanation", "simplified", KIND_KEY];
 const MD_SOLUTION_KNOWN_KEYS = [
   "task",
   "steps",
   "solutionAnswer",
   "transitionText",
+  KIND_KEY,
 ];
 const MD_PROBLEM_KNOWN_KEYS = [
   "title",
@@ -68,6 +70,7 @@ const MD_PROBLEM_KNOWN_KEYS = [
   "resources",
   "difficulty_level",
   "related_content",
+  KIND_KEY,
 ];
 
 function stepMarkdown(step: Record<string, unknown>, index: number): string {

@@ -38,6 +38,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror the component's interfaces exactly (field names included),
@@ -265,7 +266,7 @@ export const troubleshootingServerDataFromEnvelope =
 // as steps/causes).
 // ---------------------------------------------------------------------------
 
-const MD_GUIDE_KNOWN_KEYS = ["title", "description", "issues"];
+const MD_GUIDE_KNOWN_KEYS = ["title", "description", "issues", KIND_KEY];
 const MD_ISSUE_KNOWN_KEYS = [
   "id",
   "symptom",
@@ -274,6 +275,7 @@ const MD_ISSUE_KNOWN_KEYS = [
   "causes",
   "solutions",
   "relatedIssues",
+  KIND_KEY,
 ];
 const MD_SOLUTION_KNOWN_KEYS = [
   "id",
@@ -283,6 +285,7 @@ const MD_SOLUTION_KNOWN_KEYS = [
   "successRate",
   "tags",
   "steps",
+  KIND_KEY,
 ];
 const MD_STEP_KNOWN_KEYS = [
   "id",
@@ -292,6 +295,7 @@ const MD_STEP_KNOWN_KEYS = [
   "links",
   "difficulty",
   "estimatedTime",
+  KIND_KEY,
 ];
 
 /** "Key: value" lines — never bulleted (see module doc). Null when empty. */

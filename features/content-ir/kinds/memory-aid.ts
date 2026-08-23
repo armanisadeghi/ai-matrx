@@ -49,6 +49,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Shared vocabulary — the technique enums both shapes draw from.
@@ -465,6 +466,7 @@ const AID_MD_KNOWN_KEYS = [
   "analogies",
   "memory_palace",
   "memoryPalace",
+  KIND_KEY,
 ];
 
 export function memoryAidMarkdownFromValue(
@@ -513,7 +515,7 @@ export function memoryAidMarkdownFromValue(
   ]);
 }
 
-const HINT_MD_KNOWN_KEYS = ["technique", "aid", "explanation"];
+const HINT_MD_KNOWN_KEYS = ["technique", "aid", "explanation", KIND_KEY];
 
 export function memoryHintMarkdownFromValue(
   value: Record<string, unknown>,

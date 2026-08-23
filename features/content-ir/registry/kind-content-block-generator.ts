@@ -180,7 +180,8 @@ function synthesize(node: SchemaNode | null, depth = 0): unknown {
 
 // ─── Public entry ───────────────────────────────────────────────────────────
 
-function stripRootKindShape(value: unknown): unknown {
+/** Drop the root marker so `withRootKind` can re-stamp the AUTHORITATIVE slug. */
+function withoutRootKindMarker(value: unknown): unknown {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const { __kind: _dropped, ...rest } = value as Record<string, unknown>;
     return rest;
@@ -191,9 +192,10 @@ function stripRootKindShape(value: unknown): unknown {
 /** The concrete emit sample — real example preferred, synthesized as fallback. */
 function sampleData(input: GenerateContentBlockInput): unknown {
   if (input.canonicalExample !== undefined && input.canonicalExample !== null) {
-    // Root __kind is stripped in storage; strip defensively in case a caller
-    // passes an emit-shaped value, then re-add it via withRootKind below.
-    return stripRootKindShape(input.canonicalExample);
+    // Stored examples carry their marker. Drop it here ONLY so `withRootKind`
+    // below re-stamps the slug this block is actually being generated for —
+    // an example carrying a stale/mismatched marker must not win.
+    return withoutRootKindMarker(input.canonicalExample);
   }
   const node = asNode(input.emittedJsonSchema);
   return node ? synthesize(node) : null;

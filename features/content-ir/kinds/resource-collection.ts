@@ -45,6 +45,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const RESOURCE_TYPE_VALUES = [
   "documentation",
@@ -122,9 +123,9 @@ export const RESOURCE_COLLECTION_KIND_SCHEMAS: Record<string, KindSchema> = {
 // ---------------------------------------------------------------------------
 
 /** Keys mapped (possibly reshaped) explicitly — everything else rides along. */
-const MAPPED_ITEM_KEYS = new Set(["id", "title", "url", "description", "type"]);
-const MAPPED_CATEGORY_KEYS = new Set(["id", "name", "resources"]);
-const MAPPED_SET_KEYS = new Set(["title", "categories"]);
+const MAPPED_ITEM_KEYS = new Set(["id", "title", "url", "description", "type", KIND_KEY]);
+const MAPPED_CATEGORY_KEYS = new Set(["id", "name", "resources", KIND_KEY]);
+const MAPPED_SET_KEYS = new Set(["title", "categories", KIND_KEY]);
 
 function mapItem(
   item: Record<string, unknown>,
@@ -247,11 +248,12 @@ const MD_ITEM_KNOWN_KEYS = [
   "tags",
   "isFavorite",
   "isCompleted",
+  KIND_KEY,
 ];
 
-const MD_CATEGORY_KNOWN_KEYS = ["id", "name", "description", "resources"];
+const MD_CATEGORY_KNOWN_KEYS = ["id", "name", "description", "resources", KIND_KEY];
 
-const MD_SET_KNOWN_KEYS = ["title", "description", "categories"];
+const MD_SET_KNOWN_KEYS = ["title", "description", "categories", KIND_KEY];
 
 function itemLine(item: Record<string, unknown>): string {
   const title = typeof item.title === "string" ? item.title : "";

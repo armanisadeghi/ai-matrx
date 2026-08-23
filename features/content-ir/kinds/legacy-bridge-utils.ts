@@ -11,44 +11,41 @@
  *      while the block streams), so deriving serverData mid-stream is waste.
  *   2. Reconstruct the ZERO-LOSS value (`reconstructRegionValue` merges every
  *      node's residue extras back in — nothing the model emitted is missing).
- *   3. Strip the injected `__kind` discriminators (deep by default; "root"
- *      for payloads whose NESTED data may legitimately contain a `__kind`
- *      key, e.g. a schema_proposal whose JSON Schema declares the
- *      discriminator property itself).
- *   4. Reshape into the exact object the legacy component consumes.
- *   5. Memoize per envelope identity — envelopes are immutable snapshots, so
+ *   3. Reshape into the exact object the legacy component consumes.
+ *   4. Memoize per envelope identity — envelopes are immutable snapshots, so
  *      the derived serverData is reference-stable across re-renders and
  *      memoized components bail out (the flashcards precedent).
  *
  * Build failures (malformed complete payloads) resolve to `undefined`: the
  * routed block then falls back to its raw-content parse path, which the
  * legacy parsers' `parsed.<root_key> || parsed` fallbacks tolerate.
+ *
+ * THERE IS NO STRIP STEP (removed 2026-08-23). This bridge used to delete the
+ * `__kind` discriminators — deep by default — before `build` ever saw the
+ * value, which is the storage/render stripping the platform annihilated:
+ * `__kind` is PART OF THE DATA (KINDS_EVERYWHERE_PLAN §4.2), and a bridge that
+ * hides it from `build` is a bridge that cannot tell WHAT it is reshaping.
+ * `build` now receives the value verbatim. A build that copies unknown keys
+ * through (the zero-data-loss "extras" collectors) must list the marker among
+ * its mapped keys so identity never surfaces as a data field — see
+ * `MARKER_KEY` below.
  */
 
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import {
-  reconstructRegionValue,
-  stripKindDeep,
-} from "@ai-matrx/content-ir";
+import { reconstructRegionValue } from "@ai-matrx/content-ir";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Remove the injected root discriminator only — nested keys untouched. */
-function stripKindRoot(value: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value)) {
-    if (key === KIND_KEY) continue;
-    out[key] = child;
-  }
-  return out;
-}
+/**
+ * The discriminator key, re-exported for the extras collectors: identity is
+ * never an "unknown extra field" to copy into a component's serverData.
+ */
+export const MARKER_KEY = KIND_KEY;
 
 export interface CompleteEnvelopeBridgeOptions {
-  /** `__kind` removal depth — "deep" (default) or "root" (see module doc). */
-  strip?: "deep" | "root";
   /**
    * PARTIAL-READY opt-in: also build from a `status: "streaming"` envelope.
    *
@@ -73,7 +70,7 @@ export interface CompleteEnvelopeBridgeOptions {
 
 /**
  * Build a `toLegacyServerData` facet for a kind whose component only renders
- * complete payloads. `build` receives the reconstructed, kind-stripped value
+ * complete payloads. `build` receives the reconstructed value verbatim (markers included)
  * and returns the component's serverData (or undefined to decline).
  */
 export function makeCompleteEnvelopeBridge<
@@ -101,12 +98,8 @@ export function makeCompleteEnvelopeBridge<
 
     let out: T | undefined;
     try {
-      const reconstructed = reconstructRegionValue(envelope);
-      const value =
-        options?.strip === "root"
-          ? stripKindRoot(reconstructed)
-          : (stripKindDeep(reconstructed) as Record<string, unknown>);
-      out = build(value, envelope);
+      // Verbatim — markers included, at every depth.
+      out = build(reconstructRegionValue(envelope), envelope);
     } catch {
       // Malformed complete payload — decline; the raw-content parse path
       // (and its own loud error handling) takes over.

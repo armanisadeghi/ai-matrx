@@ -1,20 +1,17 @@
 /**
- * The forward composer: given a kind's STORED example (source shape, `__kind`
- * stripped — see `stripRootKind` in studio/instance-service.ts) produce the
- * EMIT/RENDER payload the platform actually detects — `{ "__kind": <slug>,
- * ...data }`.
+ * The forward composer: given a kind's stored example, produce the EMIT/RENDER
+ * payload — `{ "__kind": <slug>, ...data }`.
  *
- * WHY THIS EXISTS: the whole system stores and validates the source shape
- * (no `__kind`), because the schema represents source data and `__kind` is
- * injected only at emit time. But a human or an agent who wants to SEE the
- * component render, paste a working sample into a chat, or teach another agent
- * needs the render shape — the one that leads with `__kind`. That shape lived
- * only inside the skill body until now. This is the one-liner that makes it
- * obtainable anywhere, the mirror of `stripRootKind`.
+ * Since 2026-08-23 stored examples and instances ALREADY carry their marker
+ * (`__kind` is part of the data — KINDS_EVERYWHERE_PLAN §4.2), so for a
+ * well-formed row this is an IDENTITY with a guarantee attached: the marker is
+ * the FIRST key and it names the right slug. It stays because it is also the
+ * repair for the legacy rows and hand-typed values that do not, and because a
+ * caller wanting a copy-ready render payload should not have to know which it
+ * has.
  *
- * Objects get `__kind` prepended (first key, matching the house convention and
- * the parser's expectation). Scalars/arrays are returned unchanged — for those
- * kinds the identity travels out of band (`root.kind`), there is no key to add.
+ * Scalars/arrays are returned unchanged — for those kinds the identity travels
+ * out of band (`root.kind`); there is no key to add.
  */
 
 import { KIND_KEY } from "@ai-matrx/content-ir";

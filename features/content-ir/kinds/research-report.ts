@@ -51,6 +51,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
  * The REAL component contract — derived from the component's own parser
@@ -421,6 +422,7 @@ const MAPPED_REPORT_KEYS = new Set([
   "sourceQuality",
   "limitations",
   "metadata",
+  KIND_KEY,
 ]);
 
 /**
@@ -516,9 +518,10 @@ const MD_FINDING_KNOWN_KEYS = [
   "significance",
   "futureImplications",
   "confidenceLevel",
+  KIND_KEY,
 ];
 
-const MD_REPORT_KNOWN_KEYS = [...MAPPED_REPORT_KEYS, "additionalDetails"];
+const MD_REPORT_KNOWN_KEYS = [...MAPPED_REPORT_KEYS, "additionalDetails", KIND_KEY];
 
 function bulletList(items: string[]): string | null {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : null;

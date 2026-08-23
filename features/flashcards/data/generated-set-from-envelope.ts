@@ -15,7 +15,6 @@
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   reconstructRegionValue,
-  stripKindDeep,
 } from "@/features/content-ir/redux/render-block-envelope";
 import type { GeneratedCardSet } from "./useGenerateCards";
 import { coerceCards, setTitleOf } from "./coerce-card";
@@ -32,10 +31,11 @@ export function generatedSetFromEnvelope(
   if (envelope.root.kind !== "flashcard_set") return null;
   if (envelope.root.status !== "complete") return null;
 
-  // Zero-loss read (residue extras merged back), then the parser-injected
-  // __kind discriminators are stripped so nothing internal leaks onward.
-  // The cards narrow through THE ONE card reader (coerce-card.ts).
-  const reconstructed = stripKindDeep(reconstructRegionValue(envelope));
+  // Zero-loss read (residue extras merged back), markers included — nothing
+  // strips `__kind` any more (KINDS_EVERYWHERE_PLAN §4.2). Nothing leaks
+  // either: `setTitleOf` and THE ONE card reader (coerce-card.ts) name every
+  // field they take, so the discriminator simply is not one of them.
+  const reconstructed = reconstructRegionValue(envelope);
   const title = setTitleOf(reconstructed);
   const cards = coerceCards(reconstructed);
 

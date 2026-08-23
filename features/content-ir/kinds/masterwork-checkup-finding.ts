@@ -48,6 +48,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /** The verb the Expert is being asked to approve. */
 export type CheckupChange = "add" | "modify" | "retire";
@@ -341,6 +342,7 @@ const MD_KNOWN_KEYS = [
   "belongs_in",
   "confidence",
   "found_by",
+  KIND_KEY,
 ];
 
 const CHANGE_HEADINGS: Record<CheckupChange, string> = {

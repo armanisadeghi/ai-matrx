@@ -170,17 +170,16 @@ export interface RunResultData extends Record<string, unknown> {
   wrapper: RunResultWrapper;
 }
 
-// `strip: "root"` is load-bearing on both: the nested `output` is a data-kind
+// Both bridges receive the value verbatim: the nested `output` is a data-kind
 // instance whose OWN `__kind` is the only thing that routes it to its
-// component. Stripping deep would erase it and cost the payload its renderer —
-// the exact corruption the delegation law forbids.
+// component, and the wrapper's own marker is its identity. Nothing is stripped
+// — the exact corruption the delegation law forbids.
 export const nodeOutcomeServerData = makeCompleteEnvelopeBridge<NodeOutcomeData>(
   NODE_OUTCOME_KIND,
   (value) => {
     const wrapper = readNodeOutcomeValue(value);
     return wrapper ? { wrapper } : undefined;
   },
-  { strip: "root" },
 );
 
 export const runResultServerData = makeCompleteEnvelopeBridge<RunResultData>(
@@ -189,7 +188,6 @@ export const runResultServerData = makeCompleteEnvelopeBridge<RunResultData>(
     const wrapper = readRunResultValue(value);
     return wrapper ? { wrapper } : undefined;
   },
-  { strip: "root" },
 );
 
 // ---------------------------------------------------------------------------

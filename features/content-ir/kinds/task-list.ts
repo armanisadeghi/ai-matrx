@@ -43,6 +43,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Canonical schemas — the single authored source. The migration's
@@ -82,8 +83,8 @@ export const TASK_LIST_KIND_SCHEMA: KindSchema = {
 // facet (grammar + extras + heading).
 // ---------------------------------------------------------------------------
 
-const ITEM_KNOWN_KEYS = ["title", "item_type", "checked", "bold", "children"];
-const SET_KNOWN_KEYS = ["title", "items"];
+const ITEM_KNOWN_KEYS = ["title", "item_type", "checked", "bold", "children", KIND_KEY];
+const SET_KNOWN_KEYS = ["title", "items", KIND_KEY];
 
 type ItemType = "section" | "task" | "subtask";
 

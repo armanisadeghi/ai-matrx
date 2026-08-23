@@ -78,6 +78,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
  * The canonical question types — one per branch of QuestionnaireRenderer's
@@ -228,8 +229,9 @@ const MAPPED_QUESTION_KEYS = new Set([
   "options",
   "min",
   "max",
+  KIND_KEY,
 ]);
-const MAPPED_ROOT_KEYS = new Set(["title", "description", "questions"]);
+const MAPPED_ROOT_KEYS = new Set(["title", "description", "questions", KIND_KEY]);
 
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
@@ -398,8 +400,9 @@ const MD_QUESTION_KNOWN_KEYS = [
   "options",
   "min",
   "max",
+  KIND_KEY,
 ];
-const MD_ROOT_KNOWN_KEYS = ["title", "description", "questions"];
+const MD_ROOT_KNOWN_KEYS = ["title", "description", "questions", KIND_KEY];
 
 function questionMarkdown(
   question: Record<string, unknown>,

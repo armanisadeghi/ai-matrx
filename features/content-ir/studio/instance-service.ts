@@ -7,8 +7,12 @@
  * Python. Mirrors the aidream `instance_*` toolset semantics EXACTLY so the
  * two write paths can never disagree:
  *
- *   - `data` stores PURE data — a root `__kind` marker is stripped before
- *     write (parsers re-add envelopes; storage is payload-only).
+ *   - `data` stores the marker: `__kind` is PART OF THE DATA
+ *     (KINDS_EVERYWHERE_PLAN §4.2), stamped (or corrected) as the FIRST key on
+ *     every write so a stored row can never forget what it is. Nothing here
+ *     strips it — the DB validation trigger tolerates the marker on its own
+ *     (`content_ir.compute_example_validation`), and so does the server's
+ *     `instance_*` toolset, which does exactly the same stamping.
  *   - `title` is app-derived (see `./instance-title.ts` — explicit → the
  *     kind's `metadata.title_key` override → the shared `INSTANCE_TITLE_KEYS`
  *     list, mirroring the server's `derive_title`) unless explicit.
@@ -35,12 +39,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Root-level `__kind` removed — instances store pure data (server parity). */
-export function stripRootKind(value: Record<string, unknown>): Record<string, unknown> {
-  if (!(KIND_KEY in value)) return value;
-  const { [KIND_KEY]: _dropped, ...rest } = value;
-  void _dropped;
-  return rest;
+/**
+ * The value as a stored instance of `kind`: `__kind` set (or corrected) as the
+ * FIRST key, everything else verbatim. The mirror of aidream's
+ * `ensure_root_marker` — the two write paths stamp identically.
+ */
+export function withRootKindMarker(
+  value: Record<string, unknown>,
+  kind: string,
+): Record<string, unknown> {
+  const { [KIND_KEY]: _existing, ...rest } = value;
+  void _existing;
+  return { [KIND_KEY]: kind, ...rest };
 }
 
 export interface KindInstanceWriteResult {
@@ -68,7 +78,7 @@ export interface SaveKindInstanceArgs {
    * detects a mid-session bump (`versionBumped` on the result).
    */
   kindVersion: number;
-  /** The instance value (may carry a root `__kind`; stripped before write). */
+  /** The instance value. Its root `__kind` is stamped/corrected before write. */
   value: Record<string, unknown>;
   /**
    * The CALLER's org (never the kind's). Callers read
@@ -100,11 +110,11 @@ export interface SaveKindInstanceResult extends KindInstanceWriteResult {
 /** Live `version` + `emitted_json_schema` of a definition — freshness read. */
 async function fetchLiveDefinition(
   kindDefinitionId: string,
-): Promise<{ version: number; emittedJsonSchema: Json | null }> {
+): Promise<{ kind: string; version: number; emittedJsonSchema: Json | null }> {
   const { data, error } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("version,emitted_json_schema")
+    .select("kind,version,emitted_json_schema")
     .eq("id", kindDefinitionId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -116,7 +126,11 @@ async function fetchLiveDefinition(
       "The kind definition no longer resolves (deleted or access revoked).",
     );
   }
-  return { version: data.version, emittedJsonSchema: data.emitted_json_schema };
+  return {
+    kind: data.kind,
+    version: data.version,
+    emittedJsonSchema: data.emitted_json_schema,
+  };
 }
 
 /**
@@ -140,7 +154,7 @@ export async function saveKindInstance(
   }
 
   const live = await fetchLiveDefinition(kindDefinitionId);
-  const data = stripRootKind(value);
+  const data = withRootKindMarker(value, live.kind);
   const { data: row, error } = await supabase
     .schema("content_ir")
     .from("kind_instance")
@@ -211,10 +225,29 @@ export async function listMyKindInstances(
 
 export interface UpdateKindInstanceArgs {
   id: string;
-  /** Full replacement payload (root `__kind` stripped before write). */
+  /** Full replacement payload. Its root `__kind` is stamped before write. */
   value: Record<string, unknown>;
   /** The kind's `metadata.title_key` override — same contract as save. */
   titleKey?: string | null;
+}
+
+/** The kind slug an instance row is pinned to. Throws if it no longer resolves. */
+async function instanceKindSlug(instanceId: string): Promise<string> {
+  const { data, error } = await supabase
+    .schema("content_ir")
+    .from("kind_instance")
+    .select("kind_definition:kind_definition_id(kind)")
+    .eq("id", instanceId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to read the instance's kind: ${error.message}`);
+  }
+  const kind = (data?.kind_definition as { kind?: string } | null)?.kind;
+  if (!kind) {
+    throw new Error("The instance's kind no longer resolves (deleted or access revoked).");
+  }
+  return kind;
 }
 
 async function currentUserId(): Promise<string> {
@@ -228,7 +261,9 @@ async function currentUserId(): Promise<string> {
 export async function updateKindInstance(
   args: UpdateKindInstanceArgs,
 ): Promise<KindInstanceWriteResult> {
-  const data = stripRootKind(args.value);
+  // The kind is re-read from the row being updated, never trusted from the
+  // caller — the marker written must be the row's ACTUAL kind.
+  const data = withRootKindMarker(args.value, await instanceKindSlug(args.id));
   const { data: row, error } = await supabase
     .schema("content_ir")
     .from("kind_instance")
@@ -253,7 +288,7 @@ export async function updateKindInstance(
 
 export interface RepinKindInstanceArgs {
   id: string;
-  /** The instance's CURRENT stored data (pure, no `__kind`). */
+  /** The instance's CURRENT stored data (marker included — it is the data). */
   data: Record<string, unknown>;
   /**
    * The instance's kind — the LIVE version + `emitted_json_schema` are

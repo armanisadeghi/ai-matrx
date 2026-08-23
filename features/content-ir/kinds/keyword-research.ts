@@ -122,10 +122,9 @@ export interface SeoKeywordResearchResultData {
 }
 
 /**
- * COMPLETE bridge (a finished node result has no half-state to render), and
- * `strip: "root"` deliberately: the nested artifact's `__kind` is exactly what
- * the component delegates on — a deep strip would re-create the anonymous
- * payload this whole path exists to fix.
+ * COMPLETE bridge (a finished node result has no half-state to render). The
+ * value arrives verbatim: the nested artifact's `__kind` is exactly what the
+ * component delegates on, and the root's marker is identity, not noise.
  */
 export const seoKeywordResearchResultServerDataFromEnvelope =
   makeCompleteEnvelopeBridge<SeoKeywordResearchResultData & Record<string, unknown>>(
@@ -136,7 +135,6 @@ export const seoKeywordResearchResultServerDataFromEnvelope =
       volume: isRecord(value.volume) ? value.volume : null,
       classification: isRecord(value.classification) ? value.classification : null,
     }),
-    { strip: "root" },
   );
 
 export const keywordClassificationBatchKindSchema: KindSchema = {
@@ -419,9 +417,9 @@ export function splitKeywordClassificationSegments(text: string): string[] {
 // toMarkdown facets
 // ---------------------------------------------------------------------------
 
-const RESEARCH_KNOWN_KEYS = ["primary_keyword", "keyword_lists"];
-const LIST_KNOWN_KEYS = ["label", "keywords"];
-const BATCH_KNOWN_KEYS = ["classifier_version", "results"];
+const RESEARCH_KNOWN_KEYS = ["primary_keyword", "keyword_lists", KIND_KEY];
+const LIST_KNOWN_KEYS = ["label", "keywords", KIND_KEY];
+const BATCH_KNOWN_KEYS = ["classifier_version", "results", KIND_KEY];
 
 export function keywordResearchMarkdownFromValue(
   value: Record<string, unknown>,

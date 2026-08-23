@@ -49,6 +49,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -254,6 +255,7 @@ const SEO_PACKAGE_KNOWN_KEYS = [
   "faq",
   "schema_org",
   "open_graph",
+  KIND_KEY,
 ];
 
 function labelledLine(label: string, value: unknown): string | null {

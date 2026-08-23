@@ -35,6 +35,7 @@ import {
   stringList,
   stringOrEmpty,
 } from "./media-io-shared";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of PodcastSpeaker / PodcastEpisodeOutput.
@@ -202,6 +203,7 @@ const MD_KNOWN_KEYS = [
   "official_video_error",
   "episode_id",
   "episode_slug",
+  KIND_KEY,
 ];
 
 export function podcastEpisodeMarkdownFromValue(

@@ -44,6 +44,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -143,6 +144,7 @@ const PAGE_BRIEF_KNOWN_KEYS = [
   "must_not_cover",
   "concerns",
   "suggested_word_count",
+  KIND_KEY,
 ];
 
 function bulletList(value: unknown): string | null {

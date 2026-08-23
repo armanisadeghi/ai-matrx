@@ -48,6 +48,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — the compiled client mirror of IngestedContent / IngestedChunk.
@@ -333,6 +334,7 @@ const MD_KNOWN_KEYS = [
   "sources_ingested",
   "sources_failed",
   "errors",
+  KIND_KEY,
 ];
 
 export function ingestedSourcesMarkdownFromValue(

@@ -35,6 +35,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const VIDEO_PROMPT_ASPECT_RATIOS = ["16:9", "9:16"] as const;
 export const VIDEO_PROMPT_CLIP_LENGTHS = ["4s", "6s", "8s"] as const;
@@ -137,6 +138,7 @@ const MAPPED_SET_KEYS = new Set([
   "concept_received",
   "action",
   "prompts",
+  KIND_KEY,
 ]);
 const MAPPED_VARIATION_KEYS = new Set([
   "variation",
@@ -144,6 +146,7 @@ const MAPPED_VARIATION_KEYS = new Set([
   "aspect_ratio",
   "clip_length",
   "prompt",
+  KIND_KEY,
 ]);
 
 function nonEmptyString(value: unknown): string | null {
@@ -215,13 +218,14 @@ export const videoPromptOptionsServerDataFromEnvelope =
 // unknown keys never silently vanish.
 // ---------------------------------------------------------------------------
 
-const MD_SET_KNOWN_KEYS = ["concept_received", "action", "prompts"];
+const MD_SET_KNOWN_KEYS = ["concept_received", "action", "prompts", KIND_KEY];
 const MD_VARIATION_KNOWN_KEYS = [
   "variation",
   "interpretation",
   "aspect_ratio",
   "clip_length",
   "prompt",
+  KIND_KEY,
 ];
 
 function variationMarkdown(

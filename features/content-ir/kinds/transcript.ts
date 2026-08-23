@@ -151,9 +151,10 @@ const SEGMENT_KNOWN_KEYS = [
   "text",
   "speaker",
   "isHighlighted",
+  KIND_KEY,
 ];
 
-const ROOT_KNOWN_KEYS = ["title", "subtitle", "segments"];
+const ROOT_KNOWN_KEYS = ["title", "subtitle", "segments", KIND_KEY];
 
 function segmentLine(segment: Record<string, unknown>): string | null {
   const text = typeof segment.text === "string" ? segment.text.trim() : "";

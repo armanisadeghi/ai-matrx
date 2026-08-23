@@ -24,6 +24,7 @@ import {
   joinBlocks,
   isRecordValue,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const diagramServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "diagram_spec",
@@ -47,9 +48,9 @@ export const diagramServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 // under "Additional details" / inline extras — present, not prominent.
 // ---------------------------------------------------------------------------
 
-const MD_NODE_KNOWN_KEYS = ["id", "label", "type", "description", "details"];
-const MD_EDGE_KNOWN_KEYS = ["id", "source", "target", "label", "relationship"];
-const MD_SPEC_KNOWN_KEYS = ["title", "description", "type", "nodes", "edges"];
+const MD_NODE_KNOWN_KEYS = ["id", "label", "type", "description", "details", KIND_KEY];
+const MD_EDGE_KNOWN_KEYS = ["id", "source", "target", "label", "relationship", KIND_KEY];
+const MD_SPEC_KNOWN_KEYS = ["title", "description", "type", "nodes", "edges", KIND_KEY];
 
 function nodeMarkdownLine(node: Record<string, unknown>): string {
   const label =

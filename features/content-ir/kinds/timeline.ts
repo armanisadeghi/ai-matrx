@@ -47,6 +47,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const TIMELINE_EVENT_STATUSES = [
   "completed",
@@ -116,9 +117,10 @@ const MAPPED_EVENT_KEYS = new Set([
   "description",
   "status",
   "category",
+  KIND_KEY,
 ]);
-const MAPPED_PERIOD_KEYS = new Set(["period", "events"]);
-const MAPPED_SET_KEYS = new Set(["title", "description", "periods"]);
+const MAPPED_PERIOD_KEYS = new Set(["period", "events", KIND_KEY]);
+const MAPPED_SET_KEYS = new Set(["title", "description", "periods", KIND_KEY]);
 
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value !== "" ? value : null;
@@ -235,9 +237,10 @@ const MD_EVENT_KNOWN_KEYS = [
   "description",
   "status",
   "category",
+  KIND_KEY,
 ];
-const MD_PERIOD_KNOWN_KEYS = ["period", "events"];
-const MD_SET_KNOWN_KEYS = ["title", "description", "periods"];
+const MD_PERIOD_KNOWN_KEYS = ["period", "events", KIND_KEY];
+const MD_SET_KNOWN_KEYS = ["title", "description", "periods", KIND_KEY];
 
 function eventMarkdown(event: Record<string, unknown>): string {
   const title = nonEmptyString(event.title) ?? "";

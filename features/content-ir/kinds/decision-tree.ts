@@ -23,6 +23,7 @@ import {
   formatInlineValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const decisionTreeServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "decision_tree",
@@ -55,9 +56,10 @@ const MD_NODE_KNOWN_KEYS = [
   "estimatedTime",
   "yes",
   "no",
+  KIND_KEY,
 ];
 
-const MD_TREE_KNOWN_KEYS = ["title", "description", "root"];
+const MD_TREE_KNOWN_KEYS = ["title", "description", "root", KIND_KEY];
 
 function nodeAnnotations(node: Record<string, unknown>): string {
   const parts: string[] = [];

@@ -24,6 +24,7 @@ import {
   joinBlocks,
   isRecordValue,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — the ONE source of truth for the presentation_deck / _slide field
@@ -149,9 +150,10 @@ const MD_SLIDE_KNOWN_KEYS = [
   "author",
   "image_url",
   "notes",
+  KIND_KEY,
 ];
 
-const MD_DECK_KNOWN_KEYS = ["title", "slides"];
+const MD_DECK_KNOWN_KEYS = ["title", "slides", KIND_KEY];
 
 function slideMarkdown(slide: Record<string, unknown>, index: number): string {
   const heading =

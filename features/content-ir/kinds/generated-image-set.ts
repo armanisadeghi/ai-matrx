@@ -33,6 +33,7 @@ import {
   type MediaHandleFields,
   type MediaUsage,
 } from "./media-io-shared";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of GeneratedImage / GenerateImageOutput.
@@ -158,7 +159,7 @@ export function generatedImageSetServerDataFromEnvelope(
 // toMarkdown facet.
 // ---------------------------------------------------------------------------
 
-const MD_KNOWN_KEYS = ["images", "count", "model", "usage"];
+const MD_KNOWN_KEYS = ["images", "count", "model", "usage", KIND_KEY];
 
 export function generatedImageSetMarkdownFromValue(
   value: Record<string, unknown>,

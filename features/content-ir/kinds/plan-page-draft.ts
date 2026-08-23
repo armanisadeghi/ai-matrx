@@ -42,6 +42,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -217,6 +218,7 @@ const MD_KNOWN_KEYS = [
   "call_to_action",
   "meta_title",
   "meta_description",
+  KIND_KEY,
 ];
 
 /** The draft's body as markdown, without the meta block — reused by the review. */

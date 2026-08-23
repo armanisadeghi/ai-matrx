@@ -33,6 +33,7 @@ import {
   stringOrEmpty,
   type MediaUsage,
 } from "./media-io-shared";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schema — mirror of TextToSpeechOutput.
@@ -140,6 +141,7 @@ const MD_KNOWN_KEYS = [
   "duration_seconds",
   "model",
   "usage",
+  KIND_KEY,
 ];
 
 export function generatedAudioMarkdownFromValue(

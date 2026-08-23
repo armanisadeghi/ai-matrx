@@ -83,10 +83,16 @@ function deepEqual(left: unknown, right: unknown): boolean {
 }
 
 /**
- * Phase-2 shadow parity: does the envelope, reconstructed and stripped of
- * injected __kind discriminators, deep-equal what JSON.parse sees? Sources
- * that legitimately carry __kind are stripped on both sides, so injection
- * (speculation / expectedRootKind) never reads as a mismatch.
+ * Phase-2 shadow parity: does the envelope, reconstructed, deep-equal what
+ * JSON.parse sees?
+ *
+ * A COMPARISON, NEVER A TRANSFORM — the one lawful shape of `stripKindDeep`
+ * outside the two doors. Markers are removed from BOTH sides, symmetrically,
+ * inside this predicate, so a marker the parser INJECTED (speculation /
+ * expectedRootKind) is not reported as a mismatch against a source that did
+ * not carry one. Only a boolean leaves; neither input is mutated and neither
+ * reduced value is ever returned, stored, or rendered
+ * (KINDS_EVERYWHERE_PLAN §4.2).
  */
 export function envelopeMatchesParsedSource(
   envelope: CanonicalBlockIR,

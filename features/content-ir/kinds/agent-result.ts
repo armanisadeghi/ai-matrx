@@ -160,10 +160,6 @@ export const agentResultServerData = makeCompleteEnvelopeBridge<AgentResultData>
       facts,
     };
   },
-  // `structured_output` is arbitrary agent JSON that may legitimately carry a
-  // `__kind` of its own — stripping deep would erase it and cost that payload
-  // its own component when the pipeline re-renders it.
-  { strip: "root" },
 );
 
 // ---------------------------------------------------------------------------

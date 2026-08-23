@@ -18,8 +18,9 @@ import {
   humanizeKind,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
-const MD_ITEM_KNOWN_KEYS = ["type", "id", "name", "about"];
+const MD_ITEM_KNOWN_KEYS = ["type", "id", "name", "about", KIND_KEY];
 
 export function itemPresentationMarkdownFromValue(
   value: Record<string, unknown>,

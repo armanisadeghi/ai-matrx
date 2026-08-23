@@ -49,6 +49,7 @@ import {
   readPlanPageDraftValue,
   type PlanPageDraftData,
 } from "./plan-page-draft";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -199,7 +200,7 @@ export function planPageReviewServerDataFromEnvelope(
 // toMarkdown facet
 // ---------------------------------------------------------------------------
 
-const MD_KNOWN_KEYS = ["verdict", "issues", "revised"];
+const MD_KNOWN_KEYS = ["verdict", "issues", "revised", KIND_KEY];
 
 const SEVERITY_LABEL: Record<ReviewSeverity, string> = {
   blocker: "Blocker",

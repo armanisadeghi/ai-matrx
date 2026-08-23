@@ -35,6 +35,7 @@ import {
   type MediaHandleFields,
   type MediaUsage,
 } from "./media-io-shared";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of GeneratedVideo / GenerateVideoOutput.
@@ -128,7 +129,7 @@ export function generatedVideoSetServerDataFromEnvelope(
 // toMarkdown facet.
 // ---------------------------------------------------------------------------
 
-const MD_KNOWN_KEYS = ["videos", "count", "model", "usage"];
+const MD_KNOWN_KEYS = ["videos", "count", "model", "usage", KIND_KEY];
 
 export function generatedVideoSetMarkdownFromValue(
   value: Record<string, unknown>,

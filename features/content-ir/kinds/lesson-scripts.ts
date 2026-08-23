@@ -242,9 +242,10 @@ const MD_SECTION_KNOWN_KEYS = [
   "script",
   "duration_seconds",
   "key_points",
+  KIND_KEY,
 ];
 
-const MD_SET_KNOWN_KEYS = ["title", "overview", "sections"];
+const MD_SET_KNOWN_KEYS = ["title", "overview", "sections", KIND_KEY];
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`;

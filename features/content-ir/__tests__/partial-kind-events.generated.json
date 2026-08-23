@@ -3602,6 +3602,1950 @@
         }
       }
     ],
+    "bound_agent_unfenced_kind_first": [
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 1,
+          "fingerprint": "u-oew7w91xiopib",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set"
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 2,
+          "fingerprint": "18-eizvkd17bnrh7",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "P"
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 3,
+          "fingerprint": "1c-ivdsrd1ng5m6f",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photo"
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 4,
+          "fingerprint": "1g-1sfc6f33dgvbp",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynt"
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 5,
+          "fingerprint": "1k-1w9054gjnjd82",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesi"
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 6,
+          "fingerprint": "1n-1bkfgpj1li8pct",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis"
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 7,
+          "fingerprint": "20-16cddh3b8370h",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": []
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 8,
+          "fingerprint": "26-1ly0zdwo5gujy",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {}
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 9,
+          "fingerprint": "2o-urif6ez6ri1s",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "W"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 10,
+          "fingerprint": "2s-1o1z3lui3mans",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 11,
+          "fingerprint": "2w-1ohzobm1y8qr4k",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which mol"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 12,
+          "fingerprint": "30-fmhkob1izffsp",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecul"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 13,
+          "fingerprint": "34-1fqxhk51swd5iv",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule sp"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 14,
+          "fingerprint": "38-1y0t7y71hw00tx",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 15,
+          "fingerprint": "3b-18ss7p83xp9ai",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 16,
+          "fingerprint": "3g-109sh004zwtyu",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supp"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 17,
+          "fingerprint": "3k-v7u8kw1wjvj8e",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply e"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 18,
+          "fingerprint": "3o-1b5qqhoctt85a",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply elect"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 19,
+          "fingerprint": "3s-1eeeeggmnwk1m",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 20,
+          "fingerprint": "3v-u87hqr13zjmlt",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 21,
+          "fingerprint": "4c-ku8qg37puci1",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "W"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 22,
+          "fingerprint": "4g-1y9ggf5z46lkj",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 23,
+          "fingerprint": "4i-1qqo9t91l20r1b",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 24,
+          "fingerprint": "4v-h4eji3jzk0kl",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {}
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 25,
+          "fingerprint": "5c-1y6e6b4bbx4mq",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": ""
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 26,
+          "fingerprint": "5g-13llcq4mf98rq",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Wher"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 27,
+          "fingerprint": "5k-2z4qm87bbhgm",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 28,
+          "fingerprint": "5o-g33dsr1p5rr2p",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 29,
+          "fingerprint": "5s-1ywihd31300hb5",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the lig"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 30,
+          "fingerprint": "5w-axx0zdeahb7j",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light r"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 31,
+          "fingerprint": "60-1n12xww1pb7iei",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light react"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 32,
+          "fingerprint": "64-da42n31mi1t4l",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 33,
+          "fingerprint": "68-1y3nneamr13wo",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 34,
+          "fingerprint": "6b-1xsvsrdyfhlmj",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 35,
+          "fingerprint": "6s-79lkfs1wlisvy",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "T"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 36,
+          "fingerprint": "6w-159kii39nrp8x",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "The t"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 37,
+          "fingerprint": "70-yr3udb1fc30i5",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "The thyla"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 38,
+          "fingerprint": "74-k2qwvg10uoeh6",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "The thylakoid"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 39,
+          "fingerprint": "78-1hu61lx1jj42dn",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "The thylakoid mem"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 40,
+          "fingerprint": "7c-1jh38muz3cxxc",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "The thylakoid membran"
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "text",
+        "blockStatus": "streaming",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "partial",
+          "seq": 41,
+          "fingerprint": "7f-17bl6hx339p6b",
+          "root": {
+            "role": "structured",
+            "kind": "flashcard_set",
+            "kindState": "speculative",
+            "discriminator": {
+              "format": "json",
+              "key": "__kind"
+            },
+            "path": [],
+            "status": "streaming",
+            "value": {
+              "__kind": "flashcard_set",
+              "title": "Photosynthesis",
+              "cards": [
+                {
+                  "front": "Which molecule splits to supply electrons?",
+                  "back": "Water."
+                },
+                {
+                  "front": "Where do the light reactions run?",
+                  "back": "The thylakoid membrane."
+                }
+              ]
+            },
+            "residue": {
+              "extra": null,
+              "optionalMissing": null,
+              "notices": [
+                {
+                  "code": "partial_unvalidated",
+                  "message": "Provisional kind instance \u2014 NOT validated against the kind's registered schema. Required fields may be missing and the kind itself may still be retracted."
+                },
+                {
+                  "code": "partial_truncated",
+                  "message": "Source JSON was truncated mid-document and closed for transport."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "blockId": "blk_0",
+        "blockType": "code",
+        "blockStatus": "complete",
+        "event": {
+          "v": 1,
+          "engine": "py-block-detector",
+          "state": "superseded",
+          "seq": 42,
+          "kind": "flashcard_set"
+        }
+      }
+    ],
+    "bound_agent_unfenced_kind_last": [],
     "prose_and_code_no_partials": []
   }
 }

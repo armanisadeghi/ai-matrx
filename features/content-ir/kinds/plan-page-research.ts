@@ -45,6 +45,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -195,6 +196,7 @@ const MD_KNOWN_KEYS = [
   "sources",
   "primary_keyword",
   "research_report",
+  KIND_KEY,
 ];
 
 export function planPageResearchMarkdownFromValue(

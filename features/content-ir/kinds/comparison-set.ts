@@ -26,6 +26,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const comparisonServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "comparison_set",
@@ -53,8 +54,8 @@ export const comparisonServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 // can't break the table.
 // ---------------------------------------------------------------------------
 
-const MD_CRITERION_KNOWN_KEYS = ["name", "values"];
-const MD_SET_KNOWN_KEYS = ["title", "description", "items", "criteria"];
+const MD_CRITERION_KNOWN_KEYS = ["name", "values", KIND_KEY];
+const MD_SET_KNOWN_KEYS = ["title", "description", "items", "criteria", KIND_KEY];
 
 function tableCell(value: unknown): string {
   return formatInlineValue(value).replace(/\|/g, "\\|").replace(/\n/g, " ");

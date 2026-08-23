@@ -29,6 +29,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
  * The authored field map — the single source the storage rows
@@ -77,7 +78,7 @@ export const mermaidServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 // Unknown extra keys land under "Additional details"; nothing vanishes.
 // ---------------------------------------------------------------------------
 
-const MD_KNOWN_KEYS = ["code", "title"];
+const MD_KNOWN_KEYS = ["code", "title", KIND_KEY];
 
 export function mermaidMarkdownFromValue(
   value: Record<string, unknown>,

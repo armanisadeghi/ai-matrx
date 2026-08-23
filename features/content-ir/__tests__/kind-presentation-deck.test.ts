@@ -204,10 +204,12 @@ describe("presentation bridge — feeds Slideshow the PresentationData shape", (
     expect(data.theme).toEqual({ preset: "editorial", variant: "fancy" });
   });
 
-  it("preserves each slide's `extra` through the __kind strip", () => {
+  it("carries each slide's `__kind` AND its `extra` through the bridge", () => {
     const slides = (serverData as { slides: Array<Record<string, unknown>> }).slides;
-    // __kind is stripped for the legacy component; the domain fields survive.
-    expect(slides[0].__kind).toBeUndefined();
+    // THE LAW (KINDS_EVERYWHERE_PLAN §4.2): `__kind` is part of the data. The
+    // bridge no longer strips it — Slideshow ignores the key, and the payload
+    // keeps the identity that routes it if it is ever re-rendered.
+    expect(slides[0].__kind).toBe("presentation_slide");
     expect(slides[0].extra).toEqual({ eyebrow: "FY2026" });
     expect(slides[2].extra).toEqual({
       imagePrompt: "modern software team collaborating in a bright office",

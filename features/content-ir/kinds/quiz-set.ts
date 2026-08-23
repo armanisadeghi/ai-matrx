@@ -35,9 +35,10 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
-const MAPPED_QUESTION_KEYS = new Set(["question", "options", "explanation"]);
-const MAPPED_SET_KEYS = new Set(["title", "questions"]);
+const MAPPED_QUESTION_KEYS = new Set(["question", "options", "explanation", KIND_KEY]);
+const MAPPED_SET_KEYS = new Set(["title", "questions", KIND_KEY]);
 
 function resolveCorrectIndex(options: string[], correct: unknown): number {
   if (
@@ -166,9 +167,10 @@ const MD_QUESTION_KNOWN_KEYS = [
   "options",
   "correct_answer",
   "explanation",
+  KIND_KEY,
 ];
 
-const MD_SET_KNOWN_KEYS = ["title", "description", "questions"];
+const MD_SET_KNOWN_KEYS = ["title", "description", "questions", KIND_KEY];
 
 function questionMarkdown(
   question: Record<string, unknown>,

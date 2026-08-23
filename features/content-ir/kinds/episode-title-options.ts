@@ -44,6 +44,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**
  * The surface write target a rendered card applies through. Declared by
@@ -206,8 +207,8 @@ export function episodeTitleOptionsServerDataFromEnvelope(
 // toMarkdown facet — one section per option; unknown keys never vanish.
 // ---------------------------------------------------------------------------
 
-const MD_SET_KNOWN_KEYS = ["working_title", "options"];
-const MD_OPTION_KNOWN_KEYS = ["title", "subtitle", "rationale"];
+const MD_SET_KNOWN_KEYS = ["working_title", "options", KIND_KEY];
+const MD_OPTION_KNOWN_KEYS = ["title", "subtitle", "rationale", KIND_KEY];
 
 function optionMarkdown(
   option: Record<string, unknown>,

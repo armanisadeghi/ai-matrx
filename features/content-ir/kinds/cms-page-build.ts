@@ -40,6 +40,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -153,6 +154,7 @@ const MD_KNOWN_KEYS = [
   "css",
   "meta_title",
   "meta_description",
+  KIND_KEY,
 ];
 
 export function cmsPageBuildMarkdownFromValue(

@@ -8,21 +8,25 @@
  *   { __kind:"schema_proposal", name, schema: { ...JSON Schema... },
  *     strict? }
  *
- * SchemaProposalBlock casts the whole parsed object into `OutputSchema` and
- * "Apply to an agent" writes it to `agx_agent.output_schema` — so the bridge
- * MUST hand over a clean object with the injected root `__kind` removed.
- * Strip is ROOT-ONLY: a proposal's JSON Schema may legitimately declare a
- * `__kind` property itself (render-block-aware output schemas do exactly
- * that — see `buildAgentSchemaWithRenderBlockSupport`), and a deep strip
- * would silently delete it.
+ * THE ONE LAWFUL DROP ON THIS PATH — EXTERNAL EGRESS, not rendering.
+ * SchemaProposalBlock casts the whole object into `OutputSchema` and "Apply to
+ * an agent" writes it verbatim to `agx_agent.output_schema`. That destination
+ * is a JSON Schema document, not a kind instance, so the proposal's OWN root
+ * marker must not be written into it. It is dropped HERE, at the egress, on
+ * the ROOT ONLY — everything nested is untouched, because a proposal's JSON
+ * Schema may legitimately declare a `__kind` PROPERTY (render-block-aware
+ * output schemas do exactly that — see `buildAgentSchemaWithRenderBlockSupport`).
+ * Every other bridge passes the marker straight through
+ * (KINDS_EVERYWHERE_PLAN §4.2).
  */
 
-import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
+import { MARKER_KEY, makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export const schemaProposalServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "schema_proposal",
@@ -30,9 +34,10 @@ export const schemaProposalServerDataFromEnvelope = makeCompleteEnvelopeBridge(
     if (typeof value.name !== "string" || !isRecord(value.schema)) {
       return undefined;
     }
-    return value;
+    const { [MARKER_KEY]: _identity, ...proposal } = value;
+    void _identity;
+    return proposal;
   },
-  { strip: "root" },
 );
 
 // ---------------------------------------------------------------------------
@@ -42,10 +47,10 @@ export const schemaProposalServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 // the deliberate, honest rendering here (not a lazy fallback). The schema is
 // emitted VERBATIM: a nested `__kind` property inside it is legitimate user
 // data (render-block-aware output schemas declare the discriminator
-// themselves), exactly like the bridge's root-only strip.
+// themselves), exactly like the bridge's root-only egress drop.
 // ---------------------------------------------------------------------------
 
-const MD_PROPOSAL_KNOWN_KEYS = ["name", "schema", "strict"];
+const MD_PROPOSAL_KNOWN_KEYS = ["name", "schema", "strict", KIND_KEY];
 
 export function schemaProposalMarkdownFromValue(
   value: Record<string, unknown>,

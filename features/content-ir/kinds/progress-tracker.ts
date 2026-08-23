@@ -52,6 +52,7 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Field vocabulary — one place for the authored (snake_case) key sets.
@@ -66,6 +67,7 @@ const TRACKER_KNOWN_KEYS = [
   "target_date",
   "total_items",
   "completed_items",
+  KIND_KEY,
 ];
 
 const PHASE_KNOWN_KEYS = [
@@ -75,6 +77,7 @@ const PHASE_KNOWN_KEYS = [
   "color",
   "completion_percentage",
   "steps",
+  KIND_KEY,
 ];
 
 const STEP_KNOWN_KEYS = [
@@ -85,6 +88,7 @@ const STEP_KNOWN_KEYS = [
   "priority",
   "estimated_hours",
   "category",
+  KIND_KEY,
 ];
 
 const PRIORITIES = ["low", "medium", "high"] as const;

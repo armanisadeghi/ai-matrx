@@ -42,6 +42,7 @@ import {
   collectExtras,
   joinBlocks,
 } from "./kind-markdown-utils";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -219,6 +220,7 @@ const MD_KNOWN_KEYS = [
   "defer_to",
   "internal_links",
   "uncovered_gaps",
+  KIND_KEY,
 ];
 
 function bulletList(lines: string[]): string | null {

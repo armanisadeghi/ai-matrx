@@ -129,8 +129,9 @@ describe("presentation_deck → presentation (Slideshow payload)", () => {
     expect(sd?.theme).toEqual({ primaryColor: "#123456", variant: "fancy" });
     expect(sd?.title).toBe("Launch Deck");
 
-    // __kind stripped from every slide; extras survive.
+    // Every slide keeps its `__kind` (§4.2); extras survive.
     expect(sd?.slides?.[0]).toEqual({
+      __kind: "presentation_slide",
       type: "title",
       title: "Hello",
       subtitle: "World",
@@ -292,7 +293,7 @@ describe("math_problem → math_problem (wrapped payload)", () => {
     ],
   };
 
-  it("routes with the legacy { math_problem } wrapper, __kind stripped deep", () => {
+  it("routes with the legacy { math_problem } wrapper, markers intact", () => {
     const routed = routedBlockFor(MATH) as Routed;
     expect(routed.type).toBe("math_problem");
 
@@ -303,13 +304,15 @@ describe("math_problem → math_problem (wrapped payload)", () => {
       } & Record<string, unknown>;
     };
     expect(sd?.math_problem?.title).toBe("Quadratic Roots");
-    expect(sd?.math_problem?.__kind).toBeUndefined();
+    // Identity survives the bridge (§4.2) — the legacy parser ignores the key.
+    expect(sd?.math_problem?.__kind).toBe("math_problem");
     const solution = sd?.math_problem?.solutions?.[0] as Record<
       string,
       unknown
     > & { steps?: Array<Record<string, unknown>> };
-    expect(solution?.__kind).toBeUndefined();
+    expect(solution?.__kind).toBe("math_solution");
     expect(solution?.steps?.[0]).toEqual({
+      __kind: "math_solution_step",
       title: "Take the square root",
       equation: "x = ±2",
     });
