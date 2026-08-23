@@ -440,6 +440,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           id: string
+          input_kind: string | null
           is_active: boolean
           is_archived: boolean
           is_favorite: boolean
@@ -485,6 +486,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
@@ -530,6 +532,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
