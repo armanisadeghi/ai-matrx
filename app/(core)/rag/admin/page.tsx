@@ -95,6 +95,14 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/knowledge/library-curate",
+      label: "Library curation (curator front door)",
+      description:
+        "Non-admin authoring door for industry curators: the industries you curate, their draft/proposed packs, new draft, and Submit for ratification. Reuses the Shared Knowledge console's pack editor — Ratify/Publish stay admin-only.",
+      filePath: "app/(core)/knowledge/library-curate/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/knowledge/admin",
       label: "Admin map (this page)",
       description: "The FeatureAdminMap for the Knowledge ecosystem.",
@@ -145,6 +153,12 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       name: "DataStoreBindPanel",
       filePath: "features/rag/components/data-stores/DataStoreBindPanel.tsx",
       description: "Bind members (files/notes/transcripts) into a store.",
+    },
+    {
+      name: "LibraryCuratePage",
+      filePath: "features/rag/components/library-curate/LibraryCuratePage.tsx",
+      description:
+        "The curator front door. Reuses features/admin/shared-knowledge/packs/PackDetail rather than forking a second pack editor.",
     },
     {
       name: "LibraryCatalogPane",
