@@ -184,7 +184,10 @@ strong system prompt and even sensible input components, but its authored **user
 comes back form-like** ("Topic: {{topic}}\nAudience: {{audience}}"). Read the agent back
 and rewrite that turn as a real human request (see "Anatomy" below) with
 `update({"messages": [...]})` — `messages` is editable and replaces the whole array, so
-resend the system message verbatim. Optional variables render as empty strings, so keep
+resend the system message verbatim. `variable_definitions` is ALSO editable (full-array
+replace: `[{name, helpText, required, defaultValue}]`) — the way to add or re-document
+variables (`variables` itself is refused). One `update` may carry `model_id` +
+`variable_definitions` + `messages` together, so a whole agent flip is one versioned call. Optional variables render as empty strings, so keep
 them on labeled lines after the conversational opening rather than mid-sentence.
 
 For structured output, the schema must pass the provider gate: object root,
@@ -204,7 +207,14 @@ verify against `list_models`, favorites change monthly):
 - **Anthropic Sonnet (current gen)** — intelligence WITH tool calls.
 
 Then tune `settings` for that model (max_tokens, temperature, streaming) and re-check the
-`tools` assignment.
+`tools` assignment. 🚨 **When moving an agent ONTO an Anthropic model, strip any
+`reasoning_effort` / `reasoning_summary` keys from `settings` if the agent has an output
+schema** — the reasoning + structured-output combination silently truncates at ~800
+tokens and backfills required fields with literal "placeholder" strings (feedback
+`0788c8a5`, found 2026-08-23 when ten re-tiered agents carried legacy Gemini settings).
+Also drop any legacy `settings.response_format` block — the platform derives structured
+output from `output_schema`; a stale provider-tuned duplicate is a second copy of the
+schema that can only drift.
 
 ### 8. Run, assess, refine — at least twice
 
