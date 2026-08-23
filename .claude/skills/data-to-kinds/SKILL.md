@@ -334,11 +334,15 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
    `scripts/shape/activate-kinds.ts --apply` regenerates immediately after it bumps `version`,
    and `publish_kind_catalog.py --apply` prints the regeneration command plus the gate it will
    trip whenever it writes.
-   *Also closed:* matrx-extend needs nothing — it has ZERO kind references in `src`, and it
-   already pulls aidream-generated types automatically at release (`release.sh` step 3 →
-   `pnpm update-api-types`). Kind shapes ride that bundle already wherever a `@kind` model is
-   referenced by an endpoint or stream event. Extend that bundle when a real consumer appears;
-   do not mint a shared package for one that does not.
+   *matrx-extend is a different problem than this item claimed.* It needs no generated `.gen.ts`
+   files: it has zero kind references in `src`, and it already pulls aidream-generated API types
+   automatically at release (`release.sh` step 3 → `pnpm update-api-types`). What it actually does
+   is RECEIVE kind data and throw it away — `render_block` envelopes land in the "log only" branch
+   at `src/hooks/use-chat-stream.ts:569` and `metadata.__ir` is never read. So the fix is adopting
+   `@ai-matrx/content-ir` + `@ai-matrx/content-ir-react`, and it is **blocked on publishing the
+   render layer**: the kernel is on npm at 0.2.0, `@ai-matrx/content-ir-react` 0.1.0 is not (404),
+   and matrx-frontend's own repoint waits on the same tag. Gate verified green 2026-08-23. Tracked
+   as item 3 of `operations/kind-conversion-board.md`; never re-implement a reader in the client.
    *Still open:* the gate runs at RELEASE, not pre-merge. matrx-frontend has no CI at all, and
    the generator authenticates over Supabase REST (`NEXT_PUBLIC_SUPABASE_URL` +
    `SUPABASE_SECRET_KEY`), which aidream's CI does not hold — its `kinds-parity` job already
