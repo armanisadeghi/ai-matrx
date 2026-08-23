@@ -130,6 +130,13 @@ export interface SmartCodeEditorProps {
 
   /** Ignored — the window/modal shell already renders the title. Kept for API compat. */
   title?: string;
+  /**
+   * `self` makes this editor the active page surface. Use `host` when the
+   * editor is embedded inside a richer surface whose identity and agents must
+   * remain in the global header; the host is then responsible for publishing
+   * the editor's live draft in its own scope.
+   */
+  surfaceOwnership?: "self" | "host";
   className?: string;
 }
 
@@ -154,6 +161,7 @@ export function SmartCodeEditor({
   gitStatus,
   agentSkills,
   title,
+  surfaceOwnership = "self",
   className,
 }: SmartCodeEditorProps) {
   void title; // intentionally unused — window shell renders the title.
@@ -756,6 +764,36 @@ export function SmartCodeEditor({
     </ResizablePanelGroup>
   );
 
+  const editor = (
+    <div className={`h-full w-full flex flex-col ${className ?? ""}`}>
+      <div className="flex-1 min-h-0">
+        <MobilePanelShell
+          desktop={desktopEditor}
+          main={codeColumn}
+          mainClassName="overflow-hidden"
+          menuIcon={Bot}
+          menuLabel="IDE panels"
+          panels={[
+            {
+              id: "agent",
+              label: "Agent",
+              icon: Bot,
+              content: agentColumn,
+            },
+            {
+              id: "history",
+              label: "History",
+              icon: History,
+              content: historyColumn,
+            },
+          ]}
+        />
+      </div>
+    </div>
+  );
+
+  if (surfaceOwnership === "host") return editor;
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={smartCodeEditorManifest.surfaceName}
@@ -763,31 +801,7 @@ export function SmartCodeEditor({
       isEditable
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      <div className={`h-full w-full flex flex-col ${className ?? ""}`}>
-        <div className="flex-1 min-h-0">
-          <MobilePanelShell
-            desktop={desktopEditor}
-            main={codeColumn}
-            mainClassName="overflow-hidden"
-            menuIcon={Bot}
-            menuLabel="IDE panels"
-            panels={[
-              {
-                id: "agent",
-                label: "Agent",
-                icon: Bot,
-                content: agentColumn,
-              },
-              {
-                id: "history",
-                label: "History",
-                icon: History,
-                content: historyColumn,
-              },
-            ]}
-          />
-        </div>
-      </div>
+      {editor}
     </SurfaceRuntimeProvider>
   );
 }

@@ -29874,6 +29874,7 @@ export type Database = {
           deleted_at: string | null
           description: string
           id: string
+          industry_id: string | null
           metadata: Json
           name: string
           organization_id: string
@@ -29881,6 +29882,9 @@ export type Database = {
           sections: Json
           slug: string
           source: Json
+          source_rulebook_id: string | null
+          source_synced_at: string | null
+          source_version: number | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -29893,6 +29897,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          industry_id?: string | null
           metadata?: Json
           name: string
           organization_id: string
@@ -29900,6 +29905,9 @@ export type Database = {
           sections?: Json
           slug: string
           source?: Json
+          source_rulebook_id?: string | null
+          source_synced_at?: string | null
+          source_version?: number | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -29912,6 +29920,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          industry_id?: string | null
           metadata?: Json
           name?: string
           organization_id?: string
@@ -29919,6 +29928,9 @@ export type Database = {
           sections?: Json
           slug?: string
           source?: Json
+          source_rulebook_id?: string | null
+          source_synced_at?: string | null
+          source_version?: number | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -29931,6 +29943,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rulebook_source_rulebook_id_fkey"
+            columns: ["source_rulebook_id"]
+            isOneToOne: false
+            referencedRelation: "rulebook"
             referencedColumns: ["id"]
           },
           {
@@ -30919,6 +30938,15 @@ export type Database = {
             }
             Returns: number
           }
+      materialize_library_rulebook: {
+        Args: {
+          p_actor: string
+          p_organization_id: string
+          p_rulebook_id: string
+          p_target?: Json
+        }
+        Returns: Json
+      }
       module_config: {
         Args: { p_org: string; p_token: string }
         Returns: {
@@ -31066,6 +31094,23 @@ export type Database = {
           p_token: string
         }
         Returns: string
+      }
+      rulebook_library_catalog: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          description: string
+          entitled_via: string
+          id: string
+          industry_name: string
+          industry_slug: string
+          item_count: number
+          name: string
+          slug: string
+          status: string
+          subscribed: boolean
+          subscriber_count: number
+          updated_at: string
+        }[]
       }
       set_org_change_policy: {
         Args: {
@@ -37271,6 +37316,10 @@ export type Database = {
       is_platform_admin: { Args: never; Returns: boolean }
       is_resource_owner: {
         Args: { p_resource_id: string; p_resource_type: string }
+        Returns: boolean
+      }
+      is_rulebook_curator: {
+        Args: { p_rulebook_id: string; p_user: string }
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }

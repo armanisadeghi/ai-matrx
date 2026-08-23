@@ -39,6 +39,7 @@ import {
   Loader2,
   Lock,
   Plus,
+  ScrollText,
   Search,
   X,
 } from "lucide-react";
@@ -65,6 +66,7 @@ import {
   entitlementLabel,
 } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { PackDetailPanel } from "@/features/rag/components/library-catalog/PackDetailPanel";
+import { RulebookDetailPanel } from "@/features/rag/components/library-catalog/RulebookDetailPanel";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import {
@@ -81,6 +83,7 @@ const TYPE_FILTERS = [
   "all",
   "data_store",
   "seo_starter_pack",
+  "rulebook",
 ] as const;
 type TypeFilter = (typeof TYPE_FILTERS)[number];
 
@@ -95,7 +98,12 @@ function TypeIcon({
   entityType: LibraryEntityType;
   className?: string;
 }) {
-  const Icon = entityType === "seo_starter_pack" ? Boxes : Library;
+  const Icon =
+    entityType === "seo_starter_pack"
+      ? Boxes
+      : entityType === "rulebook"
+        ? ScrollText
+        : Library;
   return <Icon className={className} aria-hidden />;
 }
 
@@ -105,8 +113,11 @@ export function LibraryCatalogPage() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
   // `store_id` is the pre-2026-08-23 shape: a data-store id, no type.
   const selectedId = search?.get("id") ?? search?.get("store_id") ?? null;
+  const typeParam = search?.get("type");
   const selectedType: LibraryEntityType =
-    search?.get("type") === "seo_starter_pack" ? "seo_starter_pack" : "data_store";
+    typeParam === "seo_starter_pack" || typeParam === "rulebook"
+      ? typeParam
+      : "data_store";
 
   const catalog = useLibraryResources();
   // Curators author what this page hands out — give them the door, nobody else.
@@ -387,6 +398,17 @@ export function LibraryCatalogPage() {
               onBack={() => select(null)}
               organizationId={organizationId ?? null}
             />
+          ) : selected.entityType === "rulebook" ? (
+            <RulebookDetailPanel
+              item={selected}
+              onBack={() => select(null)}
+              organizationId={organizationId ?? null}
+              onAdd={async () => {
+                const ok = await catalog.subscribe(selected);
+                if (!ok) toast.error(catalog.error ?? "Could not add this Rulebook");
+                return ok;
+              }}
+            />
           ) : (
             <StoreDetailPanel
               item={selected}
@@ -445,6 +467,16 @@ function EmptyPane({
             ({counts.seo_starter_pack}) — you USE ONE ON A SITE. Its defaults are
             copied onto the website you choose, and every row stays yours to
             edit.
+          </span>
+        </li>
+        <li className="flex items-start gap-2">
+          <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            <span className="font-medium text-foreground">
+              {LIBRARY_TYPE_LABEL_PLURAL.rulebook}
+            </span>{" "}
+            ({counts.rulebook}) — you ADD ONE TO YOURS. An expert&apos;s method
+            arrives as your own Rulebook, and every rule stays yours to edit.
           </span>
         </li>
       </ul>

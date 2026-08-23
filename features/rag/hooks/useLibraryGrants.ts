@@ -8,9 +8,11 @@
  * (data stores, SEO starter packs, next: curated contact lists). Writes go
  * through the generic SECURITY DEFINER family `public.library_publish` /
  * `public.library_revoke` (any platform admin; per-type gate inside — a pack
- * must be `ratified` before an industry/global audience), the list through
+ * must be `ratified` before an industry/global audience; a Rulebook must be
+ * `active` and carry at least one approved rule), the list through
  * `public.library_list_grants` (admin, or the data store's creator, or a
- * pack's industry curator). Identity is always auth.uid().
+ * pack's industry curator, or a Rulebook's author or industry curator).
+ * Identity is always auth.uid().
  *
  * Replaced `useDataStoreGrants` (2026-08-22) — same consumers, one more
  * argument. Lazy by design: nothing fires until a consumer mounts.
@@ -22,7 +24,7 @@ import { createClient } from "@/utils/supabase/client";
 export type GrantAudience = "global" | "industry" | "organization";
 
 /** Entity tokens the Library publishes today (platform.entity_types.token). */
-export type LibraryEntityType = "data_store" | "seo_starter_pack";
+export type LibraryEntityType = "data_store" | "seo_starter_pack" | "rulebook";
 
 export interface LibraryGrant {
   id: string;

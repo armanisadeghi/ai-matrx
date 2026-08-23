@@ -22,6 +22,7 @@ import {
   Quote,
   BrainCircuit,
   Workflow,
+  Library,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -36,7 +37,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsSuperAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { resolveLibraryOrgId } from "@/lib/organizations/systemOrg";
+import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -551,6 +557,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [draftRevision, setDraftRevision] = useState(0);
   const [confirmActivate, setConfirmActivate] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
+  // THE MATRX LIBRARY (common-docs/systems/platform/library/STATE.md): a
+  // Rulebook that lives in the Library org can be GIVEN to an industry — or to
+  // everyone — through the ONE generic publish panel. Only Library-owned rows
+  // can be published (`library_publish` asserts it), so the door only appears
+  // there, and only for the platform admins who issue grants.
+  const [libraryOrgId, setLibraryOrgId] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [ingestOpen, setIngestOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [feedbackTarget, setFeedbackTarget] = useState<{
@@ -756,6 +769,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     };
   }, [assistKey, launchApproach, openCheckup, rulebookId]);
   const userId = useAppSelector(selectUserId);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openAddRule = useOpenAddRuleWindow();
   const openBuild = useOpenBuildWindow();
   const openYourWords = useOpenMasterworkYourWordsWindow();

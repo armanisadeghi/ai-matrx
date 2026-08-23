@@ -16,6 +16,10 @@
  *   • seo_starter_pack → USE ON A SITE (copy) — adoption happens on one site,
  *                        through the site's own value screens. There is no
  *                        catalog-level "subscribe" that could be honest here.
+ *   • rulebook         → ADD TO MY RULEBOOKS (copy) — `library_subscribe` writes
+ *                        the org its OWN editable Rulebook seeded from the
+ *                        Library's, so the verb is "add", never "subscribe".
+ *                        Arman's ruling, 2026-08-23.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -26,20 +30,20 @@ import { createClient } from "@/utils/supabase/client";
 import type { CatalogEntitlement } from "@/features/rag/hooks/useLibraryCatalog";
 
 /** Registered Library types this catalog knows how to present. */
-export type LibraryEntityType = "data_store" | "seo_starter_pack";
+export type LibraryEntityType = "data_store" | "seo_starter_pack" | "rulebook";
 
 /** How a resource is TAKEN — the honest verb, per type. */
-export type LibraryTakeMode = "subscribe" | "use_on_site";
+export type LibraryTakeMode = "subscribe" | "use_on_site" | "copy";
 
 export interface LibraryResource {
   entityType: LibraryEntityType;
   id: string;
   name: string;
-  /** short_code (data store) · pack slug. */
+  /** short_code (data store) · pack slug · Rulebook slug. */
   slug: string | null;
   description: string | null;
   kind: string;
-  /** Documents (data store) · pack items (starter pack). */
+  /** Documents (data store) · pack items (starter pack) · rules (Rulebook). */
   itemCount: number;
   /** The evaluated org holds an organization-audience grant. */
   subscribed: boolean;
@@ -48,7 +52,8 @@ export interface LibraryResource {
   entitledIndustrySlug: string | null;
   /** How many organizations hold this resource. */
   subscriberCount: number;
-  /** Packs: draft · proposed · ratified · retired. Null for data stores. */
+  /** Packs: draft · proposed · ratified · retired. Rulebooks: draft · active ·
+   *  archived. Null for data stores. */
   status: string | null;
   updatedAt: string | null;
 }
@@ -70,7 +75,11 @@ interface RpcRow {
   updated_at: string | null;
 }
 
-const KNOWN_TYPES: readonly string[] = ["data_store", "seo_starter_pack"];
+const KNOWN_TYPES: readonly string[] = [
+  "data_store",
+  "seo_starter_pack",
+  "rulebook",
+];
 
 function coerceEntitlement(v: string | null): LibraryResource["entitledVia"] {
   return v === "organization" ||
@@ -104,23 +113,32 @@ function toResource(row: RpcRow): LibraryResource | null {
 
 /** The verb that is TRUE for this type — never "subscribe" for a copy type. */
 export function takeMode(entityType: LibraryEntityType): LibraryTakeMode {
-  return entityType === "seo_starter_pack" ? "use_on_site" : "subscribe";
+  if (entityType === "seo_starter_pack") return "use_on_site";
+  if (entityType === "rulebook") return "copy";
+  return "subscribe";
 }
 
 export const LIBRARY_TYPE_LABEL: Record<LibraryEntityType, string> = {
   data_store: "Knowledge library",
   seo_starter_pack: "Industry starter pack",
+  rulebook: "Rulebook",
 };
 
 /** Plural, for filter chips and counts. */
 export const LIBRARY_TYPE_LABEL_PLURAL: Record<LibraryEntityType, string> = {
   data_store: "Knowledge libraries",
   seo_starter_pack: "Industry starter packs",
+  rulebook: "Rulebooks",
 };
 
 /** What one row's `itemCount` counts, per type. */
 export function itemNoun(entityType: LibraryEntityType, count: number): string {
-  const singular = entityType === "seo_starter_pack" ? "default" : "document";
+  const singular =
+    entityType === "seo_starter_pack"
+      ? "default"
+      : entityType === "rulebook"
+        ? "rule"
+        : "document";
   return `${singular}${count === 1 ? "" : "s"}`;
 }
 
@@ -172,10 +190,16 @@ export function useLibraryResources(overrideOrganizationId?: string | null) {
     };
   }, [userId, organizationId, bumper]);
 
-  /** Reference-type subscribe. Refuses any type whose take is a COPY. */
+  /**
+   * Take a resource through the ONE write path, `public.library_subscribe`.
+   * Whether that conveys a REFERENCE (`subscribe`) or writes the org its own
+   * COPY (`copy`) is the DB's per-type decision — THE SUBSCRIBE LAW — and this
+   * hook must not second-guess it. Only `use_on_site` is refused: a starter
+   * pack is adopted onto ONE site, so a catalog-level take would be a lie.
+   */
   const subscribe = useCallback(
     async (resource: LibraryResource): Promise<boolean> => {
-      if (takeMode(resource.entityType) !== "subscribe") {
+      if (takeMode(resource.entityType) === "use_on_site") {
         setError(
           `${LIBRARY_TYPE_LABEL[resource.entityType]} is used on a site, not subscribed to.`,
         );
@@ -232,6 +256,7 @@ export function useLibraryResources(overrideOrganizationId?: string | null) {
     const out: Record<LibraryEntityType, number> = {
       data_store: 0,
       seo_starter_pack: 0,
+      rulebook: 0,
     };
     for (const it of items) out[it.entityType] += 1;
     return out;

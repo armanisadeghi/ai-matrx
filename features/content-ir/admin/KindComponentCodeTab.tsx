@@ -267,6 +267,7 @@ export default function KindComponentCodeTab({
               initialIsEditing
               showTerminal={false}
               title={`${kind} component`}
+              surfaceOwnership="host"
               className="h-full min-h-0"
             />
           </div>
