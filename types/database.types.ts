@@ -30383,6 +30383,62 @@ export type Database = {
         }
         Relationships: []
       }
+      v_lifecycle_unmodelled_delete_cost: {
+        Row: {
+          cascade_edges: number | null
+          entity_ref: string | null
+          entity_token: string | null
+          mutating_edges: number | null
+          unarchived_cascade_risk: boolean | null
+          version_captures_on_delete: boolean | null
+        }
+        Insert: {
+          cascade_edges?: number | null
+          entity_ref?: string | null
+          entity_token?: string | null
+          mutating_edges?: number | null
+          unarchived_cascade_risk?: never
+          version_captures_on_delete?: never
+        }
+        Update: {
+          cascade_edges?: number | null
+          entity_ref?: string | null
+          entity_token?: string | null
+          mutating_edges?: number | null
+          unarchived_cascade_risk?: never
+          version_captures_on_delete?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "v_lifecycle_enlisted"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "v_lifecycle_registry_drift"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       v_producer_yield: {
         Row: {
           accept_rate_of_decided: number | null
@@ -30666,6 +30722,10 @@ export type Database = {
           p_tier?: string
         }
         Returns: Json
+      }
+      lifecycle_assert_delete_cost_modelled: {
+        Args: { p_entity_token: string }
+        Returns: undefined
       }
       lifecycle_close_run: {
         Args: { p_entities_acted?: number; p_run_id: string; p_status?: string }
