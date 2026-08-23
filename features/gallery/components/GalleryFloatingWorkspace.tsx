@@ -465,6 +465,18 @@ export function GalleryFloatingWorkspace() {
           >
             <div className="relative flex-1">
               <Search className="absolute left-2 max-sm:left-3 top-1/2 -translate-y-1/2 w-3 h-3 max-sm:w-4 max-sm:h-4 text-muted-foreground/50" />
+              {/*
+                Bare input, deliberately (S7 justification): ProInput is the
+                Tier 2 default, but it hard-codes 16px value text plus mic /
+                "…" / clear controls, which cannot fit this window's 24px
+                chrome bar — and it exposes no surfaceName, so it would not
+                add the agent menu here either. The two things the rule
+                protects are covered another way: the box is 16px and 44pt
+                tall on mobile (no iOS zoom), and the text is a declared
+                SurfaceValue (`search_input`) that agents read, plus a
+                declared write target they can set. Revisit if ProInput ever
+                gains a dense size.
+              */}
               <input
                 ref={searchRef}
                 type="text"
