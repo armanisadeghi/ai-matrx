@@ -2024,6 +2024,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/audio/recording-journal/chunks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Recording Journal Chunk */
+        post: operations["create_recording_journal_chunk_audio_recording_journal_chunks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/recording-journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recording Journals */
+        get: operations["get_recording_journals_audio_recording_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/recording-journal/{recording_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recording Journal */
+        get: operations["get_recording_journal_audio_recording_journal__recording_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Recording Journal */
+        delete: operations["delete_recording_journal_audio_recording_journal__recording_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/recording-journal/{recording_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Recording Journal */
+        post: operations["complete_recording_journal_audio_recording_journal__recording_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audio/transcribe": {
         parameters: {
             query?: never;
@@ -43154,6 +43223,68 @@ export interface components {
             /** Selected Version */
             selected_version?: number | null;
         };
+        /** JournalChunk */
+        JournalChunk: {
+            /** Recording Id */
+            recording_id: string;
+            /** Chunk Index */
+            chunk_index: number;
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Replaced File Id */
+            replaced_file_id?: string | null;
+        };
+        /** JournalChunkRequest */
+        JournalChunkRequest: {
+            /** Recording Id */
+            recording_id: string;
+            /** Chunk Index */
+            chunk_index: number;
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Origin */
+            origin?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /** JournalDiscardResult */
+        JournalDiscardResult: {
+            /** Recording Id */
+            recording_id: string;
+            /** File Ids */
+            file_ids: string[];
+        };
+        /** JournalRecording */
+        JournalRecording: {
+            /** Recording Id */
+            recording_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Chunk Count */
+            chunk_count: number;
+        };
         /** JournalistActivityRequest */
         JournalistActivityRequest: {
             /**
@@ -53082,6 +53213,37 @@ export interface components {
              * @default 0
              */
             edges_written?: number;
+        };
+        /** RecordingCompletion */
+        RecordingCompletion: {
+            /** Recording Id */
+            recording_id: string;
+            /**
+             * Transcript Id
+             * Format: uuid
+             */
+            transcript_id: string;
+            /**
+             * Audio File Id
+             * Format: uuid
+             */
+            audio_file_id: string;
+        };
+        /** RecordingCompletionRequest */
+        RecordingCompletionRequest: {
+            /** Transcript */
+            transcript: string;
+            /**
+             * Audio File Id
+             * Format: uuid
+             */
+            audio_file_id: string;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Origin */
+            origin?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * RecoveryApplyAck
@@ -71094,6 +71256,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_recording_journal_chunk_audio_recording_journal_chunks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalChunkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalChunk"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recording_journals_audio_recording_journal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalRecording"][];
+                };
+            };
+        };
+    };
+    get_recording_journal_audio_recording_journal__recording_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalChunk"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_recording_journal_audio_recording_journal__recording_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDiscardResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_recording_journal_audio_recording_journal__recording_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordingCompletionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingCompletion"];
                 };
             };
             /** @description Validation Error */

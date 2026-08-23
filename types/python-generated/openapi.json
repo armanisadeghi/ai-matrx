@@ -4610,6 +4610,210 @@
         }
       }
     },
+    "/audio/recording-journal/chunks": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Create Recording Journal Chunk",
+        "operationId": "create_recording_journal_chunk_audio_recording_journal_chunks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JournalChunkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalChunk"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/recording-journal": {
+      "get": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Get Recording Journals",
+        "operationId": "get_recording_journals_audio_recording_journal_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JournalRecording"
+                  },
+                  "type": "array",
+                  "title": "Response Get Recording Journals Audio Recording Journal Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/recording-journal/{recording_id}": {
+      "get": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Get Recording Journal",
+        "operationId": "get_recording_journal_audio_recording_journal__recording_id__get",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalChunk"
+                  },
+                  "title": "Response Get Recording Journal Audio Recording Journal  Recording Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Delete Recording Journal",
+        "operationId": "delete_recording_journal_audio_recording_journal__recording_id__delete",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDiscardResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/recording-journal/{recording_id}/complete": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Complete Recording Journal",
+        "operationId": "complete_recording_journal_audio_recording_journal__recording_id__complete_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingCompletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingCompletion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/audio/transcribe": {
       "post": {
         "tags": [
@@ -112009,6 +112213,159 @@
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
       },
+      "JournalChunk": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id"
+          },
+          "chunk_index": {
+            "type": "integer",
+            "title": "Chunk Index"
+          },
+          "file_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "File Id"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "replaced_file_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "chunk_index",
+          "file_id",
+          "mime_type",
+          "size_bytes",
+          "updated_at"
+        ],
+        "title": "JournalChunk"
+      },
+      "JournalChunkRequest": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Recording Id"
+          },
+          "chunk_index": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Chunk Index"
+          },
+          "file_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "File Id"
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Size Bytes"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "recording_id",
+          "chunk_index",
+          "file_id",
+          "mime_type",
+          "size_bytes"
+        ],
+        "title": "JournalChunkRequest"
+      },
+      "JournalDiscardResult": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id"
+          },
+          "file_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "File Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "file_ids"
+        ],
+        "title": "JournalDiscardResult"
+      },
+      "JournalRecording": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "chunk_count": {
+            "type": "integer",
+            "title": "Chunk Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "updated_at",
+          "chunk_count"
+        ],
+        "title": "JournalRecording"
+      },
       "JournalistActivityRequest": {
         "properties": {
           "organization_id": {
@@ -137207,6 +137564,71 @@
           "site_id"
         ],
         "title": "ReconcileReport"
+      },
+      "RecordingCompletion": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id"
+          },
+          "transcript_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Transcript Id"
+          },
+          "audio_file_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Audio File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "transcript_id",
+          "audio_file_id"
+        ],
+        "title": "RecordingCompletion"
+      },
+      "RecordingCompletionRequest": {
+        "properties": {
+          "transcript": {
+            "type": "string",
+            "title": "Transcript"
+          },
+          "audio_file_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Audio File Id"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Duration Ms"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "transcript",
+          "audio_file_id",
+          "duration_ms"
+        ],
+        "title": "RecordingCompletionRequest"
       },
       "RecoveryApplyAck": {
         "properties": {
