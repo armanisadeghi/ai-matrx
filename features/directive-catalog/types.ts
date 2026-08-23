@@ -14,10 +14,14 @@ import type { components } from "@/types/python-generated/api-types";
 export type NounDirectives = components["schemas"]["NounDirectives"];
 export type DirectiveCatalog = components["schemas"]["DirectiveCatalog"];
 export type DirectiveReceipt = components["schemas"]["DirectiveReceipt"];
-export type DirectiveApplyResult = components["schemas"]["DirectiveApplyResult"];
-export type DirectiveExecuteRequest = components["schemas"]["DirectiveExecuteRequest"];
-export type DirectiveConfirmRequest = components["schemas"]["DirectiveConfirmRequest"];
-export type DirectiveConfirmResult = components["schemas"]["DirectiveConfirmResult"];
+export type DirectiveApplyResult =
+  components["schemas"]["DirectiveApplyResult"];
+export type DirectiveExecuteRequest =
+  components["schemas"]["DirectiveExecuteRequest"];
+export type DirectiveConfirmRequest =
+  components["schemas"]["DirectiveConfirmRequest"];
+export type DirectiveConfirmResult =
+  components["schemas"]["DirectiveConfirmResult"];
 
 /** One confirm-receipt item — applied or failed (OpenAPI union). */
 export type DirectiveConfirmReceipt =
@@ -38,7 +42,22 @@ export type DirectiveVerb = keyof Pick<
 
 /** The read verbs — everything else is a write producing `verb:noun`. The
  * runtime axis is `catalog.verbs`; this only names the two pure reads. */
-export const READ_VERBS: readonly DirectiveVerb[] = ["reference", "view"] as const;
+export const READ_VERBS: readonly DirectiveVerb[] = [
+  "reference",
+  "view",
+] as const;
+
+const DIRECTIVE_VERBS: ReadonlySet<string> = new Set([
+  "reference",
+  "view",
+  "create",
+  "update",
+  "delete",
+]);
+
+export function isDirectiveVerb(value: string): value is DirectiveVerb {
+  return DIRECTIVE_VERBS.has(value);
+}
 
 export function isWriteVerb(verb: string): boolean {
   return !READ_VERBS.includes(verb as DirectiveVerb);
@@ -56,12 +75,17 @@ export function isDirectiveCatalog(value: unknown): value is DirectiveCatalog {
 }
 
 /** Read one verb's state off a noun row (the verbs are flat columns). */
-export function cellState(noun: NounDirectives, verb: DirectiveVerb): DirectiveState {
+export function cellState(
+  noun: NounDirectives,
+  verb: DirectiveVerb,
+): DirectiveState {
   return noun[verb];
 }
 
 /** Runtime guard for the execute response. */
-export function isDirectiveApplyResult(value: unknown): value is DirectiveApplyResult {
+export function isDirectiveApplyResult(
+  value: unknown,
+): value is DirectiveApplyResult {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (

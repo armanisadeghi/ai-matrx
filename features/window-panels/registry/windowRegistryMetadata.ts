@@ -1093,6 +1093,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── Directive Reference Picker ───────────────────────────────────────────
+  // Searchable real-record selection for the Directive Catalog builder.
+  // Callback-only and tied to an in-progress form, so it never persists.
+  {
+    slug: "directive-reference-picker-window",
+    overlayId: "directiveReferencePickerWindow",
+    kind: "window",
+    label: "Directive Reference Picker",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      entityToken: null as string | null,
+      fieldKey: "id",
+      title: null as string | null,
+    },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
   // ── Create Project ────────────────────────────────────────────────────────
   // The canonical ProjectFormCore wrapped in WindowPanel chrome. Open via
   // `useOpenCreateProjectWindow()` and listen for the `created` event to grab

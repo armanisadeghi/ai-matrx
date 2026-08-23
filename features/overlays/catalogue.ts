@@ -365,6 +365,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  directiveReferencePickerWindow: {
+    label: "Directive Reference Picker Window",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   diffViewerWindow: {
     label: "Diff Viewer Window",
     instanceMode: "multi",

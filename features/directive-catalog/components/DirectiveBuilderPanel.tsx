@@ -18,7 +18,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { BrainCircuit, Check, Copy, Loader2, Play } from "lucide-react";
+import { BrainCircuit, Check, Copy, Loader2, Play, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Select,
   SelectContent,
@@ -43,10 +44,20 @@ import { executeDirective } from "@/features/directive-catalog/service";
 import {
   buildDirectiveEnvelope,
   isReferenceVerb,
+  referenceFieldsForSpecs,
   refFieldsForNoun,
 } from "@/features/directive-catalog/buildEnvelope";
+import { identityFieldPickerInfo } from "@/features/directive-catalog/identityPicker";
+import {
+  buildSchemaExample,
+  isJsonSchema,
+} from "@/features/directive-catalog/schemaExamples";
+import { useOpenDirectiveReferencePickerWindow } from "@/features/overlays/openers/directiveReferencePickerWindow";
+import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
 import {
   cellState,
+  isDirectiveVerb,
   type DirectiveApplyResult,
   type DirectiveCatalog,
   type DirectiveReceipt,
@@ -78,8 +89,12 @@ function StatusPill({ status }: { status: DirectiveReceipt["status"] }) {
   );
 }
 
-export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }) {
-  const verbs = catalog.verbs as DirectiveVerb[];
+export function DirectiveBuilderPanel({
+  catalog,
+}: {
+  catalog: DirectiveCatalog;
+}) {
+  const verbs = catalog.verbs.filter(isDirectiveVerb);
   const nouns = useMemo(
     () => [...catalog.nouns].sort((a, b) => a.noun.localeCompare(b.noun)),
     [catalog.nouns],
@@ -91,17 +106,21 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
     initialNoun === undefined ? "" : initialNoun,
   );
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
+    {},
+  );
   const [copied, setCopied] = useState(false);
   // Bumping this commits the current fields into a live-rendered envelope.
   const [renderNonce, setRenderNonce] = useState(0);
   // Write-verb state.
-  const [writePayload, setWritePayload] = useState("{\n  \n}");
+  const [writePayload, setWritePayload] = useState("");
   const [force, setForce] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<DirectiveApplyResult | null>(null);
   const [execError, setExecError] = useState<string | null>(null);
 
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const openReferencePicker = useOpenDirectiveReferencePickerWindow();
 
   const noun: NounDirectives | undefined = useMemo(
     () => nouns.find((n) => n.noun === nounName),
@@ -114,6 +133,21 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
     () => (isReference && nounName ? refFieldsForNoun(nounName, noun) : []),
     [isReference, nounName, noun],
   );
+  const currentReferenceFields = useMemo(
+    () => referenceFieldsForSpecs(fieldSpecs, fields),
+    [fieldSpecs, fields],
+  );
+  const exampleReferenceFields = useMemo(
+    () => referenceFieldsForSpecs(fieldSpecs, fields, nounName),
+    [fieldSpecs, fields, nounName],
+  );
+  const writePayloadPlaceholder = useMemo(() => {
+    const schema = noun?.schemas?.[verb];
+    if (!isJsonSchema(schema)) {
+      return JSON.stringify({ [`<${verb}:${nounName}>`]: "…" }, null, 2);
+    }
+    return JSON.stringify(buildSchemaExample(schema, "minimum"), null, 2);
+  }, [noun, verb, nounName]);
 
   // The write payload, parsed. A reference has no payload (its ids drive it).
   // `error` is null when valid; `value` is always an object (empty on error).
@@ -146,17 +180,78 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
 
   const envelope = useMemo(() => {
     if (!nounName) return null;
-    if (isReference) return buildDirectiveEnvelope(verb, nounName, fields);
+    if (isReference)
+      return buildDirectiveEnvelope(verb, nounName, currentReferenceFields);
     return {
       matrx_version: MATRX_VERSION,
       kind: "output_directive" as const,
       type: `${verb}:${nounName}`,
       items: payloadOk ? [parsed.value] : [],
     };
-  }, [verb, nounName, isReference, fields, payloadOk, parsed.value]);
+  }, [
+    verb,
+    nounName,
+    isReference,
+    currentReferenceFields,
+    payloadOk,
+    parsed.value,
+  ]);
 
-  const setField = (key: string, value: string) =>
+  const displayedEnvelope = useMemo(() => {
+    if (!nounName || !isReference) return envelope;
+    return buildDirectiveEnvelope(verb, nounName, exampleReferenceFields);
+  }, [nounName, isReference, envelope, verb, exampleReferenceFields]);
+
+  const setField = (key: string, value: string, label?: string) => {
     setFields((prev) => ({ ...prev, [key]: value }));
+    setSelectedLabels((prev) => {
+      const next = { ...prev };
+      if (label) next[key] = label;
+      else delete next[key];
+      return next;
+    });
+  };
+
+  const handleNounChange = (nextNoun: string) => {
+    setNounName(nextNoun);
+    setFields({});
+    setSelectedLabels({});
+    setRenderNonce(0);
+    setResult(null);
+    setExecError(null);
+    setWritePayload("");
+  };
+
+  const handleVerbChange = (nextVerb: DirectiveVerb) => {
+    setVerb(nextVerb);
+    setRenderNonce(0);
+    setResult(null);
+    setExecError(null);
+    setWritePayload("");
+  };
+
+  const chooseIdentity = async (
+    fieldKey: string,
+    picker: NonNullable<ReturnType<typeof identityFieldPickerInfo>>,
+  ) => {
+    if (picker.token === "file") {
+      const ids = await openFilePicker({
+        multi: false,
+        title: `Choose ${picker.label}`,
+      });
+      const id = ids?.[0];
+      if (!id) return;
+      const titles = await fetchEntityTitles(picker.token, [id]);
+      setField(fieldKey, id, titles.get(id) ?? picker.label);
+      return;
+    }
+    openReferencePicker({
+      entityToken: picker.token,
+      fieldKey,
+      title: `Choose ${picker.label}`,
+      onPicked: (event) => setField(fieldKey, event.id, event.title),
+    });
+  };
 
   // A write verb executes exactly when the catalog says the cell is wired —
   // the server's registration is the only authority (no verb allowlist here).
@@ -201,9 +296,11 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
     isReference && state === "yes" && hasResolver && requiredFilled;
 
   const handleCopy = async () => {
-    if (!envelope) return;
+    if (!displayedEnvelope) return;
     try {
-      await navigator.clipboard.writeText(JSON.stringify(envelope, null, 2));
+      await navigator.clipboard.writeText(
+        JSON.stringify(displayedEnvelope, null, 2),
+      );
       setCopied(true);
       toast.success("Envelope copied");
       setTimeout(() => setCopied(false), 1500);
@@ -223,7 +320,12 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Verb</label>
-          <Select value={verb} onValueChange={(v) => setVerb(v as DirectiveVerb)}>
+          <Select
+            value={verb}
+            onValueChange={(value) => {
+              if (isDirectiveVerb(value)) handleVerbChange(value);
+            }}
+          >
             <SelectTrigger className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
@@ -238,7 +340,7 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Noun</label>
-          <Select value={nounName} onValueChange={setNounName}>
+          <Select value={nounName} onValueChange={handleNounChange}>
             <SelectTrigger className="h-8 text-sm">
               <SelectValue placeholder="Select a noun" />
             </SelectTrigger>
@@ -279,6 +381,10 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
           {fieldSpecs.map((f) => {
             const raw = fields[f.key];
             const value = raw === undefined ? "" : raw;
+            const picker = noun
+              ? identityFieldPickerInfo(noun, fieldSpecs, f.key)
+              : null;
+            const selectedLabel = selectedLabels[f.key];
             const invalid =
               f.uuid && value.trim().length > 0 && !UUID_RE.test(value.trim());
             return (
@@ -287,15 +393,40 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
                   {f.label}
                   {f.uuid ? " (UUID)" : ""}
                 </label>
-                <Input
-                  value={value}
-                  onChange={(e) => setField(f.key, e.target.value)}
-                  placeholder={f.key}
-                  className={cn(
-                    "h-8 font-mono text-sm",
-                    invalid && "border-red-500 focus-visible:ring-red-500",
-                  )}
-                />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={value}
+                    onChange={(e) => setField(f.key, e.target.value)}
+                    placeholder={`Select or enter ${nounName}.${f.key}`}
+                    className={cn(
+                      "h-8 min-w-0 flex-1 font-mono text-sm",
+                      invalid && "border-red-500 focus-visible:ring-red-500",
+                    )}
+                  />
+                  {picker ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 shrink-0 gap-1 px-2"
+                      onClick={() => void chooseIdentity(f.key, picker)}
+                      aria-label={`Search ${picker.labelPlural} for ${f.label}`}
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      Select
+                    </Button>
+                  ) : null}
+                </div>
+                {picker && selectedLabel && value.trim() ? (
+                  <EntityRef
+                    token={picker.token}
+                    id={value.trim()}
+                    name={selectedLabel}
+                    openInNewTab
+                    alwaysShowActions
+                    className="text-xs"
+                  />
+                ) : null}
               </div>
             );
           })}
@@ -303,11 +434,11 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
       )}
 
       {/* Built envelope (live JSON) */}
-      {envelope && (
+      {displayedEnvelope && (
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
-              Matrx envelope
+              Matrx envelope {requiredFilled || !isReference ? "" : "example"}
             </span>
             <Button
               type="button"
@@ -325,7 +456,7 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
             </Button>
           </div>
           <pre className="overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 text-xs text-foreground">
-            {JSON.stringify(envelope, null, 2)}
+            {JSON.stringify(displayedEnvelope, null, 2)}
           </pre>
         </div>
       )}
@@ -384,7 +515,7 @@ export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }
                 "min-h-[120px] font-mono text-xs",
                 payloadError && "border-red-500 focus-visible:ring-red-500",
               )}
-              placeholder={'{ "label": "My note", "content": "..." }'}
+              placeholder={writePayloadPlaceholder}
             />
             {payloadError && (
               <p className="text-xs text-red-500">{payloadError}</p>

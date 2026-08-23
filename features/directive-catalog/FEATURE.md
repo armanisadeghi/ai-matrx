@@ -17,22 +17,25 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 ## Parts
 
-| Part | File |
-|---|---|
-| Types (OpenAPI aliases + guards) | `types.ts` |
-| Endpoint path | `endpoints.ts` |
-| Fetch (one path) | `service.ts` |
-| Live hook (fetch + 30s poll + refresh) | `hooks/useDirectiveCatalog.ts` |
-| (verb, noun) → Matrx envelope | `buildEnvelope.ts` |
-| State color/icon primitive | `components/StateCell.tsx` |
-| Grid (matrix, filters, legend) | `components/DirectiveCatalogGrid.tsx` |
-| Builder/test panel | `components/DirectiveBuilderPanel.tsx` |
-| Orchestrator (load/error/refresh/gate) | `components/DirectiveCatalogClient.tsx` |
+| Part                                      | File                                    |
+| ----------------------------------------- | --------------------------------------- |
+| Types (OpenAPI aliases + guards)          | `types.ts`                              |
+| Endpoint path                             | `endpoints.ts`                          |
+| Fetch (one path)                          | `service.ts`                            |
+| Live hook (fetch + manual refresh)        | `hooks/useDirectiveCatalog.ts`          |
+| (verb, noun) → Matrx envelope             | `buildEnvelope.ts`                      |
+| Identity field → searchable entity source | `identityPicker.ts`                     |
+| State color/icon primitive                | `components/StateCell.tsx`              |
+| Grid (matrix, filters, legend)            | `components/DirectiveCatalogGrid.tsx`   |
+| Builder/test panel                        | `components/DirectiveBuilderPanel.tsx`  |
+| Orchestrator (load/error/refresh/gate)    | `components/DirectiveCatalogClient.tsx` |
 
 ## Reuse (no forks)
 
 - **Fetch:** `selectResolvedBaseUrl` (`apiConfigSlice`) — same base every backend call reads.
 - **Envelope render (the "test it" payoff):** `reference`/`view` with state `yes` renders LIVE through the canonical `MatrxEnvelopeBlock` + `referenceResolvers.ts` from `features/matrx-envelope/` — the same reference-chip renderer chat uses (resolves the value from Supabase, opens the entity on click). No second renderer.
+- **Identity selection:** searchable fields reuse `RecordReferencePicker` + the RLS-aware `reference_search_candidates` path; files use `openFilePicker`. The ephemeral `directiveReferencePickerWindow` returns selection through `callbackManager`; Redux carries no callbacks or chosen-record state.
+- **Reference examples stay derived:** `referenceFieldsForSpecs` projects only the current noun's server-declared fields and fills missing values with `<noun.field>` placeholders. Changing noun clears prior ids; selected records render through `EntityRef` with open/new-tab/peek doors.
 - Component library: `Select`, `Input`, `Button`, `Badge`; Lucide icons; semantic tokens.
 
 ## Execute (writes)
@@ -74,6 +77,10 @@ legacy named directives) and the server's alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-08-23 — Reference/view examples now update immediately from verb + noun with
+  exact identity placeholders; identity fields search real RLS-visible records in a
+  non-blocking picker window and selected records retain canonical doors.
 
 - 2026-07-27 — Made easy write capabilities directly toggleable from the matrix; added
   clickable Directive/Custom Action shape inspection with generated minimum/default/full copy

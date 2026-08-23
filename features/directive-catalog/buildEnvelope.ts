@@ -15,8 +15,14 @@
  * carry their specific id set.
  */
 
-import { MATRX_VERSION, type MatrxEnvelope } from "@/features/matrx-envelope/envelope";
-import type { DirectiveVerb, NounDirectives } from "@/features/directive-catalog/types";
+import {
+  MATRX_VERSION,
+  type MatrxEnvelope,
+} from "@/features/matrx-envelope/envelope";
+import type {
+  DirectiveVerb,
+  NounDirectives,
+} from "@/features/directive-catalog/types";
 import { isWriteVerb } from "@/features/directive-catalog/types";
 
 /** One identity field the admin must supply for a reference type. */
@@ -25,6 +31,30 @@ export interface RefFieldSpec {
   label: string;
   /** Whether a UUID is expected (drives the live-render "can resolve" hint). */
   uuid?: boolean;
+}
+
+/**
+ * Keep a reference item aligned to the CURRENT server-declared identity fields.
+ * This is deliberately a projection rather than a spread: switching nouns must
+ * never leak the previous noun's ids into the next envelope. When `noun` is
+ * supplied, missing values become explicit example placeholders so the builder
+ * remains useful before a real record has been selected.
+ */
+export function referenceFieldsForSpecs(
+  specs: RefFieldSpec[],
+  fields: Record<string, string>,
+  noun?: string,
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const spec of specs) {
+    const value = fields[spec.key]?.trim();
+    if (value) {
+      next[spec.key] = value;
+    } else if (noun) {
+      next[spec.key] = `<${noun}.${spec.key}>`;
+    }
+  }
+  return next;
 }
 
 function labelForKey(key: string): string {
@@ -110,7 +140,10 @@ const DEFAULT_REF_FIELDS: RefFieldSpec[] = [
  * SERVER-DERIVED first: the catalog row's `identity_fields` (the required fields
  * of the registered reference item model) is the source of truth; the hand map
  * only adds uuid/label polish for known keys; `{ id }` is the last resort. */
-export function refFieldsForNoun(noun: string, catalogNoun?: NounDirectives | null): RefFieldSpec[] {
+export function refFieldsForNoun(
+  noun: string,
+  catalogNoun?: NounDirectives | null,
+): RefFieldSpec[] {
   const derived = catalogNoun?.identity_fields;
   if (derived && derived.length > 0) {
     const hand = REF_FIELDS[noun];

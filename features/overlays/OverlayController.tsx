@@ -70,6 +70,7 @@ import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { Finding } from "@/features/hindsight/types";
+import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -476,6 +477,14 @@ const CuratedIconPickerWindow = lazyOverlay(
       (m) => ({ default: m.CuratedIconPickerWindow }),
     ),
   { ssr: false },
+);
+const DirectiveReferencePickerWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/admin/directive-reference-picker/DirectiveReferencePickerWindow").then(
+      (m) => ({ default: m.DirectiveReferencePickerWindow }),
+    ),
+  { ssr: false },
+  "@/features/window-panels/windows/admin/directive-reference-picker/DirectiveReferencePickerWindow",
 );
 const CreateProjectWindow = lazyOverlay(
   () =>
@@ -1805,6 +1814,9 @@ export default function OverlayController() {
     ),
     curatedIconPickerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "curatedIconPickerWindow"),
+    ),
+    directiveReferencePickerWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "directiveReferencePickerWindow"),
     ),
     diffViewerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "diffViewerWindow"),
@@ -3712,6 +3724,40 @@ export default function OverlayController() {
                 ? data.callbackGroupId
                 : null
             }
+          />
+        );
+      })}
+
+      {/* directiveReferencePickerWindow — multi-instance */}
+      {instancesById.directiveReferencePickerWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const entityToken =
+          typeof data?.entityToken === "string" &&
+          isEntityTypeToken(data.entityToken)
+            ? data.entityToken
+            : null;
+        if (!entityToken) return null;
+        return (
+          <DirectiveReferencePickerWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "directiveReferencePickerWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            entityToken={entityToken}
+            fieldKey={typeof data?.fieldKey === "string" ? data.fieldKey : "id"}
+            title={typeof data?.title === "string" ? data.title : null}
           />
         );
       })}

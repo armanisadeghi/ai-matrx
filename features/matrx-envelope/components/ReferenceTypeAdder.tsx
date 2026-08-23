@@ -33,7 +33,10 @@ import {
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import {
+  isEntityTypeToken,
+  type EntityTypeToken,
+} from "@/types/generated/entity-types.generated";
 
 export interface ReferenceTypeAdderProps {
   type: string;
@@ -70,7 +73,14 @@ export function ReferenceTypeAdder({
       />
     );
   }
-  return <RecordTypeAdder type={type} onPickMany={onPickMany} />;
+  if (!isEntityTypeToken(type)) {
+    return (
+      <p className="px-1 py-2 text-xs text-amber-700 dark:text-amber-300">
+        This reference type does not have a registered record picker.
+      </p>
+    );
+  }
+  return <RecordReferencePicker token={type} onPickMany={onPickMany} />;
 }
 
 function FileTypeAdder({ onBrowseFiles }: { onBrowseFiles: () => void }) {
@@ -265,17 +275,16 @@ function ScopeTypeAdder({
   );
 }
 
-function RecordTypeAdder({
-  type,
+export function RecordReferencePicker({
+  token,
   onPickMany,
 }: {
-  type: string;
+  token: EntityTypeToken;
   onPickMany: (items: ReferenceItem[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const token = type as EntityTypeToken;
   const info = getEntityInfo(token);
   const { results, loading } = useUniversalEntitySearch({
     query,

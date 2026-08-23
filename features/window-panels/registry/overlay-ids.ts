@@ -86,6 +86,7 @@ export const OVERLAY_IDS = [
   "crmCreatePartyWindow",
   "cropStudioWindow",
   "curatedIconPickerWindow",
+  "directiveReferencePickerWindow",
   "dictionarySelectorWindow",
   "diffViewerWindow",
   "emailDialog",
