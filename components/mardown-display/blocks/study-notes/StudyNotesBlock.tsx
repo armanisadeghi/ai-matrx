@@ -74,9 +74,9 @@ export function StudyNotesSectionCard({
         </p>
       ) : null}
 
-      {section.keyPoints.length > 0 ? (
+      {section.key_points.length > 0 ? (
         <ul className="mt-3 space-y-1.5">
-          {section.keyPoints.map((point, i) => (
+          {section.key_points.map((point, i) => (
             <li
               key={i}
               className="flex gap-2.5 text-sm leading-relaxed text-foreground"

@@ -44,6 +44,11 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type {
+  GlossaryTerm as GlossaryTermKind,
+  StudyNotes as StudyNotesKind,
+  StudyNotesSection as StudyNotesSectionKind,
+} from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — the ONE source `data[]` and the emitted JSON Schemas come from.
@@ -131,24 +136,25 @@ export const STUDY_NOTES_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge
 // ---------------------------------------------------------------------------
 
-export interface GlossaryTerm {
-  term: string;
-  definition: string;
-}
-
-export interface StudyNotesSection {
-  heading: string;
-  summary: string;
-  keyPoints: string[];
-  examples: string[];
-}
-
-export interface StudyNotes {
-  title: string;
-  overview: string;
+/**
+ * THE SHAPES COME FROM THE REGISTRY. `pnpm shape:types` generates
+ * `StudyNotesKind` / `StudyNotesSectionKind` / `GlossaryTermKind` from
+ * `content_ir.kind_definition`; this bridge only says how a COERCED document
+ * differs from a raw one — every field materialized, so a renderer never
+ * branches on absence. Nothing here re-declares a field name or a field type
+ * (`check:kind-type-twins`).
+ *
+ * Field names are the REGISTRY's, verbatim. The bridge used to rename
+ * `key_points` → `keyPoints`, which is precisely what made the second
+ * (idempotent) coercion pass silently blank every key point — the incident the
+ * comment on `coerceStudyNotes` records. One vocabulary, no translation layer.
+ */
+export type GlossaryTerm = Required<GlossaryTermKind>;
+export type StudyNotesSection = Required<StudyNotesSectionKind>;
+export type StudyNotes = Required<Omit<StudyNotesKind, "sections" | "glossary">> & {
   sections: StudyNotesSection[];
   glossary: GlossaryTerm[];
-}
+};
 
 export interface StudyNotesData {
   notes: StudyNotes;
@@ -175,11 +181,12 @@ function stringList(value: unknown): string[] {
  *
  * 🚨 IDEMPOTENT ON PURPOSE. The bridge hands the component an already-coerced
  * document, and the component coerces whatever it is given (it also accepts a
- * raw persisted value), so this runs TWICE on the normal path. Reading only the
- * wire spelling `key_points` made the second pass silently blank every key
- * point while `examples` — spelled the same in both shapes — survived, which is
- * exactly how it presented: notes with summaries and examples and no facts.
- * Every renamed field must accept BOTH spellings here.
+ * raw persisted value), so this runs TWICE on the normal path. It is safe
+ * because THE COERCED SHAPE IS THE WIRE SHAPE — one vocabulary, the registry's.
+ * The renaming this function used to do (`key_points` → `keyPoints`) made the
+ * second pass silently blank every key point while `examples` — spelled the
+ * same in both shapes — survived: notes with summaries and examples and no
+ * facts. Never reintroduce a per-bridge field name.
  */
 export function coerceStudyNotes(value: unknown): StudyNotes {
   const record = isRecord(value) ? value : {};
@@ -187,17 +194,20 @@ export function coerceStudyNotes(value: unknown): StudyNotes {
   const rawGlossary = Array.isArray(record.glossary) ? record.glossary : [];
 
   return {
+    __kind: "study_notes",
     title: stringOr(record.title, ""),
     overview: stringOr(record.overview, ""),
     sections: rawSections.filter(isRecord).map((section) => ({
+      __kind: "study_notes_section",
       heading: stringOr(section.heading, ""),
       summary: stringOr(section.summary, ""),
-      keyPoints: stringList(section.key_points ?? section.keyPoints),
+      key_points: stringList(section.key_points),
       examples: stringList(section.examples),
     })),
     glossary: rawGlossary
       .filter(isRecord)
       .map((entry) => ({
+        __kind: "glossary_term" as const,
         term: stringOr(entry.term, ""),
         definition: stringOr(entry.definition, ""),
       }))
@@ -225,10 +235,10 @@ function sectionMarkdown(section: StudyNotesSection): string {
   return joinBlocks([
     `## ${section.heading}`,
     section.summary || null,
-    section.keyPoints.length > 0
+    section.key_points.length > 0
       ? joinBlocks([
           "**Key points**",
-          section.keyPoints.map((point) => `- ${point}`).join("\n"),
+          section.key_points.map((point) => `- ${point}`).join("\n"),
         ])
       : null,
     section.examples.length > 0
