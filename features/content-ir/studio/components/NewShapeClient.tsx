@@ -8,7 +8,7 @@
  * seeded onto the agent's declared `user_data_sample` variable — never folded
  * into the draft text (THE USER-INPUT LAW). The creator agent does the actual
  * creation server-side and the run streams in-place — no navigation away from
- * the studio. When the shape lands, the /shapes list's Refresh picks it up.
+ * the studio. When the shape lands, the canonical /shapes/all inventory picks it up.
  *
  * The creator agent is the `content_ir.kind_creator` MANDATE (the user's own
  * binding wins). Resolution failure is LOUD: no fallback agent, ever.
