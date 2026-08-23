@@ -57,7 +57,7 @@ claim rows; do not blanket-insert (verify the kind is not a machine contract fir
    **deleted**. If deletion needs a ruling, mark the row `blocked` and write ONE line why.
 9. **Maturity is NOT promoted by this work.** `metadata.maturity` stays exactly as it is —
    `placeholder` stays `placeholder`. Only the separate verification pass awards `verified`.
-10. Kind resolution lives ONLY in `features/content-ir/core/kind-parser.ts`. Do not add a
+10. Kind resolution lives ONLY in the `@ai-matrx/content-ir` kernel (`core/kind-parser.ts`). Do not add a
     second resolver anywhere.
 
 Status vocabulary: `unclaimed` · `claimed` · `done` · `blocked`.
