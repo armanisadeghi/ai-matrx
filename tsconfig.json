@@ -21,6 +21,10 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
+      "@/app/(admin)/*": [
+        "./app/(admin)/*",
+        "./app/_admin_build_excluded/*"
+      ],
       "@/*": [
         "./*"
       ],
@@ -121,6 +125,10 @@
       "moduleResolution": "node",
       "baseUrl": ".",
       "paths": {
+        "@/app/(admin)/*": [
+          "./app/(admin)/*",
+          "./app/_admin_build_excluded/*"
+        ],
         "@/*": [
           "./*"
         ],
