@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { launchFailureMessage } from "@/features/agents/redux/execution-system/utils/launch-failure-message";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
@@ -96,7 +97,7 @@ export function EndowmentAnalysisCard({
     } catch (error) {
       handle.close();
       toast.error(
-        error instanceof Error ? error.message : "The endowment analysis failed to start.",
+        launchFailureMessage(error, "The endowment analysis failed to start."),
       );
     } finally {
       setRunning(false);
@@ -121,7 +122,7 @@ export function EndowmentAnalysisCard({
       setPortfolio(result);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "The portfolio builder failed.",
+        launchFailureMessage(error, "The portfolio builder failed."),
       );
     }
   };
