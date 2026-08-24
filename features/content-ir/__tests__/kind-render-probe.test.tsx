@@ -208,6 +208,25 @@ function probeOne(row: JobRow): ProbeResult {
     };
   }
 
+  // A kind carrying a `legacyBlockType` facet ALWAYS routes through the COMPILED
+  // bridge (kind-route.ts: "…never un-render"); the resolver's answer only
+  // refines the marker. So a `kind_component.component_key` naming a component
+  // that does not exist is invisible at render time — the compiled bridge covers
+  // for it and the registry keeps lying about which component renders the kind.
+  // Leg 3 says "renders through its REGISTERED component"; rendering through a
+  // compiled fallback while the registered row points at nothing does not
+  // satisfy that, so it FAILS here. Found by sabotaging `rating`'s row during
+  // the first verification pass (2026-08-23) — nothing else in the system caught it.
+  if (marker.key !== routed.type && !resolveBlockDispatch(marker.key)) {
+    return {
+      ...base,
+      verdict: "dangling_route_key",
+      detail:
+        `kind_component names '${marker.key}', which resolveBlockDispatch does not know; ` +
+        `the block only renders because the compiled bridge re-typed it to '${routed.type}'`,
+    };
+  }
+
   let markup = "";
   try {
     const element = renderFn(dispatchContext(routed));
