@@ -79,14 +79,19 @@ function Address({
 
 function ResultRow({
   href,
+  onOpen,
   children,
 }: {
   href: string;
+  /** Following a result ENDS the search — otherwise the deep link it just
+   *  opened stays hidden behind the results that produced it. */
+  onOpen: () => void;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
+      onClick={onOpen}
       className="group flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:border-primary/40 hover:bg-accent/40"
     >
       <div className="min-w-0 flex-1">{children}</div>
@@ -153,12 +158,15 @@ export function DimensionSearchResults({
   dimensions,
   brandId,
   siteId,
+  onOpenResult,
 }: {
   query: string;
   /** The catalogue the screen already loaded — never re-fetched to search it. */
   dimensions: FacetDimension[];
   brandId: string | null | undefined;
   siteId: string;
+  /** Clears the search so the row the reader just opened is what they see. */
+  onOpenResult: () => void;
 }) {
   const trimmed = query.trim();
   const matchers = useQuery({
@@ -302,6 +310,7 @@ export function DimensionSearchResults({
             return (
               <ResultRow
                 key={matcher.id}
+                onOpen={onOpenResult}
                 href={dimensionValueHref(
                   { brandId, siteId },
                   address.dimension.slug,
@@ -361,6 +370,7 @@ export function DimensionSearchResults({
           {hits.values.map(({ dimension, value }) => (
             <ResultRow
               key={value.value_id}
+              onOpen={onOpenResult}
               href={dimensionValueHref(
                 { brandId, siteId },
                 dimension.slug,
@@ -392,6 +402,7 @@ export function DimensionSearchResults({
           {hits.dimensions.map((dimension) => (
             <ResultRow
               key={dimension.dimension_id}
+              onOpen={onOpenResult}
               href={dimensionValueHref(
                 { brandId, siteId },
                 dimension.slug,

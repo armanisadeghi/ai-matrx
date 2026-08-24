@@ -95,8 +95,8 @@ export function findDraftIssues(
         issues.push({ value: row.value, message: "Needs a minimum score." });
         continue;
       }
-      if (min < 0 || min > 100) {
-        issues.push({ value: row.value, message: "Scores only run 0–100." });
+      if (min < 0) {
+        issues.push({ value: row.value, message: "Scores cannot be below 0." });
         continue;
       }
       const owner = seenScores.get(min);

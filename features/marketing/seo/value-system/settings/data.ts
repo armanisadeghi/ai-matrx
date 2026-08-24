@@ -15,21 +15,25 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { makeAssertData } from "@/utils/errors";
+import { makeGovernedDataAsserter } from "@/utils/errors";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("seo");
 }
 
-const assertData = makeAssertData("reach these value settings");
+const assertData = makeGovernedDataAsserter(
+  "reach these value settings",
+  /^(gsc_vocab_[a-z_]+|gsc_bad_vocab_kind|seo_settings_[a-z_]+):\s*/,
+);
 
 export type SettingsScope = "platform" | "org" | "brand" | "site";
 
 export interface ValueLevel {
   value: string;
   label?: string | null;
-  min_score: number;
+  /** Null only for the reserved `negative` guard, which is not a score range. */
+  min_score: number | null;
   /** Present on inherited rows: which tier it came from. */
   source?: SettingsScope;
 }
@@ -88,7 +92,11 @@ export async function setValueSettings(input: {
     ...(input.levels === undefined ? {} : { p_levels: input.levels }),
     p_clear: input.clear ?? [],
   });
-  return assertData(response.data, response.error) as unknown as ValueSettingsScopePayload;
+  return assertData(
+    response.data,
+    response.error,
+    "save these value settings",
+  ) as unknown as ValueSettingsScopePayload;
 }
 
 // ── Copying meaning to a sibling site (KI-043) ──────────────────────────────

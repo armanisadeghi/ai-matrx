@@ -58,6 +58,32 @@ export function makeAssertData(action: string) {
 }
 
 /**
+ * Postgres governance guards use a machine code before a sentence deliberately
+ * written for the person making the change. Preserve only the allow-listed
+ * codes; every other PostgREST failure keeps the calm generic action message.
+ */
+export function makeGovernedDataAsserter(
+  action: string,
+  governanceCode: RegExp,
+) {
+  const assertData = makeAssertData(action);
+  return function assertGovernedData<T>(
+    data: T | null,
+    error: unknown,
+    override?: string,
+  ): T {
+    if (error) {
+      const message = extractErrorMessage(error).split(" · ")[0];
+      const governed = message.match(governanceCode);
+      if (governed) {
+        throw new Error(message.slice(governed[0].length), { cause: error });
+      }
+    }
+    return assertData(data, error, override);
+  };
+}
+
+/**
  * Safe string extraction for caught values (Supabase PostgrestError, axios, etc.).
  * Avoids `String(err)` on plain objects, which yields "[object Object]".
  *

@@ -12,7 +12,7 @@
  * back up the ladder rather than copying the parent's number down.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Check, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,11 @@ import {
   type SettingsScope,
   type ValueLevel,
 } from "./data";
+import {
+  findValueLevelIssues,
+  isReservedValueLevel,
+  mayRemoveValueLevel,
+} from "./lib";
 
 const SCOPE_WORD: Record<SettingsScope, string> = {
   platform: "the platform defaults",
@@ -83,10 +88,8 @@ export function ValueSettingsEditor({
   }, [data]);
 
   const parentWord = data?.parent?.label ?? "the platform defaults";
-  const effectiveLevels = useMemo(
-    () => levels ?? data?.inherited.levels ?? [],
-    [levels, data],
-  );
+  const effectiveLevels = levels ?? data?.inherited.levels ?? [];
+  const levelIssues = findValueLevelIssues(effectiveLevels);
 
   const save = useMutation({
     mutationFn: (input: Parameters<typeof setValueSettings>[0]) =>
@@ -221,7 +224,10 @@ export function ValueSettingsEditor({
             </tr>
           </thead>
           <tbody>
-            {effectiveLevels.map((level, index) => (
+            {effectiveLevels.map((level, index) => {
+              const reserved = isReservedValueLevel(level);
+              const removable = mayRemoveValueLevel(scope, level);
+              return (
               <tr key={`${level.value}-${index}`} className="border-t border-border">
                 <td className="py-1.5 pr-2">
                   <Input
@@ -237,29 +243,46 @@ export function ValueSettingsEditor({
                   />
                 </td>
                 <td className="py-1.5 pr-2">
-                  <Input
-                    type="number"
-                    className="h-7 w-28 text-xs"
-                    value={level.min_score}
-                    disabled={readOnly}
-                    aria-label={`Score ${level.label ?? level.value} starts at`}
-                    onChange={(event) => {
-                      const next = [...effectiveLevels];
-                      next[index] = {
-                        ...level,
-                        min_score: Number(event.target.value),
-                      };
-                      setLevels(next);
-                    }}
-                  />
+                  {reserved ? (
+                    <span className="rounded border border-border bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground">
+                      guard — no score range
+                    </span>
+                  ) : (
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-7 w-28 text-xs"
+                      value={level.min_score ?? ""}
+                      disabled={readOnly}
+                      aria-label={`Score ${level.label ?? level.value} starts at`}
+                      onChange={(event) => {
+                        const next = [...effectiveLevels];
+                        next[index] = {
+                          ...level,
+                          min_score:
+                            event.target.value === ""
+                              ? null
+                              : Number(event.target.value),
+                        };
+                        setLevels(next);
+                      }}
+                    />
+                  )}
                 </td>
                 <td className="py-1.5 text-right">
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 px-2 text-muted-foreground"
-                    disabled={readOnly}
+                    disabled={readOnly || !removable}
                     aria-label={`Remove ${level.label ?? level.value}`}
+                    title={
+                      reserved
+                        ? "The Negative level is reserved — you may rename it, never remove it."
+                        : scope === "platform"
+                          ? "Platform level identities are governed in the vocabulary registry."
+                          : undefined
+                    }
                     onClick={() =>
                       setLevels(effectiveLevels.filter((_, i) => i !== index))
                     }
@@ -268,30 +291,38 @@ export function ValueSettingsEditor({
                   </Button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs"
-            disabled={readOnly}
-            onClick={() =>
-              setLevels([
-                ...effectiveLevels,
-                { value: `level_${effectiveLevels.length + 1}`, label: "", min_score: 0 },
-              ])
-            }
-          >
-            <Plus className="mr-1 h-3 w-3" aria-hidden />
-            Add a level
-          </Button>
+          {scope !== "platform" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={readOnly}
+              onClick={() =>
+                setLevels([
+                  ...effectiveLevels,
+                  { value: `level_${effectiveLevels.length + 1}`, label: "", min_score: 0 },
+                ])
+              }
+            >
+              <Plus className="mr-1 h-3 w-3" aria-hidden />
+              Add a level
+            </Button>
+          ) : null}
           <Button
             size="sm"
             className="h-8"
-            disabled={readOnly || save.isPending || levels === null}
+            disabled={
+              readOnly ||
+              save.isPending ||
+              levels === null ||
+              levelIssues.length > 0
+            }
             onClick={() => save.mutate({ scope, id, levels: effectiveLevels })}
           >
             {save.isPending ? (
@@ -314,6 +345,12 @@ export function ValueSettingsEditor({
             </Button>
           ) : null}
         </div>
+
+        {levelIssues.length > 0 && levels !== null ? (
+          <p className="mt-2 text-[11px] text-destructive">
+            {levelIssues[0].message}
+          </p>
+        ) : null}
 
         {data.parent ? (
           <p className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">

@@ -278,7 +278,10 @@ function ValueRow({
             pressing it removes all of it server-side in one transaction. There
             is no "now re-run the matchers" step, because a delete that leaves
             its stamps behind is the bug this replaced. */}
-        {editable ? (
+        {/* The honest-decline option is never deletable — the DB refuses it
+            with a sentence, and a button that can only refuse is noise on the
+            row. Hidden, not disabled. */}
+        {editable && !value.abstain ? (
           <Button
             size="sm"
             variant="ghost"

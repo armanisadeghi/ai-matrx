@@ -236,6 +236,7 @@ export function DimensionManager() {
               dimensions={dimensions}
               brandId={brandId}
               siteId={siteId}
+              onOpenResult={() => setQuery("")}
             />
           ) : null}
 

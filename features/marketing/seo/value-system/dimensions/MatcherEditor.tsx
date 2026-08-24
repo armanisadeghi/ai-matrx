@@ -128,16 +128,22 @@ function MatcherRow({
   matcher,
   siteId,
   brandId,
+  value,
+  dimensionLabel,
   onChanged,
 }: {
   matcher: ValueMatcher;
   siteId: string;
   /** For the brand-identity row's door to where its names are actually edited. */
   brandId?: string;
+  /** The answer this match fills — the review window states the full address. */
+  value: FacetValue;
+  dimensionLabel: string;
   onChanged: () => void;
 }) {
   const meta = kindMeta(matcher.kind);
   const Icon = meta.icon;
+  const dispatch = useAppDispatch();
 
   // Only pattern-kind matchers are toggled from here (`meta.editableHere`) —
   // the cast is safe because the mutation is never wired up otherwise (below).
@@ -213,17 +219,38 @@ function MatcherRow({
           Edit brand names
         </Link>
       ) : null}
+      {/* THE COUNT IS A DOOR. "2,906 stamped" is the number that used to end the
+          story; it now opens the review of exactly which keywords those are,
+          which of them this match actually holds, and which a rival answer took
+          — the same window a fresh save opens. A number you cannot open is the
+          toast problem in a different font. */}
       {matcher.matchCount !== null ? (
-        <span
-          className="shrink-0 text-[11px] text-muted-foreground"
+        <button
+          type="button"
+          onClick={() =>
+            dispatch(
+              openOverlay({
+                overlayId: "matcherReviewWindow",
+                data: {
+                  siteId,
+                  matcherId: matcher.id,
+                  pattern: matcher.pattern ?? "",
+                  kindLabel: meta.label,
+                  valueLabel: value.label,
+                  dimensionLabel,
+                },
+              }),
+            )
+          }
+          className="shrink-0 rounded px-1 text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:bg-accent hover:text-foreground"
           title={
             matcher.lastEvaluatedAt
-              ? `Last run ${new Date(matcher.lastEvaluatedAt).toLocaleString()}`
-              : "Never run"
+              ? `See exactly which keywords this caught. Last run ${new Date(matcher.lastEvaluatedAt).toLocaleString()}`
+              : "See exactly which keywords this caught. Never run."
           }
         >
           {formatCount(matcher.matchCount)} stamped
-        </span>
+        </button>
       ) : null}
       <Badge
         variant="outline"
@@ -626,6 +653,8 @@ export function MatcherEditor({
                   matcher={matcher}
                   siteId={siteId}
                   brandId={brandId}
+                  value={value}
+                  dimensionLabel={dimensionLabel}
                   onChanged={refresh}
                 />
               ))}
