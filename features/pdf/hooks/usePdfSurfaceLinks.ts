@@ -24,6 +24,13 @@ const TTL_MS = 60_000;
 const cache = new Map<string, { at: number; ids: PdfSurfaceLinkIds }>();
 const inflight = new Map<string, Promise<PdfSurfaceLinkIds>>();
 
+/** Clear cached identity pairs after a pipeline creates or relinks a doc. */
+export function invalidatePdfSurfaceLinks(fileId: string): void {
+  for (const key of cache.keys()) {
+    if (key.startsWith(`${fileId}|`)) cache.delete(key);
+  }
+}
+
 /** One-shot resolver (exported for non-hook callers like action rows).
  *  Same cache as the hook. */
 export async function resolvePdfSurfaceIds(opts: {

@@ -14,13 +14,20 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
  */
 export const dynamic = "force-dynamic";
 
-export default async function PdfExtractorStudioPage() {
+interface PageProps {
+  searchParams: Promise<{ file?: string }>;
+}
+
+export default async function PdfExtractorStudioPage({
+  searchParams,
+}: PageProps) {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return <PdfExtractorLanding />;
+  const { file } = await searchParams;
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       <Suspense fallback={null}>
-        <PdfStudioRouteClient />
+        <PdfStudioRouteClient initialSourceFileId={file} />
       </Suspense>
     </div>
   );

@@ -15,6 +15,7 @@
 | Jump between surfaces | `PdfSurfaceSwitcher` + registry (add a surface = one registry entry, every menu updates) | `components/PdfSurfaceSwitcher.tsx`, `surfaces/registry.ts` |
 | Switcher + document identity in ONE glass pill | `PdfNamedSurfaceSwitcher` — one `TapTargetButtonGroup` containing: registry-sourced PDF icon + truncated text-[11px] filename (click-to-edit via `EditableLabel` when `onRename` given; edit mode never shrinks — holds measured width, expands to w-64) + the switcher + the full `/files` `···`/right-click menus (self-hydrating via `useEnsureCloudFile`) + opt-in macOS-style search (`onSearchChange`: overlays the field across the pill's content — idle content goes `visibility:hidden` so the width literally cannot change; X clears then closes, Esc closes). Demo: `/demos/pdf-named-switcher` | `components/PdfNamedSurfaceSwitcher.tsx` |
 | Resolve fileId ↔ processedDocumentId | `usePdfSurfaceLinks` (bridge-backed, cached) | `hooks/usePdfSurfaceLinks.ts` |
+| Extract an existing cloud PDF | `useExistingPdfExtraction` — reuses the bridge or runs `full-pipeline` from `file_id`; never re-upload | `hooks/useExistingPdfExtraction.ts` |
 | Download a result blob | `useDownloadBlob` (tracked URLs, unmount revocation) | `hooks/useDownloadBlob.ts` |
 | Persist a derived PDF with lineage | `saveDerivative` (fileHandler upload + `processed_documents` row) | `services/saveDerivative.ts` |
 | Studio preset catalog UI | `PdfPresetPicker` (catalog from `GET studio/presets`; ids are backend-owned) | `components/PdfPresetPicker.tsx` |
@@ -56,6 +57,8 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 - Scanner-produced PDFs (`Scans/`, `parent_file_id` set) get no `page1_url` grid thumbnail — the variant pipeline skips derivatives BY DESIGN; the grid falls back to live render.
 
 ## Change Log
+
+- 2026-08-24 — Existing Files PDFs extract without duplicate uploads: `useExistingPdfExtraction` resolves an existing bridge or runs the canonical remote full pipeline from `cld_files.id`; Files gains background **Extract text**, extractor links preserve unprocessed identity with `?file=`, and the studio composes the canonical Cloud Files PDF picker.
 - 2026-08-17 — **The scanner's clean step is a real STREAM now; the 2s poll is deleted.** The
   2026-08-11 entry below called its own approach a ceiling and named the fix: emit the docproc
   clean pipeline as a stream and adopt it. Both halves shipped. **aidream:** `matrx_rag.stages.run_clean`

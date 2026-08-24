@@ -12,11 +12,13 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
+import { useExistingPdfExtraction } from "@/features/pdf/hooks/useExistingPdfExtraction";
+import { buildPdfExtractorHref } from "@/features/pdf/surfaces/hrefs";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
@@ -84,6 +86,7 @@ export function FilePreview({
   const ensure = useEnsureCloudFile(fileId);
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const actions = useFileActions(fileId);
+  const existingPdfExtraction = useExistingPdfExtraction();
 
   // Inline preview URL resolution.
   //
@@ -165,15 +168,9 @@ export function FilePreview({
       openInRoute = {
         label: "Open in PDF Extractor",
         onClick: () => {
-          void resolvePdfSurfaceIds({ fileId }).then(
-            ({ processedDocumentId }) => {
-              router.push(
-                processedDocumentId
-                  ? `/tools/pdf-extractor/${processedDocumentId}`
-                  : "/tools/pdf-extractor",
-              );
-            },
-          );
+          void resolvePdfSurfaceIds({ fileId }).then((ids) => {
+            router.push(buildPdfExtractorHref(ids));
+          });
         },
       };
     }
@@ -204,6 +201,30 @@ export function FilePreview({
       onDelete: () => void actions.delete({ hard: false }),
       onEdit: () => requestEdit(fileId),
       openInRoute,
+      onExtractText:
+        capability.previewKind === "pdf" && file.source.kind !== "virtual"
+          ? async () => {
+              const toastId = toast.loading("Starting PDF extraction…");
+              try {
+                const documentId = await existingPdfExtraction.extract(fileId);
+                toast.success("PDF text is ready", {
+                  id: toastId,
+                  action: {
+                    label: "Open extraction",
+                    onClick: () =>
+                      router.push(`/tools/pdf-extractor/${documentId}`),
+                  },
+                });
+              } catch (error: unknown) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "PDF extraction failed",
+                  { id: toastId },
+                );
+              }
+            }
+          : undefined,
       // Office → PDF: server renders via LibreOffice, persists a NEW pdf
       // asset, and we take the user straight to it.
       onConvertToPdf:
@@ -227,7 +248,15 @@ export function FilePreview({
           : undefined,
     });
     return <PreviewerActionBar actions={previewActions} />;
-  }, [file, capability, actions, router, fileId, dispatch]);
+  }, [
+    file,
+    capability,
+    actions,
+    router,
+    fileId,
+    dispatch,
+    existingPdfExtraction,
+  ]);
 
   if (!file) {
     if (ensure.status === "loading" || ensure.status === "idle") {

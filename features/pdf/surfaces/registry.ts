@@ -21,6 +21,7 @@ import {
   Wand2,
   Database,
 } from "lucide-react";
+import { buildPdfExtractorHref } from "./hrefs";
 
 export type PdfSurfaceId =
   | "file-viewer"
@@ -63,12 +64,10 @@ export const PDF_SURFACES: PdfSurfaceDef[] = [
     label: "PDF Extractor",
     description: "Extract, AI clean, manipulate, chunk",
     icon: Wand2,
-    // Without a processed doc the extractor home still lets the user start
-    // an extraction — better one click to the right tool than a dead entry.
-    buildHref: ({ processedDocumentId }) =>
-      processedDocumentId
-        ? `/tools/pdf-extractor/${processedDocumentId}`
-        : `/tools/pdf-extractor`,
+    // Preserve the source file identity even before it has a processed-doc
+    // bridge. The extractor route consumes `?file=` and starts the canonical
+    // remote pipeline; dropping the id here used to strand users at upload.
+    buildHref: buildPdfExtractorHref,
   },
   {
     id: "rag-library",

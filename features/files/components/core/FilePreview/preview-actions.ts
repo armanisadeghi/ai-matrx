@@ -14,6 +14,7 @@ import {
   Download,
   Edit3,
   ExternalLink,
+  FileText,
   FileOutput,
   Maximize2,
   Trash2,
@@ -23,7 +24,7 @@ import type { PreviewKind } from "@/features/files/utils/preview-capabilities";
 import type { PreviewerAction } from "./PreviewerActionBar/PreviewerActionBar";
 
 export interface BuildPreviewActionsArgs {
-  file: CloudFileRecord;
+  file: Pick<CloudFileRecord, "source">;
   previewKind: PreviewKind;
   /** Triggers `useFileActions.download`. */
   onDownload: () => void | Promise<void>;
@@ -41,6 +42,8 @@ export interface BuildPreviewActionsArgs {
    *  virtual-source adapter's `openInRoute(node)`. Surfaces as a primary
    *  "Open in <feature>" button when provided. */
   openInRoute?: { label: string; onClick: () => void };
+  /** PDF only — persist text extraction from the existing cloud-file id. */
+  onExtractText?: () => void | Promise<void>;
   /** Office (docx/pptx) only — server-side LibreOffice render to a new PDF
    *  asset. Surfaced when provided and the kind is `office`. */
   onConvertToPdf?: () => void | Promise<void>;
@@ -76,12 +79,23 @@ export function buildPreviewActions(
     onDelete,
     onEdit,
     openInRoute,
+    onExtractText,
     onConvertToPdf,
   } = args;
 
   const isVirtual = file.source.kind === "virtual";
 
   const actions: PreviewerAction[] = [];
+
+  if (!isVirtual && previewKind === "pdf" && onExtractText) {
+    actions.push({
+      id: "extract-text",
+      label: "Extract text",
+      icon: FileText,
+      onClick: onExtractText,
+      primary: true,
+    });
+  }
 
   if (openInRoute) {
     actions.push({

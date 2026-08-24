@@ -11,6 +11,9 @@ New PDF _capability_ lands in `features/pdf/`, never here.
 ## What it is
 
 Upload/select a PDF → render + extract text **page by page** → view/clean/save.
+Existing Cloud Files PDFs enter through `?file=<cld_files.id>` or the canonical
+`openFilePicker({allowedExtensions:["pdf"]})`; both call
+`useExistingPdfExtraction` and never upload duplicate bytes.
 The "extract pages individually" flow builds job variables from
 `docproc.processed_document_pages` (`integrations/surface-variables.ts`) and feeds
 `features/page-extraction`; per-page image/vision is the agent-side
@@ -57,6 +60,8 @@ live FE reads `processed_documents` directly from Supabase via `docprocDb` +
 sections when next in here.
 
 ## Change Log
+
+- 2026-08-24 — Unprocessed Files PDFs retain their `file_id` across “Open in PDF Extractor,” auto-run the remote pipeline, and are selectable from the studio through the canonical Cloud Files picker; the upload-only dead end is removed.
 
 - 2026-08-12 — `PDF_EXTRACTOR_SURFACE_NAME` is now exported from
   `features/surfaces/manifests/pdf-extractor.manifest.ts` and imported by
