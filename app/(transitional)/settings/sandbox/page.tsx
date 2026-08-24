@@ -3,14 +3,13 @@
 /**
  * Sandbox defaults — settings page.
  *
- * Lets the user configure what `ensure_default_sandbox` (auto-provision on
- * sign-in) and the SandboxPanel's "New sandbox" button produce: template,
- * tier, TTL, env vars, optional git repo to auto-clone.
+ * Lets the user configure what an explicit "New sandbox" action produces:
+ * template, tier, TTL, env vars, optional git repo to auto-clone.
  *
  * Persistence: standard userPreferences slice (`sandbox` module). The slice's
  * auto-save middleware debounces an upsert into `users.user_preferences`.
- * Read on both sides — web (SandboxPanel + this page) and aidream
- * (`ensure_default_sandbox.py` reads `user_preferences.preferences.sandbox`).
+ * Read by the web sandbox creation surfaces and the explicit provisioning
+ * service in aidream.
  */
 
 import { useState } from "react";
@@ -48,7 +47,7 @@ import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreference
 // Templates the orchestrator actually serves today. Source: `template`
 // distinct values on public.sandbox_instances. Keep this in sync — adding a
 // new template image here without registering it on the orchestrator side
-// would cause auto-provision failures.
+// would cause explicit sandbox-creation failures.
 const TEMPLATE_OPTIONS = [
   {
     value: "slim",
@@ -144,9 +143,9 @@ export default function SandboxSettingsPage() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground md:text-base">
           What every new sandbox starts with — template, tier, env vars, and an
-          optional git repo to clone right after creation. Applied to the
-          auto-provisioned default sandbox you get on sign-in and to every "New
-          sandbox" you create from the chat picker.
+          optional git repo to clone right after creation. Applied whenever you
+          explicitly create a sandbox from the sandbox page, Code workspace, or
+          chat picker.
         </p>
       </div>
 

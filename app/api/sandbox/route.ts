@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import {
   resolveOrchestratorByTier,
@@ -8,7 +7,10 @@ import {
 } from "@/lib/sandbox/orchestrator-routing";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
 import { reconcileUserSandboxes } from "@/lib/sandbox/reconcile";
-import type { SandboxConfig, SandboxTier } from "@/types/sandbox";
+import {
+  sandboxCreateRequestSchema,
+  type SandboxConfig,
+} from "@/types/sandbox";
 import type { Database } from "@/types/database.types";
 
 type SandboxInstanceInsert =
@@ -111,7 +113,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const parsedBody = sandboxCreateRequestSchema.safeParse(
+      await request.json(),
+    );
+    if (!parsedBody.success) {
+      console.error(
+        "[POST /api/sandbox] refusing invalid create request",
+        parsedBody.error.flatten(),
+      );
+      return NextResponse.json(
+        {
+          error: "Invalid sandbox create request",
+          details:
+            "organization_id, tier, and every supplied field must satisfy the sandbox create contract.",
+        },
+        { status: 400 },
+      );
+    }
+
     const {
       organization_id,
       project_id,
@@ -122,19 +141,7 @@ export async function POST(request: NextRequest) {
       template_version,
       resources,
       labels,
-    } = body as {
-      organization_id?: string;
-      project_id?: string;
-      config?: SandboxConfig;
-      ttl_seconds?: number;
-      tier?: SandboxTier;
-      template?: string;
-      template_version?: string;
-      resources?: { cpu?: number; memory_mb?: number; disk_mb?: number };
-      labels?: Record<string, string>;
-    };
-
-    const organizationId = await ensureOrgIdServer(supabase, organization_id);
+    } = parsedBody.data;
 
     if (project_id) {
       const { data: project, error: projectError } = await workspaceDb(supabase)
@@ -200,23 +207,7 @@ export async function POST(request: NextRequest) {
     // Tier is required — reject requests that omit it rather than silently
     // routing to a default orchestrator. Callers must read the user's
     // configured default from `sandboxPrefs.tier` or `useSandboxCreate().tier`.
-    const tier: SandboxTier | undefined =
-      (tierInput as SandboxTier | undefined) ||
-      (config?.tier as SandboxTier | undefined);
-    if (!tier) {
-      console.error(
-        "[POST /api/sandbox] tier is required but was not provided. " +
-          "Pass tier: 'ec2' or tier: 'hosted' explicitly — no silent defaults.",
-      );
-      return NextResponse.json(
-        {
-          error: "tier is required",
-          details:
-            "Pass tier: 'ec2' or tier: 'hosted'. No silent defaults — the caller must be explicit.",
-        },
-        { status: 400 },
-      );
-    }
+    const tier = tierInput;
     const target = resolveOrchestratorByTier(tier);
 
     // Secrets-vault injection happens INSIDE the orchestrator now (it
@@ -229,7 +220,7 @@ export async function POST(request: NextRequest) {
     // Forward to the matching orchestrator.
     const orchestratorBody: Record<string, unknown> = {
       user_id: user.id,
-      organization_id: organizationId,
+      organization_id,
       config: config || {},
       tier,
     };
@@ -313,7 +304,7 @@ export async function POST(request: NextRequest) {
     // renamed/required column, this assignment fails at compile time. That's
     // the contract that catches the next `proxy_url`-style silent drop.
     const sandboxRecord: SandboxInstanceInsert = {
-      organization_id: organizationId,
+      organization_id,
       user_id: user.id,
       project_id: project_id || null,
       sandbox_id: orchestratorData.sandbox_id,

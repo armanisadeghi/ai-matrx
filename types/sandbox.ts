@@ -1,4 +1,5 @@
 import type { Database } from "./database.types";
+import { z } from "zod";
 
 export type SandboxStatus =
   | "creating"
@@ -124,26 +125,35 @@ export interface SandboxExecResponse {
   cwd: string;
 }
 
-export interface SandboxCreateRequest {
-  /** Active organization whose permitted shared secrets should be injected. */
-  organization_id?: string;
-  project_id?: string;
-  config?: SandboxConfig;
-  ttl_seconds?: number;
-  /**
-   * Tier picker — 'ec2' (ephemeral, S3-backed) or 'hosted' (this server,
-   * larger workloads). Required — the API rejects requests without an
-   * explicit tier rather than silently defaulting. Use `sandboxPrefs.tier`
-   * or `useSandboxCreate().tier` to read the user's configured default.
-   */
-  tier: SandboxTier;
-  /** Template id; see `GET /api/templates`. */
-  template?: string;
-  template_version?: string;
-  /** Resource overrides (hosted tier only). */
-  resources?: { cpu?: number; memory_mb?: number; disk_mb?: number };
-  labels?: Record<string, string>;
-}
+export const sandboxOrganizationIdSchema = z.string().uuid();
+
+/**
+ * Runtime contract for every browser → Next sandbox-create request. The
+ * orchestrator owns a separate Pydantic twin and rejects the same missing or
+ * malformed organization before persistence.
+ */
+export const sandboxCreateRequestSchema = z
+  .object({
+    organization_id: sandboxOrganizationIdSchema,
+    project_id: z.string().uuid().optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
+    ttl_seconds: z.number().int().min(60).max(31_536_000).optional(),
+    tier: z.enum(["ec2", "hosted"]),
+    template: z.string().min(1).optional(),
+    template_version: z.string().min(1).optional(),
+    resources: z
+      .object({
+        cpu: z.number().min(0.25).max(8).optional(),
+        memory_mb: z.number().int().min(256).max(32_768).optional(),
+        disk_mb: z.number().int().min(1_024).optional(),
+      })
+      .strict()
+      .optional(),
+    labels: z.record(z.string(), z.string()).optional(),
+  })
+  .strict();
+
+export type SandboxCreateRequest = z.infer<typeof sandboxCreateRequestSchema>;
 
 export type SandboxAction = "stop" | "extend";
 

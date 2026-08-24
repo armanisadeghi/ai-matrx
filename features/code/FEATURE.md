@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-08-20`
+**Last updated:** `2026-08-23`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(a)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -107,6 +107,12 @@ Two paths:
 
 Tier selection happens at `New sandbox` time and sticks per-user (`userPreferences.coding.lastSandboxTier`). Detail lives in [`SANDBOX_DIRECT_ENDPOINTS.md`](./SANDBOX_DIRECT_ENDPOINTS.md) and [`SANDBOX_PROXY_AND_FS_EVENTS_FE_INTEGRATION.md`](./SANDBOX_PROXY_AND_FS_EVENTS_FE_INTEGRATION.md).
 
+Every create carries the explicitly selected `appContext.organization_id` through
+the form request, create hook, Next route, and orchestrator request. Missing,
+malformed, or context-drifted organization identity refuses before HTTP; the
+Next route independently rejects it before contacting the orchestrator. Personal
+organization fallback is forbidden on this write path.
+
 Sandbox identity has two layers: `sandbox_instances.name` is the editable,
 user-facing name, while `sandbox_id` remains the immutable orchestrator routing
 key and diagnostics fallback. `/sandbox`, `/sandbox/[id]`, the Code workspace,
@@ -126,6 +132,7 @@ container.
 - **The activity bar's bottom-panel toggle is independent of the side-panel state** — never collapse them through the same imperative call.
 - **Persisted file creation has one path.** The Code panel header, empty state, and `My Files` / folder context menus all dispatch `createCodeFileThunk`, derive Monaco language from the complete filename map, and immediately open the created file. Unknown extensions remain valid and open as plaintext.
 - **Sandbox routes have a 300s `maxDuration` ceiling on Vercel Pro** — see the 2026-04-26 maxDuration correction in [`SYSTEM_STATE.md`](./SYSTEM_STATE.md). Long-running operations must talk to the orchestrator directly, bypassing the Vercel proxy.
+- **Sandbox creation requires one explicit organization at every boundary.** `useSandboxCreate`, `useSandboxInstances`, `SandboxesPanel`, `POST /api/sandbox`, and the orchestrator all refuse absence; a stale request whose organization differs from live app context is refused before HTTP.
 - **PTY terminates at the sandbox orchestrator, never Next.js.** `SandboxProcessAdapter.openPty()` mints an existing sandbox-scoped `pty` token through `/api/sandbox/[id]/access-tokens`, then dials the returned `ws_base` directly. The daemon wire is raw text input/raw binary output; JSON is client-only resize/signal control. Plain Ctrl-C is captured explicitly and sent as ETX so browser/app shortcuts cannot swallow process interruption; Ctrl-Shift-C remains copy. `TerminalTab` stays on a visible buffered fallback when mint/connect fails; a 200 SSE response with zero events is an error, never success.
 
 ---
@@ -140,6 +147,11 @@ container.
 
 ## Change log
 
+- `2026-08-23` — **Made sandbox organization identity end-to-end explicit.**
+  All three create surfaces carry the selected app-context organization; shared
+  client guards refuse missing, malformed, or stale-context payloads before
+  HTTP; `POST /api/sandbox` validates the complete body and no longer resolves
+  a personal organization fallback.
 - `2026-08-20` — **Sandboxes have persistent editable names.** The owner can
   rename a sandbox from its detail header; the stored `sandbox_instances.name`
   is shown in the sandbox list, Code workspace, active connection banner, copy

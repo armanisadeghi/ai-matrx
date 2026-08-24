@@ -12,7 +12,8 @@ import type {
   SandboxAccessResponse,
 } from "@/types/sandbox";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
 
 /**
  * Shared error extractor for sandbox API responses. Surfaces the underlying
@@ -46,7 +47,7 @@ async function extractSandboxError(
 }
 
 export function useSandboxInstances(projectId?: string) {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const organizationId = useAppSelector(selectOrganizationId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -114,6 +115,10 @@ export function useSandboxInstances(projectId?: string) {
     ): Promise<{ instance: SandboxInstance | null; error: string | null }> => {
       setError(null);
       try {
+        const explicitOrganizationId = requireMatchingSandboxOrganization(
+          req.organization_id,
+          organizationId,
+        );
         console.log(
           "[useSandboxInstances] createInstance: Starting creation request",
         );
@@ -128,7 +133,7 @@ export function useSandboxInstances(projectId?: string) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            organization_id: req.organization_id || organizationId,
+            organization_id: explicitOrganizationId,
             project_id: req.project_id || projectId,
             config: req.config,
             ttl_seconds: req.ttl_seconds,

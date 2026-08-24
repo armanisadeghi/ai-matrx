@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   Container,
   Plus,
@@ -60,7 +61,11 @@ import {
 } from "@/lib/sandbox/status";
 import { CreateSandboxFormFields } from "@/features/code/views/sandboxes/CreateSandboxFormFields";
 import { useSandboxCreate } from "@/features/code/views/sandboxes/useSandboxCreate";
-import type { SandboxInstance, SandboxStatus } from "@/types/sandbox";
+import type {
+  SandboxCreateRequest,
+  SandboxInstance,
+  SandboxStatus,
+} from "@/types/sandbox";
 
 function StatusBadge({ status }: { status: SandboxStatus }) {
   return (
@@ -174,7 +179,16 @@ export default function SandboxListPage() {
     // choice next time. Hook handles the dispatch.
     createForm.persistChoices();
 
-    const request = createForm.buildRequest({ ttlSeconds: ttlHours * 3600 });
+    let request: SandboxCreateRequest;
+    try {
+      request = createForm.buildRequest({ ttlSeconds: ttlHours * 3600 });
+    } catch (error) {
+      const message = extractErrorMessage(error);
+      setCreating(false);
+      setCreateError(message);
+      toast.error(message);
+      return;
+    }
     const result = await createInstance(request);
 
     if (result.instance) {

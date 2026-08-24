@@ -10,6 +10,8 @@ import type {
   SandboxTier,
 } from "@/types/sandbox";
 import { extractErrorMessage } from "@/utils/errors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireSandboxOrganizationId } from "@/lib/sandbox/explicit-organization";
 
 /**
  * Human-readable guidance for each sandbox tier. Rendered next to the picker
@@ -60,6 +62,7 @@ interface ResourceOverrides {
 export function useSandboxCreate({ enabled }: UseSandboxCreateOptions) {
   const dispatch = useAppDispatch();
   const codingPrefs = useAppSelector((s) => s.userPreferences.coding);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const [tier, setTier] = useState<SandboxTier>(
     codingPrefs?.lastSandboxTier ?? "ec2",
@@ -162,6 +165,7 @@ export function useSandboxCreate({ enabled }: UseSandboxCreateOptions) {
   const buildRequest = useCallback(
     ({ ttlSeconds }: { ttlSeconds?: number } = {}): SandboxCreateRequest => {
       const request: SandboxCreateRequest = {
+        organization_id: requireSandboxOrganizationId(organizationId),
         tier,
         template: templateId,
       };
@@ -185,7 +189,7 @@ export function useSandboxCreate({ enabled }: UseSandboxCreateOptions) {
       }
       return request;
     },
-    [tier, templateId, templateVersion, resources],
+    [organizationId, tier, templateId, templateVersion, resources],
   );
 
   return {

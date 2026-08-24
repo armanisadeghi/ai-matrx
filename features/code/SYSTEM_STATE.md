@@ -1,6 +1,6 @@
 # `/code` Workspace — System State & Gap Audit
 
-**Last updated:** 2026‑08‑15 (browser-direct PTY restoration — see §1.5)
+**Last updated:** 2026‑08‑23 (explicit sandbox organization contract)
 **Scope:** Everything under `features/code/`, plus its hooks, adapters, and the slices it consumes from elsewhere in the app.
 
 > **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/agent-apps/[id]/code` keep `showActivityBar` (embedded rail).
@@ -312,6 +312,13 @@ GET /api-surface  →  {"service":"matrx-sandbox-orchestrator","version":"0.2.0"
 ### 3.3 Frontend status
 
 All eight items from the previous "frontend gap" list have shipped. The capability cache (`lib/sandbox/api-surface.ts`) exists so any future tier rollback degrades gracefully. New consumers for the remaining sandbox endpoints (process list / signal, public preview URLs once they exist) can be added piecemeal without further architectural work.
+
+Sandbox creation is fail-closed across the whole frontend chain. Each form
+freezes the explicitly selected `appContext.organization_id` into its typed
+`SandboxCreateRequest`; both shared create clients compare that value with the
+live app context immediately before `fetch`; `POST /api/sandbox` validates the
+required UUID again and forwards the exact value. No layer repairs absence with
+the personal organization, and a context switch invalidates a prebuilt request.
 
 ---
 

@@ -66,7 +66,8 @@ import {
   setActiveView,
 } from "../../redux/codeWorkspaceSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
 import { clearFsChangesBucket } from "../../redux/fsChangesSlice";
 import {
   setActiveTab as setBottomActiveTab,
@@ -94,7 +95,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const activeId = useAppSelector(selectActiveSandboxId);
   const activeProxyUrl = useAppSelector(selectActiveSandboxProxyUrl);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const organizationId = useAppSelector(selectOrganizationId);
   const { setFilesystem, setProcess } = useCodeWorkspace();
 
   const [instances, setInstances] = useState<SandboxInstance[] | null>(null);
@@ -319,12 +320,16 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       setCreating(true);
       setError(null);
       try {
+        const explicitOrganizationId = requireMatchingSandboxOrganization(
+          request.organization_id,
+          organizationId,
+        );
         const resp = await fetch("/api/sandbox", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...request,
-            organization_id: request.organization_id || organizationId,
+            organization_id: explicitOrganizationId,
           }),
         });
         const data = (await resp.json()) as

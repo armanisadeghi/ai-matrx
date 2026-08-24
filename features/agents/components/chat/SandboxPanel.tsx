@@ -49,6 +49,7 @@ import {
 } from "@/lib/sandbox/status";
 import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
 import type { SandboxInstance } from "@/types/sandbox";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 interface SandboxPanelProps {
   conversationId: string | null;
@@ -137,6 +138,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   // which made this a conditional hook (React would misalign the hook order the
   // first time incognito flipped mid-session).
   const sandboxPrefs = useAppSelector(selectSandboxPreferences);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const { instances, loading, fetchInstances, createInstance } =
     useSandboxInstances();
@@ -237,7 +239,14 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const handleClaimNew = async () => {
     setCreating(true);
     try {
+      if (!organizationId) {
+        toast.error(
+          "Select an organization before creating a sandbox. The request was not sent.",
+        );
+        return;
+      }
       const { instance, error } = await createInstance({
+        organization_id: organizationId,
         template: sandboxPrefs.template,
         tier: sandboxPrefs.tier,
         ttl_seconds: sandboxPrefs.ttl_seconds ?? undefined,
