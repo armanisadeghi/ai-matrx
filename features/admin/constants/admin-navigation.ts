@@ -571,6 +571,19 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     ],
   },
   {
+    name: "Marketing",
+    slug: "marketing",
+    iconName: "BrainCircuit",
+    iconColor: "text-emerald-600",
+    sections: [
+      {
+        name: "Coverage engines",
+        iconName: "BrainCircuit",
+        destinations: [destination("/administration/marketing/run-console")],
+      },
+    ],
+  },
+  {
     name: "Reporting",
     slug: "reporting",
     iconName: "ChartNoAxesCombined",

@@ -1193,6 +1193,22 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Marketing Engines",
+    landingPath: "/administration/marketing/run-console",
+    iconName: "BrainCircuit",
+    iconColor: "text-emerald-600",
+    features: [
+      {
+        title: "Run console",
+        description:
+          "Drive the keyword-coverage engines by hand: pick brands, cap the keywords per run, watch the pass think, and read what it placed, proposed, protected and quarantined. Schedules are authored here at system, organization or brand scope — nearest wins.",
+        iconName: "BrainCircuit",
+        link: "/administration/marketing/run-console",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Reports",
     landingPath: "/administration/reporting/reports",
     iconName: "BarChart2",
