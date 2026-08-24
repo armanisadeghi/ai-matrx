@@ -294,9 +294,10 @@ LANGUAGE plpgsql
 SET search_path TO 'seo', 'web', 'iam', 'platform', 'public', 'pg_temp'
 AS $fn$
 DECLARE
-  v_kv           jsonb;
-  v_vocab_levels jsonb;
-  e              jsonb;
+  v_kv             jsonb;
+  v_compact_levels jsonb;
+  v_vocab_levels   jsonb;
+  e                jsonb;
 BEGIN
   IF p_scope NOT IN ('platform','org','brand','site') THEN
     RAISE EXCEPTION 'seo_settings_bad_scope: scope must be platform, org, brand or site (got %)', COALESCE(p_scope,'null');
@@ -330,15 +331,21 @@ BEGIN
     END LOOP;
 
     SELECT jsonb_agg(jsonb_build_object(
-             'value', e->>'value',
-             'label', e->>'label',
+             'value', item->>'value',
+             'label', item->>'label',
+             'min_score', CASE WHEN item->>'value' = 'negative' THEN NULL
+                               ELSE (item->>'min_score')::numeric END)
+             ORDER BY ord),
+           jsonb_agg(jsonb_build_object(
+             'value', item->>'value',
+             'label', item->>'label',
              'description', NULL,
              'sort', ord - 1,
-             'config', CASE WHEN e->>'value' = 'negative' THEN '{}'::jsonb
-                            ELSE jsonb_build_object('min_score', (e->>'min_score')::numeric) END)
+             'config', CASE WHEN item->>'value' = 'negative' THEN '{}'::jsonb
+                            ELSE jsonb_build_object('min_score', (item->>'min_score')::numeric) END)
              ORDER BY ord)
-      INTO v_vocab_levels
-      FROM jsonb_array_elements(p_levels) WITH ORDINALITY AS rows(e, ord);
+      INTO v_compact_levels, v_vocab_levels
+      FROM jsonb_array_elements(p_levels) WITH ORDINALITY AS rows(item, ord);
     PERFORM seo.gsc_assert_vocabulary_coherent('value_band', v_vocab_levels);
   END IF;
 
@@ -388,7 +395,7 @@ BEGIN
       RAISE EXCEPTION 'seo_settings_scope_not_found: no % with id %', p_scope, p_id USING ERRCODE = 'P0002';
     END IF;
     IF p_baseline IS NOT NULL THEN v_kv := v_kv || jsonb_build_object('baseline', p_baseline); END IF;
-    IF p_levels   IS NOT NULL THEN v_kv := v_kv || jsonb_build_object('levels', p_levels); END IF;
+    IF p_levels   IS NOT NULL THEN v_kv := v_kv || jsonb_build_object('levels', v_compact_levels); END IF;
     IF 'baseline' = ANY(p_clear) THEN v_kv := v_kv - 'baseline'; END IF;
     IF 'levels'   = ANY(p_clear) THEN v_kv := v_kv - 'levels';   END IF;
 

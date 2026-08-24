@@ -21,8 +21,8 @@ describe("governed data errors", () => {
     try {
       assertGoverned(null, cause);
     } catch (error) {
-      expect(error).toBeInstanceOf(Error);
-      expect((error as Error).cause).toBe(cause);
+      if (!(error instanceof Error)) throw error;
+      expect(error.cause).toBe(cause);
     }
   });
 
