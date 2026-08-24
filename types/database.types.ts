@@ -47362,6 +47362,24 @@ export type Database = {
           },
         ]
       }
+      classifier_revision_ledger: {
+        Row: {
+          first_seen_at: string
+          revision: string
+          semantic_hash: string
+        }
+        Insert: {
+          first_seen_at?: string
+          revision: string
+          semantic_hash: string
+        }
+        Update: {
+          first_seen_at?: string
+          revision?: string
+          semantic_hash?: string
+        }
+        Relationships: []
+      }
       collection_run: {
         Row: {
           attempt_count: number
