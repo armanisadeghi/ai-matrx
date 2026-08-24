@@ -52,6 +52,8 @@
     "check:surface-impact": "tsx scripts/check-surface-impact.ts",
     "check:surface-impact:strict": "tsx scripts/check-surface-impact.ts --strict",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
+    "check:picker-add": "tsx scripts/check-picker-custom-entry.ts",
+    "check:picker-add:strict": "tsx scripts/check-picker-custom-entry.ts --strict",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",
     "check:surface-overlays": "tsx scripts/check-surface-overlays.ts",
     "check:source-attribution": "tsx scripts/check-source-attribution.ts",

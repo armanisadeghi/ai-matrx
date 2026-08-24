@@ -15,11 +15,17 @@
  * `gsc_value_vocabulary`) — never a hardcoded list, because a site can invent
  * a dimension this afternoon. One chip per pair; removing a chip removes one
  * pair, not the whole filter.
+ *
+ * P23 — and "this afternoon" means FROM HERE. Both pickers take new input: the
+ * Dimension picker offers "+ New dimension" and "+ New value", the Level picker
+ * "+ New level". Wanting to slice by something you have not named yet is the
+ * most common reason a person reaches this bar, and sending them away to name
+ * it first is the dead end the sweep exists to kill.
  */
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus, X } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -39,6 +45,7 @@ import type {
   GscFilters,
 } from "@/features/marketing/search-console/types";
 import {
+  GSC_RANGE_FILTERS,
   countryLabel,
   deviceLabel,
   encodeLevelFilter,
@@ -48,9 +55,17 @@ import {
 } from "@/features/marketing/search-console/types";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
+import { CreatablePicker } from "@/features/marketing/seo/value-system/pickers/CreatablePicker";
+import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
+import { AddLevelDialog } from "@/features/marketing/seo/value-system/pickers/AddLevelDialog";
+import { useQuickAdd } from "@/features/marketing/seo/value-system/pickers/useQuickAdd";
+import { quickAddDimensionValue } from "@/features/marketing/seo/value-system/quick-add";
+import { toast } from "@/lib/toast";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const FILTER_LABELS: Record<GscFilterKey, string> = {
   query_contains: "Query contains",
+  query_word: "Query has the word",
   query_eq: "Exact query",
   query_neq: "Query excludes",
   page_contains: "Page contains",
@@ -60,16 +75,47 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   search_appearance: "Appearance",
   stamps: "Dimension",
   levels: "Level",
+  clicks_min: "Clicks",
+  clicks_max: "Clicks",
+  impressions_min: "Impressions",
+  impressions_max: "Impressions",
+  position_min: "Position",
+  position_max: "Position",
 };
 
 const FILTER_CHIP_LABELS: Record<GscFilterKey, string> = {
   ...FILTER_LABELS,
   query_eq: "Query",
   page_eq: "Page",
+  query_word: "Word",
 };
+
+/**
+ * C14 — the range filters are added and removed as ONE thing ("Clicks 10–500"),
+ * so the menu offers a range GROUP rather than six half-filters. `range:` keys
+ * exist only inside this component; the URL and the RPC still see the bounds.
+ */
+type RangeMenuKey = `range:${(typeof GSC_RANGE_FILTERS)[number]["id"]}`;
+type FilterMenuKey = GscFilterKey | RangeMenuKey;
+const RANGE_MENU_KEYS: RangeMenuKey[] = GSC_RANGE_FILTERS.map(
+  (r) => `range:${r.id}` as RangeMenuKey,
+);
+const RANGE_BOUND_KEYS = new Set<GscFilterKey>(
+  GSC_RANGE_FILTERS.flatMap((r) => [r.min, r.max] as GscFilterKey[]),
+);
+function rangeSpecFor(key: RangeMenuKey) {
+  const id = key.slice("range:".length);
+  return GSC_RANGE_FILTERS.find((r) => r.id === id) ?? GSC_RANGE_FILTERS[0];
+}
+function rangeChipValue(min: string | undefined, max: string | undefined): string {
+  if (min && max) return `${min} – ${max}`;
+  if (min) return `≥ ${min}`;
+  return `≤ ${max}`;
+}
 
 const QUERY_PAGE_KEYS: GscFilterKey[] = [
   "query_contains",
+  "query_word",
   "query_eq",
   "query_neq",
   "page_contains",
@@ -86,7 +132,9 @@ function activeGroup(
 ): "query_page" | "country_device" | "appearance" | null {
   const keys = Object.entries(filters)
     .filter(([, v]) => typeof v === "string" && v.trim() !== "")
-    .map(([k]) => k as GscFilterKey);
+    .map(([k]) => k as GscFilterKey)
+    // Ranges belong to no group — see PROFILE_NEUTRAL_FILTER_KEYS in url-state.
+    .filter((k) => !RANGE_BOUND_KEYS.has(k));
   if (keys.length === 0) return null;
   if (keys.some((k) => QUERY_PAGE_KEYS.includes(k))) return "query_page";
   if (keys.some((k) => COUNTRY_DEVICE_KEYS.includes(k)))
@@ -125,11 +173,20 @@ export function FilterBar({
   siteId?: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const [draftKey, setDraftKey] = useState<GscFilterKey>("query_contains");
+  const [draftKey, setDraftKey] = useState<FilterMenuKey>("query_contains");
   const [draftValue, setDraftValue] = useState("");
+  const [draftMin, setDraftMin] = useState("");
+  const [draftMax, setDraftMax] = useState("");
   const [draftDimension, setDraftDimension] = useState<string>("");
   const [draftStampValue, setDraftStampValue] = useState<string>("");
   const [draftLevel, setDraftLevel] = useState<string>("");
+  // P23 — what was typed into a picker when nothing matched.
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
+  const [newLevelDraft, setNewLevelDraft] = useState<string | null>(null);
+  const { quickAdd } = useQuickAdd(siteId ?? "");
+  // P23 — the person may always type one that does not exist yet.
+  const [newValueLabel, setNewValueLabel] = useState("");
+  const queryClient = useQueryClient();
 
   const stampPairs = parseStampFilter(filters.stamps);
   const levelList = parseLevelFilter(filters.levels);
@@ -153,6 +210,25 @@ export function FilterBar({
     staleTime: 5 * 60_000,
   });
 
+  const addValue = useMutation({
+    mutationFn: (label: string) =>
+      quickAddDimensionValue({
+        siteId: siteId as string,
+        valueLabel: label,
+        dimensionId: draftDimensionRow?.dimension_id ?? null,
+      }),
+    onSuccess: (created) => {
+      toast.success(`Added “${created.value_label}” to ${created.dimension_label}`);
+      setNewValueLabel("");
+      setDraftStampValue(created.value_key);
+      void queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "filter-dimension-catalog", siteId],
+      });
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Could not add that option"),
+  });
+
   const dimensions = (catalog.data ?? []).filter((d) => d.values.length > 0);
   const dimensionLabel = (slug: string) =>
     dimensions.find((d) => d.slug === slug)?.label ?? slug;
@@ -166,20 +242,32 @@ export function FilterBar({
 
   const group = activeGroup(filters);
 
-  const addable: GscFilterKey[] = (
-    Object.keys(FILTER_LABELS) as GscFilterKey[]
-  ).filter((key) => {
-    if (filters[key] && !MULTI_KEYS.includes(key)) return false;
-    if (allowedKeys && !allowedKeys.includes(key)) return false;
-    if (MULTI_KEYS.includes(key) && !siteId) return false;
-    if (group === "query_page") return QUERY_PAGE_KEYS.includes(key);
-    if (group === "country_device") return COUNTRY_DEVICE_KEYS.includes(key);
-    if (group === "appearance") return false;
-    return true;
-  });
-  const effectiveKey: GscFilterKey = addable.includes(draftKey)
+  const addable: FilterMenuKey[] = [
+    ...(Object.keys(FILTER_LABELS) as GscFilterKey[]).filter((key) => {
+      if (RANGE_BOUND_KEYS.has(key)) return false; // offered as a range group
+      if (filters[key] && !MULTI_KEYS.includes(key)) return false;
+      if (allowedKeys && !allowedKeys.includes(key)) return false;
+      if (MULTI_KEYS.includes(key) && !siteId) return false;
+      if (group === "query_page") return QUERY_PAGE_KEYS.includes(key);
+      if (group === "country_device") return COUNTRY_DEVICE_KEYS.includes(key);
+      if (group === "appearance") return false;
+      return true;
+    }),
+    ...RANGE_MENU_KEYS.filter((key) => {
+      const spec = rangeSpecFor(key);
+      if (filters[spec.min] || filters[spec.max]) return false;
+      if (allowedKeys && !allowedKeys.includes(spec.min as GscFilterKey)) {
+        return false;
+      }
+      return true;
+    }),
+  ];
+  const effectiveKey: FilterMenuKey = addable.includes(draftKey)
     ? draftKey
     : (addable[0] ?? "query_contains");
+  const rangeSpec = effectiveKey.startsWith("range:")
+    ? rangeSpecFor(effectiveKey as RangeMenuKey)
+    : null;
 
   const removeKey = (key: GscFilterKey) => {
     const next = { ...filters };
@@ -204,6 +292,7 @@ export function FilterBar({
     [GscFilterKey, string | undefined]
   >) {
     if (typeof value !== "string" || value.trim() === "") continue;
+    if (RANGE_BOUND_KEYS.has(key)) continue; // one chip per range, added below
     if (key === "stamps") {
       stampPairs.forEach((pair, idx) => {
         chips.push({
@@ -234,18 +323,49 @@ export function FilterBar({
     });
   }
 
+  for (const spec of GSC_RANGE_FILTERS) {
+    const min = filters[spec.min];
+    const max = filters[spec.max];
+    if (!min && !max) continue;
+    chips.push({
+      id: `range:${spec.id}`,
+      label: spec.label,
+      value: rangeChipValue(min, max),
+      remove: () => {
+        const next = { ...filters };
+        delete next[spec.min];
+        delete next[spec.max];
+        onChange(next);
+      },
+    });
+  }
+
   const draftDimensionRow =
     dimensions.find((d) => d.slug === draftDimension) ?? dimensions[0];
   const draftValueRows = draftDimensionRow?.values.filter((v) => !v.abstain) ?? [];
 
-  const canAdd =
-    effectiveKey === "stamps"
+  const canAdd = rangeSpec
+    ? Number.isFinite(Number(draftMin.trim())) && draftMin.trim() !== "" ||
+      (Number.isFinite(Number(draftMax.trim())) && draftMax.trim() !== "")
+    : effectiveKey === "stamps"
       ? !!draftDimensionRow && !!draftStampValue
       : effectiveKey === "levels"
         ? !!draftLevel
         : !!draftValue.trim();
 
   const addFilter = () => {
+    if (rangeSpec) {
+      const next = { ...filters };
+      const min = draftMin.trim();
+      const max = draftMax.trim();
+      if (min !== "" && Number.isFinite(Number(min))) next[rangeSpec.min] = min;
+      if (max !== "" && Number.isFinite(Number(max))) next[rangeSpec.max] = max;
+      onChange(next);
+      setDraftMin("");
+      setDraftMax("");
+      setOpen(false);
+      return;
+    }
     if (effectiveKey === "stamps") {
       if (!draftDimensionRow || !draftStampValue) return;
       const pair = { dimension: draftDimensionRow.slug, value: draftStampValue };
@@ -311,7 +431,7 @@ export function FilterBar({
           <PopoverContent align="start" className="w-80 space-y-2 p-3">
             <Select
               value={effectiveKey}
-              onValueChange={(next) => setDraftKey(next as GscFilterKey)}
+              onValueChange={(next) => setDraftKey(next as FilterMenuKey)}
             >
               <SelectTrigger size="sm" aria-label="Filter type">
                 <SelectValue />
@@ -319,58 +439,146 @@ export function FilterBar({
               <SelectContent>
                 {addable.map((key) => (
                   <SelectItem key={key} value={key} className="text-xs">
-                    {FILTER_LABELS[key]}
+                    {key.startsWith("range:")
+                      ? rangeSpecFor(key as RangeMenuKey).label
+                      : FILTER_LABELS[key as GscFilterKey]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {effectiveKey === "stamps" ? (
+            {rangeSpec ? (
               <div className="space-y-2">
-                <Select
-                  value={draftDimensionRow?.slug ?? ""}
-                  onValueChange={(next) => {
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step={rangeSpec.step}
+                    value={draftMin}
+                    onChange={(e) => setDraftMin(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addFilter();
+                    }}
+                    placeholder="Min"
+                    className="h-8 text-xs"
+                    aria-label={`${rangeSpec.label} minimum`}
+                  />
+                  <span className="text-xs text-muted-foreground">to</span>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step={rangeSpec.step}
+                    value={draftMax}
+                    onChange={(e) => setDraftMax(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addFilter();
+                    }}
+                    placeholder="Max"
+                    className="h-8 text-xs"
+                    aria-label={`${rangeSpec.label} maximum`}
+                  />
+                </div>
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  {rangeSpec.hint}. Leave either side blank for an open end.
+                </p>
+              </div>
+            ) : effectiveKey === "stamps" ? (
+              <div className="space-y-2">
+                <CreatablePicker
+                  value={draftDimensionRow?.slug ?? null}
+                  onSelect={(next) => {
                     setDraftDimension(next);
                     setDraftStampValue("");
                   }}
-                >
-                  <SelectTrigger size="sm" aria-label="Dimension">
-                    <SelectValue
-                      placeholder={
-                        catalog.isPending ? "Loading dimensions…" : "Dimension"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dimensions.map((d) => (
-                      <SelectItem key={d.slug} value={d.slug} className="text-xs">
-                        {d.label}
-                        {d.scope === "site" ? " · yours" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={draftStampValue}
-                  onValueChange={setDraftStampValue}
+                  placeholder="Dimension"
+                  noun="dimension"
+                  ariaLabel="Dimension"
+                  loading={catalog.isPending}
+                  onCreateRequiresMore={(typed) => {
+                    setOpen(false);
+                    setNewDimensionDraft(typed);
+                  }}
+                  options={dimensions.map((d) => ({
+                    value: d.slug,
+                    label: d.label,
+                    hint: d.scope === "site" ? "yours" : undefined,
+                  }))}
+                />
+                <CreatablePicker
+                  value={draftStampValue || null}
+                  onSelect={setDraftStampValue}
                   disabled={!draftDimensionRow}
-                >
-                  <SelectTrigger size="sm" aria-label="Value">
-                    <SelectValue placeholder="Value" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {draftValueRows.map((v) => (
-                      <SelectItem key={v.key} value={v.key} className="text-xs">
-                        {v.label}
-                        {v.keyword_count > 0 ? (
-                          <span className="ml-1 text-muted-foreground">
-                            · {v.keyword_count.toLocaleString()}
-                          </span>
-                        ) : null}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Value"
+                  noun="value"
+                  ariaLabel="Value"
+                  options={draftValueRows.map((v) => ({
+                    value: v.key,
+                    label: v.label,
+                    hint:
+                      v.keyword_count > 0
+                        ? v.keyword_count.toLocaleString()
+                        : undefined,
+                  }))}
+                  lockedNote={
+                    draftDimensionRow && draftDimensionRow.scope !== "site"
+                      ? `“${draftDimensionRow.label}” is a shared dimension every business uses, so its choices are platform-governed.`
+                      : undefined
+                  }
+                  lockedAction={
+                    draftDimensionRow && draftDimensionRow.scope !== "site"
+                      ? {
+                          label: "Make this your own dimension instead",
+                          onSelect: () => {
+                            setOpen(false);
+                            setNewDimensionDraft(draftDimensionRow.label);
+                          },
+                        }
+                      : undefined
+                  }
+                  onCreate={async (typed) => {
+                    if (!draftDimensionRow || !siteId) return null;
+                    const created = await quickAdd(typed, {
+                      dimensionId: draftDimensionRow.dimension_id,
+                    });
+                    if (!created) return null;
+                    await catalog.refetch();
+                    return created.value_key;
+                  }}
+                />
+                {/* P23 — never a closed list: type one that does not exist yet. */}
+                <div className="flex items-center gap-1.5 rounded-md border border-dashed border-border p-1.5">
+                  <Input
+                    value={newValueLabel}
+                    onChange={(e) => setNewValueLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newValueLabel.trim()) {
+                        addValue.mutate(newValueLabel.trim());
+                      }
+                    }}
+                    placeholder={
+                      draftDimensionRow
+                        ? `New ${draftDimensionRow.label.toLowerCase()} value…`
+                        : "Pick a dimension first"
+                    }
+                    className="h-7 text-xs"
+                    aria-label="New value name"
+                    disabled={!draftDimensionRow || addValue.isPending}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 shrink-0 gap-1 text-xs"
+                    disabled={!draftDimensionRow || !newValueLabel.trim() || addValue.isPending}
+                    onClick={() => addValue.mutate(newValueLabel.trim())}
+                  >
+                    {addValue.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                    ) : (
+                      <Plus className="h-3 w-3" aria-hidden />
+                    )}
+                    Add
+                  </Button>
+                </div>
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Add several to intersect them — a keyword must carry every
                   stamp you pick. Stamps are keyword-level, so country / device /
@@ -379,31 +587,40 @@ export function FilterBar({
               </div>
             ) : effectiveKey === "levels" ? (
               <div className="space-y-2">
-                <Select value={draftLevel} onValueChange={setDraftLevel}>
-                  <SelectTrigger size="sm" aria-label="Level">
-                    <SelectValue
-                      placeholder={
-                        vocabulary.isPending ? "Loading levels…" : "Level"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(vocabulary.data ?? []).map((b) => (
-                      <SelectItem key={b.value} value={b.value} className="text-xs">
-                        {b.label}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="negative" className="text-xs">
-                      Negative
-                    </SelectItem>
-                    <SelectItem value="unvalued" className="text-xs">
-                      Unvalued
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <CreatablePicker
+                  value={draftLevel || null}
+                  onSelect={setDraftLevel}
+                  placeholder="Level"
+                  noun="level"
+                  ariaLabel="Level"
+                  loading={vocabulary.isPending}
+                  onCreateRequiresMore={(typed) => {
+                    setOpen(false);
+                    setNewLevelDraft(typed);
+                  }}
+                  options={[
+                    ...(vocabulary.data ?? [])
+                      .filter(
+                        (b) => b.value !== "negative" && b.value !== "unvalued",
+                      )
+                      .map((b) => ({ value: b.value, label: b.label })),
+                    { value: "negative", label: "Negative" },
+                    { value: "unvalued", label: "Unvalued" },
+                  ]}
+                />
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Levels come from this site&apos;s value scale. Several levels
-                  are OR-ed.
+                  are OR-ed.{" "}
+                  {siteId ? (
+                    <a
+                      className="underline underline-offset-2 hover:text-foreground"
+                      href={`${marketingRoutes.site(null, siteId, "value")}?edit=levels`}
+                    >
+                      Add or rename a level
+                    </a>
+                  ) : null}{" "}
+                  — a level needs a score it starts at, so it is named on the value
+                  scale rather than here.
                 </p>
               </div>
             ) : (
@@ -418,7 +635,9 @@ export function FilterBar({
                     ? "3-letter code, e.g. usa"
                     : effectiveKey === "device"
                       ? "DESKTOP, MOBILE, or TABLET"
-                      : "Value…"
+                      : effectiveKey === "query_word"
+                        ? "One word — matched whole, e.g. cost"
+                        : "Value…"
                 }
                 className="h-8 text-xs"
                 aria-label="Filter value"
@@ -452,6 +671,40 @@ export function FilterBar({
         >
           Clear all
         </button>
+      ) : null}
+
+      {/* P23 — what the pickers hand off when creating needs more than a name.
+          Both select the new row immediately and drop the person back into the
+          filter they were building. */}
+      {newDimensionDraft !== null && siteId ? (
+        <AddDimensionDialog
+          siteId={siteId}
+          initialLabel={newDimensionDraft}
+          onCancel={() => setNewDimensionDraft(null)}
+          onCreated={(created) => {
+            setNewDimensionDraft(null);
+            void catalog.refetch();
+            setDraftKey("stamps");
+            setDraftDimension(created.dimension_slug);
+            setDraftStampValue(created.value_key);
+            setOpen(true);
+          }}
+        />
+      ) : null}
+      {newLevelDraft !== null && siteId ? (
+        <AddLevelDialog
+          siteId={siteId}
+          kind="value_band"
+          initialLabel={newLevelDraft}
+          onCancel={() => setNewLevelDraft(null)}
+          onCreated={(value) => {
+            setNewLevelDraft(null);
+            void vocabulary.refetch();
+            setDraftKey("levels");
+            setDraftLevel(value);
+            setOpen(true);
+          }}
+        />
       ) : null}
     </div>
   );
