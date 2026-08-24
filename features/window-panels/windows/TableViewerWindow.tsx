@@ -81,9 +81,10 @@ function TableViewerWindowInner({
   const rowLines = (rowIndex: number): string[] => {
     const row = parsed?.rows[rowIndex];
     if (!parsed || !row) return [];
-    return parsed.headers.map(
-      (h, i) => `${cleanTableHeaderKey(h)}: ${row[i] ?? ""}`,
-    );
+    return parsed.headers.map((h, i) => {
+      const value = row[i];
+      return `${cleanTableHeaderKey(h)}: ${typeof value === "string" ? value : ""}`;
+    });
   };
 
   const copy = (text: string, what: string) => {
@@ -170,7 +171,7 @@ function TableViewerWindowInner({
         // record, so Attach To / Share correctly stay hidden rather than
         // targeting the wrong thing.
         contextData={{
-          content: content ?? "",
+          content: typeof content === "string" ? content : "",
           context: parsed
             ? { columns: parsed.headers.map(cleanTableHeaderKey), row_count: parsed.rows.length }
             : {},
