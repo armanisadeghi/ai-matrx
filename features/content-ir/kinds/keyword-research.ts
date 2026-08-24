@@ -32,6 +32,8 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import type { MaterializedKind } from "./kind-payload";
+import type { KeywordList } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -216,11 +218,15 @@ export const KEYWORD_RESEARCH_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridges — STREAMING: partial envelopes map to partial data.
 // ---------------------------------------------------------------------------
 
-export interface KeywordListData {
+/** THE SHAPE COMES FROM THE REGISTRY; the bridge adds the per-node stream flag. */
+export type KeywordListData = Omit<
+  MaterializedKind<KeywordList>,
+  "__kind" | "label"
+> & {
+  /** null until this list's own label has streamed in. */
   label: string | null;
-  keywords: string[];
   complete: boolean;
-}
+};
 
 export interface KeywordRelationshipResearchData {
   primaryKeyword: string | null;

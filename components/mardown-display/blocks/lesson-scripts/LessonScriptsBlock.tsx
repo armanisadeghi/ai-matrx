@@ -61,16 +61,16 @@ function stringList(value: unknown): string[] {
  */
 function coerceSection(section: Record<string, unknown>): LessonScriptSection {
   const rawScript = section.script;
-  const rawDuration = section.duration_seconds ?? section.durationSeconds;
+  const rawDuration = section.duration_seconds;
   return {
     heading: typeof section.heading === "string" ? section.heading : "",
     script:
       typeof rawScript === "string" && rawScript !== "" ? rawScript : null,
-    durationSeconds:
+    duration_seconds:
       typeof rawDuration === "number" && Number.isFinite(rawDuration)
         ? rawDuration
         : null,
-    keyPoints: stringList(section.key_points ?? section.keyPoints),
+    key_points: stringList(section.key_points),
   };
 }
 
@@ -107,11 +107,11 @@ function toWireValue(data: LessonScriptsData): Record<string, unknown> {
     sections: data.sections.map((section) => ({
       heading: section.heading,
       script: section.script ?? "",
-      ...(section.durationSeconds !== null
-        ? { duration_seconds: section.durationSeconds }
+      ...(section.duration_seconds !== null
+        ? { duration_seconds: section.duration_seconds }
         : {}),
-      ...(section.keyPoints.length > 0
-        ? { key_points: section.keyPoints }
+      ...(section.key_points.length > 0
+        ? { key_points: section.key_points }
         : {}),
     })),
   };
@@ -213,10 +213,10 @@ export function LessonScriptSectionCard({
             )}
           />
         </button>
-        {section.durationSeconds !== null ? (
+        {section.duration_seconds !== null ? (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted/50 px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
             <Clock className="h-3 w-3" />
-            {formatDuration(section.durationSeconds)}
+            {formatDuration(section.duration_seconds)}
           </span>
         ) : null}
         {streaming ? (
@@ -247,9 +247,9 @@ export function LessonScriptSectionCard({
             </p>
           )}
 
-          {section.keyPoints.length > 0 ? (
+          {section.key_points.length > 0 ? (
             <ul className="mt-3 space-y-1">
-              {section.keyPoints.map((point, i) => (
+              {section.key_points.map((point, i) => (
                 <li
                   key={i}
                   className="flex gap-2 text-sm leading-relaxed text-muted-foreground"

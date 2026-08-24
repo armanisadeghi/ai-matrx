@@ -49,6 +49,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { IngestedChunk, IngestedSources } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — the compiled client mirror of IngestedContent / IngestedChunk.
@@ -177,11 +179,11 @@ export function sourceKindLabel(kind: string): string {
   return humanized.charAt(0).toUpperCase() + humanized.slice(1);
 }
 
-export interface IngestedChunkData {
-  chunkId: string;
-  content: string;
-  chunkIndex: number;
-}
+/** THE SHAPE COMES FROM THE REGISTRY — the three fields a reader needs. */
+export type IngestedChunkData = Pick<
+  IngestedChunk,
+  "chunk_id" | "content" | "chunk_index"
+>;
 
 /** One SOURCE as the reader understands it — its pieces already regrouped. */
 export interface IngestedSourceData {
@@ -198,16 +200,17 @@ export interface IngestedSourceData {
   text: string;
 }
 
-export interface IngestedSourcesData {
+/**
+ * THE COUNTS COME FROM THE REGISTRY. `sources` is the bridge's own work: the
+ * flat `chunks[]` the producer emits, GROUPED by source for the reader.
+ */
+export type IngestedSourcesData = Omit<
+  MaterializedKind<IngestedSources>,
+  "__kind" | "chunks"
+> & {
   sources: IngestedSourceData[];
-  totalChars: number;
-  sourceCount: number;
-  sourcesRequested: number;
-  sourcesIngested: number;
-  sourcesFailed: number;
-  errors: string[];
   isComplete: boolean;
-}
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -259,16 +262,16 @@ export function groupChunksBySource(
       byKey.set(key, source);
     }
     source.chunks.push({
-      chunkId: stringOr(raw.chunk_id, ""),
+      chunk_id: stringOr(raw.chunk_id, ""),
       content,
-      chunkIndex: numberOr(raw.chunk_index, source.chunks.length),
+      chunk_index: numberOr(raw.chunk_index, source.chunks.length),
     });
     source.chars += content.length;
   }
 
   const sources = [...byKey.values()];
   for (const source of sources) {
-    source.chunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
+    source.chunks.sort((a, b) => a.chunk_index - b.chunk_index);
     // Chunks overlap by design (`chunk_overlap`), so a naive join repeats
     // text. Two adjacent pieces are joined on the longest suffix/prefix they
     // share, which reproduces the original prose for the reader.
@@ -299,14 +302,14 @@ export function coerceIngestedSources(value: unknown): IngestedSourcesData {
 
   return {
     sources,
-    totalChars: numberOr(
+    total_chars: numberOr(
       record.total_chars,
       sources.reduce((sum, s) => sum + s.chars, 0),
     ),
-    sourceCount: numberOr(record.source_count, sources.length),
-    sourcesRequested: numberOr(record.sources_requested, sources.length),
-    sourcesIngested: numberOr(record.sources_ingested, sources.length),
-    sourcesFailed: numberOr(record.sources_failed, errors.length),
+    source_count: numberOr(record.source_count, sources.length),
+    sources_requested: numberOr(record.sources_requested, sources.length),
+    sources_ingested: numberOr(record.sources_ingested, sources.length),
+    sources_failed: numberOr(record.sources_failed, errors.length),
     errors,
     isComplete: true,
   };
@@ -342,13 +345,13 @@ export function ingestedSourcesMarkdownFromValue(
 ): string {
   const data = coerceIngestedSources(value);
   const shortfall =
-    data.sourcesFailed > 0
-      ? `**${data.sourcesFailed} of ${data.sourcesRequested} could not be read.**`
+    (data.sources_failed ?? 0) > 0
+      ? `**${(data.sources_failed ?? 0)} of ${data.sources_requested} could not be read.**`
       : null;
 
   return joinBlocks([
     "# Your materials",
-    `${data.sourceCount} ${data.sourceCount === 1 ? "source" : "sources"} · ${data.totalChars.toLocaleString()} characters of readable text`,
+    `${data.source_count} ${data.source_count === 1 ? "source" : "sources"} · ${(data.total_chars ?? 0).toLocaleString()} characters of readable text`,
     shortfall,
     data.errors.length > 0 ? data.errors.map((e) => `- ${e}`).join("\n") : null,
     ...data.sources.map((source) =>

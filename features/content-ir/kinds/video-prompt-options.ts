@@ -36,6 +36,8 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import type { MaterializedKind } from "./kind-payload";
+import type { VideoPromptOptions, VideoPromptVariation } from "./generated/kinds.generated";
 
 export const VIDEO_PROMPT_ASPECT_RATIOS = ["16:9", "9:16"] as const;
 export const VIDEO_PROMPT_CLIP_LENGTHS = ["4s", "6s", "8s"] as const;
@@ -53,7 +55,7 @@ export const videoPromptOptionsKindSchema: KindSchema = {
   fields: {
     concept_received: {
       type: "string",
-      description: "Echo of the user's raw concept the variations interpret.",
+      description: "Echo of the user's raw concept that the variations interpret.",
     },
     action: {
       type: "inline_object",
@@ -120,19 +122,19 @@ export interface VideoPromptActionData {
   label: string | null;
 }
 
-export interface VideoPromptVariationData {
-  variation: number | null;
-  interpretation: string | null;
-  aspectRatio: string | null;
-  clipLength: string | null;
-  prompt: string;
-}
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type VideoPromptVariationData = Omit<
+  MaterializedKind<VideoPromptVariation>,
+  "__kind"
+>;
 
-export interface VideoPromptOptionsData {
-  concept: string | null;
+export type VideoPromptOptionsData = Pick<
+  MaterializedKind<VideoPromptOptions>,
+  "concept_received"
+> & {
   action: VideoPromptActionData | null;
   prompts: VideoPromptVariationData[];
-}
+};
 
 const MAPPED_SET_KEYS = new Set([
   "concept_received",
@@ -174,8 +176,8 @@ function mapVariation(
   const mapped: Record<string, unknown> = {
     variation: typeof variation.variation === "number" ? variation.variation : null,
     interpretation: nonEmptyString(variation.interpretation),
-    aspectRatio: nonEmptyString(variation.aspect_ratio),
-    clipLength: nonEmptyString(variation.clip_length),
+    aspect_ratio: nonEmptyString(variation.aspect_ratio),
+    clip_length: nonEmptyString(variation.clip_length),
     prompt,
   };
 
@@ -200,7 +202,7 @@ export const videoPromptOptionsServerDataFromEnvelope =
     if (prompts.length === 0) return undefined;
 
     const serverData: Record<string, unknown> = {
-      concept: nonEmptyString(value.concept_received),
+      concept_received: nonEmptyString(value.concept_received),
       action: mapAction(value.action),
       prompts,
     };

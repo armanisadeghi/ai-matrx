@@ -91,15 +91,15 @@ export function IngestedSourcesShortfall({
 }: {
   data: IngestedSourcesData;
 }) {
-  if (data.sourcesFailed <= 0 && data.errors.length === 0) return null;
+  if ((data.sources_failed ?? 0) <= 0 && data.errors.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
       <p className="flex items-center gap-1.5 text-sm font-medium text-destructive">
         <AlertTriangle className="h-4 w-4 shrink-0" />
-        {data.sourcesFailed > 0
-          ? `${data.sourcesFailed} of ${data.sourcesRequested} ${
-              data.sourcesRequested === 1 ? "source" : "sources"
+        {(data.sources_failed ?? 0) > 0
+          ? `${(data.sources_failed ?? 0)} of ${data.sources_requested} ${
+              data.sources_requested === 1 ? "source" : "sources"
             } could not be read`
           : "Something went wrong reading your materials"}
       </p>
@@ -196,7 +196,7 @@ export default function IngestedSourcesBlock({
       {count > 0 ? (
         <p className="text-xs text-muted-foreground">
           We read {count} {count === 1 ? "source" : "sources"} ·{" "}
-          {describeSize(data.totalChars)} of material
+          {describeSize(data.total_chars ?? 0)} of material
         </p>
       ) : null}
 

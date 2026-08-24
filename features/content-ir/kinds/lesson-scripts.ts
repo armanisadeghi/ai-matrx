@@ -41,6 +41,8 @@ import {
   isRecordValue,
   joinBlocks,
 } from "./kind-markdown-utils";
+import type { MaterializedKind } from "./kind-payload";
+import type { LessonScriptSection as LessonScriptSectionKind } from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — the ONE source `data[]` and the emitted JSON Schemas come from.
@@ -106,13 +108,14 @@ export const LESSON_SCRIPTS_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge — STREAMING, flashcards style.
 // ---------------------------------------------------------------------------
 
-export interface LessonScriptSection extends Record<string, unknown> {
-  heading: string;
+/** THE SHAPE COMES FROM THE REGISTRY (`pnpm shape:types`) — field names included. */
+export type LessonScriptSection = Omit<
+  MaterializedKind<LessonScriptSectionKind>,
+  "__kind" | "script"
+> & {
   /** null while the section's narration is still streaming — per-section loader. */
   script: string | null;
-  durationSeconds: number | null;
-  keyPoints: string[];
-}
+} & Record<string, unknown>;
 
 export interface LessonScriptsData extends Record<string, unknown> {
   title: string;
@@ -158,7 +161,7 @@ function mapSection(
         ? null // still streaming — the block shows the per-section loader
         : rawScript
       : null;
-  const durationSeconds =
+  const duration_seconds =
     typeof section.duration_seconds === "number" &&
     Number.isFinite(section.duration_seconds)
       ? section.duration_seconds
@@ -167,8 +170,8 @@ function mapSection(
   const mapped: LessonScriptSection = {
     heading,
     script,
-    durationSeconds,
-    keyPoints: stringList(section.key_points),
+    duration_seconds,
+    key_points: stringList(section.key_points),
   };
 
   for (const [key, value] of Object.entries(section)) {
@@ -265,16 +268,16 @@ function sectionMarkdown(
       ? ` (${formatDuration(section.duration_seconds)})`
       : "";
 
-  const keyPoints = stringList(section.key_points);
+  const key_points = stringList(section.key_points);
   const blocks: Array<string | null> = [
     `## ${index + 1}. ${heading}${duration}`,
     typeof section.script === "string" && section.script !== ""
       ? section.script
       : null,
-    keyPoints.length > 0
+    key_points.length > 0
       ? joinBlocks([
           "**Key points**",
-          keyPoints.map((point) => `- ${point}`).join("\n"),
+          key_points.map((point) => `- ${point}`).join("\n"),
         ])
       : null,
   ];

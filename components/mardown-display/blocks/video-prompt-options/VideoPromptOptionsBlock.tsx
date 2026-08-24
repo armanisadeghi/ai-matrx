@@ -58,7 +58,7 @@ function readData(serverData: unknown): VideoPromptOptionsData | null {
   const prompts = candidate.prompts.filter(isVariation);
   if (prompts.length === 0) return null;
   return {
-    concept: typeof candidate.concept === "string" ? candidate.concept : null,
+    concept_received: typeof candidate.concept_received === "string" ? candidate.concept_received : null,
     action:
       candidate.action && typeof candidate.action.agentId === "string"
         ? candidate.action
@@ -85,9 +85,9 @@ function variationOverrides(
   variation: VideoPromptVariationData,
 ): Partial<LLMParams> | null {
   const overrides: Partial<LLMParams> = {};
-  const aspectRatio = toAspectRatio(variation.aspectRatio);
-  if (aspectRatio) overrides.aspect_ratio = aspectRatio;
-  const durationSeconds = toDurationSeconds(variation.clipLength);
+  const aspect_ratio = toAspectRatio(variation.aspect_ratio);
+  if (aspect_ratio) overrides.aspect_ratio = aspect_ratio;
+  const durationSeconds = toDurationSeconds(variation.clip_length);
   if (durationSeconds !== null) overrides.duration_seconds = durationSeconds;
   return Object.keys(overrides).length > 0 ? overrides : null;
 }
@@ -131,16 +131,16 @@ function VariationCard({
         <span className="text-sm font-semibold text-foreground">
           Variation {number}
         </span>
-        {variation.aspectRatio ? (
+        {variation.aspect_ratio ? (
           <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
             <Proportions className="h-3 w-3" />
-            {variation.aspectRatio}
+            {variation.aspect_ratio}
           </span>
         ) : null}
-        {variation.clipLength ? (
+        {variation.clip_length ? (
           <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
-            {variation.clipLength}
+            {variation.clip_length}
           </span>
         ) : null}
         <div className="ml-auto flex items-center gap-2">
@@ -181,9 +181,9 @@ export default function VideoPromptOptionsBlock({
           Video prompt options
         </span>
       </div>
-      {data.concept ? (
+      {data.concept_received ? (
         <p className="text-sm text-muted-foreground">
-          Concept: {data.concept}
+          Concept: {data.concept_received}
         </p>
       ) : null}
       <div className="space-y-2">
