@@ -41,6 +41,7 @@ import {
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
 import MessagingTab from "./tabs/MessagingTab";
+import NotificationsTab from "./tabs/NotificationsTab";
 import PlanUsageTab from "./tabs/PlanUsageTab";
 import AppearanceTab from "./tabs/AppearanceTab";
 import VoiceTab from "./tabs/VoiceTab";
@@ -112,10 +113,10 @@ export const settingsRegistry: SettingsTabDef[] = [
     label: "Notifications",
     icon: Bell,
     parentId: "general",
-    description: "Desktop notifications, volume, alerts.",
-    searchKeywords: ["alerts", "sound", "ping"],
-    component: MessagingTab, // shares the messaging implementation
-    persistence: "synced",
+    description: "How the platform reaches you, per event — email now, more channels as they land.",
+    searchKeywords: ["alerts", "email", "notifications", "form submissions", "events"],
+    component: NotificationsTab, // canonical Notification System preferences (communication.notification_*)
+    persistence: "local-only",
   },
   {
     id: "general.language",

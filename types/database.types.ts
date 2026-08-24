@@ -10681,6 +10681,204 @@ export type Database = {
         }
         Relationships: []
       }
+      notification: {
+        Row: {
+          attempt_count: number
+          body: string | null
+          channel: string
+          claimed_by: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string | null
+          error_code: string | null
+          error_message: string | null
+          event_key: string
+          id: string
+          lease_expires_at: string | null
+          metadata: Json
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          recipient_user_id: string
+          sent_at: string | null
+          status: string
+          subject: string | null
+          to_address: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attempt_count?: number
+          body?: string | null
+          channel: string
+          claimed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_key: string
+          id?: string
+          lease_expires_at?: string | null
+          metadata?: Json
+          next_attempt_at?: string
+          organization_id: string
+          payload?: Json
+          provider?: string | null
+          provider_message_id?: string | null
+          recipient_user_id: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          to_address?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attempt_count?: number
+          body?: string | null
+          channel?: string
+          claimed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_key?: string
+          id?: string
+          lease_expires_at?: string | null
+          metadata?: Json
+          next_attempt_at?: string
+          organization_id?: string
+          payload?: Json
+          provider?: string | null
+          provider_message_id?: string | null
+          recipient_user_id?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          to_address?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      notification_event_type: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          default_channels: Json
+          deleted_at: string | null
+          description: string | null
+          enabled: boolean
+          event_key: string
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          default_channels?: Json
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          event_key: string
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          default_channels?: Json
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          event_key?: string
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      notification_preference: {
+        Row: {
+          channel: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enabled: boolean
+          event_key: string
+          id: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled: boolean
+          event_key: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          event_key?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       sms_consent: {
         Row: {
           consent_type: string
@@ -11463,6 +11661,48 @@ export type Database = {
         Args: { p_inbound_message_id: string }
         Returns: string
       }
+      claim_pending_notifications: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_count: number
+          body: string | null
+          channel: string
+          claimed_by: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string | null
+          error_code: string | null
+          error_message: string | null
+          event_key: string
+          id: string
+          lease_expires_at: string | null
+          metadata: Json
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          recipient_user_id: string
+          sent_at: string | null
+          status: string
+          subject: string | null
+          to_address: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_pending_sms_agent_turns: {
         Args: {
           p_lease_seconds?: number
@@ -11720,6 +11960,20 @@ export type Database = {
           p_retry_after_seconds?: number
           p_retryable: boolean
           p_source_event_id: number
+          p_worker_id: string
+        }
+        Returns: boolean
+      }
+      finalize_notification: {
+        Args: {
+          p_error_code: string
+          p_error_message: string
+          p_id: string
+          p_max_attempts?: number
+          p_outcome: string
+          p_provider: string
+          p_provider_message_id: string
+          p_retry_base_seconds?: number
           p_worker_id: string
         }
         Returns: boolean
