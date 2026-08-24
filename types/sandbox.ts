@@ -12,11 +12,7 @@ export type SandboxStatus =
   | "expired";
 
 export type SandboxStopReason =
-  | "user_requested"
-  | "expired"
-  | "error"
-  | "graceful_shutdown"
-  | "admin";
+  "user_requested" | "expired" | "error" | "graceful_shutdown" | "admin";
 
 export type SandboxTier = "ec2" | "hosted";
 

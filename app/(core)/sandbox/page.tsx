@@ -22,7 +22,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import {
+  TapTargetButton,
+  TapTargetButtonSolid,
+} from "@/components/icons/TapTargetButton";
 import {
   Table,
   TableHeader,
@@ -555,7 +558,9 @@ export default function SandboxListPage() {
                                   <CopyButtons
                                     size="icon"
                                     label={`Sandbox ${sandboxDisplayName(instance)}`}
-                                    human={() => sandboxInstanceSummary(instance)}
+                                    human={() =>
+                                      sandboxInstanceSummary(instance)
+                                    }
                                     agent={() => ({
                                       kind: "sandbox-instance",
                                       location: "AI Matrx — My Sandboxes",
@@ -741,7 +746,9 @@ export default function SandboxListPage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setDeleteTarget(instance)}
+                                        onClick={() =>
+                                          setDeleteTarget(instance)
+                                        }
                                         className="text-destructive hover:text-destructive"
                                       >
                                         <Trash2 className="w-3 h-3" />
@@ -770,115 +777,110 @@ export default function SandboxListPage() {
         }}
       >
         <DialogContent>
-                {createSuccess ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-4">
-                    <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                      <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-semibold text-lg">Sandbox Created</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Redirecting to your sandbox...
-                      </p>
-                      {createdInstanceId && (
-                        <p className="text-xs text-muted-foreground mt-2 font-mono">
-                          {instances.find((i) => i.id === createdInstanceId)
-                            ?.sandbox_id || createdInstanceId}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : creating ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-4">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                    <div className="text-center">
-                      <h3 className="font-semibold text-lg">
-                        Creating Sandbox
-                      </h3>
-                      {createdInstanceId ? (
-                        <>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Status:{" "}
-                            <Badge variant="info" className="ml-1">
-                              {instances.find((i) => i.id === createdInstanceId)
-                                ?.status || "creating"}
-                            </Badge>
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2 font-mono">
-                            {instances.find((i) => i.id === createdInstanceId)
-                              ?.sandbox_id || createdInstanceId}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Spinning up your container. This can take a few
-                          seconds...
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle>Create New Sandbox</DialogTitle>
-                      <DialogDescription>
-                        Launch an ephemeral sandbox environment. It will
-                        automatically shut down after the specified duration.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <CreateSandboxFormFields
-                        form={createForm}
-                        submitError={createError}
-                      >
-                        <div className="space-y-1.5">
-                          <Label className="text-sm font-medium">
-                            Duration
-                          </Label>
-                          <ToggleGroup
-                            type="single"
-                            value={String(ttlHours)}
-                            onValueChange={(value) => {
-                              if (value) setTtlHours(Number(value));
-                            }}
-                            className="justify-start gap-1"
-                          >
-                            {[1, 2, 4, 8].map((h) => (
-                              <ToggleGroupItem
-                                key={h}
-                                value={String(h)}
-                                aria-label={`${h} hour${h === 1 ? "" : "s"}`}
-                                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                              >
-                                {h}h
-                              </ToggleGroupItem>
-                            ))}
-                          </ToggleGroup>
-                        </div>
-                      </CreateSandboxFormFields>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setCreateOpen(false);
-                          setCreateError(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleCreate}
-                        disabled={createForm.loadingTemplates || creating}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Sandbox
-                      </Button>
-                    </DialogFooter>
-                  </>
+          {createSuccess ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">Sandbox Created</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Redirecting to your sandbox...
+                </p>
+                {createdInstanceId && (
+                  <p className="text-xs text-muted-foreground mt-2 font-mono">
+                    {instances.find((i) => i.id === createdInstanceId)
+                      ?.sandbox_id || createdInstanceId}
+                  </p>
                 )}
-              </DialogContent>
-            </Dialog>
+              </div>
+            </div>
+          ) : creating ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">Creating Sandbox</h3>
+                {createdInstanceId ? (
+                  <>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Status:{" "}
+                      <Badge variant="info" className="ml-1">
+                        {instances.find((i) => i.id === createdInstanceId)
+                          ?.status || "creating"}
+                      </Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2 font-mono">
+                      {instances.find((i) => i.id === createdInstanceId)
+                        ?.sandbox_id || createdInstanceId}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Spinning up your container. This can take a few seconds...
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Create New Sandbox</DialogTitle>
+                <DialogDescription>
+                  Launch an ephemeral sandbox environment. It will automatically
+                  shut down after the specified duration.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <CreateSandboxFormFields
+                  form={createForm}
+                  submitError={createError}
+                >
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Duration</Label>
+                    <ToggleGroup
+                      type="single"
+                      value={String(ttlHours)}
+                      onValueChange={(value) => {
+                        if (value) setTtlHours(Number(value));
+                      }}
+                      className="justify-start gap-1"
+                    >
+                      {[1, 2, 4, 8].map((h) => (
+                        <ToggleGroupItem
+                          key={h}
+                          value={String(h)}
+                          aria-label={`${h} hour${h === 1 ? "" : "s"}`}
+                          className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                        >
+                          {h}h
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  </div>
+                </CreateSandboxFormFields>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCreateOpen(false);
+                    setCreateError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={createForm.loadingTemplates || creating}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Sandbox
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={!!deleteTarget}
         onOpenChange={(open) => {

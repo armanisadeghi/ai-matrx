@@ -680,8 +680,7 @@ function liftLegacyAudioDevicesToMediaDevices(
   const carrier = loaded as Record<string, unknown>;
   const legacy = carrier["audioDevices"];
   const vc = loaded.videoConference as
-    | (VideoConferencePreferences & { defaultCamera?: unknown })
-    | undefined;
+    (VideoConferencePreferences & { defaultCamera?: unknown }) | undefined;
   const hasLegacyModule = legacy !== undefined;
   const hasLegacyCamera = vc !== undefined && "defaultCamera" in vc;
   if (!hasLegacyModule && !hasLegacyCamera) return loaded;
@@ -726,7 +725,9 @@ function liftLegacyAudioDevicesToMediaDevices(
     };
     delete cleanedVc["defaultCamera"];
     out["videoConference"] = cleanedVc;
-    dropped.push("videoConference.defaultCamera (placeholder enum, no mapping)");
+    dropped.push(
+      "videoConference.defaultCamera (placeholder enum, no mapping)",
+    );
   }
 
   console.warn(
@@ -755,10 +756,7 @@ function liftLegacyAudioDevicesToMediaDevices(
  * next engine save.
  */
 type DefaultModelModule =
-  | "prompts"
-  | "aiModels"
-  | "textGeneration"
-  | "imageGeneration";
+  "prompts" | "aiModels" | "textGeneration" | "imageGeneration";
 
 const LEGACY_DEFAULT_MODEL_SENTINELS: Readonly<
   Record<DefaultModelModule, string>
