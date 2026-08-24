@@ -221,6 +221,26 @@ function slice(
   return out;
 }
 
+/**
+ * The query string as it is RIGHT NOW, never the copy a render closed over.
+ *
+ * Measured 2026-08-24: with the React Compiler on, an event handler can be
+ * memoized around an older `useSearchParams()` value. Anything that MERGES into
+ * the current URL — a sort toggle, opening a saved view, storing "the
+ * arrangement I am looking at" — then computes from a stale copy and either
+ * writes the URL it already had (so `router.push` no-ops and the click silently
+ * does nothing) or saves an arrangement nobody chose. Every such call site
+ * reads through here.
+ *
+ * `fallback` is used on the server, where there is no live URL.
+ */
+export function liveSearchParams(
+  fallback: ReadonlyURLSearchParams | URLSearchParams,
+): URLSearchParams {
+  if (typeof window === "undefined") return new URLSearchParams(fallback.toString());
+  return new URLSearchParams(window.location.search);
+}
+
 export interface KeywordTableStateCodec {
   /** Per-surface URL parameter prefix. `""` for the Keyword Workbench. */
   prefix?: string;

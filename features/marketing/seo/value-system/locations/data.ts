@@ -49,8 +49,19 @@ export const locationSummaryQueryKey = (
 export const locationReadinessQueryKey = (siteId: string) =>
   ["seo", "locations", "readiness", siteId] as const;
 
-export const keywordLocationsQueryKey = (siteId: string, keywordIds: string[]) =>
-  ["seo", "locations", "keyword", siteId, [...keywordIds].sort().join("|")] as const;
+export const keywordLocationsQueryKey = (
+  siteId: string,
+  keywordIds: string[],
+  includeUnplaced = false,
+) =>
+  [
+    "seo",
+    "locations",
+    "keyword",
+    siteId,
+    [...keywordIds].sort().join("|"),
+    includeUnplaced ? "with-unplaced" : "placed-only",
+  ] as const;
 
 export const locationKeywordsQueryKey = (
   siteId: string,
@@ -131,12 +142,21 @@ export async function getKeywordLocations(
   siteId: string,
   keywordIds: string[],
   signal?: AbortSignal,
+  /**
+   * Ask the server to ALSO name what it could not place: a keyword that
+   * mentions a place but resolved to no branch comes back with
+   * `decided_by === "unresolved"` and a null `location_id`. Off by default, so
+   * the Which-location panel and the why-chain keep reading "absent means no
+   * answer" exactly as they were written.
+   */
+  includeUnplaced = false,
 ): Promise<Map<string, KeywordLocationRow>> {
   if (keywordIds.length === 0) return new Map();
   const response = await (await seoDb())
     .rpc("gsc_keyword_locations", {
       p_site_id: siteId,
       p_keyword_ids: keywordIds,
+      ...(includeUnplaced ? { p_include_unplaced: true } : {}),
     })
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);
