@@ -47,6 +47,7 @@ import {
   Ruler,
   Swords,
   Settings,
+  Signpost,
   SlidersHorizontal,
   Table2,
   Tags,
@@ -97,6 +98,8 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "reputation:narratives": MessageSquareQuote,
   "reputation:evidence": FileSearch,
 
+  // The keyword front door — a map, so a signpost.
+  "keywords:start": Signpost,
   "keywords:performance": TrendingUp,
   "keywords:workbench": SlidersHorizontal,
   "keywords:classification": Tags,

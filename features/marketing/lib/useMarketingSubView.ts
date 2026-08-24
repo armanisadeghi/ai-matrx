@@ -55,6 +55,8 @@ export interface MarketingSubNavItem {
   name: string;
   href: string;
   icon?: LucideIcon;
+  /** The registry's one-line "what do I do here?" (see `site-subviews.ts`). */
+  description?: string;
 }
 
 export interface MarketingSiteSubNav {
@@ -104,6 +106,7 @@ export function buildMarketingSubNav(
       name: subView.label,
       href: marketingSubViewHref(sectionHref, section, subView.id),
       icon: marketingSubViewIcon(section, subView.id),
+      description: subView.purpose,
     })),
     activeHref: marketingSubViewHref(sectionHref, section, view),
   };

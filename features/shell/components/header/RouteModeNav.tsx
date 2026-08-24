@@ -64,6 +64,15 @@ export interface RouteNavItem {
   icon?: LucideIcon;
   /** Match only this pathname; use for Overview/root modes. */
   exact?: boolean;
+  /**
+   * One line saying what a person DOES on that sub-route. Supply it whenever
+   * the label alone is a name the reader has to already know ("Workbench",
+   * "Rulebook", "Scribe"): it becomes a tooltip under the label — including in
+   * the FULL variant, where the label is visible but not self-explanatory —
+   * and the subtitle in the dropdown and the mobile sheet. Ruled 2026-08-24
+   * (Arman, on the keyword surfaces: "I need to know where to go").
+   */
+  description?: string;
 }
 
 type Variant = "full" | "icons" | "menu";
@@ -182,9 +191,15 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
         {showLabel && <span>{item.name}</span>}
       </Link>
     );
-    if (!withTooltip || showLabel) return link;
+    // A visible label still earns a tooltip when the item carries a purpose —
+    // the label is the NAME, the description is what you do there.
+    if (!withTooltip || (showLabel && !item.description)) return link;
     return (
-      <NavItemTooltip key={item.href} label={item.name}>
+      <NavItemTooltip
+        key={item.href}
+        label={item.name}
+        description={item.description}
+      >
         {link}
       </NavItemTooltip>
     );
@@ -274,7 +289,14 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                       )}
                     >
                       {Icon && <Icon className="mr-3 h-4 w-4 shrink-0" />}
-                      <span className="flex-1 text-left">{item.name}</span>
+                      <span className="flex-1 text-left">
+                        {item.name}
+                        {item.description ? (
+                          <span className="mt-0.5 block text-[13px] font-normal leading-snug text-muted-foreground">
+                            {item.description}
+                          </span>
+                        ) : null}
+                      </span>
                     </Link>
                   );
                 })}
@@ -296,7 +318,10 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                 </span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-52">
+            <DropdownMenuContent
+              align="center"
+              className={cn(items.some((i) => i.description) ? "w-72" : "w-52")}
+            >
               {items.map((item) => {
                 const Icon = item.icon;
                 const isActive = item.href === current?.href;
@@ -317,9 +342,26 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                         event.preventDefault();
                         navigate(item.href);
                       }}
+                      className={cn(item.description && "items-start py-1.5")}
                     >
-                      {Icon && <Icon className="h-4 w-4 shrink-0" />}
-                      {item.name}
+                      {Icon && (
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            item.description && "mt-0.5",
+                          )}
+                        />
+                      )}
+                      {item.description ? (
+                        <span className="min-w-0 flex-1">
+                          <span className="block">{item.name}</span>
+                          <span className="mt-0.5 block whitespace-normal text-[0.6875rem] font-normal leading-snug text-muted-foreground">
+                            {item.description}
+                          </span>
+                        </span>
+                      ) : (
+                        item.name
+                      )}
                     </Link>
                   </DropdownMenuItem>
                 );

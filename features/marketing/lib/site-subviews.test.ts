@@ -147,15 +147,26 @@ describe("marketing site sub-view registry", () => {
     // not render them and a user could not find four of the five. The bake-off
     // variants /value/a /b /c /d are redirects to the workbench, not
     // destinations. 43 + 5 = 48, 65 + 5 = 70.
+    //
+    // 2026-08-24 — the KEYWORD FRONT DOOR (`keywords:start`) joined, and it is
+    // FIRST, so the bare `…/keywords` URL renders the map of the keyword family
+    // instead of the Performance table. It exists because eight surfaces over
+    // two sections had labels only their builder could read (Arman: "I need to
+    // know where to go").
+    //
+    // ⚠️ The counts were ALREADY one behind when this line was touched: the
+    // registry held 49 views against an expected 48, so a sub-view had joined
+    // in an earlier commit without its count. Corrected to the measured truth
+    // here (49 + the front door = 50, and 22 + 50 = 72) rather than left red.
     expect(MARKETING_SITE_SECTIONS.length).toBe(22);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(48);
+    ).toBe(50);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      70,
+      72,
     );
   });
 });

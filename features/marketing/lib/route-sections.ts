@@ -183,17 +183,21 @@ export const MARKETING_SITE_SECTIONS = [
     slug: "keywords",
     name: "Keywords",
     titlePrefix: "Keywords",
+    // The section's front door is its `start` sub-view — the map of every
+    // screen that gives keywords meaning (see `site-subviews.ts`).
     description:
-      "Inspect persisted organic query performance and keyword-market intelligence.",
+      "Start here: what people searched, what your keywords mean, and how to say so.",
     letter: "Kw",
     group: "Search",
   },
   {
     slug: "value",
-    name: "Value",
+    name: "Keyword value",
     titlePrefix: "Keyword Value",
+    // "Value" alone read as a generic word on a sidebar of 22 sections and
+    // gave no clue it was the other half of Keywords (2026-08-24).
     description:
-      "Rule what this site's search traffic is actually worth: dimensions, qualifier rules, geo areas, the topic tree, and the value tiers they produce.",
+      "Decide what your search traffic is worth: dimensions, the rulebook, service areas, topics, and the scores and levels they produce.",
     letter: "Vl",
     group: "Search",
   },

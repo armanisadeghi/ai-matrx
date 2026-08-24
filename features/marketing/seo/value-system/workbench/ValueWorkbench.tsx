@@ -136,6 +136,20 @@ import {
   reviewWindow,
   type BandMeta,
 } from "../lib";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
+import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
+import {
+  AssignPanel,
+  type AssignTarget,
+} from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
+import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
+import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
 import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
@@ -320,6 +334,70 @@ export function ValueWorkbench() {
   const focusBand = searchParams.get("band");
   const focusComboId = searchParams.get("combo");
   const appliedFocusRef = useRef(false);
+
+  /**
+   * 🚨 THE TWO-TABLES TRAP, closed 2026-08-24. Arman, on this page: *"the
+   * traffic class is all the way on the right, but I'm not able to set it in
+   * the table."* He was right, and the reason was worse than a missing
+   * feature: the Keyword Workbench's table shows Class as a dropdown that
+   * ASSIGNS, while this table showed the same word, in the same kind of table,
+   * as dead grey text. Two near-identical tables behaving differently teaches
+   * a person that the platform is unpredictable.
+   *
+   * The fix is NOT a second write path. This cell now renders the SAME
+   * `ClassCell` and writes through the SAME `gsc_set_keyword_stamps`, with the
+   * SAME `AssignPanel` behind "Assign with a reason…" (P24 — the WHY is
+   * captured at the moment of assignment). Nothing about class assignment is
+   * implemented twice; only the mounting differs (a dialog here, an inline
+   * panel there, because this page's top is a ruled layout).
+   */
+  const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
+  const catalog = useQuery({
+    queryKey: ["marketing", "seo", "dimension-catalog", siteId],
+    queryFn: ({ signal }) => getFacetDimensionCatalog(siteId, signal),
+    staleTime: 5 * 60_000,
+  });
+  const dimensions = catalog.data ?? [];
+  const classDimension = dimensions.find((d) => d.slug === "traffic_class");
+  const classOptions = (classDimension?.values ?? []).filter((v) => !v.abstain);
+
+  /**
+   * A class stamp changes what the resolver computes, so the score, the level
+   * and the receipt on every row are stale the moment one lands — invalidate
+   * the value reads too, not only the stamp reads.
+   */
+  const refreshAfterStamp = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["marketing", "seo", "keyword-stamps", siteId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["marketing", "value", "review", siteId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["marketing", "value", "summary", siteId],
+      }),
+    ]);
+  };
+
+  const quickAssignClass = async (keywordId: string, picked: PickedValue) => {
+    try {
+      const result = await setKeywordStamps({
+        siteId,
+        keywordIds: [keywordId],
+        valueId: picked.valueId,
+      });
+      await refreshAfterStamp();
+      toast.success(
+        `Class: ${picked.valueLabel} — ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
+  };
 
   const vocab = useQuery({
     queryKey: ["marketing", "value", "vocab", siteId, "value_band"],
@@ -600,16 +678,50 @@ export function ValueWorkbench() {
       cell: (row) => <SourceChip source={row.value_source} />,
     },
     {
+      // THE SAME CONTROL AS THE KEYWORD WORKBENCH — see the note beside
+      // `assignTarget` above. "Class" is the everyday word (ratified
+      // vocabulary); "Traffic class" was the internal one.
       id: "traffic_class",
       accessorKey: "traffic_class",
-      header: "Traffic class",
+      header: "Class",
       sortable: false,
       filter: false,
       mobileHidden: true,
+      width: 150,
       cell: (row) => (
-        <span className="text-[11px] text-muted-foreground">
-          {row.traffic_class ? humanizeSlug(row.traffic_class) : "—"}
-        </span>
+        <ClassCell
+          current={row.traffic_class || null}
+          source={null}
+          options={classOptions}
+          disabled={!row.keyword_id || !classDimension}
+          onPick={(value) => {
+            if (!row.keyword_id || !classDimension) return;
+            void quickAssignClass(row.keyword_id, {
+              dimensionId: classDimension.dimension_id,
+              dimensionSlug: classDimension.slug,
+              dimensionLabel: classDimension.label,
+              valueId: value.value_id,
+              valueLabel: value.label,
+            });
+          }}
+          onAssignWithReason={() => {
+            if (!row.keyword_id) return;
+            setAssignTarget({
+              keywordIds: [row.keyword_id],
+              label: `“${row.keyword}”`,
+              lockedDimensionSlug: "traffic_class",
+            });
+          }}
+          onMakeYourOwn={() => {
+            if (!row.keyword_id) return;
+            // No locked dimension: the picker opens on the whole catalog and
+            // will create a dimension of their own from whatever they type.
+            setAssignTarget({
+              keywordIds: [row.keyword_id],
+              label: `“${row.keyword}”`,
+            });
+          }}
+        />
       ),
     },
     {
@@ -955,12 +1067,6 @@ export function ValueWorkbench() {
                     {[
                       ["Clicks", formatCount(row.clicks)],
                       ["Impressions", formatCount(row.impressions)],
-                      [
-                        "Traffic class",
-                        row.traffic_class
-                          ? humanizeSlug(row.traffic_class)
-                          : "—",
-                      ],
                     ].map(([label, value]) => (
                       <div
                         key={label}
@@ -974,6 +1080,30 @@ export function ValueWorkbench() {
                         </p>
                       </div>
                     ))}
+                    {/* Class is SETTABLE, so it is never a stat tile here
+                        either — same rule as the column. */}
+                    <button
+                      type="button"
+                      disabled={!row.keyword_id}
+                      onClick={() =>
+                        setAssignTarget({
+                          keywordIds: [row.keyword_id],
+                          label: `“${row.keyword}”`,
+                          lockedDimensionSlug: "traffic_class",
+                        })
+                      }
+                      className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center transition-colors hover:border-primary/40 hover:bg-accent"
+                      title="Set this keyword's class — the same write as the Keyword Workbench, with room for your reason."
+                    >
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        Class
+                      </p>
+                      <p className="text-sm font-semibold">
+                        {row.traffic_class
+                          ? humanizeSlug(row.traffic_class)
+                          : "Set it"}
+                      </p>
+                    </button>
                   </div>
                   <div>
                     <p className="mb-1.5 text-xs font-semibold text-foreground">
@@ -1062,6 +1192,39 @@ export function ValueWorkbench() {
           onClose={() => setMeaningOpen(false)}
         />
       ) : null}
+
+      {/* ONE assignment surface, borrowed whole from the Keyword Workbench —
+          never a second implementation of "assign a class with a reason". */}
+      <Dialog
+        open={assignTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setAssignTarget(null);
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Set the class</DialogTitle>
+          </DialogHeader>
+          {assignTarget ? (
+            <AssignPanel
+              siteId={siteId}
+              dimensions={dimensions}
+              dimensionsLoading={catalog.isLoading}
+              target={assignTarget}
+              onCancel={() => setAssignTarget(null)}
+              onDone={(result, picked) => {
+                setAssignTarget(null);
+                void refreshAfterStamp();
+                toast.success(
+                  result.cleared > 0
+                    ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
+                    : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
+                );
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       {addingLevel !== null ? (
         <AddLevelDialog

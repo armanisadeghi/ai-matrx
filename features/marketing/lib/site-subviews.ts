@@ -32,6 +32,18 @@ export interface MarketingSubView {
   /** URL identity: a `?view=` value or path segment. */
   id: string;
   label: string;
+  /**
+   * ONE LINE ANSWERING "WHAT DO I DO HERE?" — rendered by the site header as a
+   * tooltip under the label, and as the subtitle in its dropdown / bottom
+   * sheet. Ruled 2026-08-24 after Arman: *"there are so many different UIs, and
+   * they're not labeled properly… I need to know where to go."*
+   *
+   * Write it in the user's words, in the ratified vocabulary, and say what the
+   * person DOES — never what the surface is made of. A label a person has to
+   * already understand ("Workbench", "Rulebook", "Dimensions") is exactly the
+   * case this field exists for.
+   */
+  purpose?: string;
 }
 
 export type MarketingSubViewHrefStyle = "query" | "path";
@@ -147,16 +159,46 @@ export const MARKETING_SITE_SUBVIEWS = [
     ],
   },
   {
+    // 🚨 THE KEYWORD FRONT DOOR. `start` is FIRST, so the bare
+    // `…/sites/[siteId]/keywords` URL is the map of the whole keyword system —
+    // every screen that gives keywords meaning, each as a door with a sentence
+    // saying what you do there. It exists because eight surfaces spread over
+    // two sections had grown labels only their builder could read (Arman,
+    // 2026-08-24: *"it's really hard to know what happens where and what I
+    // should be doing… I need to know where to go."*). Anything reachable in
+    // this family MUST appear on it — see `KeywordStartHere.tsx`.
+    //
     // C14 — the WORKBENCH is where a person gives keywords meaning: find
     // exactly the ones you mean, assign a value with a reason, keep the
-    // arrangement as a tab. `classification` stays until it is at parity and
-    // then folds into it (C18) — two surfaces for one job is the drift the
-    // convergence exists to end.
+    // arrangement as a tab. `classification` is NOT redundant with it and did
+    // not fold in C18: it uniquely owns the class MATCHERS (patterns), the
+    // brand names, the business guidelines every AI run reads, CSV
+    // import/export and the batch AI classifier. So it keeps its route and
+    // wears a label that says which of those jobs it does.
     section: "keywords",
     views: [
-      { id: "performance", label: "Performance" },
-      { id: "workbench", label: "Workbench" },
-      { id: "classification", label: "Classification" },
+      {
+        id: "start",
+        label: "Start here",
+        purpose: "Every keyword screen, and what you do on each one.",
+      },
+      {
+        id: "performance",
+        label: "Performance",
+        purpose: "What people searched, what they clicked, where you rank.",
+      },
+      {
+        id: "workbench",
+        label: "Workbench",
+        purpose:
+          "Say what a keyword IS — set its class or any dimension, with your reason.",
+      },
+      {
+        id: "classification",
+        label: "Teach classes",
+        purpose:
+          "Teach the system to class keywords itself: patterns, brand names, your guidelines, AI.",
+      },
     ],
   },
   {
@@ -168,14 +210,40 @@ export const MARKETING_SITE_SUBVIEWS = [
     // what's missing"). They are sub-views, not filters — each changes what
     // the page IS, reads different tables, and writes through different RPCs.
     //
-    // `workbench` is first, so it renders at the bare `/value` URL.
+    // `workbench` is first, so it renders at the bare `/value` URL. Its LABEL
+    // is "Scores" — 2026-08-24: two sections each carried a tab called
+    // "Workbench", which is the single worst piece of the navigation confusion
+    // Arman reported. The id stays `workbench` because it is URL state and
+    // every share link and saved bookmark means it; only the word a human
+    // reads changed. The Keyword Workbench keeps the name "Workbench".
     section: "value",
     views: [
-      { id: "workbench", label: "Workbench" },
-      { id: "dimensions", label: "Dimensions" },
-      { id: "rules", label: "Rulebook" },
-      { id: "topics", label: "Topics" },
-      { id: "packs", label: "Industry packs" },
+      {
+        id: "workbench",
+        label: "Scores",
+        purpose:
+          "What every keyword is worth here, why, and the rulings you made yourself.",
+      },
+      {
+        id: "dimensions",
+        label: "Dimensions",
+        purpose: "The ways you look at keywords, and the answers each allows.",
+      },
+      {
+        id: "rules",
+        label: "Rulebook",
+        purpose: "What earns points and how much — matchers, worth and levels.",
+      },
+      {
+        id: "topics",
+        label: "Topics",
+        purpose: "Group keywords into your services, and set what each is worth.",
+      },
+      {
+        id: "packs",
+        label: "Industry packs",
+        purpose: "Start from your industry's defaults instead of a blank page.",
+      },
     ],
     hrefStyle: "path",
   },

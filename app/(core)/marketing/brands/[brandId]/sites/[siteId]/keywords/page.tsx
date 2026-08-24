@@ -5,7 +5,7 @@ import { SiteKeywordsView } from "@/features/marketing/seo/keyword-research/comp
 export default function MarketingSiteKeywordsPage() {
   return (
     <Suspense
-      fallback={<LoadingSurface label="Loading keyword performance…" />}
+      fallback={<LoadingSurface label="Loading keywords…" />}
     >
       <SiteKeywordsView />
     </Suspense>

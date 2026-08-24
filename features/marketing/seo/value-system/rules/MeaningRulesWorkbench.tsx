@@ -643,8 +643,11 @@ export function MeaningRulesWorkbench() {
           </ul>
         </section>
 
-        {/* ── Service areas ── */}
-        <section className="space-y-2">
+        {/* ── Service areas ──
+            `id` is load-bearing: the keyword front door ("Start here") sends
+            "where searches come from" straight to this section by anchor, so it
+            is a real destination and not a page a person has to scan. */}
+        <section id="service-areas" className="scroll-mt-4 space-y-2">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
