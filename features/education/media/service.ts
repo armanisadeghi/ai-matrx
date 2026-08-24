@@ -136,6 +136,28 @@ export const studyMediaService = {
     }
   },
 
+  /**
+   * Live rows for a known set of ids (RLS-scoped). For surfaces that hold
+   * artifact ids from somewhere else — the kit hub reads its members from
+   * association edges, whose metadata was frozen at creation time, so it has to
+   * ask the table what is true NOW (an audio artifact finishes long after its
+   * edge was written).
+   */
+  async listByIds(ids: string[]): Promise<MediaResult<StudyMediaRow[]>> {
+    try {
+      if (ids.length === 0) return { data: [], error: null };
+      const { data, error } = await EDU()
+        .from("study_media")
+        .select("*")
+        .in("id", ids)
+        .is("deleted_at", null);
+      if (error) return fail("listByIds", error);
+      return { data: (data ?? []) as StudyMediaRow[], error: null };
+    } catch (e) {
+      return fail("listByIds", e);
+    }
+  },
+
   /** List the caller's accessible artifacts of one kind, newest first (RLS-scoped). */
   async listByKind(
     kind: EduMediaKind,

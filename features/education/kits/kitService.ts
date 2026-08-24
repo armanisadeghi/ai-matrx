@@ -22,6 +22,7 @@
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { listGeneratedFrom, type GeneratedArtifact } from "@/features/education/convert/lineage";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
+import { studyMediaService } from "@/features/education/media/service";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { Json } from "@/types/database.types";
 
@@ -75,6 +76,49 @@ function kitName(members: GeneratedArtifact[]): string {
 }
 
 /**
+ * 🚨 EDGE METADATA IS FROZEN AT CREATION TIME — refresh what can still change.
+ *
+ * `recordSourceLineage` writes `title`/`detail` once, when the artifact is
+ * created. For audio that moment is the START of a long TTS render, so the edge
+ * permanently says "Starting — audio is still being produced" and the kit would
+ * keep claiming that hours after the recording finished and became playable.
+ * Every kit built with the default targets contains audio, so this is not an
+ * edge case — it is the common path, and it is the exact class of shipped lie a
+ * behavioural test cannot see (STATE.md §4.1 item 7).
+ *
+ * So `study_media` members are re-read from the table and their title/detail
+ * replaced with what is true now. One query per kit, only when it has media.
+ */
+async function refreshMediaMembers(
+  members: GeneratedArtifact[],
+): Promise<GeneratedArtifact[]> {
+  const mediaIds = members
+    .filter((m) => m.artifactType === "study_media")
+    .map((m) => m.artifactId);
+  if (mediaIds.length === 0) return members;
+
+  const res = await studyMediaService.listByIds(mediaIds);
+  if (!res.data) return members; // best-effort: the frozen copy is still a name
+  const live = new Map(res.data.map((row) => [row.id, row]));
+
+  return members.map((m) => {
+    const row = live.get(m.artifactId);
+    if (!row) return m;
+    return {
+      ...m,
+      title: row.title?.trim() ? row.title : m.title,
+      // Only a genuinely unfinished artifact still says so.
+      detail:
+        row.status === "generating"
+          ? "Still being produced"
+          : row.status === "error"
+            ? "Didn't finish — open it to try again"
+            : m.detail,
+    };
+  });
+}
+
+/**
  * ONE kit: everything generated from this source. Returns null when the anchor
  * has no kit members (an unrelated file, or a bad id) so the surface can say so
  * honestly instead of rendering an empty shell.
@@ -84,7 +128,7 @@ export async function readKit(
   sourceId: string,
 ): Promise<StudyKit | null> {
   const rows = await listGeneratedFrom(sourceType, sourceId);
-  const artifacts = kitMembers(rows);
+  const artifacts = await refreshMediaMembers(kitMembers(rows));
   if (artifacts.length === 0) return null;
   return {
     sourceType,
