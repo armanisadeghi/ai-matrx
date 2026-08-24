@@ -270,7 +270,9 @@ export function EnrollDialog({
         .is("deleted_at", null)
         .single();
       if (error) throw operationFailed("load this workflow's steps", error);
-      const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+      // `nodes` is a jsonb column — typed opaquely by the generated Database
+      // types, so give the array an explicit element type before narrowing.
+      const nodes: unknown[] = Array.isArray(data?.nodes) ? data.nodes : [];
       return nodes
         .filter((n): n is Record<string, unknown> => Boolean(n) && typeof n === "object")
         .map((n) => {
