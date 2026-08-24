@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -80,6 +81,28 @@ describe("Radix dialog accessibility semantics", () => {
     expect(
       document.querySelector('[data-slot="dialog-overlay"]'),
     ).not.toBeNull();
+  });
+
+  it("keeps canonical dialog header actions clear of the close target", () => {
+    act(() => {
+      root.render(
+        <Dialog defaultOpen>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit row</DialogTitle>
+              <button type="button">Row actions</button>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>,
+      );
+    });
+
+    const header = document.querySelector('[data-slot="dialog-header"]');
+    const close = document.querySelector('[data-slot="dialog-close"]');
+
+    expect(header?.classList.contains("pr-12")).toBe(true);
+    expect(close?.classList.contains("h-10")).toBe(true);
+    expect(close?.classList.contains("w-10")).toBe(true);
   });
 
   it("does not claim modality or hide the background for a non-modal dialog", () => {

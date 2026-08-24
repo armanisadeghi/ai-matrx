@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-08-18`
+**Last updated:** `2026-08-24`
 
 ---
 
@@ -670,6 +670,9 @@ without anyone noticing.
 
 ## Change log
 
+- `2026-08-24` — **Edit Row mobile actions no longer collide.** The row-actions trigger is a
+  tap-sized, labeled control, and the canonical `DialogHeader` now reserves the shared close
+  target's hit area for every dialog that becomes a mobile bottom sheet.
 - `2026-08-22` — Added canonical AppShell top clearance to the workbook gallery so the first row of workbook cards and actions no longer collides with the transparent shell header.
 - 2026-08-18 — **Document editor satisfies global sheets Facade dependencies without starting sheets UI.**
   Univer's sheets Facade observer attaches to every later FUniver instance, but

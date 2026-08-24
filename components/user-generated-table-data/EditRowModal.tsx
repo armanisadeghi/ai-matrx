@@ -401,7 +401,12 @@ export default function EditRowModal({
             <DialogTitle>Edit Row</DialogTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-10 p-0"
+                  aria-label="Row actions"
+                >
                   {copiedRow ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
