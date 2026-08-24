@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
 import type { FacetValue } from "@/features/marketing/seo/value-system/dimensions/data";
+import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import {
   GSC_RANGE_PRESETS,
   type GscRangeKey,
@@ -128,7 +129,7 @@ export function ClassCell({
           className="h-6 max-w-full justify-start gap-1 px-1 text-[11px] font-normal"
         >
           <span className="truncate">
-            {active?.label ?? (current ? current : "Unclassified")}
+            {active?.label ?? (current ? humanizeSlug(current) : "Unclassified")}
           </span>
           {hint && hint !== "you" ? (
             <span className="text-[10px] text-muted-foreground">{hint}</span>

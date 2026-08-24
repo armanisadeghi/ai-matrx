@@ -12555,6 +12555,10 @@ export type Database = {
           old_status: string
         }[]
       }
+      routine_source: {
+        Args: { p_name: string; p_schema: string }
+        Returns: string
+      }
       set_kind_activation: {
         Args: {
           p_active: boolean

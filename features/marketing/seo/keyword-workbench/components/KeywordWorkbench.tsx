@@ -194,6 +194,19 @@ export function KeywordWorkbench() {
 
   /* -------------------------------------------------------------- selection */
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  /**
+   * A selection belongs to the result set it was made in. Changing the
+   * filters, the window, or the saved view produces a DIFFERENT set of rows,
+   * and carrying "7 keywords selected" across that boundary invites a bulk
+   * assignment onto keywords the person can no longer see — the exact mistake
+   * a bulk tool must never make. Reset-on-scope-change, the render-time way.
+   */
+  const selectionScope = `${JSON.stringify(state.filters)}|${state.search}|${state.range}|${state.customFrom}|${state.customTo}|${state.viewId}`;
+  const [scopeAtSelection, setScopeAtSelection] = useState(selectionScope);
+  if (scopeAtSelection !== selectionScope) {
+    setScopeAtSelection(selectionScope);
+    if (selectedIds.length > 0) setSelectedIds([]);
+  }
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
   const [lastUsed, setLastUsed] = useState<PickedValue | null>(null);
   const [selectingAll, setSelectingAll] = useState(false);
