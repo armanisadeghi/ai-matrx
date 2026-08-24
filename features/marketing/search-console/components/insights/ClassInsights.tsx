@@ -683,11 +683,12 @@ export function QualityView({
               rowKind: `web-gsc-class-mover-${dimension}`,
               listKind: "web-gsc-class-mover-results",
               rowDescription: `One ${dimension} ${direction === "gain" ? "gaining" : "losing"} clicks vs the compare period, with its traffic class.`,
-              listDescription: `${direction === "gain" ? "Gaining" : "Losing"} ${dimension === "query" ? "queries" : "pages"}${trafficClass ? ` in the ${trafficClass} class` : ""}, decomposed by traffic class server-side.`,
+              listDescription: `${direction === "gain" ? "Gaining" : "Losing"} ${dimension === "query" ? "queries" : "pages"}${trafficClass ? ` in the ${trafficClass} class` : ""}${valueLevel ? ` at the ${levelLabel(valueLevel)} level` : ""}, decomposed by traffic class and value level server-side.`,
               humanRow: (row) =>
                 humanLines([
                   [dimension === "query" ? "Query" : "Page", row.key],
                   ["Class", row.traffic_class],
+                  ["Level", row.value_band ? levelLabel(row.value_band) : "—"],
                   ["Δ clicks", num(row.delta_clicks)],
                   ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
                   [
@@ -709,6 +710,7 @@ export function QualityView({
                 dimension,
                 direction,
                 traffic_class: trafficClass ?? "all",
+                value_level: valueLevel ?? "all",
                 visible_rows: visible.length,
                 fetched_rows: moverRows.length,
                 total_rows: moverTotal,
@@ -724,7 +726,7 @@ export function QualityView({
                 direction === "loss"
                   ? "Nothing is losing ground"
                   : "Nothing is gaining ground",
-              description: `No ${trafficClass ? `${trafficClass} ` : ""}row moved in this direction ${describeGscWindow(periods.current)} vs the compare period.`,
+              description: `No ${trafficClass ? `${trafficClass} ` : ""}${valueLevel ? `${levelLabel(valueLevel)} ` : ""}row moved in this direction ${describeGscWindow(periods.current)} vs the compare period.`,
             }}
             className="h-full"
           />

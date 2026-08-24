@@ -20,9 +20,9 @@
  * common-docs/systems/marketing/seo/seo-keywords/value-system.md
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListTree, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,8 +68,18 @@ const PAGE_SIZE = 50;
 
 export function TopicTreeWorkbench() {
   const params = useParams<{ brandId: string; siteId: string }>();
+  const searchParams = useSearchParams();
   const siteId = params.siteId;
   const brandId = params.brandId;
+  /**
+   * `?topic=<id>[&worth=1]` — the door every value receipt points at when the
+   * reader asks where a topic's worth comes from. The link lands ON the node:
+   * ancestors expand, the row scrolls into view and is selected, and `worth=1`
+   * opens its worth editor straight away. Landing on a tree with the node
+   * buried three collapsed levels down would be a dead end wearing a link.
+   */
+  const focusTopicId = searchParams.get("topic");
+  const focusWorth = searchParams.get("worth") === "1";
   const queryClient = useQueryClient();
   const window28 = reviewWindow();
   const windowLabel = `${window28.start} → ${window28.end}`;
@@ -292,6 +302,34 @@ export function TopicTreeWorkbench() {
   const metas = buildBandMeta(vocab.data ?? []);
   const selected = selectedId ? (tree.byId.get(selectedId) ?? null) : null;
 
+  // Runs once per focused topic, after the tree has actually loaded.
+  const focusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusTopicId || loadingTree) return;
+    if (focusedRef.current === focusTopicId) return;
+    const node = tree.byId.get(focusTopicId);
+    if (!node) return;
+    focusedRef.current = focusTopicId;
+    const ancestors = lineageOf(tree, focusTopicId).map((topic) => topic.id);
+    setCollapsed((current) => {
+      const next = new Set(current);
+      for (const id of ancestors) next.delete(id);
+      return next;
+    });
+    // A node outside the site's own slice is invisible until the whole
+    // catalog is shown — a link that resolves to nothing is the dead end.
+    if (!scopeToSite(tree)?.has(focusTopicId)) setShowWholeCatalog(true);
+    setSelectedId(focusTopicId);
+    if (focusWorth) setWorthNode(node);
+    // Let the expansion paint before scrolling to the row.
+    const frame = requestAnimationFrame(() => {
+      document
+        .getElementById(`topic-node-${focusTopicId}`)
+        ?.scrollIntoView({ block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusTopicId, focusWorth, loadingTree, tree]);
+
   const toggleNode = (id: string) => {
     const next = new Set(collapsed);
     if (next.has(id)) next.delete(id);
@@ -414,8 +452,8 @@ export function TopicTreeWorkbench() {
         ) : (
           <div className="max-h-[55vh] overflow-y-auto">
             {rows.map((node) => (
+              <div key={node.topic.id} id={`topic-node-${node.topic.id}`}>
               <TopicTreeRow
-                key={node.topic.id}
                 node={node}
                 metas={metas}
                 selected={node.topic.id === selectedId}
@@ -450,6 +488,7 @@ export function TopicTreeWorkbench() {
                     }),
                 }}
               />
+              </div>
             ))}
           </div>
         )}

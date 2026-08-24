@@ -285,7 +285,18 @@ export function MeaningRulesWorkbench() {
 
   const [editingRule, setEditingRule] = useState<ValueRule | null | undefined>(undefined);
   const [editingArea, setEditingArea] = useState<SiteGeoArea | null | undefined>(undefined);
-  const [editingBands, setEditingBands] = useState<VocabKind | null>(null);
+  /**
+   * `?bands=value_band` — the door every value receipt points at when the
+   * reader asks how a score becomes a LEVEL. Seeded from the URL so the link
+   * lands with the editor already open; closing it clears the param, so the
+   * back button and a reload both behave.
+   */
+  const bandsParam = searchParams.get("bands");
+  const bandsFromUrl: VocabKind | null =
+    bandsParam === "value_band" || bandsParam === "geo_band" ? bandsParam : null;
+  const [editingBands, setEditingBands] = useState<VocabKind | null>(
+    bandsFromUrl,
+  );
 
   const bands = useQuery({
     queryKey: ["marketing", "value-c", "vocab", siteId, "value_band"],
@@ -883,7 +894,15 @@ export function MeaningRulesWorkbench() {
           siteDomain={site.domain}
           kind={editingBands}
           window={window}
-          onClose={() => setEditingBands(null)}
+          onClose={() => {
+            setEditingBands(null);
+            if (bandsFromUrl) {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete("bands");
+              const qs = params.toString();
+              router.replace(qs ? `${basePath}?${qs}` : basePath);
+            }
+          }}
           onSaved={() => {
             void queryClient.invalidateQueries({ queryKey: ["marketing", "value-c"] });
             void queryClient.invalidateQueries({ queryKey: ["seo"] });
