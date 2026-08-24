@@ -86,7 +86,11 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
   now on the dev Mac) and exposed a wrong page-count expectation (the generator's `title=` adds
   a title slide) — test fixed to measure via the codec. **Backfill executed** (was Remaining
   item 4): all 24 pending Office masters now carry fresh baseline thumbs + the full-res
-  `page1_url` (`seen=25 processed=24 noop=1 failed=0`).
+  `page1_url` (`seen=25 processed=24 noop=1 failed=0`). FE: Text-mode slide cards gained a
+  hover "View" that jumps to that slide in the visual mode (controlled `pageNumber` on
+  `PdfPreview`; 1:1 slide↔page for decks) — the extracted-contents ↔ source connection from
+  the vision. Live browser verify of that jump is blocked by the AD203 files-read outage
+  (aidream FOUND_DEFECTS) — re-verify once that closes.
 - **2026-08-21 — Visual-fidelity preview SHIPPED (was item 4).** The LibreOffice→PDF render lane
   is live end to end: new `matrx_files/office_pdf.py` creates the cached `pdf_conversion` files
   derivative (idempotent per source revision, `parent_file_id` lineage, page/slide count in
