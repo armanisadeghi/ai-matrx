@@ -40,6 +40,7 @@ import {
   ExternalLink,
   Globe,
   Hammer,
+  Image as ImageIcon,
   Link2,
   Loader2,
   RefreshCw,
@@ -92,6 +93,7 @@ import {
   bridgeFillPreview,
   bridgeFillStart,
   bridgeFillStatus,
+  bridgeFindLogo,
   bridgePublish,
   bridgeShellCheck,
   bridgeRealize,
@@ -114,6 +116,7 @@ import {
   FILL_SEED_STAGES,
   KIT_STAGES,
   LINK_STAGES,
+  LOGO_STAGES,
   PUBLISH_PREVIEW_STAGES,
   PUBLISH_STAGES,
   REALIZE_STAGES,
@@ -128,6 +131,7 @@ import { SetupSection } from "./SetupSection";
 type BridgeAction =
   | "link"
   | "kit"
+  | "logo"
   | "check"
   | "preview"
   | "apply"
@@ -148,6 +152,7 @@ type BridgeAction =
 const RUN_STAGES: Partial<Record<BridgeAction, readonly RunStage[]>> = {
   link: LINK_STAGES,
   kit: KIT_STAGES,
+  logo: LOGO_STAGES,
   check: COMPARE_STAGES,
   // The realize dry run does the same read-both-sides work as a compare.
   preview: COMPARE_STAGES,
@@ -291,6 +296,11 @@ export function SetupBridgeSection({
   const [report, setReport] = useState<BridgeReport | null>(null);
   const [alignResult, setAlignResult] = useState<BridgeAlignResult | null>(null);
   const [fillPreview, setFillPreview] = useState<FillPreviewResult | null>(null);
+  // The COMPLETED-PREVIEW FACT, separate from the open panel: closing the
+  // preview must not re-lock "Build all pages" (live QA 2026-08-25 — the gate
+  // was tied to modal state, so dismissing a SUCCESSFUL preview disabled the
+  // button the preview had just earned).
+  const [hasPreviewed, setHasPreviewed] = useState(false);
   // THE EFFORT TIER — a named pathway, not a cap (Arman, 2026-08-16). The
   // site's recorded default seeds the picker; changing it here IS the site
   // setting, and any page carrying its own override still wins at run time.
@@ -503,6 +513,34 @@ export function SetupBridgeSection({
     }
   };
 
+  /**
+   * Rung 2, the logo: send the server to find the company's real logo on the
+   * web and store it as a `logo`-tagged CMS asset. NOT part of the starter kit
+   * — it is its own act, because it reaches the live internet and can honestly
+   * come back empty. A hit tells the user the next move (re-run the kit, which
+   * is what actually puts it in the header); a miss says so out loud and points
+   * at the CMS assets library. Never silent either way.
+   */
+  const handleFindLogo = async () => {
+    startBusy("logo");
+    try {
+      const outcome = await bridgeFindLogo(dispatch, site.id, { cmsSite: knownCmsSite });
+      await invalidateCms();
+      if (outcome.found) {
+        toast.success(outcome.message);
+      } else {
+        toast.error(outcome.message);
+        // Every candidate we downloaded and rejected, verbatim — "no logo
+        // found" is a report, never a shrug.
+        for (const reason of outcome.rejected.slice(0, 3)) toast.info(reason);
+      }
+    } catch (error) {
+      toast.error(`Logo search failed: ${extractErrorMessage(error)}`);
+    } finally {
+      endBusy();
+    }
+  };
+
   // ── rung 3: reconcile → dry-run preview → apply ───────────────────────────
   const handleCheck = async () => {
     startBusy("check");
@@ -572,6 +610,7 @@ export function SetupBridgeSection({
         cmsSite: knownCmsSite,
       });
       setFillPreview(outcome);
+      setHasPreviewed(true);
       toast.success(`Authored "${outcome.title}" (${outcome.route}) — nothing was written.`);
     } catch (error) {
       toast.error(`Content preview failed: ${extractErrorMessage(error)}`);
@@ -834,6 +873,30 @@ export function SetupBridgeSection({
               </span>
             )}
           </RunRow>
+          {/* THE LOGO. Its own act, not part of the kit: it reaches the live
+              internet (the company's own site first, web image search second)
+              and can honestly come back empty. The kit is what PLACES it. */}
+          <RunRow stage={stageFor(["logo"])} elapsed={elapsed}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              disabled={!linked || busy !== null}
+              onClick={() => void handleFindLogo()}
+            >
+              {busy === "logo" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ImageIcon className="h-3.5 w-3.5" />
+              )}
+              Find the company logo
+            </Button>
+            <span className="text-[11px] text-muted-foreground">
+              Reads the company&apos;s own website, then searches the web. What
+              it finds is saved to the site&apos;s assets — re-run the starter
+              kit to put it in the header.
+            </span>
+          </RunRow>
           {/* THE DESIGN SEAM, site half: one paragraph in the owner's words
               that the page builder receives on EVERY build (aidream offers it
               to content_plan.page_build as design_guidance). Optional — empty
@@ -1056,7 +1119,7 @@ export function SetupBridgeSection({
                 <Button
                   size="sm"
                   className="h-7 gap-1.5 px-2.5 text-xs"
-                  disabled={!linked || busy !== null || fillPreview === null}
+                  disabled={!linked || busy !== null || !hasPreviewed}
                   title={
                     "The live service does not currently provide a cost estimate."
                   }
@@ -1075,7 +1138,7 @@ export function SetupBridgeSection({
                     ? ` ${overrideCount} page(s) keep their own effort setting.`
                     : ""}
                 </span>
-                {fillPreview === null ? (
+                {!hasPreviewed ? (
                   <span className="text-[11px] text-muted-foreground">
                     Preview one page first so you see the writing style before
                     it runs on every page.
@@ -1443,7 +1506,15 @@ function FillStatusSummary({ status }: { status: FillStatus }) {
         Content generation {status.status}: {status.pagesBuilt}/{status.pages} page(s)
         built
         {status.inProgress > 0 ? ` · ${status.inProgress} step(s) running` : ""}
-        {failures > 0 ? ` · ${failures} failed` : ""}
+        {/* "4/4 built · 4 failed" read as a contradiction in live QA — pages
+            and steps are different grains, so the failure clause names the
+            grain and points at the rows that say WHICH steps. */}
+        {failures > 0
+          ? ` · ${failures} individual step(s) failed (rows below)` +
+            (status.pagesBuilt >= status.pages && status.pages > 0
+              ? " — every page still built"
+              : "")
+          : ""}
       </p>
       {/* Per step, because a page is four AI steps now. The single bar is the
         fallback for a job that ran before the steps existed. */}
