@@ -68,15 +68,29 @@ export interface KindComponentProjection {
 
 /**
  * THE deterministic row order — the ingest contract (first row per (kind,
- * platform, role) wins): `is_default DESC, sort_order ASC, created_at ASC,
- * id ASC`. `is_default` is a PREFERENCE among db rows, not a trust gate;
- * without the created_at/id tiebreakers two equal-priority rows would
- * resolve by DB physical order. Applied in SQL AND re-applied here
+ * platform, role) wins): `fallback LAST, is_default DESC, sort_order ASC,
+ * created_at ASC, id ASC`. `is_default` is a PREFERENCE among db rows, not a
+ * trust gate; without the created_at/id tiebreakers two equal-priority rows
+ * would resolve by DB physical order. Applied in SQL AND re-applied here
  * (defense in depth; also the unit-test seam).
+ *
+ * A FALLBACK MUST NEVER OUTRANK A REAL COMPONENT (Arman, 2026-08-23). The
+ * `generic_structured` key is the platform's can-never-fail viewer, not a
+ * component, so it sorts BELOW every real row regardless of its flags — the
+ * first comparison, ahead of `is_default`. 382 live rows carried
+ * `is_default = true` and beat purpose-built components that did not also set
+ * the flag (`seo_keyword_relationship_research_result` and
+ * `research_setup_suggestion` both rendered as the generic key/value dump).
+ * The database now coerces those rows too (trigger
+ * `zzz_demote_generic_fallback` + constraint
+ * `kind_component_fallback_is_never_default`); this is the second wall, and
+ * the one that holds for rows the warm tier projects without the flags.
  */
 export function sortKindComponentRows<
   T extends {
     isActive?: boolean;
+    component_key?: string;
+    componentKey?: string;
     is_default?: boolean;
     isDefault?: boolean;
     sort_order?: number;
@@ -86,10 +100,13 @@ export function sortKindComponentRows<
     id: string;
   },
 >(rows: T[]): T[] {
+  const fallbackOf = (r: T) =>
+    (r.component_key ?? r.componentKey) === GENERIC_FALLBACK_COMPONENT_KEY;
   const defaultOf = (r: T) => Boolean(r.is_default ?? r.isDefault);
   const orderOf = (r: T) => r.sort_order ?? r.sortOrder ?? 0;
   const createdOf = (r: T) => r.created_at ?? r.createdAt ?? "";
   return [...rows].sort((a, b) => {
+    if (fallbackOf(a) !== fallbackOf(b)) return fallbackOf(a) ? 1 : -1;
     if (defaultOf(a) !== defaultOf(b)) return defaultOf(a) ? -1 : 1;
     if (orderOf(a) !== orderOf(b)) return orderOf(a) - orderOf(b);
     const ca = createdOf(a);

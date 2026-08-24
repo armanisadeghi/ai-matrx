@@ -52138,7 +52138,7 @@ export type Database = {
         }[]
       }
       gsc_keyword_class_map: {
-        Args: { p_site_id: string }
+        Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: {
           class_source: string
           keyword_id: string
@@ -63667,6 +63667,108 @@ export type Database = {
           {
             foreignKeyName: "wf_run_parent_run_id_fkey"
             columns: ["parent_run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
+      run_log: {
+        Row: {
+          attempt: number | null
+          created_at: string
+          created_by: string | null
+          definition_id: string | null
+          id: string
+          label: string
+          message: string
+          metadata: Json
+          node_id: string | null
+          occurred_at: string
+          organization_id: string
+          payload: Json
+          payload_kind: string | null
+          run_id: string
+          severity: string
+          step: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempt?: number | null
+          created_at?: string
+          created_by?: string | null
+          definition_id?: string | null
+          id?: string
+          label: string
+          message: string
+          metadata?: Json
+          node_id?: string | null
+          occurred_at?: string
+          organization_id: string
+          payload?: Json
+          payload_kind?: string | null
+          run_id: string
+          severity?: string
+          step?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempt?: number | null
+          created_at?: string
+          created_by?: string | null
+          definition_id?: string | null
+          id?: string
+          label?: string
+          message?: string
+          metadata?: Json
+          node_id?: string | null
+          occurred_at?: string
+          organization_id?: string
+          payload?: Json
+          payload_kind?: string | null
+          run_id?: string
+          severity?: string
+          step?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_log_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_log_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_log_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_log_run_id_fkey"
+            columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "v_engram_confirmed_run"
             referencedColumns: ["run_id"]
