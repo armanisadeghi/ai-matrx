@@ -18,6 +18,12 @@ interface MessageInputProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  /**
+   * Text pushed INTO the composer from outside (the transcript's right-click
+   * "Quote in a reply"). `nonce` is what makes a repeat of the same quote a
+   * new insert — the text alone would dedupe to a no-op the second time.
+   */
+  draftInsert?: { text: string; nonce: number };
 }
 
 export function MessageInput({
@@ -27,6 +33,7 @@ export function MessageInput({
   disabled = false,
   placeholder = "Type a message...",
   className,
+  draftInsert,
 }: MessageInputProps) {
   const [content, setContent] = useState("");
   // Attached references live as chips, NEVER as fence JSON in the textarea —
@@ -43,13 +50,25 @@ export function MessageInput({
     }
   }, []);
 
+  // Outside-in insert (quote a message). Appends rather than replaces — the
+  // user never loses what they had already typed.
+  const lastInsertNonce = useRef<number | null>(null);
+  useEffect(() => {
+    if (!draftInsert || draftInsert.nonce === lastInsertNonce.current) return;
+    lastInsertNonce.current = draftInsert.nonce;
+    setContent((prev) =>
+      prev ? `${prev}\n${draftInsert.text}` : draftInsert.text,
+    );
+    textareaRef.current?.focus();
+  }, [draftInsert]);
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(
         textareaRef.current.scrollHeight,
-        150
+        150,
       )}px`;
     }
   }, [content]);
@@ -103,7 +122,15 @@ export function MessageInput({
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [content, attachments, canSend, isSending, disabled, onSendMessage, onTyping]);
+  }, [
+    content,
+    attachments,
+    canSend,
+    isSending,
+    disabled,
+    onSendMessage,
+    onTyping,
+  ]);
 
   // Handle key press (Enter to send, Shift+Enter for new line)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -126,7 +153,7 @@ export function MessageInput({
     <div
       className={cn(
         "w-full shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-background px-3 py-2",
-        className
+        className,
       )}
     >
       {attachments.length > 0 && (
@@ -158,7 +185,7 @@ export function MessageInput({
             "rounded-xl border-zinc-300 dark:border-zinc-700",
             "bg-zinc-100 dark:bg-zinc-800/50",
             "focus-visible:ring-1 focus-visible:ring-primary",
-            "placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+            "placeholder:text-zinc-400 dark:placeholder:text-zinc-500",
           )}
           rows={1}
         />
@@ -178,7 +205,10 @@ export function MessageInput({
             "absolute right-3 bottom-2.5 p-1 rounded-full transition-colors",
             "text-zinc-400 hover:text-primary",
             "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-zinc-400",
-            canSend && !isSending && !disabled && "text-primary hover:text-primary/80"
+            canSend &&
+              !isSending &&
+              !disabled &&
+              "text-primary hover:text-primary/80",
           )}
         >
           {isSending ? (

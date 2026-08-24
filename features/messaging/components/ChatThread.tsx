@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { selectCurrentConversation } from "../redux/messagingSlice";
@@ -13,6 +13,15 @@ import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { OnlineIndicator } from "./OnlineIndicator";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  MESSAGES_SURFACE_NAME,
+  conversationEntityRef,
+  messageCopyLines,
+  messageEntityRef,
+  messageMenuSection,
+} from "@/features/messaging/lib/messaging-menu-actions";
 
 interface ChatThreadProps {
   conversationId: string;
@@ -41,7 +50,7 @@ export function ChatThread({
   // Get user from Redux state - use auth.users.id (UUID)
   const user = useAppSelector(selectUser);
   const userId = propUserId || user?.id;
-  
+
   // Memoize displayName to prevent unnecessary effect re-runs
   const displayName = useMemo(
     () =>
@@ -50,7 +59,12 @@ export function ChatThread({
       user?.userMetadata?.name ||
       user?.email?.split("@")[0] ||
       "User",
-    [propDisplayName, user?.userMetadata?.fullName, user?.userMetadata?.name, user?.email]
+    [
+      propDisplayName,
+      user?.userMetadata?.fullName,
+      user?.userMetadata?.name,
+      user?.email,
+    ],
   );
 
   // Chat hook
@@ -70,6 +84,15 @@ export function ChatThread({
     autoMarkAsRead: true,
   });
 
+  // ONE MENU PER PANE: the transcript gets a single v3 wrapper and resolves
+  // the right-clicked MESSAGE on open, so Copy as / Export / Attach To target
+  // that message. Right-clicking the empty space between messages falls back
+  // to the conversation itself, never to nothing.
+  const [menuMessageId, setMenuMessageId] = useState<string | null>(null);
+  const [quote, setQuote] = useState<{ text: string; nonce: number } | null>(
+    null,
+  );
+
   // Refs
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,11 +105,13 @@ export function ChatThread({
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         // Find the Radix ScrollArea viewport
-        const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+        const viewport = scrollAreaRef.current?.querySelector(
+          "[data-radix-scroll-area-viewport]",
+        );
         if (viewport) {
           viewport.scrollTo({
             top: viewport.scrollHeight,
-            behavior: smooth ? 'smooth' : 'instant'
+            behavior: smooth ? "smooth" : "instant",
           });
         }
       });
@@ -99,7 +124,7 @@ export function ChatThread({
       // On initial load, scroll instantly; on new messages, scroll smoothly
       const isInitial = isInitialLoadRef.current;
       scrollToBottom(!isInitial);
-      
+
       if (isInitial) {
         isInitialLoadRef.current = false;
       }
@@ -120,7 +145,7 @@ export function ChatThread({
       if (!content.trim()) return;
       await sendMessage(content);
     },
-    [sendMessage]
+    [sendMessage],
   );
 
   // Handle typing
@@ -128,7 +153,7 @@ export function ChatThread({
     (isTyping: boolean) => {
       setTyping(isTyping);
     },
-    [setTyping]
+    [setTyping],
   );
 
   // Get other participant for direct chat display
@@ -167,126 +192,179 @@ export function ChatThread({
     );
   }
 
+  const menuMessage = messages.find((m) => m.id === menuMessageId) ?? null;
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Messages Area */}
-      <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
-        {/* Load More Button */}
-        {hasMore && !isLoading && (
-          <div className="flex justify-center py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={loadMoreMessages}
-              className="text-xs"
-            >
-              <ChevronUp className="h-3 w-3 mr-1" />
-              Load earlier messages
-            </Button>
-          </div>
-        )}
-
-        {/* Loading Skeleton */}
-        {isLoading && messages.length === 0 && (
-          <div className="space-y-4 py-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex gap-2",
-                  i % 2 === 0 ? "justify-end" : "justify-start"
-                )}
-              >
-                {i % 2 !== 0 && <Skeleton className="h-8 w-8 rounded-full" />}
-                <div className="space-y-1">
-                  <Skeleton
-                    className={cn("h-10", i % 2 === 0 ? "w-48" : "w-64")}
-                  />
-                  <Skeleton className="h-3 w-16" />
-                </div>
+      <NonEditableContextMenu
+        sourceFeature="messages"
+        surfaceName={MESSAGES_SURFACE_NAME}
+        // `{type:"raw"}`, deliberately NOT `chat-message` — that ContentSource
+        // resolves against `chat.message` (the AI chat), so pointing a DM at it
+        // would send Convert/Edit at the wrong table. Copy-as / Export /
+        // Download as Markdown all work on raw.
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: conversation
+            ? `Conversation: ${conversation.display_name || conversation.group_name || "Conversation"}`
+            : "",
+          current_conversation_id: conversationId,
+        }}
+        resolveContextOnOpen={(target) => {
+          const id = target
+            ?.closest("[data-message-id]")
+            ?.getAttribute("data-message-id");
+          setMenuMessageId(id ?? null);
+          const message = id ? messages.find((m) => m.id === id) : null;
+          if (!message) {
+            // Empty space in the transcript — the CONVERSATION is what the
+            // user right-clicked, so that is what Attach To targets.
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: conversationEntityRef(
+                conversation ?? null,
+              ),
+            };
+          }
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: messageEntityRef(message),
+            content: messageCopyLines(message),
+          };
+        }}
+        extraSections={[
+          messageMenuSection({
+            message: menuMessage,
+            onReply: (text) => setQuote({ text, nonce: Date.now() }),
+          }),
+        ]}
+      >
+        {/* `asChild` needs a real DOM element to hang the handler on. */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+            {/* Load More Button */}
+            {hasMore && !isLoading && (
+              <div className="flex justify-center py-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadMoreMessages}
+                  className="text-xs"
+                >
+                  <ChevronUp className="h-3 w-3 mr-1" />
+                  Load earlier messages
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* Messages */}
-        {!isLoading && messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              No messages yet. Start the conversation!
-            </p>
-          </div>
-        ) : (
-          <div className="py-4 space-y-4">
-            {groupMessagesByDate().map((group) => (
-              <div key={group.date}>
-                {/* Date Separator */}
-                <div className="flex items-center justify-center my-4">
-                  <div className="flex-1 border-t border-zinc-200 dark:border-zinc-700" />
-                  <span className="px-3 text-xs text-zinc-400 bg-background">
-                    {group.date === new Date().toLocaleDateString()
-                      ? "Today"
-                      : group.date}
-                  </span>
-                  <div className="flex-1 border-t border-zinc-200 dark:border-zinc-700" />
-                </div>
-
-                {/* Messages for this date */}
-                <div className="space-y-2">
-                  {group.messages.map((message, index) => {
-                    const effectiveActor = message.metadata?.actor_kind;
-                    const isOwn =
-                      effectiveActor === "human" ||
-                      (!effectiveActor && message.sender_id === userId);
-                    const prevMessage = group.messages[index - 1];
-                    const showAvatar =
-                      !isOwn &&
-                      (!prevMessage ||
-                        prevMessage.sender_id !== message.sender_id ||
-                        prevMessage.metadata?.actor_kind !== effectiveActor);
-
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isOwn={isOwn}
-                        showAvatar={showAvatar}
-                        showSenderName={
-                          conversation?.type === "group" && !isOwn && showAvatar
-                        }
+            {/* Loading Skeleton */}
+            {isLoading && messages.length === 0 && (
+              <div className="space-y-4 py-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex gap-2",
+                      i % 2 === 0 ? "justify-end" : "justify-start",
+                    )}
+                  >
+                    {i % 2 !== 0 && (
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    )}
+                    <div className="space-y-1">
+                      <Skeleton
+                        className={cn("h-10", i % 2 === 0 ? "w-48" : "w-64")}
                       />
-                    );
-                  })}
-                </div>
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
 
-          </div>
-        )}
-        {/* Scroll anchor - outside space-y container to avoid extra spacing */}
-        <div ref={messagesEndRef} className="h-0" />
-      </ScrollArea>
+            {/* Messages */}
+            {!isLoading && messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  No messages yet. Start the conversation!
+                </p>
+              </div>
+            ) : (
+              <div className="py-4 space-y-4">
+                {groupMessagesByDate().map((group) => (
+                  <div key={group.date}>
+                    {/* Date Separator */}
+                    <div className="flex items-center justify-center my-4">
+                      <div className="flex-1 border-t border-zinc-200 dark:border-zinc-700" />
+                      <span className="px-3 text-xs text-zinc-400 bg-background">
+                        {group.date === new Date().toLocaleDateString()
+                          ? "Today"
+                          : group.date}
+                      </span>
+                      <div className="flex-1 border-t border-zinc-200 dark:border-zinc-700" />
+                    </div>
+
+                    {/* Messages for this date */}
+                    <div className="space-y-2">
+                      {group.messages.map((message, index) => {
+                        const effectiveActor = message.metadata?.actor_kind;
+                        const isOwn =
+                          effectiveActor === "human" ||
+                          (!effectiveActor && message.sender_id === userId);
+                        const prevMessage = group.messages[index - 1];
+                        const showAvatar =
+                          !isOwn &&
+                          (!prevMessage ||
+                            prevMessage.sender_id !== message.sender_id ||
+                            prevMessage.metadata?.actor_kind !==
+                              effectiveActor);
+
+                        return (
+                          <MessageBubble
+                            key={message.id}
+                            message={message}
+                            isOwn={isOwn}
+                            showAvatar={showAvatar}
+                            showSenderName={
+                              conversation?.type === "group" &&
+                              !isOwn &&
+                              showAvatar
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Scroll anchor - outside space-y container to avoid extra spacing */}
+            <div ref={messagesEndRef} className="h-0" />
+          </ScrollArea>
+        </div>
+      </NonEditableContextMenu>
 
       {/* Typing Indicator - Fixed height, always visible for layout stability */}
       <div className="h-5 flex items-center pl-4 pr-4 flex-shrink-0">
         {/* Content aligned with incoming messages (pl-8 matches avatar + gap offset) */}
-        <div className={cn(
-          "flex items-center gap-1.5 pl-8 transition-opacity duration-200",
-          isAnyoneTyping ? "opacity-100" : "opacity-0"
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-1.5 pl-8 transition-opacity duration-200",
+            isAnyoneTyping ? "opacity-100" : "opacity-0",
+          )}
+        >
           {/* Animated bouncing dots - using Tailwind bounce with staggered delays */}
           <div className="flex items-end gap-[3px] h-4">
-            <span 
+            <span
               className="w-[6px] h-[6px] rounded-full bg-primary animate-bounce"
-              style={{ animationDelay: '0ms', animationDuration: '1s' }}
+              style={{ animationDelay: "0ms", animationDuration: "1s" }}
             />
-            <span 
+            <span
               className="w-[6px] h-[6px] rounded-full bg-primary animate-bounce"
-              style={{ animationDelay: '150ms', animationDuration: '1s' }}
+              style={{ animationDelay: "150ms", animationDuration: "1s" }}
             />
-            <span 
+            <span
               className="w-[6px] h-[6px] rounded-full bg-primary animate-bounce"
-              style={{ animationDelay: '300ms', animationDuration: '1s' }}
+              style={{ animationDelay: "300ms", animationDuration: "1s" }}
             />
           </div>
           {/* Typing text */}
@@ -309,6 +387,7 @@ export function ChatThread({
         onTyping={handleTyping}
         isSending={isSending}
         disabled={!userId}
+        draftInsert={quote ?? undefined}
       />
     </div>
   );

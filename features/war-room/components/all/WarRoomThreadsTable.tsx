@@ -21,6 +21,14 @@ import { containerKey } from "@/features/war-room/types";
 import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 import { formatRelativeTime, formatAbsoluteDate } from "@/utils/datetime";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  threadCopyLines,
+  threadEntityRef,
+  useWarRoomThreadMenuSection,
+  type WarRoomThreadMenuRow,
+} from "@/features/war-room/lib/thread-actions";
 
 const NO_ROOM_LABEL = "No room";
 
@@ -155,6 +163,16 @@ function OpenThreadAction({ row }: { row: ThreadTableRow }) {
 export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
   const rows = useAppSelector(selectThreadTableRows);
 
+  // ONE MENU PER PANE: the whole table gets a single v3 wrapper and the
+  // right-clicked ROW is resolved on open, so every row's Attach To, Copy as
+  // and Export target that row instead of the pane.
+  //
+  // State, not a ref: the shared section's labels depend on the row ("Unpin",
+  // the room list minus the thread's own room), so it has to re-render before
+  // the menu content mounts.
+  const [menuRow, setMenuRow] = useState<WarRoomThreadMenuRow | null>(null);
+  const threadSection = useWarRoomThreadMenuSection(menuRow);
+
   const columns = useMemo<MatrxColumnDef<ThreadTableRow>[]>(
     () => [
       {
@@ -235,70 +253,100 @@ export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
   );
 
   return (
-    <MatrxDataTable<ThreadTableRow>
-      urlState={{ id: "war-room-threads" }}
-      data={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      isLoading={isLoading}
-      toolbar={{
-        search: true,
-        searchPlaceholder: "Search threads…",
+    // No `surfaceName`: the registered `matrx-user/war-room` surface declares
+    // 17 alwaysAvailable ROOM values (room_id, threads, view_mode, …) that a
+    // cross-room table has no room to emit. Naming it here would make the
+    // value-mapping guard scream and hand bound agents empty values — the
+    // menu is honestly surface-less until a cross-room surface exists.
+    <NonEditableContextMenu
+      // War Room stamps every launch it makes as "agent-runner" (see
+      // `redux/thunks.ts`); this menu is attributed the same way rather than
+      // inventing a token the generated SourceFeature list doesn't carry.
+      sourceFeature="agent-runner"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const id = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = (id && rows.find((r) => r.id === id)) || null;
+        setMenuRow(row);
+        if (!row) return { [CONTEXT_MENU_ENTITY_KEY]: null };
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: threadEntityRef(row),
+          content: threadCopyLines(row),
+        };
       }}
-      copy={{
-        label: "Thread",
-        listLabel: "All threads",
-        location: "AI Matrx — War Rooms — Threads view (/war-room/all)",
-        rowKind: "war-room-thread",
-        listKind: "war-room-threads",
-        rowDescription: "One thread row from the cross-room Threads view.",
-        listDescription:
-          "Every thread the user owns across all War Rooms, including orphans, as the Threads view renders them.",
-        humanRow: (row) =>
-          `${row.title} — ${row.roomTitle} · ${row.anchorType} · updated ${formatRelativeTime(row.updatedAt)}`,
-        rowAttributes: (row) => ({
-          id: row.id,
-          room: row.roomTitle,
-          anchor_type: row.anchorType,
-          pinned: row.isPinned,
-        }),
-        // The list KPIs, so a copied view is never interpretable only by
-        // re-counting rows the agent may not have received.
-        listAttributes: (visible, all) => ({
-          visible_rows: visible.length,
-          total_rows: all.length,
-          orphan_rows: all.filter((r) => !r.roomId).length,
-          pinned_rows: all.filter((r) => r.isPinned).length,
-        }),
-        // Medium data: a "key fields" projection of the visible rows beside
-        // the automatic never-lossy Everything dump. Shared builder — never
-        // a local fork.
-        aiVariants: (visible) => [
-          keyFieldsAiVariant<ThreadTableRow>({
-            kind: "war-room-threads",
+      extraSections={[threadSection]}
+    >
+      {/* `asChild` needs a real DOM element to hang the handler on. */}
+      <div className="flex h-full min-h-0 flex-col">
+        <MatrxDataTable<ThreadTableRow>
+          urlState={{ id: "war-room-threads" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search threads…",
+          }}
+          copy={{
+            label: "Thread",
+            listLabel: "All threads",
             location: "AI Matrx — War Rooms — Threads view (/war-room/all)",
-            description:
-              "The visible thread rows projected to title, room and anchor.",
-            visible,
-            project: (row) => ({
+            rowKind: "war-room-thread",
+            listKind: "war-room-threads",
+            rowDescription: "One thread row from the cross-room Threads view.",
+            listDescription:
+              "Every thread the user owns across all War Rooms, including orphans, as the Threads view renders them.",
+            humanRow: (row) =>
+              `${row.title} — ${row.roomTitle} · ${row.anchorType} · updated ${formatRelativeTime(row.updatedAt)}`,
+            rowAttributes: (row) => ({
               id: row.id,
-              title: row.title,
               room: row.roomTitle,
               anchor_type: row.anchorType,
               pinned: row.isPinned,
-              updated_at: row.updatedAt,
             }),
-          }),
-        ],
-      }}
-      rowActions={(row) => <OpenThreadAction row={row} />}
-      emptyState={{
-        icon: <MessagesSquare className="size-7" />,
-        title: "No threads yet",
-        description:
-          "Threads appear here as you create them inside your War Rooms.",
-      }}
-      pageSize={25}
-    />
+            // The list KPIs, so a copied view is never interpretable only by
+            // re-counting rows the agent may not have received.
+            listAttributes: (visible, all) => ({
+              visible_rows: visible.length,
+              total_rows: all.length,
+              orphan_rows: all.filter((r) => !r.roomId).length,
+              pinned_rows: all.filter((r) => r.isPinned).length,
+            }),
+            // Medium data: a "key fields" projection of the visible rows beside
+            // the automatic never-lossy Everything dump. Shared builder — never
+            // a local fork.
+            aiVariants: (visible) => [
+              keyFieldsAiVariant<ThreadTableRow>({
+                kind: "war-room-threads",
+                location: "AI Matrx — War Rooms — Threads view (/war-room/all)",
+                description:
+                  "The visible thread rows projected to title, room and anchor.",
+                visible,
+                project: (row) => ({
+                  id: row.id,
+                  title: row.title,
+                  room: row.roomTitle,
+                  anchor_type: row.anchorType,
+                  pinned: row.isPinned,
+                  updated_at: row.updatedAt,
+                }),
+              }),
+            ],
+          }}
+          rowActions={(row) => <OpenThreadAction row={row} />}
+          emptyState={{
+            icon: <MessagesSquare className="size-7" />,
+            title: "No threads yet",
+            description:
+              "Threads appear here as you create them inside your War Rooms.",
+          }}
+          pageSize={25}
+        />
+      </div>
+    </NonEditableContextMenu>
   );
 }

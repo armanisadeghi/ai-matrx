@@ -86,7 +86,15 @@ export function MessageBubble({
   // Deleted message display
   if (deleted_for_everyone) {
     return (
-      <div className={cn("flex items-end gap-2", isOwn ? "justify-end" : "justify-start")}>
+      // `data-message-id`: the thread mounts ONE context menu for the whole
+      // transcript and resolves the right-clicked message from this attribute.
+      <div
+        data-message-id={message.id}
+        className={cn(
+          "flex items-end gap-2",
+          isOwn ? "justify-end" : "justify-start",
+        )}
+      >
         {!isOwn && <div className="w-6 shrink-0" />}
         <div className="px-3 py-2 rounded-2xl bg-zinc-100 dark:bg-zinc-800">
           <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
@@ -98,14 +106,24 @@ export function MessageBubble({
   }
 
   return (
-    <div className={cn(isOwn ? "flex flex-col items-end" : "flex flex-col items-start")}>
+    <div
+      data-message-id={message.id}
+      className={cn(
+        isOwn ? "flex flex-col items-end" : "flex flex-col items-start",
+      )}
+    >
       {/* Sender name (for group chats) */}
       {showSenderName && (
-        <span className={cn("text-xs text-zinc-500 dark:text-zinc-400 mb-0.5", !isOwn && "ml-8")}>
+        <span
+          className={cn(
+            "text-xs text-zinc-500 dark:text-zinc-400 mb-0.5",
+            !isOwn && "ml-8",
+          )}
+        >
           {senderName}
         </span>
       )}
-      
+
       {/* Avatar + Bubble Row */}
       <div className="flex items-end gap-1.5">
         {/* Avatar (for received messages) */}
@@ -116,7 +134,10 @@ export function MessageBubble({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={sender?.avatar_url || undefined} alt={senderName} />
+                      <AvatarImage
+                        src={sender?.avatar_url || undefined}
+                        alt={senderName}
+                      />
                       <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
                         {getInitials(senderName)}
                       </AvatarFallback>
@@ -137,7 +158,7 @@ export function MessageBubble({
             "max-w-[75vw] md:max-w-[400px] px-3 py-2 rounded-2xl",
             isOwn
               ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-md"
+              : "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-md",
           )}
         >
           {/* Prose + any ```matrx reference fences → the SAME live chips the
@@ -148,10 +169,19 @@ export function MessageBubble({
       </div>
 
       {/* Timestamp Row */}
-      <div className={cn("flex items-center gap-1 mt-0.5", isOwn ? "pr-1" : "pl-8")}>
+      <div
+        className={cn(
+          "flex items-center gap-1 mt-0.5",
+          isOwn ? "pr-1" : "pl-8",
+        )}
+      >
         {isOwn && status && <StatusIcon status={status} />}
-        <span className="text-[10px] text-zinc-400">{formatTime(created_at)}</span>
-        {edited_at && <span className="text-[10px] text-zinc-400 italic">(edited)</span>}
+        <span className="text-[10px] text-zinc-400">
+          {formatTime(created_at)}
+        </span>
+        {edited_at && (
+          <span className="text-[10px] text-zinc-400 italic">(edited)</span>
+        )}
       </div>
     </div>
   );

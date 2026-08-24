@@ -33,6 +33,14 @@ import { parseTimestamp } from "@/utils/datetime";
 import type { ConversationWithDetails } from "../types";
 import { NewConversationDialog } from "./NewConversationDialog";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  MESSAGES_SURFACE_NAME,
+  conversationCopyLines,
+  conversationEntityRef,
+  conversationMenuSection,
+} from "@/features/messaging/lib/messaging-menu-actions";
 
 interface ConversationListProps {
   userId?: string;
@@ -183,118 +191,156 @@ export function ConversationList({
     }
   };
 
-  return (
-    <div className={cn("flex flex-col h-full", className)}>
-      {/* Search and New Conversation */}
-      <div className="p-3 space-y-2 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => setShowNewConversation(true)}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+  // ONE MENU PER PANE: the whole list gets a single v3 wrapper and the
+  // right-clicked ROW is resolved on open, so Copy as / Export / Attach To
+  // target that conversation instead of the pane. `onSelectConversation`
+  // (the floating window) keeps "Open conversation" in place rather than
+  // navigating the page underneath.
+  const [menuConversationId, setMenuConversationId] = useState<string | null>(
+    null,
+  );
+  const menuConversation =
+    conversations.find((c) => c.id === menuConversationId) ?? null;
 
-      {/* Conversations List */}
-      <ScrollArea className="flex-1">
-        {isLoading ? (
-          <div className="p-3 space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-40" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredConversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
-              <MessageSquare className="w-6 h-6 text-zinc-400" />
-            </div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">
-              {searchQuery ? "No conversations found" : "No conversations yet"}
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              {searchQuery
-                ? "Try a different search term"
-                : "Start a new conversation to get started"}
-            </p>
-            {!searchQuery && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => setShowNewConversation(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                New Conversation
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="py-1">
-            {filteredConversations.map((conversation) => (
-              <ConversationItem
-                key={conversation.id}
-                conversation={conversation}
-                isSelected={currentConversationId === conversation.id}
-                onClick={(e) => handleSelect(conversation.id, e)}
-                getInitials={getInitials}
-                formatTime={formatTime}
-                isPending={isPending}
-                isClicked={selectedConversationId === conversation.id}
+  return (
+    <NonEditableContextMenu
+      sourceFeature="messages"
+      surfaceName={MESSAGES_SURFACE_NAME}
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const id = target
+          ?.closest("[data-conversation-id]")
+          ?.getAttribute("data-conversation-id");
+        setMenuConversationId(id ?? null);
+        const conv = id ? conversations.find((c) => c.id === id) : null;
+        if (!conv) return { [CONTEXT_MENU_ENTITY_KEY]: null };
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: conversationEntityRef(conv),
+          content: conversationCopyLines(conv),
+        };
+      }}
+      extraSections={[
+        conversationMenuSection({
+          conversation: menuConversation,
+          onOpen: onSelectConversation,
+        }),
+      ]}
+    >
+      <div className={cn("flex flex-col h-full", className)}>
+        {/* Search and New Conversation */}
+        <div className="p-3 space-y-2 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <Input
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm"
               />
-            ))}
-            {/* D247: paginated list — "Load more" continues from the last
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={() => setShowNewConversation(true)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Conversations List */}
+        <ScrollArea className="flex-1">
+          {isLoading ? (
+            <div className="p-3 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
+                <MessageSquare className="w-6 h-6 text-zinc-400" />
+              </div>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">
+                {searchQuery
+                  ? "No conversations found"
+                  : "No conversations yet"}
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {searchQuery
+                  ? "Try a different search term"
+                  : "Start a new conversation to get started"}
+              </p>
+              {!searchQuery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => setShowNewConversation(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Conversation
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="py-1">
+              {filteredConversations.map((conversation) => (
+                <ConversationItem
+                  key={conversation.id}
+                  conversation={conversation}
+                  isSelected={currentConversationId === conversation.id}
+                  onClick={(e) => handleSelect(conversation.id, e)}
+                  getInitials={getInitials}
+                  formatTime={formatTime}
+                  isPending={isPending}
+                  isClicked={selectedConversationId === conversation.id}
+                />
+              ))}
+              {/* D247: paginated list — "Load more" continues from the last
                 loaded row. Search filters the loaded page client-side, so the
                 affordance only makes sense against the unfiltered list. */}
-            {!searchQuery && hasMore && (
-              <div className="px-3 py-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-xs text-zinc-500 dark:text-zinc-400"
-                  onClick={handleLoadMore}
-                  disabled={isLoadingMore}
-                >
-                  {isLoadingMore ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      Loading more…
-                    </>
-                  ) : (
-                    "Show more conversations"
-                  )}
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </ScrollArea>
+              {!searchQuery && hasMore && (
+                <div className="px-3 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-zinc-500 dark:text-zinc-400"
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        Loading more…
+                      </>
+                    ) : (
+                      "Show more conversations"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
 
-      {/* New Conversation Dialog */}
-      <NewConversationDialog
-        open={showNewConversation}
-        onOpenChange={setShowNewConversation}
-        onConversationCreated={handleSelect}
-      />
-    </div>
+        {/* New Conversation Dialog */}
+        <NewConversationDialog
+          open={showNewConversation}
+          onOpenChange={setShowNewConversation}
+          onConversationCreated={handleSelect}
+        />
+      </div>
+    </NonEditableContextMenu>
   );
 }
 
@@ -330,6 +376,9 @@ function ConversationItem({
 
   return (
     <Link
+      // The list mounts ONE context menu and resolves the right-clicked row
+      // from this attribute.
+      data-conversation-id={conversation.id}
       href={`/messages/${conversation.id}`}
       onClick={onClick}
       className={cn(
