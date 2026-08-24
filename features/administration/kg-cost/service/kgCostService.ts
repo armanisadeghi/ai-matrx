@@ -112,6 +112,94 @@ export interface BatchDetailResponse extends BatchRow {
 }
 
 // ---------------------------------------------------------------------------
+// Unit economics — public.fn_kg_cost_unit_economics(p_days)
+//
+// Per-run ledger read from rag.ingest_run. Numeric columns arrive as strings
+// from numeric(12,6) via jsonb, so every numeric field below is typed
+// `number | string` and MUST be parsed with `Number(...)` at render time —
+// never trust the wire type. Record: migrations/fn_kg_cost_unit_economics.sql
+// ---------------------------------------------------------------------------
+
+export interface UnitEconomicsBySourceKindRow {
+  source_kind: string;
+  runs: number;
+  successes: number;
+  errors: number;
+  skips: number;
+  stuck_running: number;
+  total_cost_usd: number | string;
+  p50_cost_usd: number | string;
+  p90_cost_usd: number | string;
+  max_cost_usd: number | string;
+  cost_per_1k_chars_usd: number | string;
+  embedding_cost_usd: number | string;
+  extraction_cost_usd: number | string;
+  cleanup_cost_usd: number | string;
+  enrichment_cost_usd: number | string;
+  embedding_cache_hits: number | string;
+  embedding_calls: number | string;
+  cache_hit_pct: number | string;
+}
+
+export interface UnitEconomicsEnrichment {
+  runs_with_enrich: number;
+  runs_without_enrich: number;
+  avg_cost_with_enrich_usd: number | string;
+  avg_cost_without_enrich_usd: number | string;
+  multiplier: number | string | null;
+}
+
+export interface UnitEconomicsTotals {
+  window_days: number;
+  runs: number;
+  total_cost_usd: number | string;
+  embedding_cost_saved_usd: number | string;
+  projected_monthly_usd: number | string;
+  projected_monthly_10x_usd: number | string;
+  inexact_cost_runs: number;
+}
+
+export interface UnitEconomicsRecentRun {
+  id: string;
+  organization_id: string | null;
+  source_kind: string;
+  source_id: string | null;
+  triggered_by: string | null;
+  status: string;
+  skip_reason: string | null;
+  chars_in: number | string | null;
+  chunks_written: number | string | null;
+  chunks_reused: number | string | null;
+  embedding_cost_usd: number | string;
+  extraction_cost_usd: number | string;
+  cleanup_cost_usd: number | string;
+  enrichment_cost_usd: number | string;
+  total_cost_usd: number | string;
+  cost_is_exact: boolean;
+  enrich_ran: boolean;
+  duration_ms: number | string | null;
+  started_at: string;
+}
+
+export interface UnitEconomicsResponse {
+  by_source_kind: UnitEconomicsBySourceKindRow[];
+  enrichment: UnitEconomicsEnrichment;
+  totals: UnitEconomicsTotals;
+  recent_runs: UnitEconomicsRecentRun[];
+}
+
+export async function fetchUnitEconomics(
+  days = 30,
+  opts: { signal?: AbortSignal } = {},
+): Promise<UnitEconomicsResponse> {
+  const supabase = createClient();
+  let query = supabase.rpc("fn_kg_cost_unit_economics", { p_days: days });
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  return assertData(data, error) as unknown as UnitEconomicsResponse;
+}
+
+// ---------------------------------------------------------------------------
 // Calls
 // ---------------------------------------------------------------------------
 

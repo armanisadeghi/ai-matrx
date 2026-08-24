@@ -27,6 +27,10 @@ import {
   Brain,
   FileText,
   Lightbulb,
+  TrendingUp,
+  Layers,
+  Database,
+  Gauge,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -59,12 +63,16 @@ import {
   getOrgCostDetail,
   listPendingBatches,
   getBatchDetail,
+  fetchUnitEconomics,
   type KgCostSummaryResponse,
   type OrgCostRow,
   type OrgCostDetailResponse,
   type BatchRow,
   type BatchDetailResponse,
   type BatchStatus,
+  type UnitEconomicsResponse,
+  type UnitEconomicsBySourceKindRow,
+  type UnitEconomicsRecentRun,
 } from "../service/kgCostService";
 
 // ---------------------------------------------------------------------------
@@ -111,6 +119,40 @@ function StatusBadge({ status }: { status: BatchStatus }) {
       {status}
     </Badge>
   );
+}
+
+/** numeric(12,6) columns arrive as strings over jsonb — never trust the wire type. */
+function num(value: number | string | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function fmtCompactTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fmtDuration(ms: number | string | null | undefined): string {
+  const value = num(ms);
+  if (!value) return "—";
+  if (value < 1000) return `${value.toFixed(0)}ms`;
+  if (value < 60000) return `${(value / 1000).toFixed(1)}s`;
+  return `${(value / 60000).toFixed(1)}m`;
+}
+
+function isStuckRun(row: UnitEconomicsRecentRun): boolean {
+  if (row.status !== "running") return false;
+  const started = new Date(row.started_at).getTime();
+  if (Number.isNaN(started)) return false;
+  return Date.now() - started > 10 * 60 * 1000;
 }
 
 function percentColorClass(percent: number): string {
