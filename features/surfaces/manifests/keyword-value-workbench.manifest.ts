@@ -96,9 +96,15 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_keyword_ids",
     label: "Selected keywords",
     description:
-      "`seo.keyword` ids the person has ticked for a batch ruling. Always an array — empty when nothing is selected, which is the normal state.",
+      "`seo.keyword` ids the person has ticked for a batch ruling. Absent when nothing is selected, which is the normal state — never an empty list.",
     valueType: "array",
-    alwaysAvailable: true,
+    // `false` even though the emitter could write it on every build: the
+    // platform judges presence with `hasValue()` in `SurfaceContextWindow.tsx`,
+    // where an EMPTY ARRAY counts as ABSENT — so `true` made "nothing
+    // selected" (the normal state) report "1 required missing" and the surface
+    // look broken. Same call, same reasoning, as `admin-users.manifest.ts` and
+    // `crm-chasebox.manifest.ts`. Scalars are unaffected.
+    alwaysAvailable: false,
     typicalCharCount: 200,
     group: "value_review",
     sortOrder: 320,
@@ -274,7 +280,6 @@ export function createKeywordValueWorkbenchScope(values: {
   brand_id: string;
   site_id: string;
   // alwaysAvailable: true → required (own)
-  selected_keyword_ids: string[];
   table_query: Record<string, unknown>;
   review_window: Record<string, unknown>;
   // Inherited optionals (marketing-brand + marketing-site)
@@ -287,6 +292,7 @@ export function createKeywordValueWorkbenchScope(values: {
   site_context?: string;
   gsc_synced_at?: string;
   // alwaysAvailable: false → optional
+  selected_keyword_ids?: string[];
   visible_value_rows?: Array<Record<string, unknown>>;
   matching_keywords_total?: number;
   level_vocabulary?: Array<Record<string, unknown>>;

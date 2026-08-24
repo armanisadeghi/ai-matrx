@@ -60,7 +60,7 @@ export interface KeywordValueScopeInput {
   total: number;
   /** True while the review read has not returned yet — total/rows are not real. */
   loading: boolean;
-  /** Keyword ids ticked for a batch ruling (empty array is the normal state). */
+  /** Keyword ids ticked for a batch ruling; OMITTED while nothing is ticked. */
   selectedIds: string[];
   /** The site's level vocabulary; empty while it loads. */
   levels: BandMeta[];
@@ -96,7 +96,7 @@ export function buildKeywordValueScope({
 }: KeywordValueScopeInput): SurfaceScopePayload {
   return createKeywordValueWorkbenchScope({
     ...base,
-    selected_keyword_ids: selectedIds,
+    selected_keyword_ids: selectedIds.length ? selectedIds : undefined,
     table_query: tableState as unknown as Record<string, unknown>,
     review_window: { ...window },
     visible_value_rows: rows.length ? rows.map(projectRow) : undefined,
