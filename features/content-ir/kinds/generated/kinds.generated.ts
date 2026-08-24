@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "6b2db13b8857";
+export const KIND_REGISTRY_FINGERPRINT = "073753d472f0";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2627,6 +2627,12 @@ export interface PageBlock {
  * An ordinary reader never sees this; an SEO analyst working an owned site
  * reads it FIRST, because a call to action living inside a "noisy" wrapper is
  * exactly what the noise remover eats.
+ *
+ * The ``*_in_page`` counts are the SURVIVAL LEDGER. They are counted at the
+ * DOM dispatch site — every ``<table>``, ``<ul>``, ``<code>`` the page
+ * actually contains — while the carried arrays hold only what survived
+ * filtering. Measured: a page with 12 code blocks in its DOM handed us 4.
+ * The gap is not a discrepancy to reconcile; it IS the finding.
  *  *
  *  * From kind `scraped_page`.
  */
@@ -2637,9 +2643,21 @@ export interface PageCleaningReport {
   __kind?: "page_cleaning_report";
   removed?: PageRemoval[];
   /**
+   * Lists present in the DOM, before filtering.
+   */
+  lists_in_page?: number | null;
+  /**
+   * Tables present in the DOM, before filtering.
+   */
+  tables_in_page?: number | null;
+  /**
    * Total characters of HTML removed across both passes.
    */
   removed_char_total?: number;
+  /**
+   * Code blocks present in the DOM, before filtering.
+   */
+  code_blocks_in_page?: number | null;
   noise_removed_count?: number;
   filter_removed_count?: number;
 }
@@ -11101,7 +11119,7 @@ export interface SchemaQcResult {
  * the slug carried at v3. Everything below them is additive and optional, so
  * a consumer written against the old shape keeps working unchanged.
  *  *
- *  * Kind `scraped_page` (registry v4).
+ *  * Kind `scraped_page` (registry v5).
  */
 export interface ScrapedPage {
   /**
@@ -11163,6 +11181,10 @@ export interface ScrapedPage {
    */
   char_count?: number | null;
   main_image?: string | null;
+  /**
+   * The page as plain reading text: CODE INCLUDED, link markup and inline formatting stripped. Not a subset of research_text — measured, it carries content research_text lacks on 6 of 7 real pages, because the two extraction presets allow different element types.
+   */
+  plain_text?: string | null;
   scraped_at?: string | null;
   code_blocks?: CodeBlock[];
   fingerprint?: ContentFingerprint | null;
@@ -11175,7 +11197,7 @@ export interface ScrapedPage {
   published_at?: string | null;
   response_url?: string | null;
   /**
-   * The extraction rules' research projection of the page.
+   * The research projection: link markup KEPT, code blocks EXCLUDED. The complement of plain_text, not a superset of it.
    */
   research_text?: string | null;
   /**
@@ -11195,6 +11217,10 @@ export interface ScrapedPage {
    * Security-relevant response headers only. Null = none recorded; {} = the server sent none.
    */
   security_headers?: Record<string, string> | null;
+  /**
+   * Characters of the same text rendered WITH structure markers — markup density.
+   */
+  char_count_with_markers?: number | null;
   /**
    * The same projection with image references retained.
    */
