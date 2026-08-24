@@ -154,7 +154,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "name"
  },
  "contact_submission": {
-  "table": "contact_submissions",
+  "table": "communication.contact_submissions",
   "title_column": "name"
  },
  "content_ir_kind": {
@@ -168,6 +168,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "context_item": {
   "table": "context.context_items",
   "title_column": "display_name"
+ },
+ "crm_deal": {
+  "table": "crm.deal",
+  "title_column": "name"
  },
  "crm_outreach_list": {
   "table": "crm.outreach_list",
@@ -192,10 +196,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "fc_set": {
   "table": "education.fc_set",
   "title_column": "name"
- },
- "flashcard_set": {
-  "table": "users.user_flashcard_sets",
-  "title_column": "title"
  },
  "flexible_data": {
   "table": "platform.flexible_data",

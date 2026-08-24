@@ -4,7 +4,7 @@
  * CanvasArtifactDebugPanel — admin-only live trace of artifact ↔ canvas binding.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Bug } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
@@ -25,9 +25,6 @@ export function CanvasArtifactDebugPanel({
 }: CanvasArtifactDebugPanelProps) {
   const isAdmin = useAppSelector(selectIsAdmin);
   const [expanded, setExpanded] = useState(true);
-  const [flashcardSetTitle, setFlashcardSetTitle] = useState<string | null>(
-    null,
-  );
 
   const artifactId =
     item.content.metadata?.canvasItemId ?? item.savedItemId ?? null;
@@ -37,26 +34,6 @@ export function CanvasArtifactDebugPanel({
     hasRealId ? artifactId : null,
   );
 
-  const loadFlashcardSet = useCallback(async () => {
-    if (row?.external_system !== "user_flashcard_sets" || !row.external_id) {
-      setFlashcardSetTitle(null);
-      return;
-    }
-    try {
-      const { flashcardPersistenceService } =
-        await import("@/features/flashcards/services/flashcardPersistenceService");
-      const { data } = await flashcardPersistenceService.getSet(
-        row.external_id,
-      );
-      setFlashcardSetTitle(data?.title ?? null);
-    } catch {
-      setFlashcardSetTitle(null);
-    }
-  }, [row?.external_system, row?.external_id]);
-
-  useEffect(() => {
-    void loadFlashcardSet();
-  }, [loadFlashcardSet]);
 
   if (!isAdmin) return null;
 
@@ -145,9 +122,6 @@ export function CanvasArtifactDebugPanel({
                       : "—"
                   }
                 />
-                {flashcardSetTitle && (
-                  <DebugRow label="flashcard set" value={flashcardSetTitle} />
-                )}
               </>
             ) : (
               !loading && (
