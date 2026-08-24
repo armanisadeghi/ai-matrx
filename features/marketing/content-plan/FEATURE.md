@@ -250,6 +250,23 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
   time rather than fanned out into duplicate page edges. Both plan surface
   contexts require and emit the resolved lineage with ids, titles, origins, and
   truthful loading/error state.
+- **A page's research is ATTACH or START, and the server always adds the
+  site's.** NodePanel's Research lineage section pairs the attach list with
+  "Run research for this page" → `useOpenPageResearchWindow(...)`
+  (`features/overlays/openers/pageResearchWindow.tsx` →
+  `features/window-panels/windows/marketing/PageResearchWindow.tsx`), a compact
+  launcher over the SAME research service functions as the full wizard
+  (`createTopic` → `addKeywords` → `runPipeline`), never a fork of it. The
+  page's values carry through: the topic is named `"{page label} — page
+  research"` and keyword #1 is the page's target query; at most ONE more is
+  allowed (Arman, `common-docs/projects/content-engine/STATE.md` §2.14). The
+  new topic is attached to the plan node through the one association write
+  (`useContainerLinks.attach`) BEFORE the run starts, so a dead run still
+  leaves the page pointing at real research, and the run streams into the
+  canonical floating LiveRunWindow bound to the adopted `requestId`. The server
+  half is aidream `content_plan/research_context.py`
+  (`combined_research_report`): the SITE's research is always the baseline and
+  attached topics ride on top, feeding `deepen_node` and the brief writer.
 
 ## Key flows
 
@@ -836,6 +853,21 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-24 — **Per-page research: "Run research for this page."** New
+  `PageResearchWindow` (`features/window-panels/windows/marketing/`) +
+  `useOpenPageResearchWindow` opener + the six registration points
+  (`overlay-ids.ts`, `windowRegistryMetadata.ts`, `catalogue.ts`, and the lazy
+  import / isOpen / data / render blocks in `OverlayController.tsx`). It is a
+  COMPACT launcher over the existing research service (`createTopic` →
+  `addKeywords` → `runPipeline`) — not a fork of `ResearchInitForm` — seeded
+  with the page's label and target keyword, capped at two keywords, attaching
+  the new topic to the plan node before the run so the Research lineage list
+  shows it immediately. Wired into NodePanel's `p2_research` tab beside the
+  untouched `AssociationList`. Server half shipped the same day
+  (aidream `content_plan/research_context.py`). Live-proved on a real node:
+  topic + keyword rows + the `research_topic → plan_node` edge landed in the
+  node's org, the pipeline ran in the canonical live-run window, and the
+  server's `node_research_topic_ids` read the edge back.
 - 2026-08-24 — **"Find the company logo" in Setup rung 2.** A second button
   beside the starter kit (`SetupBridgeSection.tsx`) calls the streaming
   `POST /content-plan/sites/{site_id}/find-logo` via `bridgeFindLogo`

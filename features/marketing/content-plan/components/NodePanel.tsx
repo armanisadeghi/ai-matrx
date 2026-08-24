@@ -109,6 +109,7 @@ import { readSeoPlan } from "@/features/marketing/seo/plan/plan-model";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
 import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { useOpenPageResearchWindow } from "@/features/overlays/openers/pageResearchWindow";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { RESEARCH_LINEAGE_TOKENS } from "@/features/cms/hooks/useCmsResearchLineage";
 
@@ -251,6 +252,9 @@ export function NodePanel({
       label: edge.label,
     })),
   );
+  // "Run research for this page" — the compact launcher, carrying this page's
+  // own values through (label → topic name, target query → keyword #1).
+  const openPageResearch = useOpenPageResearchWindow();
   const save = () => {
     update.mutate(
       { id: node.id, patch: draft },
@@ -1445,6 +1449,33 @@ export function NodePanel({
                   />
                 </PanelSection>
                 <PanelSection title="Research lineage">
+                  {/* Attach existing research (the list) OR start a small new
+                      project for this page (the button). Both land in the same
+                      place — an edge the server reads as page context. */}
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      The site&apos;s research is always included. Anything
+                      attached here is extra context for this page only.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 shrink-0 px-2 text-xs"
+                      onClick={() =>
+                        openPageResearch({
+                          nodeId: node.id,
+                          siteId,
+                          pageLabel: current.label,
+                          primaryKeyword,
+                          orgId: node.organization_id,
+                        })
+                      }
+                    >
+                      <BrainCircuit className="mr-1 h-3.5 w-3.5" />
+                      Run research for this page
+                    </Button>
+                  </div>
                   <AssociationList
                     container={{
                       type: "plan_node",

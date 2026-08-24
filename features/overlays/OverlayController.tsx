@@ -621,6 +621,11 @@ const KeywordResearchWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordResearchWindow"),
   { ssr: false },
 );
+const PageResearchWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/PageResearchWindow"),
+  { ssr: false },
+);
 const KeywordWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordWindow"),
   { ssr: false },
@@ -1315,6 +1320,9 @@ export default function OverlayController() {
     keywordResearchWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordResearchWindow"),
     ),
+    pageResearchWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "pageResearchWindow"),
+    ),
     keywordWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordWindow"),
     ),
@@ -1690,6 +1698,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     keywordResearchWindow: useAppSelector((s) =>
       selectOverlayData(s, "keywordResearchWindow"),
+    ) as Record<string, unknown> | null,
+    pageResearchWindow: useAppSelector((s) =>
+      selectOverlayData(s, "pageResearchWindow"),
     ) as Record<string, unknown> | null,
     keywordWindow: useAppSelector((s) =>
       selectOverlayData(s, "keywordWindow"),
@@ -4437,6 +4448,32 @@ export default function OverlayController() {
                 : undefined
             }
             autoRun={data?.autoRun === true}
+          />
+        );
+      })()}
+
+      {/* pageResearchWindow */}
+      {(() => {
+        const isOpen = isOpenById.pageResearchWindow;
+        const data = dataById.pageResearchWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | undefined =>
+          typeof data?.[key] === "string" && data[key] ? (data[key] as string) : undefined;
+        const nodeId = str("nodeId");
+        // No page, no page research — the window's whole subject is the node.
+        if (!nodeId) return null;
+        return (
+          <PageResearchWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "pageResearchWindow" }))
+            }
+            nodeId={nodeId}
+            siteId={str("siteId")}
+            pageLabel={str("pageLabel")}
+            primaryKeyword={str("primaryKeyword")}
+            orgId={str("orgId")}
           />
         );
       })()}

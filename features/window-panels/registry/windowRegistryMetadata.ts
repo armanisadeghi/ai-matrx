@@ -1459,6 +1459,33 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     preservation: { dataKeys: ["primaryKeyword"] },
   },
 
+  // ── Research for this page (per-page research launcher) ───────────────────
+  // The COMPACT starter for one planned page's research — the first pages of
+  // the research wizard as a window, over the same service functions
+  // (`createTopic` → `addKeywords` → `runPipeline`). Topic name seeds from the
+  // page label, keyword #1 seeds from the page's target query, and at most one
+  // more keyword is allowed (Arman, STATE.md §2.14). The new topic is attached
+  // to the plan node so the server's `combined_research_report` feeds it to
+  // every agent that runs on that page. Open with
+  // `useOpenPageResearchWindow({ nodeId, siteId, pageLabel, primaryKeyword,
+  // orgId })`.
+  {
+    slug: "page-research-window",
+    overlayId: "pageResearchWindow",
+    kind: "window",
+    label: "Research for this page",
+    defaultData: {
+      nodeId: "",
+      siteId: "",
+      pageLabel: "",
+      primaryKeyword: "",
+      orgId: "",
+    },
+    mobilePresentation: "fullscreen",
+    // Deliberately NOT preserved: the window is meaningless without its page,
+    // and a restored one must never re-fire the paid pipeline.
+  },
+
   // ── Keyword Classification ────────────────────────────────────────────────
   // The traffic-class truth editor for one site's GSC keywords in a floating
   // window (features/marketing/search-console/components/classification/).

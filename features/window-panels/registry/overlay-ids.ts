@@ -163,6 +163,7 @@ export const OVERLAY_IDS = [
   "scratchpadPanel",
   "scraperWindow",
   "keywordResearchWindow",
+  "pageResearchWindow",
   "serpAnalyzerWindow",
   "setContextValueWindow",
   "shareModal",

@@ -755,6 +755,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  pageResearchWindow: {
+    label: "Research for this page",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   serpAnalyzerWindow: {
     label: "Search Appearance",
     instanceMode: "singleton",
