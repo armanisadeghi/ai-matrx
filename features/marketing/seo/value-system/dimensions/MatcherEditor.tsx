@@ -1,0 +1,573 @@
+"use client";
+
+/**
+ * THE MATCHER EDITOR — KI-008. "The real work is when you do the match"
+ * (Arman) finally has a screen: every matcher hung on one dimension VALUE,
+ * what it would catch BEFORE it is saved, and a door to re-run the engine.
+ *
+ * Until this screen, `dimension_matcher_upsert` and `gsc_matcher_reach_preview`
+ * had no UI at all — a score receipt's "matcher" step linked to the answer the
+ * matcher stamps and said so honestly (`reason-links.ts`). That is now a real
+ * link to a real editor.
+ *
+ * 🚨 NO NEW WRITE PATH. Every write here is one of the two canonical matcher
+ * functions from `./data.ts` (`upsertDimensionMatcher` / `deleteDimensionMatcher`,
+ * both wrapping `seo.dimension_matcher_upsert` / `_delete`) or the shared
+ * `runSiteMatchers` engine wrapper — the same three doors the C9 suggestion
+ * approval flow and the ruling session's rule writer already use. This screen
+ * adds no fourth.
+ *
+ * Only PATTERN matchers (exact / word / contains / starts_with / ends_with)
+ * are authored here. `place` matchers come from the geo-area editor (KI-009,
+ * `site → Value → Rules & Geo`), `brand_identity` from the brand-alias flow,
+ * and `condition` from Dig Here — each already has its own screen and its own
+ * shape of "what would this catch". All four kinds still LIST here, read-only
+ * beyond enable/disable/delete, so a value's matchers are never split across
+ * two places to look.
+ */
+
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ChevronsRight,
+  Loader2,
+  MapPin,
+  BadgeCheck,
+  Play,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Tag,
+  Timer,
+  Trash2,
+} from "lucide-react";
+import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { formatCount } from "@/features/marketing/search-console/types";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
+import { reviewWindow } from "../lib";
+import {
+  previewMatcherReach,
+  runSiteMatchers,
+  type MatcherReach,
+} from "../workbench/session/data";
+import {
+  deleteDimensionMatcher,
+  getValueMatchers,
+  upsertDimensionMatcher,
+  type FacetValue,
+  type ValueMatcher,
+} from "./data";
+
+/** The kinds this editor's "add" form writes. Every other kind is authored
+ * by its own screen (see file header) and only lists/toggles here. */
+const PATTERN_KINDS = [
+  { key: "contains", label: "Contains", hint: "anywhere in the search phrase" },
+  { key: "word", label: "Whole word", hint: "as its own word, not a substring" },
+  { key: "exact", label: "Exact phrase", hint: "the entire search, nothing else" },
+  { key: "starts_with", label: "Starts with", hint: "the phrase opens with this" },
+  { key: "ends_with", label: "Ends with", hint: "the phrase closes with this" },
+] as const;
+type PatternKind = (typeof PATTERN_KINDS)[number]["key"];
+
+const KIND_META: Record<
+  string,
+  { label: string; icon: typeof Tag; editableHere: boolean }
+> = {
+  contains: { label: "Contains", icon: Tag, editableHere: true },
+  word: { label: "Whole word", icon: Tag, editableHere: true },
+  exact: { label: "Exact phrase", icon: Tag, editableHere: true },
+  starts_with: { label: "Starts with", icon: Tag, editableHere: true },
+  ends_with: { label: "Ends with", icon: Tag, editableHere: true },
+  place: { label: "Place", icon: MapPin, editableHere: false },
+  fact: { label: "Fact", icon: ShieldCheck, editableHere: false },
+  condition: { label: "Dig Here segment", icon: Timer, editableHere: false },
+  brand_identity: { label: "Brand identity", icon: BadgeCheck, editableHere: false },
+};
+
+function kindMeta(kind: string) {
+  return (
+    KIND_META[kind] ?? { label: kind, icon: Tag, editableHere: false }
+  );
+}
+
+function MatcherRow({
+  matcher,
+  siteId,
+  onChanged,
+}: {
+  matcher: ValueMatcher;
+  siteId: string;
+  onChanged: () => void;
+}) {
+  const meta = kindMeta(matcher.kind);
+  const Icon = meta.icon;
+
+  // Only pattern-kind matchers are toggled from here (`meta.editableHere`) —
+  // the cast is safe because the mutation is never wired up otherwise (below).
+  const toggle = useMutation({
+    mutationFn: (enabled: boolean) =>
+      upsertDimensionMatcher({
+        siteId,
+        valueId: matcher.valueId,
+        kind: matcher.kind as PatternKind,
+        pattern: matcher.pattern,
+        origin: (["human", "pack", "agent", "migration"] as const).includes(
+          matcher.origin as "human" | "pack" | "agent" | "migration",
+        )
+          ? (matcher.origin as "human" | "pack" | "agent" | "migration")
+          : "human",
+        enabled,
+      }),
+    onSuccess: (_row, enabled) => {
+      toast.success(enabled ? "Matcher enabled" : "Matcher disabled");
+      onChanged();
+    },
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  });
+
+  const remove = useMutation({
+    mutationFn: () => deleteDimensionMatcher(matcher.id),
+    onSuccess: () => {
+      toast.success("Matcher removed");
+      onChanged();
+    },
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  });
+
+  const target =
+    matcher.pattern ??
+    (matcher.kind === "place"
+      ? "a place on your geo map"
+      : matcher.kind === "fact"
+        ? "another dimension's answer"
+        : matcher.kind === "condition"
+          ? "a Dig Here segment"
+          : matcher.kind === "brand_identity"
+            ? "your brand name and its known variants"
+            : "—");
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-border bg-card px-2.5 py-2">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      <Badge variant="outline" className="h-4 shrink-0 px-1.5 text-[10px]">
+        {meta.label}
+      </Badge>
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+        {target}
+      </span>
+      {matcher.matchCount !== null ? (
+        <span
+          className="shrink-0 text-[11px] text-muted-foreground"
+          title={
+            matcher.lastEvaluatedAt
+              ? `Last run ${new Date(matcher.lastEvaluatedAt).toLocaleString()}`
+              : "Never run"
+          }
+        >
+          {formatCount(matcher.matchCount)} stamped
+        </span>
+      ) : null}
+      <Badge
+        variant="outline"
+        className="h-4 shrink-0 px-1.5 text-[10px] text-muted-foreground"
+        title={`Where this matcher came from: ${matcher.origin}`}
+      >
+        {matcher.origin}
+      </Badge>
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        {meta.editableHere ? (
+          <Switch
+            checked={matcher.enabled}
+            disabled={toggle.isPending}
+            onCheckedChange={(checked) => toggle.mutate(checked)}
+            aria-label={matcher.enabled ? "Disable matcher" : "Enable matcher"}
+          />
+        ) : (
+          <Badge
+            variant="outline"
+            className="h-4 px-1.5 text-[10px] text-muted-foreground"
+            title="Authored by its own screen — enable or disable it there."
+          >
+            {matcher.enabled ? "Enabled" : "Disabled"}
+          </Badge>
+        )}
+        {meta.editableHere ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-1.5 text-destructive hover:text-destructive"
+            disabled={remove.isPending}
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Remove this matcher?",
+                description:
+                  "Keywords it already stamped keep their stamp until you re-run matchers.",
+                confirmLabel: "Remove",
+                variant: "destructive",
+              });
+              if (!ok) return;
+              remove.mutate();
+            }}
+          >
+            {remove.isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Trash2 className="h-3 w-3" />
+            )}
+          </Button>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function ReachPreviewCard({
+  reach,
+  siteId,
+  brandId,
+  organizationId,
+}: {
+  reach: MatcherReach;
+  siteId: string;
+  brandId: string | undefined;
+  organizationId: string | null | undefined;
+}) {
+  const openKeywordWindow = useOpenKeywordWindow();
+  return (
+    <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+      <p className="text-xs font-medium text-foreground">
+        Reaches {formatCount(reach.keywords)} search
+        {reach.keywords === 1 ? "" : "es"} in the last 28 days —{" "}
+        {formatCount(reach.newlyValued)} of them carry no answer here today.
+        {reach.alreadyValued > 0
+          ? ` ${formatCount(reach.alreadyValued)} already do.`
+          : ""}
+      </p>
+      {reach.sample.length > 0 ? (
+        <ul className="flex flex-wrap gap-1">
+          {reach.sample.map((row) => (
+            <li key={row.keywordId}>
+              <button
+                type="button"
+                onClick={() =>
+                  openKeywordWindow({
+                    phrase: row.keyword,
+                    siteId,
+                    brandId,
+                    organizationId: organizationId ?? undefined,
+                  })
+                }
+                title={`${formatCount(row.clicks)} clicks · ${formatCount(row.impressions)} impressions — open keyword intelligence`}
+                className="inline-flex max-w-full items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent"
+              >
+                <span className="truncate">{row.keyword}</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {formatCount(row.clicks)}c
+                </span>
+                {row.alreadyValued ? (
+                  <ChevronsRight className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          Nothing in the last 28 days matches this yet.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AddMatcherForm({
+  siteId,
+  value,
+  onSaved,
+}: {
+  siteId: string;
+  value: FacetValue;
+  onSaved: () => void;
+}) {
+  const [kind, setKind] = useState<PatternKind>("contains");
+  const [pattern, setPattern] = useState("");
+  const [reach, setReach] = useState<MatcherReach | null>(null);
+  const [reachError, setReachError] = useState<string | null>(null);
+  const { brandId, site } = useMarketingSite();
+  const trimmed = pattern.trim();
+
+  const preview = useMutation({
+    mutationFn: async () => {
+      const window = reviewWindow();
+      return previewMatcherReach({
+        siteId,
+        start: window.start,
+        end: window.end,
+        kind,
+        pattern: trimmed,
+        valueId: value.value_id,
+        sample: 8,
+      });
+    },
+    onSuccess: (result) => {
+      setReach(result);
+      setReachError(null);
+    },
+    onError: (error) => {
+      setReach(null);
+      setReachError(extractErrorMessage(error));
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: () =>
+      upsertDimensionMatcher({
+        siteId,
+        valueId: value.value_id,
+        kind,
+        pattern: trimmed,
+        origin: "human",
+        enabled: true,
+      }),
+    onSuccess: () => {
+      toast.success(`Matcher saved — “${value.label}” now watches for this`);
+      setPattern("");
+      setReach(null);
+      setReachError(null);
+      onSaved();
+    },
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  });
+
+  return (
+    <div className="space-y-2 rounded-md border border-dashed border-border p-2.5">
+      <p className="text-xs font-semibold text-foreground">
+        Add a matcher for “{value.label}”
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={kind} onValueChange={(next) => setKind(next as PatternKind)}>
+          <SelectTrigger size="sm" className="h-7 w-[9.5rem] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PATTERN_KINDS.map((option) => (
+              <SelectItem key={option.key} value={option.key}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          value={pattern}
+          onChange={(event) => {
+            setPattern(event.target.value);
+            setReach(null);
+            setReachError(null);
+          }}
+          placeholder="crt monitor"
+          className="h-7 max-w-[16rem] flex-1 text-xs"
+        />
+      </div>
+      <p className="text-[11px] leading-4 text-muted-foreground">
+        {PATTERN_KINDS.find((k) => k.key === kind)?.hint} — every keyword this
+        catches gets stamped “{value.label}” the next time matchers run.
+      </p>
+
+      {reach ? (
+        <ReachPreviewCard
+          reach={reach}
+          siteId={siteId}
+          brandId={brandId}
+          organizationId={site.organization_id ?? null}
+        />
+      ) : reachError ? (
+        <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
+          {reachError}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 text-[11px]"
+          disabled={!trimmed || preview.isPending}
+          onClick={() => preview.mutate()}
+        >
+          {preview.isPending ? (
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          ) : (
+            <Play className="mr-1 h-3 w-3" />
+          )}
+          Preview reach
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="h-7 text-[11px]"
+          disabled={!trimmed || save.isPending}
+          onClick={() => save.mutate()}
+        >
+          {save.isPending ? (
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          ) : (
+            <Plus className="mr-1 h-3 w-3" />
+          )}
+          Save matcher
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function MatcherEditor({
+  open,
+  onOpenChange,
+  siteId,
+  dimensionLabel,
+  value,
+  onChanged,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  siteId: string;
+  dimensionLabel: string;
+  value: FacetValue;
+  /** The dimension card's own refresh — matcher counts / condition badges live there too. */
+  onChanged: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const matchersKey = [
+    "marketing",
+    "seo",
+    "value-matchers",
+    siteId,
+    value.value_id,
+  ] as const;
+
+  const matchers = useQuery({
+    queryKey: matchersKey,
+    queryFn: ({ signal }) => getValueMatchers(siteId, value.value_id, signal),
+    enabled: open,
+    staleTime: 10_000,
+  });
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: matchersKey });
+    onChanged();
+  };
+
+  const run = useMutation({
+    mutationFn: () => runSiteMatchers(siteId),
+    onSuccess: (result) => {
+      toast.success(
+        result.stamped === 0 && result.removed === 0
+          ? "Already up to date — nothing changed."
+          : `${result.stamped.toLocaleString()} keywords stamped, ${result.removed.toLocaleString()} released across the site.`,
+        result.conflicts > 0
+          ? {
+              description: `${result.conflicts.toLocaleString()} kept their existing single-answer stamp instead of switching.`,
+            }
+          : undefined,
+      );
+      refresh();
+    },
+    onError: (error) =>
+      toast.error("Could not run your matchers", {
+        description: extractErrorMessage(error),
+      }),
+  });
+
+  const rows = matchers.data ?? [];
+  const editableRows = rows.filter((row) => kindMeta(row.kind).editableHere);
+  const otherRows = rows.filter((row) => !kindMeta(row.kind).editableHere);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-sm">
+            Matchers for “{value.label}”
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {dimensionLabel} — what finds this answer. A matcher only FINDS
+            keywords; the stamp it writes is what actually counts, and a human
+            or AI stamp always outranks it.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {matchers.isPending ? (
+            <p className="text-xs text-muted-foreground">Loading matchers…</p>
+          ) : matchers.isError ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+              {extractErrorMessage(matchers.error)}
+            </p>
+          ) : rows.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No matchers yet — nothing finds this answer automatically. Add
+              one below, or stamp keywords by hand from the workbench.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {[...editableRows, ...otherRows].map((matcher) => (
+                <MatcherRow
+                  key={matcher.id}
+                  matcher={matcher}
+                  siteId={siteId}
+                  onChanged={refresh}
+                />
+              ))}
+            </ul>
+          )}
+
+          <AddMatcherForm siteId={siteId} value={value} onSaved={refresh} />
+        </div>
+
+        <DialogFooter className="items-center justify-between sm:justify-between">
+          <p className="text-[11px] text-muted-foreground">
+            Changes here only take effect once matchers run.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-[11px]"
+            disabled={run.isPending}
+            onClick={() => run.mutate()}
+          >
+            {run.isPending ? (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-1 h-3 w-3" />
+            )}
+            {run.isPending ? "Running…" : "Run matchers now"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

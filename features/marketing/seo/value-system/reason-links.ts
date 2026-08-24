@@ -13,7 +13,10 @@
  *
  * Every target screen reads the query params this file writes:
  *   /value/topics     ?topic=<id>[&worth=1]        (TopicTreeWorkbench)
- *   /value/dimensions ?dimension=<slug>&value=<id>[&matcher=<id>]  (DimensionManager)
+ *   /value/dimensions ?dimension=<slug>&value=<id>[&matcher=<id>]  (DimensionManager
+ *                      — `matcher` opens THE MATCHER EDITOR, KI-008, straight
+ *                      onto that value; any truthy value works, the matcher's
+ *                      own id just rides along for a future "ring that row")
  *   /value/rules      ?bands=value_band            (MeaningRulesWorkbench)
  *   /value            ?kw=<keyword>  |  ?combo=<id>  (ValueWorkbench)
  */
@@ -133,12 +136,10 @@ export function reasonEditorLink(
           reason.value_id,
           reason.matcher_id,
         ),
-        // A matcher HAS no editor screen yet (the RPCs exist, the UI does
-        // not), so the link lands on the answer the matcher stamps — the
-        // nearest thing that is actually editable — and says so. Never label a
-        // link with a screen that does not exist.
+        // KI-008 — the matcher editor is real now: a matcher step opens it
+        // directly on the value it stamps, ready to add/preview/disable.
         label: reason.matcher_id
-          ? `Open “${reason.value_label}”, the answer this matcher stamps`
+          ? `Open the matcher that stamps “${reason.value_label}”`
           : `Change what “${reason.value_label}” is worth`,
       };
     case "combo":

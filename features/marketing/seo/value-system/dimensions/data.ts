@@ -374,6 +374,125 @@ export async function deleteDimensionMatcher(
   );
 }
 
+export interface ValueMatcher {
+  id: string;
+  siteId: string;
+  valueId: string;
+  /**
+   * Every kind the DB accepts (`dvm_kind_check`), not just the ones this
+   * editor's "add" form writes — a value can already carry a `place` matcher
+   * (geo editor), a `brand_identity` matcher (C3 migration) or a `condition`
+   * matcher (Dig Here), and this list must show ALL of them honestly.
+   */
+  kind: string;
+  pattern: string | null;
+  placeId: string | null;
+  factValueId: string | null;
+  conditionRuleId: string | null;
+  enabled: boolean;
+  origin: string;
+  notes: string | null;
+  matchCount: number | null;
+  lastEvaluatedAt: string | null;
+  createdAt: string;
+}
+
+interface RawMatcherRow {
+  id: string;
+  site_id: string;
+  value_id: string;
+  kind: string;
+  pattern: string | null;
+  place_id: string | null;
+  fact_value_id: string | null;
+  condition_rule_id: string | null;
+  enabled: boolean;
+  origin: string;
+  notes: string | null;
+  match_count: number | null;
+  last_evaluated_at: string | null;
+  created_at: string;
+}
+
+function toValueMatcher(row: RawMatcherRow): ValueMatcher {
+  return {
+    id: row.id,
+    siteId: row.site_id,
+    valueId: row.value_id,
+    kind: row.kind,
+    pattern: row.pattern,
+    placeId: row.place_id,
+    factValueId: row.fact_value_id,
+    conditionRuleId: row.condition_rule_id,
+    enabled: row.enabled,
+    origin: row.origin,
+    notes: row.notes,
+    matchCount: row.match_count,
+    lastEvaluatedAt: row.last_evaluated_at,
+    createdAt: row.created_at,
+  };
+}
+
+/**
+ * Every matcher hung on ONE value, on this site. A direct RLS-governed read
+ * (`std_select` on `seo.dimension_value_matcher` — site editors/viewers only),
+ * not a new RPC: THE MATCHER TABLE has no write path outside
+ * `dimension_matcher_upsert` / `_delete`, but listing what already exists is
+ * an ordinary scoped read (THE VIEW LAW).
+ */
+export async function getValueMatchers(
+  siteId: string,
+  valueId: string,
+  signal?: AbortSignal,
+): Promise<ValueMatcher[]> {
+  const response = await (await seoDb())
+    .from("dimension_value_matcher")
+    .select(
+      "id, site_id, value_id, kind, pattern, place_id, fact_value_id, condition_rule_id, enabled, origin, notes, match_count, last_evaluated_at, created_at",
+    )
+    .eq("site_id", siteId)
+    .eq("value_id", valueId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "load this answer's matchers",
+  ) as RawMatcherRow[];
+  return rows.map(toValueMatcher);
+}
+
+/**
+ * How many (enabled or not) matchers each value in a dimension carries, in
+ * ONE round trip — what lights up the "N matchers" door on every row in the
+ * card without a query per value.
+ */
+export async function getMatcherCounts(
+  siteId: string,
+  valueIds: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (valueIds.length === 0) return counts;
+  const response = await (await seoDb())
+    .from("dimension_value_matcher")
+    .select("value_id")
+    .eq("site_id", siteId)
+    .in("value_id", valueIds)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "count these answers' matchers",
+  ) as Array<{ value_id: string }>;
+  for (const row of rows) {
+    counts.set(row.value_id, (counts.get(row.value_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
 export type WorthDraft = {
   siteId: string;
   valueId: string;

@@ -66,15 +66,16 @@ export function DimensionManager() {
   const siteId = site.id;
   const queryClient = useQueryClient();
   /**
-   * `?dimension=<slug>&value=<value_id>` — the door a value receipt opens when
-   * the reader asks what a stamped answer is worth. The card for that value
-   * expands, the row is ringed and scrolled to. `?matcher=` rides along for
-   * the day a matcher editor exists; it is deliberately not read yet, because
-   * pretending to open an editor that does not exist is worse than landing on
-   * the value the matcher stamps.
+   * `?dimension=<slug>&value=<value_id>[&matcher=1]` — the door a value
+   * receipt opens when the reader asks what a stamped answer is worth. The
+   * card for that value expands, the row is ringed and scrolled to. `matcher`
+   * (any truthy value — `reasonEditorLink` sends the matcher's own id) also
+   * opens THE MATCHER EDITOR (KI-008) straight onto that value, since that is
+   * what a "matcher" receipt step is actually asking to change.
    */
   const searchParams = useSearchParams();
   const focusValueId = searchParams.get("value");
+  const focusMatcher = Boolean(searchParams.get("matcher"));
   const [creating, setCreating] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
 
@@ -263,6 +264,7 @@ export function DimensionManager() {
                     siteId={siteId}
                     defaultExpanded={mine.length <= 3}
                     focusValueId={focusValueId}
+                    focusMatcher={focusMatcher}
                     onSaved={refresh}
                   />
                 ))}
@@ -287,6 +289,7 @@ export function DimensionManager() {
                       siteId={siteId}
                       defaultExpanded={situational.length <= 3}
                       focusValueId={focusValueId}
+                      focusMatcher={focusMatcher}
                       onSaved={refresh}
                     />
                   ))}
@@ -316,6 +319,7 @@ export function DimensionManager() {
                       siteId={siteId}
                       defaultExpanded={false}
                       focusValueId={focusValueId}
+                      focusMatcher={focusMatcher}
                       onSaved={refresh}
                     />
                   ))

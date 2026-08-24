@@ -15,10 +15,11 @@
  */
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   Gavel,
+  ListFilter,
   Lock,
   Pencil,
   Plus,
@@ -37,7 +38,9 @@ import { formatRelativeTime } from "@/utils/datetime";
 import { useDigStampMutations } from "@/features/marketing/search-console/hooks/useDigRules";
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
 import { ValueForm, type ValueFormValue } from "./ValueForm";
+import { MatcherEditor } from "./MatcherEditor";
 import {
+  getMatcherCounts,
   upsertFacetDimension,
   upsertFacetValue,
   type FacetDimension,
@@ -71,20 +74,32 @@ function ValueRow({
   editable,
   siteId,
   dimensionSlug,
+  dimensionLabel,
   situational,
   focused = false,
+  matcherCount,
+  autoOpenMatchers = false,
   onSaved,
+  onMatchersChanged,
 }: {
   value: FacetValue;
   editable: boolean;
   siteId: string;
   dimensionSlug: string;
+  dimensionLabel: string;
   situational: boolean;
   /** Arrived here from a value receipt's "change what this is worth" link. */
   focused?: boolean;
+  /** From the card's one grouped read — `undefined` while it is still loading. */
+  matcherCount: number | undefined;
+  /** A receipt's "matcher" step landed here with `?matcher=` set — open it. */
+  autoOpenMatchers?: boolean;
   onSaved: () => void;
+  /** Fires on any matcher add/toggle/delete — refreshes just the count read. */
+  onMatchersChanged: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [matchersOpen, setMatchersOpen] = useState(autoOpenMatchers);
 
   const save = useMutation({
     mutationFn: (draft: ValueFormValue) =>
@@ -173,6 +188,25 @@ function ValueRow({
               : "never evaluated"}
           </span>
         ) : null}
+        {/* KI-008 — the door onto every matcher hung on this answer. Every
+            value gets one, owned or shared: matchers are site-scoped writes
+            regardless of which dimension a value belongs to (traffic_class's
+            values are platform-shared, but each site's brand/class matchers
+            live here). */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 px-1.5 text-[11px]"
+          onClick={() => setMatchersOpen(true)}
+          title="What finds this answer, and what it would catch"
+        >
+          <ListFilter className="mr-1 h-3 w-3" />
+          {matcherCount === undefined
+            ? "Matchers"
+            : matcherCount === 0
+              ? "No matchers"
+              : `${formatCount(matcherCount)} matcher${matcherCount === 1 ? "" : "s"}`}
+        </Button>
         {editable ? (
           <Button
             size="sm"
@@ -184,6 +218,16 @@ function ValueRow({
           </Button>
         ) : null}
       </div>
+      {matchersOpen ? (
+        <MatcherEditor
+          open={matchersOpen}
+          onOpenChange={setMatchersOpen}
+          siteId={siteId}
+          dimensionLabel={dimensionLabel}
+          value={value}
+          onChanged={onMatchersChanged}
+        />
+      ) : null}
     </li>
   );
 }
@@ -193,6 +237,7 @@ export function DimensionCard({
   siteId,
   defaultExpanded,
   focusValueId = null,
+  focusMatcher = false,
   onSaved,
 }: {
   dimension: FacetDimension;
@@ -204,6 +249,8 @@ export function DimensionCard({
    * card would make the link look broken.
    */
   focusValueId?: string | null;
+  /** The receipt's "matcher" step (`?matcher=`) — open the editor, not just ring the row. */
+  focusMatcher?: boolean;
   onSaved: () => void;
 }) {
   const focusedHere =
@@ -218,6 +265,27 @@ export function DimensionCard({
   // Re-derivation is the DB's job — this button only asks for it, scoped to
   // this dimension, over the site's current window (THE SCOPE RULE).
   const stampMutations = useDigStampMutations(siteId);
+
+  // ONE grouped read for every value's matcher count — never a query per row.
+  const valueIds = dimension.values.map((value) => value.value_id);
+  const matcherCountsKey = [
+    "marketing",
+    "seo",
+    "matcher-counts",
+    siteId,
+    dimension.dimension_id,
+  ] as const;
+  const matcherCounts = useQuery({
+    queryKey: matcherCountsKey,
+    queryFn: ({ signal }) => getMatcherCounts(siteId, valueIds, signal),
+    enabled: expanded && valueIds.length > 0,
+    staleTime: 30_000,
+  });
+  const queryClient = useQueryClient();
+  const refreshMatcherCounts = () => {
+    void queryClient.invalidateQueries({ queryKey: matcherCountsKey });
+    onSaved();
+  };
 
   const saveDimension = useMutation({
     mutationFn: (draft: DimensionFormValue) =>
@@ -474,9 +542,13 @@ export function DimensionCard({
                   editable={owned}
                   siteId={siteId}
                   dimensionSlug={dimension.slug}
+                  dimensionLabel={dimension.label}
                   situational={situational}
                   focused={value.value_id === focusValueId}
+                  matcherCount={matcherCounts.data?.get(value.value_id) ?? (matcherCounts.data ? 0 : undefined)}
+                  autoOpenMatchers={focusMatcher && value.value_id === focusValueId}
                   onSaved={onSaved}
+                  onMatchersChanged={refreshMatcherCounts}
                 />
               ))}
             </ul>
