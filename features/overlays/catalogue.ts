@@ -670,6 +670,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  quickMessageTemplateSaveWindow: {
+    label: "Save as Message Template",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   quickNoteSaveWindow: {
     label: "Quick Note Save Window",
     instanceMode: "singleton",

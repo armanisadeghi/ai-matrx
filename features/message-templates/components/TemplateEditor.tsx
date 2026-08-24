@@ -34,6 +34,7 @@ import {
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -210,6 +211,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
       if (!subjectTemplate.trim()) delete metadata.subject_template;
       if (mode === "create") {
         const input: CreateMessageTemplateInput = {
+          organization_id: requireSelectedOrgId(),
           label: label.trim(),
           content: content.trim(),
           role,

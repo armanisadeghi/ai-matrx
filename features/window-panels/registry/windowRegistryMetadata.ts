@@ -203,6 +203,16 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
 
   // ── Quick Note Save ───────────────────────────────────────────────────────
   {
+    slug: "quick-message-template-save-window",
+    overlayId: "quickMessageTemplateSaveWindow",
+    kind: "window",
+    label: "Save as Message Template",
+    defaultData: { initialContent: "", defaultRole: "assistant" },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
+  {
     slug: "quick-note-save-window",
     overlayId: "quickNoteSaveWindow",
     kind: "window",

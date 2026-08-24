@@ -50,6 +50,7 @@ import type { EntityType } from "@/features/scopes/types";
 import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
+import type { MessageRole } from "@/features/message-templates/types/message-templates-db";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
 import { getShareableResource } from "@/utils/permissions/registry";
 import type { ResourceType } from "@/utils/permissions/types";
@@ -71,6 +72,15 @@ import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { Finding } from "@/features/hindsight/types";
 import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+
+function isMessageRole(value: unknown): value is MessageRole {
+  return (
+    value === "system" ||
+    value === "user" ||
+    value === "assistant" ||
+    value === "tool"
+  );
+}
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -309,8 +319,7 @@ const GscDrilldownWindow = lazyOverlay(
   { ssr: false },
 );
 const GscWhyScoreWindow = lazyOverlay(
-  () =>
-    import("@/features/marketing/search-console/windows/GscWhyScoreWindow"),
+  () => import("@/features/marketing/search-console/windows/GscWhyScoreWindow"),
   { ssr: false },
 );
 const ReviewWalkWindow = lazyOverlay(
@@ -799,6 +808,11 @@ const QuickDataSheet = lazyOverlay(
 );
 const QuickDataWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/QuickDataWindow"),
+  { ssr: false },
+);
+const QuickMessageTemplateSaveWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/message-templates/QuickMessageTemplateSaveWindow"),
   { ssr: false },
 );
 const QuickNoteSaveWindow = lazyOverlay(
@@ -1322,6 +1336,9 @@ export default function OverlayController() {
     quickDataWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickDataWindow"),
     ),
+    quickMessageTemplateSaveWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickMessageTemplateSaveWindow"),
+    ),
     quickNoteSaveWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickNoteSaveWindow"),
     ),
@@ -1666,6 +1683,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     quickDataWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickDataWindow"),
+    ) as Record<string, unknown> | null,
+    quickMessageTemplateSaveWindow: useAppSelector((s) =>
+      selectOverlayData(s, "quickMessageTemplateSaveWindow"),
     ) as Record<string, unknown> | null,
     quickNoteSaveWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickNoteSaveWindow"),
@@ -5376,6 +5396,36 @@ export default function OverlayController() {
               typeof data?.selectedTable === "string"
                 ? data.selectedTable
                 : null
+            }
+          />
+        );
+      })()}
+
+      {/* quickMessageTemplateSaveWindow */}
+      {(() => {
+        const isOpen = isOpenById.quickMessageTemplateSaveWindow;
+        const data = dataById.quickMessageTemplateSaveWindow;
+        if (!isOpen) return null;
+        return (
+          <QuickMessageTemplateSaveWindow
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "quickMessageTemplateSaveWindow" }),
+              )
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : undefined
+            }
+            defaultName={
+              typeof data?.defaultName === "string"
+                ? data.defaultName
+                : undefined
+            }
+            defaultRole={
+              isMessageRole(data?.defaultRole) ? data.defaultRole : undefined
             }
           />
         );

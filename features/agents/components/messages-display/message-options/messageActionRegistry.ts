@@ -44,6 +44,7 @@ import {
   History,
   Layers,
   Boxes,
+  LayoutTemplate,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import {
@@ -79,6 +80,7 @@ import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
+import type { OpenQuickMessageTemplateSaveWindowOptions } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -172,6 +174,10 @@ export interface MessageActionContext {
    * before consolidating. Hidden for everyone else.
    */
   isAdmin: boolean;
+  /** Typed overlay opener supplied by the menu host; never stored in Redux. */
+  openMessageTemplateSave: (
+    options: OpenQuickMessageTemplateSaveWindowOptions,
+  ) => { close: () => void };
 }
 
 // ============================================================================
@@ -586,9 +592,8 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-blue-500 dark:text-blue-400",
       label: "Send to Google Doc",
       action: async () => {
-        const { sendContentToGoogleDoc } = await import(
-          "@/features/google-workspace/export/sendToGoogle"
-        );
+        const { sendContentToGoogleDoc } =
+          await import("@/features/google-workspace/export/sendToGoogle");
         const result = await sendContentToGoogleDoc(
           turnText,
           deriveMessageTitle(ctx) ?? "AI Matrx message",
@@ -1006,6 +1011,35 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
   ];
 }
 
+function saveAsMessageTemplateItem(ctx: MessageActionContext): MenuItem {
+  const content = ctx.turnContent ?? ctx.content;
+  return {
+    key: "save-as-message-template",
+    icon: LayoutTemplate,
+    label: "Message Template",
+    action: () => {
+      if (
+        !requireAuth(
+          ctx,
+          "save-as-message-template",
+          "Save as Message Template",
+          "Sign in to save this response as a reusable message template.",
+        )
+      )
+        return;
+      ctx.openMessageTemplateSave({
+        initialContent: content,
+        defaultName: deriveMessageTitle(ctx),
+        defaultRole: "assistant",
+      });
+      ctx.onClose();
+    },
+    category: "Save as",
+    showToast: false,
+    hidden: !ctx.conversationId || !ctx.messageId,
+  };
+}
+
 function appItems(ctx: MessageActionContext): MenuItem[] {
   const { dispatch, onClose } = ctx;
   return [
@@ -1064,7 +1098,8 @@ function appItems(ctx: MessageActionContext): MenuItem[] {
  *     turn sees the updated content.
  */
 function editContentItem(ctx: MessageActionContext): MenuItem {
-  const { content, conversationId, messageId, metadata, dispatch, onClose } = ctx;
+  const { content, conversationId, messageId, metadata, dispatch, onClose } =
+    ctx;
   const editContent = ctx.editTarget?.content ?? content;
   const editMessageId = ctx.editTarget?.messageId ?? messageId;
   return {
@@ -1895,6 +1930,7 @@ export function getAssistantMessageActions(
     editHistoryItem(ctx),
     forkAtMessageItem(ctx),
     deleteMessageItem(ctx),
+    saveAsMessageTemplateItem(ctx),
     ...saveAsItems(ctx),
     ...creatorItems(ctx),
     ...copyItems(ctx),
@@ -1954,6 +1990,7 @@ export function resumePendingAuthAction(
   isAuthenticated: boolean,
   content: string,
   dispatch: AppDispatch,
+  openMessageTemplateSave: MessageActionContext["openMessageTemplateSave"],
 ) {
   if (!isAuthenticated) return;
   try {
@@ -1985,6 +2022,11 @@ export function resumePendingAuthAction(
           },
         }),
       );
+    } else if (action === "save-as-message-template") {
+      openMessageTemplateSave({
+        initialContent: savedContent,
+        defaultRole: "assistant",
+      });
     } else if (action === "add-docs") {
       import("@/features/data-tables/export-targets")
         .then(async ({ pushMarkdownToDocument }) => {
@@ -2031,7 +2073,10 @@ export function resumePendingAuthAction(
       import("@/lib/block-print/markdown-pdf")
         .then(async ({ markdownToPdfBlob }) => {
           const blob = await markdownToPdfBlob(savedContent);
-          const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+          const ts = new Date()
+            .toISOString()
+            .replace(/[:.]/g, "-")
+            .slice(0, 19);
           const file = new File([blob], `message-${ts}.pdf`, {
             type: "application/pdf",
           });

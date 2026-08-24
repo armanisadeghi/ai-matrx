@@ -29,6 +29,7 @@ import {
 } from "./messageActionRegistry";
 import type { PrimingMessageRole } from "@/features/agents/types/agent-message-types";
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
+import { useOpenQuickMessageTemplateSaveWindow } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 
 export interface MessageOptionsMenuProps {
   isOpen: boolean;
@@ -108,6 +109,7 @@ export function MessageOptionsMenu({
   // replace-with-summary, restore). Super admin only — hidden for
   // everyone else.
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const openMessageTemplateSave = useOpenQuickMessageTemplateSaveWindow();
 
   // ── Creator detection — conversation → agent → isConfirmedOwner ──────────
   // `agentId` sits on the execution instance (cx_conversation.agent_id mirrored
@@ -135,8 +137,19 @@ export function MessageOptionsMenu({
   useEffect(() => {
     // Turn-preferred text — must mirror what requireAuth stashed, or the
     // savedContent equality check never matches and resumes silently drop.
-    resumePendingAuthAction(isAuthenticated, turnContent ?? content, dispatch);
-  }, [isAuthenticated, content, turnContent, dispatch]);
+    resumePendingAuthAction(
+      isAuthenticated,
+      turnContent ?? content,
+      dispatch,
+      openMessageTemplateSave,
+    );
+  }, [
+    isAuthenticated,
+    content,
+    turnContent,
+    dispatch,
+    openMessageTemplateSave,
+  ]);
 
   const ctx: MessageActionContext = {
     content,
@@ -160,6 +173,7 @@ export function MessageOptionsMenu({
     contentHistoryCount,
     isAdmin,
     onRequestConvert,
+    openMessageTemplateSave,
   };
 
   const menuItems =

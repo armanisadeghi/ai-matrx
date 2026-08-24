@@ -14,7 +14,7 @@ export type MessageVisibility = MessageTemplateDB["visibility"];
 
 export type CreateMessageTemplateInput = Pick<
   MessageTemplateTable["Insert"],
-  "label" | "content" | "role" | "tags"
+  "label" | "content" | "role" | "tags" | "organization_id"
 > & {
   label: string;
   content: string;

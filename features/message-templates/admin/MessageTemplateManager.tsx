@@ -81,6 +81,7 @@ import type {
   RenderBlockEvent,
 } from "@/types/python-generated/stream-events";
 import { isJsonObject } from "@/types/json";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -462,7 +463,16 @@ export function MessageTemplateManager({
         return;
       }
 
-      await createTemplate(createFormData as CreateMessageTemplateInput);
+      const input: CreateMessageTemplateInput = {
+        organization_id: requireSelectedOrgId(),
+        label: createFormData.label,
+        content: createFormData.content,
+        role: createFormData.role,
+        tags: createFormData.tags ?? [],
+        metadata: createFormData.metadata,
+        visibility: createFormData.visibility,
+      };
+      await createTemplate(input);
 
       setIsCreateDialogOpen(false);
       clearTemplateCache();

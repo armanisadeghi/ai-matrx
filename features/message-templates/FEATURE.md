@@ -29,6 +29,11 @@ or unresolved paths before it creates an approvable interaction.
   resource panel used by Tools and Skills. Row selection applies immediately; preview and
   new-tab doors remain separate controls. Selection prepends the template, then one blank line,
   then the byte-identical existing draft; the standard composer expands automatically.
+- Assistant-message **Save as → Message Template** opens the reusable quick-save window. It
+  seeds the full visible turn, defaults role to `assistant`, reuses the shared content-refine
+  editor, and supports New or Existing with Append or compare-confirmed Overwrite. New rows
+  carry the explicitly selected `organization_id`; missing organization context refuses before
+  Supabase I/O. Existing updates preserve metadata such as `subject_template`.
 
 ## Reuse-first record
 
@@ -44,8 +49,17 @@ drill-ins, doors, and draft writers. It reuses the canonical template service, `
 existing composer expansion path. The full `TemplateBrowserModal` stays dedicated to its
 preview-before-use authoring flow.
 
+The assistant-message integration searched the Notes quick-save family, template selectors,
+editor/service paths, overlay openers, WindowPanel registry, and entity doors. It reuses
+`RefinableContentEditor`, the canonical template service and generated row types, `WindowPanel`,
+`lazyOverlay`, the typed opener pattern, and the registered `message_template` `EntityRef` door;
+no table or parallel writer was added.
+
 ## Change log
 
+- **2026-08-24** — Added assistant-message quick save to message templates: shared refinement,
+  new/existing targets, append/overwrite comparison, template-native fields, typed window
+  overlay, post-save door, and explicit selected-organization create writes.
 - **2026-08-21** — Moved the canonical authoring route from Settings to Chat, updated every
   internal door, and retained permanent redirects for existing links.
 - **2026-08-20** — Replaced chat's modal detour with an in-panel, mobile-friendly picker whose

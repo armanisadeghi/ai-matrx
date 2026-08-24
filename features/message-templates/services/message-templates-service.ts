@@ -11,7 +11,6 @@ import { createClient } from "@/utils/supabase/client";
 import { makeAssertData, operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
 const assertData = makeAssertData("load your message templates");
@@ -153,11 +152,14 @@ export async function getTemplateById(
 export async function createTemplate(
   input: CreateMessageTemplateInput,
 ): Promise<MessageTemplateDB> {
+  if (!input.organization_id.trim()) {
+    throw new Error(
+      "Select an organization before creating a message template.",
+    );
+  }
   const supabase = getClient();
 
   const userId = requireUserId();
-  const organizationId = await ensureOrgId(undefined);
-
   const { data, error } = await supabase
     .schema("agent")
     .from("message_template")
@@ -170,7 +172,7 @@ export async function createTemplate(
         visibility: input.visibility || "internal",
         tags: input.tags || null,
         created_by: userId,
-        organization_id: organizationId,
+        organization_id: input.organization_id,
       },
     ])
     .select()
