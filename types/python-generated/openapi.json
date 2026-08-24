@@ -142919,6 +142919,18 @@
             ],
             "title": "Target Config"
           },
+          "target_input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Input"
+          },
           "rationale": {
             "type": "string",
             "title": "Rationale",

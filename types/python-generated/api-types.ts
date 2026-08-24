@@ -55316,6 +55316,10 @@ export interface components {
             target_config?: {
                 [key: string]: unknown;
             } | null;
+            /** Target Input */
+            target_input?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Rationale
              * @default
