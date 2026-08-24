@@ -2,12 +2,16 @@
 
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { ScheduleForm } from "@/features/scheduling/components/form/ScheduleForm";
 
-export default function NewSchedulePage() {
+// useSearchParams must sit under a Suspense boundary (repo precedent:
+// education/practice-tests/new, crm/chasebox) or the route degrades to a
+// full-CSR bailout / build-time Suspense error.
+function NewScheduleContent() {
   // Prefill from a composer handoff (e.g. AI Work's "Schedule this" link):
   // `?agentId=<uuid>&prompt=<text>`. An unknown/blank agentId just leaves the
   // agent picker empty — the form works exactly as it does with no params.
@@ -15,6 +19,15 @@ export default function NewSchedulePage() {
   const agentId = searchParams.get("agentId");
   const prompt = searchParams.get("prompt");
 
+  return (
+    <ScheduleForm
+      initialAgentId={agentId || null}
+      initialPrompt={prompt || undefined}
+    />
+  );
+}
+
+export default function NewSchedulePage() {
   return (
     <>
       <RouteHeader
@@ -32,10 +45,9 @@ export default function NewSchedulePage() {
       />
       <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+1rem)]">
         <div className="max-w-3xl mx-auto">
-          <ScheduleForm
-            initialAgentId={agentId || null}
-            initialPrompt={prompt || undefined}
-          />
+          <Suspense fallback={null}>
+            <NewScheduleContent />
+          </Suspense>
         </div>
       </div>
     </>
